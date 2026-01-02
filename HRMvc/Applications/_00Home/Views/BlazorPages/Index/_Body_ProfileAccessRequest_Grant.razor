@@ -1,0 +1,321 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._90_Utils.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._00Home.Views.BlazorPages.Index.F_Body_ProfileAccessRequest_Grant
+
+<style>
+    .btn-close-custom {
+    filter: invert(0.2) sepia(1) saturate(10) hue-rotate(0deg);
+    /* Darker red color */
+    }
+</style>
+
+<div class="w-100 p-2 bordered-darkgreen">
+
+    <RadzenTemplateForm TItem="Uc_accessreqModel" Data="@Uca" Submit="@OnSubmit" InvalidSubmit="@OnInvalidSubmit">
+        <RadzenFieldset Text="Company Access Settings" class="fw-bold text-success">
+
+            <div class="fw-normal text-success">
+                <div class="d-flex p-2 bordered card-header  justify-content-between">
+                    @*--- Left Content *@
+                    <div class="d-flex gap-2 w-90">
+                        <div class="w-125p">Enable Access </div>
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BAllowed" Change="AllowedAccess" />
+                        </div>
+                    </div>
+
+                    @*--- Left Content *@
+                    <div class="w-10 text-end px-2">
+                        <btn @onclick="Close" class="btn btn-close p-2 btn-close-custom" />
+                    </div>
+                </div>
+
+                <div class="h-10p"></div>
+                @* ----- AInfo (smallint(5) unsigned)----------*@
+                <div class="d-flex gap-2 p-2 w-100 bordered overflow-auto">
+                    <div class="d-flex gap-1 bordered p-2 rounded w-150p">
+                        <span>
+                            <RadzenSwitch @bind-Value="Uca.BAinfo" Disabled="!Uca.BAllowed" />
+                        </span>
+                        <span class="w-125p">My Records</span>
+                    </div>
+
+                    <div class="d-flex gap-1 bordered p-2 rounded w-175p ">
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BApersonalData" Disabled="!Uca.BAllowed" />
+                        </div>
+                        <div>Personal Data </div>
+                    </div>
+
+                    <div class="d-flex bordered p-2 gap-2 rounded w-125p ">
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BAaddress" Disabled="!Uca.BAllowed" />
+                        </div>
+                        <div>Address </div>
+                    </div>
+
+                    <div class="d-flex bordered p-2 gap-2 rounded w-150p ">
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BAeducaion" Disabled="!Uca.BAllowed" />
+                        </div>
+                        <div>Education </div>
+                    </div>
+
+                    <div class="d-flex bordered p-2 gap-2 rounded w-125p ">
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BAfamily" Disabled="!Uca.BAllowed" />
+                        </div>
+                        <div>Family </div>
+                    </div>
+
+                    <div class="d-flex bordered p-2 gap-2 rounded w-150p ">
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BAreferences" Disabled="!Uca.BAllowed" />
+                        </div>
+                        <div>References </div>
+                    </div>
+
+
+                    <div class="d-flex bordered p-2 gap-2 rounded w-150p ">
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BAemployment" Disabled="!Uca.BAllowed" />
+                        </div>
+                        <div>Employment </div>
+                    </div>
+
+                    <div class="d-flex bordered p-2 gap-2 rounded w-150p ">
+                        <div>
+                            <RadzenSwitch @bind-Value="Uca.BAtrainings" Disabled="!Uca.BAllowed" />
+                        </div>
+                        <div>Trainings </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+
+
+        </RadzenFieldset>
+    </RadzenTemplateForm>
+
+    <div class="h-25p"></div>
+
+    @*--- Disclaimer ------------------------------------------------------*@
+    <Disclaimer Uca="@Uca" />
+
+    <div class="h-10p"></div>
+    <div class="bordered p-2 ">
+        <div class="w-90 text-end">
+            <RadzenButton ButtonType="ButtonType.Submit" Click="GrantAccess" Icon="save" Disabled="!Uca!.BAllowed"
+            Text="Grant Access" Style="font-size:small; background-color: #0f6c53" IconColor="White" />
+        </div>
+
+        <div>
+            @* VPay.UserClaims.Conn : @VPay.UserClaims.Conn *@
+            @* *** Ucrequestingid : @Uca.Ucrequestingid *@
+        </div>
+    </div>
+
+
+</div>
+
+@inject I_00MainDA _main
+@inject IEmpmasInternalDataAccess _empmasInternal
+@inject I_00UserscompanyDataAccess _uc
+@inject IEmpmovementDataAccess _empMovement
+@inject IMymovementDataAccess _myMovement
+@inject I_00UsersAccess _user;
+@inject NavigationManager _nav;
+@inject I_00MainDA _mainDa;
+@inject I_00CompanyusersDataAccess _cu;
+@inject IMsdsDataAccess _msds;
+
+@code {
+
+
+
+
+    [Parameter]
+    public V00_Pay VPay { get; set; } = new();
+
+    [Parameter]
+    public Uc_accessreqModel? Uca { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; } = new();
+
+    void OnSubmit(Uc_accessreqModel model)
+    {
+
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+    }
+
+    void AllowedAccess()
+    {
+        if (!Uca.BAllowed) return;
+        if (Uca.BAinfo ||
+        Uca.BApersonalData ||
+        Uca.BAaddress ||
+        Uca.BAeducaion ||
+        Uca.BAfamily ||
+        Uca.BAreferences ||
+        Uca.BAemployment ||
+        Uca.BAtrainings) return;
+
+        Uca.BAinfo = true;
+        Uca.BApersonalData = true;
+        Uca.BAaddress = true;
+        Uca.BAeducaion = true;
+        Uca.BAfamily = true;
+        Uca.BAreferences = true;
+        Uca.BAemployment = true;
+        Uca.BAtrainings = true;
+    }
+
+    async void GrantAccess()
+    {
+
+
+        VPay.Action = "GrantAccess";
+        Uca!.Selected = false;
+
+        Uca.Allowed = Uca.BAllowed ? 1 : 0;
+        Uca.Ainfo = Uca.BAinfo ? 1 : 0;
+        Uca.ApersonalData = Uca.BApersonalData ? 1 : 0;
+        Uca.Aaddress = Uca.BAaddress ? 1 : 0;
+        Uca.Aeducaion = Uca.BAeducaion ? 1 : 0;
+        Uca.Afamily = Uca.BAfamily ? 1 : 0;
+        Uca.Areferences = Uca.BAreferences ? 1 : 0;
+        Uca.Aemployment = Uca.BAemployment ? 1 : 0;
+        Uca.Atrainings = Uca.BAtrainings ? 1 : 0;
+
+        var ucaId = Uca.Id;
+        var conn = VPay.UserClaims!.Conn;
+        var userId = VPay.UserClaims.UserId;
+
+        var curr_uc_accessReq = await _main._02Uc_Accessreq_ById(ucaId, "Main", conn!);
+
+
+        // Company User
+        var ar = curr_uc_accessReq.FirstOrDefault();
+
+        var cu = new CompanyUsersModel()
+        {
+            UserId = ar.Empmasid,
+            CompanyId = ar.Ucrequestingid,
+            Status = "A",
+            DateInvited = ar.Daterequested,
+            DateAccepted = DateTime.Now,
+            CompanyUserTypeId = 3,
+            InvitedById = ar.Requestedbyid
+        };
+
+        await _cu._01(cu, "Main", conn!);
+
+        var uc = await _uc._02(Uca.Ucrequestingid);
+        var pisdb = uc?.PisSchema;
+        // var empmasId = curr_uc_accessReq.FirstOrDefault()?.Empmasid;
+        var Id = curr_uc_accessReq.FirstOrDefault()?.Id;
+
+        var empmovementLast = await _empMovement._02ByRefno(Convert.ToInt32(Id), pisdb!, conn!);
+
+        int empmasId = 0;
+        if (empmovementLast != null) empmasId = empmovementLast.EmpmasId;
+
+        var empmasWithSId = await _empmasInternal._03SystemId(empmasId, userId, pisdb!, conn!); // 1) Update System ID
+        if (userId == empmasWithSId?.SystemId)
+        {
+            var empMovement = new EmpmovementModel()
+            {
+                Refno = curr_uc_accessReq.FirstOrDefault()?.Id.ToString(),
+                Mode = "GrantInv",
+                Dtls = "Approve Invite",
+                EmpmasId = empmasWithSId.Id,
+                Userid = userId,
+                Date = DateTime.Now,
+                Created = DateTime.Now
+            };
+            await _empMovement._01(empMovement, pisdb!, conn!); // 2) Log history to EmpMovement
+
+            try
+            {
+                var myMovement = new MymovementModel()
+                {
+                    Companyid = uc!.Id,
+                    Date = DateTime.Now,
+                    Mode = "GrantInv",
+                    Dtls = "Approve Invite",
+                    Refno = curr_uc_accessReq.FirstOrDefault()?.Id.ToString(),
+                    Created = DateTime.Now
+                };
+
+                var mydb = $"U{userId.ToString()}";
+                await _myMovement._01(myMovement, mydb, conn!); // 3) Log history to MyMovement
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+
+
+            Uc_accessreqModel? uc1 = await _main._03Uc_Access_Approve(Uca, "Main", VPay.UserClaims?.Conn!); // 4) Approve
+            await _user._03ChangeDefaultCompany(userId, Uca.Ucrequestingid); // 5) Update DefaultCoId
+
+            var user = await _mainDa._02UsersById(userId);
+            //var uc = await _mainDa._02UserCompanyPerOwnerId(userCompanyId);
+
+            // ============================
+            // Send notification via email
+
+            if(uc1.Id != 0){
+                var email = new EmailModel
+                {
+                    Type                = "Profile Approved",
+                    Subject             = $@"Profile Link Request Status for {uc1?.EmpmasFirstName??"-"}",
+                    CompanyName         = uc1?.CompanyName??" ",
+                    SenderName          = uc1?.EmpmasFirstName??" ",
+                    SenderEmail         = uc1?.EmpmasEmail ?? " ",
+                    RecipientName       = uc1?.RequestorFirstName?? " ",
+                    RecipientEmail      = uc1?.RequestorEmail??" ",
+
+                    Modules = new ModulesAccessModel
+                    {
+                        Info            = uc1?.Ainfo ?? 0,
+                        PersonalData    = uc1?.ApersonalData ?? 0,
+                        Address         = uc1?.Aaddress ?? 0,
+                        Education       = uc1?.Aeducaion ?? 0,
+                        Family          = uc1?.Afamily ?? 0,
+                        Employment      = uc1?.Aemployment ?? 0,
+                        Trainings       = uc1?.Atrainings ?? 0
+                    }
+                };
+
+                await _msds.SendEmail(email);
+            }
+           
+
+
+            _nav.NavigateTo($"changingclaims/00/{user?.Id}", true);
+
+
+        }
+       
+        await ChildAction.InvokeAsync();
+
+    }
+
+    async void Close()
+    {
+        Uca!.Selected = false;
+        await ChildAction.InvokeAsync();
+    }
+
+}

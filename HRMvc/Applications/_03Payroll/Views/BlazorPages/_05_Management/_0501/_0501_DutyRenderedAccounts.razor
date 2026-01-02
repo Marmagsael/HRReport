@@ -1,0 +1,114 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+
+
+@if (showAddEntry)
+{
+    <_0501_DutyRenderAcctMgt UserClaims="@UserClaims" ChildAction="CloseAddEntry">
+        
+    </_0501_DutyRenderAcctMgt>
+    
+}
+
+
+
+
+@* ============ Days Converstion ============ *@
+<div class="bordered bg-secondary bg-opacity-10 px-2 py-1 bordered-bottom ">
+    Duty Rendered Accounts 
+</div>
+
+<div class="card-body bordered-bottom p-1 text-success ">
+    <div class="w-100 mt-0 p-1 ">
+        <button @onclick="@(()=>showAddEntry=true)" class="btn btn-sm btn-outline-success">Add Account</button>
+    </div>
+
+    <div class="d-flex w-100 bordered-bottom bg-gray-85 p-2 txt-darkblue ">
+        <div class="w-125p ">Acct No</div>
+        <div class="w-325p ">Acct Name</div>
+        <div class=" ">Action</div>
+    </div>
+    
+    
+    @foreach (var dr in dutyrendereds)
+    {
+        <div class="d-flex w-100 p-1 bordered-bottom p-2 ">
+            <div class="w-125p ">@dr?.AcctNumber</div>
+            <div class="w-325p ">@dr?.AcctName </div>
+            <div class=" ">
+                @if (dr?.IsLock == 0)
+                {
+                    <button @onclick="@(()=>Delete(dr))" class="btn btn-sm btn-light text-danger">Remove</button>
+                }
+            </div>
+        </div>
+    }
+
+</div>
+
+
+
+@inject IDutyrenderedDataAccess _dr; 
+@inject IJSRuntime              _js; 
+
+@code {
+    
+    [Parameter] public UserClaimsModel UserClaims { get; set; } = new();
+    
+    string? pisdb               = string.Empty;
+    string? paydb               = string.Empty;
+    string? conn                = string.Empty;
+    List<DutyrenderedModel?>? dutyrendereds = []; 
+    
+    bool   notRerender  = true; 
+    bool   showAddEntry = false; 
+    
+    protected override async void OnParametersSet()
+    {
+        if(UserClaims==null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null ) return;
+        if (pisdb == null ) return;
+        if (paydb == null) return;
+
+        if(notRerender) await LoadDutyRenderedAccts(); 
+    }
+    
+    async Task LoadDutyRenderedAccts()
+    {
+        //Settings    = await _settings._02(1, paydb!, conn!);
+        dutyrendereds = await _dr._02s(paydb!, conn!); 
+        
+        notRerender = false; 
+        StateHasChanged();
+    }
+
+    async Task  CloseAddEntry(bool action)
+    {
+        await LoadDutyRenderedAccts(); 
+        showAddEntry = action; 
+        StateHasChanged();
+    }
+
+    private async Task Delete(DutyrenderedModel dr)
+    {
+        const string title = "Remove Account?";
+        const string icon = "question";
+        var msg = $@"<div><span class='text-primary'> {dr.AcctNumber} -  {dr.AcctName} </span> </div> "; 
+        
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (confirmed)
+        {
+            
+            //await ChildAction.InvokeAsync(); 
+            await _dr._04(dr.AcctNumber??" ", paydb!, conn!); 
+            await LoadDutyRenderedAccts();
+            StateHasChanged();
+        }
+
+    }
+
+}

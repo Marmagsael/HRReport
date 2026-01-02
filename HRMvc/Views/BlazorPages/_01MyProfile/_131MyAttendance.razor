@@ -1,0 +1,144 @@
+﻿@using Blazorise.Utilities
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRMvc.Views.BlazorPages.Vars
+@using HRMvc.Views.BlazorPages._01MyProfile._131
+
+
+
+@if ( isNotMapped )
+{
+    <div class="w-100 text-danger p-3"><h5>Account mapping is not valid.</h5></div>
+    return;
+}
+<div class="w-100 @disabledCss ">
+    <_131_01_PersonnelInfo V="@v"/>
+    <_131_04_Punches V="@v" ChildAction="ChildAction" />
+
+    <div></div>
+
+    <RadzenStack Gap="0">
+        <RadzenTabs RenderMode="TabRenderMode.Client" class="no-padding">
+            <Tabs >
+                <RadzenTabsItem Text="My IN/OUT Schedules">
+                    <_131_02_ScheduleTemplate V="@v"/>
+                </RadzenTabsItem>
+                
+                <RadzenTabsItem Text="My Location Details">
+                    <_131_05_LocationDetails V="@v"/>
+                </RadzenTabsItem>
+                
+                <RadzenTabsItem Text="My DTR">
+                    <_131_03_DTR V="@v" ChildAction="ChildAction" />
+                </RadzenTabsItem>
+
+            </Tabs>
+        </RadzenTabs>
+    </RadzenStack>
+</div>
+
+
+
+@inject ILocalStorageService        _ls; 
+@inject IPisEmpmasDataAccess        _pisempmas; 
+@inject I_00UserscompanyDataAccess  _uc; 
+@inject IAtttemplateDataAccess      _at; 
+@inject IAttdailyDataAccess         _attDaily; 
+
+@code {
+
+    V131    v               = new();
+    bool    isNotMapped     = true;
+    string  disabledCss     = "disabled-div"; 
+
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    protected override async void OnParametersSet()
+    {
+        if(UserClaims==null) return;
+        v.pisdb         = UserClaims.SchemaUserPis;
+        v.paydb         = UserClaims.SchemaUserPay;
+        v.conn          = UserClaims.Conn;
+
+        if (v.conn == null )    return;
+        if (v.pisdb == null )   return;
+        if (v.paydb == null)    return;
+
+        var userId  = UserClaims.UserId;
+        v.userId    = UserClaims.UserId; 
+
+        await CheckIfMapped(userId);
+        if (isNotMapped) return; 
+
+        await FetchUserInfo();
+        v.MacAddress    = MsdsDataAccess.GetMacAddress();
+        var id          = TimeZoneInfo.Local.Id;
+        v.TimezoneId    = MsdsDataAccess.Get_TimeZone_Id(id);
+
+        var usercompanyId   = int.Parse(UserClaims.DefCompanyId??"0"); 
+        v.UserCompany       = await _uc._02(usercompanyId);
+
+        await FetchAttendance(); 
+
+        StateHasChanged();
+    }
+
+    public async Task FetchAttendance()
+    {
+        //Attendance Template
+        var empmasId = v.PisEmpmas?.Id ?? 0;
+        if (empmasId > 0)
+        {
+            var at = await _at._02(empmasId, v.pisdb!, v.conn!);
+            v.AttTemplate = at ?? _at._02NoSchedule(empmasId);
+
+            v.CurrPunch = await _attDaily._02CurrPunch(empmasId, v.pisdb!, v.conn!);
+            v.PrevPunch = await _attDaily._02PrevPunch(empmasId, v.pisdb!, v.conn!);
+
+        }
+    }
+
+
+    public async void ChildAction()
+    {
+        if (v.Action == "CPunchIn" || 
+            v.Action == "CPunchOut" ) await CPunchIn();
+
+        v.Action = string.Empty; 
+    }
+
+    async Task CPunchIn()
+    {
+        await FetchAttendance();
+        StateHasChanged(); 
+    }
+    async Task FetchUserInfo()
+    {
+
+        if(v.pisdb==null || v.conn == null) return; 
+        var res = await _pisempmas._02BySystemId(UserClaims.UserId, v.pisdb, v.conn);
+        v.PisEmpmas = res ?? null; 
+
+
+    } 
+    async Task CheckIfMapped(int systemId)
+    {
+        var res     = await _pisempmas._02BySystemIds(systemId, v.pisdb!, v.conn!); 
+        if(res?.Count>0)
+        {
+            v.PisEmpmas = res.FirstOrDefault(); 
+            isNotMapped = false;
+            disabledCss = "";
+        } else
+        {
+            v.PisEmpmas = new();
+            isNotMapped = true;
+            disabledCss = "disabled-div"; 
+        }
+
+        StateHasChanged(); 
+    }
+
+
+}

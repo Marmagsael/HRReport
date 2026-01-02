@@ -1,0 +1,162 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0503.Items
+
+@inject NotificationService         _NotificationService;
+@inject DialogService               _DialogService;
+
+@*---- buttons ------------------------------ *@
+<div class="w-100 px-4 py-2 bordered-bottom d-flex justify-content-between bg-opacity-25 bg-forestgreen ">
+    
+    @{ var btnClass = V503.PayrollGroup!.ClNumber?.Length > 0 ? "" : "disabled-div"; }
+    
+    <div class="@btnClass">
+        <btn @onclick="Save" class="btn btn btn-outline-light">Save</btn>
+    </div>
+    
+    <div class="p-2 fw-bold">
+        <btn @onclick="CloseDataEntry" class="b-white">
+            <i class="fas fa-times"></i>
+            @* <i class="fas fa-arrow-right-from-bracket"></i> *@
+            @* <i class="fas fa-sign-out"></i> *@
+            @* <i class="fas fa-sign-out-alt"></i> *@
+        </btn>    
+    </div>
+    
+
+</div>
+@*---- Details ------------------------------ *@
+<div class="p-3 w-100 ">
+    @*---- Code *@
+    <div class="w-100 d-flex p-1">
+        <div class="w-125p p-2">Code</div>
+        <div style="width: 200px; ">
+            <RadzenTextBox 
+                @bind-Value="@V503.PayrollGroup!.ClNumber"
+                Placeholder="Code" class="w-100"
+                MaxLength="5" />
+        </div>
+    </div>
+
+    @*---- Name *@
+    <div class="w-100 d-flex p-1">
+        <div class="w-125p p-2">Group Name </div>
+        <div style="max-width: 650px; min-width: 350px">
+            <RadzenTextBox 
+                @bind-Value="@V503.PayrollGroup!.Name"
+                Placeholder="Name" class="w-100" 
+                MaxLength="80"/>
+        </div>
+    </div>
+    
+    
+    <div class="w-100 bordered br-6 ">
+        <div class="fw-100 w-100 mb-2 px-2 py-1 bg-dark text-white bg-opacity-75 ">Group Rates</div>
+        
+        @* Per Hour  *@
+        <div class="w-100 d-flex p-1">
+            <div class="p-2 w-125p">Per Hour</div>
+            <div class="w-100">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503!.PayrollGroup!.RatePerHr"
+                               Min="0"
+                               Max="99999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="TextAlign.End"
+                               ShowUpDown="false" />
+                </div>
+        </div>
+        
+        @* Per Day  *@
+        <div class="w-100 d-flex p-1">
+            <div class="p-2 w-125p">Per Day</div>
+            <div class="w-100">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503.PayrollGroup.RatePerDay"
+                               Min="0"
+                               Max="99999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="Radzen.TextAlign.End"
+                               ShowUpDown="false" />
+                </div>
+        </div>
+        
+        @* Per Month  *@
+        <div class="w-100 d-flex p-1">
+            <div class="p-2 w-125p">Per Month</div>
+            <div class="w-100">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503!.PayrollGroup!.RatePerMonth"
+                               Min="0"
+                               Max="9999999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="Radzen.TextAlign.End"
+                               ShowUpDown="false" />
+                </div>
+        </div>
+        
+        @* Per Year  *@
+        <div class="w-100 d-flex p-1">
+            <div class="p-2 w-125p">Per Year</div>
+            <div class="w-100">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503!.PayrollGroup!.RatePerYr"
+                               Min="0"
+                               Max="9999999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="Radzen.TextAlign.End"
+                               ShowUpDown="false" />
+                </div>
+        </div>
+    </div>
+</div>
+
+@inject IPayrollgrpDataAccess _payrollgrp;
+
+@code {
+    private     V503                V503                    = new(); 
+
+    [Parameter]
+    public      V00_Pay             V00     { get; set; }   = new();
+    
+    [Parameter] 
+    public      EventCallback       ChildAction { get; set; }
+
+    async void Save()
+    {
+        var res = await ValidateData(); 
+        if(res=="invalid") return;
+
+        await _payrollgrp._01(V503.PayrollGroup!, V00.paydb!, V00.conn!);
+        V00.Action = "Save";
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async Task<string> ValidateData()
+    {
+        
+        var clNumber = V503.PayrollGroup?.ClNumber ?? "-";
+        var res = await _payrollgrp._02ByCode(clNumber, V00.paydb??"", V00.conn??"");
+        if (res?.Count > 0)
+        {
+            var msg = $"Save operation aborted: Code <span class='fw-bold text-danger'>{V503.PayrollGroup!.ClNumber}</span> already exists. ";
+            await _DialogService.Alert(msg, "Delete denied", new AlertOptions() { OkButtonText = "Exit" }); 
+            return "invalid";
+        }
+
+        return "valid"; 
+        
+    }
+    
+    async Task CloseDataEntry()
+    {
+        V00.Action = "CloseDataEntry";
+        await ChildAction.InvokeAsync(); 
+    }
+
+}

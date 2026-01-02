@@ -1,0 +1,256 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0500
+@* @using Blazorise *@
+
+
+<div class="w-100 p-3 mt-2" style="background-color:lightgray; border:1px solid lightgray; border-radius:3px;">
+    <div class="fw-bold">
+       <h6>Deployment Rates</h6>
+    </div>
+</div>
+
+<div style="height:5px;"></div>
+
+
+@* Buttons *@
+@if (@V504!.Empratesdtls?.Count > 0)
+{
+    @if (!allowEdit)
+    {
+        <div class="w-100">
+            <div class="w-100 p-2 bordered gap-1 d-flex">
+                <btn class="btn btn-sm btn-secondary" @onclick="@(() => allowEdit = !allowEdit)" data-bs-toggle="tooltip" 
+                     data-bs-placement="top" title="Edit Rates"><i class="far fa-edit"></i></btn>
+            
+                <btn class="btn btn-sm btn-secondary" @onclick="@(() => showRateOverBasic = !showRateOverBasic)" data-bs-toggle="tooltip" 
+                     data-bs-placement="top" title="Show/Hide Percentage Rates"><i class="fa-solid fa-magnifying-glass-chart"></i></btn>
+            
+            </div>
+        </div>
+    }
+
+    @if (allowEdit)
+    {
+        <div class="w-100">
+            <div class="w-100 p-2 bordered br-5 d-flex  justify-content-between">
+                <div class="gap-1 d-flex">
+                    <btn class="btn btn-sm btn-secondary " @onclick="UpdateRates" data-bs-toggle="tooltip" 
+                         data-bs-placement="top" title="Update rates based on standard percentage rates ">
+                        <i class="fa-solid fa-laptop-file"></i>
+                    </btn>
+                        
+                </div>
+                
+                <div>
+                    <btn class="btn btn-sm text-danger" @onclick="@(()=>allowEdit=!allowEdit)" data-bs-toggle="tooltip" 
+                         data-bs-placement="top" title=" Close ">
+                        <i class="fa-regular fa-eye-slash"></i>
+                    </btn>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+
+
+<div class="p-1">
+    
+    @{
+        if (@V504!.Empratesdtls?.Count > 0)
+        {
+            var er      = @V504!.Empratesdtls?.Where(e=>e?.AcctNumber=="E001").FirstOrDefault();
+            V504.Emprate!.EmpRate       = er?.Rate??0.00;
+            V504.Emprate!.PayRateId     = er?.PayrateId??0;
+            
+        }
+         
+    }
+    
+    @if (allowEdit)
+    {
+        <div class="w-100 bordered mb-1 bg-gray-95 gap-2 p-2 ">
+            <div class="text-primary">Notes : </div>
+            <div class="text-success">All edits within this module are automatically saved to the server; therefore, the save button has been intentionally removed.</div>
+        </div>
+    }
+
+
+    <RadzenDataGrid Data="@V504!.Empratesdtls"
+                    TItem="EmpratesdtlModel"
+                    @ref="pgsGrid"
+                    EditMode="DataGridEditMode.Single"
+                    AllowSorting="true"
+                    AllowPaging="false"
+                    PageSize="15"
+                    PageSizeOptions="@(new int[] { 15, 20, 30 })"
+                    ColumnWidth="100%">
+
+        <Columns>
+            @* <RadzenDataGridColumn TItem="EmpratesdtlModel" Property="AcctName" Title="Acct Name" Frozen="true" 
+            TextAlign="Radzen.TextAlign.Left" /> *@
+            <RadzenDataGridColumn HeaderCssClass="d-none" TItem="EmpratesdtlModel" Context="er" TextAlign="TextAlign.Left" Width="100%">
+                <Template Context="er">
+
+                    <div class="d-flex">
+                        <div class="w-300p p-2">
+                            @er.AcctNumber - @er.AcctName
+                            @if (er.RateOverBasic > 0 && showRateOverBasic)
+                            {
+                                var rate = er.RateOverBasic * 100;
+                                <span class="text-primary"> [ @rate% ]</span>
+                            }
+
+                        </div>
+                        <div style="width:120px;">
+                            <RadzenNumeric TValue="double"
+                                           @bind-Value="er.Rate"
+                                           Max="99999999"
+                                           Format="#,##0.00"
+                                           Placeholder="0"
+                                           Change="@(() => UpdateRatesdtl(er))"
+                                           TextAlign="Radzen.TextAlign.End"
+                                           Disabled="!allowEdit"
+                                           ShowUpDown="false"/>
+
+
+
+                        </div>
+                        @if (er.AcctNumber == "E001")
+                        {
+                            <div style="width:140px; padding:0 5px;">
+                                <RadzenDropDown @bind-Value=@er.PayrateId
+                                                Data="@pr"
+                                                TextProperty="RateName"
+                                                ValueProperty="Id"
+                                                Change="@(() => UpdateRatesdtl(er))"
+                                                Style="width: 100%; max-width: 100%;"
+                                                Name="ddpayrollRates"/>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="p-2">
+                                @V504.Payrates!.Find(p => p!.Id == er.PayrateId)?.RateName
+                            </div>
+                        }
+
+
+                    </div>
+                </Template>
+            </RadzenDataGridColumn>
+
+
+
+        </Columns>
+    </RadzenDataGrid>
+</div>
+@inject IEmpratesdtlDataAccess _erd; 
+@inject I_20_001_PayDataAccess _pay; 
+
+
+@code {
+
+    string?              paydb              = string.Empty;
+    string?              pisdb              = string.Empty;
+    string?              conn               = string.Empty;
+
+    bool                showRateOverBasic   = false; 
+    bool                allowEdit           = false;
+
+    RadzenDataGrid<EmpratesdtlModel?>?   pgsGrid     = new();
+
+    [Parameter] public V00_Pay?             V00             { get; set;  }  = new();
+    [Parameter] public V0504?               V504            { get; set;  }  = new();
+    [Parameter] public UserClaimsModel?     UserClaims      { get; set; } = new();
+    [Parameter] public EventCallback        ChildAdction    { get; set; }
+
+    List<PayrateModel?>? pr = []; 
+
+    protected override void OnParametersSet()
+    {
+        SetParamenters();
+        Init(); 
+    }
+
+    void SetParamenters()
+    {
+        if (UserClaims == null) return;
+
+        paydb   = UserClaims.SchemaUserPay;
+        pisdb   = UserClaims.SchemaUserPis;
+        conn    = UserClaims.Conn;
+    }
+
+    void Init()
+    {
+        FillPayrates(); 
+    }
+
+    private void FillPayrates()
+    {
+        pr = []; 
+        var p = new PayrateModel() { Id = 1, RateName = "Hourly" }; 
+        pr.Add(p);
+        p = new PayrateModel() { Id = 2, RateName = "Daily" }; 
+        pr.Add(p);
+        p = new PayrateModel() { Id = 4, RateName = "Monthly" }; 
+        pr.Add(p);
+        p = new PayrateModel() { Id = 6, RateName = "Annually" }; 
+        pr.Add(p);
+        
+        
+    }
+
+    async Task UpdateRatesdtl(EmpratesdtlModel erd)
+    {
+        await _erd._03(erd,paydb!, conn!);
+        await ChildAdction.InvokeAsync(); 
+    }
+
+    async void UpdateRates()
+    {
+        var rate = V504?.Empratesdtls?.Find(r => r?.AcctNumber == "E001")?.Rate;
+        var rateId  = V504?.Empratesdtls?.Find(r => r?.AcctNumber == "E001")?.PayrateId;
+        
+        foreach (var r in (V504?.Empratesdtls??[]).Where(r => r!.AcctNumber != "E001"))
+        { r!.Rate = 0; }
+        
+        if(rate<1 || rateId < 1) return;
+
+        var settings = await _pay._02Settings(paydb??"", conn??"");
+        var hrsPerDay   = settings?.Daytohours??8.00;
+        var noOfDays          = 1.00;
+        
+        if (rateId == 1) hrsPerDay = 1; 
+        
+        if (rateId == 3) noOfDays = settings?.SemiMonthtodays??1 ;    //--- Bi-Weekly 
+        if (rateId == 4) noOfDays = settings?.Monthtodays??1 ;        //--- Monthly
+        if (rateId == 5) noOfDays = settings?.Semiannualtodays??1 ;   //--- Semi-Annual
+        if (rateId == 6) noOfDays = settings?.Yeartodays??1 ;         //--- Annual
+
+        var empratePara = rate / noOfDays / hrsPerDay;
+        var ratePerDay  = rate / noOfDays;
+        var rateperHour = ratePerDay / hrsPerDay; 
+        
+        //Console.WriteLine($"**---------------------------------------**");
+        V504?.Empratesdtls?.ForEach(r =>
+        {
+            if (r?.AcctNumber == "E001" ) return;
+            if (r?.RateOverBasic != 0)
+            {
+                if (r?.AcctNumber == "E000") { r.Rate = (rateperHour??0) * -1 ; }
+                else { r?.Rate = (rateperHour??0) * (r.RateOverBasic>0 ? r.RateOverBasic : 1 ) ; }
+                
+                _ = UpdateRatesdtl(r??new EmpratesdtlModel());
+            }
+            else r!.Rate = rate ?? 0; 
+            //Console.WriteLine($"{r.AcctName}:  * Rate : {r.Rate} ");
+        });
+        StateHasChanged();
+    }
+
+}
+

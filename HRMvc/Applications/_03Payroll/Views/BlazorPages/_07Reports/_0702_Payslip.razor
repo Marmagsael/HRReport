@@ -1,0 +1,95 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using Telerik.ReportViewer.Blazor
+@using Telerik.Reporting
+
+@inject IPayrollgrpDataAccess _pgrp
+@inject IWebHostEnvironment Env
+
+<h3 class="mb-3">Payroll Register Report</h3>
+
+<div class="d-flex gap-2 mb-3">
+    <select @bind="selectedReport" class="form-select" style="width:250px;">
+        <option value="_03Payroll/Payrollgrp.trdp">Payroll Register</option>
+    </select>
+
+    <button class="btn btn-primary" @onclick="GenerateReport">Generate Report</button>
+</div>
+
+@if (isLoading)
+{
+    <p class="text-info mt-2">Generating report, please wait...</p>
+}
+
+@if (ReportSourceOptions != null)
+{
+    <div style="height:800px; width:100%;">
+        <ReportViewer ServiceUrl="/api/reports"
+                      ReportSource="@ReportSourceOptions" />
+    </div>
+}
+
+
+@code {
+    private string selectedReport = "_03Payroll/Payrollgrp.trdp";
+    private bool isLoading = false;
+    private string? paydb;
+    private string? conn;
+    private V0601 V601 = new();
+
+    private ReportSourceOptions? ReportSourceOptions;
+
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+    [Parameter] public V00_Pay V00 { get; set; } = new();
+
+    protected override void OnParametersSet()
+    {
+        SetVariables();
+    }
+
+    private async void SetVariables()
+    {
+        try
+        {
+            V00.UserClaims = UserClaims;
+            paydb = UserClaims!.SchemaUserPay;
+            conn = UserClaims!.Conn;
+
+            V601.Payrollgrps = await _pgrp._02Active(paydb!, conn!);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PayrollReport] Initialization failed: {ex.Message}");
+        }
+    }
+
+    private async Task GenerateReport()
+    {
+        try
+        {
+            isLoading = true;
+            ReportSourceOptions = null;
+            StateHasChanged();
+
+            // ✅ Step 1: Load your data (if needed)
+            V601.Payrollgrps = await _pgrp._02Active(paydb!, conn!);
+
+            // ✅ Step 2: Assign report dynamically
+            ReportSourceOptions = new ReportSourceOptions
+            {
+                Report = selectedReport
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PayrollRegister] Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

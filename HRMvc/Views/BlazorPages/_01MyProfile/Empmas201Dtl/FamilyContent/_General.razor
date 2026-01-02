@@ -1,0 +1,325 @@
+﻿@page "/FamilyContents/General"
+
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+
+@inject I_00MainPisAccess _mainPis
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+<div>
+    @* // --- New Button *@
+    <div class="mt-1 mb-2">
+        <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow"
+            Disabled="@(editMode)" />
+    </div>
+
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="false" Variant="Variant.Flat" Shade="Shade.Lighter" class="@(errorMsg != string.Empty ? "d-flex mt-2 mb-2" : "d-none mt-2 mb-2")">
+        @errorMsg
+    </RadzenAlert>
+
+    <RadzenDataGrid Data="@empmasfamilys"
+                    TItem="EmpmasFamilyModel"
+    @ref="empmasfamilysGrid"
+                    EditMode="DataGridEditMode.Single"
+                    AllowSorting=true
+                    AllowPaging=true
+                    PageSize="10"
+                    PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                    ColumnWidth="100%">
+        <Columns>
+
+            @*-- Name --*@
+            <RadzenDataGridColumn TItem="EmpmasFamilyModel" Property="Name" Title="Name">
+                <EditTemplate Context="rec">
+                    <RadzenTextBox @bind-Value="rec.Name" class="w-100" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            @*-- Date of Birth --*@
+            <RadzenDataGridColumn TItem="EmpmasFamilyModel" Property="Birth" Title="Date of Birth" FormatString="{0:MMMM dd, yyyy}">
+
+                <EditTemplate Context="rec">
+                    <RadzenDatePicker @bind-Value=@rec.Birth DateFormat="MM / dd / yyyy " Name="dateBirth" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            @*-- Gender --*@
+            <RadzenDataGridColumn TItem="EmpmasFamilyModel" Property="SexName" Title="Gender">
+                <EditTemplate Context="rec">
+                    <RadzenDropDown @bind-Value="rec.Sex"  Data="genders" TextProperty="Category" ValueProperty="Code"  Placeholder="Select a Gender" class="w-100" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            @*-- Relationship --*@
+            <RadzenDataGridColumn TItem="EmpmasFamilyModel" Property="RelationshipName" Title="Relationship">
+                <EditTemplate Context="rec">
+                    <RadzenDropDown @bind-Value="rec.RelationCode"  Data="empmasfamilyrelationships" TextProperty="Name" ValueProperty="Code" Placeholder="Select a Relationship" class="w-100" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+            @*-- Actions --*@
+            <RadzenDataGridColumn TItem="EmpmasFamilyModel" Context="EmpmasFamilyModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" Width="@actionColumnWidth">
+                <Template Context="rec">
+                    <RadzenButton Icon="edit"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => EditRow(rec))"
+                    @onclick:stopPropagation="true">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1"
+                    @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+
+                <EditTemplate Context="rec">
+                    <RadzenButton Icon="check"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@((args) => SaveRow(rec))">
+                    </RadzenButton>
+
+                    <RadzenButton Icon="close"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Click="@((args) => CancelEdit(rec))"
+                                  Size="ButtonSize.Small" class="my-1 ms-1">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.ExtraSmall"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1">
+                    </RadzenButton>
+                </EditTemplate>
+
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+@code {
+    [Parameter]
+    public UserClaimsModel? UserClaims { get; set; } = new();
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+    string? mydb = string.Empty;
+
+    //-- Initialization ----------------
+    RadzenDataGrid<EmpmasFamilyModel?>? empmasfamilysGrid = new();
+    bool editMode = false;
+    DataGridEditMode editMode1 = DataGridEditMode.Single;
+
+    List<EmpmasFamilyModel?>? empmasfamilys = new();
+    EmpmasFamilyModel? empmasfamily = new();
+
+    List<EmpmasFamilyRefModel?>? empmasfamilyrelationships = new();
+
+    List<GenderModel?>? genders = new();
+
+    List<EmpmasFamilyModel?>? empmasfamilysToInsert = new();
+    List<EmpmasFamilyModel?>? empmasfamilysToUpdate = new();
+
+    string? errorMsg = string.Empty;
+    int userId;
+    string? actionColumnWidth = "100px";
+
+    public class GenderModel
+    {
+        public string Category { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+    }
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+        userId = UserClaims.UserId;
+        mydb = "u" + userId.ToString().Trim();
+        empmasfamilyrelationships = await _mainPis._02EmpmasFamilyRefList(mydb, conn);
+
+        genders = new()
+        {
+            new GenderModel{ Category = "Male",     Code="M"},
+            new GenderModel{ Category = "Female",   Code="F"},
+            new GenderModel{ Category = "Others",   Code="O"},
+        };
+
+        empmasfamilys = await _mainPis._02EmpmasFamilyList(userId, mydb, conn);
+        SetDefaultValueForDropDown();
+        StateHasChanged();
+    }
+
+
+
+    void SetDefaultValueForDropDown()
+    {
+        if (empmasfamilys is null) return;
+
+        foreach (var f in empmasfamilys)
+        {
+            if (genders is null) return;
+            if (empmasfamilyrelationships is null) return;
+
+            f!.SexName = genders.Where(g => g?.Code == f.Sex).FirstOrDefault()?.Category;
+            f.RelationshipName = empmasfamilyrelationships.Where(r => r?.Code == f.RelationCode).FirstOrDefault()?.Name;
+        }
+    }
+
+    //-- InsertRow ----------------
+    async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        actionColumnWidth = "125px";
+        Reset();
+
+        var rec = new EmpmasFamilyModel();
+        empmasfamilysToInsert!.Add(rec);
+        await empmasfamilysGrid!.InsertRow(rec);
+        editMode = true;
+    }
+    //-- Reset ----------------
+    void Reset()
+    {
+        empmasfamilysToInsert!.Clear();
+        empmasfamilysToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    void Reset(EmpmasFamilyModel rec)
+    {
+        empmasfamilysToInsert!.Remove(rec);
+        empmasfamilysToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    async Task EditRow(EmpmasFamilyModel rec)
+    {
+        if (empmasfamilysGrid != null)
+        {
+            Reset();
+            empmasfamilysToUpdate?.Add(rec);
+            await empmasfamilysGrid.EditRow(rec);
+            actionColumnWidth = "125px";
+        }
+    }
+    //-- Delete Row ----------------
+    async Task DeleteRow(EmpmasFamilyModel rec)
+    {
+        if (empmasfamilys == null) return;
+        if (empmasfamilysGrid == null) return;
+
+        Reset(rec);
+
+        if (empmasfamilys.Contains(rec))
+        {
+            var option = await _DialogService.Confirm("Delete " + rec?.Name + "?", "Confirm Delete",
+                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+            if (option == true)
+            {
+                await _mainPis._04EmpmasFamily(rec!.Id, mydb, conn!);
+                empmasfamilys.Remove(rec);
+            }
+        }
+        else
+        {
+            empmasfamilysGrid.CancelEditRow(rec);
+        }
+        await empmasfamilysGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+        actionColumnWidth = "100px";
+
+    }
+
+
+    //-- Cancel Edit ----------------
+    async void CancelEdit(EmpmasFamilyModel rec)
+    {
+        errorMsg = string.Empty;
+        if (empmasfamilysGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+        actionColumnWidth = "100px";
+
+        empmasfamilysGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        var res = await _mainPis._02EmpmasFamily(id, mydb, conn!);
+        if (res == null) return;
+        Remap_Flds(rec, res);
+        await empmasfamilysGrid.Reload();
+    }
+    //-- Remap ----------------
+    void Remap_Flds(EmpmasFamilyModel destination, EmpmasFamilyModel source)
+    {
+
+    }
+    //-- Save Row ----------------
+    async Task SaveRow(EmpmasFamilyModel rec)
+    {
+        if (empmasfamilysGrid == null) return;
+        if (!SafeToSave(rec)) return;
+
+        rec.EmpmasId = userId;
+
+        if (rec.Id == 0)
+        {
+            var res = await _mainPis._01EmpmasFamily(rec, mydb, conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                empmasfamilys!.Add(rec);
+            }
+        }
+        else
+        {
+            await _mainPis._03EmpmasFamily(rec.Id, rec, mydb, conn!);
+        }
+
+        await empmasfamilysGrid.UpdateRow(rec);
+        SetDefaultValueForDropDown();
+        editMode = false;
+        errorMsg = string.Empty;
+        actionColumnWidth = "100px";
+
+    }
+    //-- Safe to Save ----------------
+    bool SafeToSave(EmpmasFamilyModel rec)
+    {
+        if (rec.Name is null || rec.Name == string.Empty)
+        {
+            errorMsg = "Name is required.";
+            return false;
+        }
+
+        if (rec.Name is not null && rec.Name.Length > 80)
+        {
+            errorMsg = "Name should be at most 80 characters.";
+            return false;
+        }
+
+        return true;
+    }
+
+
+}

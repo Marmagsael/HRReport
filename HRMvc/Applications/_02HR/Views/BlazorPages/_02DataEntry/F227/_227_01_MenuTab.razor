@@ -1,0 +1,63 @@
+﻿@using HRMvc.Applications._02HR._02Library
+
+<style>
+    .kamay { cursor:pointer; }
+</style>
+<div style="margin-top:1em">
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link kamay @css1" aria-current="page" @onclick="@(()=>SetActive(1))">Leave Type</a>
+        </li>
+        
+        <li class="nav-item">
+            <a class="nav-link kamay @css2" aria-current="page" @onclick="@(()=>SetActive(2))">Default Leave Settings</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link  kamay  @css3" @onclick="@(()=>SetActive(3))">Leave Group</a>
+        </li>
+
+        <li class="nav-item">
+            <a class="nav-link  kamay  @css4" @onclick="@(()=>SetActive(4))">Leave Group Settings</a>
+        </li>
+
+        
+    </ul>
+
+</div>
+
+
+@code {
+
+    [Parameter]
+    public EventCallback    ChildAction     { get; set; }
+
+    [Parameter]
+    public V02              V02             { get; set; } = new(); 
+
+    string? css1 = "active";
+    string? css2, css3, css4;
+    int activeTab = 1;
+
+
+
+    async void SetActive(int no)
+    {
+        css1 = string.Empty;
+        css2 = string.Empty;
+        css3 = string.Empty;
+        css4 = string.Empty;
+
+
+        if (no == 1) css1 = "active";
+        if (no == 2) css2 = "active";
+        if (no == 3) css3 = "active";
+        if (no == 4) css4 = "active";
+
+        V02.Selection = no;
+        StateHasChanged(); 
+
+        await ChildAction.InvokeAsync(); 
+    }
+
+}

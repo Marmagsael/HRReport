@@ -1,0 +1,280 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0603._0603_03
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.Logical
+
+<div class="card shadow bordered-darkgreen mt-3" >
+    <div class="card-header text-white fw-bold " style="background-color: darkslategrey">
+        LOAN DETAILS
+    </div>
+
+    <!-- Buttons -->
+    <div class="bordered bg-black bg-opacity-10 px-2 py-1 ">
+        @{
+            var isDisabled  = V.Loan.EmpNumber?.Length > 1 ? " " : " disabled ";
+            var itemDisabled = @V.Loan.Id > 0 ? true : false ; 
+        }
+        <button onclick="@New" class="btn btn-primary btn-sm @isDisabled ">New </button>
+        <button onclick="@Save" class="btn btn-secondary btn-sm @isDisabled me-1">Save</button>
+        @if(V.Loan.Status=="A") {<button onclick="@(()=>ChangeStatus("I"))" class="btn btn-secondary btn-sm @isDisabled ">Make Inctive</button>}
+        @if(V.Loan.Status=="I") {<button onclick="@(()=>ChangeStatus("A"))" class="btn btn-secondary btn-sm @isDisabled ">Make Active</button>}
+        
+    </div>
+
+    @if (V.ErorrMsgs?.Count > 0)
+    {
+        <div class="w-100 p-2 ">
+            <div class="fw-bold p-2 text-danger bordered-bottom">ERROR MESSAGE</div>
+            <div class=" p-2 w-100 bordered-bottom ">
+                @foreach (var msg in V.ErorrMsgs)
+                {
+                    <div class="text-danger"> => @msg </div>
+                }
+            </div>
+            
+        </div>
+    }
+    <div class="card-body border-2  ">
+
+        <div class="row bordered-bottom p-1 ">
+            @* --- Charge to ----------------------- *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1">
+                <div class="w-125p py-1">Charge to</div>
+                <div class="w-350p @itemDisabled ">
+                    
+                    <RadzenDropDown TValue="string"
+                                    @ref="ddAcctNumber"
+                                    Name="ddAcctNumber"
+                                    @bind-Value="@V!.Loan.DedNCode"
+                                    Data="@V!.Coas"
+                                    TextProperty="AcctName"
+                                    Disabled="@itemDisabled"
+                                    ValueProperty="AcctNumber"
+                                    Style="width: 100%; max-width: 400px; "
+                                    Placeholder="Select COA"/>
+                </div>
+            </div>
+
+            @* --- Status ----------------------- *@
+            <div class="col-12 col-md-5 d-flex  py-1">
+                <div class="w-125p py-1">Loan Status</div>
+                <div class="w-350p">
+                    <input @bind="V.Loan.LoanStatus" type="text" class="form-control"  disabled>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row p-1 mt-2">
+
+            @* --- Payment Start ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 ">
+                <div class="w-125p py-2">CV No</div>
+                <div class="w-150p">
+                    <input @bind="V.Loan.Cvno" type="Text" class="form-control">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row">
+            
+            @* --- Loan Date ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1 ">
+                <div class="w-125p py-2">Loan Date</div>
+                <div class="w-150p">
+                    <RadzenDatePicker TValue="DateTime" @bind-Value="@V.Loan.Date" DateFormat="MM/dd/yyyy" Name="LoanDate"/>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="row">
+            
+            @* --- Loan Date ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1 ">
+                <div class="w-125p py-2">Principal</div>
+                <div class="w-150p">
+                    <RadzenNumeric @bind-Value="@V.Loan.Principal" Name="DaysPara" ShowUpDown="false" Format="#,##0.00"
+                                   TextAlign="TextAlign.Right"/>
+                </div>
+            </div>
+
+            @* --- Payment Start ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1 ">
+                <div class="w-125p py-1">Loan Amount</div>
+                <div class="w-150p">
+                    <RadzenNumeric @bind-Value="@V.Loan.Amount" Name="DaysPara" ShowUpDown="false" Format="#,##0.00"
+                                   TextAlign="TextAlign.Right"/>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row ">
+            
+            @* --- Loan Amount ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1 ">
+                <div class="w-125p py-1">Amortization</div>
+                <div class="w-150p">
+                    <RadzenNumeric @bind-Value="@V.Loan.Amort" Name="DaysPara" ShowUpDown=false Format="#,##0.00"
+                                   TextAlign="TextAlign.Right"/>
+                </div>
+            </div>
+
+            @* --- Balance ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1 ">
+                <div class="w-125p py-1">Balance</div>
+                <div class="w-150p @itemDisabled ">
+                    <RadzenNumeric @bind-Value="@V.Loan.Balance" Name="DaysPara" ShowUpDown=false Format="#,##0.00" Disabled="@itemDisabled"
+                                   TextAlign="TextAlign.Right"/>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row ">
+            
+            @* --- Payment Start ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1 ">
+                <div class="w-125p py-1">Payment Start</div>
+                <div class="w-150p">
+                    <RadzenDatePicker TValue="DateTime" @bind-Value="@V.Loan.PayStart" DateFormat="MM/dd/yyyy" Name="LoanDate"/>
+                </div>
+            </div>
+
+            @* --- Resume on ------------------ *@
+            <div class="col-12 col-md-5 d-flex gap-2 py-1 ">
+                <div class="w-125p py-1">Resume On</div>
+                <div class="w-150p">
+                    <RadzenDatePicker TValue="DateTime" @bind-Value="@V.Loan.PayRes" DateFormat="MM/dd/yyyy" Name="LoanDate"/>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row mt-2 p-2">
+            <div class=" px-3 py-1 border rounded bg-white">
+                @* --- Deduction Schedule -------------------------------- *@
+                <div class="row">
+                    <div class="col-12 fw-bold text-decoration-underline">Deduction Schedule</div>
+                </div>
+
+                <div class="row ">
+
+                    <_0603_03_01_Period Prd="@V.Loan" ChildAction="PeriodChanged" />
+
+                </div>
+
+            </div>
+        </div>
+    
+    
+        <_0603_04_DeductionList V="@V" ChildAction="ChildAction" />
+    </div>
+</div>
+
+
+@inject ILoansDataAccess _loans; 
+
+
+@code {
+    [Parameter] public V0603            V               { get; set; } = new(); 
+    [Parameter] public V00_Pay          V00             { get; set; } = new(); 
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+    
+    RadzenDropDown<string>? ddAcctNumber;
+
+    async Task PeriodChanged()
+    {
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async void New()
+    {
+        var empnumber = V.Loan.EmpNumber;
+        V.ErorrMsgs         = []; 
+        V.Loan              = new LoansModel {EmpNumber = empnumber};
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async void Save()
+    {
+        V.ErorrMsgs = []; 
+        CheckSave(); 
+        if(V.ErorrMsgs.Count > 0) return;
+        
+        if(V00.paydb==null || V00.conn==null) return;
+        if (V.Loan.Id == 0)
+        {
+            V.Loan.EncodedBy = V00.UserClaims?.UserId.ToString();
+            V.Loan.EncodedT = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss"); 
+            V.Loan.ChangeBy = V00.UserClaims?.UserId.ToString();
+            V.Loan.ChangedT = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+            V.Loan.PayMode  = "00"; 
+            
+
+        }
+
+        LoansModel? res;
+        if (V.Loan.Id == 0) res = await _loans._01(V.Loan, V00.paydb, V00.conn);
+        else res = await _loans._03(V.Loan.Id, V.Loan, V00.paydb, V00.conn); 
+        
+        if(res != null) V.Loan = res; 
+        var ress = await _loans._02ByEmpNumbers(V.Loan?.EmpNumber??"-1", V00.paydb, V00.conn);
+        if (ress != null) V.Loans = ress; 
+        
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+    }
+
+    private async void CheckSave()
+    {
+        if(V.Loan.EmpNumber?.Length < 1)    V.ErorrMsgs?.Add("Employee is not valid.");
+        if(V.Loan.DedNCode?.Length  < 1 ||  
+           V.Loan.DedNCode==null )          V.ErorrMsgs?.Add("Account is not valid.");
+        if(V.Loan.Date.Year  < 2000 )       V.ErorrMsgs?.Add("Loan Date in not valid.");
+        if(V.Loan.Amount  < 1 )             V.ErorrMsgs?.Add("Loan Amount is not valid.");
+        if(V.Loan.Amort  < 1 )              V.ErorrMsgs?.Add("Amortization is not valid.");
+        if(V.Loan.PayStart.Year  < 2000 )   V.ErorrMsgs?.Add("Start of payment is not valid.");
+        //--- Check for Deduction Schedule ----------------------------
+        if ((V.Loan?.P1B == false) &&
+            (V.Loan?.P1B == false) &&
+            (V.Loan?.P2B == false) &&
+            (V.Loan?.P3B == false) &&
+            (V.Loan?.P4B == false) &&
+            (V.Loan?.P5B == false))         V.ErorrMsgs?.Add("A schedule for deductions has not been established.");
+
+        if (V.Loan is { Id: < 1, DedNCode.Length: > 0 })
+        {
+            var dedNCode = V.Loan.DedNCode;
+            var res = V.Loans?.Where(l => l?.DedNCode == dedNCode).ToList();
+            
+            if(res?.Count > 0 ) V.ErorrMsgs?.Add("Multiple deduction account is not permitted.");
+        }
+        StateHasChanged();
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async Task ChangeStatus(string s)
+    {
+        V00.Action = "ChangeStatus"; 
+        V.Loan.ChangeBy = V00.UserClaims?.UserId.ToString();
+        V.Loan.ChangedT = DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss");
+        V.Loan.Status   = s; 
+        
+        var res = await _loans._03ChangeStatus(V.Loan.Id, V.Loan, V00.paydb!, V00.conn!); 
+        if(res != null) V.Loan = res; 
+        
+        var ress = await _loans._02ByEmpNumbers(V.Loan?.EmpNumber??"-1", V00.paydb!, V00.conn!);
+        if (ress?.Count > 0) V.Loans = ress; 
+        
+        StateHasChanged();
+        await ChildAction.InvokeAsync(); 
+    }
+
+
+}
+

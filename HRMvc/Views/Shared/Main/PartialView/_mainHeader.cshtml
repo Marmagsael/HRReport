@@ -1,0 +1,117 @@
+﻿@using HRApiLibrary.DataAccess._00_Main;
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+@using HRApiLibrary.DataAccess._10_Pis;
+@using HRApiLibrary.DataAccess._10_Pis.Interface;
+@using HRApiLibrary.Models._00_Main;
+@using HRApiLibrary.Models._00_MainPis;
+@using Microsoft.Extensions.Configuration
+
+@inject IConfiguration _config
+@inject I_10_EmpmasDataAccess _empmasDa;
+@inject I_00MainDA _mainDa;
+
+
+
+
+
+@{
+    string coName = _config.GetSection("CompanyInfo:CompanyName").Value;
+
+    string? userId = "0";
+    if (User.HasClaim(c => c.Type == "UserId"))
+    {
+        userId = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault()?.Value;
+    }
+    int empmasId = int.Parse(userId!);
+
+    string mainPisSchema = _config.GetSection("Schema:MainPis").Value;
+    string conn = _config.GetSection("Schema:DefConn").Value;
+
+    EmpmasModel? empmas = await _empmasDa._02Empmas(empmasId, mainPisSchema, conn);
+    string? empName = $"{empmas?.EmpLastNm}, {empmas?.EmpFirstNm} {empmas?.EmpMidNm}";
+    if (empmas == null)
+    {
+        empName = "-";
+        UsersModel? user = await _mainDa._02UsersById(empmasId);
+        if (user != null) empName = user.LoginName;
+
+    }
+
+
+}
+
+<link rel="stylesheet" href="~/css/Main/Layout/main_header.css" asp-append-version="true" />
+
+
+    <nav aria-label="top-navbar">
+        <div class="container-fluid with-dropdown">
+            <button class="btn  menu-toggle-icon " id="menu-toggle-icon">
+                <i class="fa-solid fa-bars open-menu-icon"></i>
+                <i class="fa-solid fa-xmark close-menu-icon"></i>
+            </button>
+
+            @*-- Logo --*@
+            <a class="co-info align-items-start">
+                <span class="co-logo"></span>
+                <h1 class="co-name">
+                    @if (coName != null)
+                        { <span>@coName</span> }
+
+                    </h1>
+                </a>
+
+
+                @*-- User Avatar --*@
+                <div class="b-dropdown user-avatar-wrapper">
+                    <div class="user-avatar" id="toggle-avatar">
+                        <i class="fa-solid fa-user user-avatar-icon"></i>
+                        <span class="user-name">@empName</span>
+                    </div>
+
+
+                    <ul class="b-dropdown-menu">
+                        <li class="b-dropdown-item">
+                            <a asp-action="_401Password" class="b-dropdown-link">Password</a>
+                        </li>
+
+
+                        @* --- For Non Exclusive Company -------- *@
+
+                        @{
+                        string? isCoExclusiveUse = _config.GetSection("CompanyInfo:Exclusive").Value;
+                    }
+                    @if (isCoExclusiveUse == "false")
+                    {
+                        <li class="b-dropdown-item"> <hr class="divider-horizontal my-1"> </li>
+
+                        <li class="b-dropdown-item">
+                            <a asp-action="_402MyEngagement" class="b-dropdown-link">My Engagement</a>
+                        </li>
+
+
+
+
+                        <li class="b-dropdown-item">
+                            <a asp-action="_403BusinessesAndSubscription" asp-asp-controller="Main" class="b-dropdown-link">Businesses and Subscriptions</a>
+                        </li>
+
+                        @*<li class="b-dropdown-item">
+                    <a href="" class="b-dropdown-link">Subscriptions</a>
+                    </li>*@
+
+                    }
+                    @* --- For Non Exclusive Company -------- *@
+
+
+
+                    <li class="b-dropdown-item"> <hr class="divider-horizontal my-1"> </li>
+
+                    <li class="b-dropdown-item">
+                        <a asp-controller="Main" asp-action="_404Logout" class="b-dropdown-link">Logout</a>
+                    </li>
+                </ul>
+
+
+            </div>
+        </div>
+    </nav>

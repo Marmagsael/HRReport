@@ -1,0 +1,355 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR.Views.BlazorPages._02DataEntry.F222;
+@using HRMvc.Applications._02HR._02Library
+
+<style>
+    .c-222-selected {
+    color: white;
+    border-radius: 2px;
+    padding: 5px;
+    background-color: gray;
+    }
+
+    .c-222-active {
+    cursor: pointer;
+    color: rgb(46, 45, 25);
+    padding: 5px;
+    text-decoration: underline;
+
+    }
+    .c-222-active:hover {
+    color: white;
+    background-color: darkkhaki;
+    text-decoration: none;
+    border-radius: 2px;
+    }
+
+    .c-222-disabled {
+    color: lightgray;
+    border-radius: 2px;
+    padding: 5px;
+    background-color: gray;
+    }
+
+</style>
+
+
+<div>
+
+    @if (!disableAction)
+    {
+        <div class="nav gap-1 p-1 justify-content-center mb-1 mt-1 " style="border: 1px solid gray; border-radius: 3px;">
+            <div class="@class1 " onclick="@(()=>ChangeClass(1))">A-J</div>
+            <div class="@class2 " onclick="@(()=>ChangeClass(2))">K-N</div>
+            <div class="@class3" onclick="@(()=>ChangeClass(3))">O-T</div>
+            <div class="@class4" onclick="@(()=>ChangeClass(4))">U-Z</div>
+            <div class="@class5" onclick="@(()=>ChangeClass(5))">Search</div>
+        </div>
+    } 
+    else
+    {
+        <div class="nav gap-1 p-1 justify-content-center mb-1 mt-1 " style="border: 1px solid gray; border-radius: 3px;">
+            <div class="c-222-disabled" >A-J</div>
+            <div class="c-222-disabled" >K-N</div>
+            <div class="c-222-disabled" >O-T</div>
+            <div class="c-222-disabled" >U-Z</div>
+            <div class="c-222-disabled" >Search</div>
+        </div>
+    }
+
+
+    @if(showSearch) 
+    {
+        <div class="p-1 d-flex gap-1 mb-1" style="border: 1px solid gray; border-radius: 3px;">
+            <div style="width: 70%;">
+                <input type="text" @oninput="@(()=>StateHasChanged())" @bind-value="skey" placeholder="Lastname" class="form-control">
+            </div>
+
+            <div style="width: 30%;">
+                <button onclick="@(()=>SearchEmployee(skey))" class="btn btn-secondary ">Search</button>
+            </div>
+        </div>
+
+        @if (showRequiredLength)
+        {
+            <div class="text-danger w-100 p-1" style="font-size:small; border: 1px solid red; border-radius: 3px;">
+                Input not less than 3 character to proceed.
+            </div>
+        }
+
+    }
+
+    <div class="p-2 text-white bg-secondary" style="border:1px solid lightgrey;">
+        <h6>Name  </h6>
+    </div>
+    <div class="" style="border:1px solid lightgrey; min-height:70vh; max-height:80vh; overflow:auto ">
+
+
+        @if (@V.EmpmasList?.Count > 0)
+        {
+            <table class="table table-sm  table-hover ">
+                <tbody>
+                    @foreach (var e in V.EmpmasList!)
+                    {
+                        @* if (e!.Id == selectedId) *@
+                        if (e!.Id == V.SelectedId)
+                        {
+                            <tr class="fw-bold bg-primary text-white" style="cursor:pointer;">
+                                <td>@e?.EmpLastNm, @e?.EmpFirstNm @e?.EmpMidNm - [@e?.EmpNumber]</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr style="cursor:pointer;">
+                                <td onclick="@(()=>SelectEmpmas(e))">
+                                    @e?.EmpLastNm, @e?.EmpFirstNm @e?.EmpMidNm - [@e?.EmpNumber]
+                                </td>
+                            </tr>
+                        }
+                    }
+
+                </tbody>
+            </table>
+        } else
+        {
+            <div class="w-100 text-center text-white" style="background-color:darkgrey; border: 1px solid gray; ">
+                Record is empty.
+            </div>
+        }
+
+
+    </div>
+    <div class="bg-secondary " style="color:lightgray; padding: 5px 10px; font-size: small; border:1px solid lightgrey; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px ;">
+        Employee Listing
+    </div>
+</div>
+
+
+@inject I_10_EmpmasDataAccess   _empmas;
+@inject DA222                   _da; 
+@inject I_00MainDA              _main;
+@inject IEmpmovementDataAccess _empMovement;
+
+
+@code {
+    string  skey    = "";
+
+    string class1   = "c-222-selected"; 
+    string class2   = "c-222-active"; 
+    string class3   = "c-222-active"; 
+    string class4   = "c-222-active"; 
+    string class5   = "c-222-active"; 
+
+    int selectedId  = 0; 
+
+    bool showSearch         = false; 
+    bool disableAction      = false; 
+    bool showRequiredLength = false; 
+
+    DA222? da; 
+
+    [Parameter]
+    public V222 V {get; set;} = new();    
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    async void ChangeClass(int classNo) {
+
+        V.EmpmasList = new();
+        disableAction       = true; 
+        showRequiredLength  = false; 
+
+        class1 = "c-222-active";      
+        class2 = "c-222-active";      
+        class3 = "c-222-active";      
+        class4 = "c-222-active";      
+        class5 = "c-222-active";      
+        showSearch = false; 
+
+        switch (classNo)
+        {
+            case 1:
+                class1 = "c-222-selected";
+                V.EmpmasList = await _empmas._02By1stLetterRange("A", "J", V.pisdb!, V.conn!);
+                break;
+
+
+            case 2:
+                class2 = "c-222-selected";
+                V.EmpmasList = await _empmas._02By1stLetterRange("K", "N", V.pisdb!, V.conn!);
+                break;
+
+            case 3:
+                class3 = "c-222-selected";
+                V.EmpmasList = await _empmas._02By1stLetterRange("O", "T", V.pisdb!, V.conn!);
+                break;
+
+            case 4:
+                class4 = "c-222-selected";
+                V.EmpmasList = await _empmas._02By1stLetterRange("U", "Z", V.pisdb!, V.conn!);
+                break;
+
+            default:
+                break; 
+        }
+
+        if (classNo == 5)
+        {
+            showSearch = true;
+            class5 = "c-222-selected";
+        }
+
+        disableAction = false;
+
+        StateHasChanged(); 
+        await ChildAction.InvokeAsync(); 
+
+    }
+
+    async void SelectEmpmas(EmpmasModel e)
+    {
+        //selectedId = e.Id; 
+        V.SelectedId = e.Id; 
+
+        if(V.Empmas==null) return; 
+
+        V.Empmas = new(); 
+        V.Empmas = (PisEmpmasModel)V.ObjectMapper(e, V.Empmas);
+
+        var res = await _empmas._02EmpmasAddress(e.Id, V.pisdb!, V.conn!); 
+        //await _main._02Uc_Access_NotAddressed()
+        if(res!=null)
+        {
+            V.Empmasaddress         = res;
+            V.EmpmasaddressToEdit   = res; 
+            V.Empmas.Email          = res.EmailAdd; 
+        }
+
+        await FetchOtherData();
+        V.EmpmovementList = await _empMovement._02ListByEmpmasId(V.Empmas.Id, V.pisdb!, V.conn!) ?? null;
+
+        StateHasChanged(); 
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async Task FetchOtherData()
+    {
+        // --- Empmas ----------------
+        EmpmasPIModel x = new(); 
+        V.EmpmasPI = await _da._02EmpmasPI(V.SelectedId, V.pisdb!, V.conn!);
+        V.EmpmasPIToEdit    = new();
+        V.EmpmasPIToEdit    = (EmpmasPIModel)V.ObjectMapper(V.EmpmasPI!, V.EmpmasPIToEdit!);
+
+       // --- Deprec (Deployment Record) ----------------
+        V.Deprec = await _da._02Deprec(V.SelectedId, V.pisdb!, V.conn!);
+        V.DeprecToEdit = new();
+        V.DeprecToEdit = (DeprecModel)V.ObjectMapper(V.Deprec!, V.DeprecToEdit);
+        
+        switch (V.TabNo)
+        {
+            //--- Personal Data --------------------
+            case 1:
+
+                break;
+
+            //--- Address --------------------
+            case 2:
+                V.Empmasaddress         = await _da._02EmpmasAddress(V.SelectedId, V.pisdb!, V.conn!); 
+                V.EmpmasaddressToEdit   = new(); 
+                V.EmpmasaddressToEdit   = (EmpmasAddressModel)V.ObjectMapper(V.Empmasaddress, V.EmpmasaddressToEdit); 
+                break;
+
+            //--- Deployment  --------------------
+            @* case 3:
+                V.Deprec        = await _da._02Deprec(V.SelectedId, V.pisdb!, V.conn!); 
+                V.DeprecToEdit  = new();
+                V.DeprecToEdit  = (DeprecModel)V.ObjectMapper(V.Deprec!, V.DeprecToEdit);
+
+                break; *@
+
+
+            //--- Employment History --------------------
+            case 4:
+
+                break;
+
+            //--- Education --------------------
+            case 5:
+
+                break;
+
+            //--- Family --------------------
+            case 6:
+
+                break;
+
+            //--- Training / Seminar --------------------
+            case 7:
+
+                break;
+
+            //--- References --------------------
+            case 8:
+
+                break;
+
+            //--- Insurance --------------------
+            case 9:
+
+                break;
+
+            //--- Compliance --------------------
+            case 10:
+
+                break;
+
+            //--- Government --------------------
+            case 11:
+
+                break;
+
+            //--- Security --------------------
+            case 12:
+
+                break;
+
+
+            default:
+                break;
+        }
+
+        await ChildAction.InvokeAsync(); 
+
+    }
+
+    void FillPositionAndStatus() {
+       
+        if(V.Empmas == null) return; 
+        if (V.Empmas.Id < 1 ) return;
+
+
+    }
+    async void SearchEmployee(string sval)
+    {
+        V.EmpmasList = new();
+
+        if(sval.Length < 4)
+        {
+            showRequiredLength=true; 
+            return; 
+        }
+
+        showRequiredLength = false;
+
+        
+        V.EmpmasList = await _empmas._02SearchName(sval, V.pisdb!, V.conn!);
+        V.Action = "SearchEmployee";
+        StateHasChanged(); 
+        await ChildAction.InvokeAsync(); 
+    }
+
+}
+

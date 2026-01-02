@@ -1,0 +1,214 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRMvc.Applications._02HR._02Library
+@using HRMvc.Applications._02HR.Views.BlazorPages._02DataEntry.F222.F222_03.F222_03_Tab2
+
+@inject NotificationService _NotificationService;
+@inject DialogService       _DialogService; 
+
+
+
+<div class="p-2">
+    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Address" />
+    
+    <RadzenTemplateForm TItem="EmpmasAddressModel" Data=@V.Empmasaddress Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>    
+        <div class="h-10p"></div>
+        @if(V.Empmas?.Id > 0) {
+            <div class="p-2 bordered mb-2 w-100">
+                <input class="btn btn-secondary w-100p" type="submit" value="Save" />
+            </div>
+        }
+        
+        
+        <RadzenFieldset Text="*****" >
+            <div class="fw-normal">
+
+            @* ----- Email ----------*@
+            <RadzenFieldset Text="Email">
+                    <div class="w-100 d-flex mt-2">
+                        @* ----- EmailAdd (varchar(45))----------*@
+                        <div class="w-20 p-2">Primary</div>
+                        <div class="w-80">
+                            <RadzenTextBox @bind-Value=@V.Empmasaddress.EmailAdd MaxLength="45" Name="PrimaryEmail" Placeholder="Primary Email" Style="width: 100%; max-width: 400px;" />
+                        </div>
+                    </div>
+
+                    <div class="w-100 d-flex mt-2">
+                        @* ----- EmailAdd (varchar(45))----------*@
+                        <div class="w-20 p-2">Secondary</div>
+                        <div class="w-80">
+                            <RadzenTextBox @bind-Value=@V.Empmasaddress.EmailAdd1 MaxLength="45" Placeholder="Secondary Email" Style="width: 100%; max-width: 400px;" />
+                        </div>
+                    </div>
+
+
+            </RadzenFieldset>
+
+                @* ----- Contact No. ----------*@
+                <RadzenFieldset Text="Contact No(s)">
+                    <div class="w-100 d-flex mt-2">
+                        @* ----- CellNo (varchar(45))----------*@
+                        <div class="w-20 p-2">Primary</div>
+                        <div class="w-80">
+                            <RadzenTextBox Placeholder="Primary Contact Number" @bind-Value=@V.Empmasaddress.CellNo MaxLength="45" Style="width: 100%; max-width: 400px;" />
+                        </div>
+                    </div>
+
+                    <div class="w-100 d-flex mt-2">
+                        @* ----- CellNo1 (varchar(45))----------*@
+                        <div class="w-20 p-2">Secondary</div>
+                        <div class="w-80">
+                            <RadzenTextBox Placeholder="Secondary Contact Number" @bind-Value=@V.Empmasaddress.CellNo1 MaxLength="45" Style="width: 100%; max-width: 400px;" />
+                        </div>
+                    </div>
+
+                </RadzenFieldset>
+
+            </div>
+        </RadzenFieldset>
+
+        @* **** ******************************************@
+        @* **** Present Address **************************@
+        @* **** ******************************************@
+        <RadzenFieldset Text="Present Address" class="fw-bold">
+            <div class="fw-normal">
+                <div class="w-100 d-flex p-2">
+                    @* ----- PresAddCountryId (varchar(10))----------*@
+                    <div class="w-20 p-2">Country </div>
+                    <div class="w-80">
+                        <RadzenDropDown Change="CountryChangedPresentAddress" TValue="int" @bind-Value=@V.Empmasaddress.PresAddCountryId Data=@V.Countrys TextProperty="Name" ValueProperty="Id"
+                                        Name="ddCountrys" Style="width: 100%; max-width: 400px;" />
+                    </div>
+                </div>
+
+                <div class="h-10p bordered-bottom">&nbsp;</div>
+                <_222_03_Tab2_PHL_PresentAddress ChildAction="ChildAction" V="@V" V03="v2203" />
+
+            </div>
+        </RadzenFieldset>
+
+
+
+        @* **** ******************************************@
+        @* **** Provincial Address ***********************@
+        @* **** ******************************************@
+        <div class="h-25p"></div>
+        <RadzenFieldset Text="Provincial Address" class="fw-bold">
+            <div class="fw-normal">
+                @* ----- ProvAddCountryId (int(11))----------*@
+                <div class="w-100 d-flex p-2">
+                    @* ----- PresAddCountryId (varchar(10))----------*@
+                    <div class="w-20 p-2">Country </div>
+                    <div class="w-80">
+                        <RadzenDropDown Change="CountryChangedProvincialAddress" TValue="int" @bind-Value=@V.Empmasaddress.ProvAddCountryId Data=@V.Countrys TextProperty="Name" ValueProperty="Id"
+                                        Style="width: 100%; max-width: 400px;" Name="ddCountrys" />
+                    </div>
+                </div>
+
+                <div class="h-10p bordered-bottom">&nbsp;</div>
+                <_222_03_Tab2_PHL_ProvincialAddress ChildAction="ChildAction" V="@V" V03="v2203" />
+            </div>
+
+        </RadzenFieldset>          
+
+    </RadzenTemplateForm>
+
+
+</div>
+
+@inject I_10_EmpmasDataAccess       _empmas; 
+@inject I_00ProvincestateDataAccess _province; 
+
+
+@code {
+
+    int empmasId            = 0; 
+
+    [Parameter]
+    public V222             V               { get; set; } = new();
+
+    [Parameter]
+    public EventCallback    ChildAction     { get; set; }
+
+    V222_03                 v2203 = new();
+
+    protected async override void OnParametersSet()
+    {
+        if(empmasId != V.SelectedId)
+        {
+            empmasId = V.SelectedId; 
+            v2203.Provinces = new();
+            v2203.ProvincesProv = new();
+
+            await CountryChangedPresentAddress(); 
+            await CountryChangedProvincialAddress(); 
+
+        }
+        
+        StateHasChanged(); 
+
+    }
+
+    async void OnSubmit(EmpmasAddressModel model)
+    {
+        await _empmas._03EmpmasAddress(empmasId, model, V.pisdb!, V.conn!); 
+
+        var severity    = NotificationSeverity.Info; 
+        var summary     = "Saved";
+        var detail      = "Record Saved."; 
+        _NotificationService.Notify(new NotificationMessage
+            {
+                Severity    = severity,
+                Summary     = summary,
+                Detail      = detail,
+                Duration    = 3000
+            });
+
+             
+        
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+    }
+
+    async Task CountryChangedPresentAddress()
+    {   
+        v2203.Provinces  = await CountryChanged(V.Empmasaddress.PresAddCountryId);
+        if (V.Countrys?.Count > 0)
+        {
+            V.Empmasaddress.PresAddCountry = V.Countrys.Where(a => a.Id == V.Empmasaddress.PresAddCountryId).FirstOrDefault()?.Name ?? "";
+        }
+        V.Empmasaddress.PresAdd = $"{V.Empmasaddress.PresAddStreet}, {V.Empmasaddress.PresAddBrgy}, {V.Empmasaddress.PresAddCity}, {V.Empmasaddress.PresAddProv}, {V.Empmasaddress.PresAddZipCode}, {V.Empmasaddress.PresAddCountry}";
+        StateHasChanged();
+    }
+
+    async Task CountryChangedProvincialAddress()
+    {   
+        v2203.ProvincesProv  = await CountryChanged(V.Empmasaddress.ProvAddCountryId);
+        if (V.Countrys?.Count > 0)
+        {
+            V.Empmasaddress.ProvAddCountry = V.Countrys.Where(a => a.Id == V.Empmasaddress.ProvAddCountryId).FirstOrDefault()?.Name ?? "";
+        }
+        V.Empmasaddress.ProvAdd = $"{V.Empmasaddress.ProvAddStreet}, {V.Empmasaddress.ProvAddBrgy}, {V.Empmasaddress.ProvAddCity}, {V.Empmasaddress.ProvAddProv}, {V.Empmasaddress.ProvAddZipCode}, {V.Empmasaddress.ProvAddCountry}";
+        StateHasChanged();
+    }
+
+
+
+    async Task<List<ProvinceStateModel?>?>  CountryChanged(int countryId)
+    {
+        List<ProvinceStateModel?>? provinces = new();
+        if (countryId < 1) return provinces;
+
+        var res = await _province._02ByCountryId(countryId, "Main", V.conn!); 
+        if(res!=null)   {   if(res.Count > 0) {   provinces = res;  }     } 
+        return provinces; 
+    }
+}
+
+
+
+
+
+

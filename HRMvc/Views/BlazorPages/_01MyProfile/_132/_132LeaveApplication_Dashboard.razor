@@ -1,0 +1,103 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface;
+@using HRApiLibrary.DataAccess._10_Pis.Interface;
+@using HRMvc.Views.BlazorPages.Vars;
+@using HRMvc.Views.BlazorPages._01MyProfile._132._132_00;
+
+@if (!showEntry)
+{
+    <div class="" >
+        @if(v132.PisEmpmass?.Count > 0)
+        {
+            <_132_00_01_PisEmpmas V="@v132" UC="@UserClaims" />
+            <_132_00_01_LeaveAnniversary V132="@v132" />
+            <_132_01_LeaveDtls V132="@v132" UserClaims="@UserClaims" ChildAction="ChildAction" />
+        } else
+        {
+            <_132_00_00_UnmappedMsg />
+        }
+
+    </div>
+}
+
+@if(showEntry)
+{
+    <div class="mt-1 w-100 p-2" style="border:1px solid gray; background-color:lightsteelblue; border-radius: 5px; ">
+        <span>
+            <btn class="btn btn-secondary">Save</btn>
+            <btn class="btn btn-secondary">Submit for Approval</btn>
+
+        </span>
+        
+    </div>
+
+    <div class="py-2" style="min-width:980px; overflow:auto;  ">
+        <_132_03_LeaveApplicationForm V132="@v132" />
+    </div>
+}
+
+@inject IPissettingsDataAccess  _pisSettings; 
+@inject ILeavetypeDataAccess    _leaveType; 
+@inject IDeprecDataAccess       _deprec; 
+@inject I_10_EmpmasDataAccess   _empmas; 
+@inject IPisEmpmasDataAccess    _pisEmpmas; 
+
+@code {
+
+    bool showEntry = false; 
+
+    [Parameter]
+    public UserClaimsModel? UserClaims { get; set; } = new();
+
+    V0132                   v132 = new();
+
+    // ReSharper disable once ArrangeModifiersOrder
+    protected async override void OnParametersSet()
+    {
+        Init(); 
+        v132.PisSettings    = await _pisSettings._02(v132.Pisdb!, v132.Conn!);
+        v132.LeaveTypes     = await _leaveType._02(v132.Pisdb!, v132.Conn!);
+        await _02Info(); 
+
+        StateHasChanged(); 
+    }
+
+    void Init()
+    {
+        if (UserClaims == null) return; 
+
+        v132.Paydb  = UserClaims.SchemaUserPay;
+        v132.Pisdb  = UserClaims.SchemaUserPis;
+        v132.Conn   = UserClaims.Conn; 
+    }
+
+    async Task _02Info() {
+        if(v132.Pisdb == null || v132.Conn == null) return; 
+
+        var pisEmpmas = await _pisEmpmas._02BySystemIdLst(UserClaims!.UserId, v132.Pisdb, v132.Conn);
+
+        if(pisEmpmas != null && pisEmpmas.Count > 0 ) 
+        {
+            v132.cssVLink = string.Empty; 
+            v132.PisEmpmass = pisEmpmas;
+            v132.PisEmpmas  = pisEmpmas.FirstOrDefault();
+
+            if (v132.PisEmpmas==null) return;
+            var empmasId = v132.PisEmpmas.Id; 
+            var res = await _deprec._02(empmasId, v132.Pisdb, v132.Conn);
+            if (res != null) v132.Deprec = res;
+        }
+    }
+
+
+    void ChildAction()
+    {
+        if (v132.Action == "NewLeave") showEntry=true;  
+
+        v132.Action = ""; 
+        StateHasChanged(); 
+    }
+
+
+
+
+}

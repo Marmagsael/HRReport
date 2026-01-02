@@ -1,0 +1,77 @@
+﻿@using System.Net.NetworkInformation;
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRMvc.Views.BlazorPages.Vars
+@using System.Timers
+
+<ul class="list-group mt-2">
+    <li class="list-group-item active" aria-current="true">Location Details</li>
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center">Time Zone ID</div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">@V.TimezoneId</div>
+        </div>
+    </li>
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center">Local Time Zone</div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">@localTimeZone.DisplayName</div>
+        </div>
+    </li>
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center">Terminal</div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">@V.MacAddress</div>
+        </div>
+    </li>
+
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center">Date and Time </div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">
+                @* @currentDateTime *@
+                <span class="text-success">@currentDate</span> <span class="text-primary">@currentTime</span>
+            </div>
+        </div>
+    </li>
+
+
+</ul>
+
+
+@code {
+    
+    [Parameter] public V131 V { get; set; } = new();
+    
+    private string currentDateTime;
+    private string currentDate;
+    private string currentTime;
+    
+    private Timer timer;
+    TimeZoneInfo localTimeZone  = TimeZoneInfo.Local ; 
+    
+    protected override void OnInitialized()
+    {
+        currentDateTime = DateTime.Now.ToString("F");
+        timer = new Timer(1000);
+        timer.Elapsed += UpdateDateTime;
+        timer.Start();
+    }
+
+    private void UpdateDateTime(object sender, ElapsedEventArgs e)
+    {
+        InvokeAsync(() =>
+        {
+            currentDateTime = DateTime.Now.ToString("F");
+            currentDate = DateTime.Now.ToString(("dddd, yyyy-M-d"));
+            currentTime = DateTime.Now.ToString("T"); 
+            
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+    }
+    
+}

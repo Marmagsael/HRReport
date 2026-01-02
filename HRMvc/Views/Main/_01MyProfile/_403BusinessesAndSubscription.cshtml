@@ -1,0 +1,107 @@
+﻿@using HRApiLibrary.DataAccess._00_Main;
+@using HRApiLibrary.Models._00_Main;
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+
+@* @model IEnumerable<HRApiLibrary.Models._00_Main.UserCompanyWTypeModel> *@
+
+@inject I_00MainDA _mainDA;
+
+@{
+    ViewData["Title"] = "403BusinessesAndSubscription";
+    Layout = "~/Views/Shared/Main/_01MyProfileLayout.cshtml";
+
+    UserClaimsModel uClaim = _mainDA._02UserClaimsContent(User.Claims);
+    IEnumerable<CompaniesAssignedToUserModel?> ownCompanies = await
+    _mainDA._02CompanyUsers_Owned_WTypeWCoDtls_List(uClaim.UserId!, uClaim.SchemaMain!, uClaim?.Conn!);
+    IEnumerable<CompaniesAssignedToUserModel?> OtherCompanies = await
+    _mainDA._02CompanyUsers_Employment_WTypeWCoDtls_List(uClaim!.UserId!, uClaim.SchemaMain!, uClaim.Conn!);
+
+}
+
+<div class="page-header">
+    <h1 class="page-title">Businesses and Subscriptions</h1>
+</div>
+
+
+<div class="page-body">
+    <div class="form-section-action">
+        <a asp-action="Create" class="btn b-btn-primary">Create New</a>
+    </div>
+    @*--- Table ----*@
+    <table class="w-100" id="otherFamilyMemberTbl">
+        @*--- Header ---*@
+        <thead>
+            <tr class="col-12">
+                <th scope="col">Short Name</th>
+                <th scope="col">Name</th>
+                <th scope="col">Type</th>
+            </tr>
+        </thead>
+
+
+        @*--- Body ---*@
+        <tbody>
+            @* *********************************** *@
+            @* --- Owned Company -----------------*@
+            @foreach (var c in ownCompanies)
+            {
+                <tr>
+                    <td>
+                        @c?.CompanySName
+                    </td>
+                    <td>
+                        @c?.CompanyName
+                    </td>
+                    <td>
+                        Owned
+                    </td>
+
+
+                    <td>
+                        @*@Html.ActionLink("Edit", "Edit", new { /* id=item.PrimaryKey */ }) |
+                    @Html.ActionLink("Details", "Details", new { /* id=item.PrimaryKey */ }) |
+                    @Html.ActionLink("Delete", "Delete", new { /* id=item.PrimaryKey */ }) |*@
+                        <a href="">Edit</a> |
+                        <a href="">Delete</a> |
+
+                        <a href="">Manage</a> |
+                        <a href="">Subscription</a>
+
+                    </td>
+                </tr>
+            }
+            @* --- Owned Company -----------------*@
+            @* *********************************** *@
+
+            @* *********************************** *@
+            @* --- OtherCompanies (Employment) ----*@
+            @foreach (var c in OtherCompanies)
+            {
+                <tr>
+                    <td>
+                        @c?.CompanySName
+                    </td>
+                    <td>
+                        @c?.CompanyName
+                    </td>
+                    <td>
+                        Employment
+                    </td>
+
+
+                    <td>
+
+                        <a href="">Manage</a> |
+                        <a href="">Details</a>
+
+                    </td>
+                </tr>
+            }
+            @* --- OtherCompanies (Employment) ----*@
+            @* *********************************** *@
+
+
+
+        </tbody>
+    </table>
+</div>

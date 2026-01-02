@@ -1,0 +1,312 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+
+<style>
+  .min-width-120 {
+    min-width: 400px;
+    width: auto;
+  }
+  .btn-width {
+  
+  }
+  
+</style>
+<div class="card shadow bordered-darkgreen mt-3">
+    <div class="card-header text-white fw-bold " style="background-color: darkslategrey">
+        Type Entry
+    </div>
+
+    <!-- Buttons -->
+    <div class="bordered bg-black bg-opacity-10 px-2 py-1 bordered-bottom-darkgreen">
+        <button onclick="@New" class="btn btn-primary btn-sm">New</button>
+        <button onclick="@Save" class="btn btn-secondary btn-sm me-1">Save</button>
+       
+    </div>
+
+    <div class="card-body p-0  ">
+
+
+
+
+      <RadzenDataGrid
+        Data ="@inv_types"
+        TItem ="Inv_typeModel"
+        @ref ="inv_typesGrid"
+        EditMode ="DataGridEditMode.Single"
+        AllowSorting =true
+        AllowPaging =true
+        PageSize ="10"
+        PageSizeOptions =@(new int[]{5, 10, 20, 30})>
+        <Columns>
+          <RadzenDataGridColumn CssClass="col-flex"
+            TItem ="Inv_typeModel" Property ="Name" Title ="Name" >
+            <EditTemplate Context="rec">
+              <RadzenTextBox @bind-Value="rec.Name" class="w-100" MaxLength="45" />
+            </EditTemplate>
+          </RadzenDataGridColumn>
+
+          <RadzenDataGridColumn
+            TItem="Inv_typeModel" Context="Inv_typeModel" Title="Action" Filterable="false" Sortable="false" TextAlign="TextAlign.Left" Frozen="true">
+            <Template Context="rec">
+              <RadzenButton
+                Icon ="edit"
+                ButtonStyle ="ButtonStyle.Light"
+                Variant ="Variant.Flat"
+                Size ="ButtonSize.Small"
+                Click ="@(args => EditRow(rec))"
+                @onclick:stopPropagation="true">
+              </RadzenButton>
+
+              <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                            Icon ="delete"
+                            Variant ="Variant.Flat"
+                            Shade ="Shade.Lighter"
+                            Size ="ButtonSize.Small"
+                            Click ="@(args => DeleteRow(rec))"
+                            class ="my-1 ms-1"
+                            @onclick:stopPropagation="true">
+              </RadzenButton>
+            </Template>
+
+            <EditTemplate Context="rec">
+              <RadzenButton Icon="check"
+                            ButtonStyle ="ButtonStyle.Success"
+                            Variant ="Variant.Flat"
+                            Size ="ButtonSize.Small"
+                            Click="@((args) => SaveRow(rec))" >
+              </RadzenButton>
+
+              <RadzenButton
+                Icon="close"
+                ButtonStyle ="ButtonStyle.Light"
+                Variant ="Variant.Flat"
+                Click ="@((args) => CancelEdit(rec))"
+                Size ="ButtonSize.Small" class="my-1 ms-1" >
+              </RadzenButton>
+
+              <RadzenButton
+                ButtonStyle="ButtonStyle.Danger"
+                Icon="delete"
+                Variant="Variant.Flat"
+                Shade="Shade.Lighter"
+                Size="ButtonSize.ExtraSmall"
+                Click="@(args => DeleteRow(rec))"
+                class="my-1 ms-1" >
+              </RadzenButton>
+            </EditTemplate>
+
+          </RadzenDataGridColumn>
+        </Columns>
+      </RadzenDataGrid>
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
+    </div>
+</div>
+
+
+@inject IInv_typeDataAccess _inv_type; 
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; } = new();
+    
+    string? pisdb   = string.Empty;
+    string? paydb   = string.Empty;
+    string? conn    = string.Empty;
+                    
+    bool rerender   = false; 
+    
+    //-- Initialization ----------------
+    RadzenDataGrid<Inv_typeModel?>? inv_typesGrid = new();
+    bool                    editMode            = false;
+    DataGridEditMode        editMode1           = DataGridEditMode.Single;
+
+    List<Inv_typeModel?>?   inv_types           = new();
+    Inv_typeModel?          inv_type            = new();
+
+    List<Inv_typeModel?>?   inv_typesToInsert   = new();
+    List<Inv_typeModel?>?   inv_typesToUpdate   = new ();
+    string?                 errorMsg            = string.Empty;
+    
+    protected override async void OnParametersSet()
+    {
+        if(UserClaims==null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null ) return;
+        if (pisdb == null ) return;
+        if (paydb == null) return;
+        
+        if(rerender) return;
+        rerender = true;
+        inv_types = await _inv_type._02(pisdb, conn); 
+        StateHasChanged();
+    }
+
+    void New()
+    {
+    }
+    
+    void Save()
+    {
+    }
+    
+    void Stop()
+    {
+    }
+    
+    //-- InsertRow ----------------
+      async Task InsertRow()
+      {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new Inv_typeModel();
+        inv_typesToInsert!.Add(rec);
+        await inv_typesGrid!.InsertRow(rec);
+        editMode = true;
+      }
+     //-- Reset ----------------
+     void Reset()
+     {
+               inv_typesToInsert!.Clear();
+               inv_typesToUpdate!.Clear();
+     }
+
+     //-- Reset ----------------
+     void Reset(Inv_typeModel rec)
+     {
+               inv_typesToInsert!.Remove(rec);
+               inv_typesToUpdate!.Remove(rec);
+     }
+
+     //-- Edit Row ----------------
+     async Task EditRow(Inv_typeModel rec)
+          {
+               if(inv_typesGrid!=null)
+               {
+                    Reset();
+                    inv_typesToUpdate?.Add(rec);
+                    await inv_typesGrid.EditRow(rec);
+               }
+     }
+     //-- Delete Row ----------------
+     async Task DeleteRow(Inv_typeModel rec)
+     {
+        if (inv_types==null) return;
+        if (inv_typesGrid == null) return;
+
+        Reset(rec);
+
+          /*if (inv_types.Contains(rec))
+          {
+            if(rec != null)
+            {
+              var res = await _inv_type._02CheckToTblTran(rec.ClNumber!, Schema!, conn!);
+              if (res!=null)
+              {
+               if (res.Count > 0)
+               {
+                 var msg = "Unable to delete <span class='text-danger fw-bold'> "+ rec.Name +"!</span> Record already exists. ";
+                 await _DialogService.Alert(msg, "Delete denied", new AlertOptions() { OkButtonText = "Exit" });
+                 return ;
+               }
+              }
+            }
+          var option = await _DialogService.Confirm("Delete " + rec?.Name + "?", "Confirm Delete",
+                   new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+          if (option == true)
+          {
+            await _inv_type._04(rec!.Id, Schema!, conn!);
+            inv_types.Remove(rec);
+          }
+        }
+          else
+          {
+            inv_typesGrid.CancelEditRow(rec);
+          }*/
+        await inv_typesGrid.Reload();
+        editMode = false;
+        errorMsg=string.Empty;
+     }
+
+
+     //-- Cancel Edit ----------------
+      async void CancelEdit(Inv_typeModel rec)
+      {
+        errorMsg = string.Empty;
+        if (inv_typesGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        inv_typesGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        var res = await _inv_type._02(id, pisdb!, conn!);
+        if (res == null) return;
+        Remap_Flds(rec, res);
+        await inv_typesGrid.Reload();
+      }
+     //-- Remap ----------------
+      void Remap_Flds(Inv_typeModel destination, Inv_typeModel source )
+      {
+
+      }
+     //-- Save Row ----------------
+      async Task SaveRow(Inv_typeModel rec)
+      {
+        if(inv_typesGrid==null) return ;
+        if(!SafeToSave(rec)) return;
+        if (rec.Id == 0)
+        {
+          var res = await _inv_type._01(rec, pisdb!,conn!);
+          if (res != null)
+          {
+            rec.Id = res.Id;
+            inv_types!.Add(rec);
+          }
+        }
+        else
+        {
+          await _inv_type._03(rec.Id, rec, pisdb!, conn!);
+        }
+        await inv_typesGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+      }
+     //-- Safe to Save ----------------
+      bool SafeToSave(Inv_typeModel rec)
+      {
+
+        return true;
+      }
+    
+
+}

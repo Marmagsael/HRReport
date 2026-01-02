@@ -1,0 +1,91 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR.Views.BlazorPages._00Library;
+
+@using HRMvc.Applications._02HR.Views.BlazorPages._02DataEntry.F227._227_02_LGS;
+@using HRMvc.Applications._02HR._02Library
+
+
+
+@inject NotificationService         _NotificationService;
+@inject DialogService               _DialogService;
+
+
+
+@inject ILeavegrpDataAccess         _leavegrp; 
+
+<div class="p-3 w-100">
+
+    <div> <_227_02_LgsDD V227="@v227" v02="@v02" ChildAction="ChildAction" /> </div> 
+
+    <div class="" style="height:5px; ">&nbsp; </div>
+    @if(v227.Leavegrp?.Id > 0)
+    {
+        <div class="d-flex w-100 p-1 " style="min-height: 75vh; border: 1px solid gray; ">
+            @* *** Column 1  *@
+            <div class="col-sm-12 col-md-4 p-1 _227-bordered">
+                <_02DtlsHdr dtlCaption="First Approver" />
+                <_227_02_LeaveApprover ApproverLevel="1" LeaveGrpId="@v227.Leavegrp.Id" UserClaims="@UserClaims" />
+                
+            </div>
+
+
+            @* *** Column 2  *@
+            <div class="col-sm-12 col-md-4 p-1 _227-bordered">
+                <_02DtlsHdr dtlCaption="Second Approver" />
+                <_227_02_LeaveApprover ApproverLevel="2" LeaveGrpId="@v227.Leavegrp.Id" UserClaims="@UserClaims" />
+
+            </div>
+
+            @* *** Column 3  *@
+            <div class="col-sm-12 col-md-4 p-1 _227-bordered">
+                <_02DtlsHdr dtlCaption="Final Approver" />
+                <_227_02_LeaveApprover ApproverLevel="3" LeaveGrpId="@v227.Leavegrp.Id" UserClaims="@UserClaims" />
+            </div>
+
+        </div>
+    }
+    
+</div>
+
+
+@code {
+
+    [Parameter]
+    public UserClaimsModel      UserClaims      { get; set; } = new();
+
+    string?     pisdb   = string.Empty;
+    string?     paydb   = string.Empty;
+    string?     conn    = string.Empty;
+
+
+    V227        v227    = new(); 
+    V02         v02     = new(); 
+
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb   = UserClaims.SchemaUserPis;
+        paydb   = UserClaims.SchemaUserPay;
+        conn    = UserClaims.Conn;
+
+        if (conn    == null) return;
+        if (pisdb   == null) return;
+        if (paydb   == null) return;
+
+        v227.Leavegrps = await _leavegrp._02(pisdb,conn); 
+        if (v227.Leavegrps?.Count > 0 )
+        {
+            v227.Leavegrp!.Id = v227.Leavegrps.FirstOrDefault()!.Id; 
+        }
+        StateHasChanged(); 
+
+    }
+
+    void ChildAction()
+    {
+        StateHasChanged(); 
+    }
+
+}

@@ -1,0 +1,61 @@
+﻿@using HRMvc.Views.BlazorPages._01MyProfile.Empmas201Dtl
+
+<h3>Navigation</h3>
+
+<hr />
+
+
+<ul class="primary-tab b-d-sm-none">
+    @foreach (empmasNavModel nav in navlst!)
+    {
+        <li class="b-d-sm-none">
+            <button @onclick="()=>MyAction(nav.Id)" class="@(nav.IsSelected ? "active" : "")">@nav.Desc</button>
+        </li>
+    }
+</ul>
+
+<div class="@(visTab!=1 ? "d-none" : "")"> <PersonalData /> </div>
+<div class="@(visTab!=2 ? "d-none" : "")"> <Address /> </div>
+<div class="@(visTab!=3 ? "d-none" : "")"> <Education /> </div>
+<div class="@(visTab!=4 ? "d-none" : "")"> <Family /> </div>
+<div class="@(visTab!=5 ? "d-none" : "")"> <References /> </div>
+
+
+
+
+
+@code {
+
+    private List<empmasNavModel>? navlst = null;
+    private int visTab = 2 ; 
+
+    private void MyAction(int id)
+    {
+        visTab = id;
+        navlst?.ForEach(n => n.IsSelected = false); 
+        navlst!.Where(n => n.Id == id).FirstOrDefault()!.IsSelected = true; 
+    }
+
+
+    protected override void OnInitialized()
+    {
+        navlst = new List<empmasNavModel>
+        {
+            new empmasNavModel {Id=1, Desc="Personal Data", IsSelected=true },
+            new empmasNavModel {Id=2, Desc="Address",       IsSelected=false },
+            new empmasNavModel {Id=3, Desc="Education",     IsSelected=false },
+            new empmasNavModel {Id=4, Desc="Family",        IsSelected=false },
+            new empmasNavModel {Id=5, Desc="Reference",     IsSelected=false }
+        }; 
+    }
+
+
+    public class empmasNavModel
+    {
+        public int      Id          { get; set; }
+        public string?  Desc        { get; set; }
+        public bool     IsSelected  { get; set; } = false; 
+
+    }
+
+}

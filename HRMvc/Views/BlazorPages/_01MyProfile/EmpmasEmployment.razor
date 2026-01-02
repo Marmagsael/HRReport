@@ -1,0 +1,590 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface;
+
+@inject IJSRuntime JSRuntime
+@inject I_00MainPisAccess _mainPis;
+@inject DialogService _DialogService;
+@inject NotificationService _NotificationService;
+
+<RadzenDialog />
+<RadzenNotification />
+
+<div class="page-header">
+    <h1 class="page-title">Employment</h1>
+</div>
+
+@* // --- New Button *@
+<div class="form-section-action">
+    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" />
+</div>
+
+<div class="custom-grid">
+    <RadzenDataGrid Data="@empmasemployments"
+                    TItem="EmpmasEmploymentModel"
+    @ref="empmasemploymentsGrid"
+                    EditMode="DataGridEditMode.Single"
+                    AllowSorting="true"
+                    AllowPaging="true"
+                    PageSize="10"
+                    PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                    ColumnWidth="200px"
+                    IsLoading="isLoading">
+        <Columns>
+            <RadzenDataGridColumn TItem="EmpmasEmploymentModel"
+                                  Context="EmpmasEmploymentModel"
+                                  Filterable="false"
+                                  Sortable="false"
+                                  Width="100%">
+                <HeaderTemplate>
+                    <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
+                        <RadzenColumn Size="5" class="custom-grid-sm">Details</RadzenColumn>
+                        <RadzenColumn Size="4" class="custom-grid-md">Company Name</RadzenColumn>
+                        <RadzenColumn Size="5" class="custom-grid-md">Position</RadzenColumn>
+                        <RadzenColumn Size="3" class="custom-grid-md">Salary</RadzenColumn>
+                    </RadzenRow>
+                </HeaderTemplate>
+
+                <Template Context="rec">
+
+                    @* ======= Small Screen =========*@
+                    <RadzenStack Gap="0" class="custom-grid-sm">
+                        @*-- Company Name --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Company Name" Component="CompName" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.CompName" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Address --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Address" Component="Address" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.Address" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Tel No. --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Tel No." Component="TelNo" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.Tel" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Pos --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Position" Component="Position" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.Pos" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- From --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="From" Component="From" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenDatePicker @bind-Value="rec.From_" ShowButton="false" Disabled="true" DateFormat="MM dd yyyy" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- To --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="To" Component="End" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenDatePicker @bind-Value="rec.To_" ShowButton="false" ReadOnly Disabled="true" DateFormat="MM dd yyyy" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Salary --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Salary" Component="Salary" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenNumeric @bind-Value="rec.Sal" Format="#,##0.00" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Remarks --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Remarks" Component="Remarks" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100" >
+                                    <RadzenTextBox @bind-Value="rec.Rem" Disabled="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+
+                    @* ======= Large Screen =========*@
+                    <RadzenStack Gap="0" class="custom-grid-md">
+                        <RadzenRow>
+                            @*-- Company Name / Address / Tel --*@
+                            <RadzenColumn Size="4">
+                                <div class="fw-bold">@rec.CompName</div>
+                                <div class="mt-1">
+                                    <RadzenRow RowGap="0">
+                                        <RadzenColumn Size="12">
+                                            Address: <span class="text-muted text-decoration-underline">@rec.Address</span>
+                                        </RadzenColumn>
+                                        @if (rec.Tel is not null && rec.Tel.Length > 0)
+                                        {
+                                            <RadzenColumn Size="12">
+                                                Tel No.: <span class="text-muted text-decoration-underline">@rec.Tel</span>
+                                            </RadzenColumn>
+                                        }
+                                        
+                                    </RadzenRow>
+                                </div>
+                            </RadzenColumn>
+
+                            @*-- Position / From / To --*@
+                            <RadzenColumn Size="5">
+                                <div >@rec.Pos</div>
+                                <div class="mt-1">
+                                    <RadzenRow RowGap="0">
+                                        <RadzenColumn Size="12" SizeLG="4">
+                                            From: <span class="text-muted text-decoration-underline">@rec.From_.ToString("MMM dd, yyyy")</span>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="12" SizeLG="4">
+                                            To: <span class="text-muted text-decoration-underline">@rec.To_.ToString("MMM dd, yyyy")</span>
+                                        </RadzenColumn>
+                                    </RadzenRow>
+                                </div>
+                            </RadzenColumn>
+
+                            @*-- Salary / Remarks --*@
+                            <RadzenColumn Size="3">
+                                <div>@rec.Sal.ToString("N")</div>
+                                @if (rec.Rem is not null && rec.Rem.Length > 0)
+                                {
+                                    <div class="mt-1">
+                                        Remarks: <span class="text-muted text-decoration-underline">@rec.Rem</span>
+                                    </div>
+                                }
+
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </Template>
+
+                <EditTemplate Context="rec">
+                    @* ======= Small Screen =========*@
+                    <RadzenStack Gap="0" class="custom-grid-sm">
+                        @*-- Company Name --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn  Size="4">
+                                <RadzenLabel Text="Company Name" Component="CompNameSm" />
+                            </RadzenColumn>
+                            <RadzenColumn  Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.CompName" Change="@(args => rec.CompName = args.ToString().Trim())" class="w-100" Name="CompNameSm" MaxLength="60" />
+                                    <RadzenRequiredValidator Component="CompNameSm" Text="Company Name is required" Popup="true" Style="position: absolute; " />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Address --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Address" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.Address" MaxLength="120" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Tel No. --*@
+                        <RadzenRow AlignItems="AlignItems.Center" class="row">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Tel No." />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8" >
+                                <RadzenFormField Variant="Variant.Text">
+                                    <RadzenTextBox @bind-Value="rec.Tel" MaxLength="25" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Position --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Position" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.Pos" Change="@(args => rec.Pos = args.ToString().Trim())" class="w-100" Name="PosSm" MaxLength="75" />
+                                    <RadzenRequiredValidator Component="PosSm" Text="Position is required" Popup="true" Style="position: absolute; " />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- From --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="From" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" >
+                                    <RadzenDatePicker @bind-Value="rec.From_" DateFormat="MM dd yyyy" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- To --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="To" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" >
+                                    <RadzenDatePicker @bind-Value="rec.To_" DateFormat="MM dd yyyy" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Salary --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Salary" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenNumeric @bind-Value="rec.Sal" Max="99999999" Format="#,##0.00" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        @*-- Remarks --*@
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="4">
+                                <RadzenLabel Text="Remarks" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="8">
+                                <RadzenFormField Variant="Variant.Text" class="w-100">
+                                    <RadzenTextBox @bind-Value="rec.Rem" MaxLength="120" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                    </RadzenStack>
+
+                    @* ======= Large Screen =========*@
+                    <RadzenStack Gap="0" class="custom-grid-md">
+                        <RadzenRow Gap=".3rem">
+
+                            @*-- Company Name / Address / Tel --*@
+                            <RadzenColumn Size="4">
+                                <RadzenTextBox @bind-Value="rec.CompName" Change="@(args => rec.CompName = args.ToString().Trim())" class="w-100" Name="CompNameLg" MaxLength="60" Style=" display: block" />
+                                <RadzenRequiredValidator Component="CompNameLg" Text="Company Name is required" Popup="true" Style="position: absolute; " />
+                                <div class="mt-1">
+                                    <RadzenRow RowGap="0">
+                                        <RadzenColumn Size="12">
+                                            <RadzenFormField  AllowFloatingLabel="false" Text="Address" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                <RadzenTextBox @bind-Value="rec.Address" class="w-100" MaxLength="120" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="12">
+                                            <RadzenFormField AllowFloatingLabel="false" Text="Tel No." Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="25" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
+                                    </RadzenRow>
+                                </div>
+                            </RadzenColumn>
+
+                            @*-- Position / From / To --*@
+                            <RadzenColumn Size="5">
+                                <RadzenTextBox @bind-Value="rec.Pos" Change="@(args => rec.Pos = args.ToString().Trim())" class="w-100" Name="PosLg" MaxLength="75" Style=" display: block" />
+                                <RadzenRequiredValidator Component="PosLg" Text="Position is required" Popup="true" Style="position: absolute; " />
+                                <div class="mt-1">
+                                    <RadzenRow RowGap="0">
+                                        <RadzenColumn Size="12" SizeMD="6">
+                                            <RadzenFormField Text="From" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                <RadzenDatePicker @bind-Value="rec.From_" DateFormat="MM/dd/yyyy" class="w-100" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
+                                        <RadzenColumn Size="12" SizeMD="6">
+                                            <RadzenFormField Text="To" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                <RadzenDatePicker @bind-Value="rec.To_" DateFormat="MM/dd/yyyy" class="w-100" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
+                                    </RadzenRow>
+                                </div>
+                            </RadzenColumn>
+
+                            @*-- Salary / Remarks --*@
+                            <RadzenColumn Size="3">
+                                <RadzenNumeric @bind-Value="rec.Sal" Format="#,##0.00" class="w-100" Max="99999999" />
+                                <div class="mt-1">
+                                    <RadzenFormField  AllowFloatingLabel="false" Text="Remarks" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                        <RadzenTextBox @bind-Value="rec.Rem" class="w-100" MaxLength="120"/>
+                                    </RadzenFormField>
+                                </div>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </EditTemplate>
+
+            </RadzenDataGridColumn>
+
+            @* Actions Column *@
+            <RadzenDataGridColumn TItem="EmpmasEmploymentModel" Context="EmpmasEmploymentModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
+                <Template Context="rec">
+                    <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true"></RadzenButton>
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true"></RadzenButton>
+                </Template>
+                <EditTemplate Context="rec">
+                    <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@((args) => SaveRow(rec))"></RadzenButton>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@((args) => CancelEdit(rec))" Size="ButtonSize.Small" class="my-1 ms-1"></RadzenButton>
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1"></RadzenButton>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+
+@code
+{
+
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    //-- Initialization ----------------
+    RadzenDataGrid<EmpmasEmploymentModel?>? empmasemploymentsGrid = new();
+
+    List<EmpmasEmploymentModel?>? empmasemployments = new();
+    EmpmasEmploymentModel? empmastraining = new();
+
+    DataGridEditMode editMode1 = DataGridEditMode.Single;
+    List<EmpmasEmploymentModel?>? empmasemploymentsToInsert = new();
+    List<EmpmasEmploymentModel?>? empmasemploymentsToUpdate = new();
+    string? errorMsg = string.Empty;
+    bool isLoading = true;
+    bool editMode = false;
+    private int screenWidth;
+
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+    string? mydb = string.Empty;
+
+    int userId = 0;
+
+
+
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        userId = UserClaims.UserId;
+        mydb = "u" + userId.ToString().Trim();
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+
+        // Simulate a delay
+        await Task.Delay(250);
+
+        empmasemployments = await _mainPis._02EmpmasEmploymentList(userId, mydb!, conn!);
+
+        isLoading = false; // End loading
+        StateHasChanged();
+    }
+
+    //-- InsertRow ----------------
+    private async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new EmpmasEmploymentModel();
+        empmasemploymentsToInsert!.Add(rec);
+        await empmasemploymentsGrid!.InsertRow(rec);
+        editMode = true;
+    }
+    //-- Reset ----------------
+    private void Reset()
+    {
+        empmasemploymentsToInsert!.Clear();
+        empmasemploymentsToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    private void Reset(EmpmasEmploymentModel rec)
+    {
+        empmasemploymentsToInsert!.Remove(rec);
+        empmasemploymentsToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    private async Task EditRow(EmpmasEmploymentModel rec)
+    {
+        editMode = true;
+
+        if (empmasemploymentsGrid != null)
+        {
+            Reset();
+            empmasemploymentsToUpdate?.Add(rec);
+            await empmasemploymentsGrid.EditRow(rec);
+        }
+    }
+    //-- Delete Row ----------------
+    private async Task DeleteRow(EmpmasEmploymentModel rec)
+    {
+        if (empmasemployments == null) return;
+        if (empmasemploymentsGrid == null) return;
+
+        Reset(rec);
+
+        if (empmasemployments.Contains(rec))
+        {
+            if (rec != null)
+            {
+                // var res = await _mainpis._02CheckToTblTran(rec.ClNumber!, Schema!, conn!);
+                // if (res != null)
+                // {
+                //     if (res.Count > 0)
+                //     {
+                //         var msg = "Unable to delete <span class='text-danger fw-bold'> " + rec.Name + "!</span> Record already exists. ";
+                //         await _DialogService.Alert(msg, "Delete denied", new AlertOptions() { OkButtonText = "Exit" });
+                //         return;
+                //    }
+                // }
+
+                var option = await _DialogService.Confirm("Delete " + rec.CompName + " employment record?", "Confirm Delete",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
+                {
+                    await _mainPis._04EmpmasEmployment(rec!.Id, mydb!, conn!);
+                    empmasemployments.Remove(rec);
+                    ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully deleted a record.", Detail = "Record has been deleted from the list.", Duration = 4000 });
+                }
+            }
+        }
+        else
+        {
+            empmasemploymentsGrid.CancelEditRow(rec);
+        }
+        await empmasemploymentsGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+    //-- Cancel Edit ----------------
+    private async void CancelEdit(EmpmasEmploymentModel rec)
+    {
+        errorMsg = string.Empty;
+        if (empmasemploymentsGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        empmasemploymentsGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        var res = await _mainPis._02EmpmasEmployment(rec.Id, mydb!, conn!);
+        if (res == null) return;
+        Remap_Flds(rec, res);
+        await empmasemploymentsGrid.Reload();
+    }
+    //-- Remap ----------------
+    private void Remap_Flds(EmpmasEmploymentModel destination, EmpmasEmploymentModel source)
+    {
+
+    }
+    //-- Save Row ----------------
+    private async Task SaveRow(EmpmasEmploymentModel rec)
+    {
+        if (empmasemploymentsGrid == null) return;
+        if (!SafeToSave(rec))
+        {
+            await empmasemploymentsGrid.UpdateRow(rec);
+            return;
+        };
+
+        if (rec.Id == 0)
+        {
+            rec.EmpmasId = userId;
+            var res = await _mainPis._01EmpmasEmployment(rec, mydb!, conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                empmasemployments!.Add(rec);
+                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully added a record.", Detail = "Record has been added to the list.", Duration = 4000 });
+            }
+        }
+        else
+        {
+            await _mainPis._03EmpmasEmployment(rec.Id, rec, mydb!, conn!);
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully updated a record.", Detail = "Record has been updated from the list.", Duration = 4000 });
+        }
+        await empmasemploymentsGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+    //-- Safe to Save ----------------
+    private bool SafeToSave(EmpmasEmploymentModel rec)
+    {
+        if (rec.CompName?.Length == 0 || rec.CompName == null)
+        {
+            return false;
+        }  
+        
+        if (rec.Pos?.Length == 0 || rec.Pos == null)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
+    }
+
+   
+
+}
+

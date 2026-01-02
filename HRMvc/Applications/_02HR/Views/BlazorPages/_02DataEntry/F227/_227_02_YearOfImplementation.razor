@@ -1,0 +1,83 @@
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR._02Library
+
+@inject IPissettingsDataAccess  _pisSettings; 
+@inject DialogService           _DialogService
+@inject NotificationService     _NotificationService;
+
+<RadzenNotification />
+
+
+<div class="w-100 mt-3 mb-3 bordered-darkgreen" style="border-radius: 5px;">
+    <div class="gap-2 p-2 d-flex">
+        <div class="p-2 fw-bold">Leave Implementation Year</div>
+        <div class="w-100p ">
+            <RadzenNumeric TValue="int" @bind-Value="pisSettings.LeaveYrImplementation" Format="0000"
+                TextAlign="TextAlign.Right" Min="1900" Max="3000"                ShowUpDown="false" />
+        </div>
+        <div class="p-1">
+            <button class="btn btn-secondary" @onclick="UpdateLeaveYrImplementation">Update</button>
+        </div>
+    </div>
+    
+
+    
+</div>
+
+@code {
+
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    PissettingsModel pisSettings = new(); 
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+    
+    int yr = 0; 
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+
+        var res = await _pisSettings._02(pisdb, conn); 
+        if(res!=null) pisSettings = res; 
+
+        StateHasChanged(); 
+    }
+
+    async Task UpdateLeaveYrImplementation() {
+        var res = await _pisSettings._02(pisdb!, conn!);
+        if(res!=null) {
+            res.LeaveYrImplementation   = pisSettings.LeaveYrImplementation; 
+            res.UserId                  = UserClaims.UserId; 
+            await _pisSettings._03(res,pisdb!,conn!); 
+
+            var severity    = NotificationSeverity.Info;
+            var summary     = "Saved";
+            var detail      = "Record Saved.";
+            _NotificationService.Notify(new NotificationMessage
+                {
+                    Severity = severity,
+                    Summary = summary,
+                    Detail = detail,
+                    Duration = 3000
+                });
+
+        } 
+    }
+
+    
+
+
+}        

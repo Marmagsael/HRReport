@@ -1,0 +1,109 @@
+﻿@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+<!-- Deduction List -->
+<div class="row">
+    <div class="col">
+        <div class="p-1 text-white bg-secondary ">
+            <span>Deduction List</span>
+        </div>
+
+        <table class="table table-striped table-bordered">
+            <thead>
+            <tr>
+                <th>Acct Name</th>
+                <th>Amount</th>
+                <th>Amortization</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            @{
+                List<LoansModel?>? loans = new();
+                switch (acctStatus)
+                {
+                    case "-":
+                        loans = V.Loans;
+                        break;
+                    case "A":
+                        loans = V.Loans?.Where(l => l?.Status == "A").ToList();
+                        break;
+                    case "I":
+                        loans = V.Loans?.Where(l => l?.Status == "I").ToList();
+                        break;
+                }
+
+                loans ??= [];
+            }
+            
+            
+            @foreach (var l in loans!)
+            {
+                var fw = "";
+                if (V.Loan.Id == l.Id) fw = "fw-bold"; 
+                <tr class=" @fw ">
+                    <td>@l?.DedNDesc</td>
+                    <td>@l?.Amount.ToString("N")</td>
+                    <td>@l?.Amort.ToString("N")</td>
+                    <td>@l?.Balance.ToString("N")</td>
+                    <td>@l?.LoanStatus</td>
+                    <td><button onclick="@(()=>SelectLoan(l!))" class="btn btn-sm btn-secondary">Select</button></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="w-100 px-2 ">
+        <div class="d-flex px-2">
+            <div class="w-120p py-2">Status to Show</div>
+            <div>
+                <RadzenDropDown TValue="string"
+                                @bind-Value="@acctStatus"
+                                Data="@StatusDictionary"
+                                TextProperty="Value"
+                                ValueProperty="Key"
+                                Style="width: 100%; max-width: 400px;"
+                                Change="ChangeAcctStatus"
+                                Placeholder="Select Status"/>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+     
+
+
+@code {
+
+    string acctStatus = "-"; 
+    [Parameter] public V0603            V               { get; set; } = new(); 
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+    
+    
+    Dictionary<string, string> StatusDictionary = new Dictionary<string, string>
+    {
+        { "-", "Show All" },
+        { "A", "Active" },
+        { "I", "Inactive" }
+    };
+
+
+    void ChangeAcctStatus()
+    {
+        
+        StateHasChanged();
+        
+    }
+
+    async Task SelectLoan(LoansModel l)
+    {
+        MsdsDataAccess msds = new();
+        msds.ObjectMapper(l, V.Loan); 
+        await ChildAction.InvokeAsync(); 
+    }
+    
+}

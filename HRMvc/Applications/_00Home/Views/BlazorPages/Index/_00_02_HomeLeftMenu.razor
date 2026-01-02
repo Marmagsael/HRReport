@@ -1,0 +1,86 @@
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using Microsoft.CodeAnalysis.Operations
+
+<_00_021HomeLeftMenuBtn HRef="_001MyProfile"  IconClass="fa-solid fa-user-large"          Caption="Profile"    />
+
+@if(defCoId < 1) return;
+@if(ucs?.Count < 1) return;
+@if (uc?.OwnerId == userId)
+{
+    <_00_021HomeLeftMenuBtn HRef="02" IconClass="fa-solid fa-users-gear" Caption="HR" /> 
+    <_00_021HomeLeftMenuBtn HRef="03" IconClass="fa-solid fa-hand-holding-dollar" Caption="Payroll" />
+    <_00_021HomeLeftMenuBtn HRef="04" IconClass="fa-solid fa-calculator" Caption="Accounting" /> 
+}
+else
+{
+    if (userPis?.Count > 0)
+    {   <_00_021HomeLeftMenuBtn HRef="02" IconClass="fa-solid fa-users-gear" Caption="HR" />     }
+    
+    if (userPay?.Count > 0)
+    {   <_00_021HomeLeftMenuBtn HRef="03" IconClass="fa-solid fa-hand-holding-dollar" Caption="Payroll" />    }
+    
+    if (userAcctg?.Count > 0)
+    {   <_00_021HomeLeftMenuBtn HRef="04" IconClass="fa-solid fa-calculator" Caption="Accounting" /> }
+}
+
+
+
+
+@inject I_00UserscompanyDataAccess  _usercompany; 
+@inject I_00MainDA                  _main; 
+
+@code {
+
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    string? pisdb                           = string.Empty;
+    string? paydb                           = string.Empty;
+    string? acctgdb                         = string.Empty;
+    string? conn                            = string.Empty;
+    UserCompanyModel?           uc          = new();   
+    List<UserCompanyModel?>?    ucs         = new();
+    List<SystemuserModel?>?     userPis     = null; 
+    List<SystemuserModel?>?     userPay     = null; 
+    List<SystemuserModel?>?     userAcctg     = null; 
+    
+    int defCoId;
+    int userId; 
+
+    protected override async void OnParametersSet()
+    {
+        if(UserClaims==null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+        
+        userId = UserClaims.UserId; 
+
+        if (conn == null ) return;
+        if (pisdb == null ) return;
+        if (paydb == null) return;
+
+        var coId   = UserClaims.DefCompanyId;
+        defCoId          = int.Parse(coId ?? "0");
+        
+        if (defCoId <= 0) return;
+        ucs = await _usercompany._02Lst(defCoId);
+        
+        
+        if (ucs?.Count < 1) return;
+        uc = ucs?.FirstOrDefault();
+
+        if (uc?.OwnerId != userId)
+        {
+            acctgdb = "U" + uc?.OwnerId.ToString().Trim() +
+                      "C" + uc?.Id.ToString().Trim() + "Acctg";
+            //userAcctg   = await _main._02SystemUsers(userId, acctgdb, conn); 
+            //userPis     = await _main._02SystemUsers(userId, pisdb, conn); 
+            //userPay     = await _main._02SystemUsers(userId, paydb, conn); 
+            
+        }
+        
+        StateHasChanged();
+
+    }
+}

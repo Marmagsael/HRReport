@@ -1,0 +1,53 @@
+﻿@using System.Web; 
+
+@using HRApiLibrary.DataAccess._00_Main.Interface; 
+
+@inject I_00UsersAccess             _users;
+@inject NavigationManager           _nav; 
+@inject I_00UserscompanyDataAccess  _userCompany; 
+ 
+<div class="px-1 py-2 px-3 msds-pay-hdr ">
+    <h5>@coName </h5>
+</div>
+
+
+
+
+
+
+@code {
+
+    UsersModel          user            = new(); 
+    UserCompanyModel?   userCompany     = new(); 
+    string              coName          = "_"; 
+
+    [Parameter]
+    public UserClaimsModel?     UserClaims  { get; set; } = new();
+
+
+
+
+    protected async override void OnParametersSet()
+    {
+        await Init();
+    }
+
+    async Task Init()
+    {
+        int userId  = UserClaims==null ? 0 : UserClaims.UserId; 
+        userCompany = await _userCompany._02ByUserDefaultCoId(userId);
+
+        coName = userCompany?.CompanyName == null ? "" : userCompany.CompanyName; ; 
+
+        if(userCompany?.CompanyName?.Trim().Length==0)
+        {
+            coName = "Undefined"; 
+        }
+
+
+        StateHasChanged();  
+            
+    }
+
+
+}

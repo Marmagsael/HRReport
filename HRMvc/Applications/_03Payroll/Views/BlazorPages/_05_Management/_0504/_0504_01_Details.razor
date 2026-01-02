@@ -1,0 +1,176 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0500
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+
+
+<style>
+    ._504-select {
+        cursor:pointer; 
+    }
+    ._504-select:hover {
+        background-color: linen; 
+    }
+    ._504-selected {
+        color:darkblue;
+        font-weight:bold;
+        background-color: linen;
+    }
+</style>
+
+
+
+<div style="z-index: 100 !important;">
+    <div class="w-100 p-3" style="background-color:lightgray; border:1px solid lightgray; border-radius:3px;">
+        <div class="fw-bold"> <h6>Rates per payroll group </h6> </div>
+    </div>
+</div>
+
+
+<div style="height:5px;"></div>
+
+
+<RadzenDataGrid Data="@V504!.Emprates"
+                TItem="EmpratesModel"
+                @ref="pgsGrid"
+                EditMode="DataGridEditMode.Single"
+                AllowSorting="true"
+                AllowPaging="false"
+                PageSize="15"
+                PageSizeOptions="@(new int[]{15, 20, 30})"
+                ColumnWidth="100%">
+
+    <Columns>
+        @* <RadzenDataGridColumn TItem="EmpratesModel" Property="FullName" Title="Employee Name" TextAlign="Radzen.TextAlign.Left" /> *@
+        <RadzenDataGridColumn TItem="EmpratesModel" 
+            Context="PayrollgrpModel" 
+            Filterable="false" 
+            Sortable="false" 
+            TextAlign="TextAlign.Start"
+            Title="Employee List"
+            Width="100%" CssClass="text-primary"
+            HeaderCssClass="d-none" >
+
+            <Template Context="er">
+                <div class="d-flex _504-select @er.Css" >
+                    <div style="">
+                        <btn class="btn btn-close btn-sm p-2" @onclick="@(()=>DeleteEntry(er))">
+                                        
+                        </btn>
+                    </div>
+
+                    <div  class="p-1" style="width:90%" @onclick="(()=>FullNameClicked(er))" >
+                        <div>
+                            <span> @er.FullName </span>  
+                            @if (er.EmpNumber?.Length > 0)
+                            {
+                                <span class="text-success"> - [ @er.EmpNumber ] </span>
+                            }    
+                        </div>
+                        @if (er.PayrollGrpName?.Trim().Length > 0)
+                        {
+                            <div class="fw-normal text-muted  ">
+                                <small>P GRP : <span class="text-success">@er.PayrollGrpName</span> </small>
+                            </div>    
+                        }
+                        
+                        
+                    </div>
+
+                                
+                </div>
+                            
+            </Template>
+        </RadzenDataGridColumn>
+        
+    </Columns>
+
+    @* <RadzenDataGridColumn TItem="PayrollgrpModel" Context="PayrollgrpModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" Width="150px"> *@
+        
+
+
+</RadzenDataGrid>
+
+
+
+@inject DialogService           _DialogService
+@inject IEmpratesDataAccess     _emprates; 
+@inject IEmpratesdtlDataAccess  _empratesdtl; 
+
+
+
+
+@code {
+
+    string?              paydb  = string.Empty;
+    string?              pisdb  = string.Empty;
+    string?              conn   = string.Empty;
+
+    RadzenDataGrid<EmpratesModel?>?   pgsGrid     = new();
+
+    [Parameter]
+    public V00_Pay              V00             { get; set; } = new();
+
+    [Parameter]
+    public V0504?               V504            { get; set;  }  = new();
+
+    [Parameter]
+    public  UserClaimsModel?    UserClaims      { get; set; } = new();
+
+    [Parameter]
+    public EventCallback        ChildAdction    { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        SetParamenters();
+        Init(); 
+    }
+
+    void SetParamenters()
+    {
+        if (UserClaims == null) return;
+
+        paydb   = UserClaims.SchemaUserPay;
+        pisdb   = UserClaims.SchemaUserPis;
+        conn    = UserClaims.Conn;
+    }
+
+    void Init()
+    {
+
+    }
+
+    async Task FullNameClicked(EmpratesModel er)
+    { 
+        if(V504?.Emprate!.EmpmasId == er.EmpmasId) return; 
+        V504!.Emprate   = er;
+
+        V00.Action      = "FullnameClicked"; 
+
+        await ChildAdction.InvokeAsync(); 
+    }
+
+    async Task DeleteEntry(EmpratesModel er)
+    {
+        string msg = "Delete " + er.EmpLastNm  + ", " + er.EmpFirstNm + " " + er.EmpMidNm + "? ";
+        var ans = await _DialogService.Confirm(msg, "Confirm Delete", new ConfirmOptions()
+            { OkButtonText = "Yes", CancelButtonText = "No" });
+        if(ans==true)
+        {
+            await _emprates._04ByFK(er.EmpmasId,er.PayrollgrpId,paydb!,conn!);
+            V504?.Emprates!.Remove(er);
+            V504!.Emprate    = new(); 
+            V00.Action      = "RemoveEmprate";
+            
+            StateHasChanged(); 
+
+        }
+
+        await ChildAdction.InvokeAsync(); 
+
+    }
+
+    
+
+
+}

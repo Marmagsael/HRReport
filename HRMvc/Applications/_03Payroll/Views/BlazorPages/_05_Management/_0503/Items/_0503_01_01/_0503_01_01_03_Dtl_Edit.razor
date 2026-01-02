@@ -1,0 +1,113 @@
+﻿@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@* --- Details  ---------------------------- *@
+
+@*--- Exit Button  *@
+<div class="w-100 p-2 ">
+    <btn class="btn btn-outline-danger" @onclick="@(()=>Action("Close"))">
+        <i class="fa fa-sign-out" aria-hidden="true"></i>
+    </btn>
+</div>
+
+<div class="rs-dtl-wrapper d-flex p-1">
+    
+    @*--- Entry Details  *@
+    <div class="p-1">
+        <RadzenDropDown @bind-Value     ="V503.Coa.AcctNumber"
+                        Data            ="V503!.Coas"
+                        TextProperty    ="AcctName"
+                        ValueProperty   ="AcctNumber"
+                        Style           ="width: 100%; max-width: 400px;"
+                        Name            ="ddCoa" />
+    </div>
+
+    <div class="rs-dtl-rates ">
+        <div class="d-flex w-100">
+
+            <div class="p-1 w-25 text-center">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503!.PayrollGroup!.RatePerHr"
+                               Min="0"
+                               Max="99999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="Radzen.TextAlign.End"
+                               ShowUpDown=false />
+            </div>
+            <div class="p-1 w-25 text-center">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503.PayrollGroup.RatePerDay"
+                               Min="0"
+                               Max="99999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="Radzen.TextAlign.End"
+                               ShowUpDown=false />
+            </div>
+            <div class="p-1 w-25 text-center">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503!.PayrollGroup!.RatePerMonth"
+                               Min="0"
+                               Max="9999999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="Radzen.TextAlign.End"
+                               ShowUpDown=false />
+            </div>
+            <div class="p-1 w-25 text-center ">
+                <RadzenNumeric TValue="double"
+                               @bind-Value="V503!.PayrollGroup!.RatePerHr"
+                               Min="0"
+                               Max="99999999"
+                               Format="#,##0.00"
+                               Placeholder="0"
+                               TextAlign="Radzen.TextAlign.End"
+                               ShowUpDown=false />
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="rs-dtl-btn p-2">
+        <btn class="btn btn-outline-primary" @onclick="@(()=>Action("Save"))">
+            <i class="fas fa-save"></i>
+        </btn>
+
+    </div>
+
+</div>
+
+@code {
+    List<CoaModel> coas = new(); 
+
+
+    [Parameter]
+    public          PayrollgrpModel?    payrollGrp      { get; set; } = new();
+    
+    [Parameter]
+    public          string?             mode            { get; set; } = string.Empty;
+
+    [Parameter]
+    public          V00_Pay?            V00             { get; set; } = new();
+
+    [Parameter]
+    public          V503?               V503            { get; set; } = new();
+
+    [Parameter]
+    public          EventCallback       ChildAction     { get; set; }
+
+
+    protected override void OnParametersSet()
+    {
+        //base.OnParametersSet();
+    }
+
+
+    async void Action(string action)
+    {
+        V00!.Action = action; 
+        await ChildAction.InvokeAsync(); 
+    }
+
+}

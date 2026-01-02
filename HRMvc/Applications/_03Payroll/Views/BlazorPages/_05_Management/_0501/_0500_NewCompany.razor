@@ -1,0 +1,85 @@
+﻿@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRApiLibrary.DataAccess._00_Main.Interface; 
+
+@inject I_00CountryDataAccess _country; 
+
+@inject DialogService _DialogService
+@inject NotificationService _NotificationService;
+
+
+<div class="p-3 h-100" style="background-color:rgba(255,255,255,.5); border-radius:3px; ">
+
+    <div class="border-bottom text-success">
+        <h5>Company Entry  </h5>
+    </div>
+
+
+    <div style="margin-top:2rem;">
+        <RadzenColumn Size="12" SizeMD="6">
+            <RadzenStack>
+                <RadzenFieldset class="fw-bold" Text="Origin">
+                    <RadzenStack Gap=".5rem">
+                        <RadzenRow AlignItems="AlignItems.Center" class="text-danger">
+                            <RadzenColumn Size="12" SizeMD="3" SizeLG="2">
+                                <RadzenLabel Text="Payroll Country" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenDropDown @bind-Value=@countryId
+                                                    Data=@countrys
+                                                    TextProperty="Name"
+                                                    ValueProperty="Id"
+                                                    Style="width: 100%; max-width: 400px;"
+                                                    Name="ddCountry" />
+                                </RadzenColumn>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+            </RadzenStack>
+        </RadzenColumn>
+    </div>
+
+
+    <div style="margin-top: 3rem;">
+        @if (countryId == 1) //Canada
+        {   <_0501_CAN UserClaims=@UserClaims V00=@V00 />   }
+
+        @if (countryId == 2) //Philippines
+        {   <_0501_PHL UserClaims=@UserClaims V00=@V00 />   }
+
+    </div>
+
+</div>
+
+   
+
+@code {
+
+    int countryId = 0; 
+    List<CountryModel?>? countrys = new(); 
+
+    [Parameter]
+    public UserClaimsModel? UserClaims  { get; set; } = new();
+
+    [Parameter]
+    public _00_Utility.Vars.V00_Pay  V00 { get; set; } = new();
+    protected override void OnParametersSet()
+    {
+        SetVariables(); 
+        Init(); 
+    }
+    void SetVariables()
+    {
+        V00.UserClaims = UserClaims;
+    }
+    async void Init()
+    {
+        await _02Country(); 
+    }
+    async Task _02Country() {
+        countrys = await _country._02("main","MySqlConn"); 
+        StateHasChanged(); 
+    }
+
+}

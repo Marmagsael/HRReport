@@ -1,0 +1,85 @@
+﻿@page "/counter"
+
+@using Newtonsoft.Json; 
+@*@using System.Net.Http.Json; *@
+@using System.Net.Http.Headers; 
+
+@using HRApiLibrary.DataAccess._00_Login;
+@using HRApiLibrary.Models._00_Main;
+@using HRApiLibrary.DataAccess._00_Login.Interface;
+
+@inject IHttpClientFactory _factory; 
+@inject I_00_001_LoginAccess _login; 
+
+
+<PageTitle>Test Http Client</PageTitle>
+<h4>Test Http Client</h4>
+
+<hr />
+
+
+<button class="btn btn-primary" @onclick="FetchCountry">Fetch Country</button> <br />
+<button class="btn btn-primary" @onclick="FetchCountries">Fetch Countries</button>
+<br />
+
+<hr />
+<h6>Country Listing</h6>
+Country Count : @countries?.Count 
+
+
+
+@code {
+    private List<CountryModel>? countries; 
+    private HttpClient? client; 
+
+
+    private int currentCount = 0;
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+
+    private async void FetchCountries()
+    {
+        string token = await _login.CreateToken(1,"marmagsael"); 
+
+        client = _factory.CreateClient("api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer",token); 
+
+        try
+        {
+            countries = await client.GetFromJsonAsync<List<CountryModel>>("https://localhost:7101/api/HR_00Country/02/Main/MySqlConn");
+
+            await InvokeAsync(StateHasChanged); 
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Encounter Error *********************************");
+            Console.WriteLine(ex.Message);
+        }
+
+
+
+
+    }
+
+    private async void FetchCountry()
+    {
+        string token = await _login.CreateToken(1, "marmagsael");
+
+        client = _factory.CreateClient("api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        
+
+        
+
+
+    
+    }
+
+
+
+
+}

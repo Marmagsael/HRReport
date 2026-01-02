@@ -1,0 +1,503 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+
+
+<style>
+    .ec2-lbl {
+        width: 10%; 
+
+    }
+    .ec2-fld {
+        width: 85%; 
+        border-bottom: 1px solid lightgray;
+        padding: 3px 0 1px 3px; 
+
+    }
+
+
+
+</style>
+
+<div>
+    @* // --- New Button *@
+    <div class="mt-1 mb-1">
+        <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="Add Emergency Contact" Click="@InsertRow" Disabled="@(editMode)" />
+    </div>
+    <div class="text-danger mt-2 mb-2"><h5>@errorMsg</h5></div>
+
+    <RadzenDataGrid Data="@empmasemergencycontacts"
+                    TItem="EmpmasEmergencyContactModel"
+                    @ref="empmasemergencycontactsGrid"
+                    EditMode="DataGridEditMode.Single"
+                    AllowSorting=true
+                    AllowPaging=true
+                    PageSize="10"
+                    PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                    ColumnWidth="100%"
+                    Style="--rz-header-display: none;">
+        <Columns>
+
+            <RadzenDataGridColumn
+                TItem="EmpmasEmergencyContactModel"
+                Context="EmpmasEmergencyContactModel"
+                Filterable="false"
+                Sortable="false"
+                Width="100%"
+                Title="Details">
+
+
+                <Template Context="rec">
+
+                    @* --- Name :  ----------------------------------- *@
+                    <div class="w-100">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Name </div>
+                            <div class="ec2-fld fw-bold"> @rec.Name </div>
+                        </div>
+                    </div>
+
+                    @* --- Address :  ----------------------------------- *@
+                    <div class="w-100">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Address</div>
+                            <div class="ec2-fld"> @rec.Addr </div>
+                        </div>
+                    </div>
+
+                    @* --- Relationship :  ----------------------------------- *@
+                    <div class="w-100">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Relationship</div>
+                            <div class="ec2-fld"> @rec.Relationship </div>
+                        </div>
+                    </div>
+
+                    @* --- Tel No :  ----------------------------------- *@
+                    <div class="w-100">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Tel No. </div>
+                            <div class="ec2-fld"> @rec.TelNo</div>
+                        </div>
+                    </div>
+
+
+                </Template>
+
+
+                <EditTemplate Context="rec" >
+
+                    @* --- Name :  ----------------------------------- *@
+                    <div class="w-100 p-1">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Name </div>
+                            <div class="ec2-fld"> <RadzenTextBox Placeholder="Name" class="w-100" @bind-Value=@rec.Name MaxLength="25"/> </div>
+                        </div>
+                    </div>
+
+                    @* --- Address :  ----------------------------------- *@
+                    <div class="w-100 p-1">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Address</div>
+                            <div> <RadzenTextBox @bind-Value="rec.Addr"/></div>
+                        </div>
+                    </div>
+
+                    @* --- Relationship :  ----------------------------------- *@
+                    <div class="w-100 p-1">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Relationship</div>
+                            <div> <RadzenTextBox @bind-Value="rec.Relationship"/> </div>
+                        </div>
+                    </div>
+
+                    @* --- Tel No :  ----------------------------------- *@
+                    <div class="w-100 p-1">
+                        <div class="d-flex">
+                            <div class="ec2-lbl p-2 gap-1">Tel No. :</div>
+                            <div> <RadzenTextBox @bind-Value="rec.TelNo"/> </div>
+                        </div>
+                    </div>
+
+                </EditTemplate>
+
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn Title="Action" TItem="EmpmasEmergencyContactModel" Context="EmpmasEmergencyContactModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Frozen="true" Width="150px">
+                <Template Context="rec">
+                    <RadzenButton Icon="edit"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => EditRow(rec))"
+                                  @onclick:stopPropagation="true">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1"
+                                  @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+
+                <EditTemplate Context="rec">
+                    <RadzenButton Icon="check"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@((args) => SaveRow(rec))">
+                    </RadzenButton>
+
+                    <RadzenButton Icon="close"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Click="@((args) => CancelEdit(rec))"
+                                  Size="ButtonSize.Small" class="my-1 ms-1">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.ExtraSmall"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1">
+                    </RadzenButton>
+                </EditTemplate>
+
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+
+@inject I_00MainPisAccess _mainPis
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+@code {
+
+    [Parameter]
+
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+
+
+    string? pisdb = string.Empty;
+
+    string? paydb = string.Empty;
+
+    string? conn = string.Empty;
+
+    string? mydb = string.Empty;
+
+
+
+    //-- Initialization ----------------
+
+    RadzenDataGrid<EmpmasEmergencyContactModel?>? empmasemergencycontactsGrid = new();
+
+    bool editMode = false;
+
+    DataGridEditMode editMode1 = DataGridEditMode.Single;
+
+
+
+    List<EmpmasEmergencyContactModel?>? empmasemergencycontacts = new();
+
+    EmpmasEmergencyContactModel? empmasemergencycontact = new();
+
+
+
+    List<EmpmasEmergencyContactModel?>? empmasemergencycontactsToInsert = new();
+
+    List<EmpmasEmergencyContactModel?>? empmasemergencycontactsToUpdate = new();
+
+    string? errorMsg = string.Empty;
+
+
+
+    protected override async void OnParametersSet()
+
+    {
+
+        if (UserClaims == null) return;
+
+        pisdb = UserClaims.SchemaUserPis;
+
+        paydb = UserClaims.SchemaUserPay;
+
+        conn = UserClaims.Conn;
+
+
+
+        if (conn == null) return;
+
+        if (pisdb == null) return;
+
+        if (paydb == null) return;
+
+
+
+        int empmasId = UserClaims.UserId;
+
+        mydb = "u" + empmasId.ToString().Trim();
+
+        empmasemergencycontacts = await _mainPis._02EmpmasEmergencyContacts(empmasId, mydb, conn);
+
+        StateHasChanged();
+
+    }
+
+
+
+    //-- InsertRow ----------------
+
+    async Task InsertRow()
+
+    {
+
+        errorMsg = string.Empty;
+
+        Reset();
+
+
+
+        var rec = new EmpmasEmergencyContactModel();
+
+        empmasemergencycontactsToInsert!.Add(rec);
+
+        await empmasemergencycontactsGrid!.InsertRow(rec);
+
+        editMode = true;
+
+    }
+
+    //-- Reset ----------------
+
+    void Reset()
+
+    {
+
+        empmasemergencycontactsToInsert!.Clear();
+
+        empmasemergencycontactsToUpdate!.Clear();
+
+    }
+
+
+
+    //-- Reset ----------------
+
+    void Reset(EmpmasEmergencyContactModel rec)
+
+    {
+
+        empmasemergencycontactsToInsert!.Remove(rec);
+
+        empmasemergencycontactsToUpdate!.Remove(rec);
+
+    }
+
+
+
+    //-- Edit Row ----------------
+
+    async Task EditRow(EmpmasEmergencyContactModel rec)
+
+    {
+
+        if (empmasemergencycontactsGrid != null)
+
+        {
+
+            Reset();
+
+            empmasemergencycontactsToUpdate?.Add(rec);
+
+            await empmasemergencycontactsGrid.EditRow(rec);
+
+        }
+
+    }
+
+    //-- Delete Row ----------------
+
+    async Task DeleteRow(EmpmasEmergencyContactModel rec)
+
+    {
+
+        if (empmasemergencycontacts == null) return;
+
+        if (empmasemergencycontactsGrid == null) return;
+
+
+
+        Reset(rec);
+
+
+
+        if (empmasemergencycontacts.Contains(rec))
+
+        {
+
+
+
+            var option = await _DialogService.Confirm("Delete " + rec?.Name + "?", "Confirm Delete", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+
+            if (option == true)
+
+            {
+
+                //await _empmasemergencycontact._04(rec!.Id, Schema!, conn!);
+
+                await _mainPis._04EmpmasEmergencyContact(rec!.Id, mydb, conn);
+
+                empmasemergencycontacts.Remove(rec);
+
+            }
+
+        }
+
+        else
+
+        {
+
+            empmasemergencycontactsGrid.CancelEditRow(rec);
+
+        }
+
+        await empmasemergencycontactsGrid.Reload();
+
+        editMode = false;
+
+        errorMsg = string.Empty;
+
+    }
+
+
+
+
+
+    //-- Cancel Edit ----------------
+
+    async void CancelEdit(EmpmasEmergencyContactModel rec)
+
+    {
+
+        errorMsg = string.Empty;
+
+        if (empmasemergencycontactsGrid == null) return;
+
+
+
+        Reset(rec);
+
+        editMode = false;
+
+
+
+        empmasemergencycontactsGrid.CancelEditRow(rec);
+
+        if (rec.Id < 1) return;
+
+
+
+        int id = rec.Id;
+
+        var res = await _mainPis._02EmpmasEmergencyContact(id, mydb, conn!);
+
+        if (res == null) return;
+
+        await Remap_Flds(rec, res);
+
+        await empmasemergencycontactsGrid.Reload();
+
+    }
+
+    //-- Remap ----------------
+
+    async Task Remap_Flds(EmpmasEmergencyContactModel destination, EmpmasEmergencyContactModel source)
+
+    {
+
+        var res = await _mainPis._02EmpmasEmergencyContact(source.EmpmasId, mydb, conn!);
+
+        destination.Id = res!.Id;
+
+        destination.EmpmasId = res!.EmpmasId;
+
+        destination.Name = res!.Name;
+
+        destination.Addr = res!.Addr;
+
+        destination.Relationship = res!.Relationship;
+
+        destination.TelNo = res!.TelNo;
+
+    }
+
+
+
+    //-- Save Row ----------------
+
+    async Task SaveRow(EmpmasEmergencyContactModel rec)
+
+    {
+
+        if (empmasemergencycontactsGrid == null) return;
+
+        if (!SafeToSave(rec)) return;
+
+
+
+        rec.EmpmasId = UserClaims.UserId;
+
+        if (rec.Id == 0)
+
+        {
+
+            var res = await _mainPis._01EmpmasEmergencyContact(rec, mydb, conn!);
+
+            if (res != null)
+
+            {
+
+                rec.Id = res.Id;
+
+                empmasemergencycontacts!.Add(rec);
+
+            }
+
+        }
+
+        else
+
+        {
+
+            await _mainPis._03EmpmasEmergencyContact(rec.Id, rec, mydb, conn!);
+
+        }
+
+        await empmasemergencycontactsGrid.UpdateRow(rec);
+
+        editMode = false;
+
+        errorMsg = string.Empty;
+
+    }
+
+
+
+    //-- Safe to Save ----------------
+
+    bool SafeToSave(EmpmasEmergencyContactModel rec)
+
+    {
+
+        return true;
+
+    }
+}

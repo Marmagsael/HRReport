@@ -1,0 +1,327 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface;
+
+@inject I_00MainPisAccess _mainPis;
+
+
+<h2 class="form-section-caption mt-0">Education</h2>
+
+<div class="mt-3">
+
+    <div class="mt-1 mb-2">
+        <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow"
+            Disabled="@(editMode)" />
+    </div>
+
+    @*<div class="text-danger mt-2 mb-2"><h5>@errorMsg</h5></div>*@
+
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="false" Variant="Variant.Flat" Shade="Shade.Lighter" class="@(errorMsg != string.Empty ? "d-flex mt-2 mb-2" : "d-none mt-2 mb-2")">
+        @errorMsg
+    </RadzenAlert>
+
+    <RadzenDataGrid Data="@empmaseducates"
+                    TItem="EmpmasEducateModel"
+                    @ref="empmaseducatesGrid"
+                    EditMode="DataGridEditMode.Single"
+                    AllowSorting=true
+                    AllowPaging=true
+                    PageSize="10"
+                    PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                    ColumnWidth="200px">
+        <Columns>
+
+            <RadzenDataGridColumn TItem="EmpmasEducateModel" Property="LEVELNAME" Title="LEVEL">
+                <EditTemplate Context="rec">
+                    <RadzenDropDown @bind-Value="rec.LEVEL" Data="@empmaseducateRefs" TextProperty="Name" ValueProperty="Code" Name="LEVEL"  Style="width:100%"
+                                    InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "Select level" }})" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="EmpmasEducateModel" Property="COURSE" Title="COURSE">
+                <EditTemplate Context="rec">
+                    <RadzenTextBox @bind-Value="rec.COURSE" Style="width:100%;"  />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="EmpmasEducateModel" Property="School" Title="School" Width="350px">
+                <EditTemplate Context="rec">
+                    <RadzenTextBox @bind-Value="rec.School" Style="width:100%;"  />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="EmpmasEducateModel" Property="FROM_" Title="From" FormatString="{0:MMMM dd, yyyy}">
+                <EditTemplate Context="rec">
+                    <RadzenDatePicker @bind-Value=@rec.FROM_ DateFormat="MM / dd / yyyy " Name="dateFrom_" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="EmpmasEducateModel" Property="TO_" Title="To" FormatString="{0:MMMM dd, yyyy}">
+                <EditTemplate Context="rec">
+                    <RadzenDatePicker @bind-Value=@rec.TO_ DateFormat="MM / dd / yyyy " Name="dateTo_" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+
+            <RadzenDataGridColumn TItem="EmpmasEducateModel" Context="EmpmasEducateModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="@actionColumnWidth">
+                <Template Context="rec">
+                    <RadzenButton Icon="edit"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => EditRow(rec))"
+                    @onclick:stopPropagation="true">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1"
+                    @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+
+                <EditTemplate Context="rec">
+                    <RadzenButton Icon="check"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@((args) => SaveRow(rec))">
+                    </RadzenButton>
+
+                    <RadzenButton Icon="close"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Click="@((args) => CancelEdit(rec))"
+                                  Size="ButtonSize.Small" class="my-1 ms-1">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.ExtraSmall"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1">
+                    </RadzenButton>
+                </EditTemplate>
+
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+@code {
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+    string? mydb = string.Empty;
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+
+
+
+        pisdb = $"U{UserClaims.UserId.ToString().Trim()}"; //UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+        int id = UserClaims.UserId;
+        mydb = "u" + id.ToString().Trim();
+        empmaseducateRefs = await _mainPis._02EmpmasEducateRefList(mydb, conn);
+        empmaseducates = await _mainPis._02EmpmasEducateList(id, mydb, conn);
+        AssignValueToLevelName();
+
+
+        StateHasChanged();
+    }
+
+    //-- Initialization ----------------
+    RadzenDataGrid<EmpmasEducateModel?>? empmaseducatesGrid = new();
+    bool editMode = false;
+    DataGridEditMode editMode1 = DataGridEditMode.Single;
+
+    List<EmpmasEducateModel?>? empmaseducates = new();
+    EmpmasEducateModel? empmaseducate = new();
+
+    List<EmpmasEducateRefModel?>? empmaseducateRefs = new();
+
+    List<EmpmasEducateModel?>? empmaseducatesToInsert = new();
+    List<EmpmasEducateModel?>? empmaseducatesToUpdate = new();
+    string? errorMsg = string.Empty;
+
+    string actionColumnWidth = "100px";
+
+    //-- InsertRow ----------------
+    async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        actionColumnWidth = "125px";
+        Reset();
+
+        var rec = new EmpmasEducateModel();
+        empmaseducatesToInsert!.Add(rec);
+        await empmaseducatesGrid!.InsertRow(rec);
+        editMode = true;
+    }
+    //-- Reset ----------------
+    void Reset()
+    {
+        empmaseducatesToInsert!.Clear();
+        empmaseducatesToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    void Reset(EmpmasEducateModel rec)
+    {
+        empmaseducatesToInsert!.Remove(rec);
+        empmaseducatesToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    async Task EditRow(EmpmasEducateModel rec)
+    {
+        if (empmaseducatesGrid != null)
+        {
+            Reset();
+            empmaseducatesToUpdate?.Add(rec);
+            await empmaseducatesGrid.EditRow(rec);
+
+            actionColumnWidth = "125px";
+        }
+    }
+    //-- Delete Row ----------------
+    async Task DeleteRow(EmpmasEducateModel rec)
+    {
+        if (empmaseducates == null) return;
+        if (empmaseducatesGrid == null) return;
+
+        Reset(rec);
+
+        if (empmaseducates.Contains(rec))
+        {
+
+            var option = await _DialogService.Confirm("Delete " + rec?.LEVEL + "?", "Confirm Delete",
+                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+            if (option == true)
+            {
+                await _mainPis._04EmpmasEducate(rec!.Id, mydb, conn!);
+                empmaseducates.Remove(rec);
+            }
+        }
+        else
+        {
+            empmaseducatesGrid.CancelEditRow(rec);
+        }
+        await empmaseducatesGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+        actionColumnWidth = "100px";
+
+    }
+
+
+    //-- Cancel Edit ----------------
+    async void CancelEdit(EmpmasEducateModel rec)
+    {
+        errorMsg = string.Empty;
+        actionColumnWidth = "100px";
+
+        if (empmaseducatesGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        empmaseducatesGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        var res = await _mainPis._02EmpmasEducate(id, mydb, conn!);
+        if (res == null) return;
+        Remap_Flds(rec, res);
+        await empmaseducatesGrid.Reload();
+
+
+    }
+    //-- Remap ----------------
+    void Remap_Flds(EmpmasEducateModel destination, EmpmasEducateModel source)
+    {
+
+    }
+
+    //-- Assign Value to Level Name-------------------------
+    void AssignValueToLevelName()
+    {
+        if (empmaseducates is not null && empmaseducateRefs is not null)
+        {
+            foreach (var e in empmaseducates)
+            {
+                e!.LEVELNAME = empmaseducateRefs?.Where(er => er?.Code == e.LEVEL).FirstOrDefault()?.Name;
+            }
+        }
+    }
+
+    //-- Save Row ----------------
+    async Task SaveRow(EmpmasEducateModel rec)
+    {
+        if (empmaseducatesGrid == null) return;
+        if (!SafeToSave(rec)) return;
+
+        rec.EmpmasId = UserClaims.UserId;
+
+        if (rec.Id == 0)
+        {
+            var res = await _mainPis._01EmpmasEducate(rec, mydb, conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                empmaseducates!.Add(rec);
+            }
+        }
+        else
+        {
+            await _mainPis._03EmpmasEducate(rec.Id, rec, mydb!, conn!);
+        }
+
+        AssignValueToLevelName();
+        await empmaseducatesGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+        actionColumnWidth = "100px";
+    }
+
+    //-- Safe to Save ----------------
+    bool SafeToSave(EmpmasEducateModel rec)
+    {
+        if (rec.LEVEL is null)
+        {
+            errorMsg = "Level is required.";
+            return false;
+        }
+
+        if (rec.COURSE is not null && rec.COURSE.Length > 75)
+        {
+            errorMsg = "Course should be at most 75 characters.";
+            return false;
+        }
+
+        if (rec.School is not null && rec.School.Length > 45)
+        {
+            errorMsg = "School should be at most 45 characters.";
+            return false;
+        }
+
+        return true;
+    }
+}

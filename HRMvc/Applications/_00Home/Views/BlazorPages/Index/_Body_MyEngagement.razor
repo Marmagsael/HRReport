@@ -1,0 +1,94 @@
+﻿@using _03Payroll.Views.BlazorPages._00_Utility.Vars;
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+@inject I_00CompanyusersDataAccess _companyUsers;
+@inject I_00UsersAccess _user;
+@inject I_00MainDA _mainDa;
+@inject NavigationManager _nav;
+
+
+<div class="card w-100 p-2 text-secondary ">
+    <div class="card-header fw-bold py-2 bg-dark text-white bg-opacity-75 ">
+        <h6>My Engagement </h6>
+    </div>
+
+    @if (companyUsers == null || companyUsers.Count == 0)
+
+    {
+        <div class="w-100 bg-white border rounded">
+            <div class="tbl-hdr sticky-tbl-hdr d-flex fw-bold p-3 mt-1 text-secondary ">
+                You don't have any engagement yet.
+            </div>
+        </div>
+    }
+
+    else
+
+    {
+        <div class="w-100 d-flex bordered-bottom p-2 fw-bold">
+            <div class="w-70 ">Company Name </div>
+            <div class="w-30 "> Actions </div>
+        </div>
+
+        foreach (var cu in companyUsers!)
+
+        {
+            <div class="w-100 d-flex bordered-bottom">
+
+                <div class="w-70 p-2 ">
+                    <div class="fw-bolder">@cu?.CompanyName</div>
+                    <div class="text-muted">@cu?.CountryName</div>
+                </div>
+                <div class="w-30 p-2">
+                    <button class="btn btn-sm btn-success">Remove</button>
+                    <button @onclick="@(()=>SelectCompany(cu!.CompanyId,cu.UserId))" class="btn btn-sm btn-secondary">Select</button>
+                </div>
+            </div>
+        }
+
+    }
+</div>
+
+
+
+@code {
+
+    List<CompanyUsersModel?>? companyUsers = new();
+
+    [Parameter]
+    public UserClaimsModel? UserClaims { get; set; } = new();
+
+    [Parameter]
+    public V00_Pay VPay { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+    protected async override void OnParametersSet()
+
+    {
+        VPay.Action = "SelectCompany";
+        int userId = UserClaims == null ? 0 : UserClaims.UserId;
+        companyUsers = await _companyUsers._02ByUserId(userId);
+
+        StateHasChanged();
+    }
+
+
+
+    async void SelectCompany(int coId, int userId)
+
+    {
+        await _user._03ChangeDefaultCompany(userId, coId);
+
+        var user = await _mainDa._02UsersById(userId);
+        var uc = await _mainDa._02UserCompanyPerOwnerId(coId);
+
+
+
+        _nav.NavigateTo($"changingclaims/00/{user?.Id}", true);
+        await ChildAction.InvokeAsync();
+
+    }
+
+}

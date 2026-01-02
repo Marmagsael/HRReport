@@ -1,0 +1,55 @@
+﻿@using HRApiLibrary.DataAccess._00_Main
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications._03Payroll.Views.BlazorPages
+@using System.Security.Claims
+
+@inject I_00MainDA                  _mainDA
+@inject IConfiguration              _config;
+@inject I_00MainPisTblMakerAccess   _pisTblMaker; 
+@inject I_20_002_PayTblMaker        _payTblMaker;
+
+@inject I_00UserscompanyDataAccess  _userCompany; 
+
+
+@{
+    @* Layout = "~/Views/Shared/Main/_03PayrollLayout_v2.cshtml"; *@
+    Layout = "~/Views/Shared/Main/_03PayrollLayout_v3.cshtml";
+    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+
+    IEnumerable<Claim?> claims = User.Claims;
+    UserClaimsModel userClaims =  _mainDA._02UserClaimsContent(claims);
+
+    var defCoId = int.Parse(userClaims.DefCompanyId); 
+
+    if (userClaims != null && userClaims.SchemaUserPay!=null && defCoId > 0)
+    {
+        _pisTblMaker._01MainPisTableInternal(userClaims.SchemaUserPis!, userClaims.Conn!);
+        
+        await _payTblMaker._01(userClaims.SchemaUserPay);
+        var x = await _userCompany._02(int.Parse(userClaims.DefCompanyId!), "Main", userClaims.Conn!);
+        if(x!=null) 
+            if(x.CountryId == 2) await _payTblMaker._01PH(userClaims.SchemaUserPay); 
+
+    }
+    
+
+}
+
+@(await Html.RenderComponentAsync<_00_00_00_Payroll>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))
+
+
+<div>
+    This is Payroll Main Page
+</div> 
+
+
+  <ul>
+    @foreach (var user in User.Claims)
+    {
+        <li>@user.Type : @user.Value </li>
+    }
+</ul> 
+
+User : @User.Claims.Where(c => c.Type.TrimEnd().Substring(c.Type.TrimEnd().Length - 3, 3) == "sid").FirstOrDefault()?.Value 

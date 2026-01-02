@@ -1,0 +1,124 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRMvc.Applications._02HR._02Library
+
+
+
+@* ----- ProvAddStreet (varchar(45))----------*@
+<div class="w-100 d-flex p-2">
+    <div class="w-20 p-2">Street </div>
+    <div class="w-80">
+        <RadzenTextBox Change="ValChanged" Placeholder="Address 1 - Street" class="w-100" @bind-Value=@V.Empmasaddress.ProvAddStreet MaxLength="45" />
+    </div>
+</div>
+
+
+@* ----- ProvAddBrgy (varchar(45))----------*@
+<div class="w-100 d-flex p-2">
+    <div class="w-20 p-2">Barangay </div>
+    <div class="w-80">
+        <RadzenTextBox Change="ValChanged" Placeholder="Address 2 - Barangay" class="w-100" @bind-Value=@V.Empmasaddress.ProvAddBrgy MaxLength="45" />
+    </div>
+</div>
+
+
+@* ----- ProvAddProvId (int(11))----------*@
+<div class="w-100 d-flex p-2">
+    <div class="w-20 p-2">Province/State </div>
+    <div class="w-80">
+        <RadzenDropDown Change="ProvinceChanged" TValue="int" @bind-Value=@V.Empmasaddress.ProvAddProvId
+                        Data=@V03.ProvincesProv TextProperty="Name" ValueProperty="Id" Style="width: 100%; max-width: 400px;" Name="ddProvinces" />
+    </div>
+</div>
+
+@* ----- ProvAddCityId (int(11))----------*@
+<div class="w-100 d-flex p-2">
+    <div class="w-20 p-2">City</div>
+    <div class="w-80">
+        <RadzenDropDown Change="CityChanged" TValue="int" @bind-Value=@V.Empmasaddress.ProvAddCityId
+                        Data=@V03.CitysProv TextProperty="CityName" ValueProperty="Id" Style="width: 100%; max-width: 400px;" Name="ddProvinces" />
+    </div>
+</div>
+
+@* ----- ProvAddZipCode (varchar(10))----------*@
+<div class="w-100 d-flex p-2">
+    <div class="w-20 p-2">Zip Code</div>
+    <div class="w-80">
+        <RadzenTextBox Change="ValChanged" Placeholder="Area Code" class="w-50" @bind-Value=@V.Empmasaddress.ProvAddZipCode MaxLength="10" />
+    </div>
+</div>
+
+@* ----- ProvAddTelNo (varchar(45))----------*@
+<div class="w-100 d-flex p-2">
+    <div class="w-20 p-2">Tel No(s)</div>
+    <div class="w-80">
+        <RadzenTextBox Change="ValChanged" Placeholder="Telephone / Mobile Number" class="w-50" @bind-Value=@V.Empmasaddress.ProvAddTelNo MaxLength="45" />
+    </div>
+</div>
+
+
+@* ----- ProvAdd (varchar(200))----------*@
+<RadzenFieldset Text="Complete Address">
+    <RadzenTextArea Change="ValChanged" Placeholder="Complete Address" class="w-100" @bind-Value=@V.Empmasaddress.ProvAdd Rows="3" Columns="30" MaxLength="200" Disabled="true"/>
+</RadzenFieldset>
+
+
+@inject I_00CityDataAccess          _city;
+
+@code {
+
+    int empmasId                        = 0 ; 
+
+    [Parameter]
+    public V222 V { get; set; }         = new();
+
+    [Parameter]
+    public V222_03 V03 { get; set; }    = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    protected async override void OnParametersSet()
+    {
+        if (empmasId != V.SelectedId)
+        {
+            empmasId = V.SelectedId;
+
+            V03.CitysProv = await _city._02ByRegionId(V.Empmasaddress.ProvAddProvId, "Main", V.conn!);
+
+            StateHasChanged();
+        }
+    }
+
+
+    async Task ProvinceChanged()
+    {
+        V03.CitysProv = await _city._02ByRegionId(V.Empmasaddress.ProvAddProvId, "Main", V.conn!);
+        if (V03.ProvincesProv?.Count > 0)
+        {
+            V.Empmasaddress.ProvAddProv = V03.ProvincesProv.Where(a => a.Id == V.Empmasaddress.ProvAddProvId).FirstOrDefault()?.Name ?? "";
+        }
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+
+        V.Empmasaddress.ProvAdd = $"{V.Empmasaddress.ProvAddStreet}, {V.Empmasaddress.ProvAddBrgy}, {V.Empmasaddress.ProvAddCity}, {V.Empmasaddress.ProvAddProv}, {V.Empmasaddress.ProvAddZipCode}, {V.Empmasaddress.ProvAddCountry}";
+
+    }
+
+    private void CityChanged()
+    {
+        if (V03.CitysProv?.Count > 0)
+        {
+            V.Empmasaddress.ProvAddCity = V03.CitysProv.Where(a => a.Id == V.Empmasaddress.ProvAddCityId).FirstOrDefault()?.CityName ?? "";
+        }
+
+        V.Empmasaddress.ProvAdd = $"{V.Empmasaddress.ProvAddStreet}, {V.Empmasaddress.ProvAddBrgy}, {V.Empmasaddress.ProvAddCity}, {V.Empmasaddress.ProvAddProv}, {V.Empmasaddress.ProvAddZipCode}, {V.Empmasaddress.ProvAddCountry}";
+
+    }
+
+    async void ValChanged()
+    {
+        V.Empmasaddress.ProvAdd = $"{V.Empmasaddress.ProvAddStreet}, {V.Empmasaddress.ProvAddBrgy}, {V.Empmasaddress.ProvAddCity}, {V.Empmasaddress.ProvAddProv}, {V.Empmasaddress.ProvAddZipCode}, {V.Empmasaddress.ProvAddCountry}";
+        await ChildAction.InvokeAsync();
+    }
+
+}

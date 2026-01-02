@@ -1,0 +1,76 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay
+@using HRApiLibrary.Models._20_Pay; 
+
+@inject DialogService   _DialogService
+@inject ICoaDataAccess  _coa; 
+
+
+@{double? rob = 0;
+if (c?.RateOverBasic > 0) rob = @c?.RateOverBasic * 100;} 
+
+<tr>
+    <th scope="row" >@c?.AcctNumber</th>
+    <td> @c?.AcctName </td>
+    <td> @c?.ShortDesc</td>
+    
+    
+    <td> @if (V502?.acctType == "Earnings") { @rob<span>%</span>  } </td>
+
+    <td class="text-center">
+        @if(c!.IsLock!=1) {
+            <button @onclick="@(()=>EditMode(c!))"  class="btn btn-sm text-primary ">Edit</button> 
+            <button @onclick="@(()=>Delete(c!))"      class="btn btn-sm text-danger ">Del</button> 
+        }
+        
+        
+    </td>
+</tr>
+
+@code {
+
+    bool isRerender = false; 
+    [Parameter] public CoaModel?                    c               { get; set; } = new();
+    [Parameter] public V502?                        V502            { get; set; } = new(); 
+    [Parameter] public EventCallback                ChildAction     { get; set; }    
+    [Parameter] public _00_Utility.Vars.V00_Pay?    V00             { get; set; } = new();  
+
+    
+    async void EditMode(CoaModel coa){
+        c!.Show= 1; 
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async void Delete(CoaModel c) {
+        string msg  = "Delete " + c.AcctName + "?"; 
+        var ans     =  await _DialogService.Confirm(msg, "Confirm Delete", new ConfirmOptions() 
+                                              { OkButtonText = "Yes", CancelButtonText = "No" }); 
+        if(ans==true)
+        {
+            string? acctNumber  =  c                == null ? "" : c?.AcctNumber;
+            string? conn        = V00?.UserClaims   == null ? "" : V00.UserClaims.Conn;
+            string? schema      = V00?.UserClaims   == null ? "" : V00.UserClaims.SchemaUserPay;
+
+            if(acctNumber !=null && conn !=null && schema !=null)
+            {
+                var trans   = await _coa._02_CheckInTbltran(acctNumber, schema, conn);
+                await _coa._04(acctNumber, schema, conn);
+                if(trans!.Count > 0 )
+                {
+                    await _DialogService.Alert("Unable to delete COA with transaction.", "Used Reference"); 
+                } 
+                else
+                {
+                    V00!.Action = "Delete";
+                    await _coa._04(acctNumber,schema,conn);
+                    V00.Action = "SaveCOA"; 
+                    await ChildAction.InvokeAsync();
+                }   
+            } 
+            else
+            {
+                await _DialogService.Alert("Session expired, please try to re-login .","Session Expired"); 
+            }
+        }
+    }
+
+}

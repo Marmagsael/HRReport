@@ -1,0 +1,86 @@
+﻿@using HRApiLibrary.Models._20_Pay
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+@using HRApiLibrary.DataAccess._20_Pay
+
+@inject I_00UsersAccess         _user; 
+@inject     ICoaDataAccess      _coa; 
+
+
+<tr>
+    <th scope="row" style="width: 15%;">
+        <RadzenTextBox Placeholder="AcctNumber" @bind-Value="c!.AcctNumber" MaxLength="5" Disabled  />
+    </th>
+
+    <td  style="width: 40%" >
+        <RadzenTextBox class="w-100" Placeholder="Acct Name" @bind-Value="c.AcctName" MaxLength="60"  />
+    </td>
+
+    <td>
+        <RadzenTextBox Placeholder="AcctNumber" @bind-Value="c.ShortDesc" MaxLength="20"  />
+    </td>
+
+    <td style="width: 10%;">
+        <RadzenNumeric Format="##0.00" class="w-100" ShowUpDown=false  
+            @bind-Value="c.RateOverBasic"  TextAlign="TextAlign.End" Max="9" Min="0"  /> 
+    </td>
+
+    <td class="text-center d-flex">
+        <button @onclick="Update" class="btn btn-sm text-primary ">Update</button> 
+        <button @onclick="CancelEdit" class="btn btn-sm text-danger ">Cancel</button> 
+    </td>
+</tr>
+
+ @code {
+
+    CoaModel coa = new();
+
+    [Parameter]
+    public CoaModel? c {get; set; } = new(); 
+
+    [Parameter]
+    public EventCallback                ChildAction {get; set; }
+
+    [Parameter]
+    public _00_Utility.Vars.V00_Pay?    V00 { get; set; } = new(); 
+
+
+
+    protected override void OnParametersSet()
+    {
+        coa = new() {
+            AcctNumber      = c?.AcctNumber, 
+            AcctName        = c?.AcctName, 
+            ShortDesc       = c?.ShortDesc,
+            RateOverBasic   = c==null ? 0 : c.RateOverBasic
+       };
+    }
+
+    async void Update() {
+        V00!.Action = "Update"; 
+
+        string? schema  = V00?.UserClaims == null ? "" : V00.UserClaims.SchemaUserPay;
+        string? conn    = V00?.UserClaims == null ? "" : V00.UserClaims.Conn;
+
+        if(c!=null && schema !=null && conn!=null) {
+            await _coa._03Basic(c, schema, conn);
+        }
+
+        c!.Show=0; 
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async void CancelEdit() { 
+        
+        V00!.Action     = "CancelUpdate";
+        c!.Show         =   0; 
+        string? xpay    = V00?.UserClaims?.SchemaUserPay;
+
+        c.AcctNumber    = coa.AcctNumber; 
+        c.AcctName      = coa.AcctName; 
+        c.ShortDesc     = coa.ShortDesc; 
+        c.RateOverBasic = coa.RateOverBasic; 
+
+        await ChildAction.InvokeAsync();  
+    }
+
+}

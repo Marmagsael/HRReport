@@ -1,0 +1,35 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+@using System.Security.Claims
+
+@using HRMvc.Applications._02HR.Views.BlazorPages._05Report
+@using HRMvc.Applications._00Home.Tools.Blazor;
+
+
+<script>
+    function copyToClipboard(elementId) {
+        var content = document.getElementById(elementId).innerText;
+        var tempInput = document.createElement("textarea");
+        tempInput.value = content;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+        alert("Nakopya na ang content!");
+    }
+</script>
+
+@inject I_00MainDA _mainDA
+@inject IConfiguration _config;
+
+@{
+    Layout = "~/Views/Shared/Main/_00ToolLayout.cshtml";
+    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+
+    IEnumerable<Claim?> claims = User.Claims;
+    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
+
+}
+
+
+@(await Html.RenderComponentAsync<_00_ClassMaker>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))

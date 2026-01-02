@@ -1,0 +1,481 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRMvc.Applications._02HR._02Library
+
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+
+<div class="p-2">
+    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Family" />
+    <div class="h-10p"></div>
+    @if (V.Empmas?.Id > 0)
+    {
+        <div class="p-2 bordered mb-2 w-100">
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" />
+        </div>
+    }
+
+
+    <div class="custom-grid mt-2">
+        <RadzenDataGrid Data="@V.Familys"
+                        TItem="EmpmasFamilyModel"
+                        @ref="V.FamilyGrid"
+                        EditMode="DataGridEditMode.Single"
+                        AllowSorting="true"
+                        AllowPaging="true"
+                        PageSize="10"
+                        PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                        ColumnWidth="200px"
+                        IsLoading="isLoading">
+            <Columns>
+                <RadzenDataGridColumn TItem="EmpmasFamilyModel"
+                                      Context="EmpmasFamilyModel"
+                                      Filterable="false"
+                                      Sortable="false"
+                                      Width="100%">
+                    <HeaderTemplate>
+                        <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
+                            <RadzenColumn Size="6" class="custom-grid-sm">Details</RadzenColumn>
+                            <RadzenColumn Size="7" class="custom-grid-md">Name</RadzenColumn>
+                            <RadzenColumn Size="5" class="custom-grid-md">Relationship</RadzenColumn>
+                        </RadzenRow>
+                    </HeaderTemplate>
+
+                    <Template Context="rec">
+
+                        @* ======= Small Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-sm">
+                            @*-- Name --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Name" Component="Name" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Name"  Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Relationship --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Relationship" Component="Relationship" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDropDown @bind-Value="rec.RelationCode" Data="V.FamilyRef" TextProperty="Name" ValueProperty="Code" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Gender --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Gender" Component="Gender" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDropDown @bind-Value="rec.Sex" Data="genders" TextProperty="Category" ValueProperty="Code" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+
+
+                            @*-- DOB --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Date of Birth" Component="Date of Birth" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDatePicker @bind-Value="rec.Birth" ShowButton="false" Disabled="true" DateFormat="MM dd yyyy" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                           
+
+                        </RadzenStack>
+
+                        @* ======= Large Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-md">
+                            <RadzenRow>
+                                @*-- Name --*@
+                                <RadzenColumn Size="7">
+                                    <div class="fw-bold">@rec.Name</div>
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12" SizeLG="12">
+                                                Date of Birth: <span class="text-muted text-decoration-underline">@rec.Birth.ToString("MMM dd, yyyy")</span>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                                @*-- Relationship  --*@
+                                <RadzenColumn Size="5">
+                                    <div>@rec.RelationshipName</div>
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12" SizeLG="12">
+                                                Gender: <span class="text-muted text-decoration-underline">@rec.SexName</span>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                            </RadzenRow>
+                        </RadzenStack>
+                    </Template>
+
+                    <EditTemplate Context="rec">
+                        @* ======= Small Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-sm">
+                            @*-- Name --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Name" Component="NameSm" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox   @bind-Value=rec.Name  class="w-100" Name="NameSm"/>
+                                        <RadzenRequiredValidator Component="NameSm" Text="Name is required" Popup="true" Style="position: absolute; " />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Relationship --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Relationship" Component="RelSm" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDropDown TValue="string" @bind-Value="rec.RelationCode" Data="V.FamilyRef" TextProperty="Name" ValueProperty="Code" Disabled="true"  Name="RelSm"/>
+                                        <RadzenRequiredValidator Component="RelSm" Text="Relationship is required" Popup="true" Style="position: absolute; " />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Gender --*@
+                            <RadzenRow AlignItems="AlignItems.Center" class="row">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Gender" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDropDown TValue="string" @bind-Value="rec.SexName" Data="genders" TextProperty="Category" ValueProperty="Code" Disabled="true" Ty />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+
+                            @*-- From --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Date of Birth" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text">
+                                        <RadzenDatePicker @bind-Value="rec.Birth" DateFormat="MM dd yyyy" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                           
+
+
+
+                        </RadzenStack>
+
+                        @* ======= Large Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-md">
+                            <RadzenRow Gap=".3rem">
+
+                                @*-- Name --*@
+                                <RadzenColumn Size="7">
+                                    <RadzenTextBox  @bind-Value=rec.Name
+                                                   Name="NameLg" class="w-100" Style=" display: block" />
+                                    <RadzenRequiredValidator Component="NameLg" Text="Name  is required" Popup="true" Style="position: absolute; " />
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12" SizeMD="6">
+                                                <RadzenFormField Text="Date of Birth" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                    <RadzenDatePicker @bind-Value="rec.Birth" DateFormat="MM dd yyyy" />
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+                                           
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                                 <RadzenColumn Size="5">
+                                    <RadzenDropDown Data="V.FamilyRef" TValue="string" @bind-Value=rec.RelationCode TextProperty="Name" ValueProperty="Code" Name="RelLg" Style=" display: block" />
+                                    <RadzenRequiredValidator Component="RelLg" Text="Relationship  is required" Popup="true" Style="position: absolute; " />
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12" SizeMD="8" >
+                                                <RadzenFormField  Text="Gender" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                    <RadzenDropDown Data="genders" TValue="string" @bind-Value=rec.Sex TextProperty="Category" ValueProperty="Code"/>
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+                                           
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                               
+                            </RadzenRow>
+                        </RadzenStack>
+                    </EditTemplate>
+
+                </RadzenDataGridColumn>
+
+                @* Actions Column *@
+                <RadzenDataGridColumn TItem="EmpmasFamilyModel" Context="EmpmasFamilyModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
+                    <Template Context="rec">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true"></RadzenButton>
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true"></RadzenButton>
+                    </Template>
+                    <EditTemplate Context="rec">
+                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@((args) => SaveRow(rec))"></RadzenButton>
+                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@((args) => CancelEdit(rec))" Size="ButtonSize.Small" class="my-1 ms-1"></RadzenButton>
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1"></RadzenButton>
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+
+
+</div>
+
+
+
+
+@inject I_10_EmpmasDataAccess _empmas;
+
+
+@code {
+
+    int empmasId = 0;
+
+    [Parameter]
+    public V222 V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+    DataGridEditMode editMode1 = DataGridEditMode.Single;
+
+    List<EmpmasFamilyModel?>? empmasfamilyToInsert = new();
+    List<EmpmasFamilyModel?>? empmasfamilyToUpdate = new();
+    string? errorMsg = string.Empty;
+    bool isLoading = true;
+    bool editMode = false;
+    private int screenWidth;
+
+    List<GenderModel?>? genders = new();
+
+    public class GenderModel
+    {
+        public string Category { get; set; } = string.Empty;
+        public string Code { get; set; } = string.Empty;
+    }
+
+
+    protected override async void OnParametersSet()
+    {
+        if (empmasId != V.SelectedId)
+        {
+            empmasId = V.SelectedId;
+
+            await Task.Delay(250);
+
+            V.Familys = await _empmas._02EmpmasFamilyList(empmasId, V.pisdb!, V.conn!);
+            V.FamilyRef = await _empmas._02EmpmasFamilyRefList( V.pisdb!, V.conn!);
+
+        }
+        isLoading = false;
+        StateHasChanged();
+
+        genders = new()
+        {
+            new GenderModel(){Category  = "Male" ,  Code="M"},
+            new GenderModel(){Category  = "Female", Code="F"},
+            new GenderModel(){Category  = "Others", Code="O"}
+        };
+
+        if (V.Familys.Count > 0)
+        {
+            foreach (var item in V.Familys)
+            {
+                Console.WriteLine(item.Sex);
+                var gender = genders.FirstOrDefault(g => g.Code == item.Sex);
+                if (gender != null)
+                {
+                    item.SexName = gender.Category;
+                }
+
+            }
+        }
+       
+    }
+
+    //-- InsertRow ----------------
+    private async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new EmpmasFamilyModel();
+        empmasfamilyToInsert!.Add(rec);
+        await V.FamilyGrid!.InsertRow(rec);
+        editMode = true;
+    }
+    //-- Reset ----------------
+    private void Reset()
+    {
+        empmasfamilyToInsert!.Clear();
+        empmasfamilyToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    private void Reset(EmpmasFamilyModel rec)
+    {
+        empmasfamilyToInsert!.Remove(rec);
+        empmasfamilyToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    private async Task EditRow(EmpmasFamilyModel rec)
+    {
+        editMode = true;
+
+        if (V.FamilyGrid != null)
+        {
+            Reset();
+            empmasfamilyToUpdate?.Add(rec);
+            await V.FamilyGrid.EditRow(rec);
+        }
+    }
+    //-- Delete Row ----------------
+    private async Task DeleteRow(EmpmasFamilyModel rec)
+    {
+        if (V.Familys == null) return;
+        if (V.FamilyGrid == null) return;
+
+        Reset(rec);
+
+        if (V.Familys.Contains(rec))
+        {
+            if (rec != null)
+            {
+                var option = await _DialogService.Confirm("Delete " + rec.RelationshipName + "  record?", "Confirm Delete",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
+                {
+                    await _empmas._04EmpmasFamily(rec!.Id, V.pisdb!, V.conn!);
+                    V.Familys.Remove(rec);
+                    ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully deleted a record.", Detail = "Record has been deleted from the list.", Duration = 4000 });
+                }
+            }
+        }
+        else
+        {
+            V.FamilyGrid.CancelEditRow(rec);
+        }
+        await V.FamilyGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+    //-- Cancel Edit ----------------
+    private async void CancelEdit(EmpmasFamilyModel rec)
+    {
+        errorMsg = string.Empty;
+        if (V.FamilyGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        V.FamilyGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        // var res = await _mainPis._02EmpmasEmployment(rec.Id, mydb!, conn!);
+        // if (res == null) return;
+        // Remap_Flds(rec, res);
+        await V.FamilyGrid.Reload();
+    }
+    //-- Remap ----------------
+    private void Remap_Flds(EmpmasFamilyModel destination, EmpmasFamilyModel source)
+    {
+
+    }
+    //-- Save Row ----------------
+    private async Task SaveRow(EmpmasFamilyModel rec)
+    {
+        if (V.FamilyGrid == null) return;
+
+        rec.SexName = genders.Where(c => c.Code == rec.Sex).FirstOrDefault()?.Category ?? "";
+        rec.RelationshipName = V.FamilyRef.Where(c => c.Code == rec.RelationCode).FirstOrDefault()?.Name ?? "";
+
+        if (!SafeToSave(rec))
+        {
+            await V.FamilyGrid.UpdateRow(rec);
+            return;
+        }
+        ;
+
+        if (rec.Id == 0)
+        {
+            rec.EmpmasId = empmasId;
+            var res = await _empmas._01EmpmasFamily(rec, V.pisdb!, V.conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                V.Familys!.Add(rec);
+                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully added a record.", Detail = "Record has been added to the list.", Duration = 4000 });
+            }
+        }
+        else
+        {
+            await _empmas._03EmpmasFamily(rec.Id, rec, V.pisdb!, V.conn!);
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully updated a record.", Detail = "Record has been updated from the list.", Duration = 4000 });
+        }
+        await V.FamilyGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+    // -- Safe to Save ----------------
+    private bool SafeToSave(EmpmasFamilyModel rec)
+    {
+        if (rec.Name?.Length == 0 || rec.Name == null)
+        {
+            return false;
+        }
+
+        if (rec.RelationCode?.Length == 0 || rec.RelationCode == null)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
+    }
+
+
+
+
+}
+
+
+
+

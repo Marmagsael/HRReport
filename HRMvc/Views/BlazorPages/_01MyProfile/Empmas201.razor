@@ -1,0 +1,93 @@
+﻿@using HRApiLibrary.Models._00_Main;
+@using HRApiLibrary.Models._00_MainPis;
+@using HRMvc.Views.BlazorPages._01MyProfile.Empmas201Dtl;
+
+
+<RadzenDialog />
+<RadzenNotification />
+
+
+<RadzenStack Gap="0" >
+    <RadzenTabs  RenderMode="TabRenderMode.Client" >
+            <Tabs >
+            <RadzenTabsItem Text="Personal Data">
+                
+                <PersonalData UserClaims="userClaims"/>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Address">
+                <Address UserClaims="userClaims"/>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Education">
+                <Education UserClaims="userClaims" />
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="Family">
+                <Family UserClaims="userClaims" />
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="References">
+                <References UserClaims="userClaims" />
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+
+
+@code {
+
+    [Parameter]
+    public UserClaimsModel? userClaims { get; set; }
+
+    [Parameter]
+    public List<CountryModel?>? countries { get; set; }
+
+
+    [Parameter]
+    public EmpmasAddressModel? empmasAddress { get; set; }
+
+
+    private int visTab = 1 ; 
+    private bool collapseTabInSm = true;
+    private List<EmpmasNavModel>? navList = null;
+
+    private void selectPrimaryTab(int id)
+    {
+        navList?.ForEach(n => n.IsSelected = false); 
+        EmpmasNavModel? nav =  navList?.Where(n => n.Id == id).FirstOrDefault();
+        if(nav is not null) nav.IsSelected = true; 
+
+        visTab = id; 
+    }
+
+    private void openPrimaryTabInSmallScreen()
+    {
+        collapseTabInSm = !collapseTabInSm;
+    }
+
+    protected override void OnInitialized()
+    {
+        navList = new List<EmpmasNavModel>
+        {
+            new EmpmasNavModel { Id = 1, Desc = "Personal Data",    IsSelected = true},
+            new EmpmasNavModel { Id = 2, Desc = "Address",          IsSelected = false },
+            new EmpmasNavModel { Id = 3, Desc = "Education",        IsSelected = false },
+            new EmpmasNavModel { Id = 4, Desc = "Family",           IsSelected = false },
+            new EmpmasNavModel { Id = 5, Desc = "References",       IsSelected = false }
+        }; 
+    }
+
+    public class EmpmasNavModel
+    {
+        public int Id {get; set; }
+        public string? Desc {get; set; }
+        public bool IsSelected { get; set; }
+
+    }
+
+
+
+    
+}

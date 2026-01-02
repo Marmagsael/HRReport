@@ -1,0 +1,180 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0503; 
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0503.Items;
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0503.Items._0503_01_01;
+
+<div class="w-100 br-6 bordered-darkgreen" >
+    @if(showAddNew) { <_0503_02_DataEntry V00="@V00" ChildAction="ChildActionCatcher" /> } 
+    else 
+    {
+        <div class="p-2">
+            <RadzenButton Click="New" Text=" + Add New " ButtonStyle="ButtonStyle.Info" Shade="Shade.Dark" />
+        </div>
+    }
+</div>
+
+@{ var disableView = showAddNew ? "disabled-div" : ""; }
+
+<div class="_0503-wrapper @disableView">
+    <table class="table table-sm table-responsive" style="max-width:1080px">
+    <thead>
+        <tr>
+            <th scope="col">CODE</th>
+            <th scope="col">Name</th>
+            <th scope="col">Rate/Hr</th>
+            <th scope="col">Rate/Day</th>
+            <th scope="col">Rate/Month</th>
+            <th scope="col">Rate/Year</th>
+            <th scope="col">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+        @if(v503!.PayrollGroups!.Count > 0)
+        {
+            foreach (var g in v503.PayrollGroups)
+            {
+                <tr>
+                    <th style="cursor: pointer;" scope="row" @onclick="@(()=>ShowHideDtls(g!))">
+                        
+                        @if(!g!.Show) { <i class="fa fa-caret-down" aria-hidden="true"></i> } 
+                        else          { <i class="fa fa-caret-up"   aria-hidden="true"></i> }
+
+                        &nbsp;
+                        @g?.ClNumber
+
+                    </th>
+
+                    <th scope="row" style="cursor: pointer;" @onclick="@(()=>ShowHideDtls(g!))">
+                        @g?.Name 
+                    </th>
+                    <td class="right">@g?.RatePerHr.ToString("#,##0.00")</td>
+                    <td class="right">@g?.RatePerDay.ToString("#,##0.00")</td>
+                    <td class="right">@g?.RatePerMonth.ToString("#,##0.00")</td>
+                    <td class="right">@g?.RatePerYr.ToString("#,##0.00")</td>
+                    <td>
+                        <btn @onclick="@(()=>Edit(g!))" class="btn btn-sm btn-outline-primary"><i class='far fa-edit'></i></btn>
+                        <btn class="btn btn-sm btn-outline-danger">X</btn>
+                        <btn class="btn btn-sm btn-outline-info">	<i class='fas fa-wrench'></i></btn>
+                    </td>
+                </tr>
+
+                if(g!.Show)
+                {
+                    <tr class="w-100">
+                        <td colspan="7">
+                            <div class="components-dtls">
+                                @if (showEdit)
+                                {
+                                    <div>Edit</div>
+                                }
+                                else
+                                {
+                                    <div><_0503_01_01_RatesSettings V503=@v503 V00=@V00 payrollGrp=@g/></div>
+                                    <div class="mt-2"><_0503_01_02_DeployedPersonnel V503=@v503 V00=@V00/></div>
+    
+                                }
+                                
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+                
+            }
+        } 
+
+    </tbody>
+</table>
+</div>
+
+
+@if (v503!.PayrollGroups!.Count < 1)
+{
+    <div class="p-2 bg-info w-100">
+        Record is empty.
+    </div>
+}
+
+@inject IPayrollgrpDataAccess   _pgrp;
+@inject ICoaDataAccess          _coa; 
+
+
+@code {
+
+    bool                showAddNew  = false; 
+    bool                showEdit    = false;
+    V503                v503        = new(); 
+
+
+    [Parameter]
+    public  V00_Pay         V00     { get; set; } = new();
+
+    async void ChildActionCatcher()
+    {
+        if (V00.Action == "CloseDataEntry")     CloseDataEntry();
+        if (V00.Action == "Save")               await Save(); 
+    }
+
+    async Task Save()
+    {
+        v503.PayrollGroups = await _pgrp._02(V00.UserClaims!.SchemaUserPay!, V00.UserClaims.Conn!);
+        CloseDataEntry(); 
+    }
+
+    void CloseDataEntry()
+    {
+        showAddNew = false; 
+        V00.Action = ""; 
+        StateHasChanged();
+    }
+
+    protected override async void OnParametersSet()
+    {
+
+        await _02Datas(); 
+
+
+
+        //base.OnParametersSet();
+    }
+
+
+    async Task _02Datas()
+    {
+        // --- PayrollGrps -----------------------------------------------------------------------
+        v503.PayrollGroups = await _pgrp._02(V00.UserClaims!.SchemaUserPay!, V00.UserClaims.Conn!);
+        // --- COAs -----------------------------------------------------------------------
+        v503.Coas = await _coa._02_Earnings(V00.UserClaims!.SchemaUserPay!, V00.UserClaims.Conn!);
+
+
+        StateHasChanged(); 
+    }
+
+    void New()
+    {
+        PayrollgrpModel pg = new(); 
+        //pg.Show     = true;
+        showAddNew = true; 
+        //ShowHideDtls(pg); 
+
+    }
+
+    void Edit(PayrollgrpModel g)
+    {
+        showEdit    = true;
+        g.Show      = true; 
+
+    }
+
+    void ShowHideDtls(PayrollgrpModel p)
+    {
+        var show = p.Show;
+        v503.PayrollGroups!.ForEach(pg=>pg.Show=false); 
+        if (show == true)   { p.Show = false; }
+        else                { p.Show = true; }
+    }
+}

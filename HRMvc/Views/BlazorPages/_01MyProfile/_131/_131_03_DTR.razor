@@ -1,0 +1,188 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Views.BlazorPages.Vars
+
+
+<ul class="list-group mt-2">
+    <li class="list-group-item active" aria-current="true">MY DTR</li>
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center">Year</div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">
+                <RadzenDropDown TValue  ="int"
+                        @bind-Value     =@V.DtrYr
+                        Change          ="FetchMyDTR"
+                        Data            =@yrs
+                        TextProperty    ="Name"
+                        ValueProperty   ="Year"
+                        Style           ="width: 100%; max-width: 200px;"
+                        Name            ="ddYears" />
+            </div>
+        </div>
+    </li>
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center">Month</div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">
+                <RadzenDropDown TValue  ="int"
+                        @bind-Value     =@V.DtrMo
+                        Change          ="FetchMyDTR"
+                        Data            =@mos
+                        TextProperty    ="Name"
+                        ValueProperty   ="Month"
+                        Style           ="width: 100%; max-width: 200px;"
+                        Name            ="ddMonths" />
+            </div>
+        </div>
+    </li>
+
+    <li class="list-group-item" >
+        <div class="w-100">
+              <HRMvc.Views.BlazorPages._01MyProfile._131._131_03._131_03_01_MyDTR V="@V" ChildAction="ChildAction" />
+              @* @foreach (var mydtr in V.MyDTR)
+               {
+                 <div>@mydtr?.Date * @mydtr?.DayName?.Substring(0,3).ToUpper() </div>
+            } *@
+        </div>
+    </li>
+
+
+</ul>
+
+@inject IAttdailyDataAccess _attdaily; 
+
+
+@code {
+    List<YearsModel?>   yrs             = new();
+    List<MonthsModel?>  mos             = new();
+    bool                _isPrerendering = true;
+
+    [Parameter] public V131             V           { get; set; } = new();
+    [Parameter] public EventCallback    ChildAction { get; set; }
+
+    protected override void OnInitialized()
+    {
+        yrs = MsdsDataAccess.GetYears(3);
+        mos = MsdsDataAccess.GetMonths(); 
+    }
+
+    protected override void OnParametersSet()
+    {
+        if(_isPrerendering)
+        {
+            _isPrerendering = false;
+            FetchMyDTR(); 
+        }
+    }
+
+    async void FetchMyDTR()
+    {
+        V.MyDTR = MsdsDataAccess.GetMonthlyDTR(V.DtrYr, V.DtrMo);
+        MapSchedule();
+        await PostAttDaily(); 
+
+        StateHasChanged(); 
+
+    }
+
+    void MapSchedule()
+    {
+        if (V.MyDTR == null) return; 
+        foreach (var mdtr in V.MyDTR)
+        {
+            var dayName         = mdtr?.Date.DayOfWeek.ToString();
+            var dayNo           = MsdsDataAccess.GetDayNo(dayName??"");
+            var punchSched      = _02PunchSchedule(dayNo, V.AttTemplate??new());
+            mdtr!.DutyType      = punchSched.DutyType; 
+            if (punchSched.InTime > 0)
+            {
+                mdtr.InTimeSchedule = mdtr.Date.AddHours(punchSched.InTime / 100);
+            }
+            if (punchSched.HrsLenght > 0)
+            {
+                if (punchSched.InTime > 0){
+                    mdtr.OutTimeSchedule = mdtr.Date.AddHours((punchSched.HrsLenght + punchSched.InTime) / 100); 
+                } else
+                {
+                    mdtr.OutTimeSchedule = mdtr.Date.AddHours(punchSched.HrsLenght / 100);
+                }
+
+            }
+
+        }
+
+    }
+    async Task PostAttDaily()
+    {
+        var empmasId = V.PisEmpmas?.Id??0;
+        var res = await _attdaily._02ByMonth(empmasId, V.DtrYr, V.DtrMo, V.pisdb!, V.conn!);
+        if (res == null) return;
+        if (res.Count < 1) return; 
+
+
+        foreach (var r in res)
+        {
+            var day = r?.Punchdate.Day;
+            V.MyDTR?.ForEach(d =>
+            {
+                if(d?.Date.Day == day)
+                {
+                    //try
+                    //{
+                        d.InTime            = r.Timein;
+                        d.InTimeSchedule    = r.Punchdate.AddHours(r.Timeint / 100);
+                        d.OutTime           = r.Timeout;
+                        d.OutTimeSchedule   = r.Punchdate.AddHours(r.Timeoutt / 100);
+                    // }
+                    // catch (Exception)
+                    // {   throw; }
+                }
+            }); 
+        }
+    }
+
+    record PunchSchedule(int AttendanceTypeId, int InTime, int HrsLenght, string DutyType);
+    PunchSchedule _02PunchSchedule(int dayno, AtttemplateModel at)
+    {
+        var ps = new PunchSchedule(0, 0, 0, "RD");
+        switch (dayno)
+        {
+            case 1:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D1_in, at.D1_hrslength, at.D1_dutytype ?? "RD");
+                return ps;
+            case 2:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D2_in, at.D2_hrslength, at.D2_dutytype ?? "RD");
+                return ps;
+            case 3:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D3_in, at.D3_hrslength, at.D3_dutytype ?? "RD");
+                return ps;
+            case 4:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D4_in, at.D4_hrslength, at.D4_dutytype ?? "RD");
+                return ps;
+            case 5:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D5_in, at.D5_hrslength, at.D5_dutytype ?? "RD");
+                return ps;
+            case 6:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D6_in, at.D6_hrslength, at.D6_dutytype ?? "RD");
+                return ps;
+            case 7:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D7_in, at.D7_hrslength, at.D7_dutytype ?? "RD");
+                return ps;
+
+
+            default:
+                break;
+        }
+
+
+        return ps;
+    }
+
+
+
+
+
+}

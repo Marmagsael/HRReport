@@ -1,0 +1,116 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    string[] label = new string[] { "Red", "Blue", "Yellow", "Green", "Purple", "Orange" };
+    string allocated = "Allocated";
+    string unallocated = "Unallocated";
+
+    int dataAllocated = 40; 
+    int dataUnallocated = 60;
+
+
+}
+
+<style>
+    .chartBox {
+        border: 1px solid red; 
+        width: 400px; 
+        padding: 10px;  
+    }
+
+</style>
+
+
+<h1>Chart JS</h1>
+
+
+<div class="chartBox">
+    <canvas id="myChart"></canvas>
+</div>
+
+
+@section Scripts{
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+    <script>
+        const ctx = document.getElementById('myChart');
+
+        const gaugeNeedle = {
+            id: 'gaugeNeedle', 
+            afterDatasetDraw(chart, args, options) {
+                 const {ctx, config, data, chartArea: {top, bottom, left, right, width, height}} = chart; 
+
+                 ctx.save(); 
+                 
+                 const needleValue = data.datasets[0].needleValue;
+                //console.log('needleValue :', needleValue)
+                 const dataTotal = data.datasets[0].data.reduce((a,b) => a + b, 0);
+                //console.log(dataTotal)
+
+                 const angle = Math.PI + (1 / dataTotal * needleValue * Math.PI);
+                //console.log(angle)
+                const chartX = width / 2;
+                const chartY = chart._metasets[0].data[0].y;
+
+                //needle 
+                ctx.translate(chartX, chartY);
+                ctx.rotate(angle); 
+                ctx.beginPath(); 
+                ctx.moveTo(0, -2); 
+                ctx.lineTo((height - ctx.canvas.offsetTop)/1.25, 0);
+                ctx.lineTo(0, 2); 
+                ctx.fillStyle = 'rgb(0,0,255)'; 
+                ctx.fill(); 
+
+                //needle dot
+                ctx.translate(-chartX, -chartY);
+
+                ctx.beginPath(); 
+                ctx.arc(chartX, chartY,5,0,10); 
+                ctx.fill(); 
+                ctx.restore(); 
+                
+            }
+        }
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+
+                labels: [ '@allocated', ' @unallocated ' ] , 
+                
+                
+                datasets: [{
+                    label: 'Pie Description',
+                    data: [@dataAllocated, @dataUnallocated],
+                    backgroundColor: [
+                        'rgb(255, 0, 0)',
+                        'rgb(0, 255, 0)'
+                    ],
+                    needleValue: @dataAllocated, 
+                    borderColor: 'brown',
+                    borderWidth: 1, 
+                    cutout: '90%', 
+                    circumference: 180, 
+                    rotation: 270, 
+                    borderRadius: 5
+                }],
+
+                hoverOffset: 4
+
+            },
+            options: {
+                 
+            }, 
+
+            plugins: [gaugeNeedle ]
+        });
+    </script>
+
+
+}

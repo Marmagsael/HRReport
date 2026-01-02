@@ -1,0 +1,731 @@
+﻿@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.DataAccess._90_Utils.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR._02Library
+@using HRMvc.Applications._02HR.Views.BlazorPages._00Library
+@using Radzen;
+
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+
+<RadzenDialog />
+<RadzenNotification />
+
+
+@* @if (showApproverScreen)
+{
+    <div class="w-100 text-center ">
+        <_242_02_01_ApproverMgt V="@V" ChildAction="ChildActionCatcher" Hdrname="DEPLOYMENT APPROVER MGT" Module="DEP" />
+    </div>
+    return;
+} *@
+
+
+
+@{
+    var cssShowApprScreen = string.Empty;
+    if (showApproverScreen) cssShowApprScreen = "disabled-div";
+}
+
+
+<div class="w-100 @cssShowApprScreen background-div ">
+    <div class="w-100 p-1 bg-secondary bg-opacity-10 border-bottom d-flex gap-2">
+        <RadzenButton Click=@SaveReinstatement Text="Save" class="btn-gray" Disabled=@V!.SaveDisabled />
+        @if (!markAsApproved)
+        {
+            <button class="btn  btn-secondary btn-sm">Send for Approval</button>
+        }
+        else
+        {
+            <RadzenButton Click=@PostReinstatement Text="Post" class="btn-gray" Disabled=@V.PostDisabled />
+            <RadzenButton Text="Print" class="btn-gray" Disabled=@V.PrintDisabled />
+        }
+
+    </div>
+
+    <div class="p-1">
+        <div class="w-100  p-1 ">
+
+            @if (V.ShowErrorMessage)
+            {
+                <div class="px-2">
+                    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="false" Variant="Variant.Flat" Shade="Shade.Lighter">
+                        Please enter values for the required fields below.
+                    </RadzenAlert>
+                </div>
+            }
+
+            <RadzenFieldset Text="Transaction">
+                @*--- TRN Number *@
+                <div class="d-flex gap-2 py-1">
+                    <div class="@lwidth p-2">TRN Number </div>
+                    <div class="w-100">
+                        <RadzenTextBox @bind-Value="@V.Tranreinstatementapproval.TranNumber" Name="TranNumber" class="w-200p" Disabled />
+                    </div>
+                </div>
+
+                @*--- TRN Date *@
+                <div class="d-flex gap-2 pt-1">
+                    <div class="@lwidth p-2">TRN Date <span class="text-danger">*</span></div>
+                    <div class="w-100">
+                        <RadzenDatePicker @bind-Value="@V.Tranreinstatementapproval.PrepDate" DateFormat="MM / dd / yyyy " Max="DateTime.Now" Name="prepDate" Style="width: 100%; max-width: 200px;" Disabled=@V.SaveDisabled />
+                    </div>
+                </div>
+            </RadzenFieldset>
+
+            <RadzenFieldset Text="Assignment" class="fw-bold">
+
+                <div class="fw-normal">
+
+                    <div class=" bordered py-1 bg-secondary bg-opacity-10 br-5">
+                        @*--- Deployment Mode *@
+                        <div class="d-flex gap-2 py-1 ">
+                            <div class="@lwidth p-2">Movement  </div>
+                            <div class="w-100 ">
+                                <RadzenTextBox Value="For Reinstatement" Style="width: 100%; max-width: 200px;" Disabled=true />
+                            </div>
+                        </div>
+
+                        @*--- Employment Type *@
+                        <div class="d-flex gap-2 py-1 ">
+                            <div class="@lwidth p-2">Employment Type <span class="text-danger">*</span> </div>
+                            <div class="w-100">
+                                <RadzenDropDown TValue="int"
+                                                @bind-Value="@V.Tranreinstatementapproval.IdEmploymentType"
+                                                Data="@V.Employtypes"
+                                                ValueProperty="Id"
+                                                TextProperty="Name"
+                                                Style="width: 100%; max-width: 200px;"
+                                                Name="ddDepMode"
+                                                Disabled=@V.SaveDisabled
+                                                Change="OnEmploymentTypeChanged" />
+                            </div>
+                        </div>
+                    </div>
+
+
+                    @*--- Deployment Start *@
+                    @{
+                        var cssDepStartBdrBott = "";
+                        if (V!.Rdep?.Employttypeid > 3) cssDepStartBdrBott = "border-bottom";
+                    }
+                    <div class="d-flex gap-2 py-1 pt-2 @cssDepStartBdrBott ">
+                        <div class="@lwidth p-2">Deployment Start <span class="text-danger">*</span></div>
+                        <div class="w-100">
+                            <RadzenDatePicker @bind-Value="@V!.Tranreinstatementapproval.DepStart"
+                                              DateFormat="MM / dd / yyyy" Name="dateDevend" class="w-200p"
+                                              Disabled=@V.SaveDisabled
+                                              Change="OnStartDateChange" />
+                        </div>
+                    </div>
+
+                    @if (!V.DateEndDisabled)
+                    {
+                        @*--- Deployment End *@
+                        <div class="d-flex gap-2 py-1 pb-2">
+                            <div class="@lwidth p-2">Deployment End <span class="text-danger">*</span></div>
+                            <div class="w-100">
+                                <RadzenDatePicker @bind-Value="@V!.Tranreinstatementapproval!.DepEnd"
+                                                  DateFormat="MM / dd / yyyy"
+                                                  Min="@V!.Tranreinstatementapproval.DepStart?.Date"
+                                                  Name="dateDevend"
+                                                  class="w-200p"
+                                                  Style="max-width:410px"
+                                                  Disabled="@V.SaveDisabled" />
+
+                            </div>
+                        </div>
+                    }
+
+                    @*--- Division *@
+                    <div class="d-flex gap-2 py-1  pt-2 border-top">
+                        <div class="@lwidth p-2">Division <span class="text-danger">*</span></div>
+                        <div class="w-100">
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@V!.Tranreinstatementapproval!.IdDivision"
+                                            Data="@V.Divs"
+                                            ValueProperty="Id"
+                                            TextProperty="Name"
+                                            Style="width: 100%; max-width: 410px;"
+                                            Name="ddDivs"
+                                            Disabled=@V.SaveDisabled />
+                        </div>
+                    </div>
+
+
+                    @*--- Department *@
+                    <div class="d-flex gap-2 py-1 ">
+                        <div class="@lwidth p-2">Department <span class="text-danger">*</span></div>
+                        <div class="w-100 d-flex gap-2">
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@V!.Tranreinstatementapproval!.IdDepartment"
+                                            Change="DepartmentChanged"
+                                            Data="@V.Depts"
+                                            ValueProperty="Id"
+                                            TextProperty="Name"
+                                            Style="width: 100%; max-width: 410px;"
+                                            Name="ddDepts"
+                                            Disabled=@V.SaveDisabled />
+                            <button @onclick="ClearDepartment" class="btn btn-sm b-btn-black-outline" disabled=@V.SaveDisabled>Clear</button>
+                        </div>
+
+                    </div>
+                    @*--- Section *@
+                    <div class="d-flex gap-2 py-1 pb-2 border-bottom">
+                        <div class="@lwidth p-2">Section <span class="text-danger">*</span></div>
+                        <div class="w-100 d-flex gap-2">
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@V!.Tranreinstatementapproval!.IdSection"
+                                            Data="@V.Secs"
+                                            ValueProperty="Id"
+                                            TextProperty="Name"
+                                            Style="width: 100%; max-width: 410px;"
+                                            Name="ddSecs"
+                                            Disabled=@V.SaveDisabled />
+                            <button @onclick="ClearSection" class="btn btn-sm b-btn-black-outline" disabled=@V.SaveDisabled>Clear</button>
+                        </div>
+                    </div>
+
+                    @*--- Deployment *@
+                    <div class="d-flex gap-2 py-2 border-bottom ">
+                        <div class="@lwidth p-2 text-success">Deployment <span class="text-danger">*</span></div>
+                        <div class="w-100">
+
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@V!.Tranreinstatementapproval!.IdDeployment"
+                                            Data="@V.Deployments"
+                                            ValueProperty="Id"
+                                            TextProperty="Name"
+                                            Style="width: 100%; max-width: 410px;"
+                                            Name="ddDesignation"
+                                            Disabled=@V.SaveDisabled
+                                            Change="DeploymentChanged"
+                                            class="text-success" />
+                        </div>
+                    </div>
+                    @*--- Designation *@
+                    <div class="d-flex gap-2 py-1 pt-2 ">
+                        <div class="@lwidth p-2">Designation <span class="text-danger">*</span></div>
+                        <div class="w-100">
+
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@V!.Tranreinstatementapproval!.IdDesignation"
+                                            Data="@V.Designations"
+                                            ValueProperty="Id"
+                                            TextProperty="Name"
+                                            Style="width: 100%; max-width: 410px;"
+                                            Name="ddDesignation"
+                                            Disabled=@V.SaveDisabled />
+                        </div>
+                    </div>
+
+                    @*--- Position *@
+                    <div class="d-flex gap-2 py-1">
+                        <div class="@lwidth p-2">Position <span class="text-danger">*</span></div>
+                        <div class="w-100">
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@V!.Tranreinstatementapproval!.IdPosition"
+                                            Data="@V.Positions"
+                                            ValueProperty="Id"
+                                            TextProperty="Name"
+                                            Style="width: 100%; max-width: 410px;"
+                                            Name="ddPosisition"
+                                            Disabled=@V.SaveDisabled />
+                        </div>
+                    </div>
+
+                    @*--- Payroll Group *@
+                    <div class="d-flex gap-2 py-1  visually-hidden d-none">
+                        <div class="@lwidth p-2">Payroll Group</div>
+                        <div class="w-100">
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@V!.Tranreinstatementapproval!.IdPayrollGrp"
+                                            Data="@V.Payrollgrp"
+                                            ValueProperty="Id"
+                                            TextProperty="Name"
+                                            Style="width: 100%; max-width: 410px;"
+                                            Name="ddDivs"
+                                            Disabled=@V.SaveDisabled />
+                        </div>
+                    </div>
+
+                    @*--- Approver ------------------------------------*@
+                    @if (!markAsApproved)
+                    {
+                        <div class="d-flex gap-2 py-1 ">
+                            <div class="@lwidth p-2">Approver <span class="text-danger">*</span></div>
+                            <div class="w-100 d-flex gap-2">
+                                <RadzenDropDown TValue="int"
+                                                @bind-Value="@V!.Tranreinstatementapproval.IdApprover"
+                                                Data="@V.RDepApproverDeps"
+                                                ValueProperty="Systemid"
+                                                TextProperty="Fullname"
+                                                Style="width: 100%; max-width: 200px;"
+                                                Name="ddSecs"
+                                                Disabled=@V.SaveDisabled />
+                                @if (V.Uc?.OwnerId == UserClaims?.UserId)
+                                {
+                                    <button @onclick="ShowApproverManagement" class="btn btn-sm b-btn-black-outline">...</button>
+                                }
+
+                            </div>
+                        </div>
+                    }
+
+                    @*--- Mark as Approve ---------------- *@
+                    <div class="d-flex gap-2 py-2 d-none">
+                        <div class="@lwidth p-2"> &nbsp; </div>
+                        <div class="w-100 d-flex gap-2">
+                            <div class="p-1"><RadzenCheckBox @bind-Value="markAsApproved" class="my-checkbox" Disabled /> </div>
+                            <div class="p-1">Mark As Approved</div>
+                        </div>
+                    </div>
+
+                    @*--- Set Status (For Approval - FA ) ----------------------------- *@
+                    @if (!markAsApproved)
+                    {
+                        <div class="d-flex gap-2 py-1 bordered mt-1 bg-secondary bg-opacity-10 br-5">
+                            <div class="@lwidth p-2">Set Status to</div>
+                            <div class="w-100 fw-bold p-2">
+                                For Approval
+                            </div>
+                        </div>
+                    }
+                </div>
+
+            </RadzenFieldset>
+
+        </div>
+
+    </div>
+</div>
+
+
+@inject IRdepapproverDataAccess _rdepapprover;
+@inject ITranreinstatementDataAccess _tranreinstatement;
+@inject ITranreinstatementapprovalDataAccess _tranreinstatementapproval;
+@inject ITranreinstatementapprovalhistoryDataAccess _tranreinstatementapprhistory;
+@inject IParaDataAccess _para;
+@inject IDeprecDataAccess _deprec;
+@inject IEmptranmovementDataAccess _emptranmovement;
+
+
+@code {
+    string lwidth = "w-200p";
+    bool markAsApproved = true;
+    DateTime d = new();
+    bool showApproverScreen = false;
+
+    string mode = "REI";
+    string notifMessage = string.Empty;
+    string status = string.Empty;
+
+    [Parameter] public V245? V { get; set; } = new();
+    [Parameter] public UserClaimsModel? UserClaims { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+
+
+    private async void OnEmploymentTypeChanged()
+    {
+        V!.Action = "OnEmploymentTypeChanged";
+        await ChildAction.InvokeAsync();
+        StateHasChanged();
+    }
+
+    async Task DepartmentChanged()
+    {
+        V!.Action = "OnDepartmentChanged";
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task<bool> DeploymentChanged()
+    {
+        if (V == null || V.EmpblockpostList == null) return false;
+
+        bool exist = V.EmpblockpostList.Any(e => e.DeploymentId == V.Tranreinstatementapproval.IdDeployment);
+        if (exist)
+        {
+            status = "Failed";
+            notifMessage = "Sorry! This employee is blocked from this deployment. Please select another deployment.";
+            NotifyUpdate(status, notifMessage);
+            return true;
+        }
+
+        return false;
+    }
+
+    async void ClearDepartment()
+    {
+
+        if (V!.SaveDisabled == true) return;
+
+        V!.Tranreinstatementapproval!.IdDepartment = 0;
+        V!.Tranreinstatementapproval!.IdSection = 0;
+        V.Secs = new();
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+    }
+
+    async void ClearSection()
+    {
+        if (V!.SaveDisabled == true) return;
+
+        V!.Tranreinstatementapproval!.IdSection = 0;
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+    }
+
+    void ShowApproverManagement()
+    {
+        showApproverScreen = true;
+        StateHasChanged();
+    }
+
+    void Mark_As_Approved()
+    {
+
+
+    }
+
+    private void OnStartDateChange()
+    {
+        if (V.Tranreinstatementapproval.DepStart > V.Tranreinstatementapproval.DepEnd && !V.DateEndDisabled)
+        {
+            V.Tranreinstatementapproval.DepEnd = V.Tranreinstatementapproval.DepStart;
+        }
+    }
+
+    private async Task SaveReinstatement()
+    {
+        if (V?.Tranreinstatementapproval == null) return;
+
+        V.Tranreinstatementapproval.Mode = mode;
+
+        //  Validate Fields are complete
+        if (!(await ValidateFields())) return;
+
+        // Insert ----------------
+        if (V.Tranreinstatementapproval.Id == 0)
+        {
+            await InsertReinstatement();
+        }
+        else
+        {
+            await UpdateReinstatement();
+        }
+
+        V.SaveDisabled = false;
+        V.PostDisabled = false;
+        V.PrintDisabled = true;
+
+        NotifyUpdate(status, notifMessage);
+    }
+
+    private async Task PostReinstatement()
+    {
+        if (V == null) return;
+        if (!(await ValidateFields())) return;
+
+
+        string pisdb = V.pisdb ?? string.Empty;
+        string conn = V.conn ?? string.Empty;
+
+        status = string.Empty;
+        notifMessage = string.Empty;
+
+        var Tranreinstatement = ConvertToTranmovement(V.Tranreinstatementapproval);
+        var insertedTrandeployment = await _tranreinstatement._01(Tranreinstatement, pisdb, conn);
+
+        if (insertedTrandeployment == null)
+        {
+            status = "Failed";
+            notifMessage = "Failed to post the record.";
+            return;
+        }
+
+
+        V.Tranreinstatement = insertedTrandeployment;
+
+        var deletedApproval = await _tranreinstatementapproval._04(V.Tranreinstatementapproval.Id, pisdb, conn);
+        if (deletedApproval != null)
+        {
+            status = "Failed";
+            notifMessage = "Failed to post the record.";
+            return;
+        }
+
+        int userId = UserClaims?.UserId ?? 0;
+
+        var history = new TranreinstatementapprovalhistoryModel
+        {
+            TranNumber = V.Tranreinstatementapproval.TranNumber,
+            Date = DateTime.Now,
+            UserId = userId,
+            Status = "Posted",
+            ApproverId = 0,
+            ApproverRemarks = string.Empty
+        };
+
+        var insertedHistory = await _tranreinstatementapprhistory._01(history, pisdb, conn);
+        if (insertedHistory == null)
+        {
+            status = "Failed";
+            notifMessage = "Failed to post the record.";
+            return;
+        }
+
+        var existingDeprec = await _deprec._02(V.Empmas.Id, pisdb, conn);
+        if (existingDeprec == null)
+        {
+            status = "Failed";
+            notifMessage = "Failed to post the record.";
+            return;
+        }
+
+        var updatedDeprec = UpdateDeprec(existingDeprec, V.Tranreinstatement);
+
+        if (updatedDeprec != null)
+        {
+            var empTrnMov = new EmptranmovementModel()
+            {
+                EmpmasId = V.Tranreinstatement.IdEmpmas,
+                MovDate = V.Tranreinstatement.PrepDate,
+                MovNumber = V.Tranreinstatement.TranNumber,
+                UserId = userId,
+                DateRecorded = DateTime.Now,
+                TranStart = V.Tranreinstatement.DepStart,
+                TranEnd = V.Tranreinstatement.DepEnd,
+                Remarks = "Reinstatement : Posted",
+                EmpStatusId = 1 // Active
+            };
+            var insertEmpTranMovRes = await _emptranmovement._01(empTrnMov, pisdb, conn);
+            if (insertEmpTranMovRes == null)
+            {
+                status = "Failed";
+                notifMessage = "Failed to post the record.";
+                return;
+            }
+
+            status = "Success!";
+            notifMessage = "The record has been posted successfully.";
+
+            V.SaveDisabled = true;
+            V.PostDisabled = true;
+            V.PrintDisabled = false;
+
+            NotifyUpdate(status, notifMessage);
+
+            V.EmpmasList?.Remove(V.Empmas);
+            V.EmpmasListGrid = V.EmpmasList;
+            if (V.EmpmasGrid != null)
+            {
+                await V.EmpmasGrid.Reload();
+                StateHasChanged();
+            }
+
+
+
+        }
+
+    }
+
+
+    private async Task InsertReinstatement()
+    {
+
+
+        // 1. Set Other Values
+        V!.Tranreinstatementapproval.IdEmpmas = V.Empmas.Id;
+
+
+        // 3. Generate TRN Number
+        var trnNumber = await MsdsDataAccess.GenerateTrnNumber(mode, _para, V.pisdb!, V.conn!);
+
+        if (string.IsNullOrWhiteSpace(trnNumber)) return;
+        V.Tranreinstatementapproval.TranNumber = trnNumber;
+
+
+        // 4. Save to TRN Approval
+        var insertApprRes = await _tranreinstatementapproval._01(V.Tranreinstatementapproval, V.pisdb!, V.conn!);
+
+        if (insertApprRes != null)
+        {
+            V.Tranreinstatementapproval.Id = insertApprRes.Id;
+
+            status = "Success!";
+            notifMessage = "The record has been saved successfully.";
+
+
+        }
+        else
+        {
+            status = "Failed!";
+            notifMessage = "Failed to save the record. Please try again.";
+        }
+    }
+
+    private async Task UpdateReinstatement()
+    {
+        if (!(await ValidateFields())) return;
+
+        var res = await _tranreinstatementapproval._03(V!.Tranreinstatementapproval.Id, V.Tranreinstatementapproval, V.pisdb!, V.conn!);
+        if (res != null)
+        {
+            status = "Success!";
+            notifMessage = "The record has been updated successfully.";
+        }
+
+        else
+        {
+            status = "Failed!";
+            notifMessage = "Failed to update the record. Please try again.";
+        }
+
+
+    }
+    private async Task<bool> ValidateFields()
+    {
+        if (V == null || V.Tranreinstatementapproval == null)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(V!.Tranreinstatementapproval.Mode)) return ShowValidationError();
+        if (V.Tranreinstatementapproval.IdEmploymentType == 0) return ShowValidationError();
+        if (V.Tranreinstatementapproval.IdDivision == 0) return ShowValidationError();
+        if (V.Tranreinstatementapproval.IdSection == 0) return ShowValidationError();
+        if (V.Tranreinstatementapproval.IdDepartment == 0) return ShowValidationError();
+        if (V.Tranreinstatementapproval.IdDeployment == 0) return ShowValidationError();
+        if (V.Tranreinstatementapproval.IdPosition == 0) return ShowValidationError();
+        if (V.Tranreinstatementapproval.IdDesignation == 0) return ShowValidationError();
+
+        if (V!.Tranreinstatementapproval.DepStart == null) return ShowValidationError();
+        if (V.DateEndDisabled == false) { if (V!.Tranreinstatementapproval.DepEnd == null) return ShowValidationError(); }
+
+        if (await DeploymentChanged()) return false;
+
+
+        V.ShowErrorMessage = false;
+        return true;
+    }
+
+    private bool ShowValidationError()
+    {
+        V!.ShowErrorMessage = true;
+        return false;
+    }
+
+    private async Task<DeprecModel> UpdateDeprec(DeprecModel existing, TranreinstatementModel tran)
+    {
+        DateTime? dHired = existing.Dhired != DateTime.MinValue ? existing.Dhired : tran.DepStart;
+        DateTime? dTraineeStart = (tran.IdEmploymentType == 1 && existing.Dtraineestart == DateTime.MinValue) ? tran.DepStart : existing.Dtraineestart;
+        DateTime? dContractualStart = (tran.IdEmploymentType == 2 && existing.Dcontractualstart == DateTime.MinValue) ? tran.DepStart : existing.Dcontractualstart;
+        DateTime? dProbationaryStart = (tran.IdEmploymentType == 3 && existing.Dprobationarystart == DateTime.MinValue) ? tran.DepStart : existing.Dprobationarystart;
+        DateTime? dRegularizationStart = (tran.IdEmploymentType == 4 && existing.Dregularizationstart == DateTime.MinValue) ? tran.DepStart : existing.Dregularizationstart;
+        DateTime? dRegularization = (tran.IdEmploymentType == 4 && existing.Dregularization == DateTime.MinValue) ? tran.DepStart : existing.Dregularization;
+        DateTime? dPermanentStart = (tran.IdEmploymentType == 5 && existing.Dpermanentstart == DateTime.MinValue) ? tran.DepStart : existing.Dpermanentstart;
+
+        DateTime? dTraineeEnd = (tran.IdEmploymentType == 1 && existing.Dtraineeend == DateTime.MinValue) ? tran.DepEnd : existing.Dtraineeend;
+        DateTime? dContractuaEnd = (tran.IdEmploymentType == 2 && existing.Dcontractualend == DateTime.MinValue) ? tran.DepEnd : existing.Dcontractualend;
+        DateTime? dProbationaryEnd = (tran.IdEmploymentType == 3 && existing.Dprobationaryend == DateTime.MinValue) ? tran.DepEnd : existing.Dprobationaryend;
+        DateTime? dRegularizationEnd = (tran.IdEmploymentType == 4 && existing.Dregularizationend == DateTime.MinValue) ? tran.DepEnd : existing.Dregularizationend;
+
+        DeprecModel? deprecModel = new DeprecModel()
+        {
+            Empmasid = tran.IdEmpmas,
+            Divid = tran.IdDivision,
+            Depid = tran.IdDepartment,
+            Secid = tran.IdSection,
+            Leavegrpid = existing.Leavegrpid,
+            Payrollgrpid = existing.Payrollgrpid,
+            Positionid = tran.IdPosition,
+            Employmenttypeid = tran.IdEmploymentType,
+            Empstatusid = 1, //Status is  Active
+            Dhired = dHired ?? DateTime.MinValue,
+            Dregularization = dRegularization ?? DateTime.MinValue,
+            Dtraineestart = dTraineeStart ?? DateTime.MinValue,
+            Dtraineeend = dTraineeEnd ?? DateTime.MinValue,
+            Dcontractualstart = dContractualStart ?? DateTime.MinValue,
+            Dcontractualend = dContractuaEnd ?? DateTime.MinValue,
+            Dprobationarystart = dProbationaryStart ?? DateTime.MinValue,
+            Dprobationaryend = dProbationaryEnd ?? DateTime.MinValue,
+            Dregularizationstart = dRegularizationStart ?? DateTime.MinValue,
+            Dregularizationend = dRegularizationEnd ?? DateTime.MinValue,
+            Dpermanentstart = dPermanentStart ?? DateTime.MinValue,
+            Dresigned = existing.Dresigned,
+            Dterminated = existing.Dterminated,
+            Dseparated = existing.Dseparated,
+            Remarks = existing.Remarks,
+            // Added -------------
+            TranNumber = tran.TranNumber,
+            IdDeployment = tran.IdDeployment,
+            DepDate = existing.DepDate,
+        };
+
+        var deprecUpdateResult = await _deprec._03(deprecModel, V!.pisdb!, V.conn!);
+        return deprecUpdateResult!;
+
+    }
+
+
+
+
+    TranreinstatementModel ConvertToTranmovement(TranreinstatementapprovalModel data)
+    {
+        return new TranreinstatementModel()
+        {
+            Id = data.Id,
+            IdEmpmas = data.IdEmpmas,
+            TranNumber = data.TranNumber,
+            PrepDate = data.PrepDate,
+            DepStart = data.DepStart,
+            DepEnd = data.DepEnd,
+            DateApproved = DateTime.Now,
+            Mode = data.Mode,
+            IdEmploymentType = data.IdEmploymentType,
+            IdDivision = data.IdDivision,
+            IdSection = data.IdSection,
+            IdDepartment = data.IdDepartment,
+            IdPosition = data.IdPosition,
+            IdDesignation = data.IdDesignation,
+            IdPayrollGrp = data.IdPayrollGrp,
+            IdDeployment = data.IdDeployment,
+            IdApprover = data.IdApprover,
+            MarkApprove = data.MarkApprove
+        };
+    }
+
+    async void ChildActionCatcher()
+    {
+        if (V!.Action == "HideEntry")
+        {
+            showApproverScreen = false;
+            var res = await _rdepapprover._02ByModule(mode, V.pisdb!, V.conn!);
+            StateHasChanged();
+        }
+    }
+
+
+    void NotifyUpdate(string summary = "Update Status", string details = "Complete")
+    {
+        NotificationMessage msg = new();
+        msg.Severity = status == "Success!" ? NotificationSeverity.Success : NotificationSeverity.Error;
+        msg.Summary = @summary;
+        msg.Detail = @details;
+        msg.Duration = 4000;
+
+        _NotificationService.Notify(msg);
+        StateHasChanged();
+    }
+
+}
+
+<style>
+    .btn-gray {
+        color: #fff;
+        background-color: #6c757d !important;
+        border-color: #6c757d;
+    }
+</style>

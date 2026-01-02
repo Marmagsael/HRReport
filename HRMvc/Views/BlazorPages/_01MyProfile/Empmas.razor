@@ -1,0 +1,128 @@
+﻿@page "/00Main/Empmas"
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+@using HRMvc.Models;
+
+@inject ILogger<Empmas> Logger
+@inject I_00MainPisAccess _mainPisDA
+@inject NotificationService NotificationService
+
+<RadzenNotification/>
+
+<RadzenTemplateForm TItem="EmpmasModel" Data="@empmas" Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+    <div class="form-section-action">
+        <RadzenButton ButtonType="Radzen.ButtonType.Submit" Text="Update Info" />
+    </div>
+
+    <RadzenRow>
+        <RadzenColumn Size="12" SizeMD="3">
+            <div class="form-img-container"><i class="fa-solid fa-user-tie"></i></div>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeMD="8">
+            <RadzenStack Gap="1rem">
+                @*---- Last Name ----*@
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenLabel Text="Last Name" Component="EmpLastNm" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="8" SizeLG="7">
+                        <RadzenTextBox style="display: block" Name="EmpLastNm" @bind-Value="empmas.EmpLastNm" class="w-100" />
+                        <RadzenLengthValidator Component="EmpLastNm" Max="25" Text="Last name should be at most 25 characters" Popup="false" Style="position: absolute" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                @*---- First Name ----*@
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenLabel Text="First Name" Component="EmpFirstNm" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="8" SizeLG="7">
+                        <RadzenTextBox style="display: block" Name="EmpFirstNm" @bind-Value="empmas.EmpFirstNm" class="w-100" />
+                        <RadzenLengthValidator Component="EmpFirstNm" Max="25" Text="First name should be at most 25 characters" Popup="false" Style="position: absolute" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                @*---- Middle Name ----*@
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenLabel Text="Middle Name" Component="EmpMidNm" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="8" SizeLG="7">
+                        <RadzenTextBox style="display: block" Name="EmpMidNm" @bind-Value="empmas.EmpMidNm" class="w-100" />
+                        <RadzenLengthValidator Component="EmpMidNm" Max="15" Text="Middle name  should be at most 15 characters" Popup="false" Style="position: absolute" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                @*---- Suffix ----*@
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenLabel Text="Suffix" Component="Suffix" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox style="display: block" Name="Suffix" @bind-Value="empmas.Suffix" class="w-100" />
+                        <RadzenLengthValidator Component="Suffix" Max="3" Text="Suffix should be at most 3 characters" Popup="false" Style="position: absolute" />
+                    </RadzenColumn>
+                </RadzenRow>
+
+                @*---- Alias ----*@
+                <RadzenRow>
+                    <RadzenColumn Size="12" SizeMD="3">
+                        <RadzenLabel Text="Alias" Component="EmpAlias" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenTextBox style="display: block" Name="EmpAlias" @bind-Value="empmas.EmpAlias" class="w-100" />
+                        <RadzenLengthValidator Component="EmpAlias" Max="15" Text="Alias should be at most 15 characters" Popup="false" Style="position: absolute" />
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenTemplateForm>
+
+
+
+
+@code {
+    [Parameter]
+    public UserClaimsModel? userClaims { get; set; }
+
+    private EmpmasModel empmas = new();
+
+    private int     userId = 0;
+    private string  schema = string.Empty;
+    private string  dbConn = string.Empty;
+
+    protected async override void OnParametersSet()
+    {
+        SetParameters();
+        await Init();
+    }
+
+    private void SetParameters()
+    {
+        if (userClaims is not null)
+        {
+            userId = userClaims?.UserId!         == null ? 0            : userClaims.UserId;
+            schema = userClaims?.SchemaMainPis!  == null ? "mainPis"    : userClaims.SchemaMainPis!;
+            dbConn = userClaims?.Conn!           == null ? "MySqlConn"  : userClaims?.Conn!;
+        }
+    }
+
+    private async Task Init()
+    {
+        var res = await _mainPisDA._02Empmas(userId, schema , dbConn );
+        if (res is not null) empmas = res;
+        StateHasChanged();
+    }
+
+    private async void OnSubmit()
+    {
+        await _mainPisDA._03Empmas(empmas.Id, empmas, schema!, dbConn);
+        NotificationService.Notify(NotificationSeverity.Success, "Success", "Form submitted successfully!");
+    }
+
+    private void OnInvalidSubmit()
+    {
+        NotificationService.Notify(NotificationSeverity.Error, "Error", "Form has errors!");
+    }
+}
