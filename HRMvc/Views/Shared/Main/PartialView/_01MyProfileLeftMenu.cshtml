@@ -1,0 +1,151 @@
+﻿@using HRApiLibrary.Models._00_Main;
+@using HRApiLibrary.Models._90_Utils;
+@using HRApiLibrary.DataAccess._00_Main;
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+
+
+@model MenusModel;
+
+@inject I_00MainDA _mainDa;
+@inject IConfiguration _config;
+@{
+    <link rel="stylesheet" href="~/css/Main/Layout/main_leftmenu.css" asp-append-version="true" />
+
+    string mainSchema   = _config.GetSection("Schema:Main").Value;
+    string conn         = _config.GetSection("Schema:DefConn").Value;
+    string isExclusiveCompany = _config.GetSection("CompanyInfo:Exclusive").Value;
+
+    string? userId = "0";
+
+    if (User.HasClaim(c => c.Type == "UserId"))
+    {
+        userId = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault()?.Value;
+    }
+
+
+    // ************************************************************************************************************
+    // *** Generate Menus to display ******************************************************************************
+    List<MenusModel?> menusList = await _mainDa._02MenuList("menus10user", 1, mainSchema, conn);
+    List<MenusModel?> menus = new();
+    menus = menusList.Where(m => m?.Id < 200).ToList(); ; //temporary (added by judith to display all menus) -----
+                       //List<MenusModel?> selectedMenu = menusList; //temporary (added by judith to display all menus) -----
+
+    string? defCompanyId = User.Claims.Where(c => c.Type == "DefCompayId").FirstOrDefault()?.Value;
+
+    CompaniesAssignedToUserModel? selectedCompany = await _mainDa._02CompanyUsers_WTypeWCoDtls(int.Parse(userId!), int.Parse(defCompanyId!), mainSchema, conn);
+    //if (defCompanyId == "0")
+    //{
+    //    if (selectedCompany?.UserTypeId > 2) menus = menusList.Where(m => m?.Id < 200 || m?.Id > 299).ToList();    // --- Fetch Personal Info and Application Link
+    //    else menus = menusList.Where(m => m?.Id < 200).ToList();                   // --- Fetch Personal Info Link
+    //}
+    //else
+    //{
+    //    if (selectedCompany?.UserTypeId > 2) menus = menusList.Where(m => m?.Id > 199 || m?.Id > 299).ToList();    // --- Fetch Personal Info and Application Link
+    //    else menus = menusList.Where(m => m?.Id > 199 && m?.Id < 300).ToList();   // --- Fetch Personal Info Link
+    //}
+    // *** Generate Menus to display ******************************************************************************
+    // ************************************************************************************************************
+
+    UserCompanyModel uc = new UserCompanyModel();
+
+    //IEnumerable<UserCompanyModel?> ucList = await _mainDa._02UserCompanyPerUser(int.Parse(userId!), mainSchema, conn);
+    //ViewBag.ucList = ucList;
+
+    //IEnumerable<CompaniesAssignedToUserModel?> ownCompanies = await _mainDa._02CompanyUsers_Owned_WTypeWCoDtls_List(int.Parse(userId!), mainSchema, conn);
+    //IEnumerable<CompaniesAssignedToUserModel?> OtherCompanies = await _mainDa._02CompanyUsers_Employment_WTypeWCoDtls_List(int.Parse(userId!), mainSchema, conn);
+    //ViewBag.ownCompanies = ownCompanies;
+    //ViewBag.OtherCompanies = OtherCompanies;
+
+}
+
+
+
+
+<RadzenPanelMenu>
+    <RadzenPanelMenuItem Text="Home" Icon="menu_open" IconColor="blue" Style="color:blue" Path="00/" />
+</RadzenPanelMenu>
+
+@if (menus != null)
+{
+    
+    @* -------------------------- Loop Menus ---------------------------- *@
+    var menusHdr = menus.Where(m => m?.Type!.Trim() == "Hdr");
+
+    @* -------- MENU CATEGORY -------- *@
+    @foreach (var mHdr in menusHdr)
+    {
+        <div class="lm-body">
+            <p class="lm-category lm-padding">@mHdr?.DispText </p>
+
+
+            @{
+                var idHdr = mHdr?.Id;
+                var menusSHdr = menus.Where(m => m?.IdParent == idHdr);
+            }
+
+            <div class="lm-dtls">
+                @* -------- MENU MAIN ITEM -------- *@
+                @foreach (var s in menusSHdr)
+                {
+                    
+                    <div class="lmd-content ">
+
+                        @if (!string.IsNullOrEmpty(@s?.Action))
+                        {
+                            <a class="lmd-hdr lm-item" asp-area="" asp-controller="@s?.Controller" asp-action="@s?.Action">
+                                @if (s?.Icon1?.Length > 0)
+                                {
+                                    <span class="lmd-hdr-icon1 icon1"><i class="@s?.Icon1"></i></span>
+                                }
+                                <span class="lmd-hdr-text">@s?.DispText</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="lmd-hdr lm-item d-flex">
+                                @if (s?.Icon1?.Length > 0)
+                                {
+                                    <span class="lmd-hdr-icon1 icon1"><i class="@s?.Icon1"></i></span>
+                                }
+                                <div class="lmd-hdr-details d-flex justify-content-between w-100">
+                                    <span class="lmd-hdr-text"> @s?.DispText</span>
+                                    @if (s?.IsWithChild == 1)
+                                    {
+                                        <button class="lm-toggle-subcontent lmd-hdr-icon2">
+                                            <i class="fa-solid fa-angle-up"></i>
+                                            <i class="fa-solid fa-angle-down"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        @if (s?.IsWithChild == 1)
+                        {
+
+
+                            var idS = s?.Id;
+                            var menusS = menus.Where(m => m?.IdParent == idS);
+                            @* -------- MENU SUBITEM -------- *@
+                            <div class="lmd-subcontent-wrapper ">
+                                @foreach (var d in menusS)
+                                {
+                                    <div class="lmd-subcontent">
+                                        <a class="lmd-subcontent-item lm-item" asp-area="" asp-controller="@d?.Controller" asp-action="@d?.Action">
+                                            <span class="lmd-dtl-icon1 icon1"><i class="@d?.Icon1"></i></span>
+                                            <span class="lmd-dtl-text"> @d?.DispText </span>
+                                        </a>
+
+                                    </div>
+
+                                }
+                            </div>
+                        }
+
+                    </div>
+                }
+
+            </div>
+        </div>
+    }
+}
+

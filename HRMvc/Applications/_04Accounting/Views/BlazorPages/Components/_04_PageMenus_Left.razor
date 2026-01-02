@@ -1,0 +1,145 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Views.BlazorPages.Components;
+
+
+<div  style="height:100%">
+    <div class="bg-light px-2 py-1" style="background-color:white; height:100%; border-radius:5px; ">
+        
+        @{var menuhdrs = MenusList.Where(m=>m!.Type=="SHdr").ToList(); }
+        <Back_To_Home_Menu />
+        <RadzenPanelMenu Click="OnParentClicked" Style="min-width:230px" Multiple="@multiple">
+            @foreach (var h in menuhdrs)
+            {
+                <RadzenPanelMenuItem Text="@h!.DispText" Icon="@h!.Icon1">
+
+                    @{  var menudtls = MenusList.Where(m => m!.IdParent == h.Id).ToList(); }
+                    @foreach (var d in menudtls)
+                    {
+                        var path    = $"04/{d?.Action}";
+                        var icon    = $"04/{d?.Icon1}";
+                        <RadzenPanelMenuItem Text="@d!.DispText" Path="@path" />
+                    }
+
+                    
+
+                </RadzenPanelMenuItem>
+            }
+        </RadzenPanelMenu>
+
+
+        
+
+
+
+
+
+
+
+
+
+        @* <RadzenPanelMenu Style="min-width:230px" Multiple="@multiple">
+             <span class="px-2 d-flex">
+                @{var menuhdrs = MenusList.Where(m=>m!.Type=="SHdr").ToList(); }
+                @foreach (var h in menuhdrs)
+                {
+                    
+                    string txt = "";
+                    string icon = ""; 
+                    if(h != null) {
+                        if(h.DispText!=null) txt     = h.DispText; 
+                        if(h.Icon1!=null)   icon    = h.Icon1; 
+                    } 
+                    <RadzenMenuItem Text="@txt" Icon="@icon">
+
+                    </RadzenMenuItem>
+                    
+                }
+             </span>
+            
+        </RadzenPanelMenu> *@
+    </div>
+</div>
+
+
+
+
+
+        @* <RadzenPanelMenu Click="OnParentClicked" Style="min-width:230px" Multiple="@multiple"> 
+           <span >
+                @{var menuhdrs = MenusList.Where(m=>m!.Type=="SHdr").ToList(); }
+                
+                @foreach (var h in menuhdrs)
+                {
+                   <RadzenMenuItem Text="@h.DispText" Icon="@h.Icon1">
+                       @{var menudtls = MenusList.Where(m=>m!.IdParent ==h.Id).ToList(); }
+                       @foreach (var d in menudtls)
+                       {
+                            string? action = $"04/{d?.Action}"; 
+                            <RadzenMenuItem Text="@d?.DispText"         Path="@action"  Icon="@d?.Icon1" />
+                       }   
+                   </RadzenMenuItem> 
+                }
+           </span>
+            
+        </RadzenPanelMenu> *@
+                
+        @* <RadzenPanelMenu Click="OnParentClicked" Style="min-width:230px" Multiple="@multiple">
+            <RadzenPanelMenuItem    Text="Management" Icon="home">
+                <RadzenPanelMenuItem    Text="Company Settings"         Path="03/0501" Icon="cached" class="disabled" />
+                <RadzenPanelMenuItem    Text="User Management"          Path="03/0506"  Icon="face" />
+                <RadzenPanelMenuItem    Text="Chart of Accounts"        Path="03/0502"  Icon="line_weight"  />
+                <div style="border-bottom: 1px solid rgba(0,0,0,.1); margin:0 10px" />
+                <RadzenPanelMenuItem     Text="Payroll Group"           Path="03/0503"  Icon="attach_file"      Click="OnChildClicked" />
+                <RadzenPanelMenuItem     Text="Employee Management"     Path="03/0504"  Icon="assignment" />
+                <RadzenPanelMenuItem     Text="Employee Rates"          Path="03/0505"  Icon="announcement" /> 
+            </RadzenPanelMenuItem>
+
+
+        </RadzenPanelMenu> *@
+
+
+@inject I_00MainDA _mainDA; 
+@inject IJSRuntime JSRuntime; 
+
+@code {
+
+    bool multiple = true;
+
+    [Parameter]
+    public UserClaimsModel?         UserClaims  { get; set; } = new();
+
+    public List<MenusModel?>        MenusList   { get; set; } = new();
+
+    string?     cnt     = string.Empty; 
+    string?     conn    = string.Empty; 
+
+    protected override async void OnParametersSet()
+    {
+        conn = UserClaims!.Conn; 
+        MenusList   = await _mainDA._02MenuList_ByModule("menus10user", "4", "Main", conn! );
+        cnt=MenusList.Count.ToString();
+        
+        StateHasChanged(); 
+
+    }
+
+    //EventConsole console;
+    void Change(object value, string name, string action)
+    {
+        //console.Log($"{name} item with index {value} {action}");
+    }
+
+    
+
+    void OnParentClicked()
+    {
+
+    }
+
+    void OnChildClicked()
+    {
+        
+    }
+
+}

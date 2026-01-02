@@ -1,0 +1,49 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications._00Home.Views.BlazorPages;
+@using System.Security.Claims
+@using Microsoft.Extensions.Configuration
+
+@inject I_00MainDA              _mainDA
+@inject IConfiguration          _config;
+
+@inject I_00MainDataMakerAccess _maindatamaker;
+
+@{
+    //Layout = "Shared/_MSDS_LayoutHome.cshtml"; 
+    Layout = "Main/_ReportLayout"; 
+    
+    
+    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+    IEnumerable<Claim?> claims = User.Claims;
+    var userClaims =  _mainDA._02UserClaimsContent(claims);
+    
+    await _maindatamaker._01MainDefaultDatas(); 
+}
+
+<div>--------------------</div>
+
+@(await Html.RenderComponentAsync<_HomePage>(RenderMode.ServerPrerendered, new { UserClaims = userClaims })) 
+
+
+
+<div>--------------------</div>
+
+ <div class="mt-4">
+    <div class="card">
+
+        <div class="card-header bg-black text-white w-100 p-1">This is HOME Page</div>
+
+        <div class="card-body">
+            <ul>
+                @foreach (var user in User.Claims)
+                {
+                    <li>@user.Type : @user.Value </li>
+                }
+            </ul>
+
+        </div>
+    </div>
+</div>
+ 
+

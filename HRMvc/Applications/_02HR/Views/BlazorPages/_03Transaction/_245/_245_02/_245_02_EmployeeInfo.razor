@@ -1,0 +1,79 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRMvc.Applications._02HR._02Library
+
+<ul class="list-group mt-2">
+    <li class="w-100 bg-secondary list-group-item bg-opacity-25 d-flex justify-content-between">
+        <h6>EMPLOYEE DETAILS</h6>
+        <RadzenButton Icon="settings"
+                      Text="Status Settings"
+                      Size="ButtonSize.Small"
+                      Style="font-size: 12px;"
+                      ButtonStyle="ButtonStyle.Light"
+                      Tooltip="Open settings"
+                      Click="@OnShowStatusSettingsModal" />
+    </li>
+
+    @* --- Empplyee Name ------------ *@
+    <li class="w-100 list-group-item ">
+        <div class="w-100 d-flex gap-3">
+            <div class="@col1Width p-2 bordered-right">Employee No.</div>
+            <div class="w-100 ">
+                <div class="d-flex gap-2 py-1 w-400p  text-success ">
+                    <RadzenTextBox Change="_02Empmas" Placeholder="XXXXXXXXXX" @bind-Value="@V.Empnumber" class="w-75" MaxLength="10" />
+                    <button @onclick="OpenSearchModal" class="w-25 btn btn-sm b-btn-black-outline">View List</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-100 d-flex gap-3 ">
+            <div class="@col1Width p-2  bordered-right">Emp. Name</div>
+            <div class="w-100 p-2 d-flex align-items-center text-nowrap">
+                <h6 class="w-100">@V?.Empmas?.Fullname</h6>
+            </div>
+        </div>
+    </li>
+</ul>
+
+
+@inject IPisEmpmasDataAccess _pisEmpmas;
+@inject IDeprecDataAccess _deprec;
+
+@code {
+
+
+
+    string col1Width = "w-150p";
+    string msg = "";
+
+
+
+    [Parameter] public V245? V { get; set; } = new();
+    [Parameter] public UserClaimsModel? UserClaims { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+
+
+    async Task _02Empmas()
+    {
+
+        V!.Action = "OnEmpNoChange";
+
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+
+    }
+
+    private async void OpenSearchModal()
+    {
+        V.Action = "ViewEmployeeList";
+        V.ShowSearchModal = true;
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+    }
+
+    private async void OnShowStatusSettingsModal()
+    {
+        V!.ShowStatusSettingModal = true;
+        await ChildAction.InvokeAsync();
+    }
+}

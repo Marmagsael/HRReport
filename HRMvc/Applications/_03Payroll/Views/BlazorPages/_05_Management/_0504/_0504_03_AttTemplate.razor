@@ -1,0 +1,145 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0500
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0504._0504_03
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility 
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+
+<div class="w-100 p-3 bordered mb-2 mt-2" style="background-color:lightgray; ">
+    <div class="fw-bold">
+        <h6>Employee Schedules</h6>
+    </div>
+</div>
+
+@if (V?.Emprate?.FullName?.Length < 1)
+{
+    <_NoScheduleToDisplay Msg="No schedule to display." />
+    return;
+}
+
+<div class="w-100 ">
+    @* ----- Attendance Type  *@
+    <div class="d-flex p-2 bordered-bottom">
+        <div class="w-140p  p-2">Attendance Type</div>
+        <div class="w-200p">
+            <RadzenDropDown TValue="int"
+                            @bind-Value="@V.Atttemplate!.AttendancetypeId"
+                            Data="@V.Atttypes"
+                            TextProperty="Name"
+                            ValueProperty="Id"
+                            Style="width: 100%; max-width: 400px;"
+                            Name="ddAtttypes"/>
+        </div>
+    </div>
+
+    <div class="w-100 p-2 bordered gap-1 d-flex mb-1 mt-1">
+        
+            <btn class="btn btn-sm btn-secondary" @onclick="@(() => allowEdit = !allowEdit)" 
+                 data-bs-toggle="tooltip" data-bs-placement="top" title="Enable/Disable Edit">
+                <i class="far fa-edit"></i>
+            </btn>
+        @if (allowEdit)
+        {
+                <btn @onclick="SaveAtttemplate" class="btn btn-sm btn-secondary" 
+                 data-bs-toggle="tooltip" data-bs-placement="top" title="Save Changes">
+                    <i class="fa-regular fa-floppy-disk"></i>
+                </btn>
+        }
+        
+        <div class="bordered"></div>
+        @if (allowEdit)
+        {
+            <btn @onclick="SetScheduleToDefault" class="btn btn-sm btn-secondary" 
+                 data-bs-toggle="tooltip" data-bs-placement="top" title="Set Schedule to Default">
+                    <i class="fa-regular fa-clone"></i>
+            </btn>
+            
+            <btn @onclick="ClearSchedule" class="btn btn-sm btn-secondary" 
+                 data-bs-toggle="tooltip" data-bs-placement="top" title="Clear Schedule">
+                    <i class="fa-regular fa-object-ungroup"></i>
+            </btn>
+            
+        }
+
+
+
+    </div>
+
+    <div class="w-100 p-2">
+        @* --- Monday ------ *@
+        <_0504_02_01_Duty V="@V" DayName="Monday" DutyType="@V.Atttemplate.D2_dutytype" AllowEdit="@allowEdit" 
+                          In="@V.Atttemplate.D2_in" Duration="@V.Atttemplate.D2_hrslength" ChildAction="NaibaAngValue"/>
+        @* --- Tuesday ------ *@
+        <_0504_02_01_Duty V="@V" DayName="Tuesday" DutyType="@V.Atttemplate.D3_dutytype" AllowEdit="@allowEdit"
+                          In="@V.Atttemplate.D3_in" Duration="@V.Atttemplate.D3_hrslength" ChildAction="NaibaAngValue"/>
+        @* --- Wednesday ------ *@
+        <_0504_02_01_Duty V="@V" DayName="Wednesday" DutyType="@V.Atttemplate.D4_dutytype" AllowEdit="@allowEdit"
+                          In="@V.Atttemplate.D4_in" Duration="@V.Atttemplate.D4_hrslength" ChildAction="NaibaAngValue"/>
+        @* --- Thursday ------ *@
+        <_0504_02_01_Duty V="@V" DayName="Thursday" DutyType="@V.Atttemplate.D5_dutytype" AllowEdit="@allowEdit"
+                          In="@V.Atttemplate.D5_in" Duration="@V.Atttemplate.D5_hrslength" ChildAction="NaibaAngValue"/>
+        @* --- Friday ------ *@
+        <_0504_02_01_Duty V="@V" DayName="Friday" DutyType="@V.Atttemplate.D6_dutytype" AllowEdit="@allowEdit"
+                          In="@V.Atttemplate.D6_in" Duration="@V.Atttemplate.D6_hrslength" ChildAction="NaibaAngValue"/>
+        
+        @* --- Saturday ------ *@
+        <_0504_02_01_Duty V="@V" DayName="Saturday" DutyType="@V.Atttemplate.D7_dutytype" AllowEdit="@allowEdit"
+                          In="@V.Atttemplate.D7_in" Duration="@V.Atttemplate.D7_hrslength" ChildAction="NaibaAngValue"/>
+        
+        @* --- Sunday ------ *@
+        <_0504_02_01_Duty V="@V" DayName="Sunday" DutyType="@V.Atttemplate.D1_dutytype" AllowEdit="@allowEdit"
+                          In="@V.Atttemplate.D1_in" Duration="@V.Atttemplate.D1_hrslength" ChildAction="NaibaAngValue"/>
+        
+    </div> 
+    
+</div>
+
+@inject I_00MainPisAccess       _main; 
+@inject IAtttemplateDataAccess  _attTemplate; 
+
+@code {
+    
+    bool                        allowEdit           = false;
+    
+    [Parameter]     public V0504?               V               { get; set; }  = new();
+    [Parameter]     public V00_Pay              V00             { get; set; } = new();
+
+    
+    [Parameter]     public EventCallback        ChildAction     { get; set; }
+
+    void NaibaAngValue()
+    {
+        StateHasChanged();
+    }
+
+    void AllowEdit()
+    {
+        allowEdit = !allowEdit; 
+        StateHasChanged();
+    }
+
+    void SetScheduleToDefault()
+    {
+        V!.Atttemplate = new AtttemplateModel(); 
+        StateHasChanged();
+    }
+
+    void ClearSchedule()
+    {
+        V!.Atttemplate = _attTemplate._02NoSchedule(V.Emprate!.EmpmasId); 
+        StateHasChanged();
+    }
+
+    async void SaveAtttemplate()
+    {
+        if(V?.Atttemplate == null || V.Emprate == null) return; 
+        V.Atttemplate.Empmasid = V.Emprate.EmpmasId; 
+        V00.Action      = "SaveAtttemplate";
+        allowEdit       = false; 
+        await ChildAction.InvokeAsync(); 
+    }
+    
+    
+    
+}

@@ -1,0 +1,942 @@
+﻿@using HRApiLibrary.DataAccess._00_CT.Interfaces
+@using HRApiLibrary.Models._00_CT
+@using HRApiLibrary.Models._00_Main
+@using System.Globalization
+@using Microsoft.JSInterop
+
+<style>
+    .cm-hdr {
+        width:100%; 
+        border:1px solid gray; 
+        padding: 5px; 
+        text-align:center; 
+        color:white;
+        background-color:darkslategray; 
+    }
+</style>
+
+<HRMvc.Applications._02HR.Views.BlazorPages._00Library._02PageHdr pageTitle="Class Generator" />
+@* --- Buttons -------------------------------- *@
+<div class="w-100 p-2 d-flex gap-2 mb-1" style="border-bottom: 2px groove gray">
+    <button type="button" class="btn btn-secondary" onclick="@(()=>CParameterSet())">Parameter Set</button>
+    <button type="button" class="btn btn-secondary" onclick="@(()=>CRadzenDataGrid())">Radzen Datagrid</button>
+    <button type="button" class="btn btn-secondary" onclick="@(()=>_03_CRadzenEntry())">Radzen Entry</button>
+    <button type="button" class="btn btn-secondary" onclick="@(()=>_04_CModel())">Model</button>
+    <button type="button" class="btn btn-secondary">Data Access</button>
+
+</div>
+
+<div class="d-flex gap-2 w-100 p-2" style="border:1px solid red; ">
+    
+    @* --- Databases ----------------------------- *@
+    <div class="" style="border:1px solid lightgreen; min-width: 200px">
+        <div class="cm-hdr" >Databases</div>
+
+            @foreach (var d in dbs!)
+            {
+                <button  type="button" onclick="@(()=>FetchTables(d))" class=" w-100 list-group-item @d.Class ">@d.Name</button>
+            }
+    </div>
+    
+    @* --- Tables ----------------------------- *@
+    <div style="min-height:95vh; min-width:250px; border:1px solid brown;  ">
+        <div class="cm-hdr">@dbName?.ToUpper() Tables</div>
+
+       @foreach (var t in tbls!)
+        {
+            <button type="button" onclick="@(()=>FetchFields(t!))" class=" w-100 list-group-item @t!.Class ">@t!.Name</button>
+        } 
+
+    </div>
+    
+    @* --- Content ----------------------------- *@
+    <div class="p-2" style="border:1px solid green;  min-width:400px; ">
+        
+            <div class="w-100 p-1 border-bottom text-end mb-2 ">
+                <btn  @onclick="CopyText" class="btn ">Copy</btn>
+            </div>
+    
+        <div id="content" class="w-100 h-100 p-2" style="border:1px solid lightgray; border-radius: 5px; ">
+            @syntax1
+            @syntax
+        </div>
+
+    </div>
+
+</div>
+
+
+
+@inject I_00_CTDataAccess _ct; 
+@inject IJSRuntime _js; 
+
+@code {
+
+    string? pisdb               = string.Empty; 
+    string? paydb               = string.Empty;
+    string? conn                = string.Empty;
+
+
+    string? a                       = "@";
+    string? q                       = "\"";
+    string cbStart                  = "{"; 
+    string cbEnd                    = "}"; 
+    string s                     = "<span></span>"; 
+    string spanO                    = "<span>";
+    string spanC                    = "</span>";
+    string syntax                   = string.Empty;
+    string newBtnCmd                = "";
+    MarkupString    syntax1         = new();
+    string tab1 = "&nbsp;";
+    string tab2 = "&nbsp; &nbsp;";
+    string tab3 = "&nbsp; &nbsp; &nbsp;";
+    string tab4 = "&nbsp; &nbsp; &nbsp; &nbsp;";
+    string tab5 = "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;";
+    string tab6 = "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;";
+    string tab7 = "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;";
+    string tab8 = "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;";
+    string tab9 = "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;";
+    string br                       = "<br />";
+    TextInfo? textInfo; 
+
+    List<DatabaseModel>?    dbs     = new();
+    string?                 dbName  = string.Empty; 
+
+    List<TableModel?>?  tbls        = new();
+    string          tblName         = string.Empty;
+
+    List<TableFieldsModel?>? tblFields  = new(); 
+
+
+    [Parameter]
+    public UserClaimsModel? UserClaims { get; set; } = new();
+
+    private async Task CopyText()
+    {
+        await _js.InvokeVoidAsync("copyToClipboard", "content");
+    }
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb   = UserClaims.SchemaUserPis;
+        paydb   = UserClaims.SchemaUserPay;
+        conn    = UserClaims.Conn;
+
+        if (conn  == null ) return; 
+        if (pisdb == null ) return; 
+        if (paydb == null)  return;
+
+        var res = await _ct._02Dbs(conn);
+        dbs     = new(); 
+        foreach (var d in res!)
+        {
+            dbs.Add(new() { Name = d, Class = string.Empty }); 
+        }
+
+        StateHasChanged(); 
+        //await _ct._02Tbls(pisdb, conn); 
+
+    }
+
+    async void FetchTables(DatabaseModel db)
+    {
+        dbs!.ForEach(db => { db.Class = string.Empty; });
+        db!.Class = "active"; 
+
+        dbName  = db.Name; 
+        var res = await _ct._02Tbls(db.Name!, conn!);
+        tbls    = new(); 
+        foreach (var t in res!)
+        {   tbls.Add(new() { Name = t, Class = string.Empty });  }
+
+        StateHasChanged(); 
+    }
+
+    void FetchFields(TableModel tbl)
+    {
+        //tblName     = tbl.Name!;
+        if (tbl == null) return;
+        if (tbl.Name == null) return; 
+
+        tblName = char.ToUpper(tbl.Name[0]) + tbl.Name.Substring(1).ToLower();
+
+
+
+        tbls!.ForEach(tbl=>{ tbl!.Class = string.Empty;  }); 
+        tbl.Class = "active";
+
+        StateHasChanged(); 
+        //tbls        = await _ct._02Tbls(dbName!, conn!); 
+    }
+
+    void CParameterSet()
+    {
+        string? cmd = $@"<div>[Parameter] </div>
+                        <div>public UserClaimsModel UserClaims {cbStart} get; set; {cbEnd} = new(); </div> <br />
+
+                        <div>string? pisdb= string.Empty;</div>
+                        <div>string? paydb= string.Empty;</div>
+                        <div>string? conn = string.Empty;</div> <br />
+
+                        protected override void OnParametersSet() <br />
+                {cbStart} <br />
+                            &nbsp; &nbsp; &nbsp;    if(UserClaims==null) return; <br />
+                            &nbsp; &nbsp; &nbsp;    pisdb   = UserClaims.SchemaUserPis; <br />
+                            &nbsp; &nbsp; &nbsp;    paydb   = UserClaims.SchemaUserPay; <br />
+                            &nbsp; &nbsp; &nbsp;    conn    = UserClaims.Conn;  <br /> <br />
+
+                            &nbsp; &nbsp; &nbsp;    if (conn  == null ) return; <br />
+                            &nbsp; &nbsp; &nbsp;    if (pisdb == null ) return; <br />
+                            &nbsp; &nbsp; &nbsp;    if (paydb == null)  return; <br />
+                {cbEnd}";
+
+        syntax1 = (MarkupString)cmd; 
+
+        StateHasChanged(); 
+    }
+
+    async void _03_CRadzenEntry(){
+        var ans = _03_Validate(); 
+        if(ans) return; 
+
+        syntax1 = (MarkupString)"";
+        syntax  = string.Empty;
+
+        var flds = await _ct._02TblFields(tblName, dbName!, conn!);
+        string? fld = string.Empty; 
+        foreach(var f in flds!) {
+
+            string fldcontent = _03_FldContent(f?.Type!, f?.Field!); 
+
+            fld += $@"<br />  <span class={q}text-danger{q} >{a}* ----- {f?.Field} ({f?.Type})----------*{a}  </span><br />
+                    <{s}div>{f?.Field} <{s}/div> <br />
+                    <{s}div> {fldcontent}<{s}/div> <br />
+            
+            " ;  
+        }
+
+        string fld1 = $@"<{s}RadzenTemplateForm TItem={q}{tblName}Model{q} Data={a}{tblName} Submit={a}OnSubmit InvalidSubmit={a}OnInvalidSubmit> <br />
+                         <{s}RadzenFieldset Text={q}{tblName}{q}> <br />
+                             {fld} <br />
+                         <{s}/RadzenFieldset> <br />
+                        <{s}/RadzenTemplateForm> <br /> <br /> <br /> 
+                        
+
+                        {a}code {cbStart} <br />
+
+                        {tab4}void OnSubmit({tblName}Model model) <br />
+                        {tab4}{tab4}{cbStart}<br />
+                                 {tab4}{tab4}{tab4}<br />
+                        {tab4}{tab4}{cbEnd}<br /><br />
+
+                        {tab4}void OnInvalidSubmit(FormInvalidSubmitEventArgs args) <br />
+                        {tab4}{cbStart}<br />
+                                
+                        {tab4}{cbEnd}<br />
+                        {cbEnd}<br />
+                        "; 
+
+
+
+
+        syntax1 = new MarkupString(fld1);
+        StateHasChanged(); 
+    }
+
+    private bool _03_Validate() {
+        if(tblName==null)
+        {
+            string msg  = $@"<div >Selected <span class={q}fw-bold text-danger{q}>table is empty</span> and cannot be processed. 
+                                  Please select a table from the list before proceeding.</div";
+            syntax1     = (MarkupString)msg;
+            return true ; 
+        } else
+        {
+            if (tblName.Length < 1)
+            {
+                string msg = $@"<div >Selected <span class={q}fw-bold text-danger{q}>table is empty</span> and cannot be processed.
+                                  Please select a table from the list before proceeding.</div";
+                syntax1 = (MarkupString)msg;
+                return true;
+            }
+        }
+
+        return false; 
+    }
+    private string _03_FldContent(string? fldtype, string? fldname) {
+        string cmd = string.Empty;
+        if(fldtype==null) return cmd;
+        string fldType = fldtype.PadRight(20);  
+
+        if(fldType.Substring(0,7)=="varchar" || fldType.Substring(0,4)=="char") 
+        {   cmd = _03_Fld_Varchar(fldname);     } 
+        
+        if(fldType.Substring(0,3)=="int" || fldType.Substring(0,8)=="smallint") 
+        {   cmd = _03_Fld_Int(fldname);     } 
+
+        if(fldType.Substring(0,6)=="double") 
+        {   cmd = _03_Fld_Double(fldname);     } 
+
+        if(fldType.Substring(0,7)=="decimal") 
+        {   cmd = _03_Fld_Decimal(fldname);     } 
+        
+        if(fldType.Substring(0,4)=="date") 
+        {   cmd = _03_Fld_Date(fldname);     } 
+        
+
+
+        return cmd; 
+
+    }
+    string _03_Fld_Varchar(string? fname){
+        string cmd = $@"<{s}RadzenTextBox 
+                            Placeholder={q}{fname}{q} 
+                            class={q}w-100{q}
+                            {a}bind-Value={a}{tblName}.{fname}  /> "; 
+        return cmd;
+    }
+        
+    string _03_Fld_Double(string? fname){
+        string cmd = $@"<{s}RadzenNumeric TValue={q}double{q}
+                           {a}bind-Value={q}{tblName}!.{fname}{q}
+                           Min={q}0{q}
+                           Max={q}999999{q}
+                           Format={q}#,##0.00{q}
+                           Placeholder={q}0{q}
+                           TextAlign={q}Radzen.TextAlign.End{q}
+                           ShowUpDown=false />"; 
+        return cmd;
+    }
+    
+    string _03_Fld_Decimal(string? fname){
+        string cmd = $@"<{s}RadzenNumeric TValue={q}decimal{q}
+                           {a}bind-Value={q}{tblName}!.{fname}{q}
+                           Min={q}0{q}
+                           Max={q}999999{q}
+                           Format={q}#,##0.00{q}
+                           Placeholder={q}0{q}
+                           TextAlign={q}Radzen.TextAlign.End{q}
+                           ShowUpDown=false />";
+        return cmd;
+    } 
+
+    string _03_Fld_Int(string? fname){
+        string cmd = $@"<{s}RadzenNumeric  Placeholder={q}0{q} 
+                                        Step={q}1{q} @bind-Value={a}{tblName}.{fname} 
+                                        InputAttributes={q}{a}(new Dictionary<{s}string,object>(){cbStart} {cbStart} {q}aria-label{q}, {q}enter value{q} {cbEnd}{cbEnd}){q} />"; 
+        return cmd;
+    }
+    string _03_Fld_Date(string? fname){
+        string cmd = $@"<{s}RadzenDatePicker @bind-Value={a}{tblName}!.{fname} Name={q}DP{fname}{q} Format={q}mm dd, YYYY{q} />"; 
+        return cmd;
+    }
+
+
+
+    async void _04_CModel() {
+        var ans = _03_Validate(); 
+        if(ans) return; 
+
+        syntax1 = (MarkupString)"";
+        syntax  = string.Empty;
+
+        var flds    = await _ct._02TblFields(tblName, dbName!, conn!);
+        string? fld = string.Empty; 
+        foreach(var f in flds!) 
+        {
+
+            string fldcontent = _04_FldContent(f?.Type!, f?.Field!); 
+            @* fld += $@"<br /> {tab6} <span class={q}text-danger{q} >{a}* ----- {f?.Field} {f?.Type}----------*{a}  </span>
+                    <div>{tab6}{fldcontent} </div>"; *@
+            fld += $@"<div>{tab6}{fldcontent} </div>";
+        }
+
+        string cmd = $@"<div>public class {tblName}Model</div>
+                        <div>{cbStart}</div>
+                        <div>{fld}</div>
+                        <div>{cbEnd}</div>";
+
+        syntax1 = new MarkupString(cmd);
+        StateHasChanged(); 
+
+    }
+
+    private string _04_FldContent(string? fldtype, string fldname) 
+    {
+        string cmd = string.Empty;
+        if(fldtype==null) return cmd;
+        string fldType = fldtype.PadRight(20);  
+        string fldName = fldname.Substring(0,1) + fldname.Substring(1).ToLower(); 
+        string gaptab   = tab9 + tab9 + tab9 ; 
+        if(fldName.Length==1) gaptab  = tab9+tab9+tab8; 
+        if(fldName.Length==2) gaptab  = tab9+tab9+tab7; 
+        if(fldName.Length==3) gaptab  = tab9+tab9+tab6; 
+        if(fldName.Length==4) gaptab  = tab9+tab9+tab5; 
+        if(fldName.Length==5) gaptab  = tab9+tab9+tab4; 
+        if(fldName.Length==6) gaptab  = tab9+tab9+tab3; 
+        if(fldName.Length==7) gaptab  = tab9+tab9+tab2; 
+        if(fldName.Length==8) gaptab  = tab9+tab9+tab1; 
+        if(fldName.Length==9) gaptab  = tab9+tab9; 
+        if(fldName.Length==10) gaptab = tab9+tab8; 
+        if(fldName.Length==11) gaptab = tab9+tab7; 
+        if(fldName.Length==12) gaptab = tab9+tab6; 
+        if(fldName.Length==13) gaptab = tab9+tab5; 
+        if(fldName.Length==14) gaptab = tab9+tab4; 
+        if(fldName.Length==15) gaptab = tab9+tab3; 
+        if(fldName.Length==16) gaptab = tab9+tab2; 
+        if(fldName.Length==17) gaptab = tab9+tab1; 
+        if(fldName.Length==18) gaptab = tab9; 
+        if(fldName.Length==19) gaptab = tab8; 
+        if(fldName.Length==20) gaptab = tab7; 
+        if(fldName.Length==21) gaptab = tab6; 
+        if(fldName.Length==22) gaptab = tab5; 
+        if(fldName.Length==23) gaptab = tab4; 
+        if(fldName.Length==24) gaptab = tab3; 
+        if(fldName.Length==25) gaptab = tab2; 
+        if(fldName.Length==26) gaptab = tab1; 
+        
+        
+
+        if(fldType.Substring(0,7)=="varchar" || fldType.Substring(0,4)=="char") 
+        {   
+            cmd = $@"public string?{tab4}  {fldName}{gaptab}        {cbStart} get; set; {cbEnd} = string.Empty;";     
+        } 
+        
+        if(fldType.Substring(0,3)=="int" || fldType.Substring(0,8)=="smallint") 
+        {   
+            cmd = $@"public int{tab4}{tab4}  {fldName}{gaptab}      {cbStart} get; set; {cbEnd} = 0;";     
+        }
+
+        if(fldType.Substring(0,6)=="double") 
+        {   
+            cmd = $@"public double{tab4}  {fldName}{gaptab}         {cbStart} get; set; {cbEnd} = 0;";     
+        }
+
+        if(fldType.Substring(0,7)=="decimal") 
+        {   
+            cmd = $@"public decimal{tab4}  {fldName}{gaptab}        {cbStart} get; set; {cbEnd} = 0;";     
+        }
+        
+        if(fldType.Substring(0,4)=="date") 
+        {   
+            cmd = $@"public datetime{tab2}  {fldName}{gaptab}       {cbStart} get; set; {cbEnd}";     
+        } 
+
+        return cmd; 
+    }
+    async void CRadzenDataGrid()
+    {
+        syntax1 = (MarkupString)"";
+        syntax  = string.Empty;
+
+        if(tblName==null)
+        {
+            string msg  = $@"<div >Selected <span class={q}fw-bold text-danger{q}>table is empty</span> and cannot be processed. 
+                                  Please select a table from the list before proceeding.</div";
+            syntax1     = (MarkupString)msg;
+            return; 
+        } else
+        {
+            if (tblName.Length < 1)
+            {
+                string msg = $@"<div >Selected <span class={q}fw-bold text-danger{q}>table is empty</span> and cannot be processed.
+                                  Please select a table from the list before proceeding.</div";
+                syntax1 = (MarkupString)msg;
+                return;
+            }
+        }
+
+        string? tblFlds  =  string.Empty; 
+        tblFlds         += await TblFlds(); 
+        tblFlds         +=  BtnFld(); 
+
+        string utos = Utos(); 
+        NewBtn(); 
+
+        string cmd = $@"{newBtnCmd}
+                        <br />
+                        <<span>RadzenDataGrid</span> <br />
+                        {tab3}Data            ={q}{a}{tblName.ToLower()}s{q} <br />
+                        {tab3}TItem           ={q}{tblName}Model{q} <br />
+                        {tab3}{a}ref          ={q}{tblName.ToLower()}sGrid{q} <br />
+                        {tab3}EditMode        ={q}DataGridEditMode.Single{q} <br />
+                        {tab3}AllowSorting    =true  <br />
+                        {tab3}AllowPaging     =true <br />
+                        {tab3}PageSize        ={q}10{q}  <br />
+                        {tab3}PageSizeOptions ={a}(new int[]{cbStart}5, 10, 20, 30{cbEnd}) <br />
+                        {tab3}ColumnWidth     ={q}100%{q} >   <br />
+
+                        {tab3}{tab3}<<span>Columns></span> <br />
+                        {tblFlds}
+                        {tab3}{tab3}<<span>/Columns></span><br />
+                                                        <<span>/RadzenDataGrid</span>> 
+                                                        <br /><br />
+                        {utos} ";
+
+        syntax1 = new MarkupString(cmd);
+        StateHasChanged(); 
+
+    }
+
+    void NewBtn()
+    {
+        string cmd = "";
+
+        cmd += $@"  <div class={q}text-danger{q}>       
+                                {a}* // --- New Button *{a}
+                    </div>
+                    <div>       <<span></span>div class={q}mt-1 mb-1{q}>    </div> 
+                    <div>
+                                {tab3}<<span></span>RadzenButton ButtonStyle={q}ButtonStyle.Success{q} Icon={q}add_circle_outline{q} Text={q}New Entry{q} Click={q}{a}InsertRow{q} Disabled={q}{a}(editMode){q} />
+                    </div>
+                    <div>       <<span></span>/div> </div>
+                  
+                    <div>       <<span></span>div class={q}text-danger mt-2 mb-2{q}><<span></span>h5>{a}errorMsg<<span></span>/h5><<span></span>/div>   </div>";
+
+        newBtnCmd = cmd;
+    }
+
+    private async Task<string?>   TblFlds()
+    {
+        string? cmd = string.Empty; 
+
+        var res = await _ct._02TblFields(tblName, dbName!, conn!);
+        if (res == null) return cmd;
+
+        string tblFlds = string.Empty; 
+        foreach (var r in res!)
+        {
+            var fname = char.ToUpper(r!.Field![0]) + r.Field.Substring(1).ToLower();
+
+            string fld = $"<span class={q}text-danger{q}>"+string.Empty + r.Type + "</span> <br />"; 
+            ;
+            //--- Varchar -------------------------------------
+
+            //--- Int -------------------------------------
+            if (r.Type!.Substring(0, 3) == "int" )
+            {
+                fld = $@"
+                        {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                                        <br />
+                        {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                                    Property        ={q}{fname}{q}
+                                                    Title           ={q}{fname}{q}
+                                                    TextAlign       ={q}Radzen.TextAlign.Right{q}
+                                                    FormatString    ={q}{cbStart}0:#,##0{cbEnd}{q} >    <br />
+
+                        {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>                       <br />
+                        {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenNumeric
+                                                {a}bind-Value ={q}rec.{fname}{q}
+                                                        Name        ={q}{fname}{q}
+                                                        ShowUpDown  =false
+                                                        Format      ={q}#,##0{q}
+                                                        TextAlign   ={q}TextAlign.Right{q} />                       <br />
+                        {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                                        <br />
+
+                        {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>                                      <br /><br />";
+            }
+            
+            //--- TinyInt -------------------------------------
+            if(r.Type.Length > 6) {
+                if (r.Type!.Substring(0, 7) == "tinyint" )
+                {
+                    fld = $@"
+                            {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                                    <br />
+                            {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                                        Property        ={q}{fname}{q}
+                                                        Title           ={q}{fname}{q}
+                                                        TextAlign       ={q}Radzen.TextAlign.Right{q}
+                                                        FormatString    ={q}{cbStart}0:#,##0{cbEnd}{q} >            <br />
+
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>                   <br />
+                            {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenNumeric
+                                                    {a}bind-Value ={q}rec.{fname}{q}
+                                                            Name        ={q}{fname}{q}
+                                                            ShowUpDown  =false
+                                                            Format      ={q}#,##0{q}
+                                                            TextAlign   ={q}TextAlign.Right{q} />                   <br />
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                                    <br />
+
+                            {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>                                  <br /><br />";
+                }
+
+
+
+            }
+
+            // --- Varchar
+            if (r.Type.Length > 6)
+            {
+                if (r.Type!.Substring(0, 7) == "varchar")
+                {
+                    fld = $@"
+                    {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                                <br />
+                    {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                                Property        ={q}{fname}{q}
+                                                Title           ={q}{fname}{q} >                        <br />
+
+                    {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>               <br />
+                    {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenTextBox 
+                                                {a}bind-Value={q}rec.{fname}{q} />                      <br />
+                    {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                                <br />
+
+                    {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>                              <br />";
+                }
+            }
+
+            if (r.Type!.Substring(0, 4) == "char")
+            {
+                fld = $@"
+                {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                                <br />
+                {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                            Property        ={q}{fname}{q}
+                                            Title           ={q}{fname}{q} >                        <br />
+
+                {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>               <br />
+                {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenTextBox
+                                            {a}bind-Value={q}rec.{fname}{q} />                      <br />
+                {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                                <br />
+
+                {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>                              <br />";
+            }
+
+            // --- Small Integer 
+            if (r.Type.Length > 7)
+            {
+                if (r.Type!.Substring(0, 8) == "smallint")
+                {
+                    fld = $@"
+                            {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                            <br />
+                            {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                                        Property        ={q}{fname}{q}
+                                                        Title           ={q}{fname}{q}
+                                                        TextAlign       ={q}Radzen.TextAlign.Right{q}
+                                                        FormatString    ={q}{cbStart}0:#,##0{cbEnd}{q} >        <br />
+
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>           <br />
+                            {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenNumeric
+                                                {a}bind-Value ={q}rec.{fname}{q}
+                                                Name        ={q}{fname}{q}
+                                                ShowUpDown  =false
+                                                Format      ={q}#,##0{q}
+                                                TextAlign   ={q}TextAlign.Right{q} />                   <br />
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                            <br />
+
+                            {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>                          <br />";
+                }
+            }
+
+            //--- Date -------------------------------------
+            if(r.Type!.Substring(0,4)=="date")
+            {
+                fld = $@"
+                        {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                                        <br />
+                        {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                                    Property        ={q}{fname}{q}
+                                                    Title           ={q}{fname}{q}
+                                                    FormatString    ={q}{cbStart}0:MMMM dd, yyyy{cbEnd}{q} >    <br />
+
+                        {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>                       <br />
+                        {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenDatePicker
+                                                                    {a}bind-Value   ={a}rec.{fname}
+                                                                    DateFormat      = {q}MM / dd / yyyy {q}
+                                                                    Name            = {q}date{fname}{q} />      <br />
+
+                        {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                                        <br />
+                        {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>                                      <br />";
+
+
+            }
+
+            //--- Double -------------------------------------
+            if (r.Type.Length > 5)
+            {
+                if (r.Type!.Substring(0, 6) == "double")
+                {
+                    fld = $@"
+                            {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                                <br />
+                            {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                                        Property        ={q}{fname}{q}
+                                                        Title           ={q}{fname}{q}
+                                                        TextAlign       ={q}Radzen.TextAlign.Right{q}
+                                                        FormatString    ={q}{0:#,##0.00}{q} >               <br />
+
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>               <br />
+                            {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenNumeric
+                                                                @bind-Value ={q}rec.{fname}{q}
+                                                                Name        ={q}{fname}{q}
+                                                                ShowUpDown  =false
+                                                                Format      ={q}#,##0.00{q}
+                                                                TextAlign   ={q}TextAlign.Right{q} />           <br />
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                                <br />
+
+                            {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>  <br />";
+                }
+
+                if (r.Type!.Substring(0, 7) == "decimal")
+                {
+                    fld = $@"
+                            {tab3}{tab3}{tab3}<<span></span>RadzenDataGridColumn                                <br />
+                            {tab3}{tab3}{tab3}{tab3}    TItem           ={q}{tblName}Model{q}
+                                                        Property        ={q}{fname}{q}
+                                                        Title           ={q}{fname}{q}
+                                                        TextAlign       ={q}Radzen.TextAlign.Right{q}
+                                                        FormatString    ={q}{0:#,##0.00}{q} >               <br />
+
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}>               <br />
+                            {tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenNumeric
+                                                                @bind-Value ={q}rec.{fname}{q}
+                                                                Name        ={q}{fname}{q}
+                                                                ShowUpDown  =false
+                                                                Format      ={q}#,##0.00{q}
+                                                                TextAlign   ={q}TextAlign.Right{q} />           <br />
+                            {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate>                                <br />
+
+                            {tab3}{tab3}{tab3}<<span></span>/RadzenDataGridColumn>  <br />";
+                }
+            }
+
+            tblFlds += fld; 
+        }
+
+        return tblFlds;
+    } 
+
+    private string BtnFld()
+    {
+        string cmd = $@"<div><br />
+                        <div>{tab3}{tab3}<<span></span>RadzenDataGridColumn </div>
+        {tab3}{tab3}{tab3}{tab3} TItem={q}{tblName}Model{q} Context={q}{tblName}Model{q} Filterable={q}false{q} Sortable={q}false{q} TextAlign={q}TextAlign.Right{q} Frozen={q}true{q} Width={q}150px{q}> <br />
+        {tab3}{tab3}{tab3}{tab3}<<span></span>Template Context={q}rec{q}>  <br />
+
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenButton <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Icon          ={q}edit{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}ButtonStyle   ={q}ButtonStyle.Light{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Variant       ={q}Variant.Flat{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Size          ={q}ButtonSize.Small{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Click         ={q}{a}(args => EditRow(rec)){q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{a}onclick:stopPropagation={q}true{q}> <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>/RadzenButton> <br /> <br />
+
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenButton ButtonStyle={q}ButtonStyle.Danger{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Icon      ={q}delete{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Variant   ={q}Variant.Flat{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Shade     ={q}Shade.Lighter{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Size      ={q}ButtonSize.Small{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Click     ={q}{a}(args => DeleteRow(rec)){q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}class     ={q}my-1 ms-1{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{a}onclick:stopPropagation={q}true{q}> <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>/RadzenButton> <br /> 
+        {tab3}{tab3}{tab3}{tab3}<<span></span>/Template> <br /> <br />
+
+        {tab3}{tab3}{tab3}{tab3}<<span></span>EditTemplate Context={q}rec{q}> <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenButton Icon={q}check{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}ButtonStyle ={q}ButtonStyle.Success{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Variant     ={q}Variant.Flat{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Size        ={q}ButtonSize.Small{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Click={q}{a}((args) => SaveRow(rec)){q} > <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>/RadzenButton> <br /> <br />
+
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenButton <br /> 
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Icon={q}close{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}ButtonStyle ={q}ButtonStyle.Light{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Variant     ={q}Variant.Flat{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Click       ={q}{a}((args) => CancelEdit(rec)){q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Size        ={q}ButtonSize.Small{q} class={q}my-1 ms-1{q}  > <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>/RadzenButton> <br /><br />
+
+
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>RadzenButton <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}ButtonStyle={q}ButtonStyle.Danger{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Icon={q}delete{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Variant={q}Variant.Flat{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Shade={q}Shade.Lighter{q}  <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Size={q}ButtonSize.ExtraSmall{q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}Click={q}{a}(args => DeleteRow(rec)){q} <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}{tab3}class={q}my-1 ms-1{q} > <br />
+        {tab3}{tab3}{tab3}{tab3}{tab3}{tab3}<<span></span>/RadzenButton> <br />
+
+        {tab3}{tab3}{tab3}{tab3}<<span></span>/EditTemplate> <br /> <br />
+
+                        <div>{tab3}{tab3}<<span></span>/RadzenDataGridColumn></div>
+                </div>";
+        return cmd; 
+    }
+
+    private string Utos()
+    {
+        string cmd = string.Empty; 
+
+        //--- Start ----------------------
+        cmd = $@"<div class={q}text-danger fw-bold{q}> {a}code <br />
+                {cbStart}  </div> " ;
+
+        //--- Initialization ----------------------
+        cmd += $@"  <div class={q}text-danger{q}> {tab3}//-- Initialization ---------------- </div>
+                    {tab3}RadzenDataGrid<<span></span>{tblName}Model?>?     {tblName.ToLower()}sGrid        = new(); <br />
+                    {tab3}bool                                              editMode                        = false;  <br />
+                    {tab3}DataGridEditMode                                  editMode1                       = DataGridEditMode.Single; <br /><br />
+
+                    {tab3}List<<span></span>{tblName}Model?>?               {tblName.ToLower()}s            = new(); <br />
+                    {tab3}{tblName}Model?                                   {tblName.ToLower()}             = new(); <br /><br />
+
+                    {tab3}List<<span></span>{tblName}Model?>?               {tblName.ToLower()}sToInsert    = new(); <br />
+                    {tab3}List<<span></span>{tblName}Model?>?               {tblName.ToLower()}sToUpdate    = new (); <br />
+                    {tab3}string?                                           errorMsg                        = string.Empty; <br /><br />";
+
+        //--- Reset --------------------------------
+        cmd += $@"  <div class={q}text-danger{q}> {tab3}//-- InsertRow ---------------- </div>
+                    {tab3}  async Task InsertRow()  <br />
+                    {tab3}  {cbStart}  <br />
+                    {tab4}      errorMsg = string.Empty;  <br />
+                    {tab4}      Reset();  <br /><br />
+
+                    {tab4}      var rec = new {tblName}Model();   <br />
+                    {tab4}      {tblName.ToLower()}sToInsert!.Add(rec);  <br />
+                    {tab4}      await {tblName.ToLower()}sGrid!.InsertRow(rec);  <br />
+
+                    {tab4}      editMode    = true; <br />
+                    {tab3}  {cbEnd}  <br />";
+
+        //--- Reset --------------------------------
+        cmd += $@"  <div class={q}text-danger{q}> {tab3}//-- Reset ---------------- </div>
+                {tab3}void Reset() <br />
+                {tab3}{cbStart} <br />
+                {tab3}{tab3}{tab3}{tblName.ToLower()}sToInsert!.Clear(); <br />
+                {tab3}{tab3}{tab3}{tblName.ToLower()}sToUpdate!.Clear(); <br />
+                {tab3}{cbEnd} <br /> <br />
+
+                    <div class={q}text-danger{q}> {tab3}//-- Reset ---------------- </div>
+                {tab3}void Reset({tblName}Model rec) <br />
+                {tab3}{cbStart} <br />
+                {tab3}{tab3}{tab3}{tblName.ToLower()}sToInsert!.Remove(rec); <br />
+                {tab3}{tab3}{tab3}{tblName.ToLower()}sToUpdate!.Remove(rec); <br />
+                {tab3}{cbEnd} <br /><br /> " ; 
+
+        //--- EditRow ----------------------
+        cmd += $@"  <div class={q}text-danger{q}> {tab3}//-- Edit Row ---------------- </div>
+                {tab3}async Task EditRow({tblName}Model rec)    <br />
+                {tab3}{tab3}{cbStart}   <br />
+                {tab3}{tab3}{tab3}if({tblName.ToLower()}sGrid!=null)  <br />
+                {tab3}{tab3}{tab3}{cbStart} <br />
+                {tab3}{tab3}{tab3}{tab3}Reset();    <br />
+                {tab3}{tab3}{tab3}{tab3}{tblName.ToLower()}sToUpdate?.Add(rec);   <br />
+                {tab3}{tab3}{tab3}{tab3}await {tblName.ToLower()}sGrid.EditRow(rec);  <br />
+                {tab3}{tab3}{tab3}{cbEnd} <br />
+                {tab3}{cbEnd} <br /> " ;
+
+        // --- Delete Row ----------------------------
+        cmd += $@"<div class={q}text-danger{q}> {tab3}//-- Delete Row ---------------- </div>
+                {tab3}async Task DeleteRow({tblName}Model rec)      <br />
+                {tab3}{cbStart}      <br />
+                {tab4}  if ({tblName.ToLower()}s==null) return;               <br />
+                {tab4}  if ({tblName.ToLower()}sGrid == null) return;         <br /><br />
+
+                {tab4}  Reset(rec);                                 <br /><br />
+
+                {tab5}    if ({tblName.ToLower()}s.Contains(rec))             <br />
+                {tab5}    {cbStart}                                 <br />
+
+                {tab6}      if(rec != null)                         <br />
+                {tab6}      {cbStart}      <br />
+                {tab7}          var res = await _{tblName.ToLower()}._02CheckToTblTran(rec.ClNumber!, Schema!, conn!);      <br />
+                {tab7}          if (res!=null)                      <br />
+                {tab7}          {cbStart}                           <br />
+                {tab4}{tab4}        if (res.Count > 0)              <br />
+                {tab4}{tab4}        {cbStart}      <br />
+                {tab5}{tab4}            var msg = {q}Unable to delete <<span></span>span class='text-danger fw-bold'> {q}+ rec.Name +{q}!<<span></span>/span> Record already exists. {q};      <br />
+                {tab5}{tab4}            await _DialogService.Alert(msg, {q}Delete denied{q}, new AlertOptions() {cbStart} OkButtonText = {q}Exit{q} {cbEnd});       <br />
+                {tab5}{tab4}            return ;            <br />
+                {tab4}{tab4}        {cbEnd}                 <br />
+                {tab7}          {cbEnd}                     <br />
+                {tab6}      {cbEnd}                         <br />
+
+                {tab5}    var option = await _DialogService.Confirm({q}Delete <span class='text-danger'> {q} + rec?.Name + {q}</span>?{q}, {q}Confirm Delete{q},       <br />
+                {tab5}{tab5}                            new ConfirmOptions() {cbStart} OkButtonText = {q}Yes{q}, CancelButtonText = {q}No{q} {cbEnd});       <br />
+                {tab5}    if (option == true)      <br />
+                {tab5}    {cbStart}      <br />
+                {tab6}      await _{tblName.ToLower()}._04(rec!.Id, Schema!, conn!);       <br />
+                {tab6}      {tblName.ToLower()}s.Remove(rec);       <br />
+                {tab5}    {cbEnd}      <br />
+                {tab4}  {cbEnd}      <br />
+                {tab4}  else      <br />
+                {tab4}  {cbStart}      <br />
+                {tab5}      {tblName.ToLower()}sGrid.CancelEditRow(rec);      <br />
+                {tab4}  {cbEnd}      <br />
+
+                {tab4}  await {tblName.ToLower()}sGrid.Reload();      <br />
+                {tab4}  editMode = false;      <br />
+                {tab4}  errorMsg=string.Empty;       <br />
+                {tab3}{cbEnd} <br /><br /><br />";
+
+        // --- Cancel Edit ----------------------------
+        cmd += $@"<div class={q}text-danger{q}> {tab3}//-- Cancel Edit ---------------- </div>
+                {tab3}  async void CancelEdit({tblName}Model rec)  <br />
+                {tab3}  {cbStart}  <br />
+                {tab4}      errorMsg = string.Empty;  <br />
+                {tab4}      if ({tblName.ToLower()}sGrid == null) return;  <br /><br />
+
+                {tab4}      Reset(rec);  <br />
+                {tab4}      editMode = false;  <br /><br />
+
+                {tab4}      {tblName.ToLower()}sGrid.CancelEditRow(rec);  <br />
+                {tab4}      if (rec.Id < 1) return;  <br /><br />
+
+                {tab4}      int id  = rec.Id;  <br />
+                            <div class={q}text-danger{q}> {tab4} var res = await _{tblName.ToLower()}._02(id, <b>db!</b>, conn!); </div>
+                {tab4}      if (res == null) return;  <br />
+                            <div class={q}text-danger{q}> {tab4} Remap_Flds(rec, res); </div>
+                {tab4}      await {tblName.ToLower()}sGrid.Reload();  <br />
+                {tab3}  {cbEnd} <br />";
+
+        // --- Remap ----------------------------
+        cmd += $@"  <div class={q}text-danger{q}> {tab3}//-- Remap ---------------- </div> 
+                    <div>{tab3}  void Remap_Flds({tblName}Model destination, {tblName}Model source )</div>
+                    <div>{tab3}  {cbStart}</div>
+                        <br />
+                    <div>{tab3}  {cbEnd}</div>";
+
+        // --- Save Row ----------------------------
+        cmd += $@"<div class={q}text-danger{q}> {tab3}//-- Save Row ---------------- </div> 
+                {tab3}  async Task SaveRow({tblName}Model rec)      <br />
+                {tab3}  {cbStart}                                   <br />
+                {tab4}      if({tblName.ToLower()}sGrid==null) return ;       <br />
+                {tab4}      if(!SafeToSave(rec)) return;            <br />
+
+                {tab4}      if (rec.Id == 0)         <br />
+                {tab4}      {cbStart}               <br />
+                {tab5}          var res = await _{tblName}._01(rec,Schema!,Conn!);      <br />
+                {tab5}          if (res != null)            <br />
+                {tab5}          {cbStart}                   <br />
+                {tab6}              rec.Id = res.Id;        <br />
+                {tab6}              {tblName.ToLower()}s!.Add(rec);      <br />
+                {tab5}          {cbEnd}         <br />
+                {tab4}      {cbEnd}             <br />
+                {tab4}      else                <br />
+                {tab4}      {cbStart}           <br />
+                                <div class={q}text-danger{q}> {tab5} await _{tblName.ToLower()}._03(rec.Id, rec, Schema!, conn!);    </div>
+                {tab4}      {cbEnd}      <br />
+
+                {tab4}      await {tblName.ToLower()}sGrid.UpdateRow(rec);        <br />
+                {tab4}      editMode    = false;                        <br />
+                {tab4}      errorMsg    = string.Empty;                 <br />
+                {tab3}  {cbEnd}                                         <br />
+            ";
+
+        cmd += $@"<div class={q}text-danger{q}> {tab3}//-- Safe to Save ---------------- </div>
+                    {tab3}  bool SafeToSave({tblName}Model rec) <br />
+                    {tab3}  {cbStart}  <br /> <br />
+                        
+                    {tab4}      return true; <br />
+
+                    {tab3}  {cbEnd} <br />
+                ";
+
+        //--- End ----------------------
+        cmd += $@"<div class={q}text-danger fw-bold{q}>{cbEnd}</div> ";
+
+        return cmd ; 
+
+    }
+
+}   

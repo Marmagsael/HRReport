@@ -1,0 +1,75 @@
+﻿@using HRApiLibrary.Models._00_Main;
+@model UserCompanyModel
+@inject IConfiguration _config;
+@{
+    IEnumerable<CompaniesAssignedToUserModel?> ownCo            = ViewBag.ownCompanies;
+    IEnumerable<CompaniesAssignedToUserModel?> OtherCompanies   = ViewBag.OtherCompanies;
+
+    var coId = @User.Claims.Where(c => c.Type == "DefCompayId").FirstOrDefault()?.Value.ToString();
+    string? defCompanyId    = User.Claims.Where(c => c.Type == "DefCompayId").FirstOrDefault()?.Value;
+    int defCoId             = int.Parse(defCompanyId!);
+
+    CompaniesAssignedToUserModel? defUserCo = ownCo.Where(c => c?.Id == defCoId).FirstOrDefault();
+    if (defUserCo == null)        defUserCo = OtherCompanies.Where(c => c?.Id == defCoId).FirstOrDefault();
+
+}
+
+<div class="lm b-dropdown" >
+
+@*---- CURRENT COMPANY SELECTED ----------------------------------------------------------------------------*@
+    <div id="toggleCompanyDropdown">
+        <span id="valueHolder" class="w-100 lm-padding border-0"    style="background: transparent; cursor: pointer; outline: none;" >
+            @if(defUserCo != null)  { @defUserCo?.CompanyName }
+            else                    { <span>Personal Profile</span> }
+        </span>
+    </div>
+        
+    @**************************************************************************************************************
+    @*---- COMPANIES OF ENGAGEMENT ------------------------------------------------------------------------------*@
+    <ul  class="b-dropdown-menu" style="top: 98px; left:50px;">
+
+        <li class="b-dropdown-item"> <a href="~/Authentication/_200ChangeCompany?userCompanyId=0" class="b-dropdown-link">Personal Profile</a> </li>
+
+        @*---- DIVIDER ------------------------------------------------------------------------------*@
+        @if ((ownCo != null && ownCo.Count() > 0) || (OtherCompanies != null && OtherCompanies.Count() > 0))
+        {
+            <li class="b-dropdown-item"> <hr class="divider-horizontal my-1"> </li>
+        }
+
+            
+        @* 1) --- User Owned Companies -----------------------------------------------------*@
+        @if (ownCo != null && ownCo.Count() > 0) 
+        {
+            <li class="lm-category lm-padding pt-0"> Owned Company </li>
+
+            @foreach (CompaniesAssignedToUserModel? c in ownCo)
+            {
+                <li class="b-dropdown-item"> <a href="~/Authentication/_200ChangeCompany?userCompanyId=@c?.Id" class="b-dropdown-link">@c?.CompanySName</a> </li>
+            }
+
+        }
+
+
+        @* 2) --- User Employment -----------------------------------------------------*@
+        @if (OtherCompanies != null && OtherCompanies.Count() > 0)
+        {
+            <li class="lm-category lm-padding" style="font-size:smaller"> My Employment </li>
+
+            @foreach (CompaniesAssignedToUserModel? c in OtherCompanies)
+            {
+                <li class="b-dropdown-item"> <a href="~/Authentication/_200ChangeCompany?userCompanyId=@c?.Id" class="b-dropdown-link">@c?.CompanySName</a> </li>
+            }
+
+        }
+        @*---- COMPANIES --------------------------------------------------------------------------------------------*@
+        @**************************************************************************************************************@
+
+        @* --- Allow to create New Company if Exclusive in appsettigs is not true  *@
+        @if (_config.GetSection("CompanyInfo:Exclusive").Value != "true")
+        {
+            <li class="b-dropdown-item"> <hr class="divider-horizontal my-1"> </li>
+            <li class="b-dropdown-item"> <a href="~/Authentication/_200ChangeCompany?userCompanyId=-1" class="b-dropdown-link">Register Company</a> </li>
+        }
+
+    </ul>
+</div>

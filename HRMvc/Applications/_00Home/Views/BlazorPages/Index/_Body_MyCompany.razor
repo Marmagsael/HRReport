@@ -1,0 +1,127 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+
+@inject I_00UserscompanyDataAccess  _usercompany;
+@inject I_00UsersAccess             _user;
+@inject NavigationManager           _nav; 
+<RadzenDialog />
+
+
+<div class="card w-100 p-2 text-secondary">
+    <div class="card-header fw-bold py-2 bg-forestgreen text-white bg-opacity-25">
+        <h6>My Company </h6>
+    </div>
+    <div class="col-12 py-3 ">
+        <button @onclick="NewCompany" class="btn btn-success">New Company</button>
+    </div>
+
+    @if(userCompanys==null || userCompanys.Count == 0 )
+    {
+        <div class="table bg-white border rounded">
+            <div class="tbl-hdr sticky-tbl-hdr d-flex fw-bold border-2 border-bottom">
+                <div class="col-12    ps-3 pe-2  py-2 fw-bold ">Record is Empty.</div>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* --- Header *@
+        <div class="w-100 d-flex fw-bold bordered-bottom">
+            <div class="w-70">Company Name</div>
+            <div class="w-30 d-flex gap-2">
+                Action
+            </div>
+        </div>
+        @foreach (var uc in userCompanys!)
+        {
+            <div class="w-100 d-flex bordered-bottom">
+                <div class="w-70">
+                    <div class="fw-bold"> @uc?.CompanyName </div>
+                    <div class="text-muted">@uc?.CountryName</div>
+                </div>
+                <div class="w-30 d-flex gap-2 py-2">
+                    <button class="btn btn-success">Edit</button>
+                    <button @onclick="@(()=>SelectCompany(uc!.Id))" class="btn btn-sm btn-secondary">Select</button>
+                </div>
+            </div>
+
+        }
+    }
+
+
+</div>
+
+
+
+@inject I_00MainDA      _mainDa; 
+@inject IJSRuntime      _js; 
+@inject DialogService   _DialogService;
+
+@code {
+
+    List<UserCompanyModel?>? userCompanys = new(); 
+    
+    [Parameter]
+    public UserClaimsModel?     UserClaims      { get; set; } = new();
+
+
+    [Parameter]
+    public V00_Pay              VPay            { get; set; } = new(); 
+
+    [Parameter]
+    public EventCallback        ChildAction {get; set; }
+
+
+    protected async override void OnParametersSet()
+    {
+        int userId      = UserClaims!.UserId; 
+        userCompanys    = await _usercompany._02ByUserId(userId);
+        StateHasChanged(); 
+
+    }
+
+    void NewCompany()
+    {
+        _nav.NavigateTo($"03/0001",true);
+        StateHasChanged(); 
+    }
+
+    async void SelectCompany(int userCompanyId)
+    {
+
+        VPay.Action     = "SelectCompany"; 
+        int userId      = UserClaims == null ? 0 : UserClaims.UserId;
+        
+        var user            = await _mainDa._02UsersById(userId);
+        var uc    = await _mainDa._02UserCompanyPerOwnerId(userCompanyId);
+
+        if (uc.Count < 1)
+        {
+            var msg = "Unable to proceed. Company profile not found.";
+            await _DialogService.Alert(msg, "Missing Profile", new AlertOptions() { OkButtonText = "Exit" });
+            return;
+        }
+        
+        var userco = uc.FirstOrDefault();
+        if (userco?.PaySchema?.Length < 1)
+        {
+            var msg = "Unable to proceed. Payroll profile is empty.";
+            await _DialogService.Alert(msg, "Invalid Payroll Profile", new AlertOptions() { OkButtonText = "Exit" });
+            return;
+        }
+        
+        if (userco?.PisSchema?.Length < 1)
+        {
+            var msg = "Unable to proceed. HR profile is empty.";
+            await _DialogService.Alert(msg, "Invalid HR Profile", new AlertOptions() { OkButtonText = "Exit" });
+            return;
+        }  
+        
+        await _user._03ChangeDefaultCompany(userId, userCompanyId);
+        _nav.NavigateTo($"changingclaims/00/{user?.Id}",true);
+
+        await ChildAction.InvokeAsync(); 
+
+    }
+
+}

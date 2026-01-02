@@ -1,0 +1,32 @@
+﻿@using HRApiLibrary.Models._90_Utils
+@using Radzen.Blazor
+
+@{
+    var menuParent = menus?.FirstOrDefault(m => m?.Id == parentId);
+    var menuDtls   = menus?.Where(m => m?.IdParent == parentId).ToList() ?? [];
+}
+
+@* <div>Count @menuDtls.Count * @parentId </div> *@
+
+@if (menuParent != null && menuDtls.Any())
+{
+    <RadzenPanelMenuItem Text="@menuParent.DispText" Icon="@menuParent.Icon">
+        @foreach (var d in menuDtls)
+        {
+            <RadzenPanelMenuItem
+                Text="@d!.DispText"
+                Path="@d.Action"
+                Icon="@d.Icon"
+                class="disabled" />
+        }
+    </RadzenPanelMenuItem>
+}
+
+
+
+
+@code {
+    [Parameter] public List<MainmenuModel?>? menus  { get; set; } = [];
+    [Parameter] public int parentId                 { get; set; } = 0;
+
+}

@@ -1,0 +1,187 @@
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR.Views.BlazorPages._02DataEntry.F222
+@using HRMvc.Applications._02HR._02Library
+
+@inject NotificationService _NotificationService;
+@inject DialogService       _DialogService; 
+
+<div class="msds-modal" >
+    <div class="msds-modal-content" style="max-width: 980px;">
+        <div class="modal-content  bg-opacity-75">
+            <div class="modal-header  bg-opacity-75">
+                <h1 class="modal-title fs-5" >Add New Employee</h1>
+                <button type="button" class="btn-close" @onclick="@(()=>ShowHideModal(false))" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body" >
+                
+                <_222_01_DataEntry V="@V" ChildAction="ChildAction"   /> 
+
+            </div>`
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="@(()=>ShowHideModal(false))"
+                    data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveUpdate">Save changes </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@inject I_10_EmpmasDataAccess _empmas; 
+
+
+@code {
+
+
+    [Parameter]
+    public V222      V        { get; set; } = new(); 
+
+    [Parameter]
+    public EventCallback ChildAction {get; set;} 
+
+    async void ShowHideModal(bool action){
+
+        if(action==false)
+        {
+            V.Empmas = V.EmpmasToEditMapper(V.EmpmasToEdit!, V.Empmas!);
+            V.ShowDataEntry = false;
+
+        }
+        await ChildAction.InvokeAsync(); 
+    }
+
+
+
+    async void SaveUpdate()
+    {
+
+        if (V.Empmas == null || (string.IsNullOrWhiteSpace(V.Empmas?.Email) ||
+              string.IsNullOrWhiteSpace(V.Empmas?.EmpNumber) ||
+              string.IsNullOrWhiteSpace(V.Empmas?.EmpFirstNm) ||
+              string.IsNullOrWhiteSpace(V.Empmas?.EmpLastNm)))
+        {
+            return;
+        }
+
+
+    
+        EmpmasModel empmas  = PisempmasToEmpmas(V.Empmas);
+        
+        var validEmpnumber    = await IsValidEmpnumber(empmas); 
+        if(!validEmpnumber) return; 
+        
+        var validEmail = await IsValidEmail(empmas); 
+        if (!validEmail) return;
+        
+    
+        if(empmas.Id==0)
+        {
+            V.Action        = "Save Empmas";
+            var res         = await _empmas._01EmpmasV1(empmas, V.pisdb!, V.conn!);     
+            V.Empmas.Id     = res!.Id; 
+            V.SelectedId    = res!.Id; 
+
+            V.EmpmasList!.Insert(0,res);
+            
+            await _empmas._01EmpmasAddress_EmailOnly(V.Empmas.Id, V.Empmas.Email, V.pisdb!, V.conn!);
+            StateHasChanged(); 
+        
+        } else
+        {
+
+            V.Action = "Update Empmas";
+            var newEmpmas   = await _empmas._03Empmas(empmas.Id, empmas, V.pisdb!, V.conn!);
+            ReflectUpdateToEmpmasList(newEmpmas!); 
+
+            EmpmasAddressModel empmasAddress = new()
+            {
+                Id          = empmas.Id, 
+                EmailAdd    = V.Empmas.Email 
+            };
+
+            var res = await _empmas._02EmpmasAddress(empmas.Id, V.pisdb!, V.conn!); 
+            if(res==null)   {   res = await _empmas._01EmpmasAddress(empmas.Id, empmasAddress, V.pisdb!, V.conn!);  } 
+            else            {   res = await _empmas._03EmpmasAddress(empmas.Id, empmasAddress, V.pisdb!, V.conn!); }
+
+            //V.Empmas.Email  = res!.EmailAdd; 
+            V.Empmasaddress = res! ; 
+        }
+
+        V.ShowDataEntry = false;
+        await ChildAction.InvokeAsync(); 
+
+    }
+
+    EmpmasModel PisempmasToEmpmas(PisEmpmasModel pe )
+    {
+        EmpmasModel e = new()
+                            {
+                                Id          = pe.Id,
+                                SystemId    = pe.SystemId,
+                                EmpNumber   = pe.EmpNumber,
+                                EmpLastNm   = pe.EmpLastNm,
+                                EmpFirstNm  = pe.EmpFirstNm,
+                                EmpMidNm    = pe.EmpMidNm,
+                                EmpAlias    = pe.EmpAlias,
+                                Suffix      = pe.Suffix
+                            };
+        return e;
+    }
+
+    async Task<bool> IsValidEmpnumber(EmpmasModel empmas)
+    {
+        if (empmas.EmpNumber==null)         return true;
+        if (empmas.EmpNumber.Length < 1)    return true; 
+
+        var res = await _empmas._02Empmas_EmpnumberOwnedByOthers(empmas.Id, empmas.EmpNumber, V.pisdb!, V.conn!);    
+        
+        if (res==null) return true;
+        if(res.Count > 0)
+        {
+            var msg = "Employee number already in used. ";
+            await _DialogService.Alert(msg, "Update Failed", new AlertOptions() { OkButtonText = "Exit" });
+            return false; 
+        }
+        return true; 
+    }
+    async Task<bool> IsValidEmail(EmpmasModel empmas)
+    {
+        if (V.Empmas?.Email==null)          return true;
+        if (V.Empmas.Email.Length < 1)      return true;
+
+        var res = await _empmas._02EmpmasAddress_ByEmailNotTheOwner(empmas.Id, V.Empmas.Email, V.pisdb!, V.conn!);
+        
+
+        if (res==null) return true;
+        if(res.Count > 0)
+        {
+            var msg = "Email address already in used. ";
+            await _DialogService.Alert(msg, "Update Failed", new AlertOptions() { OkButtonText = "Exit" });
+            return false; 
+        }
+        return true; 
+    }
+
+
+    void ReflectUpdateToEmpmasList(EmpmasModel source)
+    {
+        var e = V.EmpmasList?.Find(e=>e?.Id==source.Id); 
+        var s = source; 
+        if(e==null) return;
+        
+        e.Id          = s.Id;
+        e.SystemId    = s.SystemId;
+        e.EmpNumber   = s.EmpNumber;
+        e.EmpLastNm   = s.EmpLastNm;
+        e.EmpFirstNm  = s.EmpFirstNm;
+        e.EmpMidNm    = s.EmpMidNm;
+        e.Suffix      = s.Suffix;
+        e.EmpAlias    = s.EmpAlias;
+        
+    }
+
+}    

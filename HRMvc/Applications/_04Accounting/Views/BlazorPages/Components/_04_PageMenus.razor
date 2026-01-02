@@ -1,0 +1,94 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Views.BlazorPages.Components; 
+
+
+<div>
+    
+    
+
+
+    <RadzenMenu Click="OnParentClicked" class="bg-secondary ">
+        <span class="px-2 d-flex">
+            @{
+                var menuhdrs = MenusList.Where(m => m!.Type == "SHdr").ToList();
+            }
+
+            <RadzenMenuItem Text="Home" Path="00/" Icon="home" />
+
+            @foreach (var h in menuhdrs)
+            {
+                <RadzenMenuItem Text="@h!.DispText" Icon="@h.Icon1">
+                    
+                    @{  var menudtls = MenusList.Where(m => m!.IdParent == h.Id).ToList(); }
+
+                    @foreach (var d in menudtls)
+                    {
+                        string? action = $"04/{d?.Action}";
+                        <RadzenMenuItem Text="@d?.DispText" Path="@action" Icon="@d?.Icon1" />
+
+                    }
+
+                </RadzenMenuItem>
+            }
+
+        </span>
+
+    </RadzenMenu>
+
+    @* <RadzenMenu Click="OnParentClicked" class="bg-secondary " >
+    <span class="px-2">
+    <RadzenMenuItem Text="Management" Icon="home">
+    <RadzenMenuItem Text="Company Settings"         Path="03/0501"  Icon="cached" class="disabled"  />
+    <RadzenMenuItem Text="User Management"          Path="03/0506"  Icon="face" />
+    <RadzenMenuItem Text="Chart of Accounts"        Path="03/0502"  Icon="line_weight"  />
+
+    <div style="border-bottom: 1px solid gray;" />
+
+    <RadzenMenuItem Text="Payroll Group"            Path="03/0503"  Icon="attach_file"      Click="OnChildClicked" />
+    <RadzenMenuItem Text="Employee Management"      Path="03/0504"  Icon="assignment" />
+    <RadzenMenuItem Text="Employee Rates"           Path="03/0505"  Icon="announcement" />
+    </RadzenMenuItem>
+    </span>
+    </RadzenMenu> *@
+
+</div>
+
+
+@inject I_00MainDA _mainDA;
+
+
+@code {
+
+    [Parameter]
+    public UserClaimsModel? UserClaims { get; set; } = new();
+
+    public List<MenusModel?> MenusList { get; set; } = new();
+
+    string? cnt = string.Empty;
+    string? conn = string.Empty;
+
+    protected override async void OnParametersSet()
+    {
+        conn = UserClaims!.Conn;
+        MenusList = await _mainDA._02MenuList_ByModule("menus10user", "4", "Main", conn!);
+
+        cnt = MenusList.Count.ToString();
+
+        StateHasChanged();
+
+    }
+
+
+
+    void OnParentClicked()
+    {
+
+    }
+
+    void OnChildClicked()
+    {
+
+    }
+
+}

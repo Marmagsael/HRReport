@@ -1,0 +1,268 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR._02Library
+
+
+@inject NotificationService         _NotificationService;
+@inject DialogService               _DialogService;
+
+
+<div>
+
+    @* // --- New Button *@
+    <div class="mt-1 mb-1">
+        <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow"
+            Disabled="@(editMode)" />
+    </div>
+    <div class="text-danger mt-2 mb-2"><h5>@errorMsg</h5></div>
+
+    <RadzenDataGrid Data="@leavegrps"
+                    TItem="LeavegrpModel"
+                    @ref="leavegrpsGrid"
+                    EditMode="DataGridEditMode.Single"
+                    AllowSorting=true
+                    AllowPaging=true
+                    PageSize="10"
+                    PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                    ColumnWidth="100%">
+        <Columns>
+            <RadzenDataGridColumn TItem="LeavegrpModel" Property="Id" Title="Id" TextAlign="Radzen.TextAlign.Right" FormatString="{0:#,##0}" Width="100px">
+                @* <EditTemplate Context="rec">
+                    <RadzenNumeric @bind-Value="rec.Id" Name="Id" ShowUpDown=false Format="#,##0" TextAlign="TextAlign.Right" />
+                </EditTemplate> *@
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="LeavegrpModel" Property="Name" Title="Name">
+                <EditTemplate Context="rec">
+                    <RadzenTextBox @bind-Value="rec.Name" class="w-100" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="LeavegrpModel" Context="LeavegrpModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" Width="150px">
+                <Template Context="rec">
+                    <RadzenButton Icon="edit"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => EditRow(rec))"
+                                  @onclick:stopPropagation="true">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1"
+                                  @onclick:stopPropagation="true">
+                    </RadzenButton>
+                </Template>
+
+                <EditTemplate Context="rec">
+                    <RadzenButton Icon="check"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@((args) => SaveRow(rec))">
+                    </RadzenButton>
+
+                    <RadzenButton Icon="close"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Click="@((args) => CancelEdit(rec))"
+                                  Size="ButtonSize.Small" class="my-1 ms-1">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.ExtraSmall"
+                                  Click="@(args => DeleteRow(rec))"
+                                  class="my-1 ms-1">
+                    </RadzenButton>
+                </EditTemplate>
+
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+
+
+</div>
+
+@inject ILeavegrpDataAccess     _leavegrp; 
+
+@code {
+
+
+    [Parameter]
+    public V02?                 V02             { get; set; } = new();
+
+    [Parameter]
+    public UserClaimsModel      UserClaims      { get; set; } = new();
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+
+
+    //-- Initialization ----------------
+    RadzenDataGrid<LeavegrpModel?>?     leavegrpsGrid       = new();
+    bool                                editMode            = false;
+    DataGridEditMode                    editMode1           = DataGridEditMode.Single;
+
+    List<LeavegrpModel?>?               leavegrps           = new();
+    LeavegrpModel?                      leavegrp            = new();
+
+    List<LeavegrpModel?>?               leavegrpsToInsert   = new();
+    List<LeavegrpModel?>?               leavegrpsToUpdate   = new();
+    string? errorMsg = string.Empty;
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+        leavegrps = await _leavegrp._02(pisdb,conn); 
+        StateHasChanged(); 
+    }
+
+    //-- InsertRow ----------------
+    async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new LeavegrpModel();
+        leavegrpsToInsert!.Add(rec);
+        await leavegrpsGrid!.InsertRow(rec);
+        editMode = true;
+    }
+    //-- Reset ----------------
+    void Reset()
+    {
+        leavegrpsToInsert!.Clear();
+        leavegrpsToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    void Reset(LeavegrpModel rec)
+    {
+        leavegrpsToInsert!.Remove(rec);
+        leavegrpsToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    async Task EditRow(LeavegrpModel rec)
+    {
+        if (leavegrpsGrid != null)
+        {
+            Reset();
+            leavegrpsToUpdate?.Add(rec);
+            await leavegrpsGrid.EditRow(rec);
+        }
+    }
+    //-- Delete Row ----------------
+    async Task DeleteRow(LeavegrpModel rec)
+    {
+        if (leavegrps == null) return;
+        if (leavegrpsGrid == null) return;
+
+        Reset(rec);
+
+        if (leavegrps.Contains(rec))
+        {
+            // if (rec != null)
+            // {
+            //     var res = await _leavegrp._02CheckToTblTran(rec.ClNumber!, Schema!, conn!);
+            //     if (res != null)
+            //     {
+            //         if (res.Count > 0)
+            //         {
+            //             var msg = "Unable to delete <span class='text-danger fw-bold'> " + rec.Name + "!</span> Record already exists. ";
+            //             await _DialogService.Alert(msg, "Delete denied", new AlertOptions() { OkButtonText = "Exit" });
+            //             return;
+            //         }
+            //     }
+            // }
+
+            var option = await _DialogService.Confirm("Delete " + rec?.Name + "?", "Confirm Delete",
+                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+            
+
+            if (option == true)
+            {
+                await _leavegrp._04(rec!.Id, pisdb!, conn!);
+                leavegrps.Remove(rec);
+            }
+        }
+        else
+        {
+            leavegrpsGrid.CancelEditRow(rec);
+        }
+        await leavegrpsGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+    //-- Cancel Edit ----------------
+    async void CancelEdit(LeavegrpModel rec)
+    {
+        errorMsg = string.Empty;
+        if (leavegrpsGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        leavegrpsGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        var res = await _leavegrp._02(id, pisdb!, conn!);
+        if (res == null) return;
+        Remap_Flds(rec, res);
+        await leavegrpsGrid.Reload();
+    }
+    //-- Remap ----------------
+    void Remap_Flds(LeavegrpModel destination, LeavegrpModel source)
+    {
+
+    }
+    //-- Save Row ----------------
+    async Task SaveRow(LeavegrpModel rec)
+    {
+        if (leavegrpsGrid == null) return;
+        if (!SafeToSave(rec)) return;
+        if (rec.Id == 0)
+        {
+            var res = await _leavegrp._01(rec, pisdb!, conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                leavegrps!.Add(rec);
+            }
+        }
+        else
+        {
+            await _leavegrp._03(rec.Id, rec, pisdb!, conn!);
+        }
+        await leavegrpsGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+    //-- Safe to Save ----------------
+    bool SafeToSave(LeavegrpModel rec)
+    {
+
+        return true;
+    }
+
+}

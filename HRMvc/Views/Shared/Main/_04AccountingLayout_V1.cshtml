@@ -1,0 +1,96 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+@using System.Security.Claims
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Applications._04Accounting.Views.BlazorPages.Components; 
+
+@inject I_00MainDA _mainDA
+@inject IConfiguration _config;
+@{
+    var userid      = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+    string conn     = _config.GetSection("Schema:DefConn").Value;
+
+    IEnumerable<Claim?>     claims      = User.Claims;
+    UserClaimsModel         userClaims  = _mainDA._02UserClaimsContent(claims);
+    string vue = _config.GetSection("Vue").Value;
+}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <base href="~/" />
+    @*-- Bootsrap --*@
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    @*-- CSS --*@
+    <link rel="stylesheet" href="~/css/global.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Main/Layout/main_content.css" asp-append-version="true" />
+
+    @*-- Font Awesome --*@
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" />
+
+    @*-- Radzen --*@
+    <link href="_content/Radzen.Blazor/css/material-base.css" rel="stylesheet" />
+    <link href="_content/Blazored.Modal/blazored-modal.css" rel="stylesheet" />
+
+    @*-- Accounting --*@
+    <link rel="stylesheet" href="~/css/msds-modal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Accounting/acctg.css" asp-append-version="true" />
+</head>
+
+<body>
+    <div style="min-height:100vh; width:100%; background-color:rgb(255, 255, 250); ">
+
+        
+        @(await Html.RenderComponentAsync<_04_PageHdr>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))
+        
+        <span class="msds-lg-d-none">  @(await Html.RenderComponentAsync<_04_PageMenus>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))  </span>
+        
+
+        <div class="main-wrapper" style="min-height: 100%; ">
+
+            
+
+            @* *** Small and Medium Display -------------------*@
+            <div class="d-flex" style="min-height:100%; ">
+                <div class="msds-md-d-none d-lg-block" style="min-width:240px; min-height:95vh; ">
+                    @(await Html.RenderComponentAsync<_04_PageMenus_Left>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))
+                </div>
+
+                <div class="m-2 msds-right-body " style="border-radius: 5px; min-height:85vh;  ">
+                    @RenderBody()
+                </div>
+            </div>
+
+
+
+
+        </div>
+    </div>
+
+    <div class="main-wrapper" style="min-height:100%; ">
+        @RenderBody()
+    </div>
+
+
+    @*-- Script --*@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="~/js/Main/_00Main.js" asp-append-version="true"></script>
+    <script src="~/lib/vue/@vue"></script>
+    <script src="~/lib/axios/axios.min.js"></script>
+
+    @*-- Blazor Server Script --*@
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+
+
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

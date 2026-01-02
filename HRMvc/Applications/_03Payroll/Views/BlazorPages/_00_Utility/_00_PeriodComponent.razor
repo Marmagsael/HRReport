@@ -1,0 +1,79 @@
+<div class="row b-black w-100 pt-2 ">
+    <div class="col-12 col-md-3 col-lg-2 ">
+        Deduction Schedule 
+    </div>
+    <div class="col-12 col-md-8 col-lg-9">
+        @foreach (var prd in Prds!)
+        {
+            var chk = prd!.IsChecked ? true : false; 
+            var isDisabled = chk ? "disabled-div-50" : "";
+            <div class="form-check form-check-inline w-100p ">
+                <span class="@isDisabled">
+                    <input type="checkbox"
+                           class="form-check-input"
+                           checked="@prd.IsChecked"
+                           @onchange="() => ToggleSelection(prd)" />
+                </span>
+
+                <label>@prd.PName</label>
+                
+            </div>
+        }
+    </div>
+    
+</div>
+
+
+@code {
+    [Parameter] public int                  SelNumber               { get; set; } = 1;
+    [Parameter] public EventCallback<int>   OnSelectionChanged      { get; set; }
+
+    private int                             SelectedNumber          { get; set; } = 1;
+
+    private class PrdClass
+    {
+        public PrdClass()
+        {
+        }
+
+        public PrdClass(int id, string pName)
+        {
+            Id = id;
+            PName = pName;
+        }
+
+        public int      Id          { get; set; } = 0;
+        public string   PName       { get; set; } = "";
+        public bool     IsChecked   { get; set; } = false; 
+    }
+
+    private bool _initialized = false;
+
+    protected override void OnParametersSet()
+    {
+        if (_initialized) return;
+        Prds = new List<PrdClass?>();
+        for (var i = 1; i < 6; i++)
+        {
+            var chk = i == SelNumber;
+            var p = new PrdClass { Id = i, PName = $"Prd {i}", IsChecked = chk };
+            Prds.Add(p);
+        }
+
+        _initialized = true;
+    }
+    
+
+    private List<PrdClass?>? Prds = []; 
+    
+
+    private  void ToggleSelection(PrdClass prd)
+    {
+        foreach (var p in Prds!) p!.IsChecked = false;
+        prd.IsChecked = true;
+        OnSelectionChanged.InvokeAsync(prd.Id);
+    }
+    
+
+}
+

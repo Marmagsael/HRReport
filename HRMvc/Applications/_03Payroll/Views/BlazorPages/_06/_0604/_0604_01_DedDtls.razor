@@ -1,0 +1,232 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+
+@inject DialogService           _DialogService
+@inject NotificationService     _NotificationService;
+<RadzenDialog />
+<RadzenNotification />
+
+
+<div class="card shadow bordered-darkgreen mt-3">
+    <div class="card-header text-white fw-bold " style="background-color: darkslategrey">
+        MANDATORY DEDUCTION
+    </div>
+
+    <!-- Buttons -->
+    <div class="bordered bg-black bg-opacity-10 px-2 py-1 bordered-bottom-darkgreen">
+        <button onclick="@New" class="btn btn-primary btn-sm">New</button>
+        <button onclick="@Save" class="btn btn-secondary btn-sm me-1">Save</button>
+        @if(V.Dedmandatory?.Id > 0 ) {<button onclick="@Stop" class="btn btn-secondary btn-sm">Stop</button>}
+    </div>
+
+    <div class="card-body border-2  ">
+        <div class="row  p-1 ">
+            <div class="w-100 d-flex gap-2 py-1">
+                <div class="w-100p py-1">TRN No. </div>
+                <div class="w-200p">
+                    <RadzenNumeric @bind-Value="@V.Dedmandatory!.Id" Name="DaysPara" ShowUpDown="false" Format="##0"
+                                   TextAlign="TextAlign.Right" Disabled="true" />
+                </div>
+            </div>
+            
+        </div>
+        @* --- Line 1  ------------*@
+        <div class="row bordered-bottom p-1 ">
+            @* --- Charge to ----------------------- *@
+            <div class="col-12 col-md-4 d-flex gap-2 py-1">
+                <div class="w-100p py-1">Charge to</div>
+                <div class="w-200p">
+                    @{ var acctDisabled = V.Dedmandatory.Id > 0 ? true : false; }
+                    <RadzenDropDown TValue="string"
+                                    Name="ddAcctNumber"
+                                    @bind-Value="@V!.Dedmandatory!.AcctNumber"
+                                    Data="@V!.Coas"
+                                    TextProperty="AcctName"
+                                    ValueProperty="AcctNumber"
+                                    Disabled="@acctDisabled"
+                                    Style="width: 100%; max-width: 400px; "
+                                    Placeholder="Select COA"/>
+                </div>
+            </div>
+
+            @* --- Amount ----------------------- *@
+            <div class="col-12 col-md-4 d-flex  py-1">
+                <div class="w-100p py-1">Amount</div>
+                <div class="w-200p">
+                    <RadzenNumeric @bind-Value="@V.Dedmandatory.ContAmt" Name="DaysPara" ShowUpDown="false" Format="#,##0.00"
+                                   TextAlign="TextAlign.Right"/>
+                </div>
+            </div>
+
+            @* --- Max Amount ----------------------- *@
+            <div class="col-12 col-md-4 d-flex  py-1">
+                <div class="w-100p py-1">Max Amount</div>
+                <div class="w-200p">
+                    <RadzenNumeric @bind-Value="@V.Dedmandatory.MaxAmt" Name="DaysPara" ShowUpDown="false" Format="#,##0.00"
+                                   TextAlign="TextAlign.Right"/>
+                </div>
+            </div>
+
+        </div>
+
+        @* --- Line 2  ------------*@
+        <div class="row p-1 ">
+
+            @* --- Schedule ----------------------- *@
+            <div class="col-12 col-md-8 d-flex gap-2 py-1">
+                <div class="w-100p py-1">Schedule</div>
+                <div class="w-350p d-flex gap-2">
+                    
+                    <div class="d-flex py-1 gap-2">
+                        <input @bind="@V.Dedmandatory!.P1B"  class="form-check-input" type="checkbox" id="prd1">
+                        @* <RadzenCheckBox @bind-Value="V.Dedmandatory!.P1B" TValue="bool" class="p-0 me-1" /> *@
+                        <span>Prd 1</span>
+                    </div>
+
+                    <div class="d-flex py-1 gap-2">
+                        <input @bind="@V.Dedmandatory!.P2B"  class="form-check-input" type="checkbox" id="prd2">
+                        @* <RadzenCheckBox @bind-Value="V.Dedmandatory!.P1B" TValue="bool" class="p-0 me-1" /> *@
+                        <span>Prd 2</span>
+                    </div>
+
+                    
+                    <div class="d-flex py-1 gap-2">
+                        <input @bind="@V.Dedmandatory!.P3B"  class="form-check-input" type="checkbox" id="prd3">
+                        <span>Prd 3</span>
+                    </div>
+                    <div class="d-flex py-1 gap-2">
+                        <input @bind="@V.Dedmandatory!.P4B"  class="form-check-input" type="checkbox" id="prd4">
+                        <span>Prd 4</span>
+                    </div>
+                    <div class="d-flex py-1 gap-2">
+                        <input @bind="@V.Dedmandatory!.P5B"  class="form-check-input" type="checkbox" id="prd5">
+                        <span>Prd 5</span>
+                    </div>
+
+                </div>
+            </div>
+
+            @* --- Status ----------------------- *@
+            <div class="col-12 col-md-4 d-flex  py-1">
+                <div class="w-100p py-1">Status</div>
+                <div class="w-50p">
+                    <input @bind="V.Dedmandatory.Status" type="text"  class="form-control" disabled  >
+                    
+                </div>
+            </div>
+
+        </div>
+
+        @* --- Line 3  ------------*@
+        <div class="row p-1 bordered-bottom ">
+            @* --- Remarks ----------------------- *@
+            <div class="col-12 d-flex gap-2 py-1  ">
+                <div class="w-100p py-1">Remarks</div>
+                <div class="row w-100">
+                    <div class="col-12 w-100 ">
+                        <input @bind="V.Dedmandatory.Remarks" type="text"  maxlength="200" class="form-control" >
+                    </div>
+                    
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    @if (V.ErorrMsgs?.Count > 0)
+    {
+        <div class="w-100 px-2 ">
+            <div class="fw-bold p-2 text-danger bordered-bottom">ERROR MESSAGE</div>
+            <div class=" p-2 w-100 bordered-bottom ">
+                @foreach (var msg in V.ErorrMsgs)
+                {
+                    <div class="text-danger"> => @msg </div>
+                }
+            </div>
+            
+        </div>
+    }
+
+    @* --- Line 4  ------------*@
+    <div class="w-100 px-2 ">
+         <_0604_02_Grid V="@V" V00="@V00" ChildAction="ChildAction" />
+    </div>
+</div>
+
+
+
+@inject IDedmandatoryDataAccess _ded; 
+
+@code {
+    
+    [Parameter] public V0604            V               { get; set; } = new(); 
+    [Parameter] public V00_Pay          V00             { get; set; } = new(); 
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        
+    }
+
+    async void New()
+    {
+        V.ErorrMsgs = [];
+        V.Dedmandatory = new DedmandatoryModel();
+        await ChildAction.InvokeAsync();
+    }
+
+    async void Save()
+    {
+        V.ErorrMsgs = []; 
+        CheckSave(); 
+        if(V.ErorrMsgs.Count > 0 ) return; 
+        
+        if(V00.paydb==null || V00.conn==null || V.Dedmandatory == null) return;
+        var res = await _ded._01(V.Dedmandatory, V00.paydb, V00.conn);
+        V.Dedmandatory = res;
+
+        V.Dedmandatorys = []; 
+        var ress = await _ded._02ByStatus("A", V00.paydb!, V00.conn!);
+        if (ress != null || ress?.Count > 0) V.Dedmandatorys = ress; 
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+    }
+
+    void CheckSave()
+    {
+        if(V.Dedmandatory?.AcctNumber?.Length  < 1 ||  
+           V.Dedmandatory?.AcctNumber==null )          V.ErorrMsgs?.Add("Account is not valid.");
+        
+        if(V!.Dedmandatory?.ContAmt < 1 ) V.ErorrMsgs?.Add("Amount must not be zero.");
+        if(V!.Dedmandatory?.MaxAmt < 1 ) V.ErorrMsgs?.Add("The maximum amount must not be zero.");
+        
+        if ((V.Dedmandatory?.P1B == false) &&
+            (V.Dedmandatory?.P1B == false) &&
+            (V.Dedmandatory?.P2B == false) &&
+            (V.Dedmandatory?.P3B == false) &&
+            (V.Dedmandatory?.P4B == false) &&
+            (V.Dedmandatory?.P5B == false))         V.ErorrMsgs?.Add("Schedule for deductions has not been established.");
+
+        var d = V.Dedmandatorys?.Where(ded => ded?.AcctNumber == V.Dedmandatory?.AcctNumber).ToList();
+        if(d?.Count>0)  V.ErorrMsgs?.Add("Multiple deduction account is not permitted."); 
+    }
+
+    async void Stop()
+    {
+        var option = await _DialogService.Confirm($"Stop {V.Dedmandatory?.AcctName}", "Confirm Action",
+            new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        
+        if (option != true) return;
+        
+        var res = await _ded._03Stop(V.Dedmandatory?.Id??0, V00.paydb!, V00.conn!);
+        V.Dedmandatorys = await _ded._02ByStatus("A", V00.paydb!, V00.conn!);
+        
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
+
+    }
+    
+
+}

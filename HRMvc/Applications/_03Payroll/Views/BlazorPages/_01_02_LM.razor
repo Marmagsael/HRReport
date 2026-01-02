@@ -1,0 +1,86 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using OfficeOpenXml
+
+@inject I_00MainDA _mainDa;
+@inject IConfiguration _config;
+
+@{
+    // <link rel="stylesheet" href="~/css/Main/Layout/main_leftmenu.css" asp-append-version="true" />
+
+}
+
+
+<div class="lm-body">
+    @* <p class="lm-category lm-padding">@mHdr?.DispText</p> *@
+    <p class="lm-category lm-padding">mHdr?.DispText</p>
+
+    <div class="lm-dtls">
+
+        @{  var menusHdr = menusList.Where(m => m?.Type!.Trim() == "SHdr").ToList(); }
+        <div> MenusHdr Count : @menusHdr.Count ********* </div>
+        @foreach (var s in menusHdr)
+        {
+            <div class="lmd-content ">
+                @if (!string.IsNullOrEmpty(@s?.Action))
+                {
+                    <a class="lmd-hdr lm-item" asp-area="" asp-controller="@s?.Controller" asp-action="@s?.Action">
+                        @if (s?.Icon1?.Length > 0)
+                        {   <span class="lmd-hdr-icon1 icon1"><i class="@s?.Icon1"></i></span> }
+
+                        <span class="lmd-hdr-text">@s?.DispText</span>
+                    </a>
+                }
+                else
+                {
+                    {
+                        <div class="lmd-hdr lm-item d-flex">
+                            @if (s?.Icon1?.Length > 0)
+                            {   <span class="lmd-hdr-icon1 icon1"><i class="@s?.Icon1"></i></span> }
+                            
+                            <div class="lmd-hdr-details d-flex justify-content-between w-100">
+                                <span class="lmd-hdr-text"> @s?.DispText</span>
+                                @if (s?.IsWithChild == 1)
+                                {
+                                    <button class="lm-toggle-subcontent lmd-hdr-icon2">
+                                        <i class="fa-solid fa-angle-up"></i>
+                                        <i class="fa-solid fa-angle-down"></i>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+
+            </div>
+
+        }
+
+    </div>
+</div>
+
+
+
+
+
+@code {
+    List<MenusModel?> menusList = new();
+    string mainSchema           = string.Empty;
+    string conn                 = string.Empty;
+    string isExclusiveCompany   = string.Empty;
+
+    [Parameter]
+    public V00_Pay          V00         { get; set; } = new();
+
+
+    protected async override void OnParametersSet()
+    {
+        mainSchema           = _config.GetSection("Schema:Main").Value;
+        conn                 = _config.GetSection("Schema:DefConn").Value;
+        isExclusiveCompany   = _config.GetSection("CompanyInfo:Exclusive").Value;
+
+        string? userId      = V00.UserClaims?.UserId.ToString();
+        menusList = await _mainDa._02MenuList("menus50pay", 1, mainSchema, conn);
+    }
+}

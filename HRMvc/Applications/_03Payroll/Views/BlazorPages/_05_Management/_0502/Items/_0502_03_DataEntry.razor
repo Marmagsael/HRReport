@@ -1,0 +1,114 @@
+﻿@using System.Xml.Linq
+@using HRApiLibrary.DataAccess._20_Pay
+@using HRApiLibrary.Models._20_Pay
+<div class="w-100 py-2  ">
+    <div class=" bg-success p-1 bg-opacity-10 bordered-bottom-darkgreen d-flex  justify-content-between">
+        @if (!V!.ShowDataEntry??false)
+        {   <btn onclick="@(() => ShowHideDataEntry(true))" class="btn btn-success btn-sm">Create New Account </btn> }
+        else
+        {
+        <btn onclick="@SaveData" class="btn btn-success btn-sm">Save </btn>
+        <btn onclick="@(() => ShowHideDataEntry(false))" class="btn btn-outline-danger btn-sm">X </btn>
+            
+        }
+        
+    </div>
+    
+    
+    @if (V?.ShowDataEntry??false)
+    {
+        <div class="bordered-darkgreen mt-1">
+            @*---- Accout Number -----------------------------------*@
+            <div class="d-flex px-2 py-1 mt-1 gap-2">
+                <div class="w-125p py-2 px-2 "> Acct No.</div>
+                <div class="w-175p  w-sm-125p ">
+                    <RadzenTextBox Placeholder="XXXXX" MaxLength="5" @bind-Value="@V!.Coa!.AcctNumber" Disabled />
+                </div>
+                
+            </div>
+
+            @*---- Accout Short Name -----------------------------------*@
+            <div class="d-flex px-2 py-1 gap-2">
+                <div class="w-125p p-2"> Short Name </div>
+                <div class="w-175p w-sm-125p">
+                    <RadzenTextBox MaxLength="20" @bind-Value="@V!.Coa!.ShortDesc" />
+                </div>
+            </div>
+
+            @*---- Accout Name -----------------------------------*@
+            <div class="d-flex py-1 px-2 gap-2">
+                <div class="w-125p p-2"> Acct Name</div>
+                <div class="w-500p w-sm-250p">
+                    <RadzenTextBox MaxLength="60" class="w-100"  @bind-Value=@V!.Coa!.AcctName />
+                </div>
+            </div>
+            
+            @*---- Accout Name -----------------------------------*@
+            <div class="d-flex py-1 px-2 gap-2">
+                <div class="w-125p p-2">Rate ( % ) </div>
+                <RadzenNumeric @bind-Value="V!.Coa!.RateOverBasic" ShowUpDown=false Format="#,##0.00"
+                               TextAlign="TextAlign.Right" />
+            </div>
+            
+        </div>
+        
+    }
+    
+</div>
+
+@inject ICoaDataAccess _coa; 
+
+@code {
+    
+    [Parameter] public EventCallback                ChildAction     { get; set; }
+    [Parameter] public _00_Utility.Vars.V00_Pay?    V00             { get; set; } = new(); 
+    [Parameter] public V502?                        V               { get; set; } = new();
+    [Parameter] public List<CoaModel?>?             Coas            { get; set; } = [];
+    
+
+    
+    
+    
+    async void ShowHideDataEntry(bool ans)
+    {
+        V!.ShowDataEntry = ans;
+
+        if (ans)
+        {
+            var res = Coas?.OrderByDescending(c => c?.AcctNumber).ToList();
+            var acctNumber = res?.FirstOrDefault()?.AcctNumber?.Trim();  
+            var prefix  = acctNumber?.Substring(0, 1);
+
+            int len = (int)(acctNumber?.Trim().Length-1)!;
+        
+            if (len > 1)
+            {
+                var cnt = acctNumber?.Substring(1, len);
+                var cnt1 = 0;
+                if (cnt == null) cnt1 = 0; 
+                else cnt1 = Convert.ToInt32(cnt);
+                cnt1++; 
+            
+                V!.Coa!.AcctNumber = prefix + cnt1.ToString("D3");    
+            }    
+        }
+        
+
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async Task SaveData()
+    {
+        V00!.Action         = "SaveCOA";
+        V!.Coa!.AcctType    = V.Coa.AcctNumber?.Trim().Substring(0, 1);
+        V.Coa.SortDed       = 999; 
+        V.Coa.SortEarn      = 999;
+        V.Coa.IsLock        = 0;
+        V.Coa.IsSelected    = 0; 
+        
+        await _coa._01(V!.Coa!, V00.paydb!, V00.conn!); 
+        await ChildAction.InvokeAsync(); 
+    }
+    
+
+}

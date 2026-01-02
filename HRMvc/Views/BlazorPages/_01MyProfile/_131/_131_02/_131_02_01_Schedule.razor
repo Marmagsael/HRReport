@@ -1,0 +1,49 @@
+﻿@{
+    var hdrcss = "text-success";
+    var dutyType = DutyType == "R" ? "Regular" : "Restday"; 
+    if (DutyType == "RD") hdrcss = "text-danger";
+    
+}
+
+<div class="card w-100 mb-2">
+    <div class="card-header">
+        @DayName - <span class="@hdrcss"> [ @dutyType ] </span>  
+    </div>
+    
+    <div class="p-2 w-100 text-center">
+        @if (DutyType=="RD")
+        { <div>-</div> }
+        else
+        {
+            var inTime = (int)(In??0); 
+            <div>
+                IN/OUT : @inTime.ToString("00:00") /
+                @if (Duration == 0 || AttType==3)
+                { <span>-</span> }
+                else
+                { @outTime.ToString("00:00") }
+            </div> 
+        }
+        
+    </div>
+    
+</div>
+
+
+@code {
+    
+    int outTime = 0; 
+
+    [Parameter] public int?     AttType         { get; set; } = 1;
+    [Parameter] public string?  DutyType        { get; set; } = "RD";
+    [Parameter] public string?  DayName         { get; set; } = string.Empty;
+    [Parameter] public int?     In              { get; set; } = 0;
+    [Parameter] public int?     Duration        { get; set; } = 0; 
+
+    protected override void OnParametersSet()
+    {
+        if (Duration > 0) outTime = In + Duration??0;
+        if (outTime >= 2359) outTime = outTime - 2400; 
+    }
+
+}

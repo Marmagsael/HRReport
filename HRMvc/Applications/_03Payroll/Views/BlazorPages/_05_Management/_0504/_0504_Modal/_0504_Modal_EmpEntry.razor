@@ -1,0 +1,349 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0500
+
+@inject I_20_001_PayDataAccess _pay; 
+
+
+<link rel="stylesheet" href="css/Payroll/C0504_Modal_EmpEntry.css" />
+
+
+<div>
+    <div class="row">
+        
+        @* --- Emp. Number -------------------- *@
+        <div class="col-sm-12 col-md-3 col-lg-2 p-2">Emp Number </div>
+        <div class="col-sm-12 col-md-9 col-lg-10 p-1">
+            <div class="w-100">
+                <input type="text" @bind-value="er!.EmpNumber" @onblur="EmpnumberChanged" class="w-50 form-control" tabindex="1"/>
+            </div>
+            @if (errorMsg?.Length > 1)
+            {
+                <div class="text-danger"> @errorMsg </div>
+            }
+        </div>
+
+        <div class="mb-2" style="border-bottom: 1px solid lightgray ;height: 3px; "> &nbsp; </div>
+
+        @{ var disableEntry = er.EmpmasId > 0; }
+        
+        <div class="col-sm-12 col-md-3 col-lg-2 p-2">First Name <span class="text-danger">*</span></div>
+        <div class="col-sm-12 col-md-9 col-lg-10 p-1">
+            <input type="text" @bind-value="er!.EmpFirstNm" @ref="inputElement" class="form-control" disabled="@disableEntry"  tabindex="2"/>
+        </div>
+
+        <div class="col-sm-12 col-md-3 col-lg-2  p-2">Mid Name</div>
+        <div class="col-sm-12 col-md-9 col-lg-10 p-1">
+            <input type="text" @bind-value="er!.EmpMidNm" class="form-control" disabled="@disableEntry"  tabindex="3"/>
+        </div>
+
+        <div class="col-sm-12 col-md-3 col-lg-2 p-2">Last Name <span class="text-danger">*</span></div>
+        <div class="col-sm-12 col-md-9 col-lg-10 p-1">
+            <input type="text" @bind-value="er!.EmpLastNm" class="form-control" disabled="@disableEntry"  tabindex="4"/>
+        </div>
+
+        <div class="col-sm-12 col-md-3 col-lg-2  p-2">Suffix</div>
+        <div class="col-sm-12 col-md-9 col-lg-10 p-1">
+            <input type="text" @bind-value="er!.Suffix" class="form-control w-100p" disabled="@disableEntry"  tabindex="5"/>
+        </div>
+
+        <div class="mb-2" style="border-bottom: 1px solid lightgray ;height: 3px; ">&nbsp</div>
+
+        <div class="col-12">
+            <div class="row">
+                <div class="col-sm-12 col-md-3 col-lg-2 p-1 text-center">Rates <span class="text-danger">*</span></div>
+                <div class="col-sm-12 col-md-9 col-lg-10 p-1 d-flex gap-2">
+                    <div style="max-width: 180px;">
+                        <RadzenNumeric
+                            Format="##0.00"
+                            class="w-100"
+                            ShowUpDown=false
+                            @bind-Value="er!.EmpRate"
+                            TextAlign="TextAlign.End"
+                            Disabled="@er.UsePaygrpRates"
+                            Min="0" TabIndex="6"/>
+                    </div>
+
+                    <div style="max-width: 150px; z-index: 2500; position: relative; ">
+                        <div>
+                            <select @bind="@er!.PayRateId" disabled="@er.UsePaygrpRates" style="width:100%;" class="form-select">
+                                <option value="">Select...</option>
+                                @foreach (var item in V504.Payrates ?? [])
+                                {
+                                    <option value="@item?.Id">@item?.RateName</option>
+                                }
+                            </select>
+                            @*<RadzenDropDown @bind-Value=@er!.PayRateId
+                                            Data=@V504.Payrates
+                                            TextProperty="RateName"
+                                            ValueProperty="Id"
+                                            Style="width: 100%; z-index:99999;"
+                                            Disabled="@er.UsePaygrpRates"
+                                            PopupRenderMode="Body"
+                                            Name="ddCountry" TabIndex="7"/>*@
+
+                            @*<RadzenDropDown @bind-Value="@er!.PayRateId"
+                                            Data="@V504.Payrates"
+                                            TextProperty="RateName"
+                                            ValueProperty="Id"
+                                            Disabled="@er.UsePaygrpRates"
+                                            PopupRenderMode="Body"
+                                            Name="ddCountry"
+                                            AppendTo="body"
+                                            TabIndex="7" />*@
+
+
+                        </div>
+
+                    </div>
+                    
+                    @{
+                        isValidToSave = false;
+                        if (er.EmpLastNm?.Length > 0 &&
+                            er.EmpFirstNm?.Length > 0 &&
+                            er.EmpRate > 0) isValidToSave = true;
+                    }
+
+                    @if (isValidToSave)
+                    { <button type="button" class="btn btn-primary" @onclick="Save" tabindex="8">Save</button> }
+                    else
+                    { <button type="button" class="btn btn-primary" disabled tabindex="8">Save</button> }
+
+                </div>
+
+                <div class="col-12">
+                    <div class="row">
+                        <div class="col-sm-12 col-md-3 col-lg-2  p-2">&nbsp;</div>
+                        <div class="col-sm-12 col-md-9 col-lg-10 p-1"  data-bs-toggle="tooltip" data-bs-placement="top" title="Use payroll group settings ">
+                            <input type="checkbox" @onblur="UsePaygrpChanged" @bind="@er.UsePaygrpRates"/> Use Payroll Group Rates 
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    
+@inject IEmpratesDataAccess  _emprates; 
+@inject IPisEmpmasDataAccess _empmas; 
+@inject IJSRuntime           _jSRuntime; 
+
+@code {
+
+    string?                     paydb           = string.Empty;
+    string?                     pisdb           = string.Empty;
+    string?                     conn            = string.Empty;
+    
+    private ElementReference    inputElement;
+    
+    string?                     errorMsg        = string.Empty;
+
+    bool                        isValidToSave   = false; 
+    EmpratesModel               er              = new(); 
+    List<EmpratesdtlModel?>?    erdtls          = new(); 
+
+
+    [Parameter]
+    public V00_Pay      V00         { get; set; } = new(); 
+    
+    [Parameter]
+    public V0504    V504    {get; set;} = new(); 
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+    protected override void OnParametersSet()
+    {
+        if(V504.Payrollgrp==null) return; 
+
+        //--- Set Default datas ----------------------
+        paydb   = V00.UserClaims?.SchemaUserPay;
+        pisdb   = V00.UserClaims?.SchemaUserPis;
+        conn    = V00.UserClaims?.Conn;
+
+         Init_EmpRates(null);
+
+         
+    }
+
+    void Init_EmpRates(string? empnumber)
+    {
+        errorMsg        = string.Empty;
+        isValidToSave   = false;
+
+        er = new EmpratesModel
+        {
+            EmpNumber       = empnumber,
+            PayrollgrpId    = V504.Payrollgrp?.Id??0,
+            EmpRate         = V504.Payrollgrp?.RatePerDay??0,
+            PayRateId       = 2,
+            UsePaygrpRates  = true
+        };
+    }
+
+    async Task EmpnumberChanged()
+    {
+        
+        
+        var empnumber = er.EmpNumber;
+        Init_EmpRates(empnumber);
+        if(empnumber?.Length < 1) return;
+        var res2 = V504.Emprates?.Find(e => e?.EmpNumber == er.EmpNumber); 
+
+        if (res2 != null)
+        {
+            errorMsg        = $@"Cannot add: {empnumber} - {res2.EmpLastNm?.ToUpper()}, {res2.EmpFirstNm?.ToUpper()}  is already in the current group.";
+            return;
+        }
+        var r3 = await _empmas._02ByEmpnumbers(er.EmpNumber!, pisdb!, conn!);
+        if (r3?.Count > 0)
+        {
+            var r = r3.FirstOrDefault();
+            er.EmpmasId     = r?.Id ?? 0; 
+            er.FullName     = r?.Empmasname;
+            er.EmpFirstNm   = r?.EmpFirstNm; 
+            er.EmpMidNm     = r?.EmpMidNm;
+            er.EmpLastNm    = r?.EmpLastNm;
+            er.Suffix       = r?.Suffix;
+        }
+        
+
+        
+        StateHasChanged();
+        
+        
+        return; 
+        empnumber = er.EmpNumber;
+        er                  = new();
+        er.EmpNumber        = empnumber; 
+        if(empnumber?.Length < 1) return;
+        
+        // 1) -- Check if exists in current group ------------------
+        IEnumerable<EmpratesModel>? res = null; 
+        res = V504.Emprates?.Where(r => r?.EmpNumber == empnumber);
+        
+        
+        if (res?.Count() > 0)
+        {
+            errorMsg = "Employee Already exists in the current group!";
+            er = res?.FirstOrDefault();
+            isValidToSave = false; 
+            return;
+        }
+        
+        errorMsg        = string.Empty;
+        return;
+        
+        // 2) -- Check if exists in PIS empmas ---------------------
+        var res1 = await _empmas._02ByEmpnumbers(empnumber!, pisdb!, conn!);
+        if (res1 != null && res1.Count > 0)
+        {
+            var r = res1.FirstOrDefault();
+            er.PayrollgrpId = V504.Payrollgrp?.Id ?? 0; 
+            er.EmpmasId     = r?.Id ?? 0; 
+            er.FullName     = r?.Empmasname;
+            er.EmpFirstNm   = r?.EmpFirstNm; 
+            er.EmpMidNm     = r?.EmpMidNm;
+            er.EmpLastNm    = r?.EmpLastNm;
+            er.Suffix       = r?.Suffix;
+        }
+
+        if (er.UsePaygrpRates) UsePaygrpChanged(); 
+        
+        // 3) --- Record is new ------------------------------------
+        StateHasChanged();
+        await _jSRuntime.InvokeVoidAsync("setFocus", inputElement);
+        
+    }
+    
+    async Task Save() {
+
+        @if(paydb==null || pisdb ==null || conn == null) return; 
+        
+        if(er.UsePaygrpRates) {
+            er.EmpmasId     = 0;
+            er.RatePerHr    = V504.Payrollgrp!.RatePerHr; 
+            er.RatePerDay   = V504.Payrollgrp!.RatePerDay; 
+            er.RatePerMonth = V504.Payrollgrp!.RatePerMonth; 
+            er.RatePerYr    = V504.Payrollgrp!.RatePerYr; 
+        } else 
+        {
+            double ratePerHr = er.EmpRate; 
+            if(ratePerHr > 0) 
+            {
+                switch(er.PayRateId) 
+                {
+                    case 1:
+                        ratePerHr           = er.EmpRate;
+                        er.RatePerHr        = ratePerHr; 
+                        er.RatePerDay       = ratePerHr * V504.Setting!.Daytohours; 
+                        er.RatePerMonth     = V504.Setting.Monthtodays * er.RatePerDay; 
+                        er.RatePerYr        = V504.Setting.Yeartodays * er.RatePerDay; 
+                        break;
+
+                    case 2:
+                        ratePerHr           = er.EmpRate / V504.Setting!.Daytohours; 
+                        er.RatePerHr        = ratePerHr; 
+                        er.RatePerDay       = er.EmpRate; 
+                        er.RatePerMonth     = V504.Setting.Monthtodays * er.RatePerDay; 
+                        er.RatePerYr        = V504.Setting.Yeartodays * er.RatePerDay; 
+                        break;
+                        
+                    case 3:
+                        ratePerHr           = er.EmpRate / V504.Setting!.SemiMonthtodays / V504.Setting!.Daytohours; 
+                        er.RatePerHr        = ratePerHr; 
+                        er.RatePerDay       = ratePerHr * V504.Setting!.Daytohours; 
+                        er.RatePerMonth     = er.EmpRate; 
+                        er.RatePerYr        = V504.Setting.Yeartodays * er.RatePerDay; 
+                        break;
+                        
+                    case 4:
+                        ratePerHr           = er.EmpRate / V504.Setting!.Monthtodays / V504.Setting!.Daytohours; 
+                        er.RatePerHr        = ratePerHr; 
+                        er.RatePerDay       = ratePerHr * V504.Setting!.Daytohours; 
+                        er.RatePerMonth     = er.EmpRate; 
+                        er.RatePerYr        = V504.Setting.Yeartodays * er.RatePerDay; 
+                        break;
+
+
+                    case 5:
+                        ratePerHr           = er.EmpRate / V504.Setting!.Semiannualtodays / V504.Setting!.Daytohours; 
+                        er.RatePerHr        = ratePerHr; 
+                        er.RatePerDay       = ratePerHr * V504.Setting!.Daytohours; 
+                        er.RatePerMonth     = V504.Setting.Monthtodays * er.RatePerDay; 
+                        er.RatePerYr        = er.EmpRate; 
+                        break;
+                        
+                    case 6:
+                        ratePerHr           = er.EmpRate / V504.Setting!.Yeartodays / V504.Setting!.Daytohours; 
+                        er.RatePerHr        = ratePerHr; 
+                        er.RatePerDay       = ratePerHr * V504.Setting!.Daytohours; 
+                        er.RatePerMonth     = V504.Setting.Monthtodays * er.RatePerDay; 
+                        er.RatePerYr        = er.EmpRate; 
+                        break;
+
+                    default:
+                        ratePerHr = er.EmpRate;
+                        break;
+                }
+            }
+        }
+        
+        await _pay._01EmpmasAndEmpRates(er,pisdb,paydb,conn);   
+        V00.Action          = "Close Modal";
+        V00.IsModalVisible  = false; 
+        await ChildAction.InvokeAsync(); 
+    }
+
+    void UsePaygrpChanged()
+    {
+        if (!er.UsePaygrpRates) return;
+        er.EmpRate      = V504.Payrollgrp?.RatePerDay ?? 0;
+        er.PayRateId    = 2;
+    }
+
+}
+        

@@ -1,0 +1,314 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR.Views.BlazorPages._00Library
+
+@inject NotificationService         _NotificationService;
+@inject DialogService               _DialogService;
+
+<div class="p-2 mt-2" style="border:1px solid lightgray; border-radius: 5px; ">
+
+
+    @* // --- New Button *@
+    <div class="mt-1 mb-1">
+        <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode)" />
+    </div>
+    <div class="text-danger mt-2 mb-2"><h5>@errorMsg</h5></div>
+
+    
+    <RadzenDataGrid
+     Data ="@leavetypes"
+     TItem ="LeavetypeModel"
+     @ref ="leavetypesGrid"
+     EditMode ="DataGridEditMode.Single"
+     AllowSorting =true
+     AllowPaging =true
+     PageSize ="10"
+     PageSizeOptions =@(new int[]{5, 10, 20, 30})
+     ColumnWidth ="100%" >
+          <Columns>
+               
+               <RadzenDataGridColumn
+                     TItem ="LeavetypeModel" Property ="Code" Title ="Code" Width="100px" >
+                    <EditTemplate Context="rec">
+                         <RadzenTextBox @bind-Value="rec.Code" class="w-100" />
+                    </EditTemplate>
+               </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="LeavetypeModel" Property="LeaveName" Title="Leave Name" Width="100%">
+                <EditTemplate Context="rec">
+                    
+                    <RadzenTextBox @bind-Value="rec.LeaveName" class="w-100"/>
+                    
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="LeavetypeModel" Property="AnivStart" Title="Aniv. Start" FormatString="{0:MMMM dd, yyyy}" Width="170px">
+                <EditTemplate Context="rec">
+                    <RadzenDatePicker @bind-Value=@rec.AnivStart DateFormat="MM/dd/yyyy " Name="dateAnivstart" class="w-100" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="LeavetypeModel" Property="AnivEnd" Title="Aniv. End" FormatString="{0:MMMM dd, yyyy}" Width="170px">
+                <EditTemplate Context="rec">
+                    <RadzenDatePicker @bind-Value=@rec.AnivEnd DateFormat="MM/dd/yyyy " Name="dateAnivend" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="LeavetypeModel" Property="DefValue" Title="Def. Credit"
+                TextAlign="Radzen.TextAlign.Right" FormatString="{0:#,##0}" Width="120px">
+                <EditTemplate Context="rec">
+                    <RadzenNumeric @bind-Value="rec.DefValue" Name="Defvalue" ShowUpDown=false Format="#,##0" TextAlign="TextAlign.Right" />
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+
+            <RadzenDataGridColumn
+           TItem="LeavetypeModel" Context="LeavetypeModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Right" Frozen="true" Width="150px">
+          <Template Context="rec">
+                    <RadzenButton
+                              Icon ="edit"
+                              ButtonStyle ="ButtonStyle.Light"
+                              Variant ="Variant.Flat"
+                              Size ="ButtonSize.Small"
+                              Click ="@(args => EditRow(rec))"
+                              @onclick:stopPropagation="true">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                              Icon ="delete"
+                              Variant ="Variant.Flat"
+                              Shade ="Shade.Lighter"
+                              Size ="ButtonSize.Small"
+                              Click ="@(args => DeleteRow(rec))"
+                              class ="my-1 ms-1"
+                              @onclick:stopPropagation="true">
+                    </RadzenButton>
+          </Template>
+
+          <EditTemplate Context="rec">
+                    <RadzenButton Icon="check"
+                              ButtonStyle ="ButtonStyle.Success"
+                              Variant ="Variant.Flat"
+                              Size ="ButtonSize.Small"
+                              Click="@((args) => SaveRow(rec))" >
+                    </RadzenButton>
+
+                    <RadzenButton
+                              Icon="close"
+                              ButtonStyle ="ButtonStyle.Light"
+                              Variant ="Variant.Flat"
+                              Click ="@((args) => CancelEdit(rec))"
+                              Size ="ButtonSize.Small" class="my-1 ms-1">
+                    </RadzenButton>
+
+                    <RadzenButton
+                              ButtonStyle="ButtonStyle.Danger"
+                              Icon="delete"
+                              Variant="Variant.Flat"
+                              Shade="Shade.Lighter"
+                              Size="ButtonSize.ExtraSmall"
+                              Click="@(args => DeleteRow(rec))"
+                              class="my-1 ms-1" >
+                    </RadzenButton>
+          </EditTemplate>
+
+</RadzenDataGridColumn>
+
+          </Columns>
+</RadzenDataGrid>
+
+</div>
+
+@using HRMvc.Applications._02HR._02Library;
+
+@inject ILeavetypeDataAccess    _leavetype; 
+
+
+@code {
+
+    [Parameter]
+    public V02?             V02         {get; set; } = new(); 
+
+    [Parameter]
+    public UserClaimsModel UserClaims   { get; set; } = new();
+
+    int yr = 0; 
+
+    //-- Initialization ----------------
+    RadzenDataGrid<LeavetypeModel?>?    leavetypesGrid  = new();
+    bool                                editMode        = false;
+    DataGridEditMode                    editMode1       = DataGridEditMode.Single;
+
+    List<LeavetypeModel?>?              leavetypes      = new();
+    LeavetypeModel?                     leavetype       = new();
+
+    List<LeavetypeModel?>? leavetypesToInsert = new();
+    List<LeavetypeModel?>? leavetypesToUpdate = new();
+    string? errorMsg = string.Empty;
+    
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb   = UserClaims.SchemaUserPis;
+        paydb   = UserClaims.SchemaUserPay;
+        conn    = UserClaims.Conn;
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+        leavetypes = await _leavetype._02(pisdb, conn); 
+        
+        StateHasChanged(); 
+
+    }
+
+    //-- InsertRow ----------------
+    async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new LeavetypeModel();
+        leavetypesToInsert!.Add(rec);
+        await leavetypesGrid!.InsertRow(rec);
+        editMode = true;
+    }
+
+    //-- Reset ----------------
+    void Reset()
+    {
+        leavetypesToInsert!.Clear();
+        leavetypesToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    void Reset(LeavetypeModel rec)
+    {
+        leavetypesToInsert!.Remove(rec);
+        leavetypesToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    async Task EditRow(LeavetypeModel rec)
+    {
+        if (leavetypesGrid != null)
+        {
+            Reset();
+            leavetypesToUpdate?.Add(rec);
+            await leavetypesGrid.EditRow(rec);
+        }
+    }
+    //-- Delete Row ----------------
+    async Task DeleteRow(LeavetypeModel rec)
+    {
+        if (leavetypes      == null) return;
+        if (leavetypesGrid  == null) return;
+
+        Reset(rec);
+
+        if (leavetypes.Contains(rec))
+        {
+            // if (rec != null)
+            // {
+            //     var res = await _leavetype._02CheckToTblTran(rec.ClNumber!, Schema!, Conn!);
+            //     if (res != null)
+            //     {
+            //         if (res.Count > 0)
+            //         {
+            //             var msg = "Unable to delete <span class='text-danger fw-bold'> " + rec.Name + "!</span> Record already exists. ";
+            //             await _DialogService.Alert(msg, "Delete denied", new AlertOptions() { OkButtonText = "Exit" });
+            //             return;
+            //         }
+            //     }
+            // }
+
+            var option = await _DialogService.Confirm("Delete " + rec?.LeaveName + "?", "Confirm Delete",
+                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+            if (option == true)
+            {
+                await _leavetype._04(rec!.Id, pisdb!, conn!);
+                leavetypes.Remove(rec);
+            }
+        }
+        else
+        {
+            leavetypesGrid.CancelEditRow(rec);
+        }
+        await leavetypesGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+    
+    //-- Cancel Edit ----------------
+    async void CancelEdit(LeavetypeModel rec)
+    {
+        errorMsg = string.Empty;
+        if (leavetypesGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        leavetypesGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        var res = await _leavetype._02(id, pisdb!, conn!);
+        if (res == null) return;
+        Remap_Flds(rec, res);
+        await leavetypesGrid.Reload();
+    }
+    
+    //-- Remap ----------------
+    void Remap_Flds(LeavetypeModel destination, LeavetypeModel source)
+    {
+
+    }
+    
+    //-- Save Row ----------------
+    async Task SaveRow(LeavetypeModel rec)
+    {
+        if (leavetypesGrid == null) return;
+        if (!SafeToSave(rec)) return;
+        if (rec.Id == 0)
+        {
+            var res = await _leavetype._01(rec, pisdb!, conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                leavetypes!.Add(rec);
+            }
+        }
+        else
+        {
+            await _leavetype._03(rec.Id, rec, pisdb!, conn!);
+        }
+        await leavetypesGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+    
+    //-- Safe to Save ----------------
+    bool SafeToSave(LeavetypeModel rec)
+    {
+
+        return true;
+    }
+
+    async Task UpdateImplementationYear()
+    {
+        //var res       = await _pisSettings._02(pisdb, conn);
+        //res.LeaveYrImplementation   = yr; 
+        
+        
+        // await _pisSettings._03(res, pisdb, conn); 
+    }
+
+
+}
+    

@@ -1,0 +1,299 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Views.BlazorPages.Vars
+
+@{
+     
+    
+}
+
+
+
+
+<ul class="list-group mt-4 mb-4 bordered-darkgreen">
+    <li class="list-group-item bg-success text-white " aria-current="true">Employee Login</li>
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center text-primary border-end">Current Date</div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">
+                <div class="text-success p-2 bordered-bottom mb-2"> @DateTime.Now.ToString("D") </div>
+                <div class=" d-flex gap-2 ">
+                    <div class="p-2"> Punch IN </div>
+                    <div><RadzenTextBox @bind-Value="currIn" class="w-100p" Disabled /></div>
+                    <div>
+                        <button class="btn btn-primary" @onclick="CPunchIn" disabled="@currInDisabled">Punch IN</button>
+                    </div>
+
+                    <div class="p-2"> Punch OUT </div>
+                    <div><RadzenTextBox @bind-Value="currOut" class="w-100p" Disabled /></div>
+                    <div>
+                        <button class="btn btn-warning" @onclick="CPunchOut" disabled="@currOutDisabled" >Punch Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </li>
+
+    <li class="list-group-item">
+        <div class="d-flex gap-3">
+            <div class="w-150p p-1 bordered-bottom text-center text-muted border-end">Previous Punches</div>
+            <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">
+                <div class="text-success p-2 bordered-bottom mb-2">
+                    @V.PrevPunch?.Punchdate.ToString("D")
+                    @if (V.PrevPunch == null)
+                    {
+                        <span> No previous IN/OUT found.</span>
+                    }
+                </div>
+                @if (V.PrevPunch != null)
+                {
+                    <div class=" d-flex gap-2 ">
+                        <div class="p-2"> Punch IN </div>
+                        <div><RadzenTextBox @bind-Value="prevIn" class="w-100p" Disabled /></div>
+                        <div>
+                            <button disabled class="btn btn-primary">Punch IN</button>
+                        </div>
+
+                        <div class="p-2"> Punch OUT </div>
+                        <div><RadzenTextBox @bind-Value="prevOut" class="w-100p" Disabled/></div>
+                        <div>
+                            <button @onclick="PPunchOut" disabled="@prevOutDisabled" class="btn btn-warning">Punch Out</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </li>
+</ul>
+
+@inject IAttdailyDataAccess _attdaily 
+@inject IAttpunchesDataAccess _attpunches;
+
+@code {
+
+    bool currInDisabled   = false;
+    bool currOutDisabled  = false;
+    bool prevInDisabled   = false; 
+    bool prevOutDisabled  = false;
+
+    string? currIn  = DateTime.Now.ToString("hh:mm:ss"); 
+    string? currOut = DateTime.Now.ToString("hh:mm:ss"); 
+    string? prevIn  = DateTime.Now.ToString("hh:mm:ss"); 
+    string? prevOut = DateTime.Now.ToString("hh:mm:ss"); 
+
+    [Parameter] public V131             V           { get; set; } = new();
+    [Parameter] public EventCallback    ChildAction { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        Init();
+        StateHasChanged(); 
+    }
+
+    protected async Task CPunchIn()
+    {
+        V.Action = "CPunchIn";
+
+        var dayName     = DateTime.Now.DayOfWeek.ToString();
+        var dayNo       = MsdsDataAccess.GetDayNo(dayName);
+        var punchSched  = _02PunchSchedule(dayNo, V.AttTemplate??new()); 
+
+
+        //--- Attendance Daily --------------
+        var attDaily = new AttdailyModel()
+        {
+            Dayno       = dayNo, 
+            Empmasid    = V.PisEmpmas!.Id,      
+            Empnumber   = V.PisEmpmas!.EmpNumber, 
+            Inbyid      = V.userId, 
+            Dutytypeid  = punchSched.DutyType=="R"?1:2, 
+            Punchdate   = DateTime.Now, 
+            Timeint     = punchSched.InTime, 
+        };
+        var ad = await _attdaily._01PunchIn(attDaily, V.pisdb!, V.conn!);
+
+        //--- Attendance Punches ---------------------------------
+        var ipAdd = MsdsDataAccess.GetIPAddress();
+
+        var attPunch = new AttpunchesModel()
+            {
+                Action          = "In",  
+                Dayno           = dayNo, 
+                Dutytypeid      = punchSched.DutyType == "R" ? 1 : 2,
+                Empmasid        = V.PisEmpmas!.Id,
+                Punchdate       = DateTime.Now, 
+                Puncht          = punchSched.InTime,
+                Macaddress      = V.MacAddress,
+                Ipaddress       = ipAdd, 
+                Timezoneid      = V.TimezoneId, 
+                Userid          = V.userId.ToString()
+            };
+        var ap = await _attpunches._01In(attPunch, V.pisdb!, V.conn!); 
+
+        await ChildAction.InvokeAsync();
+        Init(); 
+    }
+    protected async Task CPunchOut()
+    {
+        V.Action = "CPunchOut";
+
+        var dayName     = DateTime.Now.DayOfWeek.ToString();
+        var dayNo       = MsdsDataAccess.GetDayNo(dayName);
+        var punchSched  = _02PunchSchedule(dayNo, V.AttTemplate??new()); 
+
+        //--- Attendance Daily --------------
+        var attDaily = new AttdailyModel()
+        {
+            Dayno       = dayNo, 
+            Empmasid    = V.PisEmpmas!.Id,      
+            Empnumber   = V.PisEmpmas!.EmpNumber, 
+            Outbyid     = V.userId, 
+            Dutytypeid  = punchSched.DutyType=="R"?1:2, 
+            Punchdate   = DateTime.Now, 
+            Timeoutt    = punchSched.InTime+punchSched.HrsLenght, 
+        };
+        var ad = await _attdaily._01PunchOut(attDaily, V.pisdb!, V.conn!);
+
+        //--- Attendance Punches ---------------------------------
+        var ipAdd = MsdsDataAccess.GetIPAddress();
+
+        var attPunch = new AttpunchesModel()
+            {
+                Action          = "Out", 
+                Dayno           = dayNo, 
+                Dutytypeid      = punchSched.DutyType == "R" ? 1 : 2,
+                Empmasid        = V.PisEmpmas!.Id,
+                Punchdate       = DateTime.Now, 
+                Puncht          = punchSched.InTime + punchSched.HrsLenght,
+                Macaddress      = V.MacAddress,
+                Ipaddress       = ipAdd, 
+                Timezoneid      = V.TimezoneId, 
+                Userid          = V.userId.ToString()
+            };
+        var ap = await _attpunches._01In(attPunch, V.pisdb!, V.conn!); 
+
+
+        await ChildAction.InvokeAsync(); 
+        Init();
+    }
+
+    protected async Task PPunchOut()
+    {
+        V.Action = "CPunchOut";
+
+
+
+        var dayName     = V.PrevPunch!.Punchdate.DayOfWeek.ToString();
+        var dayNo       = MsdsDataAccess.GetDayNo(dayName);
+        var punchSched  = _02PunchSchedule(dayNo, V.AttTemplate??new()); 
+
+        //--- Attendance Daily --------------
+        var attDaily = new AttdailyModel()
+        {
+            Dayno       = dayNo, 
+            Empmasid    = V.PisEmpmas!.Id,      
+            Empnumber   = V.PisEmpmas!.EmpNumber, 
+            Outbyid     = V.userId, 
+            Dutytypeid  = punchSched.DutyType=="R"?1:2, 
+            Punchdate   = V.PrevPunch!.Punchdate, 
+            Timeoutt    = punchSched.InTime+punchSched.HrsLenght, 
+        };
+        var ad = await _attdaily._01PunchOut(attDaily, V.pisdb!, V.conn!);
+
+        //--- Attendance Punches ---------------------------------
+        var ipAdd = MsdsDataAccess.GetIPAddress();
+
+        var attPunch = new AttpunchesModel()
+            {
+                Action          = "Out", 
+                Dayno           = dayNo, 
+                Dutytypeid      = punchSched.DutyType == "R" ? 1 : 2,
+                Empmasid        = V.PisEmpmas!.Id,
+                Punchdate       = DateTime.Now, 
+                Puncht          = punchSched.InTime + punchSched.HrsLenght,
+                Macaddress      = V.MacAddress,
+                Ipaddress       = ipAdd, 
+                Timezoneid      = V.TimezoneId, 
+                Userid          = V.userId.ToString()
+            };
+        var ap = await _attpunches._01In(attPunch, V.pisdb!, V.conn!); 
+
+
+        await ChildAction.InvokeAsync(); 
+        Init();
+    }
+
+    void Init()
+    {
+        currIn      = V.CurrPunch?.Timein   == null ? "" : V.CurrPunch.Timein.ToString("t");
+        currOut     = V.CurrPunch?.Timeout  == null ? "" : V.CurrPunch.Timeout.ToString("t");
+        prevIn      = V.PrevPunch?.Timein   == null ? "" : V.PrevPunch.Timein.ToString("t"); 
+        prevOut     = V.PrevPunch?.Timeout  == null ? "" : V.PrevPunch.Timeout.ToString("t");
+
+
+        if (V.CurrPunch?.Timein.Year < 1900)    currIn  = null; 
+        if (V.CurrPunch?.Timeout.Year < 1900)   currOut = null; 
+        if (V.PrevPunch?.Timein.Year < 1900)    prevIn  = null;
+        if (V.PrevPunch?.Timeout.Year < 1900)   prevOut = null;
+
+
+        if (currIn == null || currIn.Length < 1) 
+        {
+            currInDisabled  = false;
+            currOutDisabled = true; 
+        } else
+        {
+            currInDisabled = true;
+            if (currOut == null || currOut.Length < 1) currOutDisabled = false; 
+            else currOutDisabled = true; 
+        }
+
+        if (prevOut == null || prevOut.Length < 1) prevOutDisabled = false;
+        else prevOutDisabled = true;
+
+    
+
+    }
+
+    record PunchSchedule(int AttendanceTypeId, int InTime, int HrsLenght, string DutyType); 
+    PunchSchedule _02PunchSchedule(int dayno, AtttemplateModel at)
+    {
+        var ps = new PunchSchedule(0,0,0,"RD");
+        switch (dayno)
+        {
+            case 1:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D1_in, at.D1_hrslength, at.D1_dutytype ?? "RD");
+                return ps;
+            case 2:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D2_in, at.D2_hrslength, at.D2_dutytype ?? "RD");
+                return ps;
+            case 3:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D3_in, at.D3_hrslength, at.D3_dutytype ?? "RD");
+                return ps;
+            case 4:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D4_in, at.D4_hrslength, at.D4_dutytype ?? "RD");
+                return ps;
+            case 5:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D5_in, at.D5_hrslength, at.D5_dutytype ?? "RD");
+                return ps;
+            case 6:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D6_in, at.D6_hrslength, at.D6_dutytype ?? "RD");
+                return ps;
+            case 7:
+                ps = new PunchSchedule(at.AttendancetypeId, at.D7_in, at.D7_hrslength, at.D7_dutytype ?? "RD");
+                return ps;
+            
+
+            default:
+                break;
+        }
+        
+
+        return ps; 
+    }
+
+
+
+}

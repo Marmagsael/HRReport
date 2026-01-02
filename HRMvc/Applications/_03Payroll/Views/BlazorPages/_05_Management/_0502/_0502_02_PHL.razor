@@ -1,0 +1,232 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0502.Items; 
+@using _00_Utility.Vars; 
+
+@* @using Items;  *@
+
+@inject     ICoaDataAccess      _coa; 
+
+
+<div class="w-100">
+    <ul class="nav nav-tabs mt-2">
+        <li class="nav-item">
+            <a class="btn btn-light px-3 py-2  border border-1     @v502.cssEarnings"     @onclick="@(() => SetCssbtn("Earnings"))" >Earnings</a>
+        </li>
+        <li class="nav-item">
+            <a class="btn btn-light px-3 py-2  border border-1     @v502.cssDeductions"      @onclick="@(() => SetCssbtn("Deductions"))"  >Deductions</a>
+        </li>
+        <li class="nav-item">
+            <div class="divider-horizontal" style="width: 10px; "></div>
+        </li>
+        <li class="nav-item txt-brown ">
+            <a class="btn btn-light px-3 py-2  border border-1     @v502.cssTax"      @onclick="@(() => SetCssbtn("Tax"))"  >Taxable Accounts</a>
+        </li>
+        <li class="nav-item">
+            <a class="btn btn-light px-3 py-2  border border-1     @v502.cssSSS"      @onclick="@(() => SetCssbtn("SSS"))"  >SSS Accounts</a>
+        </li>
+        <li class="nav-item">
+            <a class="btn btn-light px-3 py-2  border border-1     @v502.cssPHIC"      @onclick="@(() => SetCssbtn("PHIC"))"  >PHIC Accounts</a>
+        </li>
+        
+    </ul>
+</div>
+
+
+
+@{
+    List<CoaModel?>? coaList = new(); 
+
+    switch (v502.acctType) {
+        case "Earnings" : 
+            coaList = coas?.Where(c=>c!.AcctType=="E").ToList();         
+            break; 
+
+        case "Deductions" : 
+            coaList = coas?.Where(c=>c!.AcctType=="D").ToList();
+            break;  
+            
+        default: 
+            coaList = coas?.Where(c=>c!.AcctType=="-").ToList();         
+            break; 
+    }
+}
+
+@if(showCOA) { <_0502_03_DataEntry V="@v502" V00="@V00" ChildAction="ChildActionCatcher" Coas="@coaList" /> 
+
+    <table class="table table-responsive ">
+        <thead style="position: sticky;top: 0; " class="bg-white ">
+        <tr>
+            <th scope="col" style="width: 15%;">Acct No</th>
+            <th scope="col" style="width: 30%" >Acct Name</th>
+            <th scope="col" style="width: 15%;">Short Name</th>
+            <th scope="col" style="width: 10%;"> Rate </th>
+                
+            <th scope="col" class="text-center">Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var c in coaList!)
+        {
+            if(c!.Show==0) 
+            {   <_0502_01_RecordList c=@c V00=@V00 ChildAction=ChildActionCatcher V502=@v502 /> }
+            else 
+            {   <_0502_02_EditEntry c=@c V00=@V00 ChildAction=ChildActionCatcher /> }
+        }
+
+        </tbody>
+    </table>
+}
+
+@if(showTax)  { <_0502_04_Tax   V00="@V00" ChildAction="ChildAction"  /> }
+@if(showSSS)  { <_0502_05_SSS   V00="@V00" ChildAction="ChildAction"  /> }
+@if(showPHIC) { <_0502_06_PHIC  V00="@V00" ChildAction="ChildAction"  /> }
+
+
+
+@code {
+
+    bool isRerender = false;
+    bool showCOA    = true; 
+    bool showTax    = false; 
+    bool showSSS    = false; 
+    bool showPHIC   = false; 
+    
+    
+    List<CoaModel?>?    coas = new();
+    V502                v502 = new();
+    
+    [Parameter] public V00_Pay?             V00             { get; set; } = new();
+    [Parameter] public EventCallback        ChildAction     { get; set; }
+
+
+
+    protected async override void OnParametersSet()
+    {
+        if(isRerender) return;
+        if (coas?.Count < 1)
+        {
+            await _02Coa();
+            StateHasChanged();
+        }
+        isRerender = true; 
+    }
+
+    async void ChildActionCatcher() {
+        if (V00!.Action == "CancelUpdate") { }
+        if (V00!.Action == "SaveCOA") await SaveCOA();
+
+        V00.Action = ""; 
+    }
+
+
+    async Task SaveCOA()
+    {
+        coas = []; 
+        await _02Coa();
+        
+        v502.Coa            = new CoaModel(); 
+        v502.ShowDataEntry  = false; 
+        
+        await ChildAction.InvokeAsync(); 
+    }
+    async Task _02Coa()
+    {
+        if(V00?.UserCompany!=null)
+        {
+            if (V00?.UserCompany.PaySchema?.Length > 0)
+            {
+                string? schema = V00?.UserCompany.PaySchema;
+                coas = await _coa._02(schema!, "MySqlConn");
+            }
+        }
+    }
+
+    void SetCssbtn(string coaType)
+    {
+        v502.ShowDataEntry  = false;
+        v502.Coa            = new();
+        
+        switch (coaType)
+        {
+            case "Earnings" :
+                v502.acctType       = "Earnings";
+                v502.cssEarnings    = "bg-white text-primary";
+                v502.cssDeductions  = "";
+                v502.cssTax         = "";
+                v502.cssSSS         = "";
+                v502.cssPHIC        = "";
+                showCOA = true;
+                showTax = false;
+                showSSS = false;
+                showPHIC = false; 
+                StateHasChanged();
+                break;
+
+            case "Deductions" :
+                v502.acctType       = "Deductions";
+                v502.cssEarnings    = "";
+                v502.cssDeductions  = "bg-white text-primary";
+                v502.cssTax         = "";
+                v502.cssSSS         = "";
+                v502.cssPHIC        = "";
+                showCOA = true;
+                showTax = false;
+                showSSS = false;
+                showPHIC = false; 
+                StateHasChanged();
+                break;
+
+            case "Tax" :
+                v502.acctType       = "Tax";
+                v502.cssEarnings    = "";
+                v502.cssDeductions  = "";
+                v502.cssTax         = "bg-white text-primary";
+                v502.cssSSS         = "";
+                v502.cssPHIC        = "";
+                showCOA = false;
+                showTax = true;
+                showSSS = false;
+                showPHIC = false; 
+                StateHasChanged();
+                break;
+                
+            case "SSS" :
+                v502.acctType       = "SSS";
+                v502.cssEarnings    = "";
+                v502.cssDeductions  = "";
+                v502.cssTax         = "";
+                v502.cssSSS         = "bg-white text-primary";
+                v502.cssPHIC        = "";
+                showCOA = false;
+                showTax = false;
+                showSSS = true;
+                showPHIC = false; 
+                StateHasChanged();
+                break;
+
+            case "PHIC" :
+                v502.acctType       = "PHIC";
+                v502.cssEarnings    = "";
+                v502.cssDeductions  = "";
+                v502.cssTax         = "";
+                v502.cssSSS         = "";
+                v502.cssPHIC        = "bg-white text-primary";
+                showCOA = false;
+                showTax = false;
+                showSSS = false;
+                showPHIC = true; 
+                StateHasChanged();
+                break;
+
+
+            default:
+                break;
+        }
+    }
+
+    void ChangeMode(CoaModel coa, int show) {
+        coa.Show = show;
+    }
+
+}

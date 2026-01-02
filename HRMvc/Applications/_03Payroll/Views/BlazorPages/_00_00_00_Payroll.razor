@@ -1,0 +1,65 @@
+﻿@using Blazored.LocalStorage
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._01_Components; 
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility;
+@using HRMvc.Applications._03Payroll.Views.Pages._01;
+
+
+@inject IConfiguration          _config; 
+@inject ILocalStorageService    _ls;
+
+@{
+    UserClaims!.IsExclusiveCompany = _config.GetSection("CompanyInfo:Exclusive").Value;
+}
+
+
+<div>
+    <div><_01_001_PayrollMainPage /> </div>
+</div>
+
+
+
+<div class="main-body">
+    <div class="container-fluid" id="app">
+
+        <div>userclaims : @userClaims?.Conn</div>
+        <div>
+            @*<_00_01_ClaimInfo userClaims=UserClaims />*@
+        </div>
+        
+        
+    </div>
+</div>
+
+
+@code {
+    private UserClaimsModel? userClaims = new(); 
+    
+    [Parameter]
+    public UserClaimsModel? UserClaims { get; set; } = new();
+
+    [Parameter]
+    public V00_Pay  v00 { get; set; } = new();
+
+
+    protected override async void OnParametersSet()
+    {
+        SetVariables(); 
+        await Init(); 
+
+    }
+
+    void SetVariables()
+    {
+        v00.UserClaims = UserClaims;
+    }
+
+    async Task Init()
+    {
+        //userClaims = await _ls.GetItemAsync<UserClaimsModel>("userClaims"); 
+        //await _ls.SetItemAsync("userclaims", UserClaims);
+        //userClaims = await _ls.GetItemAsync<UserClaimsModel>("userclaims"); 
+        
+        StateHasChanged();
+    }
+}

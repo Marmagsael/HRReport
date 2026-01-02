@@ -1,0 +1,74 @@
+﻿@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Views.BlazorPages.Vars
+
+
+<div class="p-2" style="border:1px solid gray; border-radius:3px; ">
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Code</th>
+                <th scope="col">Description</th>
+                <th scope="col">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var lt in V132.LeaveTypes!)
+            {
+                <tr>
+                    <th scope="row">
+                        <div class="p-1">@lt?.Code</div>
+                    </th>
+                    <td>
+                        <div class="p-1">@lt?.LeaveName</div>
+                    </td>
+                    <td class="d-flex gap-2">
+                        <button onclick="@(()=>NewLeave(lt!))" class="btn btn-secondary">New</button>
+                        <btn class="btn btn-secondary">Details</btn>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+
+    [Parameter]
+    public  V0132               V132                { get; set; } = new();
+
+    [Parameter]
+    public EventCallback        ChildAction         { get; set; } 
+
+    [Parameter]
+    public UserClaimsModel      UserClaims          { get; set; } = new();
+
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb   = UserClaims.SchemaUserPis;
+        paydb   = UserClaims.SchemaUserPay;
+        conn    = UserClaims.Conn;
+
+        if (conn    == null) return;
+        if (pisdb   == null) return;
+        if (paydb   == null) return;
+    }
+
+
+    async void NewLeave(LeavetypeModel lt)
+    {
+        V132.LeaveType = lt;
+        var la              = V132.Leaveapplication; 
+        la!.Leavetypename   = lt.LeaveName;
+        la.DateApplied      = DateTime.Now; 
+        V132.Action         = "NewLeave";
+
+        StateHasChanged(); 
+        await ChildAction.InvokeAsync(); 
+    }
+}

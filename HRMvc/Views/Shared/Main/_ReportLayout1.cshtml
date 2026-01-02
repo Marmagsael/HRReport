@@ -1,0 +1,121 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._01_Components;
+@using System.Security.Claims
+@using Microsoft.Extensions.Configuration
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <base href="~/" />
+
+    @*-- Bootsrap --*@
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    @*-- CSS --*@
+    <link rel="stylesheet" href="~/css/global.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Main/Layout/main_content.css" asp-append-version="true" />
+    
+    @*-- Font Awesome --*@
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+
+    @*-- Radzen --*@
+    <link href="_content/Radzen.Blazor/css/material-base.css"   rel="stylesheet" />
+    <link href="_content/Blazored.Modal/blazored-modal.css"     rel="stylesheet" />
+
+    @*-- Payroll CSS --*@
+    <link rel="stylesheet" href="~/css/msds-modal.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Payroll/pay.css" asp-append-version="true" />
+    
+    @* --- Internal CSS --------------- *@
+    <link rel="stylesheet" href="~/css/msds-modal.css" asp-append-version="true" />
+    <link href="css/Main/msds.css" rel="stylesheet" />
+    <link href="css/Main/animate.4.1.1.min.css" rel="stylesheet" />
+    
+    @* --- Telerik --------------- *@
+    <link href="_content/Telerik.ReportViewer.Blazor/css/telerikReportViewer.css" rel="stylesheet" />
+
+    
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+</head>
+
+
+<script>
+    function setFocus(element) {
+        element.focus();
+    }3.20
+</script>
+
+@inject I_00MainDA      _mainDA
+@inject IConfiguration  _config;
+
+@{
+    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+
+    IEnumerable<Claim?>     claims      = User.Claims;
+    UserClaimsModel         userClaims  = _mainDA._02UserClaimsContent(claims);
+}
+
+
+<body>
+
+    <div style="min-height:100vh; width:100%; background-color:rgb(255, 255, 250); ">
+    
+    
+        @(await Html.RenderComponentAsync<_01_01_Hdr_v1>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))
+    
+        <span class="msds-lg-d-none">  @(await Html.RenderComponentAsync<_01_03_SubMenu>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))  </span>
+    
+        <div class="main-wrapper" style="min-height: 100%; ">
+    
+            @* *** Small and Medium Display -------------------*@
+            <div class="d-flex  " style="min-height:100%;  ">
+                <div class="msds-md-d-none d-lg-block" style="min-width:240px; min-height:95vh; ">
+                    @(await Html.RenderComponentAsync<ReportLeftMenu>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))
+                </div>
+    
+                <div class="m-2 msds-right-body r-container " style="border-radius: 5px; min-height:85vh;  ">
+                    @RenderBody()
+                </div>
+            </div>
+    
+        </div>
+    </div>
+
+    <div class="main-wrapper" style="min-height:100%; ">
+        @RenderBody()
+    </div>
+
+    @*-- Script --*@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    
+    @* <script src="~/js/swal2v11.22.2.js"></script> *@
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/site.js"></script>
+
+    @* <script src="~/js/Main/_00Main.js" asp-append-version="true"></script> *@
+    <script src="~/js/Main/_00Main.js"></script>
+    <script src="~/lib/axios/axios.min.js"></script>
+
+    <!-- 🔹 ADD THIS RIGHT BEFORE THE BLAZOR SCRIPT -->
+    <script src="_content/Telerik.ReportViewer.Blazor/js/telerikReportViewer.min.js"></script>
+    
+    @*-- Blazor Server Script --*@
+    <script src="_framework/blazor.server.js"></script>
+    <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+
+
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

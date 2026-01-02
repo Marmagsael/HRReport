@@ -1,0 +1,495 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0602._0602_12
+
+
+@inject DialogService       _DialogService
+@inject NotificationService _NotificationService;
+
+<RadzenDialog />
+<RadzenNotification />
+
+<div class="card shadow bordered-darkgreen mt-3" >
+    <div class="card-header text-white fw-bold bg-forestgreen " >
+        GROUP EARNINGS
+    </div>
+
+    <!-- Buttons -->
+    <div class="bordered-bottom px-2 py-1 ">
+        <button onclick="@New" class="btn btn-primary btn-sm">New</button>
+        <button onclick="@Save" class="btn btn-secondary btn-sm">Save</button>
+        <button onclick="@Terminate" class="btn btn-secondary btn-sm">Terminate</button>
+    </div>
+
+
+
+
+
+    <div class="card-body border-2  ">
+        @* --- Line 1 ---------------------------*@
+        @* --- Payroll Group ----------------------- *@
+        <div class="col-12 d-flex  bordered-bottom py-1">
+            <div class="w-125p pt-2">Payroll Group</div>
+            <div class="w-500p w-sm-200p">
+                <RadzenDropDown TValue="int"
+                                Name="ddPayrollgrpId"
+                                @bind-Value="@V!.FEGrp!.PayrollgrpId"
+                                Data="@V!.Payrollgrps"
+                                TextProperty="Name"
+                                ValueProperty="Id"
+                                Change="PgrpChanged"
+                                Style="width: 100%; max-width: 400px;"
+                                Placeholder="Select Payroll Group"/>
+            </div>
+        </div>
+
+
+        @* --- Line 1 --------------------------- *@
+        @* ====================================== *@
+
+        @* --- Line 2 ---------------------------*@
+        @* --- Charge to ----------------------- *@
+        <div class="col-12 d-flex  py-1">
+            <div class="w-125p pt-2">Charge to</div>
+            <div class="w-500p w-sm-200p">
+                <RadzenDropDown TValue="string"
+                                Name="ddAcctNumber"
+                                @bind-Value="@V!.FEGrp!.AcctNumber"
+                                Data="@V!.Coas"
+                                TextProperty="AcctName"
+                                ValueProperty="AcctNumber"
+                                Style="width: 100%; max-width: 400px;"
+                                Placeholder="Select COA"/>
+            </div>
+        </div>
+        @* --- Line 2 --------------------------- *@
+        @* ====================================== *@
+
+        @* --- Line 3 ---------------------------*@
+        @* --- Date Start ----------------------- *@
+        <div class="col-12 d-flex flex-wrap">
+            @* --- Date Start -----------------*@
+            <div class="d-flex w-325p rw-sm py-1 ">
+                <div class="w-125p pt-2">
+                    Date Start
+                </div>
+                <div class="w-175p">
+                    <RadzenDatePicker @bind-Value="@V!.FEGrp.DStart"
+                                      Name="DPdStart"
+                                      DateFormat="MM/dd/yyyy"
+                                      DisplayFormat="MM/dd/yyyy" style="width: 150px;" />
+                </div>
+            </div>
+
+            <div class="d-flex w-325p rw-sm py-1 ">
+                <div class="w-125p pt-2">
+                    Amount
+                </div>
+                <div class="w-175p">
+                    <RadzenNumeric TValue="double"
+                                   @bind-Value="V!.FEGrp.Amount"
+                                   Min="0" Max="999999" Format="#,##0.00"
+                                   Placeholder="0" TextAlign="Radzen.TextAlign.End"
+                                   ShowUpDown=false class="w-170p" Style="width: 150px" />
+                </div>
+            </div>
+        </div>
+        @* --- Line 3 --------------------------- *@
+        @* ====================================== *@
+
+        @* --- Line 4 ---------------------------*@
+        <div class="col-12 d-flex flex-wrap ">
+            @* --- Day Parameter -----------------*@
+            <div class="d-flex w-325p rw-sm py-1">
+                
+                <div class="w-125p pt-2"> &nbsp; </div>
+                <div class="w-175p d-flex">
+                    <div class="p-0 "><RadzenCheckBox @bind-Value="V!.FEGrp.PerdayEarningsB" TValue="bool" class="p-0 me-1"/></div>
+                    <span class="mt-1">Per day Earnings</span>
+                </div>
+                
+                
+                
+                @*<div class="w-125p pt-2"> Day Parameter </div>
+                <div class="w-175p">
+                    <RadzenNumeric TValue="double" class="w-150p"
+                                   @bind-Value="V!.FEGrp.DaysPara"
+                                   Min="0" Max="999999" Format="#,##0"
+                                   Placeholder="0" TextAlign="Radzen.TextAlign.End"
+                                   ShowUpDown=false />
+                </div>*@
+            </div>
+
+            @* --- Perday Earnings -----------------*@
+            <div class="d-flex w-325p rw-sm py-1 px-0">
+                <div class="w-100 pt-2 d-flex p-0">
+                    <div class="w-150p d-block d-md-none p-0">
+                        &nbsp;
+                    </div>
+                    <div class="form-check form-check-inline me-1 w-325p d-flex p-0 ">
+                        @*<div class="p-0 "><RadzenCheckBox @bind-Value="V!.FEGrp.PerdayEarningsB" TValue="bool" class="p-0 me-1"/></div>
+                        
+                        <span class="mt-1">Per day Earnings</span>*@
+                    </div>
+                </div>
+
+            </div>
+           
+        </div>
+        
+        @if (V!.errorFEGrp?.Count > 0)
+        {
+            <div class="p-2 b-red w-100 bg-danger bg-opacity-25 mt-1 br-5">
+                <div class="fw-bold t-maroon ">Error Message : </div>
+                @foreach (var e in V.errorFEGrp)
+                { <div class="px-3 text-danger"> => @e </div> }
+
+            </div>
+        }
+        
+        @* --- Line 4 --------------------------- *@
+        @* ====================================== *@
+
+        <div>
+            @* --- Line 5 ---------------------------*@
+            <div class="col-12 gap-1 d-flex  mt-2">
+                <_0602_12_Period FEGrp="@V.FEGrp" OnSelectionChanged="HandleSelection" />
+            </div>
+
+            @* --- Line 5 --------------------------- *@
+            @* ====================================== *@
+        </div>
+
+        <div class="w-100 d-flex flex-wrap bordered mt-2">
+            <div class="w-60 rw-sm p-1">
+                <div class="card w-100">
+                    <div class="card-header bg-green text-white">
+                        Account List
+                    </div>
+                    <div class="card-body p-1">
+                        <_0602_12_AccountList Feg="@V.FEGrps" FetchFeg="HandleSelection" />
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="w-40 rw-sm p-1">
+                <div class="card w-100">
+                    <div class="card-header bg-green text-white">
+                        Employee List
+                    </div>
+                    <div class="d-flex p-1 bg-black bg-opacity-25 bordered-bottom-darkgreen gap-1">
+                        
+                        @* ----- Check All Employee -----------*@
+                        <btn onclick="@CheckAll" class="btn btn-sm  btn-light px-2" data-bs-toggle="tooltip" title="Check All">
+                            <i class="fas fa-check"></i>
+                        </btn>
+
+
+                        @* ----- Uncheck All Employee -----------*@
+                        <btn onclick="@UncheckAll" class="btn btn-sm  btn-light px-2" data-bs-toggle="tooltip" title="Uncheck All">
+                            <i class="far fa-square"> </i>
+                        </btn>
+
+                        <div class="vr"></div> <!-- Vertical Divider -->
+
+                        @* ----- Save -----------*@
+                        <btn onclick="@SaveEmployeeGE" class="btn btn-sm btn-primary px-2" data-bs-toggle="tooltip" title="Save Data!">
+                            <i class="fa-solid fa-box-archive"></i>
+                        </btn>
+
+
+
+
+                    </div>
+                    <div class="card-body  p-1">
+                        <_0602_12_EmployeeList Empmas="@V.Empmas_FEGrps" ChildAction="ChildAction" />
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@inject IDeprecDataAccess                   _deprec ; 
+@inject IFixedearnings_grpDataAccess        _feg; 
+@inject IFixedearnings_grp_empDataAccess    _fegEmp;
+
+
+@code {
+
+    Fixedearnings_grpModel?     pTmp        = new(); 
+    string                      empnumber   = string.Empty; 
+    
+    private string              selectedCountry = "Deduction 1";
+    RadzenDropDown<string>?     ddAcctNumber;
+    
+
+    [Parameter] public V00_Pay?         V00             { get; set; } = new();
+    [Parameter] public V0602?           V               { get; set; } = new();
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+    
+    private int SelectedPeriod;
+    
+    async void SaveEmployeeGE()
+    {
+        if (V?.Empmas_FEGrps == null || V.FEGrp?.Id == 0)
+        {
+            var severity    = NotificationSeverity.Error; 
+            var summary     = "No selected earnings";
+            var detail      = "Schedule not saved, select earnings from the list to proceed."; 
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity    = severity,
+                Summary     = summary,
+                Detail      = detail,
+                Duration    = 4000
+            });
+            return;
+        }
+        var paydb = V00!.paydb;
+        var conn = V00!.conn;
+        
+        V.Empmas_FEGrps.ForEach(async ef =>
+        {
+            Fixedearnings_grp_empModel fegEmp = new();
+            fegEmp.EmpmasId             = ef?.Id ?? 0;
+            fegEmp.FixedEarnings_grpId  = V.FEGrp?.Id??0;
+
+            if (ef?.Sel ?? false)
+            { await _fegEmp._01(fegEmp, paydb!, conn!); }
+            else
+            { await _fegEmp._04_PerEmployee(fegEmp.FixedEarnings_grpId, fegEmp.EmpmasId, paydb!, conn!); }
+            
+            var severity    = NotificationSeverity.Info; 
+            var summary     = "Msg";
+            var detail      = "Group earnings saved to employee's schedule."; 
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity    = severity,
+                Summary     = summary,
+                Detail      = detail,
+                Duration    = 3000
+            });
+            
+            
+        });
+        
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async void HandleSelection(Fixedearnings_grpModel p)
+    {
+        
+        V!.FEGrps?.ForEach(eg =>
+        {
+            if (eg?.Id == p.Id) eg.Sel = true;
+            else eg!.Sel = false; 
+        });
+        
+        pTmp = p;
+        if(V?.FEGrp == null) return;
+        
+        var f = V.FEGrp; 
+        f.Id                = p.Id;
+        f.PayrollgrpId      = p.PayrollgrpId;
+        f.AcctNumber        = p.AcctNumber;
+        f.DStart            = p.DStart;
+        f.Amount            = p.Amount; 
+        f.DaysPara          = p.DaysPara;
+        f.PerdayEarnings    = p.PerdayEarnings;
+        f.P1 = p.P1; 
+        f.P2 = p.P2; 
+        f.P3 = p.P3; 
+        f.P4 = p.P4; 
+        f.P5 = p.P5; 
+        
+        var payrollgrpId = p.PayrollgrpId;
+        var paydb = V00!.paydb;
+        var conn = V00!.conn;
+        var empLst = await _fegEmp._02(p.Id, paydb!, conn!);
+        
+        V.Empmas_FEGrps?.ForEach(fe =>
+        {
+            fe!.Sel = false;
+            var emp = empLst?.Where(e => e!.EmpmasId == fe.Id).ToList();
+            if (emp?.Count > 0) fe!.Sel = true; 
+
+        }); 
+
+        StateHasChanged();
+    }
+
+    async Task New()
+    {
+        
+        V!.errorFEGrp       = [];
+        var pgId        = V.FEGrp?.PayrollgrpId;
+        V.FEGrp             = new Fixedearnings_grpModel(); 
+        if (pgId != null) V.FEGrp!.PayrollgrpId = (int)pgId;
+        
+        V.FEGrps?.ForEach(fe=> { fe!.Sel = false; });
+        V.Empmas_FEGrps?.ForEach(e => { e!.Sel = false;});
+
+        await ChildAction.InvokeAsync(); 
+    }
+
+    async Task Save()
+    {
+        ValidateSave();
+        if (V?.errorFEGrp.Count > 0) return;
+        
+        if(V00?.paydb == null || V00.conn==null) return;
+        if (V?.FEGrp?.Id == 0)
+        {
+            V.FEGrp.CreatedbyId = V00.UserClaims?.UserId??0; 
+            var res = await _feg._01(V.FEGrp, V00.paydb, V00.conn);
+            if (res != null)
+            {
+                V.FEGrp = res; 
+            }
+            
+        }
+        else
+        {
+            var res = await _feg._03(V?.FEGrp?.Id??0, V?.FEGrp!, V00.paydb, V00.conn); 
+        }
+
+        var feGrpId = V?.FEGrp?.PayrollgrpId; 
+        V!.FEGrps =  await _feg._02_ByPgrpId_Active(feGrpId??0, V00.paydb, V00.conn); 
+        await ChildAction.InvokeAsync(); 
+        
+    }
+
+    void ValidateSave()
+    {
+        if(V==null) return;
+        V.errorFEGrp = []; 
+        
+        var feg = V.FEGrp; 
+        if(feg==null) return;
+        
+        //--- Payroll Group Check ---------------------------------------------
+        if (feg?.PayrollgrpId < 1 ) V!.errorFEGrp.Add("Payroll group is not valid. ");
+        
+        //--- COA Check ---------------------------------------------
+        if (feg?.AcctNumber?.Length < 1 || feg?.AcctNumber==null ) V!.errorFEGrp.Add("Account is not valid. ");
+            
+        //--- Date Start Check ---------------------------------------------
+        if (feg?.DStart == null || feg?.DStart.Year < 2000) V!.errorFEGrp.Add("Date Start is not valid.");
+        
+        //--- Amount Check ---------------------------------------------
+        if (feg?.Amount  < 1) V!.errorFEGrp.Add("Amount is not a valid entry. ") ;
+        
+        //--- Check for Deduction Schedule ----------------------------
+        if ((feg?.P1B == false ) &&
+            (feg?.P1B == false) &&
+            (feg?.P2B == false) &&
+            (feg?.P3B == false) &&
+            (feg?.P4B == false) &&
+            (feg?.P5B == false))    V!.errorFEGrp.Add("Deduction schedule is not valid. ");
+    }
+    
+    async void Terminate()
+    {
+        if (V.FEGrp.Id == 0)
+        {
+            var severity    = NotificationSeverity.Warning; 
+            var summary     = "No selected earnings";
+            var detail      = "Nothing to Terminate"; 
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity    = severity,
+                Summary     = summary,
+                Detail      = detail,
+                Duration    = 3000
+            });
+            return;
+        }
+        
+        var option = await _DialogService.Confirm($"Terminate selected earnings and employee's schedule?", "Confirm Delete",
+            new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (option == false) return;
+
+        string? paydb   = V00!.paydb;
+        string? conn    = V00!.conn;
+
+        var fegId = V.FEGrp.Id; 
+        var userId   = V00.UserClaims?.UserId??0;
+        
+
+
+        await _feg._03_Terminate(fegId, userId, paydb!, conn!);
+        await PgrpChanged();
+        await New(); 
+
+    }
+
+    async Task PgrpChanged()
+    {
+        
+        if(V?.FEGrp==null) return;
+        
+        V.Empmas_FEGrps = []; 
+        var fepgId = V.FEGrp.PayrollgrpId; 
+        V!.FEGrps =  await _feg._02_ByPgrpId_Active(fepgId, V00!.paydb!, V00.conn!);
+
+        await FetchEmployee(); 
+        await ChildAction.InvokeAsync();
+
+    }
+
+    async Task FetchEmployee()
+    {
+        if(V00==null || V?.FEGrp==null) return; 
+        
+        string? paydb   = V00.paydb;
+        string? conn    = V00.conn;
+        var payrollgrpId = V.FEGrp.PayrollgrpId; 
+        
+        var empLst = await _fegEmp._02(payrollgrpId, paydb!, conn!); 
+        
+        var res = await _deprec._02_ByPayrollgrpIds(payrollgrpId, V00!.pisdb!, V00!.conn!);
+        if (res?.Count > 0)
+        {   foreach (var r in res)
+            {
+
+                var empmasId = r?.Empmasid ?? 0;
+                var emp = empLst?.Where(e => e?.EmpmasId == empmasId).ToList();
+
+                var selected = emp?.Count > 0;
+                V.Empmas_FEGrps?.Add(new EmpmasInternalModel
+                {
+                    Id              = empmasId, 
+                    PayrollgrpId    = r?.Payrollgrpid??0, 
+                    Sel             = false, 
+                    Fullname        = r?.Empname, 
+                    EmpStatus       = r?.Empstatusname
+                });    
+                
+            }
+            
+        }
+        
+    }
+    
+    async void CheckAll()
+    {
+        V?.Empmas_FEGrps?.ForEach(ef => { ef!.Sel = true;});
+        await ChildAction.InvokeAsync(); 
+    }
+    
+    async void UncheckAll()
+    {
+        V?.Empmas_FEGrps?.ForEach(ef => { ef!.Sel = false;});
+        await ChildAction.InvokeAsync(); 
+    }
+
+}

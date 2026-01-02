@@ -1,0 +1,348 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0602._0602_11
+
+<div class="card shadow bordered-darkgreen mt-3" >
+    <div class="card-header text-white fw-bold " style="background-color: darkslategrey">
+        EMPLOYEE EARNINGS
+    </div>
+
+    <!-- Buttons -->
+    <div class="bordered bg-black bg-opacity-10 px-2 py-1 ">
+        <button onclick="@NewEntry"     class="btn btn-primary btn-sm">New</button>
+        <button onclick="@Save"         class="btn btn-secondary btn-sm">Save</button>
+        <button onclick="@Terminate"    class="btn btn-secondary btn-sm">Terminate</button>
+    </div>
+
+
+    <div class="card-body border-2  ">
+        
+        <div class="row p-1 ">
+            @* --- Line 1 ---------------------------*@
+            @* --- Charge to ----------------------- *@
+            <div class="col-12 p-0 d-flex gap-1">
+                <div class="w-100p py-1">Charge to </div>
+                <div class="w-350p w-sm-300p ">
+
+                    <RadzenDropDown TValue="string"
+                                    @ref="ddAcctNumber"
+                                    Name="ddAcctNumber"
+                                    @bind-Value="@V!.Fixedearning!.Acctnumber"
+                                    Data="@V!.Coas"
+                                    TextProperty="AcctName"
+                                    ValueProperty="AcctNumber"
+                                    Style="width: 100%; max-width: 400px;"
+                                    Placeholder="Select COA"/>
+
+                </div>
+            </div>
+
+            @* --- Line 2 ---------------------------*@
+            @* ===================================== *@
+            <div class="w-100 d-flex flex-wrap p-0">
+                <div class="d-flex w-300p rw-sm mt-1">
+                    @* --- Loan Date ------------------ *@
+                    <div class="w-100p py-2">Date Start</div>
+                    <div class="w-185p p-1">
+                        <RadzenDatePicker TValue="DateTime" @bind-Value="@V.Fixedearning.Dstart" DateFormat="MM/dd/yyyy" Name="Dstart"/>
+                    </div>
+                </div>
+
+                @* --- Amount ------------------ *@
+                <div class="d-flex w-250p rw-sm">
+                    <div class="w-75p w-sm-100p py-3 ">Amount</div>
+                    <div class="w-150p  p-2">
+                        <RadzenNumeric @bind-Value="@V.Fixedearning.Amount" Name="Coid" ShowUpDown=false Format="#,##0.00"
+                                       TextAlign="TextAlign.Right"/>
+                    </div>
+                </div>
+                @* ================================ *@
+                @* --- Loan Date ------------------ *@
+
+            </div>
+
+
+            @* --- Line 3 ---------------------------*@
+            @* ===================================== *@
+            <div class="col-12gap-1 d-flex gap-1 p-0">
+                @* --- Amount ------------------ *@
+                <div class="w-100p py-2">Max Day</div>
+                <div class="w-140p w-sm-150p">
+                    <RadzenNumeric @bind-Value="@V.Fixedearning.Dayspara" Name="DaysPara" ShowUpDown=false Format="#,##0"
+                                   TextAlign="TextAlign.Right"/>
+
+
+                </div>
+            </div>
+            
+            @* --- Line 4 ---------------------------*@
+            @* ===================================== *@
+            <div class="col-12gap-1 d-flex gap-1 p-0">
+                @* --- Amount ------------------ *@
+                <div class="w-100p py-2"> Type</div>
+                <div class="w-200p w-sm-150p d-flex gap-2">
+                    <div class="py-2">
+                        <input @bind="@V.Fixedearning.PerdayEarningsB" class="form-check-input" type="checkbox" id="prd2">    
+                    </div>
+                    <div class="py-2">
+                        Per Day Earnings
+                    </div>
+
+
+                </div>
+            </div>
+
+            @* ===================================== *@
+            @* --- Line 5 ---------------------------*@
+
+            <div class="col-12 gap-1 d-flex mt-2">
+                <_00_PeriodTemplate Prd="@V.PeriodTmp"  OnSelectionChanged="HandleSelection"/>
+            </div>
+            
+            @if (V!.erorrMsgFe .Length > 0)
+            {
+                <div class="p-2 b-red w-100 bg-danger bg-opacity-25 mt-1">
+                    <span class="fw-bold t-maroon ">Error Message : </span> <span class="text-danger">@V.erorrMsgFe </span>
+                </div>
+            }
+
+        </div>
+
+
+
+        <div class="col-12 w-100 p-0">
+            <_0602_11_Grid V="@V" PickFE="HandleSelectFE" />
+        </div>
+
+    </div>
+</div>
+
+
+@inject NotificationService         _NotificationService;
+@inject DialogService               _DialogService;
+
+@inject ICoaDataAccess _coa; 
+@inject IFixedearningsDataAccess _fe; 
+
+@code {
+    
+    [Parameter] public V00_Pay?         V00             { get; set; } = new();
+    [Parameter] public V0602?           V               { get; set; } = new();
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+
+
+    int                 prd             = 2; 
+    string              empnumber       = string.Empty; 
+    string              selectedCountry = "Deduction 1";
+    PeriodTmpModel?     pTmp = new();
+    List<CoaModel?>?    coas = [];
+    
+    bool                shouldFocusDdAcct = false;
+    private int         SelectedPeriod;
+    RadzenDropDown<string>? ddAcctNumber;
+
+    string? pisdb= string.Empty;
+    string? paydb= string.Empty;
+    string? conn = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        if(V00?.UserClaims==null) return;
+        var userClaims = V00?.UserClaims;  
+        pisdb   = userClaims?.SchemaUserPis;
+        paydb   = userClaims?.SchemaUserPay;
+        conn    = userClaims?.Conn;
+    }
+    protected override async void OnInitialized()
+    {
+        if(coas?.Count < 1) coas = await _coa._02_Earnings_HasNoROB(V00!.paydb!, V00.conn!); 
+    }
+
+    private void HandleSelection(PeriodTmpModel p)
+    {
+        if (V?.Fixedearning == null) return; 
+        pTmp = p;
+        V.Fixedearning.P1 = p.p1; 
+        V.Fixedearning.P2 = p.p2; 
+        V.Fixedearning.P3 = p.p3; 
+        V.Fixedearning.P4 = p.p4;
+        V.Fixedearning.P5 = p.p5;
+
+        StateHasChanged(); 
+    }
+
+    void HandleSelectFE(FixedearningsModel fe)
+    {
+        if(V==null || V.Fixedearning==null) return;
+        MsdsDataAccess _msds = new();
+        _msds.ObjectMapper(fe, V.Fixedearning); 
+        
+        if(V.PeriodTmp==null) return;
+        V.PeriodTmp.p1 = fe.P1; 
+        V.PeriodTmp.p2 = fe.P2; 
+        V.PeriodTmp.p3 = fe.P3; 
+        V.PeriodTmp.p4 = fe.P4; 
+        V.PeriodTmp.p5 = fe.P5; 
+    }
+    async void NewEntry()
+    {
+        //V!.Fixedearning     = new FixedearningsModel();
+        if(V!.Fixedearning==null) return;
+        
+        V!.Fixedearning.Id = 0;
+        V!.Fixedearning.Acctnumber = string.Empty;
+        V!.Fixedearning.AcctName = string.Empty;
+        V!.Fixedearning.Dstart = DateTime.Now;
+        V!.Fixedearning.Amount = 0;
+        V!.Fixedearning.Dayspara = 0;
+        V!.Fixedearning.PerdayEarnings = 0; 
+        V!.Fixedearning.P1 = 0;
+        V!.Fixedearning.P2 = 0;
+        V!.Fixedearning.P3 = 0;
+        V!.Fixedearning.P4 = 0;
+        V!.Fixedearning.P5 = 0;
+        
+        V!.PeriodTmp        = new(); 
+        
+        shouldFocusDdAcct   = true;
+        await ChildAction.InvokeAsync(); 
+        StateHasChanged();
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (shouldFocusDdAcct && ddAcctNumber != null)
+        {
+            shouldFocusDdAcct = false;
+            await ddAcctNumber.FocusAsync();
+        }
+    }
+
+    async Task Save()
+    {
+        V!.erorrMsgFe = string.Empty;
+        var validToSave = IsValidtoSave(); 
+        if(!validToSave) return;
+
+        if (V?.Fixedearning == null) return;
+        if (V.Fixedearning.Id > 0)
+        {
+            var id = V.Fixedearning.Id; 
+            var res = await _fe._03(id, V.Fixedearning, paydb!, conn!);
+        }
+        else
+        {
+            V.Fixedearning.Createdby = V00?.UserClaims?.UserId.ToString().Trim();  
+            var res = await _fe._01(V.Fixedearning, paydb!, conn!);
+            V.Fixedearning = res; 
+            
+        }
+
+        var empNumber = V.Fixedearning?.Empnumber??"-1"; 
+        V.Fixedearnings  =  await _fe._02ByEmpnumber(empNumber, paydb!, conn!);
+        await ChildAction.InvokeAsync(); 
+
+        //V.Fixedearnings = 
+    }
+
+    bool IsValidtoSave()
+    {
+        var ans = true;
+        var fe = V?.Fixedearning;
+        
+        //--- Employee Check ---------------------------------------------
+        if (fe?.Empnumber?.Trim().Length < 1 )
+        {
+            V!.erorrMsgFe += " => Employee is not valid. ";
+            ans = false;
+        }
+        
+        //--- Payroll Group Check ---------------------------------------------
+        if (fe?.Payrollgrpid < 1 )
+        {
+            V!.erorrMsgFe  += " => Payroll group is not valid. ";
+            ans = false;
+        }
+        
+        //--- COA Check ---------------------------------------------
+        if (fe?.Acctnumber?.Length < 1 )
+        {
+            V!.erorrMsgFe  += " => Account is not valid. ";
+            ans = false;
+        }
+        //--- Date Start Check ---------------------------------------------
+        if (fe?.Dstart == null || fe.Dstart.Year < 2000)
+        {
+            V!.erorrMsgFe  += " => Date Start is not valid. ";
+            ans = false;
+        }
+        
+        //--- Amount Check ---------------------------------------------
+        if (fe?.Amount < 1)
+        {
+            V!.erorrMsgFe  += " => Amount is not a valid entry. ";
+            ans = false;
+        }
+        
+        //--- Check for Deduction Schedule ----------------------------
+        if ((fe?.P1B == false ) &&
+            (fe?.P1B == false) &&
+            (fe?.P2B == false) &&
+            (fe?.P3B == false) &&
+            (fe?.P4B == false) &&
+            (fe?.P5B == false))
+        {
+            V!.erorrMsgFe  += " => Deduction schedule is not valid. ";
+            ans = false; 
+        }
+        
+        
+        return ans; 
+    }
+
+    async Task Terminate()
+    {
+        if (V?.Fixedearning?.AcctName.Length < 1)
+        {
+            var msg = "Nothing to terminate. ";
+            await _DialogService.Alert(msg, "No account selected.", new AlertOptions() { OkButtonText = "Exit" });
+            return;
+        }
+        
+        
+        var option = await _DialogService.Confirm("Terminate " + V?.Fixedearning?.AcctName , "Confirm Delete",
+            new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+
+        if (option == true)
+        {
+            var fe = V?.Fixedearning;
+            if (fe != null)
+            {
+                
+                fe.Status       = "T";
+                fe.Terminatedby = V00?.UserClaims?.UserId.ToString()??"0"; 
+                fe.Dend         = DateTime.Now;
+                
+                var id                = V?.Fixedearning?.Id??-1;
+                var empNumber       = V?.Fixedearning?.Empnumber??"-1";
+                var res  = await _fe._03(id, V?.Fixedearning!, paydb!, conn!);
+                
+                if (res?.Status == "T") 
+                {
+                    NewEntry();
+                }
+
+                V!.Fixedearnings  =  await _fe._02ByEmpnumber(empNumber, paydb!, conn!);
+                await ChildAction.InvokeAsync(); 
+                
+            }
+
+             
+        }
+    }
+
+}

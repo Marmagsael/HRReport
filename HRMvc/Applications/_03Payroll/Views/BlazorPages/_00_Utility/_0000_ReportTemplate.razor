@@ -1,0 +1,120 @@
+﻿@page "/payroll-register"
+
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using Telerik.Reporting
+@using Telerik.Reporting.Processing
+
+<_DtlHdr caption="Payroll Register" />
+
+<h3 class="mb-3">Payroll Group Report</h3>
+
+<div class="mb-2">
+    <select @bind="selectedFormat" class="form-select" style="width:200px;">
+        <option value="PDF">Export as PDF</option>
+        <option value="XLSX">Export as Excel</option>
+    </select>
+</div>
+
+<button class="btn btn-primary" @onclick="GenerateReport">Generate Payroll Report</button>
+
+@if (isLoading)
+{
+    <p class="mt-3 text-info">Generating report, please wait...</p>
+}
+else if (pdfBytes != null)
+{
+    var mime = selectedFormat == "XLSX" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf";
+
+    <div style="height:85vh; margin-top:10px;">
+        <iframe src="data:@mime;base64,@Convert.ToBase64String(pdfBytes)" style="width:100%;height:100%;border:none;"></iframe>
+    </div>
+}
+
+@inject IPayrollgrpDataAccess _pgrp
+@inject IWebHostEnvironment Env
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; } = new();
+    [Parameter] public V00_Pay V00 { get; set; } = new();
+
+    private byte[]? pdfBytes;
+    private bool isLoading = false;
+    private string selectedFormat = "PDF";
+    private string? paydb = string.Empty;
+    private string? conn = string.Empty;
+    private V0601 V601 = new();
+
+    protected override void OnParametersSet()
+    {
+        SetVariables();
+    }
+
+    private async void SetVariables()
+    {
+        try
+        {
+            V00.UserClaims = UserClaims;
+            paydb = UserClaims!.SchemaUserPay;
+            conn = UserClaims!.Conn;
+
+            V601.Payrollgrps = await _pgrp._02Active(paydb!, conn!);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PayrollReport] Initialization failed: {ex.Message}");
+        }
+    }
+
+    private async Task GenerateReport()
+    {
+        try
+        {
+            isLoading = true;
+            pdfBytes = null;
+            StateHasChanged();
+
+            // ✅ Step 1: Load data
+            V601.Payrollgrps = await _pgrp._02Active(paydb!, conn!);
+
+            // ✅ Step 2: Resolve the TRDP file path
+            var reportPath = Path.Combine(Env.ContentRootPath, "Reports", "_03Payroll", "Payrollgrp.trdp");
+            if (!System.IO.File.Exists(reportPath))
+                throw new FileNotFoundException($"Report file not found at: {reportPath}");
+
+            // ✅ Step 3: Load TRDP definition (using ReportPackager)
+            Telerik.Reporting.Report report;
+            var packager = new Telerik.Reporting.ReportPackager();
+            using (var stream = System.IO.File.OpenRead(reportPath))
+            {
+                report = (Telerik.Reporting.Report)packager.UnpackageDocument(stream);
+            }
+
+            // ✅ Step 4: Bind runtime data via ObjectDataSource
+            var objDS = new Telerik.Reporting.ObjectDataSource
+            {
+                DataSource = V601.Payrollgrps
+            };
+            report.DataSource = objDS;
+
+            // ✅ Step 5: Render output (PDF/XLSX)
+            var processor = new ReportProcessor();
+            var instanceSource = new InstanceReportSource { ReportDocument = report };
+            var result = processor.RenderReport(selectedFormat, instanceSource, null);
+
+            pdfBytes = result.DocumentBytes;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[PayrollReport] Error generating report: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

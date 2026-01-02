@@ -1,0 +1,58 @@
+﻿@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._90_Utils
+@using Radzen
+@using Radzen.Blazor
+@using HRApiLibrary.Models._00_Main
+@inject NavigationManager Nav
+
+<div class="p-3 fw-bold">
+    Report Menu
+</div>
+<div style="border-bottom: 1px solid rgba(0,0,0,.1); margin:0 10px" />
+
+
+<RadzenPanelMenu Click="OnParentClicked" Style="min-width:230px" Multiple="@multiple">
+    <ReportLeftMenuDtl menus="menus" parentId="1101" />
+    <ReportLeftMenuDtl menus="menus" parentId="1151" />
+    <ReportLeftMenuDtl menus="menus" parentId="1201" />
+    <ReportLeftMenuDtl menus="menus" parentId="1251" />
+    <ReportLeftMenuDtl menus="menus" parentId="1301" />
+</RadzenPanelMenu>
+
+
+
+
+@inject IMainmenuDataAccess _menu; 
+
+
+@code {
+
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    bool multiple       = true;
+    bool isRerendered   = false;
+    string? conn        = string.Empty;
+
+    List<MainmenuModel?>? menus = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        conn    = UserClaims?.Conn;
+        menus   = await _menu._02("MainPay", conn!);
+    }
+
+
+
+
+
+    void OnParentClicked(MenuItemEventArgs args)
+    {
+        //console.Log($"{args.Text} clicked from parent");
+    }
+
+    void OnChildClicked(MenuItemEventArgs args)
+    {
+        //console.Log($"{args.Text} from child clicked");
+
+    }
+}

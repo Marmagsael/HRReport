@@ -1,0 +1,139 @@
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+<div class="card shadow bordered-darkgreen mt-2 ">
+    <div class="card-header text-white fw-bold bg-success ">
+        Attendance Entry
+    </div>
+
+    <!-- Buttons -->
+    <div class="bordered-bottom bg-dark bg-opacity-10 px-2 py-1 ">
+        <button class="btn btn-primary btn-sm">New</button>
+        <button class="btn btn-secondary btn-sm">Post</button>
+    </div>
+
+    <div class="p-2 bordered-bottom w-100">
+        <_00_PayrollgrpComponent Payrollgrps="@V601.Payrollgrps" PayrollgrpChanged="PayrollgrpChanged" />    
+    </div>
+    
+    @* --- Punch IN --------------------- *@
+    <div class="w-100 d-flex flex-wrap p-1">
+        <div class="w-300p rw-sm d-flex">
+            <div class="w-125p p-1 bg-success bg-opacity-10 bordered text-center fw-bold text-success">
+                IN Date
+            </div>
+            <div class="w-175p px-2">
+                <RadzenDatePicker @bind-Value="@V601.Payrollentry!.PIndate" Name="DPDHired" DateFormat="MMM dd, yyyy"/>
+            </div>    
+        </div>
+        <div class="w-150p rw-sm d-flex ">
+            <div class="w-130p d-block d-md-none p-1"> &nbsp; </div>
+            <div class="w-155p text-secondary py-1 ">
+                @if (@V601.Payrollentry.PIndate!.Year > 2000)
+                {
+                    <span>: @V601.Payrollentry.PIndate.DayOfWeek</span>    
+                }
+            </div>
+        </div>
+        
+    </div>
+
+    <div class="p-1 d-flex w-100 bordered-bottom">
+        <div class="w-125p p-1 bg-secondary bg-opacity-10 bordered text-center">Time IN </div>
+        <div class="w-175p px-2">
+            <RadzenDropDown class="form-control"
+                TValue="int"
+                @bind-Value="@V601.Payrollentry.PIn"
+                Data="@Attins"
+                TextProperty="Name"
+                ValueProperty="InTime"/>
+        </div>
+        
+    </div>
+
+
+    @* --- Punch OUT --------------------- *@
+    <div class="w-100 d-flex flex-wrap p-1">
+        <div class="w-300p rw-sm d-flex">
+            <div class="w-125p p-1 bg-success bg-opacity-10 bordered text-center fw-bold t-maroon">
+                OUT Date
+            </div>
+            <div class="w-175p px-2">
+                <RadzenDatePicker @bind-Value="@V601.Payrollentry!.POutdate" Name="DPDHired" DateFormat="MMM dd, yyyy"/>
+            </div>
+        </div>
+        <div class="w-150p rw-sm d-flex ">
+            <div class="w-130p d-block d-md-none p-1"> &nbsp; </div>
+            <div class="w-155p text-secondary py-1 ">
+                @if (@V601.Payrollentry.POutdate!.Year > 2000)
+                {
+                <span>: @V601.Payrollentry.POutdate.DayOfWeek</span>
+                }
+                
+                </div>
+        </div>
+
+    </div>
+
+    <div class="p-1 d-flex w-100 bordered-bottom">
+        <div class="w-125p p-1 bg-secondary bg-opacity-10 bordered text-center">Time Out </div>
+        <div class="w-175p px-2">
+            <RadzenDropDown class="form-control"
+                            TValue="int"
+                            @bind-Value="@V601.Payrollentry.POut"
+                            Data="@Attins"
+                            TextProperty="Name"
+                            ValueProperty="InTime"/>
+        </div>
+
+    </div>
+    
+
+
+
+</div>
+
+
+
+
+@code {
+
+    List<AttinModel?>?   Attins = []; 
+    
+    [Parameter] public V0601            V601            { get; set; } = new();
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+
+    async void PayrollgrpChanged(int pgrpId)
+    {
+        V601.Payrollentry!.PayrollgrpId = pgrpId; 
+        await ChildAction.InvokeAsync(); 
+    }
+
+    protected override void OnInitialized()
+    {
+        if (Attins?.Count < 1) CreateInSchedule();
+    }
+
+    void CreateInSchedule()
+    {
+        Attins = [];
+        for (var i = 0; i < 24; i++)
+        {
+            var intime      = i * 100;
+            var item = new AttinModel() { Id = intime, InTime  = intime, Name    = $"{intime:0000}H" };
+            Attins.Add(item);
+            
+            var intime30    = intime + 30; 
+            var item30 = new AttinModel() { Id = intime30, InTime  = intime30, Name    = $"{intime30:0000}H" };
+            Attins.Add(item30);
+
+            
+        }
+        StateHasChanged();
+    }
+    
+
+    
+}
+

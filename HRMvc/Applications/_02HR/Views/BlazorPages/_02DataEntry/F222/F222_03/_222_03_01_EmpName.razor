@@ -1,0 +1,344 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._90_Utils.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Applications._02HR._02Library
+
+<RadzenNotification />
+
+<div class="w-100 p-1">
+
+    @* --- Employee Name ---------------- *@
+    @if (V.Empmas?.EmpLastNm?.Length > 0)
+    {
+        <div class="p-2 fw-bold">
+            <h3>
+                <div class="d-flex gap-2">
+                    <div>
+                        <div class="text-success bordered-bottom-darkgreen">@V.Empmas.EmpLastNm &nbsp; </div>
+                        <div class="s22203-lbl">Last Name</div>
+                    </div>
+
+                    <div>
+                        <div class="text-success bordered-bottom-darkgreen">@V.Empmas.EmpFirstNm &nbsp; </div>
+                        <div class="s22203-lbl">First Name</div>
+                    </div>
+                    <div>
+                        <div class="text-success bordered-bottom-darkgreen">@V.Empmas.EmpMidNm &nbsp; </div>
+                        <div class="s22203-lbl">Mid. Name</div>
+                    </div>
+                    <div>
+                        <div class="text-success bordered-bottom-darkgreen">@V.Empmas.Suffix &nbsp; </div>
+                        <div class="s22203-lbl">Suffix</div>
+                    </div>
+
+                </div>
+            </h3>
+        </div>
+    }
+
+    <RadzenTemplateForm TItem="PisEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+
+        <div class="bordered p-2 d-flex gap-1">
+
+            @* --- Picture ------------- *@
+            <div class="w-40  p-2 bordered text-centered">
+                <div class="h-100 d-flex justify-content-center align-items-center">
+                    <div class="bordered-darkgreen p-1" style="border-radius: 5px; height: 160px; width: 160px ;">
+                        <img class="img-fluid" alt="Employee Image" src="images/employee.png" height="150" width="150">
+                    </div>
+                </div>
+
+            </div>
+
+
+
+            <div class="w-60 p-2">
+                @* --- System Id -------------------------- *@
+                <div class="p-1 mt-2 d-flex">
+                    <div class="s22203a-lbl w-25">Link No. </div>
+                    <div class="bordered-bottom w-75">@V.Empmas?.SystemId</div>
+                </div>
+
+                @* --- Email Address -------------------------- *@
+                <div class="p-1 d-flex">
+                    <div class="s22203a-lbl w-25">Email </div>
+
+                    <div class="bordered-bottom w-75">
+                        <div class="w-100 d-flex gap-3">
+                            <div>@V.Empmas!.Email</div>
+                            @if (V.Empmas?.Email != null)
+                            {
+
+                                @if (V.Empmas?.Email!.Length > 0 && V.Empmas.SystemId == 0)
+                                {
+                                    <div> <span @onclick="MakeALink" class="msds-link">Profile Link</span> </div>
+                                }
+                            }
+                        </div>
+
+                        @*--- Error Msg for email not found ------*@
+                        <div class="text-danger">
+                            @if (userid == V.Empmas?.Id)
+                            {
+                                @errorEmail
+                            }
+                        </div>
+
+
+                    </div>
+
+
+                </div>
+
+                @* --- Emp Number -------------------------- *@
+                <div class="p-1 d-flex">
+                    <div class="s22203a-lbl w-25">Empl. No. </div>
+                    <div class="bordered-bottom w-75">
+                        @V.Empmas!.EmpNumber
+                    </div>
+                </div>
+
+                @* --- Position -------------------------- *@
+                <div class="p-1 d-flex">
+                    <div class="s22203a-lbl w-25">Position </div>
+                    <div class="bordered-bottom w-75">
+                        @* @V.Empmas!. *@
+                        @V.Deprec?.Positionname
+                    </div>
+                </div>
+
+
+                @* --- Current Status -------------------------- *@
+                <div class="p-1 d-flex">
+                    <div class="s22203a-lbl w-25">Status </div>
+                    <div class="bordered-bottom w-75">
+                        @* @V.Empmas!. *@
+                        @V.Deprec?.Empstatusname
+                    </div>
+                </div>
+
+                @* --- Current Status -------------------------- *@
+                <div class="p-1 d-flex">
+                    <div class="s22203a-lbl w-25">&nbsp;</div>
+                    @if (V.Empmas.Id > 0)
+                    {
+                        <div class="bordered-bottom p-2 d-flex w-75">
+                            <div>| <span class="msds-link" @onclick="EditEmpmas">Edit</span> &nbsp; </div>
+                            <div> | <span class="msds-link">Upload Image</span> |</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (userid == @V.Empmas.Id && users?.Count > 0)
+        {
+
+            <div class="w-100 d-flex p-1 fw-bold gap-1 bordered bg-secondary">
+                <div class="w-20 bordered p-1 text-white text-center">Identity ID</div>
+                <div class="w-30 bordered p-1 text-white"> Name</div>
+                <div class="w-30 bordered p-1 text-white"> Email</div>
+                <div class="w-20 bordered p-1 text-white"> Action</div>
+            </div>
+
+            foreach (var user in users)
+            {
+                <div class="w-100 d-flex p-2 gap-1 bordered-darkgreen">
+                    <div class="w-20 bordered-bottom text-center"> @user?.Id </div>
+                    <div class="w-30 bordered-bottom"> @user?.AFullName </div>
+                    <div class="w-30 bordered-bottom"> @user?.Email</div>
+                    <div class="w-20 bordered-bottom msds-link" @onclick="@(()=>SendRequest(user))"> <span> Send Request</span>
+                    </div>
+                </div>
+
+            }
+
+
+        }
+        @if(V.EmpmovementList != null)
+        {
+            <div class="p-2 user-select-none">
+                <RadzenAccordion>
+                    <Items>
+                        <RadzenAccordionItem Text="Request History" Icon="history" CollapseTitle="Collapse history."
+                        ExpandTitle="Expand history." CollapseAriaLabel="Collapse the history details."
+                        ExpandAriaLabel="Expand the history details." class="p-0 border">
+                            <div class="border">
+                                <div class="d-flex fw-bold  border-2 border-bottom">
+                                    <div class="col-5 p-1">Date Sent</div>
+                                    <div class="col-5 p-1">Action</div>
+                                </div>
+                                @if (V.EmpmovementList.Count > 0)
+                                {
+                                    @foreach (var emp in V.EmpmovementList)
+                                    {
+                                        <div class="d-flex border-bottom">
+                                            <div class="col-5 p-1">@emp.Created</div>
+                                            <div class="col-5 p-1">
+                                                @if (emp.Mode == "Invite")
+                                                {
+                                                    <span>Request Sent</span>
+                                                }
+                                                @if (emp.Mode == "GrantInv")
+                                                {
+                                                    <span>Request Granted</span>
+                                                }
+                                                @if (emp.Mode == "Deny")
+                                                {
+                                                    <span>Request Denied</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                } else
+                                {
+                                    <div class="p-1"> No records to display.</div>
+                                }
+
+
+                            </div> 
+                        </RadzenAccordionItem>
+
+                    </Items>
+                </RadzenAccordion>
+            </div>
+
+        }
+    </RadzenTemplateForm>
+</div>
+
+@inject NotificationService NotificationService
+@inject I_00MainDA _main;
+@inject IEmpmovementDataAccess _empMovement;
+@inject IMsdsDataAccess _msds;
+
+@code {
+
+    bool popup = true;
+
+    [Parameter]
+    public V222 V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    List<UsersModel?>? users = new();
+    int userid = 0;
+    string? errorEmail = "";
+
+    // protected async override void OnParametersSet()
+    // {
+    // StateHasChanged();
+    // }
+
+    async void EditEmpmas()
+    {
+        errorEmail = string.Empty;
+        V.Action = "EditEmpmas";
+        V.EmpmasToEdit = V.EmpmasToEditMapper(V.Empmas!, V.EmpmasToEdit!);
+        V.ShowDataEntry = true;
+        await ChildAction.InvokeAsync();
+    }
+
+    async void MakeALink()
+    {
+        errorEmail = string.Empty;
+        if (V.Empmas == null) return;
+        if (V.Empmas.Email == null) return;
+
+        string email = V.Empmas.Email?.Trim() ?? string.Empty;
+        userid = V.Empmas.Id;
+        Console.WriteLine($"email {email}");
+        users = await _main._02UsersByEmailLst(email);
+        if (users == null) errorEmail = "Email is unused.";
+        else if (users.Count == 0) errorEmail = "Email is unused.";
+        StateHasChanged();
+
+        await ChildAction.InvokeAsync();
+
+    }
+
+    void Log(string eventName, string value)
+    {
+        //console.Log($"{eventName}: {value}");
+    }
+
+    void OnSubmit(PisEmpmasModel model)
+    {
+        //Log("Submit", JsonSerializer.Serialize(model, new JsonSerializerOptions() { WriteIndented = true }));
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+        //Log("InvalidSubmit", JsonSerializer.Serialize(args, new JsonSerializerOptions() { WriteIndented = true }));
+    }
+
+    async void SendRequest(UsersModel? user)
+    {
+        if (user == null) return;
+
+        Uc_accessreqModel? uca = new()
+        {
+            Empmasid = user.Id,
+            Requestedbyid = V.userid,
+            Ucrequestingid = V.defcoid
+        };
+
+        var res = await _main._01Uc_Access(uca, "Main", V.conn!);
+
+
+        if (res.FirstOrDefault()?.Empmasid > 0)
+        {
+
+            var empMovement = new EmpmovementModel()
+            {
+                Date = DateTime.Now,
+                Created = DateTime.Now,
+                Dtls = "Send Invite",
+                EmpmasId = V.Empmas?.Id ?? 0,
+                Mode = "Invite",
+                Refno = res.FirstOrDefault()?.Id.ToString(),
+                Userid = V.userid
+            };
+
+            var resEmpMovement =  await _empMovement._01(empMovement, V.pisdb!, V.conn!);
+
+            V.EmpmovementList?.Add(resEmpMovement);
+        }
+
+        // =====================================
+        // Send notification via email =========
+        var email = new EmailModel
+        {
+            Type = "Profile Request",
+            Subject = "Verify and Link Your Profile",
+            CompanyName = res.FirstOrDefault()?.CompanyName,
+            SenderName = res.FirstOrDefault()?.RequestorFirstName,
+            SenderEmail = res.FirstOrDefault()?.RequestorEmail,
+            RecipientName = res.FirstOrDefault()?.EmpmasFirstName,
+            RecipientEmail = res.FirstOrDefault()?.EmpmasEmail,
+        };
+
+        await _msds.SendEmail(email);
+
+
+        //users = new();
+        V.Action = "SendRequest";
+        ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Success",
+                Detail = $"Successfully sent a request to {user.AFullName}.",
+                Duration = 4000
+            });
+
+        await ChildAction.InvokeAsync();
+    }
+
+    void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+}

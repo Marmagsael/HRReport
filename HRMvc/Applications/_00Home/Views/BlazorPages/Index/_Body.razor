@@ -1,0 +1,92 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface;
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+
+@inject I_00UserscompanyDataAccess _usersCompany;
+@inject I_00UsersAccess _user;
+@inject ISessionDataAccess _session;
+@inject I_00MainDA _main;
+@inject NavigationManager _nav; 
+
+<_Body_CompanyDetails UserCompany="@userCompany" />
+
+<div class="h-25p"></div>
+<_Body_MyCompany UserClaims=@UserClaims ChildAction=ChildAction />
+
+<div class="h-25p"></div>
+<_Body_MyEngagement ChildAction="ChildAction" UserClaims="@UserClaims" VPay="@VPay" />
+
+<div class="h-10p"></div>
+<_Body_ProfileAccessRequest ChildAction="ChildAction" UserClaims="@UserClaims" VPay="@VPay" />
+
+
+
+
+@code {
+
+    UsersModel? user = new();
+    UserCompanyModel? userCompany = new()
+        {
+            CompanyName = "...empty...",
+            CountryName = "undefined",
+            OwnerName = "undefined"
+        };
+    SessionInfo sessionInfo = new();
+
+    [Parameter]
+    public UserClaimsModel? UserClaims { get; set; } = new();
+
+    [Parameter]
+    public V00_Pay VPay { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    protected async override void OnParametersSet()
+    {
+        SetSchema();
+        await _02SelectedCompany();
+    }
+
+    async void ChildActionCatcher()
+    {
+        if (VPay.Action == "SelectCompany") await _02SelectedCompany();
+        if (VPay.Action == "GrantAccess")   await _02SelectedCompany();
+
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task _02SelectedCompany()
+    {
+        var userId = UserClaims?.UserId ?? 0;
+        VPay.Uc_acccessreqs = await _main._02Uc_Access_ProfileAccessRequest(userId, "Main", UserClaims?.Conn!);
+
+        var defCoId = int.Parse(UserClaims?.DefCompanyId ?? "0");
+
+        if (defCoId > 0) { userCompany = await _usersCompany._02(defCoId); }
+        else
+        {
+
+            var user            = await _main._02UsersById(userId);
+
+            _nav.NavigateTo($"changingclaims/00/{user?.Id}",true);
+
+        }
+        StateHasChanged();
+    }
+
+    private void SetSchema()
+    {
+        if (UserClaims == null) return;
+        VPay.UserClaims.SchemaUserPis = UserClaims.SchemaUserPis;
+        VPay.UserClaims.SchemaUserPay = UserClaims.SchemaUserPay;
+        VPay.UserClaims.Conn = UserClaims.Conn;
+        VPay.UserClaims.UserId = UserClaims.UserId;
+    }
+
+    void _GrantAccess()
+    {
+        VPay.Action = "GrantAccess";
+    }
+}

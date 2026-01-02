@@ -1,0 +1,408 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface;
+@using HRMvc.Models.Pis;
+@using Microsoft.AspNetCore.Components;
+
+@inject I_00MainPisAccess _mainPis
+@inject I_00MainDA _mainDA
+@inject NotificationService NotificationService
+
+<RadzenNotification />
+
+<h2 class="form-section-caption mt-0">Address</h2>
+
+
+<RadzenTemplateForm TItem="EmpmasAddressModel" Data="@empmasaddress" Submit="SaveData">
+       
+        <div class="form-section-action">
+            <RadzenButton ButtonType="Radzen.ButtonType.Submit" Text="Save Info" />
+        </div>
+
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenStack>
+                    <RadzenFieldset Text="Present">
+                        <RadzenStack Gap="1rem">
+                            @*--- Street ---*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Street" Component="PresStreet" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.PresAddStreet" Style="width: 100%;" Name="PresStreet" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Village ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Village" Component="PresVillage" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.PresAddVillage" Style="width: 100%;" Name="PresVillage" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Barangay ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Barangay" Component="PresAddBrgy" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.PresAddBrgy" Style="width: 100%;" Name="PresAddBrgy" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Country ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Country" Component="PresAddCountry" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenDropDown @bind-Value="empmasaddress.PresAddCountryId"
+                                                    Data="countries"
+                                                    ValueProperty="Id"
+                                                    TextProperty="Name"
+                                                    Style="width: 100%;"
+                                                    Name="PresAddCountry"
+                                                    Change=@(args => OnCountryChanged("present"))
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+
+                            @*--- Province ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Province" Component="PresAddProv" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenDropDown @bind-Value="empmasaddress.PresAddProvId"
+                                                    Data="presProvinces"
+                                                    ValueProperty="Id"
+                                                    TextProperty="Name"
+                                                    Style="width: 100%;"
+                                                    Name="PresAddProv"
+                                                    Change="@(args => OnProvinceChanged("present"))"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- City ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="City" Component="PresAddCity" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenDropDown @bind-Value="empmasaddress.PresAddCityId"
+                                                    Data="presCities"
+                                                    TextProperty="CityName"
+                                                    ValueProperty="Id"
+                                                    Style="width: 100%;"
+                                                    Name="PresAddCity"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Zip Code ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Zip Code" Component="PresAddZipCode" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.PresAddZipCode" Style="width: 100%;" Name="PresAddZipCode" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Telephone No. ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Tel No." Component="PresAddTelNo" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.PresAddTelNo" Style="width: 100%;" Name="PresAddTelNo" />
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </RadzenStack>
+                    </RadzenFieldset>
+                </RadzenStack>
+            </RadzenColumn>
+
+
+            @*==================*@
+            @*=== PROVINCIAL ===*@
+            @*==================*@
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenStack>
+                    <RadzenFieldset Text="Provincial">
+                        <RadzenStack Gap="1rem">
+                            @*--- Street ---*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Street" Component="ProvStreet" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.ProvAddStreet" Style="width: 100%;" Name="ProvStreet" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Village ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Village" Component="ProvVillage" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.ProvAddVillage" Style="width: 100%;" Name="ProvVillage" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Barangay ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Barangay" Component="ProvAddBrgy" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.ProvAddBrgy" Style="width: 100%;" Name="ProvAddBrgy" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Country ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Country" Component="ProvAddCountry" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenDropDown @bind-Value="empmasaddress.ProvAddCountryId"
+                                                    Data="countries"
+                                                    ValueProperty="Id"
+                                                    TextProperty="Name"
+                                                    Change=@(args => OnCountryChanged("provincial"))
+                                                    Style="width: 100%;"
+                                                    Name="ProvAddCountry"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Province ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Province" Component="ProvAddProv" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenDropDown @bind-Value="empmasaddress.ProvAddProvId"
+                                                    Data="provProvinces"
+                                                    ValueProperty="Id"
+                                                    TextProperty="Name"
+                                                    Change=@(args => OnProvinceChanged("provincial"))
+                                                    Style="width: 100%;"
+                                                    Name="ProvAddProv"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- City ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="City" Component="ProvAddCity" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenDropDown @bind-Value="empmasaddress.ProvAddCityId"
+                                                    Data="provCities"
+                                                    ValueProperty="Id"
+                                                    TextProperty="CityName"
+                                                    Style="width: 100%;"
+                                                    Name="ProvAddCity"
+                                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" FilterOperator="StringFilterOperator.StartsWith" AllowFiltering="true" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Zip Code ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Zip Code" Component="ProvAddZipCode" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.ProvAddZipCode" Style="width: 100%;" Name="ProvAddZipCode" />
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*--- Telephone No. ---*@
+                            <RadzenRow>
+                                <RadzenColumn Size="12" SizeMD="4">
+                                    <RadzenLabel Text="Tel No." Component="ProvAddTelNo" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="8">
+                                    <RadzenTextBox @bind-Value="empmasaddress.ProvAddTelNo" Style="width: 100%;" Name="ProvAddTelNo" />
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </RadzenStack>
+                    </RadzenFieldset>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+
+    </RadzenTemplateForm>
+
+
+<style >
+    .rz-fieldset-legend-text {
+        font-weight: 500;
+        color: green;
+    }
+
+    .rz-tabview-panel {
+        overflow-x: hidden;
+    }
+</style>
+
+
+@code{
+
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+
+    //-- Initialization ----------------
+    EmpmasAddressModel empmasaddress = new();
+
+    List<CountryModel?>? countries = new();
+
+    List<ProvinceStateModel?>? presProvinces = new();
+    List<CityModel?>? presCities = new();
+
+    List<ProvinceStateModel?>? provProvinces = new();
+    List<CityModel?>? provCities = new();
+
+    string? errorMsg = string.Empty;
+    int userId = 0;
+
+
+    protected async override void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+        userId = UserClaims.UserId;
+        await SetDropDownValues();
+
+        //-- Get Saved Data -------------------------------------------------
+        var res = await _mainPis._02EmpmasAddress(userId, "MainPis", conn!);
+        if(res is null) return;
+        empmasaddress = res;
+
+        //-- Get the saved value for province and cities ---------------------
+        List<string> category = new();
+        category.Add("present");
+        category.Add("provincial");
+
+        foreach (var item in category)
+        {
+            await OnCountryChanged(item);
+            await OnProvinceChanged(item);
+        }
+
+        StateHasChanged();
+    }
+
+    async Task SetDropDownValues()
+    {
+        countries = await _mainDA._02CountryList("Main", conn!);
+
+    }
+
+    async Task OnCountryChanged(string category)
+    {
+        if(empmasaddress is null) return;
+        if(category  == "present")
+        {
+            int countryId = empmasaddress.PresAddCountryId;
+            presProvinces = await _mainDA._02ProvinceStatePerCountry(countryId, "Main", conn!);
+        }
+
+        if (category == "provincial")
+        {
+            int countryId = empmasaddress.ProvAddCountryId;
+            provProvinces = await _mainDA._02ProvinceStatePerCountry(countryId, "Main", conn!);
+        }
+    }
+
+    async Task OnProvinceChanged(string category)
+    {
+        if (empmasaddress is null) return;
+        if (category == "present")
+        {
+            int provinceId = empmasaddress.PresAddProvId;
+            presCities = await _mainDA._02CityPerRegion(provinceId, "Main", conn!);
+        }
+
+        if (category == "provincial")
+        {
+            int provinceId = empmasaddress.ProvAddProvId;
+            provCities = await _mainDA._02CityPerRegion(provinceId, "Main", conn!);
+        }
+    }
+
+
+    //-- Save Row ----------------
+    async Task SaveData()
+    {
+        if(empmasaddress is null) return;
+
+        EmpmasAddressModel rec = new();
+        rec = empmasaddress;
+
+        //-- Assign the equivalent city and province name based on id ----------
+        if (rec.PresAddCountryId != 0)
+        {
+            rec.PresAddCountry = countries?.Where(c => c?.Id == rec.PresAddCountryId).FirstOrDefault()!.Name;
+            if(rec.PresAddProvId != 0)  rec.PresAddProv = presProvinces?.Where(c => c?.Id == rec.PresAddProvId).FirstOrDefault()!.Name;
+            if(rec.PresAddCityId != 0) rec.PresAddCity = presCities?.Where(c => c?.Id == rec.PresAddCityId).FirstOrDefault()!.CityName;
+        }
+
+        if(rec.ProvAddCountryId != 0)
+        {
+            rec.ProvAddCountry = countries?.Where(c => c?.Id == rec.ProvAddCountryId).FirstOrDefault()!.Name;
+            if (rec.ProvAddProvId != 0)  rec.ProvAddProv = provProvinces?.Where(c => c?.Id == rec.ProvAddProvId).FirstOrDefault()!.Name;
+            if (rec.ProvAddCityId != 0)  rec.ProvAddCity = provCities?.Where(c => c?.Id == rec.ProvAddCityId).FirstOrDefault()!.CityName;
+        }
+
+
+
+        if (!SafeToSave(rec)) return;
+        if (rec.Id == 0)
+        {
+            rec.Id = userId;
+
+            var res = await _mainPis._01EmpmasAddress(rec, "MainPis", conn!);
+            if (res != null)
+            {
+                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success", Detail = "Successfully saved the record.", Duration = 4000 });
+            }
+        }
+        else
+        {
+            await _mainPis._03EmpmasAddress(rec.Id, rec, "MainPis", conn!);
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success", Detail = "Successfully updated the record.", Duration = 4000 });
+        }
+
+        errorMsg = string.Empty;
+    }
+    //-- Safe to Save ----------------
+    bool SafeToSave(EmpmasAddressModel rec)
+    {
+        return true;
+    }
+
+    void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+}

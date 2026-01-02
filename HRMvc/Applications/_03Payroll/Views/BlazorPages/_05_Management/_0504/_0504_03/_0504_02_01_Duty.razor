@@ -1,0 +1,131 @@
+﻿@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0500
+<div class="d-flex gap-2  bordered br-5 mb-1">
+    @{ var dtCss = (DutyType =="RD" ? "text-danger" : ""); }
+    <div class="p-2 w-175p fw-bold text-center bordered-bottom-darkgreen @dtCss">@DayName</div>
+    
+    @{var allowEdit = !AllowEdit;}
+    
+    <div class="w-100">
+        <div class="d-flex gap-1">
+
+            <div class="w-125p py-2  @dtCss">Duty Type</div>
+            <div class="p-1">
+                <RadzenDropDown
+                    Disabled="@allowEdit"
+                    class="@dtCss"
+                    Change="Nagbago"
+                    TValue="string"
+                    @bind-Value="@DutyType"
+                    Data="@V?.Attdutytypes"
+                    TextProperty="Name"
+                    ValueProperty="Code"
+                    Style="width: 100%; max-width: 150px;"/>
+            </div>
+        </div>
+
+        @{ var inCss = (In == 0 ? "text-danger" : ""); }
+        <div class="d-flex gap-1">
+            <div class="w-125p  py-2 @inCss">In</div>
+            <div class="p-1">
+                <RadzenDropDown
+                    Disabled="@allowEdit"
+                    class="@inCss"
+                    Change="Nagbago"
+                    TValue="int"
+                    @bind-Value="@In"
+                    Data="@V.Attins"
+                    TextProperty="Name"
+                    ValueProperty="InTime"
+                    Style="width: 100%; max-width: 150px;"/>
+            </div>
+        </div>
+
+        @{ var durationCss = (Duration == 0 ? "text-danger" : ""); }
+        <div class="d-flex gap-1">
+            <div class="w-125p py-2 @durationCss">Duration</div>
+            <div class="p-1 ">
+                <RadzenDropDown
+                    Disabled="@allowEdit"
+                    class="@durationCss"
+                    Change="Nagbago"
+                    TValue="int"
+                    @bind-Value="@Duration"
+                    Data="@V.Attdurations"
+                    TextProperty="Name"
+                    ValueProperty="Duration"
+                    Style="width: 100%; max-width: 150px;"/>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter] public string           DayName         { get; set; } = "R";
+    [Parameter] public string           DutyType        { get; set; } = "R";
+    [Parameter] public int              In              { get; set; } = 800; 
+    [Parameter] public int              Duration        { get; set; } = 800; 
+    [Parameter] public bool             AllowEdit       { get; set; } = false; 
+    
+    [Parameter] public V0504?           V               { get; set; }  = new();
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+
+    async void Nagbago()
+    {
+        
+        switch (DayName)
+        {   
+            case    "Monday":
+                V!.Atttemplate!.D2_dutytype = DutyType; 
+                V!.Atttemplate!.D2_in = In; 
+                V!.Atttemplate!.D2_hrslength = Duration; 
+                break;
+                
+            case    "Tuesday":
+                V!.Atttemplate!.D3_dutytype = DutyType; 
+                V!.Atttemplate!.D3_in = In; 
+                V!.Atttemplate!.D3_hrslength = Duration; 
+                break;
+            
+            case    "Wednesday":
+                V!.Atttemplate!.D4_dutytype = DutyType; 
+                V!.Atttemplate!.D4_in = In; 
+                V!.Atttemplate!.D4_hrslength = Duration; 
+                break;
+                
+            case    "Thursday":
+                V!.Atttemplate!.D5_dutytype = DutyType; 
+                V!.Atttemplate!.D5_in = In; 
+                V!.Atttemplate!.D5_hrslength = Duration; 
+                break;
+            
+            case    "Friday":
+                V!.Atttemplate!.D6_dutytype = DutyType; 
+                V!.Atttemplate!.D6_in = In; 
+                V!.Atttemplate!.D6_hrslength = Duration; 
+                break;
+                
+            case    "Saturday":
+                V!.Atttemplate!.D7_dutytype = DutyType; 
+                V!.Atttemplate!.D7_in = In; 
+                V!.Atttemplate!.D7_hrslength = Duration; 
+                break;
+                        
+            case    "Sunday":
+                V!.Atttemplate!.D1_dutytype = DutyType; 
+                V!.Atttemplate!.D1_in = In; 
+                V!.Atttemplate!.D1_hrslength = Duration; 
+                break;
+                
+            default:
+                break;    
+            
+        }
+        
+        StateHasChanged();
+        
+        await ChildAction.InvokeAsync(); 
+    }
+    
+    
+}

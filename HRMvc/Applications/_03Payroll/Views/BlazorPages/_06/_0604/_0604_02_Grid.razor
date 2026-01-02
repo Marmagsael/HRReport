@@ -1,0 +1,68 @@
+﻿@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+<!-- Deduction List -->
+<div class="w-100 p-0">
+    <div class="col">
+        <div class="p-1 text-white bg-secondary ">
+            <span>Deduction List</span>
+        </div>
+
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Account Name</th>
+                    <th class="w-100p text-end px-2">Amount</th>
+                    <th class="w-125p text-end px-2">Max Amount</th>
+                    <th class="w-50p">Status</th>
+                    <th class="w-50p text-center">P1</th>
+                    <th class="w-50p text-center">P2</th>
+                    <th class="w-50p text-center">P3</th>
+                    <th class="w-50p text-center">P4</th>
+                    <th class="w-50p text-center">P5</th>
+                    <th class="w-50p text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var d in V.Dedmandatorys!)
+            {
+                var fw = d?.Id == V.Dedmandatory?.Id ? " fw-bold " : ""; 
+                
+                <tr>
+                    <td>@d?.AcctName</td>
+                    <td class="@fw text-end">@d?.ContAmt.ToString("N")</td>
+                    <td class="@fw text-end">@d?.MaxAmt.ToString("N")</td>
+                    <td class="@fw text-center">@d?.Status</td>
+                    <td class="@fw text-center"><input @bind="@d!.P1B" disabled class="form-check-input" type="checkbox" id="prd1"></td>
+                    <td class="@fw text-center"><input @bind="@d!.P2B" disabled class="form-check-input" type="checkbox" id="prd2"></td>
+                    <td class="@fw text-center"><input @bind="@d!.P3B" disabled class="form-check-input" type="checkbox" id="prd3"></td>
+                    <td class="@fw text-center"><input @bind="@d!.P4B" disabled class="form-check-input" type="checkbox" id="prd4"></td>
+                    <td class="@fw text-center"><input @bind="@d!.P5B" disabled class="form-check-input" type="checkbox" id="prd5"></td>
+                    
+                    <td class="text-center"><button onclick="@(()=>SelectDedMandatory(d))" class="btn btn-sm btn-secondary">Select</button></td>
+                </tr>    
+            }
+            
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+@code {
+    
+    [Parameter] public V0604            V               { get; set; } = new(); 
+    [Parameter] public V00_Pay          V00             { get; set; } = new(); 
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+
+    async Task SelectDedMandatory(DedmandatoryModel d)
+    {
+        var msds = new MsdsDataAccess();
+        msds.ObjectMapper(d, V.Dedmandatory!); 
+        await ChildAction.InvokeAsync();
+    }
+    
+    
+
+}

@@ -1,0 +1,142 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._90_Utils.Interface
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using OfficeOpenXml.Packaging.Ionic.Zip
+@using HRApiLibrary.Models._10_Pis;
+
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRMvc.Applications._02HR._02Library
+
+
+@* **************************************************** *@
+@* --- Access Request --------------------------------- *@
+@if(VPay.Uc_acccessreqs?.Count > 0 )
+{
+    <div class="card w-100 p-2 text-secondary">
+        <div class="card-header fw-bold py-2 bg-success text-white bg-opacity-75">
+            <h6>Profile Access Request </h6>
+        </div>
+
+        <div class="card-body">
+
+            @* --- Header *@
+            <div class="w-100 d-flex fw-bold bordered-bottom">
+                <div class="w-20">Date/Time Requested</div>
+                <div class="w-50">Requesting Company</div>
+                <div class="w-30 d-flex gap-2"> Action </div>
+            </div>
+
+            @foreach (var uca in VPay.Uc_acccessreqs)
+            {
+                <div class="w-100 d-flex py-2">
+                    <div class="w-20">@uca!.Daterequested</div>
+                    <div class="w-50">@uca!.CompanyName </div> 
+
+                    @if (!uca.Selected)
+                    {
+                        <div class="w-30 d-flex gap-2">
+                            <button class="btn btn-success"   @onclick="@(()=>GrantAccess(uca))">Grant Access</button>
+                            <button class="btn btn-secondary" @onclick="@(()=>DenyAccess(uca))">Deny Access</button>
+                        </div>    
+                    }
+                </div>
+
+                if (!uca.Selected)  continue; 
+                <_Body_ProfileAccessRequest_Grant  VPay="@VPay"  Uca="@uca" ChildAction="ChildAction"/>
+
+            }
+
+        </div>
+    </div>
+}
+
+@inject I_00MainDA _main;
+@inject IEmpmovementDataAccess _empMovement;
+@inject NavigationManager _nav;
+@inject I_00UserscompanyDataAccess _uc;
+@inject IMsdsDataAccess _msds;
+
+
+
+@code {
+    [Parameter]
+    public UserClaimsModel?     UserClaims      { get; set; } = new();
+
+    [Parameter]
+    public V00_Pay              VPay            { get; set; } = new(); 
+
+
+
+
+    [Parameter]
+    public EventCallback        ChildAction {get; set; }
+
+    void ChildAction2()
+    {
+
+    }
+
+    private void GrantAccess(Uc_accessreqModel uca)
+    {
+        uca.Selected = true; 
+        StateHasChanged();
+    }
+
+    private async Task DenyAccess(Uc_accessreqModel uca){
+
+
+        var conn = VPay.UserClaims!.Conn;
+
+        var uc = await _uc._02(uca.Ucrequestingid);
+
+        var pisdb = uc?.PisSchema;
+
+        var empmovementLast = await _empMovement._02ByRefno(Convert.ToInt32(uca.Id), pisdb!, conn!);
+        var empMovement = new EmpmovementModel()
+            {
+                Date        = DateTime.Now,
+                Created     = DateTime.Now,
+                Dtls        = "Denied Invite",
+                EmpmasId    = empmovementLast?.EmpmasId ?? 0,
+                Mode        = "Deny",
+                Refno       = uca.Id.ToString(),
+                Userid      = UserClaims!.UserId
+            };
+
+
+        var res = await _empMovement._01(empMovement, pisdb!, conn!); // 1) Log history to EmpMovement\
+        if (res != null)
+        {
+            var uc_accessreq = new Uc_accessreqModel()
+            {
+                Id = uca.Id
+            };
+          
+            var res_uc_access =  await _main._03Uc_Access_Deny(uc_accessreq, "Main", conn); // 2) Update uc_accreq
+            VPay.Uc_acccessreqs = res_uc_access;
+
+        
+        }
+        
+
+        // ============================
+        // Send notification via email
+        var email = new EmailModel
+        {
+            Type = "Profile Denied",
+            Subject = $@"Profile Link Request Status for {uca.EmpmasFirstName}",
+            CompanyName = uca.CompanyName,
+            SenderName = uca.EmpmasFirstName,
+            SenderEmail = uca.EmpmasEmail,
+            RecipientName = uca.RequestorFirstName,
+            RecipientEmail = uca.RequestorEmail,
+        };
+
+        await _msds.SendEmail(email);
+    }
+
+
+    
+    
+}

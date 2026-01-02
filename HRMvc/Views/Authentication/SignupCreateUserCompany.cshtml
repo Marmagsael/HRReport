@@ -1,0 +1,240 @@
+﻿@model HRMvc.Models.Main.LoginSignUp.CreateUserCompanyUiModel
+@{
+    Layout = "~/Views/Shared/Authentication/_AuthenticationLayout.cshtml";
+
+    var userInfo = ViewData["UserInfo"];
+    var coName = ViewData["CoName"];
+    
+    var input = ViewData["input"]; 
+
+}
+
+@*---- MAIN HEADER ----*@
+<header class="main-hdr">
+    <nav class="navbar" aria-label="top-navbar">
+        <div class="container-fluid">
+            <a class="co-info">
+                <span class="co-logo"></span>
+                <p class="co-name">
+                    @if (coName != null)    { @coName }
+                </p>
+            </a>
+        </div>
+    </nav>
+</header>
+
+<div class="main-body signup-create-usercompany">
+    <div class="main-body-center ">
+        <div class="main-body-center-content">
+            @*----BODY HEADER ----*@
+            <div class="main-body-center-content-hdr">
+                <h1 class="page-title">Setup your information and your company profile</h1>
+                <p class="body-text-lg mt-2 text-center">Please enter the necessary details to set up your account with us.</p>
+            </div>
+        
+
+            @*---- FORM ----*@
+            <div class="main-body-center-content-body">
+
+            <form asp-action="SignupCreateUserCompanySave">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                    <input asp-for="UserId"     class="form-control" hidden />
+                    <input asp-for="LoginName"  class="form-control" hidden />
+                    <input asp-for="Password"   class="form-control" hidden />
+                    <input asp-for="Email"      class="form-control" hidden />
+
+                @*--- USER INFORMATION ---*@
+                <partial name="PartialView/SignupCreateUserCompany/_00UserInformation" />
+
+                @*--- COMPANY PROFILE ---*@
+                <partial name="PartialView/SignupCreateUserCompany/_00CompanyProfile" />
+
+                @*--- SUBMIT BUTTON ---*@
+                <div class="submit-btn b-pl-md-4">
+                    <input type="submit" value="Submit" class="btn b-btn-primary" />
+                </div>
+            </form>
+        </div>
+        </div>
+    </div>
+</div>
+
+<div id="main-footer">
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script type="text/javascript">
+        $(document).ready(async function () {
+            var countryList; 
+            var currencyList; 
+
+            var country     = $("#lstCountry");
+            var region      = $("#lstRegion");
+            var city        = $("#lstCity");
+            var currency    = $('#listCurrency');
+            var zipCode     = $('#tZipCode');
+
+            await fetchCountrylist(); 
+            await fetchCurrencylist();
+
+            //--- Country changed ---------------------------
+            country.change(function () {
+                //var dis = $("#lstCountry"); 
+                var countryId   = $(this).val();
+                var countryCode = document.querySelector("#lstCountry").selectedOptions[0].getAttribute("data-countryCode"); 
+
+                var currencyId = currencyList.filter(cl => cl.code.trim() == countryCode.trim()); 
+                
+                if (currencyId.length > 0 ) {
+                    
+                    currency.val(currencyId[0].id);
+                }
+
+
+                //console.log(document.getElementById("lstCountry").getAttribute("data-countryCode"));
+                //console.log(document.querySelector("#lstCountry").selectedIndex); 
+                //console.log(document.querySelector("#lstCountry").selectedOptions[0].getAttribute("data-countryCode"));
+
+
+
+                region.empty(); 
+                city.empty();
+
+                currency.val(countryId);
+
+                region.append('<option selected class="bg-light text-muted "  disabled value="-1">Select region</option>');
+                city.append('<option selected class="bg-light text-muted " disabled value="-1">Select city</option>');
+                
+                $.ajax({
+                    url: '_02ProvinceStateByCountryId/' + countryId,
+                    dataType: "json",
+                    method: 'GET',
+                    
+                    success: function (data) {
+                        $.each(data, function(i,data) {
+                            region.append('<option value="' + data.id + '">'+data.name+'</option>')
+                        })
+                    },
+                    error: function (err) {
+                        console.log(err);
+                    }
+                })
+
+
+
+            })
+
+            //--- Region changed ---------------------------
+            region.change(function () {
+                var regionId = $(this).val();
+
+                city.empty();
+                city.append('<option selected class="bg-light text-muted " disabled value="-1">Select city</option>');
+
+                $.ajax({
+                    url: '_02CityByRegionId/' + regionId,
+                    dataType: "json",
+                    method: 'GET',
+
+                    success: function (data) {
+
+                        console.log(data);
+
+                        $.each(data, function (i, data) {
+                            city.append('<option value="' + data.id + '">' + data.cityName + '</option>')
+                        })
+                    },
+                    error: function (err) {
+                        console.log(err);
+                    }
+                })
+            })
+
+
+            /******************************************************************************/
+            /*-----Functions--------------------------------------------------------------*/
+            /******************************************************************************/
+
+            async function fetchCountrylist() {
+                await $.ajax({
+                    url: '_02Country',
+                    dataType: "json",
+                    method: 'GET',
+                    
+                    success: function (data) {
+                        return countryList=data;             
+                    },
+                    error: function (err) {
+                        console.log(err);
+                    }
+                })
+            }
+
+            async function fetchCurrencylist() {
+                await $.ajax({
+                    url: '_02Currency',
+                    dataType: "json",
+                    method: 'GET',
+                    
+                    success: function (data) {
+                        return currencyList=data;             
+                    },
+                    error: function (err) {
+                        console.log(err);
+                    }
+                })
+            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //--- Currency ---------------------------------
+
+
+            //async function fetchCountry('_02Country','GET') {
+            //    var res = await doAjax()
+            //    //var money = res.rates.INR
+            //    //console.log(money)
+            //}
+
+
+            //var cl = doAjax("_02Country", "GET")
+            //console.log({ CL: cl});
+
+            //async function fetchCountry() {
+            //    var cl = await doAjax("_02Country","GET")
+                    
+            //}
+            
+
+            //async function doAjax(url, type) {
+            //    const result = await $.ajax({
+            //        url: url,
+            //        type: type,
+            //    });
+            //    return result;
+            //}
+
+
+
+
+        })
+    </script>
+
+
+ }

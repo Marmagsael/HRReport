@@ -1,0 +1,149 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+
+<div class="card shadow bordered-darkgreen mt-2 ">
+    <div class="card-header text-white fw-bold bg-success ">
+        EMPLOYEE DETAILS
+    </div>
+    @* ----- Employee Name  -------------*@
+    <div class="responsive-div mt-3 ">
+        <div class="w-100 h-25p ">
+            <label class="px-2">Employee Name</label>
+        </div>
+    </div>
+
+    <div class="responsive-div bordered-bottom">
+        <div class="container-fluid p-0">
+            <div class="row py-0 px-1">
+
+                <div class="col-12 col-md-3 col-lg-2 py-1 py-md-0">
+                    <div class="col-6 col-md-12 ">
+                        <RadzenTextBox Placeholder="XXXXX" class="w-100" @bind-Value="@empmasInternal!.EmpNumber" @onblur="FetchEmployee"  />
+                    </div>
+
+                </div>
+                <div class="col-12 col-md-8 col-lg-9 d-flex gap-2 py-1 py-md-0 px-md-0" >
+                    <div class="w-80 ">
+                        <RadzenTextBox Placeholder="Lastname, Firstname" class="w-100" @bind-Value="@empmasInternal!.Fullname"/>
+                    </div>
+                    <div class="w-20 py-1 ">
+                        <btn class="btn btn-secondary" @onclick="LocateEmployeeByName">Locate</btn>
+                    </div>
+
+
+
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex">
+        </div>
+
+    </div>
+
+    <div class="responsive-div bordered-bottom">
+        <div class="py-2">
+            <!-- Line 2 -->
+            <div class="w-100 d-flex p-1 pt-1">
+                <div class="p-2 w-125p">Emp. Status</div>
+                <div>
+                    <RadzenTextBox Disabled class="w-150p" @bind-Value="@empmasInternal.EmpStatus" />
+                </div>
+            </div>
+
+
+            <!-- Line 3 -->
+            <div class="w-100 d-flex px-1">
+                <div class="p-2 w-125p">Payroll Group</div>
+                <div class="">
+                    <RadzenTextBox Disabled class="w-300p" @bind-Value="@empmasInternal.PayrollGrp" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if(showEmplist && empmasInternals.Count > 0) 
+    {  <div class="w-100 px-1">  <_06000_EmpInfo_01_SearchResult empmasInternals="@empmasInternals" SelEmployee="HandleEmployeeSelect" Close="CloseModule" /> </div>     }
+
+    @* <div>V00.UserClaims.SchemaUserPis : @V00.UserClaims.SchemaUserPis </div> *@
+
+</div>
+
+@inject IEmpmasInternalDataAccess _ei;
+
+@code {
+
+    string?     paydb           = string.Empty;
+    string?     pisdb           = string.Empty; 
+    string?     conn            = string.Empty; 
+
+    string      empnumber       = string.Empty; 
+    bool        showEmplist     = false; 
+
+    List<EmpmasInternalModel?>?     empmasInternals = []; 
+    EmpmasInternalModel?            empmasInternal  = new(); 
+
+
+    [Parameter] public V00_Pay?                                 V00                 { get; set; } = new();
+    [Parameter] public EventCallback                            ChildAction         { get; set; }
+    [Parameter] public EventCallback<EmpmasInternalModel?>      HandlChangeEmpmas   { get; set; }
+
+
+    async void FetchEmployee()
+    {
+        var empnumber = empmasInternal?.EmpNumber;
+        empmasInternal = new EmpmasInternalModel();
+        if (empnumber?.Length < 1) return;
+
+        empmasInternal.EmpNumber = empnumber;
+        var ei = await _ei._02byEmpnumber(empnumber??"-1",pisdb!, paydb!, conn!);
+        if (ei?.Count > 0)
+        {
+            empmasInternal = ei.FirstOrDefault();
+            showEmplist = false; 
+            await HandlChangeEmpmas.InvokeAsync(empmasInternal); 
+        }
+        else
+        {
+            var newEi = new EmpmasInternalModel(); 
+            await HandlChangeEmpmas.InvokeAsync(newEi);
+        }
+        StateHasChanged(); 
+    }
+    
+    private void HandleEmployeeSelect(EmpmasInternalModel emp)
+    {
+        empmasInternal  = emp; 
+        showEmplist     = false;
+        HandlChangeEmpmas.InvokeAsync(emp); 
+    }
+    
+    async Task LocateEmployeeByName()
+    {
+        var fullname = empmasInternal?.Fullname ?? ""; 
+        var res         = await _ei._02FilterByName(fullname, pisdb??"", paydb??"", conn??"");
+        empmasInternals = [];
+        if(res?.Count > 0 ) empmasInternals = res; 
+        showEmplist = true;
+
+        StateHasChanged();
+    }
+    void CloseModule()              {   showEmplist =false;     }
+
+
+    protected override async void OnParametersSet()
+    {
+        SetVariables1();
+    }
+
+    void SetVariables1()
+    {
+        if (V00?.UserClaims == null) return;
+
+        paydb   = V00.UserClaims.SchemaUserPay;
+        pisdb   = V00.UserClaims.SchemaUserPis;
+        conn    = V00.UserClaims.Conn;
+    }
+}
+    

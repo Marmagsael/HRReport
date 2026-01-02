@@ -1,0 +1,139 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._02HR.Views.BlazorPages._00Library
+
+
+<div> 
+
+    <RadzenDataGrid Data="@v227!.Leavetypes"
+                    TItem="LeavetypeModel"
+                    @ref="ltsGrid"
+                    EditMode="DataGridEditMode.Single"
+                    AllowSorting=true
+                    AllowPaging=false
+                    PageSize="15"
+                    PageSizeOptions=@(new int[]{15, 20, 30})
+                    ColumnWidth="100%">
+
+        <Columns>
+            <RadzenDataGridColumn 
+                TItem="LeavetypeModel" 
+                Title="Action"
+                Context="LeavetypeModel" 
+                TextAlign="TextAlign.Center" 
+                Frozen="true" Width="120px"  >
+
+                <Template Context="lt">
+                    <RadzenButton Icon="edit"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => EditRow(lt))"
+                                  @onclick:stopPropagation="true">
+                    </RadzenButton>
+
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.Small"
+                                  Click="@(args => DeleteRow(lt))"
+                                  class="my-1 ms-1"
+                                  @onclick:stopPropagation="true">
+                    </RadzenButton>
+
+                </Template>
+
+                <EditTemplate Context="lt">
+
+                    <RadzenButton Icon="check"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Variant="Variant.Flat"
+                                  Size="ButtonSize.Small"
+                                  Click="@((args) => SaveRow(lt))">
+                    </RadzenButton>
+
+                    <RadzenButton Icon="close"
+                                  ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Flat"
+                                  Click="@((args) => CancelEdit(lt))"
+                                  Size="ButtonSize.Small" class="my-1 ms-1">
+                    </RadzenButton>
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                  Icon="delete"
+                                  Variant="Variant.Flat"
+                                  Shade="Shade.Lighter"
+                                  Size="ButtonSize.ExtraSmall"
+                                  Click="@(args => DeleteRow(lt))"
+                                  class="my-1 ms-1">
+                    </RadzenButton>
+                </EditTemplate>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="LeavetypeModel" Property="Id" Title="Id" Width="75px" Frozen="true" TextAlign="Radzen.TextAlign.Center" />
+            <RadzenDataGridColumn TItem="LeavetypeModel" Property="Code" Title="Code" Width="75px" />
+            <RadzenDataGridColumn TItem="LeavetypeModel" Property="LeaveName" Title="Name" />
+
+
+        </Columns>
+
+    </RadzenDataGrid>
+
+
+</div>
+
+@using HRMvc.Applications._02HR._02Library;
+
+@inject ILeavetypeDataAccess _leaveType; 
+
+@code {
+
+    [Parameter]
+    public V02?     V02 {get;set;} = new(); 
+
+    List<LeavetypeModel?>?              ltsToInsert     = new(); 
+    List<LeavetypeModel?>?              ltsToUpdate     = new();
+
+    V227        v227 = new(); 
+    RadzenDataGrid<LeavetypeModel?>?    ltsGrid         = new();
+
+    protected async override void OnInitialized()
+    {
+        if(V02==null ) return; 
+        v227.Leavetypes = await _leaveType._02(V02.Pisdb!,V02.Conn!);
+        StateHasChanged(); 
+    }
+
+    void Reset()
+    {
+        ltsToInsert!.Clear();
+        ltsToUpdate!.Clear(); 
+    }
+
+    async void EditRow(LeavetypeModel lt)
+    {
+        if (ltsGrid != null)
+        {
+            Reset();
+            ltsToUpdate?.Add(lt);
+            await ltsGrid.EditRow(lt);
+        }
+
+    }
+
+    async void DeleteRow(LeavetypeModel lt)
+    {
+        await ltsGrid!.Reload();
+    }
+
+    void SaveRow(LeavetypeModel lt)
+    {
+
+    }
+
+    void CancelEdit(LeavetypeModel lt)
+    {
+        
+    }
+}
+    

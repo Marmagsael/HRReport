@@ -1,0 +1,149 @@
+﻿@using HRApiLibrary.DataAccess._00_Login.Interface;
+@using HRMvc.Models.Pis;
+@using HRApiLibrary.DataAccess._00_Main.Interface;
+@inject IHttpClientFactory _factory;
+
+@inject I_00MainPisAccess       _mainPis;
+@inject I_00_001_LoginAccess    _login;
+
+
+<h2 class="form-section-caption mt-0">Uploadables</h2>
+
+<EditForm Model="empmasClearancePhUi" OnSubmit="@HandleSubmit">
+    @*SAVE BUTTON*@
+    <div class="form-section-action">
+        <input type="submit" value="Save Info" class="btn b-btn-primary" />
+    </div>
+
+    <div class="row b-row">
+        @*********************************************************************************************@
+        @*******  Left Column ************************************************************************@
+        @*********************************************************************************************@
+        <div class="col-xl-5">
+            <div class="form-group d-md-flex ">
+                <label for="clearance-nbi" class="control-label">NBI Expiration</label>
+                <RadzenDatePicker ID="clearance-nbi" @bind-Value="empmasClearancePhUi!.Nbi_Exp"></RadzenDatePicker>
+            </div>
+
+            <div class="form-group d-md-flex ">
+                <label for="clearance-police" class="control-label">Police Expiration</label>
+                <RadzenDatePicker ID="clearance-police" @bind-Value="empmasClearancePhUi.Police_Exp"></RadzenDatePicker>
+            </div>
+            <div class="form-group d-md-flex ">
+                <label for="clearance-pnp" class="control-label">PNP Expiration</label>
+                <RadzenDatePicker ID="clearance-pnp" @bind-Value="empmasClearancePhUi.Pnp_Exp"></RadzenDatePicker>
+            </div>
+
+            <div class="form-group d-md-flex ">
+                <label for="clearance-brgy" class="control-label">Barangay Expiration</label>
+                <RadzenDatePicker ID="clearance-brgy" @bind-Value="empmasClearancePhUi.Brgy_Exp"></RadzenDatePicker>
+            </div>
+        </div>
+
+        <div class="col-xl-5">
+            <div class="form-group d-md-flex ">
+                <label for="clearance-neuro" class="control-label">Neuro Expiration</label>
+                <RadzenDatePicker ID="clearance-neuro" @bind-Value="empmasClearancePhUi.Neuro_Exp"></RadzenDatePicker>
+            </div>
+
+            <div class="form-group d-md-flex ">
+                <label for="clearance-drugtest" class="control-label">Drugtest Expiration</label>
+                <RadzenDatePicker ID="clearance-drugtest" @bind-Value="empmasClearancePhUi.Drug_Exp"></RadzenDatePicker>
+            </div>
+
+            <div class="form-group d-md-flex ">
+                <label for="clearance-court" class="control-label">Court Expiration</label>
+                <RadzenDatePicker ID="clearance-drugtest" @bind-Value="empmasClearancePhUi.Court_Exp"></RadzenDatePicker>
+            </div>
+
+            <div class="form-group d-md-flex ">
+                <label for="clearance-court" class="control-label">Medical</label>
+            </div>
+
+        </div>
+
+    </div>
+</EditForm>
+
+@code {
+    private HttpClient? client;
+
+    [Parameter]
+    public UserClaimsModel? userClaims { get; set; }
+    private EmpmasClearancePhModel? empmasClearancePhModel { get; set; }
+    private EmpmasclearancephUiModel? empmasClearancePhUi = new();
+    private DateTime parsedDate = DateTime.Parse("Jan 1, 0001");
+
+    protected async override Task OnParametersSetAsync()
+    {
+        Int32 userId = (Int32)userClaims!.UserId!;
+        string userName = userClaims?.UserName!;
+
+        string token = await _login.CreateToken(userId, userName);
+
+        client = _factory.CreateClient("api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("JWT", token);
+
+        empmasClearancePhUi!.Id = 0;
+
+        try
+        {
+            empmasClearancePhModel = await client.GetFromJsonAsync<EmpmasClearancePhModel>
+                ("HR_00_003Empmas/02EmpmasClearancePh/" + userId + "/MainPis/MySqlConn");
+            if (empmasClearancePhModel is not null)
+            {
+                empmasClearancePhUi.Id = empmasClearancePhModel.Id;
+                empmasClearancePhUi.Brgy_Exp = empmasClearancePhModel.Brgy_Exp;
+                empmasClearancePhUi.Pnp_Exp = empmasClearancePhModel.Pnp_Exp;
+                empmasClearancePhUi.Court_Exp = empmasClearancePhModel.Court_Exp;
+                empmasClearancePhUi.Drug_Exp = empmasClearancePhModel.Drug_Exp;
+                empmasClearancePhUi.Nbi_Exp = empmasClearancePhModel.Nbi_Exp;
+                empmasClearancePhUi.Neuro_Exp = empmasClearancePhModel.Neuro_Exp;
+                empmasClearancePhUi.Police_Exp = empmasClearancePhModel.Police_Exp;
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        Int32 userId = (Int32)userClaims?.UserId!;
+        string userName = userClaims?.UserName!;
+
+        string token = await _login.CreateToken(userId, userName);
+
+        client = _factory.CreateClient("api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("JWT", token);
+
+        if (empmasClearancePhUi!.Id == 0)
+        {
+            try
+            {
+                empmasClearancePhUi.Id = userId;
+                var resAdd = await client.PostAsJsonAsync<EmpmasclearancephUiModel>
+                    ("HR_00_003Empmas/01EmpmasClearancePh/MainPis/MySqlConn", empmasClearancePhUi);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        }
+        else
+        {
+            try
+            {
+                var resUpdate = await client.PutAsJsonAsync<EmpmasclearancephUiModel>
+                    ("HR_00_003Empmas/03EmpmasClearancePh/" + userId + "/MainPis/MySqlConn", empmasClearancePhUi);
+            }
+            catch (Exception ex)
+            {
+                // 
+            }
+        }
+
+    }
+}

@@ -1,0 +1,77 @@
+﻿@using HRMvc.Models.Authentication;
+@model LoginUiModel
+
+@{
+    Layout = $"~/Views/Shared/Login/_Login.cshtml";
+
+    var coName          = ViewData["CoName"] as string;
+    var errServerMsg    = ViewData["errServerMsg"] as string;
+    var errEmpNoMsg     = ViewData["errEmpNoMsg"] as string;
+    var errPasswordMsg  = ViewData["errPasswordMsg"] as string;
+}
+
+<div class="auth-wrapper">
+    <div class="auth-content">
+        @*---- HEADER ----*@
+        <div class="auth-content-hdr-wrapper place-items-center-col">
+            <img class="auth-content-hdr-logo" src="/images/gsia-logo.png" />
+            <h3 class="auth-content-hdr-text page-title">Company Name</h3>
+        </div>
+
+        @*---- ALERT MESSAGE FOR SERVER ERROR ----*@
+        @if (@errServerMsg != null)
+        {
+            <div class="b-alert-msg  alert-danger  " role="alert">
+                <span class="alert">@errServerMsg</span>
+            </div>
+        }
+        <form action="/login" method="Post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @*---- EMPLOYEE NUMBER ----*@
+            <div class="form-group">
+                <label asp-for="EmpNumber" class="control-label"></label>
+                <input asp-for="EmpNumber" class="form-control" />
+                <span asp-validation-for="EmpNumber" class="err-input-msg text-danger"></span>
+                @if (errEmpNoMsg != null)
+                {
+                    <span class="err-input-msg text-danger">@errEmpNoMsg</span>
+                }
+            </div>
+            @*---- PASSWORD ----*@
+            <div class="form-group">
+                <label class="control-label">Password</label>
+                <input class="form-control" type="password" name="Password" />
+                @if (errPasswordMsg != null)
+                {
+                    <span class="err-input-msg text-danger">@errPasswordMsg</span>
+                }
+            </div>
+
+            @*---- LOGIN BUTTON ----*@
+            <div class="form-group mb-0">
+                <input type="submit" value="Login" class="btn b-btn-primary w-100 mt-2" />
+            </div>
+        </form>
+
+        <div class="divider-wrapper place-items-center-row">
+            <hr class="divider" /> <span class="body-text-md">or</span> <hr class="divider" />
+        </div>
+
+        @*---- LOGIN WITH GOOGLE BUTTON ----*@
+        <a asp-controller="Login" asp-action="SignInWithGoogle" class="btn b-btn-outline-secondary  w-100 place-items-center-row btn-signin-google">
+            <img src="/images/google-logo.png" />
+            <span>Login with Google</span>
+        </a>
+
+        @*---- REGISTER LINK ----*@
+        <div class="auth-action-link body-text-md mb-sm-4">Don't have an account? <a asp-controller="Login" asp-action="Register" class="link-primary fw-bold">Register with Employee Number</a></div>
+
+        <div class="auth-content-footer body-text-md ">© 2023 All Rights Reserved.</div>
+    </div>
+</div>
+
+@* @section Scripts { *@
+@*     @{ *@
+@*         await Html.RenderPartialAsync("_ValidationScriptsPartial"); *@
+@*     } *@
+@* } *@

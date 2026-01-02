@@ -1,0 +1,123 @@
+﻿@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+
+<div class="card shadow bordered-darkgreen mt-2 ">
+    <div class="card-header text-white fw-bold bg-success ">
+        Attendance Entry
+    </div>
+    
+    <!-- Buttons -->
+    <div class="bordered-bottom bg-dark bg-opacity-10 px-2 py-1 ">
+        <button class="btn btn-primary btn-sm">New</button>
+        <button class="btn btn-secondary btn-sm">Show Entry</button>
+        <button class="btn btn-secondary btn-sm">Post</button>
+    </div>
+
+    <div class="p-2 bordered-bottom w-100">
+        <_00_PayrollgrpComponent Payrollgrps="@V.Payrollgrps" PayrollgrpChanged="PayrollgrpChanged" />
+    </div>
+
+    <div class="w-100 p-2">
+        
+        @*------  Start  -----------------*@
+        <div class="d-flex">
+            <div class="w-125p p-2 ">Coverage Start </div>
+            <div class="w-175p ">
+                <RadzenDatePicker @bind-Value="@V.Dstart" DateFormat="MM / dd / yyyy " Name="dateOccur_dt"/>
+            </div>
+        </div>
+        
+        @*------  End  -----------------*@
+        <div class="d-flex py-2">
+            <div class="w-125p p-2 ">Coverage End </div>
+            <div class="w-175p ">
+                <RadzenDatePicker @bind-Value="@V.Dend" DateFormat="MM / dd / yyyy " Name="dateOccur_dt"/>
+            </div>
+        </div>
+        
+    </div>
+    
+</div>
+
+
+<div class="overflow-auto mt-2">
+    <table class="table table-sm  table-striped">
+        <thead>
+        <tr>
+            <th scope="col"  style="resize: none; width: 200px; position: sticky; left: 0; background-color: white;  " >Name</th>
+
+            @if (V is { Dstart: not null, Dend: not null })
+            {   if (V.Dstart <= V.Dend)
+                {
+                    var daysCnt = ((DateTime)V.Dend - (DateTime)V.Dstart).Days;
+                    if (daysCnt > 31)
+                    {
+                        <th scope="col" class="bordered p-2 text-danger " style="resize: none; width: 95%; " >
+                            Date Query must not exceeds 31 days. 
+                        </th>
+                    }
+                    else
+                    {
+                        var ds = new DateTime(V.Dstart?.Year??2025, V.Dstart?.Month??1, V.Dstart?.Day??1);
+                        for (var d = ds; d <= V.Dend; d = d.AddDays(1))  {
+                            <th scope="col" class="bordered p-2" style="resize: none; width: 200px; " >
+                                @d.ToString("MM/dd")
+                            </th>
+                        }
+                    }
+                }
+            }
+        </tr>
+        </thead>
+        
+        <tbody>
+        <tr>
+            <td class="w-175p"  style="resize: none; position: sticky; left: 0; background-color: white;  ">
+                <input type="text" disabled value="Jose Abad Santos"/>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+
+</div>
+
+
+
+<div class="mt-2 w-100 " style="">
+    <div class="fw-bold b-red " style="overflow-x: auto; overflow-y: auto; display: flex; background-color: white; ">
+        <div class="px-2 py-1 bordered" style="resize: none; width: 200px; position: sticky; left: 0; background-color: white;  ">
+            Name
+        </div>
+        
+        @if (V is { Dstart: not null, Dend: not null })
+        {   if (V.Dstart <= V.Dend)             {
+                var ds = new DateTime(V.Dstart?.Year??2025, V.Dstart?.Month??1, V.Dstart?.Day??1); 
+                for (var d = ds; d < V.Dend; d = d.AddDays(1))  {
+                    <div class="bordered p-2" style="width: 175px; ">
+                        @d.ToString("MM/dd")
+                    </div>
+                }
+            }
+        }
+        
+    </div>
+</div>
+
+
+
+@code {
+    
+    [Parameter] public V00_Pay          V00             { get; set; } = new();
+    [Parameter] public V0601            V               { get; set; } = new();
+    [Parameter] public EventCallback    ChildAction     { get; set; }
+
+    
+    async void PayrollgrpChanged(int pgrpId)
+    {
+        V.Payrollentry!.PayrollgrpId = pgrpId; 
+        await ChildAction.InvokeAsync(); 
+    }
+
+}

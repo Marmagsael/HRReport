@@ -1,0 +1,50 @@
+﻿
+<div class="w-100" >
+
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link msds-pointer @activeEarnings"     @onclick="@(()=>ActiveAcct("E"))" >Employee Earnings</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link msds-pointer @activeGrpEarnings" @onclick="@(()=>ActiveAcct("GE"))">Group Earnings</a>
+        </li>
+
+    </ul>
+</div>
+
+@code {
+    string activeEarnings       = "active";
+    string activeGrpEarnings    = ""; 
+    
+    [Parameter]
+    public V0602?   V0602       { get; set;  }
+    
+    
+    [Parameter]
+    public EventCallback    ChildAction  {get; set; }
+    
+    public async void ActiveAcct(string acct) {
+        
+        switch(acct) {
+            case "E": 
+                activeEarnings="active"; 
+                activeGrpEarnings="";
+                V0602!.ViewMode = "FixedEarnings"; 
+                break ; 
+
+
+            case "GE":
+                activeEarnings=""; 
+                activeGrpEarnings="active";
+                V0602!.ViewMode = "GroupEarnings"; 
+                break; 
+
+            default :
+                break; 
+        }
+        
+        await ChildAction.InvokeAsync(); 
+
+    }
+
+}

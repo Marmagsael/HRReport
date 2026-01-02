@@ -1,0 +1,300 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+
+
+
+@if (showBtn)
+{
+    <div class="p-2" style="border-bottom: 1px solid gray; ">
+        <btn class="btn btn-sm btn-secondary" onclick="@(()=>ShowHideAdd(false))">+</btn>
+    </div>
+}
+else
+{
+    <div>
+        @* *** Button  *@
+        <div class="w-100 d-flex gap-1 p-2 _227-bordered-bottom">
+            <input type="button" class="btn btn-secondary btn-sm" value="Save" />
+            <input type="button" class="btn btn-secondary btn-sm" value="Cancel" onclick="@(()=>ShowHideAdd(true))" />
+        </div>
+
+        @* *** Search Hdr caption  *@
+        <div class="w-100 mb-1" style="padding: 0 5px; ">
+            <div class="d-flex ">
+                <div class="fw-bold" style="width:80%">Name</div>
+                <div class="fw-bold" style="width:20%">Action</div>
+            </div>
+        </div>
+        @* *** Search Fields  *@
+        <div class="w-100" style="padding:0 5px">
+            <div class="d-flex ">
+                <div style="width:75%; padding: 0 2px">
+                    <input type="text" class="form-control  form-control-sm w-100" @bind-value="skey" />
+                </div>
+                <div style="width:25%">
+                    @* <button class="btn btn-sm btn-secondary" @onclick="@(()=>SearchName(skey)" >Search</button >*@
+                     <button onclick="@(()=>SearchName(skey))"  class="btn btn-sm btn-secondary">Search</button>
+                </div>
+            </div>
+        </div>
+
+        @* *** Search Result  *@
+        @if(empmasSearch?.Count > 0)
+        {
+            <div class="w-100 mb-1" style="padding: 0 5px; ">
+                <div class="w-100 p-2 mt-1" style="border: 1px solid gray; background-color:azure; border-radius: 3px; ">
+                    @foreach (var empmas in empmasSearch)
+                    {
+                        <div class="d-flex p-1">
+                            <div style="width:80%">@empmas?.Fullname</div>
+                            <div style="width:20%">
+                                <button onclick="@(()=>AddApprover(empmas!))" class="btn btn-sm btn-secondary">Add</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+            </div>
+        }
+        
+
+
+    </div>
+}
+
+<style>
+    ._227_02-dlsa-edit {
+        padding : 5px; 
+        cursor: pointer; 
+    }
+    ._227_02-dlsa-edit:hover {
+        color:blue;
+        text-shadow: 1px 1px lightgray;
+    }
+    ._227_02-dlsa-del {
+        padding : 5px; 
+        color:red; 
+        cursor: pointer;
+    }
+    ._227_02-dlsa-del:hover {
+            color: rgba(100,0,100, 1);
+            text-shadow: 1px 1px rgba(100,0,100, .4);
+    }
+
+</style>
+
+<div class="p-1 ">
+    <div class="p-1 _227-bordered fw-bold" style="background-color:aliceblue">Name</div>
+</div>
+
+<div class="w-100 mb-1" style="padding: 0 5px; ">
+    <div class="w-100 p-2 mt-1" style="border: 1px solid gray; background-color:azure; border-radius: 3px; ">
+
+        @if(leavedefaultapprovers?.Count < 1)
+        {
+            <div>No assigned approver in this category.  </div>
+        }
+
+        @foreach (var lda in leavedefaultapprovers!)
+        {
+            if(lda!.IsVisible==true)
+            {
+                <div class="d-flex p-1">
+                    <div style="width:80%">
+                        <div class="w-100">
+                            @lda?.Fullname
+                        </div>
+
+                        <div class="w-100 text-muted">
+                            @lda?.Designation
+                        </div>
+
+                    </div>
+                    <div class="d-flex gap-1" style="width:20%">
+                        <btn onclick="@(()=>ShowHideDtl(lda!,false))" class="_227_02-dlsa-edit">Edit</btn>
+                        <btn onclick="@(()=>_04(lda!))" class="_227_02-dlsa-del">Del</btn>
+                    </div>
+                </div>
+            } 
+            else
+            {
+                <div class="d-flex p-1">
+                    <div style="width:80%">
+                        <div class="w-100">
+                            @lda?.Fullname
+                        </div>
+
+                        <div class="w-100 text-muted">
+                            <input class="form-control form-control-sm w-100" type="text" @bind-value="lda!.Designation" />
+                        </div>
+
+                    </div>
+                    <div class="d-flex gap-1" style="width:20%">
+                        @* <btn class="_227_02-dlsa-edit" onclick="@(()=>_03(lda)">Save</btn> *@
+                        <btn onclick="@(()=>_03(lda!))" class="_227_02-dlsa-edit">Save</btn>
+                        <btn onclick="@(()=>ExitUpdate(lda!))" class="_227_02-dlsa-del">Exit</btn>
+                    </div>
+                </div>
+            }
+
+
+
+        }
+    </div>
+</div>
+
+
+@* @foreach (var l in ldaDefaultData)
+{
+    <div>ID : @l.Id **** @l.Designation *** @l.Fullname </div>
+    
+} *@
+
+@inject NotificationService                 _NotificationService;
+@inject DialogService                       _DialogService;
+
+@inject IEmpmasInternalDataAccess           _empmas; 
+@inject ILeavedefaultapproverDataAccess     _leavedefaultapprover; 
+
+@code {
+
+    bool showBtn = true; 
+
+    bool showBtn1 = true;
+    bool showBtn2 = true;
+    bool showBtn3 = true;
+
+    [Parameter]
+    public UserClaimsModel      UserClaims      { get; set; } = new();
+
+    [Parameter]
+    public int                  ApproverLevel   { get; set; } = 1;
+
+
+    string?     pisdb   = string.Empty;
+    string?     paydb   = string.Empty;
+    string?     conn    = string.Empty;
+
+
+    string?                             skey                    = string.Empty;
+    List<EmpmasInternalModel?>?         empmasSearch            = new();
+    List<LeavedefaultapproverModel?>?   leavedefaultapprovers   = new(); 
+    List<LeavedefaultapproverModel>     ldaDefaultData          = new(); 
+    // List<EmpmasInternalModel?>? empmas = new();
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb   = UserClaims.SchemaUserPis;
+        paydb   = UserClaims.SchemaUserPay;
+        conn    = UserClaims.Conn;
+
+        if (conn    == null) return;
+        if (pisdb   == null) return;
+        if (paydb   == null) return;
+
+        leavedefaultapprovers = await _leavedefaultapprover._02ByLvl(ApproverLevel,pisdb,conn); 
+        StateHasChanged(); 
+
+    }
+
+
+    void ShowHideAdd(bool ans)
+    {   showBtn = ans; }
+
+    void ShowHideDtl(LeavedefaultapproverModel lda, bool ans)
+    {   
+        if(ans==false)
+        {   
+            ldaDefaultData.Add(new()
+            {
+                Id          = lda.Id, 
+                Fullname    = lda.Fullname,
+                Designation = lda.Designation,
+                EmpmasId    = lda.EmpmasId,
+                IsVisible   = lda.IsVisible,
+                Lvl         = lda.Lvl
+            }); 
+        }
+
+        lda.IsVisible = ans; StateHasChanged(); 
+
+    }
+
+
+    async void SearchName(string name)
+    {
+        empmasSearch=new(); 
+        if (name.Trim().Length < 1) return; 
+
+        empmasSearch = await _empmas._02FilterByName(name, ApproverLevel, pisdb!, conn!);
+        StateHasChanged(); 
+    }
+
+    async void AddApprover(EmpmasInternalModel empmas)
+    {
+        string lvl = "1st "; 
+        if(ApproverLevel == 2 ) lvl = "2nd "; 
+        if(ApproverLevel == 3 ) lvl = "3rd "; 
+
+        LeavedefaultapproverModel lda = 
+                new() 
+                {
+                    EmpmasId    = empmas.Id, 
+                    Lvl         = ApproverLevel, 
+                    Designation = $"{lvl}Approver"
+                }; 
+
+        await _leavedefaultapprover._01(lda,pisdb!, conn!); 
+        leavedefaultapprovers = await _leavedefaultapprover._02ByLvl(ApproverLevel, pisdb!, conn!);
+
+        skey = string.Empty;
+        empmasSearch = new(); 
+
+        StateHasChanged();
+
+    }
+
+    void ExitUpdate(LeavedefaultapproverModel lda)
+    {
+        ShowHideDtl(lda!, true);
+        var res = ldaDefaultData.Find(l => l.Id == lda.Id);
+        if (res != null)
+        {
+            lda.Designation = res.Designation;
+            ldaDefaultData.Remove(lda);
+        }
+    }
+
+    async void _03(LeavedefaultapproverModel lda) {
+        if (pisdb==null || conn==null) return; 
+        await _leavedefaultapprover._03(lda.Id, lda,pisdb,conn); 
+        lda.IsVisible = true; 
+        ldaDefaultData.Remove(lda); 
+
+        StateHasChanged(); 
+    }
+
+    
+    //-- Delete Row ----------------
+    async Task _04(LeavedefaultapproverModel lda)
+    {
+        if (pisdb == null || conn == null) return;
+        if(leavedefaultapprovers == null) return; 
+        
+        if (leavedefaultapprovers.Contains(lda))
+        {
+            
+            var option = await _DialogService.Confirm("Delete " + lda?.Fullname + "?", "Confirm Delete",
+                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+            
+            if (option == true)
+            {
+                await _leavedefaultapprover._04(lda!.Id, pisdb!, conn!);
+                leavedefaultapprovers.Remove(lda);
+                StateHasChanged(); 
+            }
+        }
+    }
+
+}

@@ -1,0 +1,429 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface;
+@using HRMvc.Models.Pis
+@using Microsoft.AspNetCore.Components;
+
+@inject I_00MainPisAccess _mainPis
+@inject NotificationService NotificationService
+
+<RadzenNotification />
+
+<h2 class="form-section-caption mt-0">Personal Data</h2>
+
+<RadzenTemplateForm TItem="EmpmasPIModel" Data="@empmaspi" Submit="SaveData">
+    <div class="form-section-action">
+        <RadzenButton ButtonType="Radzen.ButtonType.Submit" Text="Save Info" />
+    </div>
+
+    <RadzenAlert AlertStyle="AlertStyle.Danger" ShowIcon="false" Variant="Variant.Flat" Shade="Shade.Lighter" class="@(errorMsg != string.Empty ? "d-flex mt-2 mb-2" : "d-none mt-2 mb-2")">
+        @errorMsg
+    </RadzenAlert>
+
+    <RadzenStack>
+        <RadzenRow Gap="8rem">
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenStack Gap="1REM">
+
+                    @*--- Date of Birth ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Date of Birth" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDatePicker @bind-Value="empmaspi.EmpBirth" DateFormat="MM/dd/yyyy" class="w-100" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Place of Birth ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Place of Birth" Component="BirthPlace"/>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox style="display: block" Name="BirthPlace" @bind-Value="empmaspi.BirthPlace" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="BirthPlace" Max="75" Text="Birth place should be at most 75 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Gender ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Gender" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="empmaspi.Sex_" Data="genders" TextProperty="Description" Placeholder="Select a Gender"
+                                ValueProperty="Code" class="w-100" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Civil Status ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Civil Status" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenDropDown @bind-Value="empmaspi.CivStat_" Data="civilStatuses" Placeholder="Select a Civil Status"
+                                TextProperty="Description" ValueProperty="Code" class="w-100">
+
+                            </RadzenDropDown>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Citizenship ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Citizenship" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Citizen" Name="Citizen" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Citizen" Max="15" Text="Citzenship should be at most 15 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Religion ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Religion" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Religion" Name="Religion" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Religion" Max="35" Text="Religion should be at most 35 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Height ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Height" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenStack>
+                                <RadzenRow Gap="2REM">
+                                    <RadzenColumn Size="6">
+                                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                            Gap=".5REM">
+                                            <RadzenNumeric @bind-Value="empmaspi.Height" class="w-100" /> <span>
+                                                ft</span>
+                                        </RadzenStack>
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="6">
+                                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                            Gap=".5REM">
+                                            <RadzenNumeric @bind-Value="empmaspi.HeightInch" class="w-100" /> <span>
+                                                inches</span>
+                                        </RadzenStack>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Weight ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Weight" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="6" SizeMD="4">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center"
+                                Gap=".5rem">
+                                <RadzenNumeric @bind-Value="empmaspi.Weight" class="w-100" /> <span> lbs</span>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenColumn>
+            
+            
+            <RadzenColumn Size="12" SizeMD="6">
+                <RadzenStack Gap="1REM">
+
+                    @*--- Hair ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Hair" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Hair" Name="Hair" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Hair" Max="15" Text="Hair should be at most 15 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Eye Color ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Eye Color" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Eyes" Name="Eyes" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Eyes" Max="15" Text="Eyes should be at most 15 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Complexion ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Complexion" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Complexion" Name="Complexion" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Complexion" Max="10" Text="Complexion should be at most 10 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Marks ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Marks" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Marks" Name="Marks" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Marks" Max="60" Text="Marks should be at most 60 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Blood Type ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Blood Type" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.BloodType" Name="BloodType" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="BloodType" Max="10" Text="Blood Type should be at most 10 characters" Popup="true" Style="position: absolute" />
+
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Spouse ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Spouse" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Spouse" Name="Spouse" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Spouse" Max="25" Text="Spouse should be at most 25 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- Occupation ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="Occupation" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenTextBox @bind-Value="empmaspi.Occupation" Name="Occupation" class="w-100 d-block" />
+                            <RadzenLengthValidator Component="Occupation" Max="75" Text="Occupation should be at most 75 characters" Popup="true" Style="position: absolute" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    @*--- No. of Children ---*@
+                    <RadzenRow>
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="No. of Children" />
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="6" SizeMD="3">
+                            <RadzenNumeric @bind-Value="empmaspi.NoChildren" class="w-100" />
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenStack>
+</RadzenTemplateForm>
+
+
+
+
+
+
+@code {
+
+
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+
+    //-- Initialization ----------------
+    EmpmasPIModel empmaspi = new();
+
+    string? errorMsg = string.Empty;
+    int userId = 0;
+
+    List<GenderModel> genders = new();
+    List<CivilStatusModel> civilStatuses = new();
+
+    public class GenderModel
+    {
+        public string Code          { get; set; } = string.Empty;
+        public string Description   { get; set; } = string.Empty;
+    }
+
+    public class CivilStatusModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb   = UserClaims.SchemaUserPis;
+        paydb   = UserClaims.SchemaUserPay;
+        conn    = UserClaims.Conn;
+
+        if (conn    == null) return;
+        if (pisdb   == null) return;
+        if (paydb   == null) return;
+
+        userId      = UserClaims.UserId;
+
+        SetDropDownValues();
+
+        var res     = await _mainPis._02EmpmasPI(userId, "MainPis", conn);
+        if (res is null) return;
+        empmaspi = res;
+
+
+        StateHasChanged();
+    }
+
+    void SetDropDownValues()
+    {
+        genders = new List<GenderModel>
+        {
+            new GenderModel { Code="M", Description="Male"},
+            new GenderModel { Code="F", Description="Female"},
+            new GenderModel { Code="O", Description="Others"}
+        };
+
+        civilStatuses = new List<CivilStatusModel>
+        {
+           new CivilStatusModel {  Code="S", Description     ="Single" },
+           new CivilStatusModel {  Code="M", Description     ="Married" },
+           new CivilStatusModel {  Code="SE", Description    ="Separated" },
+           new CivilStatusModel {  Code="SP", Description    ="Single Parent" },
+        };
+    }
+
+    //-- Save Row ----------------
+    async Task SaveData ()
+    {
+
+        if (empmaspi == null) return;
+
+        EmpmasPIModel rec = new();
+        rec = empmaspi;
+
+        if (!SafeToSave(rec)) return;
+
+
+        if (rec.Id == 0)
+        {
+            rec.Id = userId;
+
+            var res = await _mainPis._01EmpmasPI(rec, "MainPis", conn!);
+            if (res != null)
+            {
+                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success", Detail = "Successfully saved the record.", Duration = 4000 });
+            }
+        }
+        else
+        {
+            await _mainPis._03EmpmasPI(rec.Id, rec, "MainPis", conn!);
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Success", Detail = "Successfully updated the record.", Duration = 4000 });
+        }
+
+        errorMsg = string.Empty;
+    }
+
+    //-- Safe to Save ----------------
+    bool SafeToSave(EmpmasPIModel rec)
+    {
+        if(rec.BirthPlace is not null && rec.BirthPlace.Length > 75)
+        {
+            errorMsg = "Birth Place should be at most 75 characters.";
+            return false;
+        }
+
+        if (rec.Citizen is not null && rec.Citizen.Length > 15)
+        {
+            errorMsg = "Citizenship should be at most 15 characters.";
+            return false;
+        }
+
+        if (rec.Religion is not null && rec.Religion.Length > 35)
+        {
+            errorMsg = "Religion should be at most 35 characters.";
+            return false;
+        }
+
+
+        if (rec.Hair is not null && rec.Hair.Length > 15)
+        {
+            errorMsg = "Hair should be at most 15 characters.";
+            return false;
+        }
+
+        if (rec.Eyes is not null && rec.Eyes.Length > 15)
+        {
+            errorMsg = "Eyes should be at most 15 characters.";
+            return false;
+        }
+
+        if (rec.Complexion is not null && rec.Complexion.Length > 10)
+        {
+            errorMsg = "Complexion should be at most 10 characters.";
+            return false;
+        }
+
+        if (rec.Marks is not null && rec.Marks.Length > 60)
+        {
+            errorMsg = "Marks should be at most 60 characters.";
+            return false;
+        }
+
+        if (rec.BloodType is not null && rec.BloodType.Length > 10)
+        {
+            errorMsg = "Blood Type should be at most 10 characters.";
+            return false;
+        }
+
+        if (rec.Spouse is not null && rec.Spouse.Length > 25)
+        {
+            errorMsg = "Spouse should be at most 25 characters.";
+            return false;
+        }
+
+        if (rec.Occupation is not null && rec.Occupation.Length > 75)
+        {
+            errorMsg = "Occupation should be at most 75 characters.";
+            return false;
+        }
+
+
+
+        return true;
+    }
+
+    void ShowNotification(NotificationMessage message)
+    {
+        NotificationService.Notify(message);
+    }
+}

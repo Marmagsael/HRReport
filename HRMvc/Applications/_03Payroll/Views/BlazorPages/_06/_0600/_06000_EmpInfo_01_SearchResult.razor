@@ -1,0 +1,64 @@
+
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+
+<!-- Employee Search Result -->
+<div class="row mt-2">
+    <div class="col ">
+        <div class="d-flex justify-content-between bg-secondary text-white p-2">
+            <div class=" fw-bold">Employee Search Result</div>
+            <button onclick="@(() => Exit())" type="button" class="btn-close btn-close-white"
+                aria-label="Close"></button>
+            
+        </div>
+        <table class="table table-striped table-bordered">
+            <thead>
+            <tr>
+                <th>Emp No</th>
+                <th>Name</th>
+                <th>Payroll Group</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+                @if (empmasInternals != null)
+                {
+                    foreach (var emp in empmasInternals)
+                    {
+                        <tr>
+                            <td>@emp.EmpNumber</td>
+                            <td>@emp.Fullname</td>
+                            <td>@emp.PayrollGrp</td>
+                            <td>@emp.EmpStatus</td>
+                            <td>Active</td>
+                            <td><button @onclick="(()=>SelectEmployee(emp))" class="btn btn-sm btn-secondary">Select</button></td>
+                        </tr>
+                    }
+                }   
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@inject IEmpmasInternalDataAccess _ei; 
+@code {
+
+    [Parameter] public EventCallback                        Close               { get; set; }
+    [Parameter] public EventCallback<EmpmasInternalModel>   SelEmployee         { get; set; }
+    [Parameter] public List<EmpmasInternalModel?>?          empmasInternals     { get; set; } = null; 
+
+
+
+    async void Exit() {
+        await Close.InvokeAsync(); 
+    }
+
+    private async Task SelectEmployee(EmpmasInternalModel emp)
+    {
+        await SelEmployee.InvokeAsync(emp);
+    }
+    
+    
+}

@@ -1,0 +1,81 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0502.Items._0500
+<div>
+    <_0500_SubHdr HdrCaption="SSS Accounts" /> 
+    
+    <div class="w-100">
+        <table class="table table-sm table-responsive">
+            <thead class="">
+            <tr>
+                <th class="w-125p">Acct Code</th>
+                <th class="w-250p">Acct Name</th>
+                <th>With SSS</th>
+            </tr>
+            </thead>
+            
+            <tbody>
+            @foreach(var c in coas??[])
+            {
+                <tr>
+                    <td>@c?.AcctNumber</td>
+                    <td>@c?.AcctName</td>
+                    <td>
+                        <input 
+                            class="form-check-input" 
+                            type="checkbox"
+                            checked="@c!.IsSelectedB"
+                            @onchange="@((ChangeEventArgs e) => AcctChanged(e, c))" />
+                        
+                    </td>
+                </tr>   
+            }
+            </tbody>
+
+        </table>
+    </div>
+     
+</div>
+
+@inject     ICoaDataAccess      _coa; 
+
+@code {
+    [Parameter] public V00_Pay?             V00             { get; set; } = new();
+    [Parameter] public EventCallback        ChildAction     { get; set; }
+
+    string               paydb    = string.Empty;
+    string               conn     = string.Empty;
+    List<CoaModel?>?     coas     = [];
+
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if(paydb.Length > 1) return;
+        paydb   = V00?.paydb??"";
+        conn    = V00?.conn??"";
+        await _02Coas();
+        
+    }
+    
+    private async Task AcctChanged(ChangeEventArgs e, CoaModel c)
+    {
+        var val = (bool)(e.Value??false); 
+        c.IsSelectedB = val;
+        await _coa._0104_Earnings_SSSMap(c, paydb, conn);
+        await _02Coas(); 
+        StateHasChanged();
+    }
+
+    private async Task _02Coas()
+    {
+        coas = await _coa._02_Earnings_SSSMap(paydb, conn);
+
+        coas = coas?.OrderByDescending(c => c!.IsSelected)
+            .ThenBy(c=>c!.AcctNumber)
+            .ToList(); 
+        
+        StateHasChanged();
+        await ChildAction.InvokeAsync(); 
+    }
+}

@@ -1,0 +1,92 @@
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+
+
+
+
+<table class="table table-sm table-bordered w-100 ">
+    <thead class="bg-dark bg-opacity-25">
+    <tr class=" text-center">
+        <th class=" w-10 " scope="col">Action</th>
+        <th class=" w-20 " scope="col">Date</th>
+        <th class=" w-40  text-start" scope="col">Account Name</th>
+        <th class=" w-20 " scope="col">Amount</th>
+        <th class=" w-10 " scope="col">PDE</th>
+    </tr>
+    </thead>
+    
+    <tbody>
+    @if (Feg != null)
+    {
+        foreach (var feg in Feg)
+        {
+            var selClass    = " ";
+            var btop        = string.Empty; 
+            var bbot        = string.Empty;
+            var bright      = string.Empty; 
+            var bleft       = string.Empty;
+
+            if (feg?.Sel ?? false)
+            {
+                selClass = " bg-success bg-opacity-25; ";
+                btop     = " border-top:    1.25px solid green; "; 
+                bbot     = " border-bottom: 1.25px solid green; ";
+                bright   = " border-right:  1.25px solid green; "; 
+                bleft    = " border-left:   1.25px solid green; ";
+            }
+            
+            <tr class=""  >
+                <td rowspan="2" class=" align-middle text-center msds-link @selClass" style="@btop">
+                    @if (!feg?.Sel??false)
+                    {
+                        <btn onclick="@(() => LoadFeg(feg!))" class="msds-link"> >> </btn>
+                    }
+                </td>
+                <td rowspan="" class="align-middle text-center" style="@btop">
+                    @feg?.DStart.ToString("d")
+                </td>
+                <td class=" fs-6 text-success" style="@btop">
+                    @feg?.AcctName
+                </td>
+                <td class="text-end align-middle pe-1 " style="@btop">
+                    @feg?.Amount.ToString("N")
+                </td>
+                <td class="text-center" style="@bright @btop">
+                    <RadzenCheckBox @bind-Value="feg!.PerdayEarningsB" TValue="bool" class="p-0 form-check-input me-1" Disabled="true" />
+                </td>
+            </tr>
+            <tr class="row-border" style="@bbot">
+                <td>&nbsp;</td>
+                <td colspan="3" class="disabled-div-50" style="padding-left: 10px; @bright">
+                    <_0602_12_01_PeriodTemplate FeG="@feg" ChildAction="ChangedPrdValue"/>
+                </td>
+            </tr>
+            
+        }
+    }
+    
+    
+    </tbody>
+
+</table>
+
+@code {
+
+    [Parameter] public List<Fixedearnings_grpModel?>?           Feg                 { get; set; } = [];
+    [Parameter] public EventCallback                            ChildAction         { get; set; }
+    [Parameter] public EventCallback<Fixedearnings_grpModel>    FetchFeg            { get; set; }
+
+    async Task ChangedPrdValue(Fixedearnings_grpModel feg)
+    {
+        StateHasChanged();
+        await ChildAction.InvokeAsync(); 
+    }
+    
+    async  Task LoadFeg(Fixedearnings_grpModel feg)
+    {
+        
+        feg.Sel = true; 
+        await FetchFeg.InvokeAsync(feg);
+    }
+    
+}

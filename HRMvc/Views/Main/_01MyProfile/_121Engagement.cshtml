@@ -1,0 +1,280 @@
+﻿@using System.Security.Claims
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+
+@inject I_00MainDA _mainDA;
+
+@{
+    ViewData["Title"] = "_121MyCompanyEngagement";
+    Layout = "~/Views/Shared/Main/_01MyProfileLayout.cshtml";
+
+    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+
+    IEnumerable<Claim?> claims = User.Claims;
+    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
+}
+
+
+<div id="_112Employment">
+    <div class="page-header">
+        <h1 class="page-title">My Engagement</h1>
+    </div>
+</div>
+
+<div>
+    @*==============================================*@
+    @*============ Selection Sort  =================*@
+@*
+    @{
+        List<int> arr = new() { 13, 2, 3, 2, 15, 10, 5 };
+    }
+
+    @for (int i = 0; i < arr.Count; i++)
+    {
+        int snum = arr[i];
+
+        @for (int j = i + 1; j < arr.Count; j++)
+        {
+
+
+            if(arr[j] < snum)
+            {
+                arr[i]  = arr[j];
+                arr[j]  = snum;
+                snum    = arr[i];
+                
+            }
+        }
+    }
+
+
+    @foreach(var item in arr)
+    {
+        <span>@item </span> <span>,</span>
+    }*@
+
+
+
+
+    @* New ------------- *@
+   @* @{
+        List<int> a = new() { 13, 2, 3, 2, 15, 10, 5 };
+        int lnctr = 0;
+        string? lst1 = string.Empty;
+
+
+        foreach (var i in a.ToList())
+        {
+            if(lnctr < a.Count())
+            {
+                int snum = a[lnctr];
+
+                int lnctr2 = lnctr + 1;
+
+                foreach (var j in a.ToList())
+                {
+                    if (lnctr2 < a.Count())
+                    {
+                        int temp = 0;
+                        if (a[lnctr2] < snum)
+                        {
+                            a[lnctr]    = a[lnctr2];
+                            a[lnctr2]   = snum;
+                            snum        = a[lnctr];
+
+                            
+                        }
+                    }
+                    lnctr2++;
+                }
+            }
+
+
+            lnctr++;
+            lst1 = lst1 + i.ToString() + ", ";
+
+        }
+
+
+    }
+
+    @foreach (var item in a)
+    {
+        <span>@item </span> <span>,</span>
+    }
+*@
+
+    @*============ Selection Sort  =================*@
+    @*==============================================*@
+
+
+
+    @*==============================================*@
+    @*============ Bubble Sort  ====================*@
+
+  @*  @{
+        List<int> arr = new() { 5, 1,8, 4, 2  };
+    }*@
+
+  @*  @for (int i = 0; i < arr.Count() - 1; i++)
+    {
+        int ctr = 0;
+
+        @for (int j = ctr + 1; j < arr.Count() - 1; j++)
+        {
+            int temp = 0;
+
+            if(arr[ctr] < arr[j])
+            {
+                temp        = arr[j];
+                arr[j]      = arr[ctr];
+                arr[ctr]    = temp;
+            }
+
+            <div>
+                @i >> 
+                @foreach (var n in arr)
+                {
+
+                    <span> @n</span> <span>,</span>
+                }
+            </div>
+
+            ctr = ctr + 1;
+        }
+
+        
+
+    }
+*@
+    @*============ End of Bubble Sort  =============*@
+    @*==============================================*@
+
+
+
+    @*==============================================*@
+    @*========= Start of Insertion Sort  ===========*@
+@*
+    @{
+        List<int> arr = new() { 23, 2, 10, 5, 1 };
+
+        @for (int i = 1; i < arr.Count() ; i++)
+        {
+            int currItem = 0;
+            @for (int j = i; j != 0 && arr[j-1] > arr[j]; j--)
+            {
+                currItem    = arr[j];
+                arr[j]      = arr[j - 1];
+                arr[j - 1] = currItem;
+
+                <div>
+                    <span>@i >> </span>
+                    @foreach (var n in arr)
+                    {
+                        <span> @n</span> <span>,</span>
+                    }
+                </div>
+               
+
+            }
+        }
+    }*@
+
+    @*============ End of Insertion Sort ===========*@
+    @*==============================================*@
+
+
+    @*===============================================*@
+    @*============ Start of Counting Sort ===========*@
+     @{
+        List<int> inputArr = new() { 1, 4, 1, 2, 7, 5, 2 };
+        int max = 0;
+    }
+
+    @*Get the max value*@
+    @for (int i = 0; i < inputArr.Count(); i++)
+    {
+        if(inputArr[i] > max)
+        {
+            max = inputArr[i];
+        }
+    }
+
+    @*Initialize CountArr *@
+    @{
+        max = max + 1;
+        List<int> countArr = new List<int>(new int[max]);
+    }
+
+    @*Count the occurence of the item and store to the countArr*@
+    @for (int i = 0; i < inputArr.Count(); i++)
+    {
+        @for (int c = 0; c < countArr.Count(); c++)
+        {
+            if(c == inputArr[i])
+            {
+                countArr[c] = countArr[c] + 1;
+            }
+        }
+    }
+
+    @*Calculate the cumulative sum. Will be used for sorting the data in the correct order*@
+   @for (int c = 1; c < countArr.Count() ; c++)
+    {
+        countArr[c] = countArr[c] + countArr[c - 1];
+    }
+
+    @*Initialize outputArr. Stores the sorted items.*@
+    @{
+
+        List<int> outputArr = new List<int>(new int[inputArr.Count()]);
+        int inputArrLn = inputArr.Count() - 1;
+
+    }
+
+    @*Start the iteration at the end to preserve the order*@
+    @for (int i = inputArrLn; i >= 0; i--)
+    {
+        int key = 0;
+
+        @*Check the index of the item*@
+       @for (int c = 0; c < countArr.Count(); c++)
+        {
+            if (inputArr[i] == c)
+            {
+                countArr[c] = countArr[c] - 1;
+                key = countArr[c];
+            }
+        }
+
+        @*Add the item in outputArr based on the index *@
+        @for (int o = 0; o < outputArr.Count(); o++)
+        {
+            if(o == key)
+            {
+                outputArr[o] = inputArr[i];
+            }
+
+            <div>
+                @foreach (var item in outputArr)
+                {
+                    <span>@item</span>
+                }
+            </div>
+        }
+
+    }
+    
+
+
+    @*============= End of Counting Sort ============*@
+    @*===============================================*@
+
+    @*===============================================*@
+    @*============= Start of Merge Sort =============*@
+
+    @*============== End of Merge Sort ============*@
+    @*===============================================*@
+
+    
+</div>

@@ -1,0 +1,348 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+
+@inject IPayrollgrpDataAccess _payrollgrp; 
+
+@inject NotificationService         _NotificationService;
+@inject DialogService               _DialogService;
+
+
+
+
+<style>
+    /* Remove padding and margin from Radzen edit cell container */
+    .no-padding-editor,
+    .no-padding-editor .rz-cell-editor,
+    .no-padding-editor .rz-cell-editor > div,
+    .no-padding-editor .rz-inputtext {
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+    }
+</style>
+@* // --- New Button *@
+<div class="my-1 p-2 p-2 bg-dark bordered-bottom-darkgreen bg-opacity-10" >
+    <RadzenButton ButtonStyle="ButtonStyle.Info" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode)" />
+</div>
+<div class="text-danger mt-2 mb-2"><h5>@errorMsg</h5></div>
+
+<div class="card shadow bordered-darkgreen mt-2 ">
+    <div class="card-header text-white fw-bold bg-success ">
+        PAYROLL GROUP LIST
+    </div>
+    <div class="responsive-div mt-1 ">
+        <RadzenDataGrid Data="@payrollgrps"
+                        TItem="PayrollgrpModel"
+                        @ref="payrollgrpsGrid"
+                        EditMode="DataGridEditMode.Single"
+                        AllowSorting="true"
+                        AllowPaging="true"
+                        PageSize="10"
+                        PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                        ColumnWidth="100%">
+            <Columns>
+
+                @*<RadzenDataGridColumn
+                    Width="100px"
+                    TItem="PayrollgrpModel" Property="ClNumber" Title="Code">
+                    <EditTemplate Context="rec" >
+                        <RadzenTextBox @bind-Value="rec.ClNumber" MaxLength="5"  class="w-100" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>*@
+
+                <RadzenDataGridColumn Width="200px" TItem="PayrollgrpModel" Property="Name" Title="Name">
+                    <EditTemplate Context="rec" >
+                        <RadzenTextBox @bind-Value="rec.Name" MaxLength="80" class="w-100" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                @* --- Details ------------------ *@
+                @* ****************************** *@
+                <RadzenDataGridColumn
+                    Width="100px"
+                    TItem="PayrollgrpModel" Property="RatePerHr" Title="Hr [Rate]" TextAlign="Radzen.TextAlign.Right" FormatString="{0:#,##0.00}" >
+                    <EditTemplate Context="rec">
+                        <RadzenNumeric TValue="double" @bind-Value="rec.RatePerHr" Name="RatePerHr" ShowUpDown="false" Format="#,##0.00" TextAlign="TextAlign.Right" class="w-100"/>
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn
+                    Width="100px"
+                    TItem ="PayrollgrpModel" Property ="RatePerDay" Title ="Day [Rate]" TextAlign ="Radzen.TextAlign.Right" FormatString="{0:#,##0.00}"  >
+                    <EditTemplate Context="rec">
+                        <RadzenNumeric @bind-Value ="rec.RatePerDay" Name ="Rateperday" ShowUpDown ="false" Format ="#,##0.00" TextAlign ="TextAlign.Right" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn
+                    Width="120px"
+                    TItem ="PayrollgrpModel" Property ="RatePerMonth" Title ="Month [Rate]" TextAlign ="Radzen.TextAlign.Right" FormatString="{0:#,##0.00}"  >
+                    <EditTemplate Context="rec">
+                        <RadzenNumeric @bind-Value ="rec.RatePerMonth" Name ="Ratepermonth" ShowUpDown ="false" Format ="#,##0.00" TextAlign ="TextAlign.Right" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn
+                    Width="120px"
+                    TItem ="PayrollgrpModel" Property ="RatePerYr" Title ="Year [Rate]" TextAlign ="Radzen.TextAlign.Right" FormatString="{0:#,##0.00}"  >
+                    <EditTemplate Context="rec">
+                        <RadzenNumeric @bind-Value ="rec.RatePerYr" Name ="Rateperyr" ShowUpDown ="false" Format ="#,##0.00" TextAlign ="TextAlign.Right" />
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+                @* ****************************** *@
+                @* --- Details ------------------ *@
+                <RadzenDataGridColumn TItem="PayrollgrpModel" Context="PayrollgrpModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Left" Frozen="true" Width="150px">
+                    <Template Context="rec">
+                        <RadzenButton Icon="edit"
+                                      ButtonStyle="ButtonStyle.Light"
+                                      Variant="Variant.Flat"
+                                      Size="ButtonSize.Small"
+                                      Click="@(args => EditRow(rec))"
+                                      @onclick:stopPropagation="true">
+                        </RadzenButton>
+
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                      Icon="delete"
+                                      Variant="Variant.Flat"
+                                      Shade="Shade.Lighter"
+                                      Size="ButtonSize.Small"
+                                      Click="@(args => DeleteRow(rec))"
+                                      class="my-1 ms-1"
+                                      @onclick:stopPropagation="true">
+                        </RadzenButton>
+                    </Template>
+
+                    <EditTemplate Context="rec">
+                        <RadzenButton Icon="check"
+                                      ButtonStyle="ButtonStyle.Success"
+                                      Variant="Variant.Flat"
+                                      Size="ButtonSize.Small"
+                                      Click="@((args) => SaveRow(rec))">
+                        </RadzenButton>
+
+                        <RadzenButton Icon="close"
+                                      ButtonStyle="ButtonStyle.Light"
+                                      Variant="Variant.Flat"
+                                      Click="@((args) => CancelEdit(rec))"
+                                      Size="ButtonSize.Small" class="my-1 ms-1">
+                        </RadzenButton>
+
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger"
+                                      Icon="delete"
+                                      Variant="Variant.Flat"
+                                      Shade="Shade.Lighter"
+                                      Size="ButtonSize.ExtraSmall"
+                                      Click="@(args => DeleteRow(rec))"
+                                      class="my-1 ms-1">
+                        </RadzenButton>
+                    </EditTemplate>
+
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+</div>
+
+
+@code
+{
+    [Parameter]
+    public UserClaimsModel UserClaims { get; set; } = new();
+
+    string? pisdb = string.Empty;
+    string? paydb = string.Empty;
+    string? conn = string.Empty;
+
+    //-- Initialization ----------------
+    RadzenDataGrid<PayrollgrpModel?>? payrollgrpsGrid = new();
+    bool editMode = false;
+    DataGridEditMode editMode1 = DataGridEditMode.Single;
+
+    List<PayrollgrpModel?>? payrollgrps = new();
+    PayrollgrpModel? payrollgrp = new();
+
+    List<PayrollgrpModel?>? payrollgrpsToInsert = new();
+    List<PayrollgrpModel?>? payrollgrpsToUpdate = new();
+    string? errorMsg = string.Empty;
+
+    protected override async void OnParametersSet()
+    {
+        if (UserClaims == null) return;
+        pisdb = UserClaims.SchemaUserPis;
+        paydb = UserClaims.SchemaUserPay;
+        conn = UserClaims.Conn;
+
+        if (conn == null) return;
+        if (pisdb == null) return;
+        if (paydb == null) return;
+
+        payrollgrps = await _payrollgrp._02(paydb, conn);  
+        StateHasChanged();
+    }
+
+    //-- InsertRow ----------------
+    async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new PayrollgrpModel();
+        payrollgrpsToInsert!.Add(rec);
+        await payrollgrpsGrid!.InsertRow(rec);
+        editMode = true;
+    }
+    //-- Reset ----------------
+    void Reset()
+    {
+        payrollgrpsToInsert!.Clear();
+        payrollgrpsToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    void Reset(PayrollgrpModel rec)
+    {
+        payrollgrpsToInsert!.Remove(rec);
+        payrollgrpsToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    async Task EditRow(PayrollgrpModel rec)
+    {
+        if (payrollgrpsGrid != null)
+        {
+            Reset();
+            payrollgrpsToUpdate?.Add(rec);
+            await payrollgrpsGrid.EditRow(rec);
+        }
+    }
+    //-- Delete Row ----------------
+    async Task DeleteRow(PayrollgrpModel rec)
+    {
+        if (payrollgrps == null) return;
+        if (payrollgrpsGrid == null) return;
+
+        Reset(rec);
+
+        if (payrollgrps.Contains(rec))
+        {
+            if (rec != null)
+            {
+                var res = await _payrollgrp._02CheckToTblTran(rec.ClNumber!, paydb!, conn!);
+                if (res != null)
+                {
+                    if (res.Count > 0)
+                    {
+                        var msg = "Unable to delete <span class='text-danger fw-bold'> " + rec.Name + "!</span>, record already exists. ";
+                        await _DialogService.Alert(msg, "Delete denied", new AlertOptions() { OkButtonText = "Exit" });
+                        return;
+                    }
+                }
+            }
+            var option = await _DialogService.Confirm("Delete " + rec?.Name + "?", "Confirm Delete",
+                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+            if (option == true)
+            {
+                await _payrollgrp._04(rec!.Id, paydb!, conn!);
+                payrollgrps.Remove(rec);
+            }
+        }
+        else
+        {
+            payrollgrpsGrid.CancelEditRow(rec);
+        }
+        await payrollgrpsGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+    //-- Cancel Edit ----------------
+    async void CancelEdit(PayrollgrpModel rec)
+    {
+        errorMsg = string.Empty;
+        if (payrollgrpsGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        payrollgrpsGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int id = rec.Id;
+        var res = await _payrollgrp._02(id, paydb!, conn!);
+        if (res == null) return;
+        Remap_Flds(rec, res);
+        await payrollgrpsGrid.Reload();
+    }
+    //-- Remap ----------------
+    void Remap_Flds(PayrollgrpModel destination, PayrollgrpModel source)
+    {
+
+    }
+    //-- Save Row ----------------
+    async Task SaveRow(PayrollgrpModel rec)
+    {
+        if (payrollgrpsGrid == null) return;
+        
+        var safeToSave = await SafeToSave(rec); 
+        if (!safeToSave) return;
+        
+        if (rec.Id == 0)
+        {
+            var res = await _payrollgrp._01(rec, paydb!, conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                payrollgrps!.Add(rec);
+            }
+        }
+        else
+        {
+            await _payrollgrp._03(rec.Id, rec, paydb!, conn!);
+        }
+        await payrollgrpsGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+    //-- Safe to Save ----------------
+    async Task<bool> SafeToSave(PayrollgrpModel rec)
+    {
+        // --- Payroll group name ----------------------------------------------------------------------- 
+        if (string.IsNullOrEmpty(rec.Name?.Trim()))
+        {
+            var msg = "Payroll group is required.";
+            await _DialogService.Alert(msg, "Invalid Entry", new AlertOptions() { OkButtonText = "Exit" });
+            return false;
+        }
+        
+        // --- Hour Rate validation ----------------------------------------------------------------------- 
+        if (rec.RatePerHr < 1)
+        {
+            var msg = "Rate per hour is reuired.";
+            await _DialogService.Alert(msg, "Invalid Entry", new AlertOptions() { OkButtonText = "Exit" });
+            return false;
+        }
+        
+        // --- Day Rate validation ----------------------------------------------------------------------- 
+        if (rec.RatePerHr < 1)
+        {
+            var msg = "Daily rate is reuired.";
+            await _DialogService.Alert(msg, "Invalid Entry", new AlertOptions() { OkButtonText = "Exit" });
+            return false;
+        }
+        
+        // --- Monthly Rate validation ----------------------------------------------------------------------- 
+        if (rec.RatePerMonth < 1)
+        {
+            var msg = "Monthly rate is reuired.";
+            await _DialogService.Alert(msg, "Invalid Entry", new AlertOptions() { OkButtonText = "Exit" });
+            return false;
+        }
+        
+        
+        
+
+        return true;
+    }
+}
