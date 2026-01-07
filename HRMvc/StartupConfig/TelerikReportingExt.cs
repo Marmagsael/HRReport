@@ -1,4 +1,4 @@
-﻿using Telerik.Reporting;
+﻿/*using Telerik.Reporting;
 using Telerik.Reporting.Cache.File;
 using Telerik.Reporting.Services;
 
@@ -22,3 +22,4 @@ public static class TelerikReportingExt
             });
     }
 }
+*/

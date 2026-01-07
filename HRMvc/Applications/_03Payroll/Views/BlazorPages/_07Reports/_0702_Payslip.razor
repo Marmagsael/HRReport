@@ -1,8 +1,9 @@
 ﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility.Vars
 @using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
-@using Telerik.ReportViewer.Blazor
+@using Microsoft.AspNetCore.Hosting
 @using Telerik.Reporting
+@using Telerik.Reporting.Processing
 
 @inject IPayrollgrpDataAccess _pgrp
 @inject IWebHostEnvironment Env
@@ -11,10 +12,17 @@
 
 <div class="d-flex gap-2 mb-3">
     <select @bind="selectedReport" class="form-select" style="width:250px;">
-        <option value="_03Payroll/Payrollgrp.trdp">Payroll Register</option>
+        <option value="_03Payroll\Payrollgrp.trdp">Payroll Register</option>
     </select>
 
-    <button class="btn btn-primary" @onclick="GenerateReport">Generate Report</button>
+    <button class="btn btn-primary" @onclick="GenerateReport">
+        Generate Report
+    </button>
+    
+</div>
+
+<div>
+    V601.Payrollgrps.Count : @V601.Payrollgrps.Count
 </div>
 
 @if (isLoading)
@@ -22,46 +30,38 @@
     <p class="text-info mt-2">Generating report, please wait...</p>
 }
 
-@if (ReportSourceOptions != null)
+@if (pdfBytes != null)
 {
-    <div style="height:800px; width:100%;">
-        <ReportViewer ServiceUrl="/api/reports"
-                      ReportSource="@ReportSourceOptions" />
+    <div style="height:85vh; margin-top:10px;">
+        <iframe src="data:application/pdf;base64,@Convert.ToBase64String(pdfBytes)"
+                style="width:100%;height:100%;border:none;">
+        </iframe>
     </div>
 }
 
-
 @code {
+
     private string selectedReport = "_03Payroll/Payrollgrp.trdp";
-    private bool isLoading = false;
+    private bool isLoading;
+    private byte[]? pdfBytes;
+
     private string? paydb;
     private string? conn;
-    private V0601 V601 = new();
 
-    private ReportSourceOptions? ReportSourceOptions;
+    private V0601 V601 = new();
 
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
     [Parameter] public V00_Pay V00 { get; set; } = new();
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        SetVariables();
-    }
+        V00.UserClaims  = UserClaims;
+        paydb           = UserClaims?.SchemaUserPay;
+        conn            = UserClaims?.Conn;
 
-    private async void SetVariables()
-    {
-        try
+        if (paydb != null && conn != null)
         {
-            V00.UserClaims = UserClaims;
-            paydb = UserClaims!.SchemaUserPay;
-            conn = UserClaims!.Conn;
-
-            V601.Payrollgrps = await _pgrp._02Active(paydb!, conn!);
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[PayrollReport] Initialization failed: {ex.Message}");
+            V601.Payrollgrps = await _pgrp._02Active(paydb, conn);
         }
     }
 
@@ -70,21 +70,54 @@
         try
         {
             isLoading = true;
-            ReportSourceOptions = null;
+            pdfBytes = null;
             StateHasChanged();
 
-            // ✅ Step 1: Load your data (if needed)
+            // STEP 1: Reload data
             V601.Payrollgrps = await _pgrp._02Active(paydb!, conn!);
 
-            // ✅ Step 2: Assign report dynamically
-            ReportSourceOptions = new ReportSourceOptions
+            if (V601.Payrollgrps == null || !V601.Payrollgrps.Any())
+                throw new Exception("No payroll group data found.");
+
+            // STEP 2: Resolve TRDP path
+            var reportPath = Path.Combine(Env.ContentRootPath, "Reports", selectedReport);
+            
+            if (!File.Exists(reportPath))
+                throw new FileNotFoundException(reportPath);
+
+            // STEP 3: Load TRDP
+            Telerik.Reporting.Report report;
+            var packager = new ReportPackager();
+
+            using (var fs = File.OpenRead(reportPath))
             {
-                Report = selectedReport
+                report = (Telerik.Reporting.Report)packager.UnpackageDocument(fs);
+            }
+
+            // STEP 4: Set parameters
+            report.ReportParameters["pCompanyName"].Value = "ABC CORPORATION";
+            //report.ReportParameters["pPrintedBy"].Value  = UserClaims?.UserName ?? "SYSTEM";
+            //report.ReportParameters["pPrintDate"].Value  = DateTime.Now;
+
+            // STEP 5: ObjectDataSource
+            report.DataSource = new ObjectDataSource
+            {
+                DataSource = V601.Payrollgrps
             };
+
+            // STEP 6: Render PDF
+            var processor = new ReportProcessor();
+            var source = new InstanceReportSource
+            {
+                ReportDocument = report
+            };
+
+            var result = processor.RenderReport("PDF", source, null);
+            pdfBytes = result.DocumentBytes;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[PayrollRegister] Error: {ex.Message}");
+            Console.WriteLine($"[PayrollRegister] {ex}");
         }
         finally
         {
