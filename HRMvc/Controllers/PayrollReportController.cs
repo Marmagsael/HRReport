@@ -5,120 +5,74 @@ namespace HRMvc.Controllers
     [Route("13")]
     public class PayrollReportController : Controller
     {
-        [HttpGet("")] public IActionResult Index()
-        { return View("~/Applications/PayrollReport/Views/Pages/Index.cshtml"); }
-        
-        //--- Earnings Report ----------------------------------------------------
-        [HttpGet("Coa")] public IActionResult Coa()
-        { return View("~/Applications/PayrollReport/Views/Pages/Coa.cshtml"); }
+        private static readonly Dictionary<string, string> ReportViews = new()
+        {
+            // Earnings
+            ["1102"] = "_1102_EarningsSummary",
+            ["1103"] = "_1103_EarningsHistory",
+            ["1104"] = "_1104_MonthlyEarningsReport",
 
-        
-        //--- Earnings Report ----------------------------------------------------
-        [HttpGet("PayRep_1102")] public IActionResult PayRep_1102()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1102_EarningsSummary.cshtml"); }
-        
-        [HttpGet("PayRep_1103")] public IActionResult PayRep_1103()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1103_EarningsHistory.cshtml"); }
-        
-        [HttpGet("PayRep_1104")] public IActionResult PayRep_1104()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1104_MonthlyEarningsReport.cshtml"); }
-        
-        //--- Deductions Report ----------------------------------------------------
-        [HttpGet("PayRep_1152")] public IActionResult PayRep_1152()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1152_DeductionSummary.cshtml"); }
-        
-        [HttpGet("PayRep_1153")] public IActionResult PayRep_1153()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1153_ConsolidatedDeductionSummary.cshtml"); }
-        
-        [HttpGet("PayRep_1154")] public IActionResult PayRep_1154()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1154_DeductionHistory.cshtml"); }
-        
-        [HttpGet("PayRep_1155")] public IActionResult PayRep_1155()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1155_MonthlyDeductionSummary.cshtml"); }
-        
-        
-        //--- Standard Report ----------------------------------------------------
-        [HttpGet("PayRep_1202")] public IActionResult PayRep_1202()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1202_Payslip.cshtml"); }
-        
-        [HttpGet("PayRep_1203")] public IActionResult PayRep_1203()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1203_PayrollRegister.cshtml"); }
-        
-        [HttpGet("PayRep_1204")] public IActionResult PayRep_1204()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1204_BankCharge.cshtml"); }
-        
-        [HttpGet("PayRep_1205")] public IActionResult PayRep_1205()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1205_BankAdvise.cshtml"); }
-        
-        [HttpGet("PayRep_1206")] public IActionResult PayRep_1206()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1206_PayrollSummaryPerGroup.cshtml"); }
-        
-        [HttpGet("PayRep_1207")] public IActionResult PayRep_1207()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1207_13thMonthSummary.cshtml"); }
-        
-        [HttpGet("PayRep_1208")] public IActionResult PayRep_1208()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1208_13thMonthBankAdvise.cshtml"); }
-        
-        [HttpGet("PayRep_1209")] public IActionResult PayRep_1209()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1209_13thMonthDetailed.cshtml"); }
-        
-        [HttpGet("PayRep_1212")] public IActionResult PayRep_1212()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1212_13thMonthRegister.cshtml"); }
-        
-        [HttpGet("PayRep_1213")] public IActionResult PayRep_1213()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1213_13thMonthPayslip.cshtml"); }
-        
-        
-        //--- Compliance Report ----------------------------------------------------
-        [HttpGet("PayRep_1252")] public IActionResult PayRep_1252()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1252_SSSContribution.cshtml"); }
-        
-        [HttpGet("PayRep_1253")] public IActionResult PayRep_1253()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1253_SSSLoanRemittance.cshtml"); }
-        
-        [HttpGet("PayRep_1254")] public IActionResult PayRep_1254()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1254_PagibigContribution.cshtml"); }
-        
-        [HttpGet("PayRep_1255")] public IActionResult PayRep_1255()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1255_PagibigLoanRemittance.cshtml"); }
+            // Deductions
+            ["1152"] = "_1152_DeductionSummary",
+            ["1153"] = "_1153_ConsolidatedDeductionSummary",
+            ["1154"] = "_1154_DeductionHistory",
+            ["1155"] = "_1155_MonthlyDeductionSummary",
 
-        [HttpGet("PayRep_1256")] public IActionResult PayRep_1256()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1256_CalamityLoanRemittance.cshtml"); }
-        
-        [HttpGet("PayRep_1257")] public IActionResult PayRep_1257()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1256_CalamityLoanRemittance.cshtml"); }
-        
-        //--- Others Report ----------------------------------------------------
-        [HttpGet("PayRep_1302")] public IActionResult PayRep_1302()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1302_TaxAnnualization.cshtml"); }
-        
-        [HttpGet("PayRep_1303")] public IActionResult PayRep_1303()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1303_DutyRendered.cshtml"); }
-        
-        [HttpGet("PayRep_1304")] public IActionResult PayRep_1304()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1304_QuitClaims.cshtml"); }
-        
-        [HttpGet("PayRep_1305")] public IActionResult PayRep_1305()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1305_Compliance.cshtml"); }
-        
-        [HttpGet("PayRep_1306")] public IActionResult PayRep_1306()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1306_PISValidation.cshtml"); }
-        
-        [HttpGet("PayRep_1307")] public IActionResult PayRep_1307()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1307_Retirement.cshtml"); }
-        
-        [HttpGet("PayRep_1308")] public IActionResult PayRep_1308()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1308_GroupRetirement.cshtml"); }
-        
-        [HttpGet("PayRep_1309")] public IActionResult PayRep_1309()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1309_AccountTotal.cshtml"); }
-        
-        [HttpGet("PayRep_1312")] public IActionResult PayRep_1312()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1312_GrandTotal.cshtml"); }
-        
-        [HttpGet("PayRep_1313")] public IActionResult PayRep_1313()
-        { return View("~/Applications/PayrollReport/Views/Pages/_1313_AccountTotal.cshtml"); }
+            // Standard
+            ["1202"] = "_1202_Payslip",
+            ["1203"] = "_1203_PayrollRegister",
+            ["1204"] = "_1204_BankCharge",
+            ["1205"] = "_1205_BankAdvise",
+            ["1206"] = "_1206_PayrollSummaryPerGroup",
+            ["1207"] = "_1207_13thMonthSummary",
+            ["1208"] = "_1208_13thMonthBankAdvise",
+            ["1209"] = "_1209_13thMonthDetailed",
+            ["1212"] = "_1212_13thMonthRegister",
+            ["1213"] = "_1213_13thMonthPayslip",
 
+            // Compliance
+            ["1252"] = "_1252_SSSContribution",
+            ["1253"] = "_1253_SSSLoanRemittance",
+            ["1254"] = "_1254_PagibigContribution",
+            ["1255"] = "_1255_PagibigLoanRemittance",
+            ["1256"] = "_1256_CalamityLoanRemittance",
+            ["1257"] = "_1257_PHICContribution",
 
+            // Others
+            ["1302"] = "_1302_TaxAnnualization",
+            ["1303"] = "_1303_DutyRendered",
+            ["1304"] = "_1304_QuitClaims",
+            ["1305"] = "_1305_Compliance",
+            ["1306"] = "_1306_PISValidation",
+            ["1307"] = "_1307_Retirement",
+            ["1308"] = "_1308_GroupRetirement",
+            ["1309"] = "_1309_AccountTotal",
+            ["1312"] = "_1312_GrandTotal",
+            ["1313"] = "_1313_AccountTotal"
+        };
+
+        [HttpGet("")]
+        public IActionResult Index()
+        {
+            return View("~/Applications/PayrollReport/Views/Pages/Index.cshtml");
+        }
+
+        [HttpGet("Coa")]
+        public IActionResult Coa()
+        {
+            return View("~/Applications/PayrollReport/Views/Pages/Coa.cshtml");
+        }
+
+        // 🔥 Clean numeric route
+        [HttpGet("{reportCode:int}")]
+        public IActionResult Report(int reportCode)
+        {
+            var key = reportCode.ToString();
+
+            if (!ReportViews.TryGetValue(key, out var viewName))
+                return NotFound();
+
+            return View($"~/Applications/PayrollReport/Views/Pages/{viewName}.cshtml");
+        }
     }
 }

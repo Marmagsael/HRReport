@@ -10,6 +10,14 @@ public class _03Controller : Controller
         return View("~/Applications/_03Payroll/Views/Pages/Index.cshtml");
     }
 
+    [HttpGet("03/1102")]
+    public IActionResult _0000_1102()
+    {
+        return View("~/Applications/PayrollReport/Views/Pages/_1102_EarningsSummary.cshtml");
+                             
+    }
+
+
     [HttpGet("03/0000")]
     public IActionResult _0000_Register()
     {
