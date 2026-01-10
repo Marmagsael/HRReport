@@ -1,0 +1,56 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using System.Threading.Tasks
+
+
+<div>
+    <button class="btn btn-success" @onclick="Create" >Generate Payroll Group </button>
+</div>
+
+<div>
+    Payrollgrp Count : @pg.Count
+</div>
+
+<IframeReportRenderer DataSource="payrollgrps"
+                      ReportRelativePath="@relativePath"
+                      OutputFormat="@selectedFormat"
+                      Parameters="reportParams"
+                      AutoGenerate="@(payrollgrps?.Any() == true)" />
+
+
+
+
+
+@inject IPayrollgrpDataAccess _pg; 
+
+
+@code {
+
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    List<PayrollgrpModel?>? payrollgrps = [];
+    List<PayrollgrpModel?>? pg = [];
+
+    private string selectedFormat   = "PDF";                                // PDF | XLSX
+    private string relativePath     = "Reports/_03Payroll/Payrollgrp.trdp"; //"{path}{filename}"
+    private Dictionary<string, object> reportParams = new()
+        {
+            ["pCompanyName"]    = "Morpheusbox Inc.",
+            ["pPrintedBy"]      = "SYSTEM",
+            ["pPrintDate"]      = DateTime.Now
+        };
+
+    private async Task Create()
+    {
+        string conn = UserClaims?.Conn??"";
+        string paydb = UserClaims?.SchemaUserPay??"";
+
+
+        pg = await _pg._02(paydb!, conn!);
+        if (pg.Count > 0) payrollgrps = pg; 
+        StateHasChanged(); 
+    }
+}
+
