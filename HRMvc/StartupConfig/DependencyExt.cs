@@ -27,7 +27,9 @@ public static class DependencyExt
         builder.Services.AddEndpointsApiExplorer();
         // ---- Blazor Components -----
         builder.Services.AddRazorPages();
-        builder.Services.AddServerSideBlazor()
+        builder.Services.AddServerSideBlazor();
+            
+            /*
             .AddCircuitOptions(options =>
             {
                 options.DetailedErrors = false;
@@ -42,7 +44,7 @@ public static class DependencyExt
 
                 // default is ~30 seconds
                 options.ClientTimeoutInterval = TimeSpan.FromMinutes(10);
-            });
+            });*/
         //builder.Services.AddSyncfusionBlazor();
         builder.Services.AddRadzenComponents();
 
