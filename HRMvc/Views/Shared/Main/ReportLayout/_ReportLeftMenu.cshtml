@@ -1,54 +1,25 @@
 @model HRApiLibrary.Models._00_Main.UserClaimsModel
 
 @using HRApiLibrary.DataAccess._90_Utils
-@using HRApiLibrary.Models._90_Utils
-
 @inject IMainmenuDataAccess _menu
 
 @{
-    string? conn = Model?.Conn;
-    List<MainmenuModel?> menus = [];
-
-    if (!string.IsNullOrEmpty(conn))
-    {
-        menus = await _menu._02("MainPay", conn);
-    }
-
-    Func<int, IEnumerable<MainmenuModel?>> getChildren = parentId =>
-        menus.Where(m => m?.ParentId == parentId);
+    // Load menu list ONCE
+    var          menus          = await _menu._02("MainPay", Model.Conn??"") ?? [];
+    const string childCshtml    = "~/Views/Shared/_Main/ReportLayout/_ReportLeftMenuDtl.cshtml";
 }
 
-<div class="p-3 fw-bold">
-    Payroll Report
-</div>
+<div class="p-3 fw-bold">Payroll Report</div>
 <div class="border-bottom mx-2 mb-2"></div>
 
-<ul class="list-group list-group-flush">
+<ul class="list-unstyled px-2">
 
-    @foreach (var parent in getChildren(0))
-    {
-        <li class="list-group-item px-3">
+    @* FIXED parent buckets – same as your Radzen version *@
 
-            <div class="fw-semibold">
-                @parent!.MenuName
-            </div>
-
-            @if (getChildren(parent.MenuId).Any())
-            {
-                <ul class="list-unstyled ps-3 mt-1">
-                    @foreach (var child in getChildren(parent.MenuId))
-                    {
-                        <li class="py-1">
-                            <a class="text-decoration-none"
-                               href="@child!.MenuUrl">
-                                @child.MenuName
-                            </a>
-                        </li>
-                    }
-                </ul>
-            }
-
-        </li>
-    }
+    @await Html.PartialAsync(childCshtml, (menus, 1101))
+    @await Html.PartialAsync(childCshtml, (menus, 1151))
+    @await Html.PartialAsync(childCshtml, (menus, 1201))
+    @await Html.PartialAsync(childCshtml, (menus, 1251))
+    @await Html.PartialAsync(childCshtml, (menus, 1301))
 
 </ul>
