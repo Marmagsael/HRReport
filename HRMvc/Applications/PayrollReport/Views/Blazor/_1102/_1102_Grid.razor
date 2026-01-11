@@ -1,4 +1,5 @@
-﻿@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+﻿@using HRApiLibrary.Models._20_PayGeneric
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
 
 
 <button class="btn btn-success mb-2" @onclick="Refresh">Refresh</button>
@@ -18,10 +19,12 @@
             @foreach (var coa in V1102.ChartOfAccts??[] )
             {
                 <tr>
-                    <td class="text-center"><input type="checkbox" @bind="coa.IsSelectedB">
-                        <RadzenCheckBox 
-                            @bind-Value="coa.IsSelectedB"
-                            TValue="bool" />
+                    <td class="text-center">
+                        <input 
+                            class="form-check-input" 
+                            type="checkbox"
+                            checked="@coa!.IsSelectedB"
+                            @onchange="@((ChangeEventArgs e) => AcctChanged(e, coa))" />
                     </td>
                     <td>@coa.AcctName * @coa.IsSelectedB </td>
                 </tr>
@@ -132,9 +135,20 @@
 
 @code {
     [Parameter] public V1102? V1102 { get; set; }
+    [Parameter] public EventCallback<GChartofacctModel>     OnSelectionChanged      { get; set; }
 
     void Refresh()
     {
+        StateHasChanged();
+    }
+    
+    private void AcctChanged(ChangeEventArgs e, GChartofacctModel c)
+    {
+        var val = (bool)(e.Value??false); 
+        c.IsSelectedB = val;
+        Console.WriteLine($"Name : {c.AcctName} * value : {c.IsSelectedB}");
+        //await _coa._0104_Earnings_TaxMap(c, paydb, conn);
+        //await _02Coas(); 
         StateHasChanged();
     }
 }
