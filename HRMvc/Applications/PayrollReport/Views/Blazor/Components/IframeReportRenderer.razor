@@ -17,32 +17,24 @@ else if (ReportBytes != null && OutputFormat == "PDF")
 @code {
 
     // ===============================
-    // PARAMETERS (MATCHES YOUR PARENT)
+    // PARAMETERS 
     // ===============================
-    [Parameter, EditorRequired]
-    public IEnumerable<object>? DataSource { get; set; }
-
-    [Parameter, EditorRequired]
-    public string ReportRelativePath { get; set; } = default!;
-
-    [Parameter]
-    public string OutputFormat { get; set; } = "PDF";
-
-    [Parameter]
-    public Dictionary<string, object>? Parameters { get; set; }
-
-    [Parameter]
-    public bool AutoGenerate { get; set; } = false;
+    [Parameter, EditorRequired] public IEnumerable<object>?         DataSource              { get; set; }
+    [Parameter, EditorRequired] public string                       ReportRelativePath      { get; set; } = default!;
+    [Parameter]                 public string                       OutputFormat            { get; set; } = "PDF";
+    [Parameter]                 public Dictionary<string, object>?  Parameters              { get; set; }
+    [Parameter]                 public bool                         AutoGenerate            { get; set; } = false;
+    [Parameter]                 public int                          RefreshToken            { get; set; }
 
     // ===============================
     // INTERNAL STATE
     // ===============================
-    private byte[]? ReportBytes;
-    private bool IsLoading;
-    private string? lastHash;
+    private byte[]?     ReportBytes;
+    private bool        IsLoading;
+    private string?     lastHash;
 
-    [Inject] private IWebHostEnvironment Env { get; set; } = default!;
-    [Inject] private IJSRuntime JS { get; set; } = default!;
+    [Inject] private IWebHostEnvironment    Env { get; set; } = default!;
+    [Inject] private IJSRuntime             JS  { get; set; } = default!;
 
     // ===============================
     // LIFECYCLE (FIXED)
@@ -50,14 +42,12 @@ else if (ReportBytes != null && OutputFormat == "PDF")
     protected override async Task OnParametersSetAsync()
     {
         // ❗ DO NOTHING UNTIL DATA EXISTS
-        if (!AutoGenerate)
-            return;
+        if (!AutoGenerate)  return;
+        if (DataSource == null || !DataSource.Any())    return;
 
-        if (DataSource == null || !DataSource.Any())
-            return;
+        //var currentHash =   $"{OutputFormat}|{ReportRelativePath}|{DataSource.Count()}";
+        var currentHash     = $"{OutputFormat}|{ReportRelativePath}|{RefreshToken}";
 
-        var currentHash =
-            $"{OutputFormat}|{ReportRelativePath}|{DataSource.Count()}";
 
         if (currentHash == lastHash)
             return;
@@ -73,24 +63,19 @@ else if (ReportBytes != null && OutputFormat == "PDF")
     {
         try
         {
-            IsLoading = true;
+            IsLoading   = true;
             ReportBytes = null;
             StateHasChanged();
 
             // SAFETY GUARD
-            if (DataSource == null || !DataSource.Any())
-                return;
+            if (DataSource == null || !DataSource.Any())    return;
 
             // -----------------------------
             // Resolve TRDP
             // -----------------------------
-            var fullPath = Path.Combine(
-                Env.ContentRootPath,
-                ReportRelativePath
-            );
+            var fullPath = Path.Combine(Env.ContentRootPath, ReportRelativePath );
 
-            if (!File.Exists(fullPath))
-                return;
+            if (!File.Exists(fullPath)) return;
 
             // -----------------------------
             // Load report
@@ -98,9 +83,8 @@ else if (ReportBytes != null && OutputFormat == "PDF")
             var packager = new ReportPackager();
             Telerik.Reporting.Report report;
 
-            using var fs = File.OpenRead(fullPath);
-            report = (Telerik.Reporting.Report)
-                     packager.UnpackageDocument(fs);
+            using var fs    = File.OpenRead(fullPath);
+            report          = (Telerik.Reporting.Report)packager.UnpackageDocument(fs);
 
             // -----------------------------
             // Parameters
@@ -125,31 +109,25 @@ else if (ReportBytes != null && OutputFormat == "PDF")
             // -----------------------------
             // Render
             // -----------------------------
-            var processor = new ReportProcessor();
-            var result = processor.RenderReport(
-                OutputFormat,
-                new InstanceReportSource
-                {
-                    ReportDocument = report
-                },
-                null
-            );
+            var processor   = new ReportProcessor();
+            var result      = processor.RenderReport(OutputFormat, new InstanceReportSource { ReportDocument = report }, null );
 
-            ReportBytes = result.DocumentBytes;
+            ReportBytes     = result.DocumentBytes;
 
             // -----------------------------
             // Excel auto-download
             // -----------------------------
             if (OutputFormat == "XLSX")
             {
-                await JS.InvokeVoidAsync(
-                    "downloadFile",
-                    $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx",
-                    Convert.ToBase64String(ReportBytes)
-                );
-
+                await JS.InvokeVoidAsync("downloadFile", $"Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx", Convert.ToBase64String(ReportBytes) );
                 ReportBytes = null;
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("❌ IframeReportRenderer.GenerateAsync ERROR");
+            Console.WriteLine(ex.Message);
+            Console.WriteLine(ex.StackTrace);
         }
         finally
         {
