@@ -1,0 +1,25 @@
+@model HRApiLibrary.Models._00_Main.UserClaimsModel
+
+@using HRApiLibrary.DataAccess._00_Main
+@using HRApiLibrary.Models._00_Main
+
+@inject I_00UserscompanyDataAccess _userCompany
+
+@{
+    UsersModel user = new();
+    UserCompanyModel? userCompany = null;
+    string coName = "Loading...";
+
+    if (Model != null)
+    {
+        int userId = Model.UserId;
+        userCompany = await _userCompany._02ByUserDefaultCoId(userId);
+
+        coName = string.IsNullOrWhiteSpace(userCompany?.CompanyName) ? "Undefined" : userCompany.CompanyName;
+    }
+}
+
+<div class="px-3 py-2 bg-dark text-white">
+    <h5 class="mb-0">@coName</h5>
+</div>
+
