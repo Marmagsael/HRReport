@@ -1,0 +1,69 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using System.Threading.Tasks
+
+<div>
+    <button class="btn btn-success" @onclick="Create" >Generate Report - 1152 </button>
+</div>
+
+<div>
+    Record Count : @pg.Count
+</div>
+
+<IframeReportRenderer
+    DataSource          ="report"
+    ReportRelativePath  ="@relativePath"
+    OutputFormat        ="@selectedFormat"
+    Parameters          ="reportParams"
+    AutoGenerate        ="@(report?.Any() == true)"
+    RefreshToken        ="@refreshToken" />
+
+@inject IPayrollgrpDataAccess _pg; 
+
+@code {
+
+    private class ReportModel
+    {
+        public string?  EmpLastNm       { get; set; }
+        public string?  EmpFirstNm      { get; set; }
+        public string?  EmpMidNm        { get; set; }
+        public string?  AcctNumber      { get; set; }
+        public string?  AcctName        { get; set; }
+        public string?  AcctType        { get; set; }
+        public string?  Trn             { get; set; }
+        public double   Amount          { get; set; }
+
+    }
+
+
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    List<PayrollgrpModel?>? payrollgrps = []; 
+    List<PayrollgrpModel?>? pg          = [];
+    List<ReportModel?>?     report      = [];
+
+    private int refreshToken        = 1202000;
+
+    private string                      selectedFormat  = "PDF";                                // PDF | XLSX
+    private string                      relativePath    = "Reports/_03Payroll/m1152.trdp"; //"{path}{filename}"
+    private Dictionary<string, object>  reportParams    = new() {   ["CoName"]      = "Morpheusbox Inc.",
+                                                                    ["pPrintedBy"]  = "SYSTEM",
+                                                                    ["pPrintDate"]  = DateTime.Now
+                                                                };
+
+    private async Task Create()
+    {
+        report = [];
+        report.Add(new ReportModel() { EmpLastNm = "Lastname 1", EmpFirstNm = "First Name 1", EmpMidNm = "L", Amount = 100.00, AcctNumber = "D001", AcctType = "D", AcctName = "Acctname 1", Trn   = "250101-00000" });
+        report.Add(new ReportModel() { EmpLastNm = "Lastname 2", EmpFirstNm = "First Name 2", EmpMidNm = "L", Amount = 200.00, AcctNumber = "D001", AcctType = "D", AcctName = "Acctname 1", Trn   = "250101-00000" });
+        report.Add(new ReportModel() { EmpLastNm = "Lastname 3", EmpFirstNm = "First Name 3", EmpMidNm = "L", Amount = 300.00, AcctNumber = "D001", AcctType = "D", AcctName = "Acctname 1", Trn   = "250101-00000" });
+        report.Add(new ReportModel() { EmpLastNm = "Lastname 4", EmpFirstNm = "First Name 4", EmpMidNm = "L", Amount = 400.00, AcctNumber = "D001", AcctType = "D", AcctName = "Acctname 1", Trn   = "250101-00000" });
+        
+
+        //sample.Add(new SampleModel { No = "1", Desc="Desc 1", Amount=11123.33 });
+    }
+}
+
