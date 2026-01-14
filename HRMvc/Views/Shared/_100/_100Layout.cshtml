@@ -1,0 +1,84 @@
+@using System.Security.Claims
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+@using Microsoft.Extensions.Configuration
+
+
+@inject I_00MainDA _mainDA
+@inject IConfiguration _config
+
+
+@{
+    IEnumerable<Claim?> claims = User.Claims;
+    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
+}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <base href="~/" />
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="~/css/global.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Main/Layout/main_content.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" />
+
+    <!-- Radzen styles (safe to keep) -->
+    <link href="_content/Radzen.Blazor/css/material-base.css" rel="stylesheet" />
+
+    <!-- Payroll / App styles -->
+    <link rel="stylesheet" href="~/css/Payroll/pay.css" asp-append-version="true" />
+
+</head>
+
+<body>
+<div class="main-wrapper d-flex flex-column min-vh-100 w-100 bg-light">
+
+    <!-- 🔹 HEADER (MVC PARTIAL) -->
+    <header class="border-bottom bg-gray-10 txt-white sticky-top">
+        @await Html.PartialAsync("~/Views/Shared/_100/_100Child/_100Header.cshtml", userClaims)
+    </header>
+
+    <!-- 🔹 BODY -->
+    <div class="d-flex flex-grow-1 w-100">
+
+        <!-- 🔹 LEFT MENU (MVC PARTIAL) -->
+        <aside class="border-end" style="width:240px;">
+            @await Html.PartialAsync("~/Views/Shared/_100/_100Child/_100LeftMenu.cshtml", userClaims)
+        </aside>
+
+        <!-- 🔹 MAIN CONTENT -->
+        <main class="flex-grow-1 m-2 p-2 bg-gray-95 overflow-auto">
+            @RenderBody()
+        </main>
+
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+<script src="~/js/site.js"></script>
+<script src="~/js/Main/_00Main.js"></script>
+
+<!-- Blazor Server (ONLY needed for content pages that render Blazor) -->
+<script src="_framework/blazor.server.js"></script>
+<script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+
+@await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>
+
