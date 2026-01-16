@@ -1,0 +1,74 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
+@using System.Threading.Tasks
+
+<div>
+    <button class="btn btn-success" @onclick="Create" >Generate Report </button>
+</div>
+
+<div>
+    Record Count : @pg.Count
+</div>
+
+<IframeReportRenderer
+    DataSource          ="sample"
+    ReportRelativePath  ="@relativePath"
+    OutputFormat        ="@selectedFormat"
+    Parameters          ="reportParams"
+    AutoGenerate        ="@(sample?.Any() == true)"
+    RefreshToken        ="@refreshToken" />
+
+@inject IPayrollgrpDataAccess _pg; 
+
+@code {
+
+    private class SampleModel
+    {
+        public string?  No      { get; set; }
+        public string?  Desc    { get; set; }
+        public double   Amount  { get; set; } = 0;
+
+    }
+
+
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    List<PayrollgrpModel?>? payrollgrps = []; 
+    List<PayrollgrpModel?>? pg          = [];
+    List<SampleModel?>?     sample      = [];
+
+    private int refreshToken        = 1202000;
+
+    private string                      selectedFormat  = "PDF";                                // PDF | XLSX
+    private string                      relativePath    = "Reports/_03Payroll/mSample.trdp"; //"{path}{filename}"
+    private Dictionary<string, object>  reportParams    = new() {   ["pCompanyName"]    = "Morpheusbox Inc.",
+                                                                    ["pPrintedBy"]      = "SYSTEM",
+                                                                    ["pPrintDate"]      = DateTime.Now
+                                                                };
+
+    private async Task Create()
+    {
+        sample = [];
+        sample.Add(new SampleModel { No = "1", Desc="Desc 1", Amount=11123.33 });
+        sample.Add(new SampleModel { No = "2", Desc="Desc 2", Amount=22223.33 });
+        sample.Add(new SampleModel { No = "3", Desc="Desc 3", Amount=33323.33 });
+        sample.Add(new SampleModel { No = "4", Desc="Desc 4", Amount=14423.33 });
+        
+        
+        return;
+        string conn = UserClaims?.Conn??"";
+        string paydb = UserClaims?.SchemaUserPay??"";
+
+
+        pg = await _pg._02(paydb!, conn!);
+        if (pg.Count > 0) payrollgrps = pg; 
+
+        refreshToken++;
+        StateHasChanged(); 
+        
+    }
+}
+

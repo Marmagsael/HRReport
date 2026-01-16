@@ -1,0 +1,55 @@
+@model HRApiLibrary.Models._00_Main.UserClaimsModel
+
+@using HRApiLibrary.DataAccess._90_Utils
+@inject IMainmenuDataAccess _menu
+
+<style>
+    .accordion-collapse,
+    .collapsing { transition: none !important; }
+</style>
+
+
+@{
+    // Load menu list ONCE
+    var          menus          = await _menu._02("MainPay", Model.Conn??"") ?? [];
+    const string childCshtml    = "~/Views/Shared/Main/ReportLayout/_ReportLeftMenuDtl1.cshtml";
+}
+
+
+<div class="p-3 fw-bold">Payroll Report</div>
+<div class="border-bottom mx-2 mb-2"></div>
+
+<div class="accordion accordion-flush" id="payrollAccordion">
+    @await Html.PartialAsync(childCshtml, (menus, 1101))
+    @await Html.PartialAsync(childCshtml, (menus, 1151))
+    @await Html.PartialAsync(childCshtml, (menus, 1201))
+    @await Html.PartialAsync(childCshtml, (menus, 1251))
+    @await Html.PartialAsync(childCshtml, (menus, 1301))
+</div>
+
+
+<script>
+    (function () {
+        const KEY = "payroll-open-accordion";
+
+        // ✅ SAVE OPEN ACCORDION (unchanged)
+        window.saveAccordion = function (id) { localStorage.setItem(KEY, id); };
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // ✅ RESTORE OPEN ACCORDION (unchanged)
+            const id = localStorage.getItem(KEY);
+            if (id) {
+                const el = document.getElementById(id);
+                if (el) { new bootstrap.Collapse(el, { toggle: true }); }
+            }
+
+            // 🔴 NEW: disable animation ONLY when CLOSING
+            document.querySelectorAll('.accordion-collapse').forEach(function (el) {
+                el.addEventListener('hide.bs.collapse', function () { el.style.transition = 'none'; });
+                el.addEventListener('show.bs.collapse', function () { el.style.transition = ''; });
+            });
+        });
+    })();
+</script>
+

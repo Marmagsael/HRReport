@@ -28,6 +28,23 @@ public static class DependencyExt
         // ---- Blazor Components -----
         builder.Services.AddRazorPages();
         builder.Services.AddServerSideBlazor();
+            
+            /*
+            .AddCircuitOptions(options =>
+            {
+                options.DetailedErrors = false;
+
+                // keep circuit state longer (less churn)
+                options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(60);
+            });
+
+        builder.Services.AddSignalR(options =>
+            {   // default is ~15 seconds
+                options.KeepAliveInterval = TimeSpan.FromMinutes(5);
+
+                // default is ~30 seconds
+                options.ClientTimeoutInterval = TimeSpan.FromMinutes(10);
+            });*/
         //builder.Services.AddSyncfusionBlazor();
         builder.Services.AddRadzenComponents();
 

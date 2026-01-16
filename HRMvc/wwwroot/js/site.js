@@ -48,3 +48,10 @@ window.scrollToClass = (className) => {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
+
+window.Blazor.start({
+    reconnectionOptions: {
+        maxRetries: 1,
+        retryIntervalMilliseconds: 10000
+    }
+});

@@ -1,0 +1,56 @@
+@model (List<HRApiLibrary.Models._90_Utils.MainmenuModel?> Menus, int ParentId)
+
+@{
+    var menuParent = Model.Menus.FirstOrDefault(m => m?.Id == Model.ParentId);
+    var menuDtls = Model.Menus.Where(m => m?.IdParent == Model.ParentId).ToList();
+    if (menuParent == null || !menuDtls.Any()) { return; }
+
+    var headingId = $"heading-{Model.ParentId}";
+    var collapseId = $"collapse-{Model.ParentId}";
+}
+
+<div class="accordion-item">
+
+    <h2 class="accordion-header" id="@headingId">
+        <button class="accordion-button collapsed d-flex align-items-center gap-2"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#@collapseId"
+                aria-expanded="false"
+                aria-controls="@collapseId"
+                onclick="saveAccordion('@collapseId')">
+
+            @*<i class="rz-icon rz-icon-@menuParent.Icon"></i>*@
+            <i class="fa fa-@menuParent.Icon"></i>
+            <span>@menuParent.DispText</span>
+        </button>
+    </h2>
+
+    <div id="@collapseId"
+         class="accordion-collapse collapse"
+         aria-labelledby="@headingId"
+         data-bs-parent="#payrollAccordion">
+
+        <div class="accordion-body py-2 px-3">
+
+            <ul class="list-unstyled ps-4 mb-0">
+                @foreach (var d in menuDtls)
+                {
+                    <li class="py-1">
+                        <a href="@d!.Action"
+                           class="d-flex align-items-center gap-2 text-decoration-none disabled">
+
+                            @* <i class="rz-icon rz-icon-@d.Icon"></i> *@
+                            <i class="@d.Icon"></i>
+
+                            <span>@d.DispText</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+
+        </div>
+
+    </div>
+
+</div>

@@ -1,77 +1,49 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay_Report
 @using HRApiLibrary.Models._00_Main
 
-<div>
-    <button class="btn btn-primary" @onclick="CreateReport">
-        Create Report
-    </button>
-    
-    <button class="btn btn-danger" @onclick="@(() => Console.WriteLine("FIRED"))">
-        TEST CLICK
-    </button>
-    
+@using HRApiLibrary.Models._20_PayGeneric
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components; 
+<_DtlHdrPay caption="EARNINGS SUMMARY" />
+
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1102;
+@using System.Threading.Tasks
+
+<div>Accounts Count : @v1102.ChartOfAccts.Count </div>
+<div>Conn   : @conn </div>
+<div>Paydb  : @paydb </div>
+
+<div class="p-3 bordered br-6 mt-2"> 
+    <_1102_button   UserClaims="@UserClaims"></_1102_button>
+    <_1102_Coverage UserClaims="@UserClaims"></_1102_Coverage>
+    <_1102_Grid V1102="@v1102"></_1102_Grid>
 </div>
 
-<div>
-    Message : @msg
-</div>
 
-<div>
-    paydb = @paydb
-</div>
-
-@if (isLoading)
-{
-    <p class="mt-3 text-info">Generating report, please wait...</p>
-}
-else if (pdfBytes != null)
-{
-    var mime = selectedFormat == "XLSX" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : "application/pdf";
-
-    <div style="height:85vh; margin-top:10px;">
-        <iframe src="data:@mime;base64,@Convert.ToBase64String(pdfBytes)"
-                style="width:100%;height:100%;border:none;">
-        </iframe>
-    </div>
-}
+@inject IGPayrollReportDataAccess _pr; 
 
 @code {
 
-    [Parameter]
-    public UserClaimsModel? UserClaims { get; set; }
+    [Parameter] public UserClaimsModel?             UserClaims   { get; set; }
+    [Parameter] public List<GChartofacctModel?>?    ChartOfAccts { get; set; } = [];
 
-    private byte[]? pdfBytes;
-    private bool isLoading = false;
-    private string selectedFormat = "PDF";
+    public  V1102?      v1102 { get; set; } = new V1102();
+    private string      conn                = string.Empty;
+    private string      paydb               = string.Empty;
 
-    private string? pisdb;
-    private string? paydb;
-    private string? conn;
-    private string? msg;
-
-    // ✅ Correct lifecycle method
-    protected override Task OnParametersSetAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        try
-        {
-            paydb = UserClaims?.SchemaUserPay;
-            pisdb = UserClaims?.SchemaUserPis;
-            conn  = UserClaims?.Conn;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[PayrollReport] Initialization failed: {ex.Message}");
-        }
+        if (v1102.ChartOfAccts.Count > 0 ) return;
+        await LoadData();
 
-        return Task.CompletedTask;
     }
 
-    // ✅ Proper event handler
-    private async Task CreateReport()
-    {
-        msg = "Button Clicked...";
-        Console.WriteLine("Hello!.....");
 
-        // simulate async work
-        await Task.Delay(10);
+    async Task LoadData()
+    {
+        conn                = UserClaims?.Conn            ?? string.Empty;
+        paydb               = "Pay";
+        v1102.ChartOfAccts  = ChartOfAccts;
     }
+
+    
 }
