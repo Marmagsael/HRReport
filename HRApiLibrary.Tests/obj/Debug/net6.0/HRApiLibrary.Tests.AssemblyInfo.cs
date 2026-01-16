@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0802ea39a4adb809a9e7c24029c7ec39be7b4f85")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ab5ca4b57e1c2e209da0a0f1f30abb1ae8237ba")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

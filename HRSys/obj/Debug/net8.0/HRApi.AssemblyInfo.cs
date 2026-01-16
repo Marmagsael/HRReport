@@ -15,11 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< HEAD
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8051014b2da02ca0f0168b24aabd424a1a642279")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0802ea39a4adb809a9e7c24029c7ec39be7b4f85")]
->>>>>>> lm260112
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ab5ca4b57e1c2e209da0a0f1f30abb1ae8237ba")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

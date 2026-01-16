@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRApiLibrary")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+04224a81138809f797fb30c4ead11775ed63d55d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ab5ca4b57e1c2e209da0a0f1f30abb1ae8237ba")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRApiLibrary")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApiLibrary")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
