@@ -9,7 +9,8 @@ public class _100Controller : Controller
     {
         // Main Menu
         ["102"] = "100.002Profile",
-        ["103"] = "100.003TimeSheet"
+        ["103"] = "100.003TimeSheet",
+        ["104"] = "100.004"
     };
         
     
