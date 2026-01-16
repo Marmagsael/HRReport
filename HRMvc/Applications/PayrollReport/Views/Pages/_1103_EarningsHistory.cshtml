@@ -1,4 +1,19 @@
-﻿@{
-    Layout = "~/Views/Shared/Main/_ReportLayout1.cshtml";
+﻿@using System.Security.Claims
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+
+@inject I_00MainDA _mainDA
+@inject IConfiguration _config;
+
+@{
+    Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
+
+    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+    IEnumerable<Claim?> claims = User.Claims;
+    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
 }
-<div>1103</div>
+<div>
+    @(await Html.RenderComponentAsync<_1103_EH>(RenderMode.ServerPrerendered, new { UserClaims = userClaims })) 
+    
+</div>

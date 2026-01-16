@@ -12,6 +12,7 @@ using HRApiLibrary.DataAccess._20_Pay;
 using HRApiLibrary.DataAccess._20_Pay.DA0605;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._20_Pay.Report;
+using HRApiLibrary.DataAccess._20_Pay_Report;
 using HRApiLibrary.DataAccess._90_Utils;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRMvc.Applications._02HR._02Library;
@@ -160,6 +161,7 @@ public static class ApiExt
         //-- Pay Report --------------------------------------------------------------------
         builder.Services.AddSingleton<IReportDataAccess, ReportDataAccess>();
         builder.Services.AddSingleton<IMainmenuDataAccess, MainmenuDataAccess>();
+        builder.Services.AddSingleton<IGPayrollReportDataAccess, GPayrollReportDataAccess>();
 
 
         //--- Accounting -------------------------------------------------------------------
