@@ -9,9 +9,32 @@ namespace HRMvc.Controllers
         {
             // Standard
             ["2102"] = "_2102_EmployeeMasterList",
-            
+            ["2103"] = "_2103_EmployeeStatusReport",
+            ["2104"] = "_2104_EmployeeAgeReport",
+            ["2105"] = "_2105_NewlyHiredfortheMonth",
+            ["2106"] = "_2106_HireDateReport",
+            ["2107"] = "_2107_ForRegularization",
+            ["2108"] = "_2108_ResignedPersonnelfortheMonth",
+            ["2109"] = "_2109_ManpowerMovement",
+            ["2110"] = "_2110_InsurancePolicy",
+
             // Compliance
-            ["2202"] = "_2202_ClientGuardDetail"
+            ["2202"] = "_2202_ClientGuardDetail",
+            ["2203"] = "_2203_EmployeeClearance",
+            ["2204"] = "_2204_PNPSAGSDReport",
+            ["2205"] = "_2205_FEDReport",
+            ["2206"] = "_2206_GroupDDO",
+            ["2207"] = "_2207_RTUReport",
+            ["2208"] = "_2208_RecalledEmployeeReport",
+            ["2209"] = "_2209_AssignmentHistory",
+            ["2210"] = "_2210_ClientContractExpirationReport",
+            ["2211"] = "_2211_UniformQuery",
+            ["2212"] = "_2212_FloatingEmployees",
+            ["2213"] = "_2213_OnLeaveEmployees",
+            ["2214"] = "_2214_DetailedDeviationReport",
+            ["2215"] = "_2215_SummarizedDeviationReport",
+            ["2216"] = "_2216_LicenseVerification",
+            ["2217"] = "_2217_LicenseExpiration"
         };
 
         [HttpGet("")]
