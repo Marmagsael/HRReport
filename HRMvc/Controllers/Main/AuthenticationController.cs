@@ -107,8 +107,12 @@ public class AuthenticationController : Controller
 
         CreateClaims(user ?? new UsersModel(){Id=0}, uc); 
         HttpContext.Session.Clear();
+        
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
         HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
+        
+        //Console.WriteLine($"Old Pis : {uc.OldPis ?? ""}");
+        //Console.WriteLine($"Old Pay : {uc.OldPay ?? ""}");
         
         return Redirect("~/13");
         
@@ -383,6 +387,12 @@ public class AuthenticationController : Controller
 
         CreateClaims(user, uc);
         await CreateCompany(user, uc, conn);    
+        
+        HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
+        HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
+        
+        //Console.WriteLine($"Old Pis 1 : {uc.OldPis ?? ""}");
+        //Console.WriteLine($"Old Pay 1 : {uc.OldPay ?? ""}");
         
         
         return Redirect("13");
