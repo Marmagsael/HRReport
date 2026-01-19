@@ -17,6 +17,7 @@ public class UserClaimsModel
     public string?                  CoName                  { get; set; } = string.Empty;
 
     //------------------------------------------------------------------------------------
+    public string?                  Email                   { get; set; } = string.Empty;    
     public string?                  Conn                    { get; set; } = string.Empty;
     public string?                  ConnNoDb                { get; set; } = string.Empty;
     public string?                  ConnPay                { get; set; } = string.Empty;

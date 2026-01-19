@@ -51,6 +51,7 @@ public class _00MainDA : I_00MainDA
             var val = claims.Where(c => c?.Type == "UserId").FirstOrDefault()?.Value;
             if (val != null) uc.UserId = int.Parse(val);
             uc.DefCompanyId = claims.Where(c => c?.Type == "DefCompayId").FirstOrDefault()?.Value;
+            uc.Email        = claims.FirstOrDefault(c => c?.Type == "Email")?.Value;
 
             var userId = uc.UserId.ToString();
             var uprefix = "U" + userId + "C1";
@@ -86,26 +87,26 @@ public class _00MainDA : I_00MainDA
     {
         var uc = new UserClaimsModel
         {
-            SchemaMain = _config.GetSection("Schema:Main").Value,
+            SchemaMain    = _config.GetSection("Schema:Main").Value,
             SchemaMainPis = _config.GetSection("Schema:MainPis").Value,
-            Conn = _config.GetSection("Schema:DefConn").Value
+            Conn          = _config.GetSection("Schema:DefConn").Value
         };
 
         if (claims.Count() <= 0) return uc;
 
-        var val = claims.Where(c => c?.Type == "UserId").FirstOrDefault()?.Value;
+        var val = claims.FirstOrDefault(c => c?.Type == "UserId")?.Value;
         if (val != null) uc.UserId = int.Parse(val);
 
-        val = claims.Where(c => c?.Type == "DefCompayId").FirstOrDefault()?.Value;
+        val = claims.FirstOrDefault(c => c?.Type == "DefCompayId")?.Value;
         if (val != null) uc.DefCompanyId = val;
 
 
         var userId = uc.UserId.ToString();
-        var uprefix = "U" + userId + "C1";
-        uc.SchemaMainPis = uprefix + "Pis";
-        uc.SchemaUserPay = uprefix + "Pay";
-        uc.SchemaUserAms = uprefix + "Ams";
-        uc.SchemaUserApp = uprefix + "App";
+        var uprefix  = "U" + userId + "C1";
+        uc.SchemaMainPis   = uprefix + "Pis";
+        uc.SchemaUserPay   = uprefix + "Pay";
+        uc.SchemaUserAms   = uprefix + "Ams";
+        uc.SchemaUserApp   = uprefix + "App";
         uc.SchemaUserAcctg = uprefix + "Acctg";
 
         if (string.IsNullOrEmpty(uc.DefCompanyId))
@@ -125,10 +126,10 @@ public class _00MainDA : I_00MainDA
         var coId = res.Id.ToString().ToString();
         var prefix = "U" + ownerId + "C" + coId;
 
-        uc.SchemaMainPis = prefix + "Pis";
-        uc.SchemaUserPay = prefix + "Pay";
-        uc.SchemaUserAms = prefix + "Ams";
-        uc.SchemaUserApp = prefix + "App";
+        uc.SchemaMainPis   = prefix + "Pis";
+        uc.SchemaUserPay   = prefix + "Pay";
+        uc.SchemaUserAms   = prefix + "Ams";
+        uc.SchemaUserApp   = prefix + "App";
         uc.SchemaUserAcctg = prefix + "Acctg";
         uc.CoName = res.CompanyName;
 
