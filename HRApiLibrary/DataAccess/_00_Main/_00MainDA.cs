@@ -149,15 +149,13 @@ public class _00MainDA : I_00MainDA
     }
     public async Task<UserCompanyModel?> _02UserCompany(int id, string schema = "Main", string conn = "MySqlConn")
     {
-        string sql = $@"select  Id, OwnerId, CompanySName, CompanyName, CountryId, RegionId, CityId, Zipcode, 
-                            CurrencyId, StorageId, AMSSchema, ApplicantSchema, PISSchema, PaySchema from {schema}.Userscompany where Id = @Id";
+        string sql = $@"select  * from {schema}.Userscompany where Id = @Id";
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     public async Task<List<UserCompanyModel?>> _02UserCompanyPerUser(int id, string schema = "Main", string conn = "MySqlConn")
     {
-        string sql = $@"select  Id, OwnerId, CompanySName, CompanyName, CountryId, RegionId, CityId, Zipcode, 
-                            CurrencyId, StorageId, AMSSchema, ApplicantSchema, PISSchema, PaySchema from {schema}.Userscompany where OwnerId = @OwnerId";
+        string sql = $@"select  * from {schema}.Userscompany where OwnerId = @OwnerId";
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { OwnerId = id }, conn);
         return data;
     }
