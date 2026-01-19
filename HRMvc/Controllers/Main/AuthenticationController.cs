@@ -106,6 +106,10 @@ public class AuthenticationController : Controller
         var uc      = await _mainDA._02UserCompany(user?.DefaultCoId ?? 0);
 
         CreateClaims(user ?? new UsersModel(){Id=0}, uc); 
+        HttpContext.Session.Clear();
+        HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
+        HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
+        
         return Redirect("~/13");
         
         //return Content($"user id : {uc?.CompanyName} ** link {link}");
@@ -625,6 +629,7 @@ public class AuthenticationController : Controller
         var amsSchema       = prefix + "Ams";
         var conn            = user.Domain;
         var coName          = uc?.CompanyName ?? "-";
+        var email = user.Email;
 
         if (!string.IsNullOrEmpty(user.DefaultCoId.ToString()) && user.DefaultCoId != 0)
         {
@@ -649,6 +654,7 @@ public class AuthenticationController : Controller
         {
             new("UserId",               userId),
             new("UserName",             loginName),
+            new("Email",                email??""),
             new("DefCompayId",          defCoId),
             new("PisSchema",            pisSchema ?? ""),
             new("PaySchema",            paySchema ?? ""),
@@ -694,7 +700,8 @@ public class AuthenticationController : Controller
         var appSchema       = prefix + "App";
         var amsSchema       = prefix + "Ams";
         var conn           = user.Domain;
-        var defCoId              = "0";
+        var defCoId               = "0";
+        var email           = user.Email ?? "-";
         
         var resUc = await _mainDA._02UserCompanyPerOwnerId(user.Id); 
         var coName                = resUc.FirstOrDefault()?.CompanyName ?? "Undefined Company";
@@ -725,7 +732,8 @@ public class AuthenticationController : Controller
         {
             new("UserId",               userId),
             new("UserName",             loginName ?? ""),
-            new("DefCompayId",          defCoId ?? ""),
+            new("Email",                email     ?? "-"),
+            new("DefCompayId",          defCoId   ?? ""),
             new("PisSchema",            pisSchema ?? ""),
             new("PaySchema",            paySchema ?? ""),
             new("ApplicantSchema",      appSchema ?? ""),
