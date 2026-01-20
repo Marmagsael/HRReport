@@ -22,6 +22,7 @@ builder.AddApiInjectionServices();
 builder.AddApiServices();
 
 var app = builder.Build();
+app.UseSession();  
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();
