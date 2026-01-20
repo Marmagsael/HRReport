@@ -234,6 +234,7 @@
         var empratePara = rate / noOfDays / hrsPerDay;
         var ratePerDay  = rate / noOfDays;
         var rateperHour = ratePerDay / hrsPerDay; 
+        if (rateperHour == null) rateperHour = 0;
         
         //Console.WriteLine($"**---------------------------------------**");
         V504?.Empratesdtls?.ForEach(r =>
@@ -242,7 +243,16 @@
             if (r?.RateOverBasic != 0)
             {
                 if (r?.AcctNumber == "E000") { r.Rate = (rateperHour??0) * -1 ; }
-                else { r?.Rate = (rateperHour??0) * (r.RateOverBasic>0 ? r.RateOverBasic : 1 ) ; }
+                else 
+                {
+                    var rob = r?.RateOverBasic ?? 0;
+
+                    if (rob == 0) rob = 1.00;
+                    if (r != null)
+                    {
+                        r.Rate = (rateperHour ?? 0) * rob;
+                    }
+                }
                 
                 _ = UpdateRatesdtl(r??new EmpratesdtlModel());
             }
