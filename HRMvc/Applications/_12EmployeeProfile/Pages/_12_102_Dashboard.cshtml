@@ -1,10 +1,15 @@
 @using System.Security.Claims
 @using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis.OPis
+@using Microsoft.AspNetCore.Http
 @using Microsoft.Extensions.Configuration
 
 @inject I_00MainDA                  _mainDA
 @inject IConfiguration              _config;
+@inject IOempmasDataAccess          _oempmas;
+
 
 @{
     ViewData["Title"] = "Employee Dashboard";
@@ -13,6 +18,19 @@
     var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
     IEnumerable<Claim?> claims = User.Claims;
     UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
+    
+    var oEmpnumber = Context.Session.GetString("EmpNumber");
+    var oPisDb = Context.Session.GetString("OldPis");
+    var oPayDb = Context.Session.GetString("OldPis");
+    
+    userClaims.OempNumber = oEmpnumber;
+    userClaims.OpayDb = oPisDb;
+    userClaims.OpisDb = oPisDb; 
+    
+    List<OempmasModel?>? oEmpmas = new(); 
+    
+    /*if(string.IsNullOrEmpty(empnumber)) return;
+    oEmpmas = await _oempmas._02(empnumber, oldPis, userClaims.Conn );*/
 
 
 

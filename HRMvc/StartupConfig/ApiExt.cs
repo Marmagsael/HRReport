@@ -8,6 +8,7 @@ using HRApiLibrary.DataAccess._00_MainTrans;
 using HRApiLibrary.DataAccess._00_MainTrans.Interfaces;
 using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
+using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay;
 using HRApiLibrary.DataAccess._20_Pay.DA0605;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
@@ -103,8 +104,9 @@ public static class ApiExt
         builder.Services.AddSingleton<IPenaltyDataAccess, RpenaltyDataAccess>();
 
         builder.Services.AddSingleton<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
-        
         builder.Services.AddSingleton<DA222>();
+        /*builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<SessionService>();*/
         
         //-- Accountability ------------------------------------------------------------
         builder.Services.AddSingleton<IInvDataAccess, InvDataAccess>();
@@ -120,6 +122,7 @@ public static class ApiExt
         //-- PIS Personal ------------------------------------------------------------
         builder.Services.AddSingleton<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddSingleton<IMymovementDataAccess, MymovementDataAccess>();
+        builder.Services.AddSingleton<IOempmasDataAccess, OempmasDataAccess>();
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
