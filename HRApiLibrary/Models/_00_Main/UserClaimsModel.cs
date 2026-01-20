@@ -15,6 +15,11 @@ public class UserClaimsModel
     public string?                  SchemaUserAcctg         { get; set; } = string.Empty;  
     public string?                  SchemaUserApp           { get; set; } = string.Empty;
     public string?                  CoName                  { get; set; } = string.Empty;
+    
+    //-----------------------------------------------------------------------------------
+    public string?                  OempNumber              { get; set; } = string.Empty;
+    public string?                  OpisDb                  { get; set; } = string.Empty;
+    public string?                  OpayDb                  { get; set; } = string.Empty;
 
     //------------------------------------------------------------------------------------
     public string?                  Email                   { get; set; } = string.Empty;    

@@ -13,6 +13,7 @@ using HRApiLibrary.Models._00_MainPis;
 using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
+using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using MySqlX.XDevAPI;
@@ -34,22 +35,24 @@ public class AuthenticationController : Controller
     private readonly I_20_002_PayTblMaker           _payTblMaker;
     private readonly I_00UserscompanyDataAccess     _userCompany;
     private readonly I_AcctgTableMaker              _acctg;
+    private readonly IOempmasDataAccess             _oldEmpmas;
     
             
 
 
 
-    public AuthenticationController(IConfiguration config,
-                                    I_00UsersAccess userAccess,
-                                    I_90_001_MySqlDataAccess mysql,
-                                    I_00MainDA mainDA,
-                                    I_09_02_VarsGlobal vars,
-                                    ClaimsAccess claimsAccess,
-                                    I_00MainPisTblMakerAccess mainPisTblMaker,
-                                    I_10_EmpmasDataAccess empmas, 
-                                    I_20_002_PayTblMaker payTblMaker, 
+    public AuthenticationController(IConfiguration             config,
+                                    I_00UsersAccess            userAccess,
+                                    I_90_001_MySqlDataAccess   mysql,
+                                    I_00MainDA                 mainDA,
+                                    I_09_02_VarsGlobal         vars,
+                                    ClaimsAccess               claimsAccess,
+                                    I_00MainPisTblMakerAccess  mainPisTblMaker,
+                                    I_10_EmpmasDataAccess      empmas, 
+                                    I_20_002_PayTblMaker       payTblMaker, 
                                     I_00UserscompanyDataAccess userCompany, 
-                                    I_AcctgTableMaker acctg)
+                                    I_AcctgTableMaker          acctg, 
+                                    IOempmasDataAccess         oldEmpmas )
     {
         _config             = config;
         _userAccess         = userAccess;
@@ -62,6 +65,8 @@ public class AuthenticationController : Controller
         _payTblMaker        = payTblMaker;
         _userCompany        = userCompany;
         _acctg              = acctg;
+        _oldEmpmas          = oldEmpmas;
+        
     }
 
 
@@ -96,29 +101,7 @@ public class AuthenticationController : Controller
         return View();
     }
     
-    [HttpGet("changingclaims/{link}/{userid}")]
-    public async Task<IActionResult> ChangingClaims(string link, string userid)
-    {
-        //ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
-
-        var uid     = int.Parse(userid); 
-        var user    = await _mainDA._02UsersById(uid);
-        var uc      = await _mainDA._02UserCompany(user?.DefaultCoId ?? 0);
-
-        CreateClaims(user ?? new UsersModel(){Id=0}, uc); 
-        HttpContext.Session.Clear();
-        
-        HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
-        HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
-        
-        //Console.WriteLine($"Old Pis : {uc.OldPis ?? ""}");
-        //Console.WriteLine($"Old Pay : {uc.OldPay ?? ""}");
-        
-        return Redirect("~/13");
-        
-        //return Content($"user id : {uc?.CompanyName} ** link {link}");
-        
-    }
+    
     
 
     // -- 03 ---------------------------
@@ -391,13 +374,46 @@ public class AuthenticationController : Controller
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
         HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
         
-        //Console.WriteLine($"Old Pis 1 : {uc.OldPis ?? ""}");
-        //Console.WriteLine($"Old Pay 1 : {uc.OldPay ?? ""}");
+        if (uc.OldPis.Length <= 0) return Redirect("~/13");
+        var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
+        if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
+        Console.WriteLine($"Empas Count 1 : {empmas.Count} * email : {user.Email} * uc.OldPis : {uc.OldPis} * conn : {conn} ");
+
         
         
         return Redirect("13");
 
 
+    }
+    
+    [HttpGet("changingclaims/{link}/{userid}")]
+    public async Task<IActionResult> ChangingClaims(string link, string userid)
+    {
+        //ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
+
+        var uid     = int.Parse(userid); 
+        var user    = await _mainDA._02UsersById(uid);
+        var uc      = await _mainDA._02UserCompany(user?.DefaultCoId ?? 0);
+
+        CreateClaims(user ?? new UsersModel(){Id=0}, uc); 
+        HttpContext.Session.Clear();
+        
+        HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
+        HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
+        HttpContext.Session.SetString("EmpNumber", "00000");
+
+        if (uc.OldPis.Length <= 0) return Redirect("~/13");
+        
+        var conn     = _config.GetSection("Schema:DefConn").Value.ToString();
+        var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
+        if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
+        Console.WriteLine($"Empas Count 2 : {empmas.Count} * email : {user.Email} * uc.OldPis : {uc.OldPis} * conn : {conn} ");
+
+
+        return Redirect("~/13");
+        
+        //return Content($"user id : {uc?.CompanyName} ** link {link}");
+        
     }
 
     private async Task CreateCompany(UsersModel user, UserCompanyModel? uc, string conn)
