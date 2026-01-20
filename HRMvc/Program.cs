@@ -15,6 +15,9 @@ builder.AddInjectServices();
 builder.AddHttpClient();
 builder.AddCors();
 builder.AddAuthenticationServices();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SessionService>();
+builder.Services.AddScoped<UserClaimsContextService>();
 
 
 //Api Injection -------------------------
