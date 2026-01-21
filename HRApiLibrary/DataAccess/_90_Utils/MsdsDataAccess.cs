@@ -13,6 +13,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using HRApiLibrary.Models._00_Main;
 
 
 namespace HRApiLibrary.DataAccess._90_Utils;
@@ -20,6 +21,7 @@ namespace HRApiLibrary.DataAccess._90_Utils;
 
 public class MsdsDataAccess : IMsdsDataAccess
 {
+
 
     public async Task SendEmail(EmailModel email)
     {
