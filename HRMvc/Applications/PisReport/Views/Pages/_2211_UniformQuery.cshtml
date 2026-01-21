@@ -1,32 +1,12 @@
-﻿@using HRApiLibrary.DataAccess._00_Main.Interface
-@using HRApiLibrary.DataAccess._20_Pay_Report
-@using HRApiLibrary.Models._00_Main
-@using System.Security.Claims
-@using HRMvc.Applications.PayrollReport.Views.Blazor
-@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
-@using Microsoft.Extensions.Configuration
-
-@inject I_00MainDA                  _mainDA
-@inject IConfiguration              _config;
-@inject IGPayrollReportDataAccess   _pr;
+﻿@inject HRMvc.StartupConfig.UserClaimsContextService ClaimsContext
 
 @{
     Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
-
-    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
-    IEnumerable<Claim?> claims = User.Claims;
-    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
-
-    //--- Load Initial Data -------------------------------------------------
-    var conn = userClaims.Conn;
-    var paydb = "Pay";
-
-    var chartOfAccts = await _pr._02ByAcctTypes("E", paydb, conn!);
+    var userClaims = ClaimsContext.Build(User);
 }
 
-
 <div>
-    @* @(await Html.RenderComponentAsync<_1102_ES>(RenderMode.ServerPrerendered, new { UserClaims = userClaims, ChartOfAccts = chartOfAccts })) *@
+    @(await Html.RenderComponentAsync<_2102_EML>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))
     <div> 2211 </div>
     
 </div>
