@@ -19,10 +19,15 @@ public class L12_120
     public async Task<List<OempmasModel?>> Oempmass(UserClaimsModel uc)
     {
         List<OempmasModel?>? oEmpmass = [];
-        var pisdb = _http.HttpContext?.Session.GetString("OldPis");
-        var paydb = _http.HttpContext?.Session.GetString("OldPay");
+        // var pisdb = _http.HttpContext?.Session.GetString("OldPis");
+        // var paydb = _http.HttpContext?.Session.GetString("OldPay");
+        // var conn = uc.Conn;
+        // var empnumber = _http.HttpContext?.Session.GetString("EmpNumber");
+
+        var empnumber = uc.OempNumber; 
+        var pisdb = uc.OpisDb; 
         var conn = uc.Conn;
-        var empnumber = _http.HttpContext?.Session.GetString("EmpNumber"); 
+        
         var empass = await _oempmas._02(empnumber,pisdb, conn);
         
         return oEmpmass;
