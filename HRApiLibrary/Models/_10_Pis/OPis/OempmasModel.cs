@@ -3,9 +3,9 @@ namespace HRApiLibrary.Models._10_Pis.OPis;
 public class OempmasModel
 {
     public string? EmpNumber                { get; set; }
-    public string? EmpLastName              { get; set; }
-    public string? EmpFirstName             { get; set; }
-    public string? EmpMiddleName            { get; set; }
+    public string? EmpLastNm              { get; set; }
+    public string? EmpFirstNm             { get; set; }
+    public string? EmpMiddleNm            { get; set; }
     public string? Suffix                   { get; set; }
     public string? EmpAlias                 { get; set; }
     public string? Client                   { get; set; }
