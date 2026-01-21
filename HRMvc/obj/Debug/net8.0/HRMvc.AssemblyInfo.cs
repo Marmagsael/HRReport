@@ -14,11 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< HEAD
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eef51a82f3973f4167774fb468c621e09b54518e")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7b9deb13e3e9191ea7bc8b3c3c24636be9488059")]
->>>>>>> origin/mar
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5b26e2a9d535545046eebb4af1eb6a540b21881b")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
