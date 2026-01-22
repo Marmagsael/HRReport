@@ -1,0 +1,55 @@
+﻿@namespace HRMvc.Applications.PisReport.Views.Blazor
+
+@using HRApiLibrary.DataAccess._20_Pay_Report
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+
+<div class="p-3"> <button class="btn btn-success" @onclick="Create">Generate Report </button> </div>
+
+
+
+<div>
+    <IframeReportRenderer DataSource="report"
+                          ReportRelativePath="@relativePath"
+                          OutputFormat="@selectedFormat"
+                          Parameters="reportParams"
+                          AutoGenerate="@(report?.Any() == true)"
+                          RefreshToken="@refreshToken" />
+
+</div>
+
+
+@code {
+
+    private class ReportModel
+    {
+        public string?  No     { get; set; }
+        public string?  EmpNumber  { get; set; }
+
+    }
+
+    List<ReportModel?>? report = [];
+
+    private string relativePath = "Reports/_02HR/_2102_EML.trdp";
+    private string                      selectedFormat  = "PDF";                                          //PDF | XLSX
+    private Dictionary<string, object> reportParams     = new() { ["CoName"] = "Morpheusbox Inc." };
+    private int                         refreshToken    = 2102000;
+    
+
+
+    [Parameter] public UserClaimsModel?		UserClaims { get; set; }
+
+    private void Create()
+    {
+        
+        report = [];
+        report.Add(new ReportModel() { No = "1", EmpNumber = "00001" });
+        report.Add(new ReportModel() { No = "2", EmpNumber = "00002" });
+        report.Add(new ReportModel() { No = "3", EmpNumber = "00003" });
+        report.Add(new ReportModel() { No = "4", EmpNumber = "00004" });
+        report.Add(new ReportModel() { No = "5", EmpNumber = "00005" });
+
+    }
+
+}
+ 
