@@ -51,9 +51,11 @@ public class OempmasDataAccess : IOempmasDataAccess
 	
 	public async Task<List<OempmasModel?>?> _02(string empnumber, string schema, string conn)
 	{
-        empnumber = string.IsNullOrWhiteSpace(empnumber) ? "0" : empnumber;
-
-        var  sql = $@"select  * from {schema}.Empmas where Empnumber = @Empnumber" ; 
+		
+		var  sql = $@"select  s.name EmpStatus, p.name PositionName, e.*  from {schema}.Empmas e
+          			  	left join {schema}.position p on p.code = e.position_
+                      	left join {schema}.empstat s on s.code = e.empstat_                              
+          			  where e.Empnumber = @Empnumber" ; 
 		var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn); 
 		return data;
 	}

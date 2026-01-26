@@ -492,8 +492,30 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IpAddress       Char(20), 
                             MacAddress      Char(20),
                             UserId          BigInt, 
+                            PunchComplete   Int default 0, 
                         PRIMARY KEY (EmpmasId, PunchDate)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { });
+        
+        sql = @$"CREATE TABLE if not exists {schema}.AttPunches1 (
+                            EmpmasId        INTEGER     UNSIGNED,
+                            DayNo           Int, 
+                            PunchInDate     DATETIME,
+                            PunchT          Int, 
+                            SchedDuration   Int, 
+                            DutyTypeId      INTEGER     UNSIGNED,
+                            TimeZoneIdIn    INTEGER     UNSIGNED,
+                            IpAddressIn     Char(20), 
+                            MacAddressIn    Char(20),
+                            UserIdIn        BigInt, 
+
+                            PunchOutDate     DATETIME,
+                            TimeZoneIdOut    INTEGER     UNSIGNED,
+                            IpAddressOut     Char(20), 
+                            MacAddressOut    Char(20),
+                            UserIdOut        BigInt, 
+                        PRIMARY KEY (EmpmasId, PunchInDate)) ENGINE = InnoDB;";
+        await _sql.ExecuteCmd(sql, new { });
+
 
     }
 
