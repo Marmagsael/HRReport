@@ -5,7 +5,7 @@ public class OempmasModel
     public string? EmpNumber                { get; set; }
     public string? EmpLastNm              { get; set; }
     public string? EmpFirstNm             { get; set; }
-    public string? EmpMiddleNm            { get; set; }
+    public string? EmpMidNm            { get; set; }
     public string? Suffix                   { get; set; }
     public string? EmpAlias                 { get; set; }
     public string? Client                   { get; set; }
@@ -38,7 +38,7 @@ public class OempmasModel
     public string? Tel2                     { get; set; }
     public string? BirthDate                { get; set; }
     public string? BirthPlace               { get; set; }
-    public string? Sex                      { get; set; }
+    public string? Sex_                     { get; set; }
     public string? CivilStatus              { get; set; }
     public string? Citizenship              { get; set; }
     public string? Height                   { get; set; }
@@ -53,10 +53,10 @@ public class OempmasModel
     public string? Spouse                   { get; set; }
     public string? Occupation               { get; set; }
     public string? NumberOfChildren         { get; set; }
-    public string? DateHired                { get; set; }
+    public DateTime? DateHired                { get; set; }
     public string? SeparationDate           { get; set; }
     public string? Position                 { get; set; }
-    public string? EmploymentStatus         { get; set; }
+    public string? EmpStat_                 { get; set; }
     public string? StatusDate               { get; set; }
     public string? SecurityLicense          { get; set; }
     public string? LicenseExpiry            { get; set; }
@@ -84,6 +84,9 @@ public class OempmasModel
     public string? IsWithSss                { get; set; }
     public string? IsWithGsis               { get; set; }
     public string? IsWithPhilHealth         { get; set; }
-    public string? IsWithPagIbig            { get; set; }  
+    public string? IsWithPagIbig            { get; set; }
+    //-------------------------------------------------------
+    public string? PositionName            { get; set; } = string.Empty;
+    public string? EmpStatus               { get; set; } = string.Empty;
 }
 
