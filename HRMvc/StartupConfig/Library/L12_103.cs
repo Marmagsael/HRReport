@@ -51,7 +51,7 @@ public class L12_103
         var pisdb = uc.OpisDb;
         var conn = uc.Conn;
 
-        var family = await _ofamily._02(pisdb, conn);
+        var family = await _ofamily._02(empnumber, pisdb, conn);
         return family;
     }
 
@@ -61,7 +61,7 @@ public class L12_103
         var pisdb = uc.OpisDb;
         var conn = uc.Conn;
 
-        var emergenc = await _oemergenc._02(pisdb, conn);
+        var emergenc = await _oemergenc._02(empnumber, pisdb, conn);
         return emergenc;
     }
 
