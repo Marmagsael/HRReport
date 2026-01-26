@@ -4,7 +4,7 @@ public class Attpunches1Model
 {
 	public string? EmpmasId         {get; set; } 
 	public string? DayNo            {get; set; } 
-	public string? PunchInDate      {get; set; } 
+	public DateTime PunchInDate      {get; set; } 
 	public string? PunchT           {get; set; } 
 	public string? SchedDuration    {get; set; } 
 	public string? DutyTypeId       {get; set; } 
@@ -12,7 +12,7 @@ public class Attpunches1Model
 	public string? IpAddressIn      {get; set; } 
 	public string? MacAddressIn     {get; set; } 
 	public string? UserIdIn         {get; set; } 
-	public string? PunchOutDate     {get; set; } 
+	public DateTime PunchOutDate     {get; set; } 
 	public string? TimeZoneIdOut    {get; set; } 
 	public string? IpAddressOut     {get; set; } 
 	public string? MacAddressOut    {get; set; } 
