@@ -1,3 +1,4 @@
+using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.Models._00_Main;
@@ -11,15 +12,15 @@ public class L12_102
 {
     private readonly IOempmasDataAccess _oempmas;
     private readonly IAtttemplateDataAccess _attTemplate; 
-    private readonly IAttpunchesDataAccess _attpunches;
+    private readonly IAttpunches1DataAccess _attpunches1;
 
     public L12_102(IOempmasDataAccess oempmas, 
                    IAtttemplateDataAccess attTemplate, 
-                   IAttpunchesDataAccess attpunches)
+                   IAttpunches1DataAccess attpunches1)
     {
         _oempmas        = oempmas;
         _attTemplate    = attTemplate;
-        _attpunches     = attpunches;
+        _attpunches1     = attpunches1;
     }
 
     public async Task<List<OempmasModel?>?> _02Oempmass(UserClaimsModel uc)
@@ -48,8 +49,16 @@ public class L12_102
         }
         v12_102.Atttemplates = Atttemplates;
 
-        // --- Previous Punches -----------------------------//
-        //var Attdailys = await _attpunches._02._05_Last7Days(empmasid, pisdb, conn);
+        // --- Punches  -----------------------------//
+            //--- Get Last 7 Days Punches -----------------//
+            var Attpunches1_7days = await _attpunches1._02LastPunches(empmasid, 7, pisdb, conn); 
+
+            //--- Get Puches without Out -----------------//
+            var Attpunches1_Wo_Out = await _attpunches1._02NoPunchOut(empmasid, pisdb, conn); 
+
+        v12_102.Attpunches1_7days   = Attpunches1_7days;
+        v12_102.Attpunches1_Wo_Out  = Attpunches1_Wo_Out;
+
 
 
 
