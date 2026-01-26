@@ -1,25 +1,30 @@
-@using System.Security.Claims
-@using HRApiLibrary.DataAccess._00_Main.Interface
-@using HRApiLibrary.Models._00_Main
-@using Microsoft.Extensions.Configuration
+@inject UserClaimsContextService ClaimsContext
+@inject L12_103 L103
 
-@inject I_00MainDA                  _mainDA
-@inject IConfiguration              _config;
 
 @{
     Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
-
-    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
-    IEnumerable<Claim?> claims = User.Claims;
-    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
-
-
-
+    var userClaims  = ClaimsContext.Build(User);
+    var oEmpmas     = await L103._02Oempmass(userClaims);
+    var oEducates   = await L103._02Oeducate(userClaims);
+    var oEmergenc   = await L103._02OEmergenc(userClaims);
+    var oFamily     = await L103._02OFamily(userClaims);
+    var oGender     = await L103._02OGender(userClaims);
+    var oCivstat    = await L103._02OCivstat(userClaims);
 }
 
-
 <div>
-    @* @(await Html.RenderComponentAsync<_1102_ES>(RenderMode.ServerPrerendered, new { UserClaims = userClaims })) *@
-    <div class="w-780p "> 12.103 </div>
-    
+
+    @(await Html.RenderComponentAsync<_12_1032R>(RenderMode.ServerPrerendered, new { UserClaims = userClaims, 
+                                                                                    Oempmass    = oEmpmas, 
+                                                                                    oEducates   = oEducates,  
+                                                                                    oFamilys    = oFamily,  
+                                                                                    oEmergencs  = oEmergenc,    
+                                                                                    Ogenders    = oGender, 
+                                                                                    Ocivstats   = oCivstat
+                                                                                     }))
+
 </div>
+
+
+
