@@ -3,9 +3,9 @@ namespace HRApiLibrary.Models._10_Pis.OPis;
 public class OempmasModel
 {
     public string? EmpNumber                { get; set; }
-    public string? EmpLastNm              { get; set; }
-    public string? EmpFirstNm             { get; set; }
-    public string? EmpMidNm            { get; set; }
+    public string? EmpLastNm                { get; set; }
+    public string? EmpFirstNm               { get; set; }
+    public string? EmpMidNm                 { get; set; }
     public string? Suffix                   { get; set; }
     public string? EmpAlias                 { get; set; }
     public string? Client                   { get; set; }
@@ -40,8 +40,7 @@ public class OempmasModel
     public DateTime EmpBirth                { get; set; }
     public string? BirthPlace               { get; set; }
     public string? Sex_                     { get; set; }
-    public string? CivilStatus              { get; set; }
-    public string? Civstat_                 { get; set; }
+    public string? CivStat_                 { get; set; }
     public string? Citizenship              { get; set; }
     public string? Citizen                  { get; set; }
     public int? Height                      { get; set; }
