@@ -15,10 +15,10 @@ public class OemergencDataAccess : IOemergencDataAccess
 
 
 
-    public async Task<List<OemergencModel?>?> _02( string schema, string conn)
+    public async Task<List<OemergencModel?>?> _02(string empnumber, string schema, string conn)
     {
-        var sql = $@"select  * from {schema}.emergenc ";
-        var data = await _sql.FetchData<OemergencModel?, dynamic>(sql, new {  }, conn);
+        var sql = $@"select  * from {schema}.emergenc where EMPNUMBER = @EMPNUMBER;";
+        var data = await _sql.FetchData<OemergencModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
         return data;
     }
 
@@ -28,5 +28,5 @@ public class OemergencDataAccess : IOemergencDataAccess
 
 public interface IOemergencDataAccess
 {
-    Task<List<OemergencModel?>?> _02( string schema, string conn);
+    Task<List<OemergencModel?>?> _02(string empnumber, string schema, string conn);
 }

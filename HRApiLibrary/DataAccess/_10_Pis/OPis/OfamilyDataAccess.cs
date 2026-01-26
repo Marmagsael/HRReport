@@ -15,10 +15,10 @@ public class OfamilyDataAccess : IOfamilyDataAccess
 
 
 
-    public async Task<List<OfamilyModel?>?> _02(string schema, string conn)
+    public async Task<List<OfamilyModel?>?> _02(string empnumber, string schema, string conn)
     {
-        var sql = $@"select EMPNUMBER,NAME, NULLIF(BIRTH, '0000-00-00') AS BIRTH,RELATION from {schema}.family ";
-        var data = await _sql.FetchData<OfamilyModel?, dynamic>(sql, new { }, conn);
+        var sql = $@"select * from {schema}.family where EMPNUMBER = @EMPNUMBER;  ";
+        var data = await _sql.FetchData<OfamilyModel?, dynamic>(sql, new { EMPNUMBER = empnumber}, conn);
         return data;
     }
 
@@ -28,5 +28,5 @@ public class OfamilyDataAccess : IOfamilyDataAccess
 
 public interface IOfamilyDataAccess
 {
-    Task<List<OfamilyModel?>?> _02(string schema, string conn);
+    Task<List<OfamilyModel?>?> _02(string empnumber, string schema, string conn);
 }

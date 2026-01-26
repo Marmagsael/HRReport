@@ -41,8 +41,11 @@ public class OempmasModel
     public string? BirthPlace               { get; set; }
     public string? Sex_                     { get; set; }
     public string? CivilStatus              { get; set; }
+    public string? Civstat_                 { get; set; }
     public string? Citizenship              { get; set; }
-    public string? Height                   { get; set; }
+    public string? Citizen                  { get; set; }
+    public int? Height                      { get; set; }
+    public int? HeightInches                { get; set; }
     public string? Weight                   { get; set; }
     public string? Tin                      { get; set; }
     public string? Sss                      { get; set; }
@@ -57,7 +60,8 @@ public class OempmasModel
     public string? Spouse                   { get; set; }
     public string? Occupation               { get; set; }
     public string? NumberOfChildren         { get; set; }
-    public DateTime? DateHired                { get; set; }
+    public string? NoChildren               { get; set; }
+    public DateTime? DateHired              { get; set; }
     public string? SeparationDate           { get; set; }
     public string? Position                 { get; set; }
     public string? EmpStat_                 { get; set; }
@@ -91,5 +95,8 @@ public class OempmasModel
     //-------------------------------------------------------
     public string? PositionName            { get; set; } = string.Empty;
     public string? EmpStatus               { get; set; } = string.Empty;
+
+    public string? Addr1 { get; set; }
+    public string? Addr2 { get; set; }
 }
 
