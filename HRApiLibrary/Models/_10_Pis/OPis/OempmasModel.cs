@@ -5,7 +5,7 @@ public class OempmasModel
     public string? EmpNumber                { get; set; }
     public string? EmpLastNm              { get; set; }
     public string? EmpFirstNm             { get; set; }
-    public string? EmpMiddleNm            { get; set; }
+    public string? EmpMidNm            { get; set; }
     public string? Suffix                   { get; set; }
     public string? EmpAlias                 { get; set; }
     public string? Client                   { get; set; }
@@ -36,13 +36,18 @@ public class OempmasModel
     public string? Address2                 { get; set; }
     public string? Tel1                     { get; set; }
     public string? Tel2                     { get; set; }
-    public string? BirthDate                { get; set; }
+    //public string? BirthDate              { get; set; }
+    public DateTime EmpBirth                { get; set; }
     public string? BirthPlace               { get; set; }
-    public string? Sex                      { get; set; }
-    public string? CivilStatus              { get; set; }
-    public string? Citizenship              { get; set; }
-    public string? Height                   { get; set; }
-    public string? Weight                   { get; set; }
+    //public string? Sex                    { get; set; }
+    public string? Sex_                     { get; set; }
+    //public string? CivilStatus              { get; set; }
+    public string? Civstat_                { get; set; }
+    //public string? Citizenship              { get; set; }
+    public string? Citizen                  { get; set; }
+    public int Height                       { get; set; }
+    public int HeightInches                 { get; set; }
+    public int Weight                       { get; set; }
     public string? Tin                      { get; set; }
     public string? Sss                      { get; set; }
     public string? PagIbig                  { get; set; }
@@ -50,9 +55,13 @@ public class OempmasModel
     public string? Religion                 { get; set; }
     public string? Hair                     { get; set; }
     public string? Eyes                     { get; set; }
+    public string? Complexion               { get; set; }
+    public string? Marks                    { get; set; }
+    public string? BloodType                { get; set; }
     public string? Spouse                   { get; set; }
     public string? Occupation               { get; set; }
-    public string? NumberOfChildren         { get; set; }
+    //public string? NumberOfChildren       { get; set; }
+    public string? NoChildren               { get; set; }
     public string? DateHired                { get; set; }
     public string? SeparationDate           { get; set; }
     public string? Position                 { get; set; }
@@ -70,7 +79,6 @@ public class OempmasModel
     public string? EmergencyContactName     { get; set; }
     public string? EmergencyContactTel      { get; set; }
     public string? EmergencyContactAddress  { get; set; }
-    public string? BloodType                { get; set; }
     public string? Age                      { get; set; }
     public string? Remarks                  { get; set; }
     public string? BadgeNumber              { get; set; }
