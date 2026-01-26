@@ -55,6 +55,7 @@ public static class ApiExt
         builder.Services.AddSingleton<IAtttemplateDataAccess, AtttemplateDataAccess>();
         builder.Services.AddSingleton<IAttdailyDataAccess, AttdailyDataAccess>();
         builder.Services.AddSingleton<IAttpunchesDataAccess, AttpunchesDataAccess>();
+        builder.Services.AddSingleton<IAttpunches1DataAccess, Attpunches1DataAccess>();
         builder.Services.AddSingleton<IEmpmasInternalDataAccess, EmpmasInternalDataAccess>();
         builder.Services.AddSingleton<IPissettingsDataAccess, PissettingsDataAccess>();
         builder.Services.AddSingleton<ILeavetypeDataAccess, LeavetypeDataAccess>();
