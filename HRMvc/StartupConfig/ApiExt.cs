@@ -124,6 +124,11 @@ public static class ApiExt
         builder.Services.AddSingleton<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddSingleton<IMymovementDataAccess, MymovementDataAccess>();
         builder.Services.AddSingleton<IOempmasDataAccess, OempmasDataAccess>();
+        builder.Services.AddSingleton<IOgenderDataAccess, OgenderDataAccess>();
+        builder.Services.AddSingleton<IOcivstatDataAccess, OcivstatDataAccess>();
+        builder.Services.AddSingleton<IOeducateDataAccess, OeducateDataAccess>();
+        builder.Services.AddSingleton<IOfamilyDataAccess, OfamilyDataAccess>();
+        builder.Services.AddSingleton<IOemergencDataAccess, OemergencDataAccess>();
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
