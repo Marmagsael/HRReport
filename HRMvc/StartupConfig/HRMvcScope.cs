@@ -10,6 +10,7 @@ public static class HRMvcScope
         services.AddScoped<SessionService>();
         services.AddScoped<UserClaimsContextService>();
         services.AddScoped<L12_102>();
+        services.AddScoped<L12_103>();
         services.AddScoped<L12_120>();
 
         return services;

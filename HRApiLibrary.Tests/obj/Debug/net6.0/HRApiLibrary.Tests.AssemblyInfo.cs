@@ -14,19 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d92c8699950b21aea31ea8a27983a1597c9d796d")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6751b4ec35a9822b069cbed587b2c57a7ed5d107")]
->>>>>>> 26f2d1d09cee8f7ce513dfe0081b861cfa0bcec8
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+26f2d1d09cee8f7ce513dfe0081b861cfa0bcec8")]
->>>>>>> origin/mar
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7b9deb13e3e9191ea7bc8b3c3c24636be9488059")]
->>>>>>> origin/mar
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+27f9c8547db2e86a3e6ae80edb0170e7799fee2c")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
