@@ -58,10 +58,13 @@ public class L12_102
 
         v12_102.Attpunches1_7days   = Attpunches1_7days;
         v12_102.Attpunches1_Wo_Out  = Attpunches1_Wo_Out;
-
-
-
-
+        
+        //--- Set Current Punch as the Latest Punch in the Last 7 Days ---//
+        if(v12_102.Attpunches1_7days.Count < 1) v12_102.Attpunches1_Current = new();
+        else    v12_102.Attpunches1_Current = v12_102.Attpunches1_7days.FirstOrDefault();
+                if(v12_102.Attpunches1_Current.Status == "L")   v12_102.Attpunches1_Current = new();
+            
+        
         return v12_102;
     }
     

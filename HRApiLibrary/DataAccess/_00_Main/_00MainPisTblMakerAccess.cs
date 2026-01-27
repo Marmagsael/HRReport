@@ -513,6 +513,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IpAddressOut     Char(20), 
                             MacAddressOut    Char(20),
                             UserIdOut        BigInt, 
+                            Status          Char(1) default '-',
                         PRIMARY KEY (EmpmasId, PunchInDate)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { });
 
@@ -708,7 +709,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                           Status        Char(1)         DEFAULT 'A',
                           DefaultCoId   INTEGER UNSIGNED NOT NULL DEFAULT 1,
                           PRIMARY KEY(`Id`))ENGINE = InnoDB;";
-        _sql.ExecuteCmd(sql, new { }, connName);
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
     private async Task _201_11_Empmas(string schema)
