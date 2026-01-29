@@ -5,7 +5,7 @@
 @using HRApiLibrary.Models._10_Pis
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 
-
+@{ var ac = Attpunches1_Current; }
 
 <div class="card w-100">
     <div class="card-header w-100 ">
@@ -29,25 +29,31 @@
         </div>
     </div>
     
+
     <div class="card-body">
+        @if (Attpunches1_Current?.Status == "-")
+        {
         @*--- Punch In ----------------*@
         <div class=" d-flex gap-2 p-1">
             <div class="p-2 w-100p"> Punch IN </div>
-            <div><RadzenTextBox @bind-Value="v.currIn" class="w-100p text-center" Disabled /></div>
+            <div><RadzenTextBox id="pin" @bind-Value="v.currIn" class="w-150p text-center" Disabled /></div>
             <div class="p-1">
                 <button class="btn btn-primary w-115p" @onclick="CPunchIn" disabled="@v.currInDisabled">Punch IN</button>
             </div>
             
         </div>
-        
+        }
+        else if (Attpunches1_Current != null)
+        {
         @*--- Punch Out  ----------------*@
         <div class=" d-flex  gap-2 p-1">
             <div class="p-2  w-100p"> Punch OUT </div>
-            <div><RadzenTextBox @bind-Value="v.currOut" class="w-100p text-center" Disabled /></div>
+            <div><RadzenTextBox id="pout" @bind-Value="v.currOut" class="w-150p text-center" Disabled /></div>
             <div class="p-1">
                 <button class="btn btn-warning w-115p" @onclick="CPunchOut" disabled="@v.currOutDisabled" >Punch Out</button>
             </div>
         </div>    
+        }
     </div>
     
 </div>
@@ -55,6 +61,7 @@
 @inject IAttdailyDataAccess _attdaily 
 @inject IAttpunches1DataAccess _attpunches1  
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 @code {
     
@@ -66,21 +73,68 @@
     V12_102BodyPunch v = new V12_102BodyPunch();
     PunchSchedule pSchedule = new PunchSchedule(0,0,0,"RD");
 
-    void CPunchIn()
+    @inject IJSRuntime JS
+
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (firstRender)
     {
-        string?         ipAdd       = MsdsDataAccess.GetIPAddress();
+        await JS.InvokeVoidAsync("startTextboxTime", "pout");
+        await JS.InvokeVoidAsync("startTextboxTime", "pin");
+    }
+}
+
+    async Task CPunchIn()
+    {
         string?         dayName     = DateTime.Now.DayOfWeek.ToString();
         int             dayNo       = MsdsDataAccess.GetDayNo(dayName);
         
-        
+        //--- Attendance Daily --------------
+        var attDaily = new AttdailyModel()
+        {
+            Empmasid    = uc?.UserId ?? 0,      
+            Empnumber   = uc?.OempNumber ?? "-", 
+            Punchdate   = DateTime.Now.Date, 
+            Dayno       = dayNo, 
+            Timein      = DateTime.Now,
+            Timeint     = pSchedule.HrsLenght, 
+            Dutytypeid  = pSchedule.DutyType == "R" ? 1 : 2, 
+            Inbyid      = uc.UserId, 
+            
+        };
+        var ad = await _attdaily._01PunchIn(attDaily, uc.SchemaUserPis, uc.Conn!);
+
+        //--- Attendance Punches ---------------------------------
+        var ipAdd       = MsdsDataAccess.GetIPAddress();
+        var id          = TimeZoneInfo.Local.Id;
+        var timeZone        = MsdsDataAccess.Get_TimeZone_Id(id);
+        var macAddress  = MsdsDataAccess.GetMacAddress();
+
+        Attpunches1Model? ap1 = new Attpunches1Model(){
+            EmpmasId        = uc?.UserId ?? 0,
+            DayNo           = dayNo, 
+            PunchInDate     = DateTime.Now,
+            PunchT          = pSchedule.InTime, 
+            SchedDuration   = pSchedule.HrsLenght, 
+            DutyTypeId      = pSchedule.DutyType == "R" ? 1 : 2,
+            TimeZoneIdIn   = timeZone, 
+            IpAddressIn    = ipAdd, 
+            MacAddressIn   = macAddress, 
+            UserIdIn       = uc?.UserId ?? 0, 
+            Status          = "N"
+        }; 
+
+        var res = await _attpunches1._01(ap1, uc.SchemaUserPis!, uc.Conn!);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);    
     }
+
     async Task CPunchOut()
     {
         if (Attpunches1_Current == null)
             return;
 
-        string dayName      = DateTime.Now.DayOfWeek.ToString();
-        if (Attpunches1_Current.PunchInDate != null) dayName = Attpunches1_Current.PunchInDate.DayOfWeek.ToString();
+        string? dayName     = Attpunches1_Current.PunchInDate.DayOfWeek.ToString();
         int dayNo           = MsdsDataAccess.GetDayNo(dayName);
         int hrs             = pSchedule.HrsLenght / 100;
         int mins            = pSchedule.HrsLenght % 100;
@@ -101,7 +155,8 @@
             Inbyid      = uc?.UserId ?? 0,
             Outbyid     = uc?.UserId ?? 0,
         };
-        var ad = await _attdaily._01PunchOut(attDaily, uc.SchemaUserPis??"-", uc.Conn);
+        var conn = uc.Conn ?? "-";
+        var ad = await _attdaily._01PunchOut(attDaily, uc.SchemaUserPis??"-", conn );
 
         var ipAdd       = MsdsDataAccess.GetIPAddress();
         var id          = TimeZoneInfo.Local.Id;
@@ -175,7 +230,7 @@
 
         v.empmas = Oempmass?.FirstOrDefault() ?? new OempmasModel();
         
-        if (Attpunches1_Current?.Status == "N")
+        if (Attpunches1_Current?.Status == "-")
         {
             v.currInDisabled  = false;
             v.currOutDisabled = true;
@@ -184,13 +239,11 @@
         {
             v.currInDisabled  = true;
             v.currOutDisabled = false;
-
-            v.currIn = Attpunches1_Current.PunchInDate
-                .ToString("hh:mm tt");
-
+            
+            v.currIn = Attpunches1_Current.PunchInDate.ToString("hh:mm tt");
             v.msg    = "Punch Out for : ";
-            v.msgVal = Attpunches1_Current.PunchInDate
-                .ToString("yyyy-MM-dd hh:mm tt");
+            v.msgVal = Attpunches1_Current.PunchInDate.ToString("yyyy-MM-dd hh:mm tt");
+            
         }
         
         string? dayName     = DateTime.Now.DayOfWeek.ToString();

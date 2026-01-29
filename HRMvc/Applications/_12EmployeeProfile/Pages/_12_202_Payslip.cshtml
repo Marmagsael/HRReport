@@ -1,25 +1,14 @@
-@using System.Security.Claims
-@using HRApiLibrary.DataAccess._00_Main.Interface
-@using HRApiLibrary.Models._00_Main
-@using Microsoft.Extensions.Configuration
-
-@inject I_00MainDA                  _mainDA
-@inject IConfiguration              _config;
+@inject UserClaimsContextService ClaimsContext
+@inject L12_102 L102 
 
 @{
     Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
-
-    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
-    IEnumerable<Claim?> claims = User.Claims;
-    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
-
-
-
+    var userClaims  = ClaimsContext.Build(User);
+    var oEmpmas = await L102._02Oempmass(userClaims); 
 }
 
 
 <div>
-    @* @(await Html.RenderComponentAsync<_1102_ES>(RenderMode.ServerPrerendered, new { UserClaims = userClaims })) *@
-    <div> 12.102 </div>
+    @(await Html.RenderComponentAsync<_12_202PSlip>(RenderMode.ServerPrerendered, new { UserClaims = userClaims, Oempmass = oEmpmas }))
     
 </div>
