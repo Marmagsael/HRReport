@@ -13,8 +13,8 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
     public async Task<Attpunches1Model?> _01(Attpunches1Model attpunches1, string schema, string conn)
     {
         string sql = $@"Insert into {schema}.Attpunches1 
-							(EmpmasId,  DayNo,  PunchInDate,  PunchT,  SchedDuration,  DutyTypeId,  TimeZoneIdIn,  IpAddressIn,  MacAddressIn,  UserIdIn  ) values 
-							(@EmpmasId, @DayNo, @PunchInDate, @PunchT, @SchedDuration, @DutyTypeId, @TimeZoneIdIn, @IpAddressIn, @MacAddressIn, @UserIdIn)";
+							(EmpmasId,  DayNo,  PunchInDate,  PunchT,  SchedDuration,  DutyTypeId,  TimeZoneIdIn,  IpAddressIn,  MacAddressIn,  UserIdIn,  Status  ) values 
+							(@EmpmasId, @DayNo, @PunchInDate, @PunchT, @SchedDuration, @DutyTypeId, @TimeZoneIdIn, @IpAddressIn, @MacAddressIn, @UserIdIn, @Status );";
         await _sql.ExecuteCmd<dynamic>(sql, attpunches1, conn);
 
         sql = $@"SELECT * FROM {schema}.Attpunches1 WHERE EmpmasId=@EmpmasId and PunchInDate=@PunchInDate";
@@ -31,7 +31,7 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 
     public async Task<List<Attpunches1Model?>?> _02NoPunchOut(int empmasId, string schema, string conn)
     {
-        string sql = $@"select  * from {schema}.Attpunches1 where EmpmasId=@EmpmasId and PunchOutDate is null order by PunchInDate desc  "; ;
+        string sql = $@"select  * from {schema}.Attpunches1 where EmpmasId=@EmpmasId and status != 'L' order by PunchInDate desc  "; ;
         var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data;
     }
@@ -44,7 +44,8 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 							TimeZoneIdOut 	= @TimeZoneIdOut, 
 							IpAddressOut 	= @IpAddressOut, 
 							MacAddressOut 	= @MacAddressOut, 
-							UserIdOut 		= @UserIdOut 
+							UserIdOut 		= @UserIdOut, 
+                            Status          = @Status 
 						where EmpmasId = @EmpmasId and PunchInDate = @PunchInDate;";
         await _sql.ExecuteCmd<dynamic>(sql, attpunches1, conn);
 

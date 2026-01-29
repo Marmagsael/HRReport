@@ -12,6 +12,7 @@ using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay;
 using HRApiLibrary.DataAccess._20_Pay.DA0605;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
+using HRApiLibrary.DataAccess._20_Pay.OPay;
 using HRApiLibrary.DataAccess._20_Pay.Report;
 using HRApiLibrary.DataAccess._20_Pay_Report;
 using HRApiLibrary.DataAccess._90_Utils;
@@ -132,6 +133,7 @@ public static class ApiExt
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
+        builder.Services.AddSingleton<IOtbltranDataAccess, OtbltranDataAccess>();
         
         builder.Services.AddSingleton<ITbltranDataAccess, TbltranDataAccess>();
         builder.Services.AddSingleton<IEmprateshistDataAccess, EmprateshistDataAccess>();
