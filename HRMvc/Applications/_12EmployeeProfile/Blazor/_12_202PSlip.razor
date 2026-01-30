@@ -1,13 +1,25 @@
-﻿@using HRMvc.Applications._12EmployeeProfile.Blazor._12_202
+﻿@using HRApiLibrary.Models._20_PayGeneric
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_202
 <div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper">
     
     <div class="card-header">
-        <_12_102_PersonalInfo Oempmass="Oempmass" ></_12_102_PersonalInfo>
+        <_12_102_PersonalInfo Oempmass="@V.Oempmas" ></_12_102_PersonalInfo>
     </div> 
     <div class="card-body p-0">
         <div class="card-header bg-white"><div class="mt-2"><h5>My Payslip</h5></div></div>
+        
+        <_12_202_Buttons V="@V" ChildAction="ChildActionHandler" />
+        @if(V.Tbltrans != null && V.Tbltrans.Count > 0) {
 
-        <_12_202_Payslip_Details />
+             var tbltrans_trn       = V.Tbltrans.Select(t=> t.Trn).Distinct().ToList(); 
+            foreach(var trn in tbltrans_trn)
+            {
+                List<GTbltranModel?>?       gTbltrans       = V.Tbltrans.Where(t=> t.Trn == trn).ToList();
+                List<GTbltrandtlModel?>?    gTbltrandtls    = V.Tbltrandtls.Where(t=> t.Trn == trn).ToList();
+                <_12_202_Payslip_Details GTbltrans="@gTbltrans" GTbltrandtls="gTbltrandtls"   />   
+            }
+        }
+        
 
     </div>
 </div>
@@ -15,7 +27,11 @@
 
 @code {
 
-    [Parameter] public UserClaimsModel?         UserClaims  { get; set; }
-    [Parameter] public List<OempmasModel?>?     Oempmass    { get; set; } = [];
+    [Parameter] public V12_202?                 V    { get; set; } = new();
 
+    void ChildActionHandler()
+    {
+        StateHasChanged();
+    }
+    
 }
