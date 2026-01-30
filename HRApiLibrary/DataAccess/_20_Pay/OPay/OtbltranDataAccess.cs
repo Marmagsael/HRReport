@@ -29,19 +29,37 @@ public class OtbltranDataAccess : IOtbltranDataAccess
 
     public async Task<List<GTbltranModel?>?> _02ByTrnAndEmpnumber(string trn, string empnumber, string schema, string conn)
     {
-        string sql = $@"select  t.TRN, t.AcctNumber, t.EmpNumber, t.Amount, t.DTimeStamp, t.Source, t.PostedBy, 
-                                dt.nVal DayHr, dt.DayHrs,
-                                if(right(left(dt.DtlCd,4),1) = '2', 'Day', 'Hr/s') as Uom 
-                        from {schema}.Tbltran t 
+        string sql = $@"select  t.TRN, t.AcctNumber, c.AcctName, t.EmpNumber, t.Amount, t.DTimeStamp, t.Source, t.PostedBy, 
+                                dt.nVal DayHrs, 
+                                CASE
+                                    when dt.nVal is null or dt.nval < 1
+                                        THEN ' '
+                                    WHEN RIGHT(LEFT(dt.DtlCd,7),1) = '2' AND LEFT(dt.DtlCd,4) = 'E001' and dt.nVal > 0 
+                                        THEN 
+                                            case 
+                                                when dt.nVal > 1 then 'Days' 
+                                                else 'Day' end
+                                    ELSE     
+                                        case  
+                                            when dt.nVal > 1 then 'Hrs' 
+                                            else 'Hr' end
+                                END AS Uom
+                        from {schema}.Tbltran t
                         left join {schema}.Tbltrandtl dt on t.trn = dt.trn and t.acctnumber = left(dt.dtlCd,4) and t.empnumber = dt.empnumber
-                        where Trn = @Trn and Empnumber = @Empnumber ;";
+                        left join {schema}.ChartofAcct c on c.AcctNumber = t.AcctNumber  
+                        where left(t.Trn,6) = @Trn and t.Empnumber = @Empnumber ;";
+        //Console.WriteLine(sql);
         var data = await _sql.FetchData<GTbltranModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         return data;
     }
 
     public async Task<List<GTbltranModel?>?> _02Trns_ByEmpnumber(string empnumber, string schema, string conn)
     {
-        string sql = $@"select distinct t.TRN from {schema}.Tbltran t where Empnumber = @Empnumber ;";
+        string sql = $@"select left(t.TRN,6) as TRN from {schema}.Tbltran t 
+                        where Empnumber = @Empnumber 
+                        GROUP BY LEFT(TRN,6)
+                        order by LEFT(t.TRN,6) desc
+                        limit 48 ;";
         var data = await _sql.FetchData<GTbltranModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }

@@ -133,7 +133,6 @@ public static class ApiExt
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
-        builder.Services.AddSingleton<IOtbltranDataAccess, OtbltranDataAccess>();
         
         builder.Services.AddSingleton<ITbltranDataAccess, TbltranDataAccess>();
         builder.Services.AddSingleton<IEmprateshistDataAccess, EmprateshistDataAccess>();
@@ -169,6 +168,12 @@ public static class ApiExt
         builder.Services.AddSingleton<IMatrixsssDataAccess, MatrixsssDataAccess>();
         builder.Services.AddSingleton<IMatrixwtaxDataAccess, MatrixwtaxDataAccess>();
         
+        //-- Old Pay -----------------------------------------------------------------------
+        builder.Services.AddSingleton<IOtbltranDataAccess, OtbltranDataAccess>();
+        builder.Services.AddSingleton<IOTbltrandtlDataAccess, OTbltrandtlDataAccess>();
+        builder.Services.AddSingleton<IOPaymainhdrDataAccess, OPaymainhdrDataAccess>();
+        
+
         //-- Pay Report --------------------------------------------------------------------
         builder.Services.AddSingleton<IReportDataAccess, ReportDataAccess>();
         builder.Services.AddSingleton<IMainmenuDataAccess, MainmenuDataAccess>();
