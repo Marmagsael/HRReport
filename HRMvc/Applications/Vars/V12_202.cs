@@ -18,6 +18,7 @@ public class V12_202
     public UserClaimsModel          UserClaims      { get; set; } = new(); 
     public List<GTbltranModel?>?    Tbltrans        { get; set; } = [];
     public List<GTbltrandtlModel?>? Tbltrandtls     { get; set; } = [];
+    public GPaymainhdrModel?        Paymainhdr      { get; set; } = new();
     public List<GPaymainhdrModel?>? Paymainhdrs     { get; set; } = [];
     public List<OempmasModel?>?     Oempmas         { get; set; } = [];   
     public int                      Yr              { get; set; } = DateTime.Now.Year;

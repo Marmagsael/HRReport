@@ -40,8 +40,10 @@ public class OPaymainhdrDataAccess : IOPaymainhdrDataAccess
 						from {paydb}.Paymainhdr h  
 						left join {pisdb}.Client c on c.clNumber = right(trim(h.trn),5) 
 						where Trn = @Trn ";
+        
         var data = await _sql.FetchData<GPaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
         return data.FirstOrDefault();
+        
     }
 
     public async Task<GPaymainhdrModel?> _03(int id, GPaymainhdrModel paymainhdr, string schema, string conn)

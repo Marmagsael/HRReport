@@ -19,6 +19,6 @@ public class GPaymainhdrModel
 	public DateTime? 	AttEnd			{ get; set; } 
 
 	// -- Other Fields ------------------------------------------
-	public string? ClientName 			{ get; set; }
+	public string? ClName 				{ get; set; }
 
 }
