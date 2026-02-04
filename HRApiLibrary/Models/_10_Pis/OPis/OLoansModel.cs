@@ -3,31 +3,35 @@ namespace HRApiLibrary.Models._10_Pis.OPis;
 public class OLoansModel
 {
 	public string? 		Number 			{ get; set; } 
-	public string? 		EMPNUMBER 		{ get; set; } 
-	public DateTime? 	DATE 			{ get; set; } 
-	public string? 		DEDNCODE 		{ get; set; } 
-	public string? 		DEDNDESC 		{ get; set; } 
-	public double? 		AMOUNT 			{ get; set; } 
-	public double? 		AMORT 			{ get; set; } 
-	public double? 		BALANCE 		{ get; set; } 
-	public string? 		STATUS 			{ get; set; } 
-	public string? 		ENCODEBY 		{ get; set; } 
-	public string? 		ENCODEDT 		{ get; set; } 
-	public string? 		CHANGEBY 		{ get; set; } 
-	public string? 		CHANGEDT 		{ get; set; } 
-	public string? 		POSTED 			{ get; set; } 
-	public string? 		EMPLASTNM 		{ get; set; } 
-	public string? 		POSTFLAG 		{ get; set; } 
-	public string? 		REMARKS 		{ get; set; } 
-	public string? 		payMode 		{ get; set; } 
-	public DateTime? 	payStart 		{ get; set; } 
-	public DateTime? 	payRes 			{ get; set; } 
+	public string? 		EmpNumber 		{ get; set; } 
+	public DateTime? 	Date 			{ get; set; } 
+	public string? 		DedNCode 		{ get; set; } 
+	public string? 		DedNDesc 		{ get; set; } 
+	public double? 		Amount 			{ get; set; } 
+	public double? 		Amort 			{ get; set; } 
+	public double? 		Balance 		{ get; set; } 
+	public string? 		Status 			{ get; set; } 
+	public string? 		EncodedBy 		{ get; set; } 
+	public string? 		EncodedDT 		{ get; set; } 
+	public string? 		ChangeBy 		{ get; set; } 
+	public string? 		ChangeDT 		{ get; set; } 
+	public string? 		Posted 			{ get; set; } 
+	public string? 		PostFlag 		{ get; set; } 
+	public string? 		Remarks 		{ get; set; } 
+	public string? 		PayMode 		{ get; set; } 
+	public DateTime? 	PayStart 		{ get; set; } 
+	public DateTime? 	PayRes 			{ get; set; } 
 	public string? 		CvNo 			{ get; set; } 
 	public int? 		P1 				{ get; set; } 
 	public int? 		P2 				{ get; set; } 
 	public int? 		P3 				{ get; set; } 
 	public int? 		P4 				{ get; set; } 
 	public int? 		P5 				{ get; set; } 
-	public string? 		TRNLastPosted 	{ get; set; } 
+	public string? 		TrnLastPosted 	{ get; set; } 
+
+	//--- Other Fields ---------------------------------------
+	public string? 		AcctName 		{ get; set; } = string.Empty; 
+	public string? 		EmpName 		{ get; set; } = string.Empty; 
+
 }
 
