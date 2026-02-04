@@ -1,5 +1,7 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRMvc.Views.BlazorPages.Vars
+@using Microsoft.CodeAnalysis.CSharp
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
 @namespace HRMvc.Applications._12EmployeeProfile.Blazor
 
@@ -16,13 +18,13 @@
     
     <div class="card-body w-100">
 
-        @if(lnk==2){ <div>2</div> }
-        @if(lnk==3){ <div>3</div> }
-        @if(lnk==4){ <div>4</div> }
-        @if(lnk==5){ <div>5</div> }
-        @if(lnk==6){ <div>6</div> }
-        @if(lnk==7){ <div>7</div> }
-        @if(lnk==8){ <div>8</div> }
+        @if(lnk==2){ <div> <_12_102_RequestTimeOff />  </div> }
+        @if(lnk==3){ <div> <_12_102_TimeSheet /> </div> }
+        @if(lnk==4){ <div> <_12_102_Obligation /> </div> }
+        @if(lnk==5){ <div> <_12_102_SSSRemittance /> </div> }
+        @if(lnk==6){ <div> <_12_102_PHICRemittance /> </div> }
+        @if(lnk==7){ <div> <_12_102_PagibigRemittance /> </div> }
+        @if(lnk==8){ <div> <_12_102_Loans Loans="@loans" /> </div> }
         
         
         
@@ -67,6 +69,7 @@
 
 </div>
 
+@inject IOLoansDataAccess   _loans; 
 
 @code {
 
@@ -74,13 +77,26 @@
     [Parameter] public List<OempmasModel?>?     Oempmass    { get; set; } = [];
     [Parameter] public V12_102?                 V12_102     { get; set; } = new();
 
+    List<OLoansModel?>?                         loans = [];
+
     
     int lnk = 0;  
 
-    void Ec(int val) {
+    async Task Ec(int val) {
+        if(val == 8) await FetchLoans() ; 
+
+
         lnk = val; 
          
     }
+
+    async Task FetchLoans() {
+        var uc  = UserClaims; 
+        string empnumber = UserClaims.OempNumber ?? "-";
+        loans = await _loans._02ByEmpNumbers(empnumber, uc.OpayDb, uc.Conn); 
+    }
+
+
 
 
 }
