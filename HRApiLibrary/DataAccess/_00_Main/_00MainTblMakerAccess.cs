@@ -449,6 +449,8 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     ApplicantSchema VARCHAR (60)    NULL,
                     PISSchema       VARCHAR (60)    NULL,
                     PaySchema       VARCHAR (60)    NULL,
+                    OldPay          VARCHAR (60)    NULL,
+                    OldPis          VARCHAR (60)    NULL,
                     PRIMARY KEY (`Id`)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }

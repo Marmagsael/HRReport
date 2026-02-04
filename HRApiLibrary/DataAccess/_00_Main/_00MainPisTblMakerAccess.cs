@@ -492,8 +492,31 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IpAddress       Char(20), 
                             MacAddress      Char(20),
                             UserId          BigInt, 
+                            PunchComplete   Int default 0, 
                         PRIMARY KEY (EmpmasId, PunchDate)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { });
+        
+        sql = @$"CREATE TABLE if not exists {schema}.AttPunches1 (
+                            EmpmasId        INTEGER     UNSIGNED,
+                            DayNo           Int, 
+                            PunchInDate     DATETIME,
+                            PunchT          Int, 
+                            SchedDuration   Int, 
+                            DutyTypeId      INTEGER     UNSIGNED,
+                            TimeZoneIdIn    INTEGER     UNSIGNED,
+                            IpAddressIn     Char(20), 
+                            MacAddressIn    Char(20),
+                            UserIdIn        BigInt, 
+
+                            PunchOutDate     DATETIME,
+                            TimeZoneIdOut    INTEGER     UNSIGNED,
+                            IpAddressOut     Char(20), 
+                            MacAddressOut    Char(20),
+                            UserIdOut        BigInt, 
+                            Status          Char(1) default '-',
+                        PRIMARY KEY (EmpmasId, PunchInDate)) ENGINE = InnoDB;";
+        await _sql.ExecuteCmd(sql, new { });
+
 
     }
 
@@ -686,7 +709,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                           Status        Char(1)         DEFAULT 'A',
                           DefaultCoId   INTEGER UNSIGNED NOT NULL DEFAULT 1,
                           PRIMARY KEY(`Id`))ENGINE = InnoDB;";
-        _sql.ExecuteCmd(sql, new { }, connName);
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
     private async Task _201_11_Empmas(string schema)

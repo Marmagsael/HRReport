@@ -53,6 +53,13 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
 		var data = await _sql.FetchData<AtttemplateModel?, dynamic>(sql, new { Id = id }, conn); 
 		return data?.FirstOrDefault();
 	}
+    
+	public async Task<List<AtttemplateModel?>?> _02s(int id, string schema, string conn)
+	{
+		string sql = $@"select  * from {schema}.Atttemplate where EmpmasId = @Id" ; 
+		var data = await _sql.FetchData<AtttemplateModel?, dynamic>(sql, new { Id = id }, conn); 
+		return data;
+	}
 
     public AtttemplateModel? _02NoSchedule(int empmasId)
     {

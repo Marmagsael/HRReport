@@ -14,12 +14,7 @@ public class Model605
     public List<TbltranModel?>?             Tmptbltrans             { get; set; } = [];
     public List<TmptbltranemplistModel?>?   TmptbltranEmpLists      { get; set; } = [];
     public PayrollgrpModel?                 Payrollgrp              { get; set; } = new();
-    
-    
-    
-    
-    
-    
+       
 
     public List<TbltranModel?>?             Tbltrans                { get; set; } = []; 
     public TbltranModel?                    Tbltran                 { get; set; } = new(); 

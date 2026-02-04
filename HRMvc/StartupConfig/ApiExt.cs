@@ -8,9 +8,11 @@ using HRApiLibrary.DataAccess._00_MainTrans;
 using HRApiLibrary.DataAccess._00_MainTrans.Interfaces;
 using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
+using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay;
 using HRApiLibrary.DataAccess._20_Pay.DA0605;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
+using HRApiLibrary.DataAccess._20_Pay.OPay;
 using HRApiLibrary.DataAccess._20_Pay.Report;
 using HRApiLibrary.DataAccess._20_Pay_Report;
 using HRApiLibrary.DataAccess._90_Utils;
@@ -54,6 +56,7 @@ public static class ApiExt
         builder.Services.AddSingleton<IAtttemplateDataAccess, AtttemplateDataAccess>();
         builder.Services.AddSingleton<IAttdailyDataAccess, AttdailyDataAccess>();
         builder.Services.AddSingleton<IAttpunchesDataAccess, AttpunchesDataAccess>();
+        builder.Services.AddSingleton<IAttpunches1DataAccess, Attpunches1DataAccess>();
         builder.Services.AddSingleton<IEmpmasInternalDataAccess, EmpmasInternalDataAccess>();
         builder.Services.AddSingleton<IPissettingsDataAccess, PissettingsDataAccess>();
         builder.Services.AddSingleton<ILeavetypeDataAccess, LeavetypeDataAccess>();
@@ -103,8 +106,9 @@ public static class ApiExt
         builder.Services.AddSingleton<IPenaltyDataAccess, RpenaltyDataAccess>();
 
         builder.Services.AddSingleton<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
-        
         builder.Services.AddSingleton<DA222>();
+        /*builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<SessionService>();*/
         
         //-- Accountability ------------------------------------------------------------
         builder.Services.AddSingleton<IInvDataAccess, InvDataAccess>();
@@ -120,6 +124,12 @@ public static class ApiExt
         //-- PIS Personal ------------------------------------------------------------
         builder.Services.AddSingleton<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddSingleton<IMymovementDataAccess, MymovementDataAccess>();
+        builder.Services.AddSingleton<IOempmasDataAccess, OempmasDataAccess>();
+        builder.Services.AddSingleton<IOgenderDataAccess, OgenderDataAccess>();
+        builder.Services.AddSingleton<IOcivstatDataAccess, OcivstatDataAccess>();
+        builder.Services.AddSingleton<IOeducateDataAccess, OeducateDataAccess>();
+        builder.Services.AddSingleton<IOfamilyDataAccess, OfamilyDataAccess>();
+        builder.Services.AddSingleton<IOemergencDataAccess, OemergencDataAccess>();
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
@@ -158,6 +168,17 @@ public static class ApiExt
         builder.Services.AddSingleton<IMatrixsssDataAccess, MatrixsssDataAccess>();
         builder.Services.AddSingleton<IMatrixwtaxDataAccess, MatrixwtaxDataAccess>();
         
+        //-- Old Pis -----------------------------------------------------------------------
+        builder.Services.AddSingleton<IOCoinfoDataAccess, OCoinfoDataAccess>();
+        
+
+        //-- Old Pay -----------------------------------------------------------------------
+        builder.Services.AddSingleton<IOtbltranDataAccess, OtbltranDataAccess>();
+        builder.Services.AddSingleton<IOTbltrandtlDataAccess, OTbltrandtlDataAccess>();
+        builder.Services.AddSingleton<IOPaymainhdrDataAccess, OPaymainhdrDataAccess>();
+        builder.Services.AddSingleton<IOLoansDataAccess, OLoansDataAccess>();
+        
+
         //-- Pay Report --------------------------------------------------------------------
         builder.Services.AddSingleton<IReportDataAccess, ReportDataAccess>();
         builder.Services.AddSingleton<IMainmenuDataAccess, MainmenuDataAccess>();
@@ -168,8 +189,6 @@ public static class ApiExt
         builder.Services.AddSingleton<I_AcctgTableMaker, _AcctgTableMaker>();
         // builder.Services.AddSingleton<IMainmenuDataAccess, IMainmenuDataAccess>();
         
-        
-       
         
     }
 }
