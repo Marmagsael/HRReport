@@ -17,6 +17,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d92c8699950b21aea31ea8a27983a1597c9d796d")]
 =======
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6751b4ec35a9822b069cbed587b2c57a7ed5d107")]
@@ -24,6 +25,9 @@ using System.Reflection;
 =======
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+17508256ec3e3115c5ed8049767fd7d2d00fec5a")]
 >>>>>>> origin/erwin
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6751b4ec35a9822b069cbed587b2c57a7ed5d107")]
+>>>>>>> origin/kevin
 [assembly: System.Reflection.AssemblyProductAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
