@@ -14,7 +14,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+<<<<<<< HEAD
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1171ad11c50ac19cc11d1c0bd5224cf9a5810594")]
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ff8911be6d6bcf7f81381b90f0b292210127c5b3")]
+>>>>>>> origin/KevWin
 [assembly: System.Reflection.AssemblyProductAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
