@@ -1,0 +1,111 @@
+﻿@using Blazorise
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_PayGeneric
+
+<div class="d-flex p-2 border-bottom gap-2">
+    <div class="ms-3 py-2">Year</div> 
+    <div class="">
+        <RadzenNumeric TValue="int"
+            @bind-Value="V.Yr"
+            Max="@DateTime.Now.Year"
+            Style="width:100px; text-align:center"
+            Min="1980"
+            Step="1" />
+    </div> 
+
+    <div class="ms-3 py-2">Month</div> 
+    <div class="">
+        <RadzenNumeric TValue="int"
+            @bind-Value="V.Mo"
+            Max="12"
+            Style="width:75px; text-align:center"
+            Min="1"
+            Step="1" />
+    </div> 
+    
+    <div class="ms-3 py-2">Period</div> 
+    <div class="">
+        <RadzenNumeric TValue="int"
+            @bind-Value="V.Prd"
+            Max="5"
+            Style="width:75px; text-align:center "
+            Min="1"
+            Step="1" />
+    </div> 
+    <div class="ms-3 card p-2 mb-cbtn mb-cbtn-gray w-150p d-flex " @onclick="CreatePayslip">
+        <div class="d-flex gap-2">
+            <span class="text-white ">
+                <i class="fa-solid fa-file-invoice"></i>
+            </span>
+            <span>Load Payslip</span> 
+        </div>
+    </div> 
+</div>
+
+@if(@msg != string.Empty) { <div class="p-3 text-danger">@msg</div> }
+
+
+
+
+@inject IOtbltranDataAccess     _otbltran ; 
+@inject IOTbltrandtlDataAccess  _otbltrandtl; 
+@inject IOPaymainhdrDataAccess  _opaymainhdr; 
+
+@code {
+    [Parameter] public V12_202? V { get; set; } = new(); 
+    [Parameter] public EventCallback        ChildAction     { get; set; } 
+
+    string msg = string.Empty;
+    List<string?>? tbltrans_trn = []; 
+    
+    private async Task CreatePayslip()
+    {
+        var oe    = V.Oempmas.FirstOrDefault()??new();
+        var uc = V.UserClaims;
+        var year        = V?.Yr.ToString(); 
+        var yr          = year?.Substring(year.Length - 2);
+        var month       = V?.Mo.ToString()?.Trim().PadLeft(2, '0');
+        var period      = V?.Prd.ToString().Trim().PadLeft(2, '0');
+        var trn         = $"{yr}{month}{period}";
+
+        var empnumber   = oe.EmpNumber??"-";
+        var pisdb       = uc.OpisDb??"";
+        var paydb       = uc.OpayDb??"";
+        var conn        = uc.Conn??"-";
+
+        msg = $"Please wait, Loading payslip for TRN : {trn} ";
+        
+        V.Tbltrans      = await _otbltran._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
+        V.Tbltrandtls   = await _otbltrandtl._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
+        
+        @* --- Paymainhdr ------------------------------------------------------------------- *@
+        V.Paymainhdrs   = []; 
+        if(V.Tbltrans.Count>0){
+            List<string?> trns = V.Tbltrandtls.Select(t=>t.Trn).Distinct().ToList(); 
+            foreach(var t in trns){
+                GPaymainhdrModel paymainhdr = await _opaymainhdr._02Trn(t,uc.OpayDb, uc.OpisDb, uc.Conn); 
+                V.Paymainhdrs.Add(paymainhdr); 
+            }
+        }
+        
+        msg = string.Empty;
+        StateHasChanged();
+
+
+
+       await ChildAction.InvokeAsync();
+
+        @* Console.WriteLine($"***************************************");
+        foreach(var ttrn in tbltrans_trn)
+        {
+            Console.WriteLine($"Available TRN: {ttrn} ");
+        } *@
+
+        
+
+        @* Console.WriteLine($"TRN: {trn} * Record Count : {V.Tbltrans.Count()}"); *@
+        
+        
+
+    }
+}

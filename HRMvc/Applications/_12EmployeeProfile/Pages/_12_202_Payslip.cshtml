@@ -1,25 +1,21 @@
-@using System.Security.Claims
-@using HRApiLibrary.DataAccess._00_Main.Interface
-@using HRApiLibrary.Models._00_Main
-@using Microsoft.Extensions.Configuration
+@using HRApiLibrary.DataAccess._20_Pay
+@using HRMvc.Applications.Vars
+@inject UserClaimsContextService ClaimsContext
+@inject L12_102 L102 
+@inject L12 L12
 
-@inject I_00MainDA                  _mainDA
-@inject IConfiguration              _config;
 
 @{
     Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
-
-    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
-    IEnumerable<Claim?> claims = User.Claims;
-    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
-
+    var userClaims  = ClaimsContext.Build(User);
+    
+    V12_202? v202 = await L12._12_202(userClaims);
 
 
 }
 
 
 <div>
-    @* @(await Html.RenderComponentAsync<_1102_ES>(RenderMode.ServerPrerendered, new { UserClaims = userClaims })) *@
-    <div> 12.102 </div>
+    @(await Html.RenderComponentAsync<_12_202PSlip>(RenderMode.ServerPrerendered, new { V=v202 }))
     
 </div>

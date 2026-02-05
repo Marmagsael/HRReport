@@ -26,11 +26,18 @@ public class AttpunchesDataAccess : IAttpunchesDataAccess
 
     }
 
-
+    
     public async Task<AttpunchesModel?> _02(int empmasid, DateTime punchDate, string schema, string conn)
     {
         string sql = $@"select  * from {schema}.Attpunches where EmpmasId = @Empmasid and PunchDate = Date(@Punchdate) ";
         var data = await _sql.FetchData<AttpunchesModel?, dynamic>(sql, new { Empmasid = empmasid, PunchDate = punchDate }, conn);
+        return data?.FirstOrDefault();
+    }
+    
+    public async Task<AttpunchesModel?> _02LastPunches(int empmasid, int reccount, string schema, string conn)
+    {
+        string sql = $@"select  * from {schema}.Attpunches where EmpmasId = @Empmasid order by PunchDate desc limit @Reccount ";
+        var data = await _sql.FetchData<AttpunchesModel?, dynamic>(sql, new { Empmasid = empmasid, Reccount = reccount }, conn);
         return data?.FirstOrDefault();
     }
 
