@@ -15,6 +15,7 @@ builder.AddInjectServices();
 builder.AddHttpClient();
 builder.AddCors();
 builder.AddAuthenticationServices();
+builder.Services.AddHRMvcScope(); 
 
 
 //Api Injection -------------------------
@@ -22,6 +23,7 @@ builder.AddApiInjectionServices();
 builder.AddApiServices();
 
 var app = builder.Build();
+app.UseSession();  
 app.UseSwagger();
 app.UseSwaggerUI();
 app.MapControllers();

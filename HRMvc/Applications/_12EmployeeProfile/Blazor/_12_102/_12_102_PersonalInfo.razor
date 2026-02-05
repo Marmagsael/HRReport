@@ -1,0 +1,100 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+
+@{
+    var empmas = Oempmass.FirstOrDefault();
+    if (Oempmass.Count < 1) empmas = new OempmasModel(); 
+    
+    var tenure = "";
+
+    if (empmas.DateHired.HasValue)
+    {
+        var start = empmas.DateHired.Value.Date;
+        var today = DateTime.Today;
+
+        var years = today.Year - start.Year;
+        var months = today.Month - start.Month;
+        var days = today.Day - start.Day;
+
+        if (days < 0)
+        {
+            months--;
+            var prevMonth = today.AddMonths(-1);
+            days += DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
+        }
+
+        if (months < 0)
+        {
+            years--;
+            months += 12;
+        }
+
+        tenure = $"{years}y {months}m {days}d";
+    }
+}
+
+<div class="d-flex gap-1 h-150p">
+    <div class="br-6">
+        <img src="images/employee1.png"
+             alt="Employee Image"
+             width="175"
+             height="150" />
+    </div>
+    
+    <div class="mt-4 w-250p p-2 ">
+        <div class="mt-2 ">
+            <h5>@empmas.EmpFirstNm @empmas.EmpMidNm @empmas.EmpLastNm</h5>
+            <div class="mt-1 text-success ">@empmas.PositionName</div>
+        </div>
+    </div>
+    
+    <div class=" flex-grow-1 d-flex justify-content-center align-items-center">
+        
+        <div class="w-100">
+            @* --- 1st Line  ---------------------------------------------*@
+            <div class="d-flex gap-2 ">
+                <div class="w-40 bordered-bottom  ">
+                    <span class="px-2">Emp No : </span> 
+                    <span class="text-primary"> @(empmas.EmpNumber ?? "")</span>
+                </div>    
+                <div class="w-40 bordered-bottom ">
+                    <span class="px-2">Status : </span> 
+                    <span class="text-primary"> @(empmas.EmpStatus ?? "")</span>
+                </div>    
+            </div>
+            
+            @* --- 2nd Line  ---------------------------------------------*@
+            <div class="d-flex gap-2 ">
+                <div class="w-40 bordered-bottom  ">
+                    <span class="px-2">Date Hired : </span> 
+                    <span class="text-primary"> @(empmas.DateHired?.ToString("MMM dd, yyyy") ?? "")</span>
+                </div>    
+                <div class="w-40 bordered-bottom ">
+                    <span class="px-2">Residency : </span> 
+                    <span class="text-primary"> @(tenure ?? "")</span>
+                </div>    
+            </div>
+            
+            @* --- 3rd Line  ---------------------------------------------*@
+            <div class="d-flex gap-2 ">
+                <div class="w-40 bordered-bottom  ">
+                    <span class="px-2">Gender : </span> 
+                    <span class="text-primary"> @(empmas.Sex_ switch { "M" => "Male", "F" => "Female", _   => "" })</span>
+                </div>    
+                <div class="w-50 bordered-bottom ">
+                    <span class="px-2">Email : </span> 
+                    <span class="text-primary">@(empmas.Email ?? "")</span>
+                </div>    
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+    [Parameter] public List<OempmasModel?>?     Oempmass   { get; set; } = [];
+
+}

@@ -1,0 +1,62 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications._12EmployeeProfile.Blazor
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_103
+
+<div class="w-960p p-3"> 
+    <div class="page-header"> 
+        <h1 class="page-title">My 201 Records</h1> 
+    </div> 
+    <div class="page-body d-flex flex-column gap-5 pt-3">
+        <_12_103_EmployeeName  Oempmas="Oempmas" /> 
+        
+        <RadzenStack Gap="0"> 
+            <RadzenTabs RenderMode="TabRenderMode.Client"> 
+                <Tabs> 
+                    <RadzenTabsItem Text="Personal Data"> 
+                        <_12_103_PersonalData Oempmas="Oempmas" Ogenders="Ogenders" Ocivstats="Ocivstats" /> 
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Address">
+                        <_12_103_Address Oempmas="Oempmas"  />
+                    </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="Education">
+                        <_12_103_Education Oeducates="Oeducates" />
+                    </RadzenTabsItem> 
+
+                    <RadzenTabsItem Text="Family">
+                        <_12_103_Family Ofamilys="Ofamilys" Oemergencs="Oemergencs" />
+                     </RadzenTabsItem>
+
+                    <RadzenTabsItem Text="References"> test </RadzenTabsItem> 
+                </Tabs> 
+            </RadzenTabs> 
+        </RadzenStack>
+      </div> 
+</div>
+@inject IOempmasDataAccess _oempmas;
+
+@code {
+    [Parameter] public UserClaimsModel?             UserClaims  { get; set; }
+    [Parameter] public List<OempmasModel?>?         Oempmass    { get; set; }   = new();
+    [Parameter] public List<OeducateModel?>?        Oeducates   { get; set; }   = new();
+    [Parameter] public List<OemergencModel?>?       Oemergencs  { get; set; }   = new();
+    [Parameter] public List<OfamilyModel?>?         Ofamilys    { get; set; }   = new();
+    [Parameter] public List<OgenderModel?>?         Ogenders    { get; set; }   = new();
+    [Parameter] public List<OcivstatModel?>?        Ocivstats   { get; set; }    = new();
+
+    private OempmasModel? Oempmas { get; set; } = new();
+
+    protected async override void OnParametersSet()
+    {
+        if (Oempmass != null && Oempmass.Count > 0)
+        {
+            Oempmas = Oempmass.FirstOrDefault();
+            if (Oempmas != null)
+            {
+                Oempmas.HeightInches = Oempmas.Height * 12;
+            }
+        }
+    }
+}

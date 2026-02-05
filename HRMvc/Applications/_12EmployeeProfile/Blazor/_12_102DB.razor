@@ -1,0 +1,121 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.Models._20_Pay
+@using HRApiLibrary.Models._20_PayGeneric
+@using HRMvc.Views.BlazorPages.Vars
+@using Microsoft.CodeAnalysis.CSharp
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
+@namespace HRMvc.Applications._12EmployeeProfile.Blazor
+
+
+
+
+<div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper">
+    
+    <div class="card-header">
+        <_12_102_PersonalInfo Oempmass="Oempmass" ></_12_102_PersonalInfo>
+    </div> 
+    <_12_102Shortcuts Ec="@Ec" > </_12_102Shortcuts>
+    
+    
+    <div class="card-body w-100">
+
+        @if(lnk==2){ <div> <_12_102_RequestTimeOff />  </div> }
+        @if(lnk==3){ <div> <_12_102_TimeSheet /> </div> }
+        @if(lnk==4){ <div> <_12_102_Obligation /> </div> }
+        @if(lnk==5){ <div> <_12_102_SSSRemittance Ec="@SSSRemittance" /> </div> }
+        @if(lnk==6){ <div> <_12_102_PHICRemittance /> </div> }
+        @if(lnk==7){ <div> <_12_102_PagibigRemittance /> </div> }
+        @if(lnk==8){ <div> <_12_102_Loans Loans="@loans" /> </div> }
+        
+        
+        
+        
+        
+
+        @if(lnk==0) {
+        <div class="w-100">
+            <_12_102_Body_Clock  Oempmass="@Oempmass" > </_12_102_Body_Clock>    
+        </div>
+        <div class="d-flex gap-2 w-100 mt-3">
+            @*--- Left ---*@
+            <div class="w-50">
+                <div>
+                    <_12_102_Body_Punch 
+                        Oempmass            = "@Oempmass" 
+                        uc                  = "@UserClaims" 
+                        Attpunches1_Current = "@V12_102.Attpunches1_Current" 
+                        Atttemplate         = "@V12_102.Atttemplates.FirstOrDefault()" />
+                </div>
+                <div class="mt-2">
+                    <_12_102_AttTemplate AttTemplate="@V12_102.Atttemplates.FirstOrDefault()" />
+                </div>
+                
+                
+            </div>
+
+            @*--- Right ---*@
+            <div class="w-50">
+                <div>
+                    <_12_102_Body_Action V12_102="@V12_102" />
+                </div>
+                
+                <div class="mt-2">
+                    <_12_102_Body_Last_7_Punches V12_102="@V12_102" />
+                </div>
+            </div>            
+        </div>
+        }
+    </div>
+    
+
+</div>
+
+@inject IOLoansDataAccess   _loans; 
+
+@code {
+
+    [Parameter] public UserClaimsModel?         UserClaims  { get; set; }
+    [Parameter] public List<OempmasModel?>?     Oempmass    { get; set; } = [];
+    [Parameter] public V12_102?                 V12_102     { get; set; } = new();
+
+    List<GLoansModel?>?                         loans = [];
+
+    public class SSSModel() {
+        public List<GTbltranModel?>? tbltran { get; set; } = []; 
+        @* public List<G?>? tbltran { get; set; } = [];  *@
+        
+    }
+
+    
+    int lnk = 0;  
+
+    async Task Ec(int val) {
+        if(val == 5) await FetchLoans() ; 
+        if(val == 8) await FetchSSS() ; 
+
+
+        lnk = val; 
+         
+    }
+
+    async Task FetchSSS() {
+    
+    }
+
+
+    async Task FetchLoans() {
+        var uc  = UserClaims; 
+        string empnumber = UserClaims.OempNumber ?? "-";
+        loans = await _loans._02ByEmpNumbers(empnumber, uc.OpayDb, uc.Conn); 
+    }
+
+    async Task SSSRemittance(int tabno) {
+        
+
+    }
+
+
+
+
+}
