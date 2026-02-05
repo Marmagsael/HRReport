@@ -1,5 +1,7 @@
 @using HRApiLibrary.DataAccess._20_Pay.OPay
 @using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.Models._20_Pay
+@using HRApiLibrary.Models._20_PayGeneric
 @using HRMvc.Views.BlazorPages.Vars
 @using Microsoft.CodeAnalysis.CSharp
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
@@ -21,7 +23,7 @@
         @if(lnk==2){ <div> <_12_102_RequestTimeOff />  </div> }
         @if(lnk==3){ <div> <_12_102_TimeSheet /> </div> }
         @if(lnk==4){ <div> <_12_102_Obligation /> </div> }
-        @if(lnk==5){ <div> <_12_102_SSSRemittance /> </div> }
+        @if(lnk==5){ <div> <_12_102_SSSRemittance Ec="@SSSRemittance" /> </div> }
         @if(lnk==6){ <div> <_12_102_PHICRemittance /> </div> }
         @if(lnk==7){ <div> <_12_102_PagibigRemittance /> </div> }
         @if(lnk==8){ <div> <_12_102_Loans Loans="@loans" /> </div> }
@@ -77,23 +79,40 @@
     [Parameter] public List<OempmasModel?>?     Oempmass    { get; set; } = [];
     [Parameter] public V12_102?                 V12_102     { get; set; } = new();
 
-    List<OLoansModel?>?                         loans = [];
+    List<GLoansModel?>?                         loans = [];
+
+    public class SSSModel() {
+        public List<GTbltranModel?>? tbltran { get; set; } = []; 
+        @* public List<G?>? tbltran { get; set; } = [];  *@
+        
+    }
 
     
     int lnk = 0;  
 
     async Task Ec(int val) {
-        if(val == 8) await FetchLoans() ; 
+        if(val == 5) await FetchLoans() ; 
+        if(val == 8) await FetchSSS() ; 
 
 
         lnk = val; 
          
     }
 
+    async Task FetchSSS() {
+    
+    }
+
+
     async Task FetchLoans() {
         var uc  = UserClaims; 
         string empnumber = UserClaims.OempNumber ?? "-";
         loans = await _loans._02ByEmpNumbers(empnumber, uc.OpayDb, uc.Conn); 
+    }
+
+    async Task SSSRemittance(int tabno) {
+        
+
     }
 
 
