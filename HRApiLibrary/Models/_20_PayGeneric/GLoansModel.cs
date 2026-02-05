@@ -1,6 +1,6 @@
-namespace HRApiLibrary.Models._10_Pis.OPis;
+namespace HRApiLibrary.Models._20_PayGeneric;
 
-public class OLoansModel
+public class GLoansModel
 {
 	public string? 		Number 			{ get; set; } 
 	public string? 		EmpNumber 		{ get; set; } 
@@ -34,4 +34,3 @@ public class OLoansModel
 	public string? 		EmpName 		{ get; set; } = string.Empty; 
 
 }
-
