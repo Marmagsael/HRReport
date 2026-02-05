@@ -186,7 +186,5 @@ public static class ApiExt
         // builder.Services.AddSingleton<IMainmenuDataAccess, IMainmenuDataAccess>();
         
         
-       
-        
     }
 }
