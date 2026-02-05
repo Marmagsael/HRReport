@@ -125,11 +125,21 @@ public static class ApiExt
         builder.Services.AddSingleton<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddSingleton<IMymovementDataAccess, MymovementDataAccess>();
         builder.Services.AddSingleton<IOempmasDataAccess, OempmasDataAccess>();
-        builder.Services.AddSingleton<IOgenderDataAccess, OgenderDataAccess>();
-        builder.Services.AddSingleton<IOcivstatDataAccess, OcivstatDataAccess>();
-        builder.Services.AddSingleton<IOeducateDataAccess, OeducateDataAccess>();
-        builder.Services.AddSingleton<IOfamilyDataAccess, OfamilyDataAccess>();
-        builder.Services.AddSingleton<IOemergencDataAccess, OemergencDataAccess>();
+        builder.Services.AddSingleton<IOGenderDataAccess, OGenderDataAccess>();
+        builder.Services.AddSingleton<IOCivstatDataAccess, OCivstatDataAccess>();
+
+        builder.Services.AddSingleton<IOEducateDataAccess, OEducateDataAccess>();
+
+        builder.Services.AddSingleton<IOFamilyDataAccess, OFamilyDataAccess>();
+        builder.Services.AddSingleton<IOParentDataAccess, OParentDataAccess>();
+        builder.Services.AddSingleton<IOChildrenDataAccess, OChildrenDataAccess>();
+        builder.Services.AddSingleton<IOEmergencDataAccess, OEmergencDataAccess>();
+
+        builder.Services.AddSingleton<IOEmployDataAccess, OEmployDataAccess>();
+        builder.Services.AddSingleton<IOReferDataAccess, OReferDataAccess>();
+        builder.Services.AddSingleton<IOTrainDataAccess, OTrainDataAccess>();
+
+
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();

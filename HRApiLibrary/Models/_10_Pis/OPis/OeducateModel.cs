@@ -1,6 +1,6 @@
 ﻿namespace HRApiLibrary.Models._10_Pis.OPis;
 
-public class OeducateModel
+public class OEducateModel
 {
     public string? EMPNUMBER { get; set; }
     public string? CODE { get; set; }
