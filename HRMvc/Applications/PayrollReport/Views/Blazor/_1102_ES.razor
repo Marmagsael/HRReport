@@ -1,49 +1,38 @@
-﻿@using HRApiLibrary.DataAccess._20_Pay_Report
-@using HRApiLibrary.Models._00_Main
+﻿@using HRMvc.Applications.PayrollReport.Views.Blazor._1102
+@using HRMvc.Applications.Vars
 
-@using HRApiLibrary.Models._20_PayGeneric
-@using HRMvc.Applications.PayrollReport.Views.Blazor.Components; 
-<_DtlHdrPay caption="EARNINGS SUMMARY" />
 
-@using HRMvc.Applications.PayrollReport.Views.Blazor._1102;
-@using System.Threading.Tasks
+<div class="card ">
 
-<div>Accounts Count : @v1102.ChartOfAccts.Count </div>
-<div>Conn   : @conn </div>
-<div>Paydb  : @paydb </div>
+    <div class="card-header"> <_DtlHdrPay caption="Earnings Summary" />  </div>
 
-<div class="p-3 bordered br-6 mt-2"> 
-    <_1102_button   UserClaims="@UserClaims"></_1102_button>
-    <_1102_Coverage UserClaims="@UserClaims"></_1102_Coverage>
-    <_1102_Grid V1102="@v1102"></_1102_Grid>
+    <div class="card-body">
+        <_1102button2 />
+
+        <_1102SelectionMenu /> 
+        <_1102ItemSelectionMenu /> 
+
+        
+    </div>
+
+
+<_00Modal ModuleCaption="Earnings Summary Report">
+     @* <IframeReportRenderer
+    DataSource          ="report"
+    ReportRelativePath  ="@rv.RelativePath"
+    OutputFormat        ="@rv.SelectedFormat"
+    Parameters          ="@rv.ReportParams"
+    AutoGenerate        ="@(report?.Any() == true)"
+    RefreshToken        ="@rv.RefreshToken" />  *@
+</_00Modal>
+
 </div>
 
 
-@inject IGPayrollReportDataAccess _pr; 
-
 @code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+    V00_RepVars rv = new(); 
 
-    [Parameter] public UserClaimsModel?             UserClaims   { get; set; }
-    [Parameter] public List<GChartofacctModel?>?    ChartOfAccts { get; set; } = [];
-
-    public  V1102?      v1102 { get; set; } = new V1102();
-    private string      conn                = string.Empty;
-    private string      paydb               = string.Empty;
-
-    protected override async Task OnParametersSetAsync()
-    {
-        if (v1102.ChartOfAccts.Count > 0 ) return;
-        await LoadData();
-
-    }
-
-
-    async Task LoadData()
-    {
-        conn                = UserClaims?.Conn            ?? string.Empty;
-        paydb               = "Pay";
-        v1102.ChartOfAccts  = ChartOfAccts;
-    }
 
     
 }
