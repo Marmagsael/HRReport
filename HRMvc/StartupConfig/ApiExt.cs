@@ -173,6 +173,7 @@ public static class ApiExt
         builder.Services.AddSingleton<IOTbltrandtlDataAccess, OTbltrandtlDataAccess>();
         builder.Services.AddSingleton<IOPaymainhdrDataAccess, OPaymainhdrDataAccess>();
         builder.Services.AddSingleton<IOLoansDataAccess, OLoansDataAccess>();
+        builder.Services.AddSingleton<IOChartofacctDataAccess, OChartofacctDataAccess>();
         
 
         //-- Pay Report --------------------------------------------------------------------
