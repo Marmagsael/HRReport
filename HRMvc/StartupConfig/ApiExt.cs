@@ -170,6 +170,8 @@ public static class ApiExt
         
         //-- Old Pis -----------------------------------------------------------------------
         builder.Services.AddSingleton<IOCoinfoDataAccess, OCoinfoDataAccess>();
+        builder.Services.AddSingleton<IOClientDataAccess, OClientDataAccess>();
+        builder.Services.AddSingleton<IOEmpstatDataAccess, OEmpstatDataAccess>();
         
 
         //-- Old Pay -----------------------------------------------------------------------
@@ -177,6 +179,7 @@ public static class ApiExt
         builder.Services.AddSingleton<IOTbltrandtlDataAccess, OTbltrandtlDataAccess>();
         builder.Services.AddSingleton<IOPaymainhdrDataAccess, OPaymainhdrDataAccess>();
         builder.Services.AddSingleton<IOLoansDataAccess, OLoansDataAccess>();
+        builder.Services.AddSingleton<IOChartofacctDataAccess, OChartofacctDataAccess>();
         
 
         //-- Pay Report --------------------------------------------------------------------
