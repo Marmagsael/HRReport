@@ -51,7 +51,7 @@ public class OempmasDataAccess : IOempmasDataAccess
 
     public async Task<List<OempmasModel?>?> _02(string empnumber, string schema, string conn)
     {
-        var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName
+        var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName, 
                         e.*  from {schema}.Empmas e
                      left join {schema}.position    p on p.code = e.position_
                      left join {schema}.empstat     s on s.code = e.empstat_                              
