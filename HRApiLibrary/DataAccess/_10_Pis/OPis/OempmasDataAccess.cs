@@ -51,11 +51,25 @@ public class OempmasDataAccess : IOempmasDataAccess
 
     public async Task<List<OempmasModel?>?> _02(string empnumber, string schema, string conn)
     {
-        var sql = $@"select  s.name EmpStatus, p.name PositionName, e.*  from {schema}.Empmas e
-                 left join {schema}.position p on p.code = e.position_
-                 left join {schema}.empstat s on s.code = e.empstat_                              
-                 where e.Empnumber = @Empnumber";
+        var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName
+                        e.*  from {schema}.Empmas e
+                     left join {schema}.position    p on p.code = e.position_
+                     left join {schema}.empstat     s on s.code = e.empstat_                              
+                     left join {schema}.Client      c  on c.ClNumber = e.Client_                              
+                     where e.Empnumber = @Empnumber";
         var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data;
+    }
+    
+    public async Task<List<OempmasModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
+    {
+        var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName
+                        e.*  from {schema}.Empmas e
+                     left join {schema}.position    p on p.code = e.position_
+                     left join {schema}.empstat     s on s.code = e.empstat_                              
+                     left join {schema}.Client      c  on c.ClNumber = e.Client_                              
+                     where e.Client_ = @ClNumber; ";
+        var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
         return data;
     }
 
@@ -140,8 +154,9 @@ public class OempmasDataAccess : IOempmasDataAccess
 
 public interface IOempmasDataAccess
 {
-	Task<OempmasModel?> _01(OempmasModel empmas, string schema, string conn);
-	Task<List<OempmasModel?>?> _02(string empnumber, string schema, string conn); 
-	Task<List<OempmasModel?>?> _02ByEmail(string email, string schema, string conn); 
+	Task<OempmasModel?>         _01(OempmasModel empmas, string schema, string conn);
+	Task<List<OempmasModel?>?>  _02(string empnumber, string schema, string conn); 
+    Task<List<OempmasModel?>?>  _02ByClNumbers(string clnumber, string schema, string conn); 
+	Task<List<OempmasModel?>?>  _02ByEmail(string email, string schema, string conn); 
 	
 }
