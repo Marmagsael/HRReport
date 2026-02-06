@@ -1,0 +1,76 @@
+﻿@namespace HRMvc.Applications.PisReport.Views.Blazor
+
+@using HRApiLibrary.DataAccess._20_Pay_Report
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+
+<div class="p-3"> <button class="btn btn-success" @onclick="Create">Generate Report </button> </div>
+
+
+
+<div>
+    <IframeReportRenderer DataSource="report"
+                          ReportRelativePath="@relativePath"
+                          OutputFormat="@selectedFormat"
+                          Parameters="reportParams"
+                          AutoGenerate="@(report?.Any() == true)"
+                          RefreshToken="@refreshToken" />
+
+</div>
+
+
+@code {
+
+    private class ReportModel
+    {
+        public string?  No          { get; set; }
+        public string?  EmpNumber   { get; set; }
+        public string?  EmpFullName { get; set; }
+        public string?  Clname { get; set; }
+        public string?  Empstat { get; set; }
+        
+
+    }
+
+    List<ReportModel?>? report = [];
+
+    private string relativePath = "Reports/_02HR/_2103_ESR.trdp";
+    private string                      selectedFormat  = "PDF";                                          //PDF | XLSX
+    private Dictionary<string, object> reportParams     = new() { ["CoName"] = "GSIA Security Agency Inc.",
+                                                                  ["CoAddress"] = "577 Suntrade Bldg. Alabang Zapote Rd. Brgy. Almanza Uno, Las Pinas City, NCR.",
+                                                                  ["ReportTitle"] = "Employee Status Report",
+                                                                  ["RunDate"] = DateTime.Now };
+    private int                         refreshToken    = 2102000;
+
+
+
+    [Parameter] public UserClaimsModel?		UserClaims { get; set; }
+
+    private void Create()
+    {
+
+        report = [];
+        report.Add(new ReportModel() { No = "1.", EmpNumber = "00001", EmpFullName = "Aala, John Patrick E.",       Empstat = "Active", Clname = "ADVANTEK - RONDEAU RESIDENCE" });
+        report.Add(new ReportModel() { No = "2.", EmpNumber = "00002", EmpFullName = "Aba Ariannie R.",             Empstat = "Active", Clname = "AGA Philippines, Inc. (LTI Biñan, Laguna)" });
+        report.Add(new ReportModel() { No = "3.", EmpNumber = "00003", EmpFullName = "Abacano, Mark Alvin M..",     Empstat = "Active", Clname = "ALIBATA LTD - MANILA BRANCH" });
+        report.Add(new ReportModel() { No = "4.", EmpNumber = "00004", EmpFullName = "Abad, Jessie G.",             Empstat = "Active", Clname = "SANMAR SOLAR INC." });
+        report.Add(new ReportModel() { No = "5.", EmpNumber = "00005", EmpFullName = "Abaja, John Renel",           Empstat = "Active", Clname = "AMDATEX Las Piñas Services Inc." });
+        report.Add(new ReportModel() { No = "1.", EmpNumber = "00001", EmpFullName = "Cervantes, Jeric B.",         Empstat = "Sick Leave", Clname = "JAE PHILIPPINES INC. - PLANT 1" });
+        report.Add(new ReportModel() { No = "2.", EmpNumber = "00002", EmpFullName = "Cesar, Leopoldo P.",          Empstat = "Sick Leave", Clname = "GNPOWER MARIVELES ENERGY CENTER LTD. CO." });
+        report.Add(new ReportModel() { No = "3.", EmpNumber = "00003", EmpFullName = "Cervera, Marvin B.",          Empstat = "Sick Leave", Clname = "QUEZON POWER (PHILIPPINES), LTD CO." });
+        report.Add(new ReportModel() { No = "4.", EmpNumber = "00004", EmpFullName = "Cestina, Sarrah P.",          Empstat = "Sick Leave", Clname = "KCD Builders  Corporation" });
+        report.Add(new ReportModel() { No = "5.", EmpNumber = "00005", EmpFullName = "Charias, Jenny E.",           Empstat = "Sick Leave", Clname = "MEAD JOHNSON NUTRITION (PHILIPPINES) INC." });
+        report.Add(new ReportModel() { No = "1.", EmpNumber = "00001", EmpFullName = "Librea, Emil M.",             Empstat = "Suspended", Clname = "PHILIPPINE MANUFACTURING CO. OF MURATA INC." });
+        report.Add(new ReportModel() { No = "2.", EmpNumber = "00002", EmpFullName = "Librero, Emil M.",            Empstat = "Suspended", Clname = "GNPOWER MARIVELES ENERGY CENTER LTD. CO." });
+        report.Add(new ReportModel() { No = "3.", EmpNumber = "00003", EmpFullName = "Licanda Jake C.",             Empstat = "Suspended", Clname = "Mars Philippines Inc. - Augmentation" });
+        report.Add(new ReportModel() { No = "4.", EmpNumber = "00004", EmpFullName = "Lichtle, Marilyn L.",         Empstat = "Suspended", Clname = "SANMAR SOLAR INC." });
+        report.Add(new ReportModel() { No = "5.", EmpNumber = "00005", EmpFullName = "Liclican, Maribel A.",        Empstat = "Suspended", Clname = "SAN BUENAVENTURA POWER LTD. CO." });
+        report.Add(new ReportModel() { No = "1.", EmpNumber = "00001", EmpFullName = "Ranjo, Silverio Jr. P.",      Empstat = "Resigned", Clname = "MITSUI & CO. (ASIA PACIFIC) PTE. LTD - Receptionist" });
+        report.Add(new ReportModel() { No = "2.", EmpNumber = "00002", EmpFullName = "Raon, Rizah T.",              Empstat = "Resigned", Clname = "MIDDLEBY PHIL. CORP. - WAREHOUSE" });
+        report.Add(new ReportModel() { No = "3.", EmpNumber = "00003", EmpFullName = "Rapis, Ryan B.",              Empstat = "Resigned", Clname = "Palauig Solar1 Inc. " });
+        report.Add(new ReportModel() { No = "4.", EmpNumber = "00004", EmpFullName = "Rapisora, Hanna Cressa T.",   Empstat = "Resigned", Clname = "SANMAR SOLAR INC." });
+        report.Add(new ReportModel() { No = "5.", EmpNumber = "00005", EmpFullName = "Ranit, Angelina L.",          Empstat = "Resigned", Clname = "RECKITT BENNCKISER" });
+    }
+
+}
+ 
