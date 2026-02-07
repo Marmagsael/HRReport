@@ -30,10 +30,28 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
 
         return data;
     }
+    
+    public async Task<EP_Phic12102Model> _02PHICRemittance(string empnumber, string acctnumber, string paydb, string conn)
+    {
+        EP_Phic12102Model data = new()
+        {
+            Tbltran         = await _02GTbltran_ByEmpNumber_ByAcctNumber(empnumber, acctnumber, paydb, conn),
+            GPhicpaydtl     = await _02EP_ByEmpNumber_ByAcctNumber<GPhicpaydtlModel>(empnumber, "PHICPaydtl", paydb, conn)
+        };
 
+        return data;
+    }
+    
+    public async Task<EP_Pagibig12102Model> _02PAGIBIGRemittance(string empnumber, string acctnumber, string paydb, string conn)
+    {
+        EP_Pagibig12102Model data = new()
+        {
+            Tbltran             = await _02GTbltran_ByEmpNumber_ByAcctNumber(empnumber, acctnumber, paydb, conn),
+            GPagibigpaydtl      = await _02EP_ByEmpNumber_ByAcctNumber<GPagibigpaydtlModel>(empnumber, "PagibigPaydtl", paydb, conn)
+        };
 
-
-
+        return data;
+    }
 
     // ========================================================================
     // --- Private Functions --------------------------------------------------
@@ -62,6 +80,8 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
 
 public interface IOEmpportalDataAccess
 {
-    Task<List<GTbltrandtlModel>> _02ByTrnAndEmpnumber(string trn, string empnumber, string schema, string conn);
-    Task<EP_SSS12102Model> _02SSSRemittance(string empnumber, string acctnumber, string paydb, string conn);
+    Task<List<GTbltrandtlModel>>    _02ByTrnAndEmpnumber(string trn, string empnumber, string schema, string conn);
+    Task<EP_SSS12102Model>          _02SSSRemittance(string empnumber, string acctnumber, string paydb, string conn);
+    Task<EP_Phic12102Model>         _02PHICRemittance(string empnumber, string acctnumber, string paydb, string conn); 
+    Task<EP_Pagibig12102Model>      _02PAGIBIGRemittance(string empnumber, string acctnumber, string paydb, string conn); 
 }

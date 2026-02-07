@@ -21,17 +21,17 @@
     
     <div class="card-body w-100">
 
-        
+        @if(msg.Length > 0 ) { <div class="text-danger p-3 "> @msg </div> }
 
         @if(lnk==2){ <div> <_12_102_RequestTimeOff />  </div> }
         @if(lnk==3){ <div> <_12_102_TimeSheet /> </div> }
         @if(lnk==4){ <div> <_12_102_Obligation /> </div> }
         @if(lnk==5){ <div> <_12_102_SSSRemittance EP_SSS12102="@sssPrem" /> </div> }
-        @if(lnk==6){ <div> <_12_102_PHICRemittance /> </div> }
-        @if(lnk==7){ <div> <_12_102_PagibigRemittance /> </div> }
+        @if(lnk==6){ <div> <_12_102_PHICRemittance EP_Phic12102="@phicPrem" /> </div> }
+        @if(lnk==7){ <div> <_12_102_PagibigRemittance EP_Pagibig12102="@pagibigPrem" /> </div> }
         @if(lnk==8){ <div> <_12_102_Loans Loans="@loans" /> </div> }
         
-        @if(msg.Length > 0 ) { <div class="text-danger p-3 "> @msg </div> }
+        
         
         
         
@@ -87,6 +87,9 @@
 
     List<GLoansModel?>?     loans = [];
     EP_SSS12102Model        sssPrem     = new(); 
+    EP_Phic12102Model       phicPrem    = new(); 
+    EP_Pagibig12102Model    pagibigPrem = new(); 
+    
     string                  msg         = string.Empty; 
 
     
@@ -98,6 +101,8 @@
         lnk = val;
 
         if(val == 5) await FetchSSS() ; 
+        if(val == 6) await FetchPHIC() ; 
+        if(val == 7) await FetchPagibig() ; 
         if(val == 8) await FetchLoans() ; 
         
 
@@ -106,21 +111,48 @@
     }
 
     async Task FetchSSS() {
-        msg = "Please wait, loading data...."; 
+        msg = "Please wait, loading SSS data  ...."; 
         StateHasChanged(); 
 
         UserClaimsModel uc = UserClaims; 
         sssPrem = await _empPortal._02SSSRemittance(uc.OempNumber, "D002", uc.OpayDb, uc.Conn); 
 
         msg = string.Empty; 
+    }
+    
+    async Task FetchPHIC() {
+        msg = "Please wait, loading PHIC data  ...."; 
+        StateHasChanged(); 
 
-        
+        UserClaimsModel uc = UserClaims; 
+        phicPrem = await _empPortal._02PHICRemittance(uc.OempNumber, "D003", uc.OpayDb, uc.Conn); 
+
+        msg = string.Empty; 
+    }
+    
+    async Task FetchPagibig() {
+        msg = "Please wait, loading PAGIBIG data  ...."; 
+        StateHasChanged(); 
+
+        UserClaimsModel uc = UserClaims; 
+        pagibigPrem = await _empPortal._02PAGIBIGRemittance(uc.OempNumber, "D004", uc.OpayDb, uc.Conn); 
+        @* phicPrem = await _empPortal._02PHICRemittance(uc.OempNumber, "D004", uc.OpayDb, uc.Conn);  *@
+
+
+
+        Console.WriteLine($"-------------------"); 
+
+        msg = string.Empty; 
     }
 
 
     async Task FetchLoans() {
+        msg = "Please wait, loading Loans data  ...."; 
+
         UserClaimsModel uc          = UserClaims; 
         loans = await _loans._02ByEmpNumbers(uc.OempNumber, uc.OpayDb, uc.Conn); 
+
+        msg = string.Empty; 
     }
 
 
