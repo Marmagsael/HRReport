@@ -12,3 +12,4 @@ public class GSssprempaydtlModel
 	public double? Sal 				{get; set; } 
 	public string? Stat 			{get; set; } 
 }
+
