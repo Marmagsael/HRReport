@@ -13,7 +13,7 @@ public static class TelerikReportingExt
         // Use minimal resolver — no claims or data injection
         var resolver = new CustomReportSourceResolver(reportsPath);
 
-        builder.Services.AddSingleton<IReportServiceConfiguration>(sp =>
+        builder.Services.AddScoped<IReportServiceConfiguration>(sp =>
             new ReportServiceConfiguration
             {
                 HostAppId = "HRMvcApp",
