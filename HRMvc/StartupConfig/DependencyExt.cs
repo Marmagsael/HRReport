@@ -59,37 +59,37 @@ public static class DependencyExt
     public static void AddInjectServices(this WebApplicationBuilder builder)
     {
         // --- Session --------------------------------------------------------------------------
-        builder.Services.AddSingleton<ISessionDataAccess, SessionDataAccess>();
+        builder.Services.AddScoped<ISessionDataAccess, SessionDataAccess>();
 
         // --- 00_MainPis -----------------------------------------------------------------------
-        builder.Services.AddSingleton<I_00MainDA, _00MainDA>();
-        builder.Services.AddSingleton<ClaimsAccess>(); 
-        builder.Services.AddSingleton<I_00UsersAccess, _00UsersAccess>();
-        builder.Services.AddSingleton<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
+        builder.Services.AddScoped<I_00MainDA, _00MainDA>();
+        builder.Services.AddScoped<ClaimsAccess>(); 
+        builder.Services.AddScoped<I_00UsersAccess, _00UsersAccess>();
+        builder.Services.AddScoped<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
 
         // --- 00_MainPis -----------------------------------------------------------------------
-        builder.Services.AddSingleton<I_00MainPisAccess, _00MainPisAccess>();
-        builder.Services.AddSingleton<I_00CountryDataAccess, _00CountryDataAccess>();
+        builder.Services.AddScoped<I_00MainPisAccess, _00MainPisAccess>();
+        builder.Services.AddScoped<I_00CountryDataAccess, _00CountryDataAccess>();
         
-        builder.Services.AddSingleton<I_00CityDataAccess, _00CityDataAccess>();
-        builder.Services.AddSingleton<I_00ClientDataAccess, _00ClientDataAccess>();
-        builder.Services.AddSingleton<I_00CompanyusersDataAccess, _00CompanyusersDataAccess>();
-        builder.Services.AddSingleton<I_00ProvincestateDataAccess, _00ProvincestateDataAccess>();
-        builder.Services.AddSingleton<I_00UserscompanyDataAccess, _00UserscompanyDataAccess>();
-        builder.Services.AddSingleton<I_00_CurrencyDataAccess, _00_CurrencyDataAccess>();
+        builder.Services.AddScoped<I_00CityDataAccess, _00CityDataAccess>();
+        builder.Services.AddScoped<I_00ClientDataAccess, _00ClientDataAccess>();
+        builder.Services.AddScoped<I_00CompanyusersDataAccess, _00CompanyusersDataAccess>();
+        builder.Services.AddScoped<I_00ProvincestateDataAccess, _00ProvincestateDataAccess>();
+        builder.Services.AddScoped<I_00UserscompanyDataAccess, _00UserscompanyDataAccess>();
+        builder.Services.AddScoped<I_00_CurrencyDataAccess, _00_CurrencyDataAccess>();
 
         // --- 10_Pis -----------------------------------------------------------------------
-        builder.Services.AddSingleton<I_10_EmpmasDataAccess, _10_EmpmasDataAccess>();
+        builder.Services.AddScoped<I_10_EmpmasDataAccess, _10_EmpmasDataAccess>();
 
         // --- 20 Pay -----------------------------------------------------------------------
-        builder.Services.AddSingleton<ICoaDataAccess, CoaDataAccess>();
-        builder.Services.AddSingleton<IPayrollgrpDataAccess, PayrollgrpDataAccess>(); 
-        builder.Services.AddSingleton<IPayrollgrpratesDataAccess, PayrollgrpratesDataAccess>();
+        builder.Services.AddScoped<ICoaDataAccess, CoaDataAccess>();
+        builder.Services.AddScoped<IPayrollgrpDataAccess, PayrollgrpDataAccess>(); 
+        builder.Services.AddScoped<IPayrollgrpratesDataAccess, PayrollgrpratesDataAccess>();
 
         // --- 90_Utils -----------------------------------------------------------------------
-        builder.Services.AddSingleton<I_90_001_MySqlDataAccess, _90_001_MySqlDataAccess>();
-        builder.Services.AddSingleton<I_09_02_VarsGlobal, _09_02_VarsGlobal>();
-        builder.Services.AddSingleton<IMsdsDataAccess, MsdsDataAccess>();
+        builder.Services.AddScoped<I_90_001_MySqlDataAccess, _90_001_MySqlDataAccess>();
+        builder.Services.AddScoped<I_09_02_VarsGlobal, _09_02_VarsGlobal>();
+        builder.Services.AddScoped<IMsdsDataAccess, MsdsDataAccess>();
 
 
         //--- Radzen Requirements ---------------------------------------

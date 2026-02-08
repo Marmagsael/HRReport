@@ -24,28 +24,28 @@ public static class DependencyExt
 
     public static void AddInjectionServices(this WebApplicationBuilder builder)
     {
-        builder.Services.AddSingleton<I_90_001_MySqlDataAccess, _90_001_MySqlDataAccess>();
-        builder.Services.AddSingleton<I_00_001_LoginAccess,     _00_001_LoginAccess>();
+        builder.Services.AddScoped<I_90_001_MySqlDataAccess, _90_001_MySqlDataAccess>();
+        builder.Services.AddScoped<I_00_001_LoginAccess,     _00_001_LoginAccess>();
 
-        builder.Services.AddSingleton<I_00MainTblMakerAccess,   _00MainTblMakerAccess>();
-        builder.Services.AddSingleton<I_00MainDataMakerAccess,  _00MainDataMakerAccess>();
+        builder.Services.AddScoped<I_00MainTblMakerAccess,   _00MainTblMakerAccess>();
+        builder.Services.AddScoped<I_00MainDataMakerAccess,  _00MainDataMakerAccess>();
 
-        builder.Services.AddSingleton<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
+        builder.Services.AddScoped<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
 
         //-- Main ---------------------------------------------------------------------
-        builder.Services.AddSingleton<I_00UsersAccess, _00UsersAccess>();
-        builder.Services.AddSingleton<I_00MainDA,      _00MainDA>();
-        builder.Services.AddSingleton<I_00CountryDataAccess, _00CountryDataAccess>();
+        builder.Services.AddScoped<I_00UsersAccess, _00UsersAccess>();
+        builder.Services.AddScoped<I_00MainDA,      _00MainDA>();
+        builder.Services.AddScoped<I_00CountryDataAccess, _00CountryDataAccess>();
 
         //-- MainPis ---------------------------------------------------------------------
-        builder.Services.AddSingleton<I_10_EmpmasDataAccess, _10_EmpmasDataAccess>();
+        builder.Services.AddScoped<I_10_EmpmasDataAccess, _10_EmpmasDataAccess>();
 
 
         //-- Pis ------------------------------------------------------------------------
 
 
         //-- Pay ------------------------------------------------------------------------
-        builder.Services.AddSingleton<I_20_002_PayTblMaker, _20_002_PayTblMaker>(); 
+        builder.Services.AddScoped<I_20_002_PayTblMaker, _20_002_PayTblMaker>(); 
 
     }
 
