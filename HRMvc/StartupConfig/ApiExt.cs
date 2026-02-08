@@ -30,162 +30,169 @@ public static class ApiExt
 
     public static void AddApiInjectionServices(this WebApplicationBuilder builder)
     {
-        builder.Services.AddSingleton<I_90_001_MySqlDataAccess, _90_001_MySqlDataAccess>();
+        builder.Services.AddScoped<I_90_001_MySqlDataAccess, _90_001_MySqlDataAccess>();
         builder.Services.AddScoped<I_00_001_LoginAccess, _00_001_LoginAccess>();
 
-        builder.Services.AddSingleton<I_00MainTblMakerAccess, _00MainTblMakerAccess>();
-        builder.Services.AddSingleton<I_00MainDataMakerAccess, _00MainDataMakerAccess>();
+        builder.Services.AddScoped<I_00MainTblMakerAccess, _00MainTblMakerAccess>();
+        builder.Services.AddScoped<I_00MainDataMakerAccess, _00MainDataMakerAccess>();
 
-        builder.Services.AddSingleton<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
-        builder.Services.AddSingleton<I_00_CTDataAccess, _00_CTDataAccess>();
-        builder.Services.AddSingleton<IMsdsDataAccess, MsdsDataAccess>();
+        builder.Services.AddScoped<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
+        builder.Services.AddScoped<I_00_CTDataAccess, _00_CTDataAccess>();
+        builder.Services.AddScoped<IMsdsDataAccess, MsdsDataAccess>();
 
         //-- Main ---------------------------------------------------------------------
-        builder.Services.AddSingleton<I_00UsersAccess, _00UsersAccess>();
-        builder.Services.AddSingleton<I_00MainDA, _00MainDA>();
-        builder.Services.AddSingleton<ISystemuserDataAccess, SystemuserDataAccess>();
+        builder.Services.AddScoped<I_00UsersAccess, _00UsersAccess>();
+        builder.Services.AddScoped<I_00MainDA, _00MainDA>();
+        builder.Services.AddScoped<ISystemuserDataAccess, SystemuserDataAccess>();
 
 
         //-- MainPis ---------------------------------------------------------------------
-        builder.Services.AddSingleton<I_10_EmpmasDataAccess, _10_EmpmasDataAccess>();
-        builder.Services.AddSingleton<IEngagementDataAccess, EngagementDataAccess>();
-        builder.Services.AddSingleton<IDevdataDataAccess, RdevdataDataAccess>();
+        builder.Services.AddScoped<I_10_EmpmasDataAccess, _10_EmpmasDataAccess>();
+        builder.Services.AddScoped<IEngagementDataAccess, EngagementDataAccess>();
+        builder.Services.AddScoped<IDevdataDataAccess, RdevdataDataAccess>();
 
 
         //-- Pis ------------------------------------------------------------------------
-        builder.Services.AddSingleton<IAtttemplateDataAccess, AtttemplateDataAccess>();
-        builder.Services.AddSingleton<IAttdailyDataAccess, AttdailyDataAccess>();
-        builder.Services.AddSingleton<IAttpunchesDataAccess, AttpunchesDataAccess>();
-        builder.Services.AddSingleton<IAttpunches1DataAccess, Attpunches1DataAccess>();
-        builder.Services.AddSingleton<IEmpmasInternalDataAccess, EmpmasInternalDataAccess>();
-        builder.Services.AddSingleton<IPissettingsDataAccess, PissettingsDataAccess>();
-        builder.Services.AddSingleton<ILeavetypeDataAccess, LeavetypeDataAccess>();
-        builder.Services.AddSingleton<ILeavegrpDataAccess, LeavegrpDataAccess>();
-        builder.Services.AddSingleton<ILeavedefaultapproverDataAccess, LeavedefaultapproverDataAccess>();
-        builder.Services.AddSingleton<ILeaveapproverDataAccess, LeaveapproverDataAccess>();
-        builder.Services.AddSingleton<ILeavegrpapproverDataAccess, LeavegrpapproverDataAccess>();
-        builder.Services.AddSingleton<IDeprecDataAccess, DeprecDataAccess>();
-        builder.Services.AddSingleton<IEmpblockpostDataAccess, EmpblockpostDataAccess>();
-        builder.Services.AddSingleton<IEmploymenttypeDataAccess, EmploymenttypeDataAccess>();
-        builder.Services.AddSingleton<IRdivisionDataAccess, HRApiLibrary.DataAccess._10_Pis.RdivisionDataAccess>();
-        builder.Services.AddSingleton<IRdepartmentDataAccess, HRApiLibrary.DataAccess._10_Pis.RdepartmentDataAccess>();
-        builder.Services.AddSingleton<IRsectionDataAccess, HRApiLibrary.DataAccess._10_Pis.RsectionDataAccess>();
-        builder.Services.AddSingleton<IPositionDataAccess, PositionDataAccess>();
-        builder.Services.AddSingleton<IRempstatDataAccess, RempstatDataAccess>();
-        builder.Services.AddSingleton<IRcivstatDataAccess, RcivstatDataAccess>();
-        builder.Services.AddSingleton<IDeviationDataAccess, DeviationDataAccess>();
-        builder.Services.AddSingleton<IPisEmpmasDataAccess, PisEmpmasDataAccess>();
-        builder.Services.AddSingleton<IDeploymodeDataAccess, DeploymodeDataAccess>();
-        builder.Services.AddSingleton<IEmploytypeDataAccess, EmploytypeDataAccess>();
-        builder.Services.AddSingleton<IRdepDataAccess, RdepDataAccess>();
-        builder.Services.AddSingleton<IRdepapproverDataAccess, RdepapproverDataAccess>();
-        builder.Services.AddSingleton<IRdeploymentDataAccess, RdeploymentDataAccess>();
-        builder.Services.AddSingleton<ITrandeploymentDataAccess, TrandeploymentDataAccess>();
-        builder.Services.AddSingleton<ITrandeploymentapprovalDataAccess, TrandeploymentapprovalDataAccess>();
-        builder.Services.AddSingleton<ITrandeploymentapprovalhistoryDataAccess, TrandeploymentapprovalhistoryDataAccess>();
-        builder.Services.AddSingleton<ITrandeviationDataAccess, TrandeviationDataAccess>();
-        builder.Services.AddSingleton<ITrandeviationapprovalDataAccess, TrandeviationapprovalDataAccess>();
-        builder.Services.AddSingleton<ITrandeviationotherDataAccess, TrandeviationotherDataAccess>();
-        builder.Services.AddSingleton<ITrandeviationapprovalhistoryDataAccess, TrandeviationapprovalhistoryDataAccess>();
-        builder.Services.AddSingleton<ITrandisciplinaryDataAccess, TrandisciplinaryDataAccess>();
-        builder.Services.AddSingleton<ITraninvestigateDataAccess, TraninvestigateDataAccess>();
-        builder.Services.AddSingleton<ITranexonerateDataAccess, TranexonerateDataAccess>();
-        builder.Services.AddSingleton<ITrandisciplinaryapprovalDataAccess, TrandisciplinaryapprovalDataAccess>();
-        builder.Services.AddSingleton<ITraninvestigateapprovalDataAccess, TraninvestigateapprovalDataAccess>();
-        builder.Services.AddSingleton<ITranexonerateapprovalDataAccess, TranexonerateapprovalDataAccess>();
-        builder.Services.AddSingleton<ITrandisciplinaryapprovalhistoryDataAccess, TrandisciplinaryapprovalhistoryDataAccess>();
-        builder.Services.AddSingleton<ITraninvestigateapprovalhistoryDataAccess, TraninvestigateapprovalhistoryDataAccess>();
-        builder.Services.AddSingleton<ITranexonerateapprovalhistoryDataAccess, TranexonerateapprovalhistoryDataAccess>();
-        builder.Services.AddSingleton<ITranreinstatementDataAccess, TranreinstatementDataAccess>();
-        builder.Services.AddSingleton<ITranreinstatementapprovalDataAccess, TranreinstatementapprovalDataAccess>();
-        builder.Services.AddSingleton<ITranreinstatementapprovalhistoryDataAccess, TranreinstatementapprovalhistoryDataAccess>();
+        builder.Services.AddScoped<IAtttemplateDataAccess, AtttemplateDataAccess>();
+        builder.Services.AddScoped<IAttdailyDataAccess, AttdailyDataAccess>();
+        builder.Services.AddScoped<IAttpunchesDataAccess, AttpunchesDataAccess>();
+        builder.Services.AddScoped<IAttpunches1DataAccess, Attpunches1DataAccess>();
+        builder.Services.AddScoped<IEmpmasInternalDataAccess, EmpmasInternalDataAccess>();
+        builder.Services.AddScoped<IPissettingsDataAccess, PissettingsDataAccess>();
+        builder.Services.AddScoped<ILeavetypeDataAccess, LeavetypeDataAccess>();
+        builder.Services.AddScoped<ILeavegrpDataAccess, LeavegrpDataAccess>();
+        builder.Services.AddScoped<ILeavedefaultapproverDataAccess, LeavedefaultapproverDataAccess>();
+        builder.Services.AddScoped<ILeaveapproverDataAccess, LeaveapproverDataAccess>();
+        builder.Services.AddScoped<ILeavegrpapproverDataAccess, LeavegrpapproverDataAccess>();
+        builder.Services.AddScoped<IDeprecDataAccess, DeprecDataAccess>();
+        builder.Services.AddScoped<IEmpblockpostDataAccess, EmpblockpostDataAccess>();
+        builder.Services.AddScoped<IEmploymenttypeDataAccess, EmploymenttypeDataAccess>();
+        builder.Services.AddScoped<IRdivisionDataAccess, HRApiLibrary.DataAccess._10_Pis.RdivisionDataAccess>();
+        builder.Services.AddScoped<IRdepartmentDataAccess, HRApiLibrary.DataAccess._10_Pis.RdepartmentDataAccess>();
+        builder.Services.AddScoped<IRsectionDataAccess, HRApiLibrary.DataAccess._10_Pis.RsectionDataAccess>();
+        builder.Services.AddScoped<IPositionDataAccess, PositionDataAccess>();
+        builder.Services.AddScoped<IRempstatDataAccess, RempstatDataAccess>();
+        builder.Services.AddScoped<IRcivstatDataAccess, RcivstatDataAccess>();
+        builder.Services.AddScoped<IDeviationDataAccess, DeviationDataAccess>();
+        builder.Services.AddScoped<IPisEmpmasDataAccess, PisEmpmasDataAccess>();
+        builder.Services.AddScoped<IDeploymodeDataAccess, DeploymodeDataAccess>();
+        builder.Services.AddScoped<IEmploytypeDataAccess, EmploytypeDataAccess>();
+        builder.Services.AddScoped<IRdepDataAccess, RdepDataAccess>();
+        builder.Services.AddScoped<IRdepapproverDataAccess, RdepapproverDataAccess>();
+        builder.Services.AddScoped<IRdeploymentDataAccess, RdeploymentDataAccess>();
+        builder.Services.AddScoped<ITrandeploymentDataAccess, TrandeploymentDataAccess>();
+        builder.Services.AddScoped<ITrandeploymentapprovalDataAccess, TrandeploymentapprovalDataAccess>();
+        builder.Services.AddScoped<ITrandeploymentapprovalhistoryDataAccess, TrandeploymentapprovalhistoryDataAccess>();
+        builder.Services.AddScoped<ITrandeviationDataAccess, TrandeviationDataAccess>();
+        builder.Services.AddScoped<ITrandeviationapprovalDataAccess, TrandeviationapprovalDataAccess>();
+        builder.Services.AddScoped<ITrandeviationotherDataAccess, TrandeviationotherDataAccess>();
+        builder.Services.AddScoped<ITrandeviationapprovalhistoryDataAccess, TrandeviationapprovalhistoryDataAccess>();
+        builder.Services.AddScoped<ITrandisciplinaryDataAccess, TrandisciplinaryDataAccess>();
+        builder.Services.AddScoped<ITraninvestigateDataAccess, TraninvestigateDataAccess>();
+        builder.Services.AddScoped<ITranexonerateDataAccess, TranexonerateDataAccess>();
+        builder.Services.AddScoped<ITrandisciplinaryapprovalDataAccess, TrandisciplinaryapprovalDataAccess>();
+        builder.Services.AddScoped<ITraninvestigateapprovalDataAccess, TraninvestigateapprovalDataAccess>();
+        builder.Services.AddScoped<ITranexonerateapprovalDataAccess, TranexonerateapprovalDataAccess>();
+        builder.Services.AddScoped<ITrandisciplinaryapprovalhistoryDataAccess, TrandisciplinaryapprovalhistoryDataAccess>();
+        builder.Services.AddScoped<ITraninvestigateapprovalhistoryDataAccess, TraninvestigateapprovalhistoryDataAccess>();
+        builder.Services.AddScoped<ITranexonerateapprovalhistoryDataAccess, TranexonerateapprovalhistoryDataAccess>();
+        builder.Services.AddScoped<ITranreinstatementDataAccess, TranreinstatementDataAccess>();
+        builder.Services.AddScoped<ITranreinstatementapprovalDataAccess, TranreinstatementapprovalDataAccess>();
+        builder.Services.AddScoped<ITranreinstatementapprovalhistoryDataAccess, TranreinstatementapprovalhistoryDataAccess>();
 
-        builder.Services.AddSingleton<IEmptranmovementDataAccess, EmptranmovementDataAccess>();
-        builder.Services.AddSingleton<IParaDataAccess, ParaDataAccess>();
-        builder.Services.AddSingleton<IDesignationDataAccess, DesignationDataAccess>();
-        builder.Services.AddSingleton<IPenaltyDataAccess, RpenaltyDataAccess>();
+        builder.Services.AddScoped<IEmptranmovementDataAccess, EmptranmovementDataAccess>();
+        builder.Services.AddScoped<IParaDataAccess, ParaDataAccess>();
+        builder.Services.AddScoped<IDesignationDataAccess, DesignationDataAccess>();
+        builder.Services.AddScoped<IPenaltyDataAccess, RpenaltyDataAccess>();
 
-        builder.Services.AddSingleton<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
-        builder.Services.AddSingleton<DA222>();
+        builder.Services.AddScoped<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
+        builder.Services.AddScoped<DA222>();
         /*builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<SessionService>();*/
         
         //-- Accountability ------------------------------------------------------------
-        builder.Services.AddSingleton<IInvDataAccess, InvDataAccess>();
-        builder.Services.AddSingleton<IInvdtlDataAccess, InvdtlDataAccess>();
-        builder.Services.AddSingleton<IInv_typeDataAccess, Inv_typeDataAccess>();
-        builder.Services.AddSingleton<IInv_brandDataAccess, Inv_brandDataAccess>();
-        builder.Services.AddSingleton<IInv_categoryDataAccess, Inv_categoryDataAccess>();
-        builder.Services.AddSingleton<IInv_makeDataAccess, Inv_makeDataAccess>();
-        builder.Services.AddSingleton<IInv_statusDataAccess, Inv_statusDataAccess>();
+        builder.Services.AddScoped<IInvDataAccess, InvDataAccess>();
+        builder.Services.AddScoped<IInvdtlDataAccess, InvdtlDataAccess>();
+        builder.Services.AddScoped<IInv_typeDataAccess, Inv_typeDataAccess>();
+        builder.Services.AddScoped<IInv_brandDataAccess, Inv_brandDataAccess>();
+        builder.Services.AddScoped<IInv_categoryDataAccess, Inv_categoryDataAccess>();
+        builder.Services.AddScoped<IInv_makeDataAccess, Inv_makeDataAccess>();
+        builder.Services.AddScoped<IInv_statusDataAccess, Inv_statusDataAccess>();
         
 
 
         //-- PIS Personal ------------------------------------------------------------
-        builder.Services.AddSingleton<IEmpmovementDataAccess, EmpmovementDataAccess>();
-        builder.Services.AddSingleton<IMymovementDataAccess, MymovementDataAccess>();
-        builder.Services.AddSingleton<IOempmasDataAccess, OempmasDataAccess>();
-        builder.Services.AddSingleton<IOgenderDataAccess, OgenderDataAccess>();
-        builder.Services.AddSingleton<IOcivstatDataAccess, OcivstatDataAccess>();
-        builder.Services.AddSingleton<IOeducateDataAccess, OeducateDataAccess>();
-        builder.Services.AddSingleton<IOfamilyDataAccess, OfamilyDataAccess>();
-        builder.Services.AddSingleton<IOemergencDataAccess, OemergencDataAccess>();
+        builder.Services.AddScoped<IEmpmovementDataAccess, EmpmovementDataAccess>();
+        builder.Services.AddScoped<IMymovementDataAccess, MymovementDataAccess>();
+        builder.Services.AddScoped<IOempmasDataAccess, OempmasDataAccess>();
+        builder.Services.AddScoped<IOgenderDataAccess, OgenderDataAccess>();
+        builder.Services.AddScoped<IOcivstatDataAccess, OcivstatDataAccess>();
+        builder.Services.AddScoped<IOeducateDataAccess, OeducateDataAccess>();
+        builder.Services.AddScoped<IOfamilyDataAccess, OfamilyDataAccess>();
+        builder.Services.AddScoped<IOemergencDataAccess, OemergencDataAccess>();
 
         //-- Pay Transaction ------------------------------------------------------------
-        builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
+        builder.Services.AddScoped<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
         
-        builder.Services.AddSingleton<ITbltranDataAccess, TbltranDataAccess>();
-        builder.Services.AddSingleton<IEmprateshistDataAccess, EmprateshistDataAccess>();
-        builder.Services.AddSingleton<ILoanhdrDataAccess, LoanhdrDataAccess>();
-        builder.Services.AddSingleton<ILoansDataAccess, LoansDataAccess>();
-        builder.Services.AddSingleton<IUserpayinprocessDataAccess, UserpayinprocessDataAccess>();
-        builder.Services.AddSingleton<IPaymainhistoryDataAccess, PaymainhistoryDataAccess>();
-        builder.Services.AddSingleton<IFixedearnings_grpDataAccess, Fixedearnings_grpDataAccess>();
-        builder.Services.AddSingleton<IDedmandatoryDataAccess, DedmandatoryDataAccess>();
-        builder.Services.AddSingleton<ISettingsDataAccess, SettingsDataAccess>();
-        builder.Services.AddSingleton<IPayrollprdDataAccess, PayrollprdDataAccess>();
+        builder.Services.AddScoped<ITbltranDataAccess, TbltranDataAccess>();
+        builder.Services.AddScoped<IEmprateshistDataAccess, EmprateshistDataAccess>();
+        builder.Services.AddScoped<ILoanhdrDataAccess, LoanhdrDataAccess>();
+        builder.Services.AddScoped<ILoansDataAccess, LoansDataAccess>();
+        builder.Services.AddScoped<IUserpayinprocessDataAccess, UserpayinprocessDataAccess>();
+        builder.Services.AddScoped<IPaymainhistoryDataAccess, PaymainhistoryDataAccess>();
+        builder.Services.AddScoped<IFixedearnings_grpDataAccess, Fixedearnings_grpDataAccess>();
+        builder.Services.AddScoped<IDedmandatoryDataAccess, DedmandatoryDataAccess>();
+        builder.Services.AddScoped<ISettingsDataAccess, SettingsDataAccess>();
+        builder.Services.AddScoped<IPayrollprdDataAccess, PayrollprdDataAccess>();
 
         
         //-- Pay ------------------------------------------------------------------------
-        builder.Services.AddSingleton<I_20_002_PayTblMaker, _20_002_PayTblMaker>();
-        builder.Services.AddSingleton<IEmpratesDataAccess, EmpratesDataAccess>();
-        builder.Services.AddSingleton<IEmprateshistDataAccess, EmprateshistDataAccess>();
-        builder.Services.AddSingleton<ICoaDataAccess, CoaDataAccess>();
-        builder.Services.AddSingleton<IPaymaindtlDataAccess, PaymaindtlDataAccess>();
-        builder.Services.AddSingleton<IPaymainhdrDataAccess, PaymainhdrDataAccess>();
-        builder.Services.AddSingleton<IPayrollgrpDataAccess, PayrollgrpDataAccess>();
-        builder.Services.AddSingleton<IPayrollgrpratesDataAccess, PayrollgrpratesDataAccess>();
-        builder.Services.AddSingleton<IPayrateDataAccess, PayrateDataAccess>();
-        builder.Services.AddSingleton<IEmpratesdtlDataAccess, EmpratesdtlDataAccess>();
-        builder.Services.AddSingleton<IFixedearningsDataAccess, FixedearningsDataAccess>();
-        builder.Services.AddSingleton<IFixedearnings_grp_empDataAccess, Fixedearnings_grp_empDataAccess>();
-        builder.Services.AddSingleton<IPaymainvisacctDataAccess, PaymainvisacctDataAccess>();
-        builder.Services.AddSingleton<IPaytranDataAccess, PaytranDataAccess>();
-        builder.Services.AddSingleton<IDa605DataAccess, Da605DataAccess>();
-        builder.Services.AddSingleton<IDutyrenderedDataAccess, DutyrenderedDataAccess>();
-        builder.Services.AddSingleton<IMatrixpagibigDataAccess, MatrixpagibigDataAccess>();
-        builder.Services.AddSingleton<IMatrixphicDataAccess, MatrixphicDataAccess>();
-        builder.Services.AddSingleton<IMatrixsssDataAccess, MatrixsssDataAccess>();
-        builder.Services.AddSingleton<IMatrixwtaxDataAccess, MatrixwtaxDataAccess>();
+        builder.Services.AddScoped<I_20_002_PayTblMaker, _20_002_PayTblMaker>();
+        builder.Services.AddScoped<IEmpratesDataAccess, EmpratesDataAccess>();
+        builder.Services.AddScoped<IEmprateshistDataAccess, EmprateshistDataAccess>();
+        builder.Services.AddScoped<ICoaDataAccess, CoaDataAccess>();
+        builder.Services.AddScoped<IPaymaindtlDataAccess, PaymaindtlDataAccess>();
+        builder.Services.AddScoped<IPaymainhdrDataAccess, PaymainhdrDataAccess>();
+        builder.Services.AddScoped<IPayrollgrpDataAccess, PayrollgrpDataAccess>();
+        builder.Services.AddScoped<IPayrollgrpratesDataAccess, PayrollgrpratesDataAccess>();
+        builder.Services.AddScoped<IPayrateDataAccess, PayrateDataAccess>();
+        builder.Services.AddScoped<IEmpratesdtlDataAccess, EmpratesdtlDataAccess>();
+        builder.Services.AddScoped<IFixedearningsDataAccess, FixedearningsDataAccess>();
+        builder.Services.AddScoped<IFixedearnings_grp_empDataAccess, Fixedearnings_grp_empDataAccess>();
+        builder.Services.AddScoped<IPaymainvisacctDataAccess, PaymainvisacctDataAccess>();
+        builder.Services.AddScoped<IPaytranDataAccess, PaytranDataAccess>();
+        builder.Services.AddScoped<IDa605DataAccess, Da605DataAccess>();
+        builder.Services.AddScoped<IDutyrenderedDataAccess, DutyrenderedDataAccess>();
+        builder.Services.AddScoped<IMatrixpagibigDataAccess, MatrixpagibigDataAccess>();
+        builder.Services.AddScoped<IMatrixphicDataAccess, MatrixphicDataAccess>();
+        builder.Services.AddScoped<IMatrixsssDataAccess, MatrixsssDataAccess>();
+        builder.Services.AddScoped<IMatrixwtaxDataAccess, MatrixwtaxDataAccess>();
         
+        //-- Old Pis -----------------------------------------------------------------------
+        builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
+        builder.Services.AddScoped<IOClientDataAccess, OClientDataAccess>();
+        builder.Services.AddScoped<IOEmpstatDataAccess, OEmpstatDataAccess>();
+        
+        builder.Services.AddScoped<IOPisReportDataAccess, OPisReportDataAccess>();
+
+
         //-- Old Pay -----------------------------------------------------------------------
-        builder.Services.AddSingleton<IOtbltranDataAccess, OtbltranDataAccess>();
-        builder.Services.AddSingleton<IOTbltrandtlDataAccess, OTbltrandtlDataAccess>();
-        builder.Services.AddSingleton<IOPaymainhdrDataAccess, OPaymainhdrDataAccess>();
-        builder.Services.AddSingleton<IOLoansDataAccess, OLoansDataAccess>();
-        builder.Services.AddSingleton<IOChartofacctDataAccess, OChartofacctDataAccess>();
-        builder.Services.AddSingleton<IOEmpportalDataAccess, OEmpportalDataAccess>();
+        builder.Services.AddScoped<IOtbltranDataAccess, OtbltranDataAccess>();
+        builder.Services.AddScoped<IOTbltrandtlDataAccess, OTbltrandtlDataAccess>();
+        builder.Services.AddScoped<IOPaymainhdrDataAccess, OPaymainhdrDataAccess>();
+        builder.Services.AddScoped<IOLoansDataAccess, OLoansDataAccess>();
+        builder.Services.AddScoped<IOChartofacctDataAccess, OChartofacctDataAccess>();
         
 
         //-- Pay Report --------------------------------------------------------------------
-        builder.Services.AddSingleton<IReportDataAccess, ReportDataAccess>();
-        builder.Services.AddSingleton<IMainmenuDataAccess, MainmenuDataAccess>();
-        builder.Services.AddSingleton<IGPayrollReportDataAccess, GPayrollReportDataAccess>();
+        builder.Services.AddScoped<IReportDataAccess, ReportDataAccess>();
+        builder.Services.AddScoped<IMainmenuDataAccess, MainmenuDataAccess>();
+        builder.Services.AddScoped<IGPayrollReportDataAccess, GPayrollReportDataAccess>();
 
 
         //--- Accounting -------------------------------------------------------------------
-        builder.Services.AddSingleton<I_AcctgTableMaker, _AcctgTableMaker>();
-        // builder.Services.AddSingleton<IMainmenuDataAccess, IMainmenuDataAccess>();
+        builder.Services.AddScoped<I_AcctgTableMaker, _AcctgTableMaker>();
+        // builder.Services.AddScoped<IMainmenuDataAccess, IMainmenuDataAccess>();
         
         
     }
