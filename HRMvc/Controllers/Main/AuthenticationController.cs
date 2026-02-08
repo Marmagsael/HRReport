@@ -377,8 +377,7 @@ public class AuthenticationController : Controller
         if (uc.OldPis.Length <= 0) return Redirect("~/13");
         var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
         if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
-        Console.WriteLine($"Empas Count 1 : {empmas.Count} * email : {user.Email} * uc.OldPis : {uc.OldPis} * conn : {conn} ");
-
+        
         
         
         return Redirect("13");
@@ -407,8 +406,7 @@ public class AuthenticationController : Controller
         var conn     = _config.GetSection("Schema:DefConn").Value.ToString();
         var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
         if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
-        Console.WriteLine($"Empas Count 2 : {empmas.Count} * email : {user.Email} * uc.OldPis : {uc.OldPis} * conn : {conn} ");
-
+        
 
         return Redirect("~/13");
         
