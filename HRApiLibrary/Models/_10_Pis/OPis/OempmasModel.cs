@@ -8,7 +8,7 @@ public class OempmasModel
     public string? EmpMidNm                 { get; set; }
     public string? Suffix                   { get; set; }
     public string? EmpAlias                 { get; set; }
-    public string? Client                   { get; set; }
+    public string? Client_                   { get; set; }
     public string? ClientCode               { get; set; }
     public string? BasicRate                { get; set; }
     public string? PayType                  { get; set; }
@@ -92,10 +92,11 @@ public class OempmasModel
     public string? IsWithPhilHealth         { get; set; }
     public string? IsWithPagIbig            { get; set; }
     //-------------------------------------------------------
-    public string? PositionName            { get; set; } = string.Empty;
-    public string? EmpStatus               { get; set; } = string.Empty;
-
-    public string? Addr1 { get; set; }
-    public string? Addr2 { get; set; }
+    public string? PositionName             { get; set; } = string.Empty;
+    public string? EmpStatus                { get; set; } = string.Empty;
+    public string? ClName                   { get; set; } = string.Empty;
+    
+    public string? Addr1                    { get; set; }
+    public string? Addr2                    { get; set; }
 }
 

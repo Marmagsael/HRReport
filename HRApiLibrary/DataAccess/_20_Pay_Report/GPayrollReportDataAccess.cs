@@ -1,4 +1,5 @@
 ﻿using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._20_PayGeneric;
 using System.Security.AccessControl;
 
@@ -26,6 +27,9 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         var data    = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { AcctType = acctType }, conn);
         return data;
     }
+    
+
+
 
 
 }
@@ -35,4 +39,6 @@ public interface IGPayrollReportDataAccess
 {
     Task<List<GChartofacctModel?>?> _02ByAcctTypes(string acctType, string schema, string conn);
     Task<List<GChartofacctModel?>?> _02s(string schema, string conn);
+    
+
 }
