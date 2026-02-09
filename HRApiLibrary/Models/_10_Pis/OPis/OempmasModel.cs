@@ -36,8 +36,7 @@ public class OempmasModel
     public string? Address2                 { get; set; }
     public string? Tel1                     { get; set; }
     public string? Tel2                     { get; set; }
-    //public string? BirthDate              { get; set; }
-    public DateTime EmpBirth                { get; set; }
+    public DateTime? EmpBirth                { get; set; }
     public string? BirthPlace               { get; set; }
     public string? Sex_                     { get; set; }
     public string? CivStat_                 { get; set; }
@@ -91,6 +90,23 @@ public class OempmasModel
     public string? IsWithGsis               { get; set; }
     public string? IsWithPhilHealth         { get; set; }
     public string? IsWithPagIbig            { get; set; }
+    public string? MLACODE_                 { get; set; }
+    public string? PROCODE_                 { get; set; }
+
+    public string? GuardNoYrs               { get; set; }
+    public DateTime? RegRef                 { get; set; }
+    public string? MilitaryNoYr             { get; set; }
+    public string? AcctCode                 { get; set; }
+    public string? TaxCode                  { get; set; }
+    public DateTime? EXP_NBI                { get; set; }
+    public DateTime? EXP_POLICE             { get; set; }
+    public DateTime? EXP_PNP                { get; set; }
+    public DateTime? EXP_BRGY               { get; set; }
+    public DateTime? EXP_NEURO              { get; set; }
+    public DateTime? EXP_DRUG               { get; set; }
+    public DateTime? EXP_COURT              { get; set; }
+    public DateTime? EXPMED                 { get; set; }
+
     //-------------------------------------------------------
     public string? PositionName             { get; set; } = string.Empty;
     public string? EmpStatus                { get; set; } = string.Empty;
