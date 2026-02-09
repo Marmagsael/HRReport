@@ -1,6 +1,6 @@
 namespace HRApiLibrary.Models._10_Pis.OPis;
 
-public class OemergencModel
+public class OEmergencModel
 {
     public string? EMPNUMBER { get; set; }
     public string? NAME { get; set; }
