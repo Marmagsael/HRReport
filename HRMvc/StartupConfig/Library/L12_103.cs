@@ -66,7 +66,6 @@ public class L12_103
 
         var civstats        = await _ocivstat._02(pisdb, conn);
         var genders         = await _ogender._02(pisdb, conn);
-
         var family          = await _ofamily._02(empnumber, pisdb, conn);
         var parents         = await _oparent._02(empnumber, pisdb, conn);
         var childrens       = await _ochildren._02(empnumber, pisdb, conn);
