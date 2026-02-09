@@ -61,7 +61,7 @@ public class L12_103
         var pisdb = uc.OpisDb;
         var conn = uc.Conn;
 
-        var emergenc = await _oemergenc._02(empnumber, pisdb, conn);
+        var emergenc = await _oemergenc._02(empnumber??"-", pisdb??"-", conn??"-");
         return emergenc;
     }
 
@@ -74,7 +74,7 @@ public class L12_103
         var pisdb = uc.OpisDb;
         var conn = uc.Conn;
 
-        var civstats = await _ocivstat._02( pisdb, conn);
+        var civstats = await _ocivstat._02( pisdb??"-", conn??"-");
         return civstats;
     }
 
@@ -84,7 +84,7 @@ public class L12_103
         var pisdb = uc.OpisDb;
         var conn = uc.Conn;
 
-        var genders = await _ogender._02(pisdb, conn);
+        var genders = await _ogender._02(pisdb??"-", conn??"-");
         return genders;
     }
 
