@@ -29,7 +29,7 @@ public class L12_102
         var pisdb = uc.OpisDb; 
         var conn = uc.Conn;
         
-        var empass = await _oempmas._02(empnumber,pisdb, conn);
+        var empass = await _oempmas._02(empnumber??"",pisdb??"", conn??"");
         return empass; 
     }
 
