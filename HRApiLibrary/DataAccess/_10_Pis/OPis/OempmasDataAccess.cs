@@ -76,7 +76,36 @@ public class OempmasDataAccess : IOempmasDataAccess
 
     public async Task<List<OempmasModel?>?> _02ByEmail(string email, string schema, string conn)
 	{
-		var sql = $@"select  * from {schema}.Empmas where Email = @Email" ; 
+		var sql = $@"select  
+                        EMPNUMBER, EMPLASTNM, EMPFIRSTNM, EMPMIDNM, suffix, EMPALIAS, CLIENT, CLIENT_, BASICRATE, PAYTYPE, ADMIN, 
+                        CASHBOND, WORKDAYS, ALLOWRATE, ALLOWTYPE, ALLOWFIX, ALLOW2RATE, ALLOW2TYPE, ALLOW2FIX, ALLOW3RATE, ALLOW3TYPE, 
+                        ALLOW3FIX, ALLOW4RATE, ALLOW4TYPE, ALLOW4FIX, MOVNUMBER, MOVMODE, 
+                        MOVDATE, 
+                        MOVEND, 
+                        DUTYDATE, 
+                        ADDR1, MLACODE_, 
+                        TEL1, ADDR2, PROCODE_, TEL2, 
+                        EMPBIRTH, 
+                        BIRTHPLACE, SEX_, CIVSTAT_, CITIZEN, HEIGHT, WEIGHT, TIN, SSS, HDMF, 
+                        RELIGION, HAIR, EYES, SPOUSE, OCCUPATION, NOCHILDREN, 
+                        DATEHIRED, 
+                        SEPARATE, 
+                        POSITION_, EMPSTAT_, SECLICENSE, TRAINAT, 
+                        STATUSDATE, 
+                        LICEXPIRE, 
+                        DATETRAIN, 
+                        INSURANCE, POLICYNO, FACEVALUE, PREMIUM, 
+                        INSEXPIRE, 
+                        EXMILITARY, CSP, CPP, ROTC, ELLEVEL, HSLEVEL, COLLEGE_, COURSE, VOLEVEL, VOCOURSE, LANGUAGE, SKILL1, SKILL2, SKILL3, 
+                        SKILL4, TAXCODE, ACCTCODE, AWOL, DISMISS, ASTART, AEND, ADAYS, DSTART, DEND, DDAYS, EMRNAME, EMRTEL, EMRADDR, 
+                        GUARDEXP, COMTAXNO, 
+                        COMTAXDATE, 
+                        COMTAX_AT, BLOODTYPE, MARKS, COMPLEXION, EXP_NBI, EXP_POLICE, EXP_PNP, EXP_BRGY, 
+                        EXP_COURT, EXP_NEURO, EXP_DRUG, W_BIRTHC, W_CLOSINGR, W_TRNCERT, W_PRELIC, W_CERTEMP, W_MEDEXAM, GKERATE, CLNAME, 
+                        MLANAME, AGE, MBRANCH, MYEAR, MNATURE, REMARKS, BADGENO, GUARDNOYRS, MILITARYNOYR, PAGIBIGNO, PHIC, BANK, EXPMED, 
+                        regref, empBasicRate, rateID, empEcola, xmark, suretybondquota, DRV_LICENSE, DRV_EXP, isTaxable, isconfi, iswithSSS, 
+                        iswithGSIS, iswithPHIC, iswithPagibig, ismaxsss, email, passwd, Countrycode, sgcode, dpadate, dpclient, desig_
+                     from {schema}.Empmas where Email = @Email" ; 
 		var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Email = email }, conn); 
 		return data;
 	}
