@@ -52,7 +52,34 @@ public class OempmasDataAccess : IOempmasDataAccess
     public async Task<List<OempmasModel?>?> _02(string empnumber, string schema, string conn)
     {
         var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName, 
-                        e.*  from {schema}.Empmas e
+                        e.*,  
+                        IF(MovDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, MovDate) AS MovDate,   
+                        IF(MovEnd IN ('0000-00-00','0000-00-00 00:00:00'), NULL, MovEnd) AS MovEnd,   
+                        IF(DutyDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DutyDate) AS DutyDate,   
+                        IF(EmpBirth IN ('0000-00-00','0000-00-00 00:00:00'), NULL, EmpBirth) AS EmpBirth,   
+                        IF(DateHired IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DateHired) AS DateHired,   
+                        IF(Separate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Separate) AS Separate,   
+                        IF(StatusDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, StatusDate) AS StatusDate,   
+                        IF(LicExpire IN ('0000-00-00','0000-00-00 00:00:00'), NULL, LicExpire) AS LicExpire,   
+                        IF(DateTrain IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DateTrain) AS DateTrain,   
+                        IF(InsExpire IN ('0000-00-00','0000-00-00 00:00:00'), NULL, InsExpire) AS InsExpire,   
+                        IF(AStart IN ('0000-00-00','0000-00-00 00:00:00'), NULL, AStart) AS AStart,   
+                        IF(AEnd IN ('0000-00-00','0000-00-00 00:00:00'), NULL, AEnd) AS AEnd,   
+                        IF(DStart IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DStart) AS DStart,   
+                        IF(DEnd IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DEnd) AS DEnd,   
+                        IF(ComTaxDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, ComTaxDate) AS ComTaxDate,   
+                        IF(Exp_Nbi IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Nbi) AS Exp_Nbi,   
+                        IF(Exp_Police IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Police) AS Exp_Police,   
+                        IF(Exp_Pnp IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Pnp) AS Exp_Pnp,   
+                        IF(Exp_Brgy IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Brgy) AS Exp_Brgy,   
+                        IF(Exp_Court IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Court) AS Exp_Court,   
+                        IF(Exp_Neuro IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Neuro) AS Exp_Neuro,   
+                        IF(Exp_Drug IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Drug) AS Exp_Drug,   
+                        IF(ExpMed IN ('0000-00-00','0000-00-00 00:00:00'), NULL, ExpMed) AS ExpMed,   
+                        IF(RegRef IN ('0000-00-00','0000-00-00 00:00:00'), NULL, RegRef) AS RegRef,   
+                        IF(Drv_Exp IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Drv_Exp) AS Drv_Exp,   
+                        IF(DpaDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DpaDate) AS DpaDate   
+                        from {schema}.Empmas e
                      left join {schema}.position    p on p.code = e.position_
                      left join {schema}.empstat     s on s.code = e.empstat_                              
                      left join {schema}.Client      c  on c.ClNumber = e.Client_                              
