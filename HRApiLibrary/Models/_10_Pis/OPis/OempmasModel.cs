@@ -36,7 +36,7 @@ public class OempmasModel
     public string? Address2                 { get; set; }
     public string? Tel1                     { get; set; }
     public string? Tel2                     { get; set; }
-    public DateTime EmpBirth                { get; set; }
+    public DateTime? EmpBirth                { get; set; }
     public string? BirthPlace               { get; set; }
     public string? Sex_                     { get; set; }
     public string? CivStat_                 { get; set; }

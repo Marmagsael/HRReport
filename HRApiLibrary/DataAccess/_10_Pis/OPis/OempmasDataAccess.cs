@@ -90,8 +90,38 @@ public class OempmasDataAccess : IOempmasDataAccess
     
     public async Task<List<OempmasModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
     {
-        var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName
-                        e.*  from {schema}.Empmas e
+        var usql = $@"UPDATE {schema}.Empmas SET
+                        MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
+                        MovEnd     = IF(MovEnd     < '1000-01-01', NULL, MovEnd),
+                        DutyDate   = IF(DutyDate   < '1000-01-01', NULL, DutyDate),
+                        EmpBirth   = IF(EmpBirth   < '1000-01-01', NULL, EmpBirth),
+                        DateHired  = IF(DateHired  < '1000-01-01', NULL, DateHired),
+                        Separate   = IF(Separate   < '1000-01-01', NULL, Separate),
+                        StatusDate = IF(StatusDate < '1000-01-01', NULL, StatusDate),
+                        LicExpire  = IF(LicExpire  < '1000-01-01', NULL, LicExpire),
+                        DateTrain  = IF(DateTrain  < '1000-01-01', NULL, DateTrain),
+                        InsExpire  = IF(InsExpire  < '1000-01-01', NULL, InsExpire),
+                        AStart     = IF(AStart     < '1000-01-01', NULL, AStart),
+                        AEnd       = IF(AEnd       < '1000-01-01', NULL, AEnd),
+                        DStart     = IF(DStart     < '1000-01-01', NULL, DStart),
+                        DEnd       = IF(DEnd       < '1000-01-01', NULL, DEnd),
+                        ComTaxDate = IF(ComTaxDate < '1000-01-01', NULL, ComTaxDate),
+                        Exp_Nbi    = IF(Exp_Nbi    < '1000-01-01', NULL, Exp_Nbi),
+                        Exp_Police = IF(Exp_Police < '1000-01-01', NULL, Exp_Police),
+                        Exp_Pnp    = IF(Exp_Pnp    < '1000-01-01', NULL, Exp_Pnp),
+                        Exp_Brgy   = IF(Exp_Brgy   < '1000-01-01', NULL, Exp_Brgy),
+                        Exp_Court  = IF(Exp_Court  < '1000-01-01', NULL, Exp_Court),
+                        Exp_Neuro  = IF(Exp_Neuro  < '1000-01-01', NULL, Exp_Neuro),
+                        Exp_Drug   = IF(Exp_Drug   < '1000-01-01', NULL, Exp_Drug),
+                        ExpMed     = IF(ExpMed     < '1000-01-01', NULL, ExpMed),
+                        RegRef     = IF(RegRef     < '1000-01-01', NULL, RegRef),
+                        Drv_Exp    = IF(Drv_Exp    < '1000-01-01', NULL, Drv_Exp),
+                        DpaDate    = IF(DpaDate    < '1000-01-01', NULL, DpaDate)
+                    WHERE Client_ = @ClNumber; "; 
+        await _sql.ExecuteCmd<dynamic>(usql, new { ClNumber = clnumber }, conn);
+        
+        var sql = $@" select  s.name EmpStatus, p.name PositionName, c.ClName, 
+                        e.* from {schema}.Empmas e
                      left join {schema}.position    p on p.code = e.position_
                      left join {schema}.empstat     s on s.code = e.empstat_                              
                      left join {schema}.Client      c  on c.ClNumber = e.Client_                              
@@ -103,36 +133,42 @@ public class OempmasDataAccess : IOempmasDataAccess
 
     public async Task<List<OempmasModel?>?> _02ByEmail(string email, string schema, string conn)
 	{
-		var sql = $@"select  
-                        EMPNUMBER, EMPLASTNM, EMPFIRSTNM, EMPMIDNM, suffix, EMPALIAS, CLIENT, CLIENT_, BASICRATE, PAYTYPE, ADMIN, 
-                        CASHBOND, WORKDAYS, ALLOWRATE, ALLOWTYPE, ALLOWFIX, ALLOW2RATE, ALLOW2TYPE, ALLOW2FIX, ALLOW3RATE, ALLOW3TYPE, 
-                        ALLOW3FIX, ALLOW4RATE, ALLOW4TYPE, ALLOW4FIX, MOVNUMBER, MOVMODE, 
-                        MOVDATE, 
-                        MOVEND, 
-                        DUTYDATE, 
-                        ADDR1, MLACODE_, 
-                        TEL1, ADDR2, PROCODE_, TEL2, 
-                        EMPBIRTH, 
-                        BIRTHPLACE, SEX_, CIVSTAT_, CITIZEN, HEIGHT, WEIGHT, TIN, SSS, HDMF, 
-                        RELIGION, HAIR, EYES, SPOUSE, OCCUPATION, NOCHILDREN, 
-                        DATEHIRED, 
-                        SEPARATE, 
-                        POSITION_, EMPSTAT_, SECLICENSE, TRAINAT, 
-                        STATUSDATE, 
-                        LICEXPIRE, 
-                        DATETRAIN, 
-                        INSURANCE, POLICYNO, FACEVALUE, PREMIUM, 
-                        INSEXPIRE, 
-                        EXMILITARY, CSP, CPP, ROTC, ELLEVEL, HSLEVEL, COLLEGE_, COURSE, VOLEVEL, VOCOURSE, LANGUAGE, SKILL1, SKILL2, SKILL3, 
-                        SKILL4, TAXCODE, ACCTCODE, AWOL, DISMISS, ASTART, AEND, ADAYS, DSTART, DEND, DDAYS, EMRNAME, EMRTEL, EMRADDR, 
-                        GUARDEXP, COMTAXNO, 
-                        COMTAXDATE, 
-                        COMTAX_AT, BLOODTYPE, MARKS, COMPLEXION, EXP_NBI, EXP_POLICE, EXP_PNP, EXP_BRGY, 
-                        EXP_COURT, EXP_NEURO, EXP_DRUG, W_BIRTHC, W_CLOSINGR, W_TRNCERT, W_PRELIC, W_CERTEMP, W_MEDEXAM, GKERATE, CLNAME, 
-                        MLANAME, AGE, MBRANCH, MYEAR, MNATURE, REMARKS, BADGENO, GUARDNOYRS, MILITARYNOYR, PAGIBIGNO, PHIC, BANK, EXPMED, 
-                        regref, empBasicRate, rateID, empEcola, xmark, suretybondquota, DRV_LICENSE, DRV_EXP, isTaxable, isconfi, iswithSSS, 
-                        iswithGSIS, iswithPHIC, iswithPagibig, ismaxsss, email, passwd, Countrycode, sgcode, dpadate, dpclient, desig_
-                     from {schema}.Empmas where Email = @Email" ; 
+        var usql = $@"UPDATE {schema}.Empmas SET
+                        MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
+                        MovEnd     = IF(MovEnd     < '1000-01-01', NULL, MovEnd),
+                        DutyDate   = IF(DutyDate   < '1000-01-01', NULL, DutyDate),
+                        EmpBirth   = IF(EmpBirth   < '1000-01-01', NULL, EmpBirth),
+                        DateHired  = IF(DateHired  < '1000-01-01', NULL, DateHired),
+                        Separate   = IF(Separate   < '1000-01-01', NULL, Separate),
+                        StatusDate = IF(StatusDate < '1000-01-01', NULL, StatusDate),
+                        LicExpire  = IF(LicExpire  < '1000-01-01', NULL, LicExpire),
+                        DateTrain  = IF(DateTrain  < '1000-01-01', NULL, DateTrain),
+                        InsExpire  = IF(InsExpire  < '1000-01-01', NULL, InsExpire),
+                        AStart     = IF(AStart     < '1000-01-01', NULL, AStart),
+                        AEnd       = IF(AEnd       < '1000-01-01', NULL, AEnd),
+                        DStart     = IF(DStart     < '1000-01-01', NULL, DStart),
+                        DEnd       = IF(DEnd       < '1000-01-01', NULL, DEnd),
+                        ComTaxDate = IF(ComTaxDate < '1000-01-01', NULL, ComTaxDate),
+                        Exp_Nbi    = IF(Exp_Nbi    < '1000-01-01', NULL, Exp_Nbi),
+                        Exp_Police = IF(Exp_Police < '1000-01-01', NULL, Exp_Police),
+                        Exp_Pnp    = IF(Exp_Pnp    < '1000-01-01', NULL, Exp_Pnp),
+                        Exp_Brgy   = IF(Exp_Brgy   < '1000-01-01', NULL, Exp_Brgy),
+                        Exp_Court  = IF(Exp_Court  < '1000-01-01', NULL, Exp_Court),
+                        Exp_Neuro  = IF(Exp_Neuro  < '1000-01-01', NULL, Exp_Neuro),
+                        Exp_Drug   = IF(Exp_Drug   < '1000-01-01', NULL, Exp_Drug),
+                        ExpMed     = IF(ExpMed     < '1000-01-01', NULL, ExpMed),
+                        RegRef     = IF(RegRef     < '1000-01-01', NULL, RegRef),
+                        Drv_Exp    = IF(Drv_Exp    < '1000-01-01', NULL, Drv_Exp),
+                        DpaDate    = IF(DpaDate    < '1000-01-01', NULL, DpaDate)
+                        WHERE Email = @Email;"; 
+        await _sql.ExecuteCmd<dynamic>(usql, new { Email = email }, conn);
+        
+        var sql = $@"SELECT s.name AS EmpStatus, p.name AS PositionName, c.ClName,
+                        e.* from {schema}.Empmas e
+                     left join   {schema}.position    p on p.code = e.position_
+                     left join   {schema}.empstat     s on s.code = e.empstat_                              
+                     left join   {schema}.Client      c  on c.ClNumber = e.Client_
+                     where e.Email = @Email" ; 
 		var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Email = email }, conn); 
 		return data;
 	}
