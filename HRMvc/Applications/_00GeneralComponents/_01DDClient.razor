@@ -1,27 +1,36 @@
+@using Blazorise
 <div class="d-flex ">
     <div class="@Caption_Class " > Client Name </div>
-    <div class=" @DD_Class  "       style="width: ;">
+    
+    <div class=" @DD_Class  " >
         <RadzenDropDown
-            Change="ValueChanged"
-            Data="@Clients"
-            TextProperty="ClName"
-            ValueProperty="ClNumber"
-            @bind-Value="@ClNumber"
-            Placeholder="Select Client ---------------- "
-            Style="width: 100%" />
+                TValue="string"
+                Data="@Clients"
+                TextProperty="ClName"
+                ValueProperty="ClNumber"
+                @bind-Value="ClNumber"
+                Change="@(_ => ValueChanged())"
+                Placeholder="Clients Name"
+                Style="width:100%"
+                PopupStyle="min-height: 300px; max-height: 600px;  overflow-y: auto;" />
     </div>
 </div>
+
+
 @code {
     
     [Parameter] public List<OClientModel>       Clients         { get; set; } = []; 
     [Parameter] public string                   ClNumber        { get; set; } = string.Empty; 
-    [Parameter] public string                   Caption_Class   { get; set; } = " p-2 w-125p "; 
+    [Parameter] public string                   Caption_Class   { get; set; } = " p-2 w-150p "; 
     [Parameter] public string                   DD_Class        { get; set; } = " w-400p "; 
-    [Parameter] public EventCallback<string>    ChildAction { get; set; } = new();
+    [Parameter] public EventCallback<string>    ChildAction     { get; set; } = new();
 
-    async Task ValueChanged() {
-        await ChildAction.InvokeAsync(ClNumber); 
+    
+    async Task ValueChanged()
+    {
+        await ChildAction.InvokeAsync(ClNumber);
     }
+
 
 
 
