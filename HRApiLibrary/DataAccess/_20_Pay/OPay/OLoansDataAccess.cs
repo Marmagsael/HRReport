@@ -51,12 +51,6 @@ public class OLoansDataAccess : IOLoansDataAccess
 						where Empnumber = @Empnumber and l.Balance > 0";
         var data = await _sql.FetchData<GLoansModel?, dynamic>(sql, new { EmpNumber = empnumber }, conn);
 
-        // Console.WriteLine($"*************************************************************"); 
-        // foreach(var d in data)
-        // {
-        //     Console.WriteLine($"Name {d.AcctName} * Amount {d.Amount} * Status : {d.Status} Amort : {d.Amort}"); 
-        // }
-
         return data;
     }
 
