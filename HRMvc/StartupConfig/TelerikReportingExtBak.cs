@@ -11,7 +11,7 @@ public static class TelerikReportingExt
     {
         var reportsPath = Path.Combine(Directory.GetCurrentDirectory(), "Reports");
 
-        builder.Services.AddSingleton<IReportServiceConfiguration>(sp =>
+        builder.Services.AddScoped<IReportServiceConfiguration>(sp =>
             new ReportServiceConfiguration
             {
                 HostAppId = "HRMvcApp",

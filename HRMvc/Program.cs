@@ -15,7 +15,7 @@ builder.AddInjectServices();
 builder.AddHttpClient();
 builder.AddCors();
 builder.AddAuthenticationServices();
-
+builder.Services.AddHRMvcScope(); 
 
 //Api Injection -------------------------
 builder.AddApiInjectionServices();
