@@ -1,10 +1,36 @@
 ﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1154
 @using Microsoft.AspNetCore.Mvc
 
 <_00BT HdrCaption="Deduction History">
     <Details>
         <div class="card-header">
-            <_01DDClient Clients="clients"   />
+            <_01DDClient Rv="rv" ChildAction="ClientValChanged"     />
+        </div>
+
+        <div class="b-red  ">
+
+            <_1154_Component1 rv="rv" ChildAction="C1Function" />
+
+        </div>
+
+        
+        
+
+
+
+
+
+        
+        <div>
+            <div class="p-2 bordered-bottom">
+                Cl Number : @rv.ClNumber 
+            </div>
+
+
+            @foreach(var c in rv.Clients) {
+                <div> @c.ClNumber   * @c.ClName  </div>
+            }
         </div>
 
     </Details>
@@ -18,19 +44,34 @@
 
 @code {
     [Parameter] public UserClaimsModel? Uc { get; set; } 
-    List<OClientModel> clients = [];
-    
+
+    V00_RepVars rv = new(); 
+
+
     int ctr = 0; 
 
     
+    protected override async Task OnParametersSetAsync()
+    {
+        await FetchClient(); 
+    }
+
+    void ClientValChanged(string val) {
+        rv.ClNumber  = val; 
+    }
+    void C1Function() {
+
+    }
 
 
     async Task FetchClient() {
         var res = await _client._02ByStatuss("Active",Uc.OpisDb!, Uc.Conn!); 
-        if(res==null) clients = []; 
-        else clients = res!; 
-
-        Console.WriteLine($"record Count : {res.Count} * Uc.Conn ; {Uc.Conn}" ); 
+        if(res==null) rv.Clients = []; 
+        else rv.Clients = res!; 
+        
+        ctr = ctr + 1;
+        Console.WriteLine($"{ctr} record Count : {res.Count} * Uc.Conn ; {Uc.Conn}" ); 
+         
 
 
     }
