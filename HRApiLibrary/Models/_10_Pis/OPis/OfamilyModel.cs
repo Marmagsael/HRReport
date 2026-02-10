@@ -2,9 +2,9 @@ namespace HRApiLibrary.Models._10_Pis.OPis;
 
 public class OFamilyModel
 {
-    public string?  EMPNUMBER   { get; set; }
-    public string?  NAME        { get; set; }
-    public DateTime? BIRTH       { get; set; }
-    public string?  RELATION    { get; set; }
+    public string?      EmpNumber   { get; set; }
+    public string?      Name        { get; set; }
+    public DateTime?    Birth       { get; set; }
+    public string?      Relation    { get; set; }
 }
 
