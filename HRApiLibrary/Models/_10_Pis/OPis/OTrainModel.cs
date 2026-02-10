@@ -1,25 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace HRApiLibrary.Models._10_Pis.OPis
+﻿namespace HRApiLibrary.Models._10_Pis.OPis
 {
     public class OTrainModel
     {
-        public string? EMPNUMBER { get; set; }
+        public string?  EmpNumber   { get; set; }
 
-        public string? PROGRAM { get; set; }
+        public string?  Program     { get; set; }
 
-        public string? TAKEN { get; set; }
+        public string?  Taken       { get; set; }
 
-        public string? SCHOOL { get; set; }
+        public string?  School      { get; set; }
 
-        public string? TRAINOR { get; set; }
+        public string?  Trainor     { get; set; }
 
-        public string? TYPE { get; set; }
+        public string?  Type        { get; set; }
 
-        public int idtrainhdr { get; set; }
+        public int      IdTrainHdr { get; set; }
     }
 }
