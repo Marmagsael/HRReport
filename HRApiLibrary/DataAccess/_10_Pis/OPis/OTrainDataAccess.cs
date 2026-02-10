@@ -26,11 +26,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         }
 
 
-        public async Task<OTrainModel?> _02(int id, string schema, string conn)
+        public async Task<List<OTrainModel?>?> _02(string empnumber, string schema, string conn)
         {
-            string sql = $@"select  EMPNUMBER, PROGRAM, TAKEN, SCHOOL, TRAINOR, TYPE, idtrainhdr from {schema}.Train where Id = @Id";
-            var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { Id = id }, conn);
-            return data?.FirstOrDefault();
+            string sql = $@"select  EMPNUMBER, PROGRAM, TAKEN, SCHOOL, TRAINOR, TYPE, idtrainhdr from {schema}.Train WHERE empnumber = @Empnumber";
+            var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { Empnumber = empnumber}, conn);
+            return data;
         }
 
 
@@ -59,7 +59,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 public interface IOTrainDataAccess
 {
     Task<OTrainModel?> _01(OTrainModel train, string schema, string conn);
-    Task<OTrainModel?> _02(int id, string schema, string conn);
+    Task<List<OTrainModel?>?> _02( string empnumber, string schema, string conn);
     Task<OTrainModel?> _03(int id, OTrainModel train, string schema, string conn);
     Task<OTrainModel?> _04(int id, string schema, string conn);
 }

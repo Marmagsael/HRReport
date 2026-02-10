@@ -137,6 +137,9 @@ public static class ApiExt
         builder.Services.AddScoped<IOReferDataAccess, OReferDataAccess>();
         builder.Services.AddScoped<IOTrainDataAccess, OTrainDataAccess>();
 
+        builder.Services.AddScoped<IOProcodeDataAccess, OProcodeDataAccess>();
+        builder.Services.AddScoped<IOMlacodeDataAccess, OMlacodeDataAccess>();
+
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddScoped<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
         
