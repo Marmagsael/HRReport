@@ -90,22 +90,22 @@ public class OempmasModel
     public string? IsWithGsis               { get; set; }
     public string? IsWithPhilHealth         { get; set; }
     public string? IsWithPagIbig            { get; set; }
-    public string? MLACODE_                 { get; set; }
-    public string? PROCODE_                 { get; set; }
+    public string? MlaCode_                 { get; set; }
+    public string? ProCode_                 { get; set; }
 
     public string? GuardNoYrs               { get; set; }
     public DateTime? RegRef                 { get; set; }
     public string? MilitaryNoYr             { get; set; }
     public string? AcctCode                 { get; set; }
     public string? TaxCode                  { get; set; }
-    public DateTime? EXP_NBI                { get; set; }
-    public DateTime? EXP_POLICE             { get; set; }
-    public DateTime? EXP_PNP                { get; set; }
-    public DateTime? EXP_BRGY               { get; set; }
-    public DateTime? EXP_NEURO              { get; set; }
-    public DateTime? EXP_DRUG               { get; set; }
-    public DateTime? EXP_COURT              { get; set; }
-    public DateTime? EXPMED                 { get; set; }
+    public DateTime? Exp_Nbi                { get; set; }
+    public DateTime? Exp_Police             { get; set; }
+    public DateTime? Exp_Pnp                { get; set; }
+    public DateTime? Exp_Brgy               { get; set; }
+    public DateTime? Exp_Neuro              { get; set; }
+    public DateTime? Exp_Drug               { get; set; }
+    public DateTime? Exp_Court              { get; set; }
+    public DateTime? ExpMed                 { get; set; }
 
     //-------------------------------------------------------
     public string? PositionName             { get; set; } = string.Empty;

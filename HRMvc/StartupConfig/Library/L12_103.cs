@@ -22,10 +22,14 @@ public class L12_103
     private readonly IOReferDataAccess _orefer;
     private readonly IOTrainDataAccess _otrain;
 
+    private readonly IOProcodeDataAccess _oprocode;
+    private readonly IOMlacodeDataAccess _omlacode;
+
 
     public L12_103(IOempmasDataAccess oempmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender, 
                   IOFamilyDataAccess ofamily, IOParentDataAccess oparent, IOChildrenDataAccess ochildren, IOEmergencDataAccess oemergenc,
-                  IOEducateDataAccess oeducate, IOEmployDataAccess oemploy, IOReferDataAccess orefer, IOTrainDataAccess otrain
+                  IOEducateDataAccess oeducate, IOEmployDataAccess oemploy, IOReferDataAccess orefer, IOTrainDataAccess otrain,
+                  IOProcodeDataAccess oprocode, IOMlacodeDataAccess omlacode
                 )
     {
         _oempmas         = oempmas;
@@ -41,6 +45,9 @@ public class L12_103
         _oemploy         = oemploy;
         _orefer          = orefer;
         _otrain          = otrain;
+
+        _oprocode        = oprocode;
+        _omlacode        = omlacode;
 
     }
 
@@ -74,6 +81,10 @@ public class L12_103
         var educates        = await _oeducate._02(empnumber, pisdb, conn);
         var employs         = await _oemploy._02(empnumber, pisdb, conn);
         var refers          = await _orefer._02(empnumber, pisdb, conn);
+        var trains          = await _otrain._02( empnumber, pisdb, conn);
+
+        var procode          = await _oprocode._02( pisdb, conn);
+        var mlacode          = await _omlacode._02( pisdb, conn);
 
 
         v12_103.OCivstats   = civstats;
@@ -88,6 +99,10 @@ public class L12_103
         v12_103.OEductates  = educates;
         v12_103.OEmploys    = employs;
         v12_103.ORefers     = refers;
+        v12_103.OTrains     = trains;
+
+        v12_103.OProcode    = procode;
+        v12_103.OMlaCode    = mlacode;
 
 
         return v12_103;
