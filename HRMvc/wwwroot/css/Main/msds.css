@@ -27,82 +27,127 @@
 .t-maroon   { color: maroon; }
 
 /* --- TABS CONTAINER ------------------------------------------------- */
+
+/* ================= CONTAINER ================= */
+
 .mb-tabs {
     display: flex;
-    width: 100%;
-    border-bottom: 1px solid #dee2e6;
-    gap: 1px;
+    flex-wrap: wrap;
+    gap: 14px;
 }
+
+/* ================= TAB ================= */
 
 .mb-tab {
-    position: relative; /* REQUIRED for underline */
+    position: relative;
+    overflow: hidden;
 
-    padding: 10px 16px;
+    flex: 0 0 calc(25% - 10.5px);
+    text-align: center;
 
-    background: #f8f9fa;
+    padding: 16px 12px;
+
+    background: #ffffff;
     color: #495057;
 
-    border: 1px solid #dee2e6;
-    border-bottom: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px 12px 0 0;
 
-    margin-bottom: -1px;
-
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-
-    font-size: 14px;
-    font-weight: 500;
     cursor: pointer;
 
-    transition:
-        color .2s ease,
-        background-color .2s ease,
-        border-color .2s ease;
+    transition: 
+        transform .25s cubic-bezier(.4,0,.2,1),
+        box-shadow .25s ease,
+        color .25s ease,
+        background-color .25s ease;
 }
 
-/* ================= UNDERLINE ================= */
+/* Keep content above animation */
+.mb-tab > * {
+    position: relative;
+    z-index: 2;
+}
+
+/* ================= ROLLING ACCENT ================= */
+
+@keyframes rollingAccent {
+    0%   { background-position: 200% 50%; }
+    100% { background-position: 0% 50%; }
+}
 
 .mb-tab::after {
     content: "";
     position: absolute;
-    left: 50%;
-    bottom: -1px;
+    inset: 0;
 
-    width: 0%;
-    height: 2px;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        color-mix(in srgb, var(--mb-accent) 40%, transparent),
+        transparent
+    );
 
-    background: var(--mb-accent);
-    transition: width .25s ease;
-
-    transform: translateX(-50%);
+    background-size: 200% 100%;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
 }
 
-/* Hover underline */
+/* ================= HOVER ================= */
+
 .mb-tab:hover::after {
-    width: 100%;
+    opacity: 1;
+    animation: rollingAccent 3s linear infinite;
 }
 
-/* Hover text color */
 .mb-tab:hover {
+    background: #f8fafc;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.06);
     color: var(--mb-accent);
 }
 
 /* ================= ACTIVE ================= */
 
 .mb-tab.active {
-    background: #ffffff;
-    color: var(--mb-accent);
-
+    background: linear-gradient(
+        135deg,
+        var(--mb-accent),
+        color-mix(in srgb, var(--mb-accent) 70%, black)
+    );
+    color: #ffffff;
     border-color: var(--mb-accent);
-    border-bottom: 1px solid #ffffff; /* hide container line */
-
+    box-shadow: 0 8px 18px rgba(0,0,0,0.08);
     cursor: default;
+    position: relative;
 }
 
-/* Remove underline for active */
+.mb-tab.active i {
+    color: #ffffff !important;
+    
+}
+
 .mb-tab.active::after {
     display: none;
 }
+.mb-tab.active::before {
+    content: "";
+    position: absolute;
+    left: 10%;
+    bottom: -1px;
+    width: 80%;
+    height: 3px; /* mas makapal */
+
+    /* background: var(--mb-accent); */
+    background: #ffffff; /* 👈 white line */
+
+    border-radius: 4px;
+
+    box-shadow:
+        0 0 8px var(--mb-accent),
+        0 0 14px color-mix(in srgb, var(--mb-accent) 90%, transparent);
+}
+
 
 /* ========================================================== */
 
