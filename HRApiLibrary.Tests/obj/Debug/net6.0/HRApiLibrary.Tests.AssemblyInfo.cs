@@ -14,11 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< HEAD
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4706523317a6c5913854d4cbaeb8a5769c94bfd3")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7ceb4dd4c6fa13c825ce67bf0d895fab310dbe24")]
->>>>>>> origin/dith
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+155637dc0712e6c318d00f8a0f776a660bd60525")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
