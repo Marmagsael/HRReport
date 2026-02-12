@@ -5,7 +5,7 @@ namespace HRMvc.Applications.Vars;
 
 public class V12_102BodyPunch
 {
-    public OempmasModel?    empmas              {get; set;} = new OempmasModel();
+    public OEmpmasModel?    empmas              {get; set;} = new OEmpmasModel();
     public string?          currIn              {get; set;} = "-"; 
     public string?          currOut             {get; set;} = "-"; 
     public string?          prevIn              {get; set;} = "00:00"; 
