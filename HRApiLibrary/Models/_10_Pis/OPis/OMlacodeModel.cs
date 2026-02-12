@@ -2,7 +2,7 @@
 {
     public class OMlacodeModel
     {
-        public string? CODE { get; set; }
-        public string? NAME { get; set; }
+        public string? Code { get; set; }
+        public string? Name { get; set; }
     }
 }
