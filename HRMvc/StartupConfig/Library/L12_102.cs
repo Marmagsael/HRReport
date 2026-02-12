@@ -10,11 +10,11 @@ namespace HRMvc.StartupConfig.Library;
 
 public class L12_102
 {
-    private readonly IOempmasDataAccess _oempmas;
+    private readonly IOEmpmasDataAccess _oempmas;
     private readonly IAtttemplateDataAccess _attTemplate; 
     private readonly IAttpunches1DataAccess _attpunches1;
 
-    public L12_102(IOempmasDataAccess oempmas, 
+    public L12_102(IOEmpmasDataAccess oempmas, 
                    IAtttemplateDataAccess attTemplate, 
                    IAttpunches1DataAccess attpunches1)
     {

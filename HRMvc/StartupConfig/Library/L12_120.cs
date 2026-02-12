@@ -6,10 +6,10 @@ namespace HRMvc.StartupConfig.Library;
 
 public class L12_120
 {
-    private readonly IOempmasDataAccess _oempmas;
+    private readonly IOEmpmasDataAccess _oempmas;
     private readonly IHttpContextAccessor _http;
 
-    public L12_120(IOempmasDataAccess oempmas, IHttpContextAccessor http)
+    public L12_120(IOEmpmasDataAccess oempmas, IHttpContextAccessor http)
     {
         _oempmas = oempmas;
         _http = http;

@@ -124,7 +124,7 @@ public static class ApiExt
         //-- PIS Personal ------------------------------------------------------------
         builder.Services.AddScoped<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddScoped<IMymovementDataAccess, MymovementDataAccess>();
-        builder.Services.AddScoped<IOempmasDataAccess, OempmasDataAccess>();
+        builder.Services.AddScoped<IOEmpmasDataAccess, OEmpmasDataAccess>();
         builder.Services.AddScoped<IOGenderDataAccess, OGenderDataAccess>();
         builder.Services.AddScoped<IOCivstatDataAccess, OCivstatDataAccess>();
         builder.Services.AddScoped<IOEducateDataAccess, OEducateDataAccess>();

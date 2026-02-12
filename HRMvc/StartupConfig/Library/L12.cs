@@ -11,9 +11,9 @@ namespace HRMvc.StartupConfig.Library;
 public class L12
 {
     private readonly IOtbltranDataAccess _otbltran;
-    private readonly IOempmasDataAccess _oempmas;
+    private readonly IOEmpmasDataAccess _oempmas;
 
-    public L12(IOtbltranDataAccess otbltran, IOempmasDataAccess oempmas)
+    public L12(IOtbltranDataAccess otbltran, IOEmpmasDataAccess oempmas)
     {
         _otbltran   = otbltran;
         _oempmas    = oempmas;
