@@ -124,6 +124,10 @@ public static class ApiExt
         //-- PIS Personal ------------------------------------------------------------
         builder.Services.AddScoped<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddScoped<IMymovementDataAccess, MymovementDataAccess>();
+<<<<<<< HEAD
+=======
+        
+>>>>>>> DA_mar
         builder.Services.AddScoped<IOEmpmasDataAccess, OEmpmasDataAccess>();
         builder.Services.AddScoped<IOGenderDataAccess, OGenderDataAccess>();
         builder.Services.AddScoped<IOCivstatDataAccess, OCivstatDataAccess>();
@@ -132,11 +136,17 @@ public static class ApiExt
         builder.Services.AddScoped<IOParentDataAccess, OParentDataAccess>();
         builder.Services.AddScoped<IOChildrenDataAccess, OChildrenDataAccess>();
         builder.Services.AddScoped<IOEmergencDataAccess, OEmergencDataAccess>();
+<<<<<<< HEAD
 
         builder.Services.AddScoped<IOEmployDataAccess, OEmployDataAccess>();
         builder.Services.AddScoped<IOReferDataAccess, OReferDataAccess>();
         builder.Services.AddScoped<IOTrainDataAccess, OTrainDataAccess>();
 
+=======
+        builder.Services.AddScoped<IOEmployDataAccess, OEmployDataAccess>();
+        builder.Services.AddScoped<IOReferDataAccess, OReferDataAccess>();
+        builder.Services.AddScoped<IOTrainDataAccess, OTrainDataAccess>();
+>>>>>>> DA_mar
         builder.Services.AddScoped<IOProcodeDataAccess, OProcodeDataAccess>();
         builder.Services.AddScoped<IOMlacodeDataAccess, OMlacodeDataAccess>();
 
