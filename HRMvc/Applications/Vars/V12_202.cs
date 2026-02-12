@@ -20,7 +20,7 @@ public class V12_202
     public List<GTbltrandtlModel?>? Tbltrandtls     { get; set; } = [];
     public GPaymainhdrModel?        Paymainhdr      { get; set; } = new();
     public List<GPaymainhdrModel?>? Paymainhdrs     { get; set; } = [];
-    public List<OempmasModel?>?     Oempmas         { get; set; } = [];   
+    public List<OEmpmasModel?>?     OEmpmas         { get; set; } = [];   
     public int                      Yr              { get; set; } = DateTime.Now.Year;
     public int                      Mo              { get; set; } = DateTime.Now.Month;   
     public int                      Prd             { get; set; } = 1;       

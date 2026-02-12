@@ -1,4 +1,5 @@
 namespace HRApiLibrary.Models._20_Pay.Report;
+
 public class R1254Model
 {
     public string?      EmpNumber       { get; set; } = string.Empty; 
