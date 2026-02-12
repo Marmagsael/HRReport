@@ -3,20 +3,39 @@ using HRApiLibrary.Models._20_Pay;
 using HRApiLibrary.Models._20_Pay.Report;
 
 namespace HRApiLibrary.DataAccess._20_Pay.Report;
-
-public interface IReportDataAccess
-{
-    Task<PayslipModel?> _02Payslip(string trn, string paySchema, string pisSchema, string conn); 
-}
-
 public class ReportDataAccess : IReportDataAccess
 {
     private readonly I_90_001_MySqlDataAccess _sql;
 
-    public ReportDataAccess(I_90_001_MySqlDataAccess sql)
+    public ReportDataAccess(I_90_001_MySqlDataAccess sql) {   _sql = sql; }
+
+    public async Task<List<R1254Model>> _02_R1254(string yr, string mo, string paydb, string pisdb, string conn)
     {
-        _sql = sql;
+        var trn = yr[^2..] + mo.PadLeft(2,'0'); // YYMM
+
+        var sql = @$"SELECT t.EmpNumber,
+                            e.PagibigNo as Pin, 
+                            t.Es,
+                            e.EmpLastNm,
+                            e.Suffix AS EmpSuffixNm,
+                            e.EmpFirstNm,
+                            e.EmpMidNm,
+                            0 AS Salary,
+                            ' ' AS Status,
+                            e.EmpBirth AS BirthDate,
+                            0 AS Ps,
+                            e.Sex_ AS Gender
+                        FROM ( SELECT t.EmpNumber, SUM(t.Amount) AS Es FROM {paydb}.tbltran t
+                               WHERE t.trn LIKE CONCAT(@Trn, '%') and AcctNumber = 'D004'
+                               GROUP BY t.EmpNumber ) t
+                     LEFT JOIN {pisdb}.Empmas e ON e.Empnumber = t.EmpNumber ";
+
+        var data = await _sql.FetchData<R1254Model, dynamic>(
+            sql, new { Trn = trn }, conn);
+
+        return data ?? new List<R1254Model>();
     }
+
 
     public async Task<PayslipModel?> _02Payslip(string trn, string paydb, string pisdb, string conn)
     {
@@ -29,13 +48,6 @@ public class ReportDataAccess : IReportDataAccess
         
         var empList = _02EmpList();
         FillPayslipDtl(); 
-        
-        /*Console.WriteLine($"|---> {payslip.PayslipDtls.Count} : payslip records found.");
-        foreach (var p in payslip.PayslipDtls)
-        {
-            Console.WriteLine($"|---> Emp. Name: {p?.EmpName} * {p?.EAcctName} - {p?.EAmount} ** {p?.DAcctName} - {p?.DAmount} ** ");
-        }*/
-       
 
         return payslip;
 
@@ -202,7 +214,11 @@ public class ReportDataAccess : IReportDataAccess
         
         
     } 
-
+    
 }
 
-
+public interface IReportDataAccess
+{
+    Task<PayslipModel?>     _02Payslip(string trn, string paySchema, string pisSchema, string conn); 
+    Task<List<R1254Model>>  _02_R1254(string yr, string mo, string paydb, string pisdb, string conn); 
+}
