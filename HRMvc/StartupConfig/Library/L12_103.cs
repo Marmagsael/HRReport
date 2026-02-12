@@ -8,7 +8,7 @@ namespace HRMvc.StartupConfig.Library;
 
 public class L12_103
 {
-    private readonly IOEmpmasDataAccess _oempmas;
+    private readonly IOEmpmasDataAccess _OEmpmas;
     private readonly IOGenderDataAccess _ogender;
     private readonly IOCivstatDataAccess _ocivstat;
 
@@ -26,13 +26,13 @@ public class L12_103
     private readonly IOMlacodeDataAccess _omlacode;
 
 
-    public L12_103(IOEmpmasDataAccess oempmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender, 
+    public L12_103(IOEmpmasDataAccess OEmpmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender, 
                   IOFamilyDataAccess ofamily, IOParentDataAccess oparent, IOChildrenDataAccess ochildren, IOEmergencDataAccess oemergenc,
                   IOEducateDataAccess oeducate, IOEmployDataAccess oemploy, IOReferDataAccess orefer, IOTrainDataAccess otrain,
                   IOProcodeDataAccess oprocode, IOMlacodeDataAccess omlacode
                 )
     {
-        _oempmas         = oempmas;
+        _OEmpmas         = OEmpmas;
         _ogender         = ogender;
         _ocivstat        = ocivstat;
 
@@ -51,13 +51,13 @@ public class L12_103
 
     }
 
-    public async Task<List<OempmasModel?>?> _02Oempmass(UserClaimsModel uc)
+    public async Task<List<OEmpmasModel?>?> _02OEmpmass(UserClaimsModel uc)
     {
         var empnumber = uc.OempNumber; 
         var pisdb = uc.OpisDb; 
         var conn = uc.Conn;
         
-        var empass = await _oempmas._02(empnumber,pisdb, conn);
+        var empass = await _OEmpmas._02(empnumber,pisdb, conn);
         return empass; 
     }
 

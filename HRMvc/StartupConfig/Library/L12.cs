@@ -11,20 +11,20 @@ namespace HRMvc.StartupConfig.Library;
 public class L12
 {
     private readonly IOtbltranDataAccess _otbltran;
-    private readonly IOEmpmasDataAccess _oempmas;
+    private readonly IOEmpmasDataAccess _OEmpmas;
 
-    public L12(IOtbltranDataAccess otbltran, IOEmpmasDataAccess oempmas)
+    public L12(IOtbltranDataAccess otbltran, IOEmpmasDataAccess OEmpmas)
     {
         _otbltran   = otbltran;
-        _oempmas    = oempmas;
+        _OEmpmas    = OEmpmas;
     }
-    public async Task<List<OempmasModel?>?> _02Oempmass(UserClaimsModel uc)
+    public async Task<List<OEmpmasModel?>?> _02OEmpmass(UserClaimsModel uc)
     {
         var empnumber   = uc.OempNumber; 
         var pisdb       = uc.OpisDb; 
         var conn        = uc.Conn;
         
-        var empass = await _oempmas._02(empnumber,pisdb, conn);
+        var empass = await _OEmpmas._02(empnumber,pisdb, conn);
         return empass; 
     }
 
@@ -49,7 +49,7 @@ public class L12
 
         V12_202? v      = new V12_202();
         v.UserClaims    = uc;
-        v.Oempmas       = await _oempmas._02(empnumber,pisdb, conn);        
+        v.OEmpmas       = await _OEmpmas._02(empnumber,pisdb, conn);        
 
         return v;
     }
