@@ -124,12 +124,20 @@ public static class ApiExt
         //-- PIS Personal ------------------------------------------------------------
         builder.Services.AddScoped<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddScoped<IMymovementDataAccess, MymovementDataAccess>();
+        
         builder.Services.AddScoped<IOEmpmasDataAccess, OEmpmasDataAccess>();
         builder.Services.AddScoped<IOGenderDataAccess, OGenderDataAccess>();
         builder.Services.AddScoped<IOCivstatDataAccess, OCivstatDataAccess>();
         builder.Services.AddScoped<IOEducateDataAccess, OEducateDataAccess>();
         builder.Services.AddScoped<IOFamilyDataAccess, OFamilyDataAccess>();
+        builder.Services.AddScoped<IOParentDataAccess, OParentDataAccess>();
+        builder.Services.AddScoped<IOChildrenDataAccess, OChildrenDataAccess>();
         builder.Services.AddScoped<IOEmergencDataAccess, OEmergencDataAccess>();
+        builder.Services.AddScoped<IOEmployDataAccess, OEmployDataAccess>();
+        builder.Services.AddScoped<IOReferDataAccess, OReferDataAccess>();
+        builder.Services.AddScoped<IOTrainDataAccess, OTrainDataAccess>();
+        builder.Services.AddScoped<IOProcodeDataAccess, OProcodeDataAccess>();
+        builder.Services.AddScoped<IOMlacodeDataAccess, OMlacodeDataAccess>();
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddScoped<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
