@@ -8,7 +8,7 @@ namespace HRMvc.StartupConfig.Library;
 
 public class L12_103
 {
-    private readonly IOempmasDataAccess _oempmas;
+    private readonly IOEmpmasDataAccess _oempmas;
     private readonly IOGenderDataAccess _ogender;
     private readonly IOCivstatDataAccess _ocivstat;
 
@@ -26,7 +26,7 @@ public class L12_103
     private readonly IOMlacodeDataAccess _omlacode;
 
 
-    public L12_103(IOempmasDataAccess oempmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender, 
+    public L12_103(IOEmpmasDataAccess oempmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender, 
                   IOFamilyDataAccess ofamily, IOParentDataAccess oparent, IOChildrenDataAccess ochildren, IOEmergencDataAccess oemergenc,
                   IOEducateDataAccess oeducate, IOEmployDataAccess oemploy, IOReferDataAccess orefer, IOTrainDataAccess otrain,
                   IOProcodeDataAccess oprocode, IOMlacodeDataAccess omlacode
