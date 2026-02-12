@@ -2,6 +2,7 @@
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRMvc.Applications._12EmployeeProfile.Blazor
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_103
+@using HRMvc.StartupConfig.Library
 
 
 <div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper">
@@ -25,7 +26,7 @@
         @if (lnk == 2)
         {
             <div class="w-100">
-                <_12_103_Address Oempmass="Oempmass"  />
+                <_12_103_Address Oempmass="Oempmass" V12_103="V12_103" />
             </div>
         }
         @if (lnk == 3)
@@ -98,12 +99,12 @@
 
 </div>
 
-@inject IOempmasDataAccess _oempmas;
+@inject L12_103 L103
 
 @code {
     [Parameter] public UserClaimsModel?             UserClaims  { get; set; }
-    [Parameter] public List<OempmasModel?>?         Oempmass    { get; set; }   = new();
-    [Parameter] public V12_103?                     V12_103     { get; set; }   = new();
+    List<OempmasModel?>?         Oempmass    { get; set; }   = [];
+    V12_103?                     V12_103     { get; set; }   = new();
 
     int lnk = 1;
 
@@ -112,5 +113,11 @@
         lnk = val;
 
     }
-  
+
+    protected async override Task OnInitializedAsync()
+    {
+        Oempmass = await L103._02Oempmass(UserClaims);
+        V12_103 = await L103.V12_103(UserClaims);
+    }
+
 }
