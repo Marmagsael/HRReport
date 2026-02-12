@@ -1,6 +1,6 @@
 namespace HRApiLibrary.Models._10_Pis.OPis;
 
-public class OempmasModel
+public class OEmpmasModel
 {
     public string? EmpNumber                { get; set; }
     public string? EmpLastNm                { get; set; }
@@ -8,7 +8,7 @@ public class OempmasModel
     public string? EmpMidNm                 { get; set; }
     public string? Suffix                   { get; set; }
     public string? EmpAlias                 { get; set; }
-    public string? Client_                   { get; set; }
+    public string? Client_                  { get; set; }
     public string? ClientCode               { get; set; }
     public string? BasicRate                { get; set; }
     public string? PayType                  { get; set; }
@@ -36,8 +36,7 @@ public class OempmasModel
     public string? Address2                 { get; set; }
     public string? Tel1                     { get; set; }
     public string? Tel2                     { get; set; }
-    //public string? BirthDate              { get; set; }
-    public DateTime EmpBirth                { get; set; }
+    public DateTime? EmpBirth               { get; set; }
     public string? BirthPlace               { get; set; }
     public string? Sex_                     { get; set; }
     public string? CivStat_                 { get; set; }
@@ -48,8 +47,8 @@ public class OempmasModel
     public string? Weight                   { get; set; }
     public string? Tin                      { get; set; }
     public string? Sss                      { get; set; }
-    public string? PagIbig                  { get; set; }
-    public string? PhilHealth               { get; set; }
+    public string? PagIbigNo                { get; set; }
+    public string? Phic                     { get; set; }
     public string? Religion                 { get; set; }
     public string? Hair                     { get; set; }
     public string? Eyes                     { get; set; }
@@ -61,36 +60,53 @@ public class OempmasModel
     public string? NumberOfChildren         { get; set; }
     public string? NoChildren               { get; set; }
     public DateTime? DateHired              { get; set; }
-    public string? SeparationDate           { get; set; }
-    public string? Position                 { get; set; }
+    public DateTime? Separate               { get; set; }
+    public string? Position_                { get; set; }
     public string? EmpStat_                 { get; set; }
     public string? StatusDate               { get; set; }
-    public string? SecurityLicense          { get; set; }
-    public string? LicenseExpiry            { get; set; }
+    public string? SecLicense               { get; set; }
+    public DateTime? Licexpire              { get; set; }
     public string? TrainingAt               { get; set; }
     public string? TrainingDate             { get; set; }
     public string? Insurance                { get; set; }
     public string? PolicyNumber             { get; set; }
     public string? FaceValue                { get; set; }
     public string? Premium                  { get; set; }
-    public string? InsuranceExpiry          { get; set; }
+    public DateTime? InsExpire              { get; set; }
     public string? EmergencyContactName     { get; set; }
     public string? EmergencyContactTel      { get; set; }
     public string? EmergencyContactAddress  { get; set; }
     public string? Age                      { get; set; }
     public string? Remarks                  { get; set; }
-    public string? BadgeNumber              { get; set; }
+    public string? BadgeNo                  { get; set; }
     public string? Bank                     { get; set; }
     public string? Email                    { get; set; }
     public string? Password                 { get; set; }
-    public string? DriverLicense            { get; set; }
-    public string? DriverLicenseExpiry      { get; set; }
+    public string? Drv_License              { get; set; }
+    public DateTime? Drv_Exp                { get; set; }
     public string? IsTaxable                { get; set; }
     public string? IsConfidential           { get; set; }
     public string? IsWithSss                { get; set; }
     public string? IsWithGsis               { get; set; }
     public string? IsWithPhilHealth         { get; set; }
     public string? IsWithPagIbig            { get; set; }
+    public string? MlaCode_                 { get; set; }
+    public string? ProCode_                 { get; set; }
+
+    public string? GuardNoYrs               { get; set; }
+    public DateTime? RegRef                 { get; set; }
+    public string? MilitaryNoYr             { get; set; }
+    public string? AcctCode                 { get; set; }
+    public string? TaxCode                  { get; set; }
+    public DateTime? Exp_Nbi                { get; set; }
+    public DateTime? Exp_Police             { get; set; }
+    public DateTime? Exp_Pnp                { get; set; }
+    public DateTime? Exp_Brgy               { get; set; }
+    public DateTime? Exp_Neuro              { get; set; }
+    public DateTime? Exp_Drug               { get; set; }
+    public DateTime? Exp_Court              { get; set; }
+    public DateTime? ExpMed                 { get; set; }
+
     //-------------------------------------------------------
     public string? PositionName             { get; set; } = string.Empty;
     public string? EmpStatus                { get; set; } = string.Empty;

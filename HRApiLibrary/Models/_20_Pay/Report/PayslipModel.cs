@@ -8,8 +8,7 @@ public class PayslipModel
     public DateTime?                   AttStart               { get; set; }
     public DateTime?                   AttEnd                 { get; set; }
     public string?                     DateCovered            { get; set; } = string.Empty;
-    public string?                     PaymainhdrStatus       { get; set; } = ""; 
-    
+    public string?                     PaymainhdrStatus       { get; set; } = "";    
     public List<PayslipdtlModel?>     PayslipDtls            { get; set; } = [];
     
 }
