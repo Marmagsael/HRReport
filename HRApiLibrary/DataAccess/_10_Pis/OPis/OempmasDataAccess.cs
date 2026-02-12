@@ -3,11 +3,11 @@ using HRApiLibrary.Models._10_Pis.OPis;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
-public class OempmasDataAccess : IOempmasDataAccess
+public class OEmpmasDataAccess : IOEmpmasDataAccess
 {
     private readonly I_90_001_MySqlDataAccess _sql;
 
-	public OempmasDataAccess(I_90_001_MySqlDataAccess sql)
+	public OEmpmasDataAccess(I_90_001_MySqlDataAccess sql)
 	{
 			_sql = sql;
 	}
@@ -244,7 +244,7 @@ public class OempmasDataAccess : IOempmasDataAccess
 }
 
 
-public interface IOempmasDataAccess
+public interface IOEmpmasDataAccess
 {
 	Task<OempmasModel?>         _01(OempmasModel empmas, string schema, string conn);
 	Task<List<OempmasModel?>?>  _02(string empnumber, string schema, string conn); 

@@ -1,6 +1,6 @@
 namespace HRApiLibrary.Models._10_Pis.OPis;
 
-public class OempmasModel
+public class OEmpmasModel
 {
     public string? EmpNumber                { get; set; }
     public string? EmpLastNm                { get; set; }
