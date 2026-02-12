@@ -6,7 +6,7 @@
 
         public string?      Program     { get; set; }
 
-        public DateTime?    Taken       { get; set; }
+        public string?      Taken       { get; set; }
 
         public string?      School      { get; set; }
 

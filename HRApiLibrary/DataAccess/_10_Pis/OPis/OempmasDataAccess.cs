@@ -12,7 +12,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 			_sql = sql;
 	}
 
-	public async Task<OempmasModel?> _01(OempmasModel empmas, string schema, string conn )
+	public async Task<OEmpmasModel?> _01(OEmpmasModel empmas, string schema, string conn )
 	{
 		string sql = $@"Insert into {schema}.Empmas 
     					(EMPNUMBER, EMPLASTNM, EMPFIRSTNM, EMPMIDNM, suffix, EMPALIAS, CLIENT, CLIENT_, BASICRATE, PAYTYPE, ADMIN, CASHBOND, WORKDAYS, 
@@ -43,13 +43,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
 		sql = $@"SELECT * FROM {schema}.Empmas WHERE EmpNumber = @Empnumber"; 
 
-		var res = await _sql.FetchData<OempmasModel?,dynamic>(sql,new {Empnumber=empmas.EmpNumber },conn);
+		var res = await _sql.FetchData<OEmpmasModel?,dynamic>(sql,new {Empnumber=empmas.EmpNumber },conn);
 
 		return res.FirstOrDefault();
 	}
 
 
-    public async Task<List<OempmasModel?>?> _02(string empnumber, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02(string empnumber, string schema, string conn)
     {
         var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName, 
                         e.*,  
@@ -84,11 +84,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join {schema}.empstat     s on s.code = e.empstat_                              
                      left join {schema}.Client      c  on c.ClNumber = e.Client_                              
                      where e.Empnumber = @Empnumber";
-        var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }
     
-    public async Task<List<OempmasModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
     {
         var usql = $@"UPDATE {schema}.Empmas SET
                         MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
@@ -126,12 +126,12 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join {schema}.empstat     s on s.code = e.empstat_                              
                      left join {schema}.Client      c  on c.ClNumber = e.Client_                              
                      where e.Client_ = @ClNumber; ";
-        var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
         return data;
     }
 
 
-    public async Task<List<OempmasModel?>?> _02ByEmail(string email, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByEmail(string email, string schema, string conn)
 	{
         var usql = $@"UPDATE {schema}.Empmas SET
                         MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
@@ -169,13 +169,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join   {schema}.empstat     s on s.code = e.empstat_                              
                      left join   {schema}.Client      c  on c.ClNumber = e.Client_
                      where e.Email = @Email" ; 
-		var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Email = email }, conn); 
+		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Email = email }, conn); 
 		return data;
 	}
 	
 
 	
-	public async Task<OempmasModel?> _03(int id,OempmasModel empmas, string schema, string conn)
+	public async Task<OEmpmasModel?> _03(int id,OEmpmasModel empmas, string schema, string conn)
 	{
 		string sql = $@"Update {schema}.Empmas set 
                                EMPNUMBER = @EMPNUMBER, 
@@ -226,17 +226,17 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 		await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
 		
 		sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
-		var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Id = id }, conn);
+		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
 		return data?.FirstOrDefault();
 	}
 
-	public async Task<OempmasModel?> _04(int id, string schema, string conn)
+	public async Task<OEmpmasModel?> _04(int id, string schema, string conn)
 	{
 		string sql = $@"Delete from {schema}.Empmas where Id = @Id;";
 		// await _sql.ExecuteCmd<dynamic>(sql, new {Id=id},conn);
 
 		sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
-		var data = await _sql.FetchData<OempmasModel?, dynamic>(sql, new { Id = id }, conn);
+		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
 		return data?.FirstOrDefault();
 	}
 	
@@ -246,9 +246,9 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
 public interface IOEmpmasDataAccess
 {
-	Task<OempmasModel?>         _01(OempmasModel empmas, string schema, string conn);
-	Task<List<OempmasModel?>?>  _02(string empnumber, string schema, string conn); 
-    Task<List<OempmasModel?>?>  _02ByClNumbers(string clnumber, string schema, string conn); 
-	Task<List<OempmasModel?>?>  _02ByEmail(string email, string schema, string conn); 
+	Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string schema, string conn);
+	Task<List<OEmpmasModel?>?>  _02(string empnumber, string schema, string conn); 
+    Task<List<OEmpmasModel?>?>  _02ByClNumbers(string clnumber, string schema, string conn); 
+	Task<List<OEmpmasModel?>?>  _02ByEmail(string email, string schema, string conn); 
 	
 }
