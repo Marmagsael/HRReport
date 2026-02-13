@@ -278,7 +278,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         //--- Inv_Type -----------------------------------------------------------
         cmd = $"select * from {equipdb}.Inv_Type limit 1 ";
         var resType = await _sql.FetchData<Inv_typeModel, dynamic>(cmd, new { }, connName);
-        //Console.WriteLine($"Inv_Type Count : {resType.Count}.");
+       
         if (resType.Count == 0)
         {
             cmd = $@"insert into {equipdb}.Inv_Type (Id, Name) values 

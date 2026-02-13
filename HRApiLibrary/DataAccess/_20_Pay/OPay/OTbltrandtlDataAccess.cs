@@ -27,7 +27,7 @@ public class OTbltrandtlDataAccess : IOTbltrandtlDataAccess
     {
         string sql  = $@"select  * from {schema}.Tbltrandtl where left(Trn,6) = left(@Trn,6) and EmpNumber = @EmpNumber";
         var data    = await _sql.FetchData<GTbltrandtlModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
-        Console.WriteLine($" Tbltrandtl Count : {data.Count}");
+        
         return data??[];
     }
 
