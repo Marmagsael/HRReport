@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 using System;
 using HRApiLibrary.Models._10_Pis;
-=======
->>>>>>> DA_mar
 using HRApiLibrary.Models._10_Pis.OPis;
 
 namespace HRMvc.Applications.Vars;

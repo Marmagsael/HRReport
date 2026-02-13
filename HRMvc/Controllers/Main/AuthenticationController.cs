@@ -434,7 +434,7 @@ public class AuthenticationController : Controller
             var acctgdb = prefix + "acctg";
             
             
-            _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
+            await _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
             
             await _payTblMaker._01(paydb);
             var x = await _userCompany._02(coId, "Main", conn!);
