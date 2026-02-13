@@ -1,0 +1,84 @@
+@using HRMvc.Applications.PisReport.Vars
+
+<div class="p-3">
+    <div class="d-flex gap bordered-bottom p-2 fw-bold">
+        <div class="w-100p">Emp. No    </div>
+        <div class="w-250p">Emp. Name  </div>
+        <div class="w-150p">Birthdate  </div>
+        <div class="w-100p">Age        </div>
+        <div class="w-100p">Status        </div>
+    </div>
+
+
+    @{ int row = 0; }
+    @foreach(var v in V2104){
+
+        <div class="d-flex gap px-2 py-1 @(row % 2 == 0 ? "bg-light" : "")">
+            <div class="w-100p">@v.EmpNumber    </div>
+            <div class="w-250p">@v.EmpName      </div>
+            <div class="w-150p">@v.EmpBirth?.ToString("MMM dd, yyyy")     </div>
+            <div class="w-100p">
+                @(v.EmpBirth.HasValue ? $"{CalculateAge(v.EmpBirth.Value).Years} yrs {CalculateAge(v.EmpBirth.Value).Months} mos" : "" )
+            </div>
+            <div class="w-100p">
+                @v.EmpStatus 
+            </div>
+        </div>
+
+        row++; 
+    }
+
+</div>
+
+
+
+
+
+@code {
+    [Parameter] public List<V2104Model> V2104 { get; set; } = []; 
+
+    private (int Years, int Months) CalculateAge(DateTime birthDate)
+    {
+        var today = DateTime.Today;
+
+        int years = today.Year - birthDate.Year;
+        int months = today.Month - birthDate.Month;
+
+        if (today.Day < birthDate.Day)
+            months--;
+
+        if (months < 0)
+        {
+            years--;
+            months += 12;
+        }
+
+        return (years, months);
+    }
+
+    private (int Years, int Months, double AgeDouble) CalculateAgeFull(DateTime birthDate)
+{
+    var today = DateTime.Today;
+
+    int years = today.Year - birthDate.Year;
+    int months = today.Month - birthDate.Month;
+
+    if (today.Day < birthDate.Day)
+        months--;
+
+    if (months < 0)
+    {
+        years--;
+        months += 12;
+    }
+
+    double ageDouble = years + (months / 12.0);
+
+    return (years, months, ageDouble);
+}
+
+
+
+    
+
+}
