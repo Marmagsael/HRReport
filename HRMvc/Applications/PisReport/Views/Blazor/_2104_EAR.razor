@@ -1,81 +1,113 @@
-﻿@namespace HRMvc.Applications.PisReport.Views.Blazor
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Report
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2104
 
-@using HRApiLibrary.DataAccess._20_Pay_Report
-@using HRApiLibrary.Models._00_Main
-@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+<_00BT HdrCaption="Modal" Rv="@Rv" >
+    <Details>
+        <div class="p-0"> 
+            <div class="card-header">
+                <div class="d-flex gap-2">
+                    <_01DDClient Clients="@Rv.Clients" ChildAction="ClientChanged" />
+                    <span @onclick="FetchData">
+                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray"> Fetch Data </div>
+                    </span> 
+                </div>
+            </div>
+        </div>
 
-<div class="p-3"> <button class="btn btn-success" @onclick="Create">Generate Report </button> </div>
+        <div>
+            <_2104_Dtl V2104="@v2104" /> 
+        </div>
 
 
 
-<div>
-    <IframeReportRenderer DataSource="report"
-                          ReportRelativePath="@relativePath"
-                          OutputFormat="@selectedFormat"
-                          Parameters="reportParams"
-                          AutoGenerate="@(report?.Any() == true)"
-                          RefreshToken="@refreshToken" />
 
-</div>
+
+
+
+    </Details>
+</_00BT>
+
+@inject IOClientDataAccess      _client; 
+@inject IOPisReportDataAccess   _pisRep; 
 
 
 @code {
 
-    private class ReportModel
+    [Parameter] public UserClaimsModel  Uc      {get; set; } = new(); 
+    [Parameter] public V00_RepVars      Rv      {get; set; } = new(); 
+
+    List<V2104Model> v2104 = [];
+    bool _loaded = false;
+
+
+
+
+    protected override async Task OnParametersSetAsync()
     {
-        public string?  No          { get; set; }
-        public string?  EmpNumber   { get; set; }
-        public string?  EmpFullName { get; set; }
-        public string?  EmpBirth    { get; set; }
-        public string?  Age         { get; set; }
-        public string?  Clname      { get; set; }
+        if (_loaded) return;
+        if (string.IsNullOrEmpty(Uc?.OpisDb) || string.IsNullOrEmpty(Uc?.Conn)) return;
+
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!); 
+        Rv.Clients = []; 
+        Rv.Clients.Add(new() { ClNumber="-", ClName="Select All----" });
+        if(res.Count > 0 ) { 
+            foreach(var r in res){ Rv.Clients.Add(r??new()); } 
+            Rv.ClNumber="-"; 
+        }; 
+        _loaded = true;
 
     }
 
-    List<ReportModel?>? report = [];
-
-    private string relativePath = "Reports/_02HR/_2104_EAR.trdp";
-    private string                      selectedFormat  = "PDF";                                          //PDF | XLSX
-    private Dictionary<string, object> reportParams     = new() { ["CoName"] = "GSIA Security Agency Inc.",
-                                                                  ["CoAddress"] = "577 Suntrade Bldg. Alabang Zapote Rd. Brgy. Almanza Uno, Las Pinas City, NCR.",
-                                                                  ["ReportTitle"] = "Employee Age Report",
-                                                                  ["RunDate"] = DateTime.Now };
-    private int                         refreshToken    = 2102000;
-
-
-
-    [Parameter] public UserClaimsModel?		UserClaims { get; set; }
-
-    private void Create()
+    protected override void OnInitialized()
     {
-
-        report = [];
-        report.Add(new ReportModel() { No = "1.", EmpNumber = "09726", EmpFullName = "Ablong, Kenn Malanza", EmpBirth = "01/17/2001", Age = "33", Clname = "ACEN TECH HUB INC." });
-        report.Add(new ReportModel() { No = "2.", EmpNumber = "09730", EmpFullName = "Abriola III, Angel Chica", EmpBirth = "05/19/1994", Age = "40", Clname = "ACEN TECH HUB INC." });
-        report.Add(new ReportModel() { No = "3.", EmpNumber = "06029", EmpFullName = "Alaiza, Bernie Rabusa", EmpBirth = "08/16/1997", Age = "47", Clname = "ACEN TECH HUB INC." });
-        report.Add(new ReportModel() { No = "4.", EmpNumber = "09889", EmpFullName = "Abong,Richard P.", EmpBirth = "06/13/2003", Age = "32", Clname = "ACEN TECH HUB INC." });
-        report.Add(new ReportModel() { No = "5.", EmpNumber = "09725", EmpFullName = "Alga Jr., Apolonio Pigaredo", EmpBirth = "01/03/2000", Age = "49", Clname = "ACEN TECH HUB INC." });
-        report.Add(new ReportModel() { No = "1.", EmpNumber = "09417", EmpFullName = "Bandol, Jovie Sanches", EmpBirth = "01/17/2001", Age = "28", Clname = "ADVANTEK Ayala Alabang " });
-        report.Add(new ReportModel() { No = "2.", EmpNumber = "06261", EmpFullName = "Bandon, Zalver Jordan", EmpBirth = "05/19/1994", Age = "35", Clname = "ADVANTEK Ayala Alabang " });
-        report.Add(new ReportModel() { No = "3.", EmpNumber = "09729", EmpFullName = "Basuel, Gilbert Jimenez", EmpBirth = "08/16/1997", Age = "43", Clname = "ADVANTEK Ayala Alabang " });
-        report.Add(new ReportModel() { No = "4.", EmpNumber = "09725", EmpFullName = "Batchinitcha, Arlene Alvarez", EmpBirth = "06/13/2003", Age = "58", Clname = "ADVANTEK Ayala Alabang " });
-        report.Add(new ReportModel() { No = "5.", EmpNumber = "02438", EmpFullName = "Cayago, John Arvin Brecia", EmpBirth = "01/03/2000", Age = "43", Clname = "ADVANTEK Ayala Alabang " });
-        report.Add(new ReportModel() { No = "1.", EmpNumber = "07635", EmpFullName = "Concha, Rosalyn Saquili", EmpBirth = "01/17/2001", Age = "33", Clname = "ADVANTEK Ayala Alabang" });
-        report.Add(new ReportModel() { No = "2.", EmpNumber = "10139", EmpFullName = "De Jesus, John Paul Penuliar", EmpBirth = "05/19/1994", Age = "28", Clname = "FILM PABRIKA INC." });
-        report.Add(new ReportModel() { No = "3.", EmpNumber = "08312", EmpFullName = "Gabrillo, Mayette De Luna", EmpBirth = "08/16/1997", Age = "28", Clname = "FILM PABRIKA INC." });
-        report.Add(new ReportModel() { No = "4.", EmpNumber = "08229", EmpFullName = "Gan III, Julius Caesar Ramirez", EmpBirth = "06/13/2003", Age = "45", Clname = "FILM PABRIKA INC." });
-        report.Add(new ReportModel() { No = "5.", EmpNumber = "09871", EmpFullName = "Gucela, Louie Laquihon", EmpBirth = "01/03/2000", Age = "46", Clname = "FILM PABRIKA INC." });
-        report.Add(new ReportModel() { No = "1.", EmpNumber = "08380", EmpFullName = "Haz, Ray Santos", EmpBirth = "01/17/2001", Age = "25", Clname = "FILM PABRIKA INC." });
-        report.Add(new ReportModel() { No = "2.", EmpNumber = "08596", EmpFullName = "Helonggo, Alvin Tapaya", EmpBirth = "05/19/1994", Age = "29", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "3.", EmpNumber = "08136", EmpFullName = "Labine, Alfie Abalos", EmpBirth = "08/16/1997", Age = "27", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "4.", EmpNumber = "10077", EmpFullName = "Isanan, Jeffrey Batierna", EmpBirth = "06/13/2003", Age = "34", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "5.", EmpNumber = "10076", EmpFullName = "Manuel, Jade Siobal", EmpBirth = "01/03/2000", Age = "37", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "1.", EmpNumber = "09165", EmpFullName = "Juan, Dela Cruz E.", EmpBirth = "01/17/2001", Age = "36", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "2.", EmpNumber = "08321", EmpFullName = "John, Dela Rosa D.", EmpBirth = "05/19/1994", Age = "39", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "3.", EmpNumber = "09317", EmpFullName = "Abogacia, Robert T.", EmpBirth = "08/16/1997", Age = "21", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "4.", EmpNumber = "09435", EmpFullName = "Abong,Richard P.", EmpBirth = "06/13/2003", Age = "22", Clname = "RECKITT BENNCKISER" });
-        report.Add(new ReportModel() { No = "5.", EmpNumber = "08149", EmpFullName = "Abecia, Marvin D.", EmpBirth = "01/03/2000", Age = "26", Clname = "RECKITT BENNCKISER" });
+        Rv.RelativePath = "Reports/_02HR/_2104_EAR.trdp";
+        Rv.RefreshToken = 2104000; 
+        Rv.MCaption     = "Employee Age Report"; 
     }
+
+    void ClientChanged(string clno) {
+        Rv.ClNumber = clno; 
+        v2104 = []; 
+    }
+
+    int ctr = 0; 
+    private async Task FetchData()
+    {
+        var res = await _pisRep._02Empmas_By_Clnumbers(Rv.ClNumber, Uc.OpisDb!, Uc.Conn!); 
+        v2104 = []; 
+
+        if(res.Count > 0) {
+            var today = DateTime.Today; // compute once
+            foreach(var r in res){
+                V2104Model v = new() { EmpNumber=r.EmpNumber, EmpBirth=r.EmpBirth, EmpName = r.EmpName, EmpStatus=r.EmpStatus }; 
+                
+                if (v.EmpBirth != null)
+                {
+                    var birth = v.EmpBirth.Value;
+                    int years = today.Year - birth.Year;
+                    int months = today.Month - birth.Month;
+
+                    if (today.Day < birth.Day) months--;
+                    if (months < 0) { years--; months += 12; }
+
+                    v.Age = years + (months / 12.0);
+                } else { v.Age = null; }
+
+                v2104.Add(v); 
+            }   
+        }
+    }
+
+    private void CreateReport()
+    {
+        ctr++; 
+        Console.WriteLine($"You clicked me {ctr} "); 
+        Rv.ShowModal = true; 
+        
+    }
+
 
 }
  
