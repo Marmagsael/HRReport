@@ -80,7 +80,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
         }
 
-        Console.WriteLine($"Count : {data.Count}");
+        
         return data ?? [];
 
     }
