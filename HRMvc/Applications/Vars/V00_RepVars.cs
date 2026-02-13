@@ -8,11 +8,12 @@ namespace HRMvc.Applications.Vars;
 
 public class V00_RepVars
 {
-    public int    RefreshToken   { get; set; } = 0;
-    public string SelectedFormat { get; set; } = "PDF";
-    public string RelativePath   { get; set; } = "Reports/_03Payroll/mSample.trdp";
+    public int                          RefreshToken    { get; set; } = 0;
+    public string                       SelectedFormat  { get; set; } = "PDF";
+    public string                       RelativePath    { get; set; } = "Reports/_03Payroll/mSample.trdp";
+    public IEnumerable<object>         ReportData       { get; set; } = [];
 
-    public Dictionary<string, object> ReportParams { get; set; } = new()
+    public Dictionary<string, object>   ReportParams    { get; set; } = new()
     {
         ["CoName"]     = "Morpheusbox Inc.",
         ["pPrintedBy"] = "SYSTEM",
@@ -31,8 +32,17 @@ public class V00_RepVars
     public List<PeriodModel> Periods { get; set; } = GetDefaultPeriods();
 
     //---------------------------------------------------------------------------------------
-    public string             ClNumber { get; set; } = "";
-    public List<OClientModel> Clients  { get; set; } = [];
+    public string               ClNumber        { get; set; } = "";
+    public List<OClientModel>   Clients         { get; set; } = [];
+    
+
+    //--- Modal Details ----------------------------------------------
+    public bool                 ShowModal       { get; set; } = false;  
+    public string               MCaption       { get; set; } = "-";  
+
+
+
+
 
     //---------------------------------------------------------------------------------------
     // Helpers
