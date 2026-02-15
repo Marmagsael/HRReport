@@ -34,15 +34,28 @@ public class OClientDataAccess : IOClientDataAccess
 
     public async Task<List<OClientModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
     {
-        string sql = $@"select  * from {schema}.Client where ClNumber = @ClNumber order by ClName ";
+        string sql  = $@"update {schema}.Client set 
+                            ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
+                            ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
+                            ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) 
+                        where  ClNumber = @Clnumber ";
+        _sql.ExecuteCmd<dynamic>(sql, new { ClNumber = clnumber }, conn);
+        sql = $@"select  * from {schema}.Client where ClNumber = @ClNumber order by ClName ";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
         return data;
     }
 
     public async Task<List<OClientModel?>?> _02ByStatuss(string status, string schema, string conn)
     {
-        string sql = $@"select  * from {schema}.Client where ClNumber = @ClNumber order by ClName ";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = status }, conn);
+        string sql  = $@"update {schema}.Client set 
+                            ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
+                            ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
+                            ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) 
+                        where  Status = @Status ";
+        _sql.ExecuteCmd<dynamic>(sql, new { Status = status }, conn);
+
+        sql         = $@"select  * from {schema}.Client where Status = @Status order by ClName ";
+        var data    = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = status }, conn);
         return data;
     }
 

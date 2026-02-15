@@ -75,7 +75,6 @@ public class ReportDataAccess : IReportDataAccess
                 var dCnt   = empDeductions?.Count ?? 0;  // <--- fixed
                 var maxCnt = Math.Max(eCnt, dCnt);       // clearer
 
-                //Console.WriteLine($" |++++> Loops  -----Total Count : {maxCnt}---------> ");
                 for (int i = 0; i < maxCnt; i++)       // start at 0
                 {
                     /* 1) ----- Initiliaze PayslipdtlQuery -------------------*/
