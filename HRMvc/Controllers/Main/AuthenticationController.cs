@@ -35,7 +35,7 @@ public class AuthenticationController : Controller
     private readonly I_20_002_PayTblMaker           _payTblMaker;
     private readonly I_00UserscompanyDataAccess     _userCompany;
     private readonly I_AcctgTableMaker              _acctg;
-    private readonly IOempmasDataAccess             _oldEmpmas;
+    private readonly IOEmpmasDataAccess             _oldEmpmas;
     
             
 
@@ -52,7 +52,7 @@ public class AuthenticationController : Controller
                                     I_20_002_PayTblMaker       payTblMaker, 
                                     I_00UserscompanyDataAccess userCompany, 
                                     I_AcctgTableMaker          acctg, 
-                                    IOempmasDataAccess         oldEmpmas )
+                                    IOEmpmasDataAccess         oldEmpmas )
     {
         _config             = config;
         _userAccess         = userAccess;
@@ -434,7 +434,7 @@ public class AuthenticationController : Controller
             var acctgdb = prefix + "acctg";
             
             
-            _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
+            await _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
             
             await _payTblMaker._01(paydb);
             var x = await _userCompany._02(coId, "Main", conn!);

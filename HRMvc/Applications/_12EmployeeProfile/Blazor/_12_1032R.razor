@@ -2,61 +2,122 @@
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRMvc.Applications._12EmployeeProfile.Blazor
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_103
+@using HRMvc.StartupConfig.Library
 
-<div class="w-960p p-3"> 
-    <div class="page-header"> 
-        <h1 class="page-title">My 201 Records</h1> 
-    </div> 
-    <div class="page-body d-flex flex-column gap-5 pt-3">
-        <_12_103_EmployeeName  Oempmas="Oempmas" /> 
+
+<div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper">
+
+    <div class="card-header">
+        <_12_102_PersonalInfo OEmpmass="OEmpmass"></_12_102_PersonalInfo>
+    </div>
+    <_12_103Shortcuts Ec="@Ec"/>
+
+   
+
+
+    <div class="card-body w-100">
+        @if (lnk == 1)
+        {
+            <div class="w-100">
+                <_12_103_PersonalInformation OEmpmass="OEmpmass" V12_103="V12_103" />
+            </div>
+        }
+
+        @if (lnk == 2)
+        {
+            <div class="w-100">
+                <_12_103_Address OEmpmass="OEmpmass" V12_103="V12_103" />
+            </div>
+        }
+        @if (lnk == 3)
+        {
+            <div class="w-100">
+                <_12_103_Family V12_103="V12_103" />
+            </div>
+        }
+        @if (lnk == 4)
+        {
+            <div class="w-100">
+                <_12_103_Education V12_103="V12_103" />
+            </div>
+        }
+        @if (lnk == 5)
+        {
+            <div class="w-100">
+                <_12_103_EmploymentRecords V12_103="V12_103" />
+            </div>
+        } 
+        @if (lnk == 6)
+        {
+            <div class="w-100">
+                <_12_103_EmploymentDetails OEmpmass ="OEmpmass" />
+            </div>
+        }
+        @if (lnk == 7)
+        {
+            <div class="w-100">
+                <_12_103_TrainingSeminarsAttended V12_103="V12_103" />
+            </div>
+        }
+        @if (lnk == 8)
+        {
+            <div class="w-100">
+                <_12_103_Government OEmpmass="OEmpmass" />
+            </div>
+        }
+        @if (lnk == 9)
+        {
+            <div class="w-100">
+                <_12_103_Insurance OEmpmass ="OEmpmass" />
+            </div>
+        }
+        @if (lnk == 10)
+        {
+            <div class="w-100">
+                <_12_103_Reference V12_103="V12_103" />
+            </div>
+        }
+        @if (lnk == 11)
+        {
+            <div class="w-100">
+                <_12_103_Clearance  OEmpmass="OEmpmass" />
+            </div>
+        }
+        @if (lnk == 12)
+        {
+            <div class="w-100">
+            </div>
+        }
+
+
+       
+
+
         
-        <RadzenStack Gap="0"> 
-            <RadzenTabs RenderMode="TabRenderMode.Client"> 
-                <Tabs> 
-                    <RadzenTabsItem Text="Personal Data"> 
-                        <_12_103_PersonalData Oempmas="Oempmas" Ogenders="Ogenders" Ocivstats="Ocivstats" /> 
-                    </RadzenTabsItem>
+    </div>
 
-                    <RadzenTabsItem Text="Address">
-                        <_12_103_Address Oempmas="Oempmas"  />
-                    </RadzenTabsItem>
 
-                    <RadzenTabsItem Text="Education">
-                        <_12_103_Education Oeducates="Oeducates" />
-                    </RadzenTabsItem> 
-
-                    <RadzenTabsItem Text="Family">
-                        <_12_103_Family Ofamilys="Ofamilys" Oemergencs="Oemergencs" />
-                     </RadzenTabsItem>
-
-                    <RadzenTabsItem Text="References"> test </RadzenTabsItem> 
-                </Tabs> 
-            </RadzenTabs> 
-        </RadzenStack>
-      </div> 
 </div>
-@inject IOempmasDataAccess _oempmas;
+
+@inject L12_103 L103
 
 @code {
     [Parameter] public UserClaimsModel?             UserClaims  { get; set; }
-    [Parameter] public List<OempmasModel?>?         Oempmass    { get; set; }   = new();
-    [Parameter] public List<OeducateModel?>?        Oeducates   { get; set; }   = new();
-    [Parameter] public List<OemergencModel?>?       Oemergencs  { get; set; }   = new();
-    [Parameter] public List<OfamilyModel?>?         Ofamilys    { get; set; }   = new();
-    [Parameter] public List<OgenderModel?>?         Ogenders    { get; set; }   = new();
-    [Parameter] public List<OcivstatModel?>?        Ocivstats   { get; set; }    = new();
+    List<OEmpmasModel?>?         OEmpmass    { get; set; }   = [];
+    V12_103?                     V12_103     { get; set; }   = new();
 
-    private OempmasModel? Oempmas { get; set; } = new();
+    int lnk = 1;
 
-    protected async override void OnParametersSet()
+    void Ec(int val)
     {
-        if (Oempmass != null && Oempmass.Count > 0)
-        {
-            Oempmas = Oempmass.FirstOrDefault();
-            if (Oempmas != null)
-            {
-                Oempmas.HeightInches = Oempmas.Height * 12;
-            }
-        }
+        lnk = val;
+
     }
+
+    protected async override Task OnInitializedAsync()
+    {
+        OEmpmass = await L103._02OEmpmass(UserClaims);
+        V12_103 = await L103.V12_103(UserClaims);
+    }
+
 }
