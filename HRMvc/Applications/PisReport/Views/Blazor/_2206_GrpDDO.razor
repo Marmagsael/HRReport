@@ -1,27 +1,48 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Views.Blazor._2206
+
+
 <_00BT HdrCaption="Group DDO Report">
     <Details>
-        <div class="card-header">
-            <_01DDClient />
+        <div class="card-header d-flex gap-2">
+            <div class=" w-600p "> <_01DDClient Clients="@RV.Clients" ChildAction="@ClientChanged" /> </div>
         </div>
-        
+
+        <div class="card-body p-0 mt-2">
+            <_2206_Details />
+        </div>
 
     </Details>
 </_00BT>
 
 
+
+@inject IOPisReportDataAccess _pisRep; 
+        
+
+
 @code {
 
-    [Parameter] public UserClaimsModel? UserClaims { get; set; }
-
-    V00_RepVars rv = new(); 
-
+    [Parameter] public UserClaimsModel          uc         { get; set; } = new(); 
+    [Parameter] public  V00_RepVars             RV         { get; set; } = new(); 
 
 
-    string clNumber = string.Empty; 
 
-    async Task ValueChanged(V00_RepVars rp) {
-        
+
+
+
+    protected override async Task OnInitializedAsync(){
+        @if(RV.Clients.Count < 1) {
+            RV.Clients = await _pisRep._02ClientByStatus("Active", uc.OpisDb??"-", uc.Conn??"-"); 
+        }
     }
+
+    async Task ClientChanged(string clnumber) { 
+        RV.ClNumber = clnumber; 
+    }
+
+
+    
 
 }

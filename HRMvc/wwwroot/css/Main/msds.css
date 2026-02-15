@@ -22,88 +22,37 @@
 .b-blue     { border: 1px solid blue; }
 .b-maroon   { border: 1px solid rgb(108, 104, 104); }
 .b-black    { border: 1px solid black; }
-.b-dgray     { border: 1px solid darkgray; }
+.b-dgray    { border: 1px solid darkgray; }
 
 .t-maroon   { color: maroon; }
 
 /* --- TABS CONTAINER ------------------------------------------------- */
-.mb-tabs {
-    display: flex;
-    width: 100%;
-    border-bottom: 1px solid #dee2e6;
-    gap: 1px;
-}
+.mb-tabs {display: flex; flex-wrap: wrap; gap: 2px; }
+/* ================= TAB ================= */
+.mb-tab { position: relative; overflow: hidden; flex: 0 0 calc(25% - 10.5px); text-align: center; padding: 8px 10px;
+    background: #ffffff; color: #495057; border: 1px solid #e5e7eb; border-radius: 12px 12px 0 0; cursor: pointer;
+    transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s ease, color .25s ease, background-color .25s ease; }
+.mb-tab > * { position: relative; z-index: 3; }
+/* ================= ROLLING ACCENT (BACKGROUND SHINE) ================= */
+@keyframes rollingAccent { 0%   { background-position: 200% 50%; } 100% { background-position: 0% 50%; } }
 
-.mb-tab {
-    position: relative; /* REQUIRED for underline */
+.mb-tab::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient( 120deg,  transparent, color-mix(in srgb, var(--mb-accent) 40%, transparent), transparent );
+    background-size: 200% 100%; opacity: 0; pointer-events: none; z-index: 1; }
 
-    padding: 10px 16px;
-
-    background: #f8f9fa;
-    color: #495057;
-
-    border: 1px solid #dee2e6;
-    border-bottom: none;
-
-    margin-bottom: -1px;
-
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
-
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-
-    transition:
-        color .2s ease,
-        background-color .2s ease,
-        border-color .2s ease;
-}
-
-/* ================= UNDERLINE ================= */
-
-.mb-tab::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    bottom: -1px;
-
-    width: 0%;
-    height: 2px;
-
-    background: var(--mb-accent);
-    transition: width .25s ease;
-
-    transform: translateX(-50%);
-}
-
-/* Hover underline */
-.mb-tab:hover::after {
-    width: 100%;
-}
-
-/* Hover text color */
-.mb-tab:hover {
-    color: var(--mb-accent);
-}
-
+/* ================= ANIMATED HOVER BOTTOM LINE ================= */
+.mb-tab::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0; height: 3px;
+    background: var(--mb-accent); transition: width .25s ease, left .25s ease; z-index: 2; }
+/* ================= HOVER ================= */
+.mb-tab:hover::after { opacity: 1; animation: rollingAccent 3s linear infinite; }
+.mb-tab:hover::before { width: 100%; left: 0; }
+.mb-tab:hover { background: #f8fafc; transform: translateY(-3px); box-shadow: 0 6px 14px rgba(0,0,0,0.06); color: var(--mb-accent); }
 /* ================= ACTIVE ================= */
-
-.mb-tab.active {
-    background: #ffffff;
-    color: var(--mb-accent);
-
-    border-color: var(--mb-accent);
-    border-bottom: 1px solid #ffffff; /* hide container line */
-
-    cursor: default;
-}
-
-/* Remove underline for active */
-.mb-tab.active::after {
-    display: none;
-}
-
+.mb-tab.active { background: linear-gradient( 135deg, var(--mb-accent), color-mix(in srgb, var(--mb-accent) 70%, black) );
+    color: #ffffff; border-color: var(--mb-accent); box-shadow: 0 8px 18px rgba(0,0,0,0.08); cursor: default; }
+.mb-tab.active i { color: #ffffff !important; }
+.mb-tab.active::before { width: 100%; left: 0; height: 3px; background: #ffffff; }
+.mb-tab.active::after { display: none; }
 /* ========================================================== */
 
 /* --- Accent ----------------------------------------------- */
@@ -233,6 +182,7 @@
 
 .txt-brown          { color: brown !important; }
 .txt-white          { color: white !important; }
+.txt-blue           { color: rgb(15, 37, 79) !important; }
 .txt-darkblue       { color: darkblue !important; }
 .txt-darkorange     { color: darkorange !important; }
 .txt-darkred        { color: darkred !important; }
@@ -604,6 +554,29 @@
     /*margin: auto;*/
     /*padding: 1rem;*/
 }
+
+/* === Modal ------------------------------------------- */
+#mb-body { position: relative; width: 100%; height: 100%; }
+    /* === MODAL OVERLAY ===================================== */
+    #mb-modal { 
+        position: absolute; 
+        inset: 0; 
+        background: rgba(0, 0, 0, 0.6);
+        justify-content: center;    /* horizontal center */
+        align-items: center;        /* vertical center */
+        z-index: 10;
+    }
+
+    #mb-modal.show {display: flex; }
+    #mb-modal-content { 
+        width: 100%; 
+        background: #ffffff; 
+        border-radius: 5px; 
+        min-height: 100%;
+    }
+
+
+/*=======================================================*/
 
 @media (max-width: 576px) {
     .r-container {

@@ -13,9 +13,9 @@
             
     @* <div class="p-2 text-primary border-bottom "> Your system ID Number is <span class="text-success">@UserClaims.UserId</span>  </div> *@
     <div class=" d-flex gap-2 border-bottom ">
-        <div class="p-2 text-primary "> @v.msg </div>
+        <div class="p-2 text-primary "> @v.Msg </div>
         <div class="p-2  text-success"> 
-            @v.msgVal  - 
+            @v.MsgVal  - 
             <span class="text-primary">@(Attpunches1_Current?.PunchInDate.ToString("dddd") ?? "-")</span>
         </div>
     </div>
@@ -35,7 +35,7 @@
         @*--- Punch In ----------------*@
         <div class=" d-flex  gap-2 p-1 align-items-center justify-content-center">
             <div class="p-2 w-100p"> Punch IN </div>
-            <div><RadzenTextBox id="pin" @bind-Value="v.currIn" class="w-150p text-center" Disabled /></div>
+            <div><RadzenTextBox id="pin" @bind-Value="v.CurrIn" class="w-150p text-center" Disabled /></div>
 
             <div class="card p-2 mb-cbtn mb-cbtn-blue d-flex w-125p" @onclick="CPunchIn">
                 <div class="d-flex align-items-center justify-content-center">
@@ -57,7 +57,7 @@
         @*--- Punch Out  ----------------*@
         <div class=" d-flex  gap-2 p-1 align-items-center justify-content-center">
             <div class="p-2  w-100p"> Punch OUT </div>
-            <div><RadzenTextBox id="pout" @bind-Value="v.currOut" class="w-150p text-center" Disabled /></div>
+            <div><RadzenTextBox id="pout" @bind-Value="v.CurrOut" class="w-150p text-center" Disabled /></div>
 
             <div class="card p-2 mb-cbtn mb-cbtn-red d-flex" @onclick="CPunchOut">
                 <div class="d-flex align-items-center justify-content-center">
@@ -81,7 +81,7 @@
 @code {
     
     [Parameter] public UserClaimsModel?         uc                      { get; set; } = new(); 
-    [Parameter] public List<OempmasModel?>?     Oempmass                { get; set; } = [];
+    [Parameter] public List<OEmpmasModel?>?     OEmpmass                { get; set; } = [];
     [Parameter] public Attpunches1Model?        Attpunches1_Current     { get; set; } = new();
     [Parameter] public AtttemplateModel?        Atttemplate             { get; set; } = new();  
 
@@ -227,37 +227,37 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
 
     void InitUI()
     {
-        v.currIn  = "-"; 
-        v.currOut = "-"; 
-        v.prevIn  = "00:00"; 
-        v.prevOut = "00:00"; 
+        v.CurrIn  = "-"; 
+        v.CurrOut = "-"; 
+        v.PrevIn  = "00:00"; 
+        v.PrevOut = "00:00"; 
 
-        v.currInDisabled  = false;
-        v.currOutDisabled = false;
-        v.prevInDisabled  = false; 
-        v.prevOutDisabled = false;
+        v.CurrInDisabled  = false;
+        v.CurrOutDisabled = false;
+        v.PrevInDisabled  = false; 
+        v.PrevOutDisabled = false;
 
-        v.msg    = "Punch In for : ";
-        v.msgVal = DateTime.Now.ToString("yyyy-MM-dd");
+        v.Msg    = "Punch In for : ";
+        v.MsgVal = DateTime.Now.ToString("yyyy-MM-dd");
     }
     void LoadFromParams()
     {
 
-        v.empmas = Oempmass?.FirstOrDefault() ?? new OempmasModel();
+        v.Empmas = OEmpmass?.FirstOrDefault() ?? new OEmpmasModel();
         
         if (Attpunches1_Current?.Status == "-")
         {
-            v.currInDisabled  = false;
-            v.currOutDisabled = true;
+            v.CurrInDisabled  = false;
+            v.CurrOutDisabled = true;
         }
         else if (Attpunches1_Current != null)
         {
-            v.currInDisabled  = true;
-            v.currOutDisabled = false;
+            v.CurrInDisabled  = true;
+            v.CurrOutDisabled = false;
             
-            v.currIn = Attpunches1_Current.PunchInDate.ToString("hh:mm tt");
-            v.msg    = "Punch Out for : ";
-            v.msgVal = Attpunches1_Current.PunchInDate.ToString("yyyy-MM-dd hh:mm tt");
+            v.CurrIn = Attpunches1_Current.PunchInDate.ToString("hh:mm tt");
+            v.Msg    = "Punch Out for : ";
+            v.MsgVal = Attpunches1_Current.PunchInDate.ToString("yyyy-MM-dd hh:mm tt");
             
         }
         
