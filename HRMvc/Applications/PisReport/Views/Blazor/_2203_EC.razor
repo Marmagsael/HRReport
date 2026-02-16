@@ -1,0 +1,33 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis.OPis
+@using Microsoft.AspNetCore.Mvc
+
+<_00BT HdrCaption="Employee Clearance">
+	<Details>
+		<div class="card-header"> 
+			<_01DDClient Clients="clients"/>
+		</div>
+
+
+		<div>
+			<button class="btn btn-primary" @onclick="FetchClient">Fetch Client</button>
+		</div>
+	</Details>
+
+</_00BT>
+
+@inject IOClientDataAccess _client;
+
+@code {
+			[Parameter] public UserClaimsModel? Uc { get; set; }
+
+			List<OClientModel> clients = [];
+
+			async Task FetchClient() {
+			var res= await _client._02ByStatuss(status: "Active", Uc.OpisDb!, Uc.Conn!);
+			if (res==null ) clients = [];
+			else clients = res!;
+
+			}
+
+	}
