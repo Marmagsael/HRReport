@@ -1,0 +1,49 @@
+﻿@using HRMvc.Applications.PayrollReport.Views.Blazor._1254
+
+
+<_00BT HdrCaption="Pagibig Contribution" >
+    <Details>
+        <div class="card-header d-flex gap-2 ">
+            <_01YYMM ChildAction="CA" Rv="@Rv" />
+            
+            <div @onclick="FetchData">
+                <div class="card p-2 mb-cbtn mb-cbtn-gray">
+                    Fetch Data 
+                </div>
+            </div>
+
+        </div>
+
+        <div>
+            <_1254_DtlHdr />
+            <_1254_Dtl r1254s="@r1254s" />
+        </div>
+
+
+
+
+
+    </Details>
+</_00BT>
+
+
+@inject IReportDataAccess _rep; 
+
+@code {
+
+    [Parameter] public UserClaimsModel?     Uc      { get; set; }
+
+    V00_RepVars          Rv      { get; set; } = new(); 
+    List<R1254Model> r1254s = new(); 
+
+    async Task FetchData() {
+        var res = await _rep._02_R1254(Rv.Year.ToString(), Rv.Month, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!); 
+        r1254s = [];
+        if (res.Count > 0) r1254s = res??[]; 
+    }
+
+    void CA() {
+        r1254s = []; 
+    }
+
+}

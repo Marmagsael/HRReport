@@ -1,0 +1,55 @@
+﻿@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+
+
+@if(Rv.ShowModal) { 
+    <div id="mb-modal" class="px-4 py-1">
+        <div id="mb-modal-content">
+            
+             <div class="modal-header  bg-opacity-75">
+                <h1 class="modal-title fs-5" >@Rv.MCaption</h1>
+                <button type="button" class="btn-close" @onclick="@(()=>ShowHideModal(false))" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div> 
+
+            <div>
+
+                @* <div>     Rec Count : @Rv.ReportData?.Count() * Item Type : @Rv.ReportData?.FirstOrDefault()?.GetType().Name * Rv.ShowModal : @Rv.ShowModal </div> *@
+                @* Rv.ReportParams : @Rv.ReportParams.FirstOrDefault().GetType().Name  *@
+                                      @* @Rv.ReportParams.FirstOrDefault().Key *@
+
+                @* <div>     
+                    @foreach (var p in Rv.ReportParams)
+                    {
+                        <div class="d-flex">
+                            Key: @p.Key  Value: @p.Value  Type: @p.Value?.GetType().Name
+                        </div>
+                    }
+                </div> *@
+
+                <IframeReportRenderer DataSource ="@Rv.ReportData"
+                          ReportRelativePath     ="@Rv.RelativePath"
+                          OutputFormat           ="@Rv.SelectedFormat"
+                          Parameters             ="@Rv.ReportParams"
+                          AutoGenerate           ="@(Rv.ReportData?.Any() == true)"
+                          RefreshToken           ="@Rv.RefreshToken" />
+
+
+            </div>
+            
+            
+        </div>
+    </div>
+}
+
+
+@code {
+
+    [Parameter] public V00_RepVars Rv           { get; set; } = new(); 
+    [Parameter] public EventCallback<bool>      ChildAction     { get; set; } 
+
+    async void ShowHideModal(bool action){
+
+        Rv.ShowModal= action; 
+        await ChildAction.InvokeAsync(action); 
+    }
+
+}
