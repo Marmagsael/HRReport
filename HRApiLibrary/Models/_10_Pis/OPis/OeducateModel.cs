@@ -1,12 +1,12 @@
 ﻿namespace HRApiLibrary.Models._10_Pis.OPis;
 
-public class OeducateModel
+public class OEducateModel
 {
-    public string? EMPNUMBER { get; set; }
-    public string? CODE { get; set; }
-    public string? SCHOOL { get; set; }
-    public string? FROM_ { get; set; }
-    public string? TO_ { get; set; }
-    public string? COURSE { get; set; }
-    public string? LEVEL { get; set; }
+    public string? EmpNumber    { get; set; }
+    public string? Code         { get; set; }
+    public string? School       { get; set; }
+    public string? From_        { get; set; }
+    public string? To_          { get; set; }
+    public string? Course       { get; set; }
+    public string? Level        { get; set; }
 }
