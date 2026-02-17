@@ -3,11 +3,13 @@ using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._20_Pay;
 using HRApiLibrary.Models._90_Utils;
 using System.Globalization;
+using DocumentFormat.OpenXml.Bibliography;
 
 namespace HRMvc.Applications.Vars;
 
 public class V00_RepVars
 {
+    public bool                         Isloaded        { get; set; } = false; 
     public int                          RefreshToken    { get; set; } = 0;
     public string                       SelectedFormat  { get; set; } = "PDF";
     public string                       RelativePath    { get; set; } = "Reports/_03Payroll/mSample.trdp";
@@ -40,8 +42,7 @@ public class V00_RepVars
     public bool                 ShowModal       { get; set; } = false;  
     public string               MCaption       { get; set; } = "-";  
 
-
-
+    
 
 
     //---------------------------------------------------------------------------------------
