@@ -1,6 +1,94 @@
-﻿@code {
-    
-    [Parameter] public UserClaimsModel Uc { get; set; } = new();  
+﻿@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2103
 
-    V00_RepVars Rv = new();    
+
+
+<_00BT HdrCaption="Employee Status Report" Rv="@rv">
+    <Details>
+        <div class="p-0">
+            <div class="d-flex gap-2 card-header">
+                <_01DDClient Clients="@rv.Clients" ChildAction="ClientChanged" /> 
+                <div @onclick="FetchData" class=" p-2 card mb-cbtn mb-cbtn-gray"> Fetch Data</div>
+                <div @onclick="ShowReport" class=" p-2 card mb-cbtn mb-cbtn-blue @(v.Count>0?"":"disabled-div") "> Show Report</div>
+            </div>
+
+          <_2103_Dtl V2103s="@v"  />  
+
+
+        </div>
+    </Details>
+</_00BT>
+
+@inject IOClientDataAccess      _client; 
+@inject IOPisReportDataAccess   _pisRep; 
+
+@code {
+
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();  
+    V00_RepVars         rv  = new V00_RepVars();  
+    List<V2103Model>    v   = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if(rv.Isloaded) return; 
+        rv.Clients = []; 
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!); 
+        if(res != null ) rv.Clients = res! ; 
+        rv.Isloaded = true; 
+    }
+
+    protected override void OnInitialized()
+    {
+        rv.MCaption = "Employee Status Report";
+        rv.RefreshToken = 21030000;
+        rv.RelativePath = "Reports/_02HR/_2103_ESR.trdp";
+
+    }
+
+    private void ClientChanged(string clno) {
+         rv.ClNumber = clno;  
+         v=[]; 
+    }
+
+    async Task FetchData() {
+        v=[]; 
+        var res = await _pisRep._02Empmas_By_Clnumbers(rv.ClNumber, Uc.OpisDb!, Uc.Conn!); 
+        foreach(var r in res) {
+            V2103Model rec  = new() {
+                EmpNumber   = r?.EmpNumber??"", 
+                EmpName     = r?.EmpName??"", 
+                ClName      = r?.ClName??"", 
+                StatusName  = r?.EmpStatus??"" 
+            };
+            v.Add(rec);  
+        }    
+        
+    }
+
+    async Task ShowReport() {
+        rv.ReportData = v; 
+        rv.ReportParams = []; 
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
+        rv.ReportParams["CoName"]       = "-";
+        rv.ReportParams["CoAddress"]    = "-";
+
+        if (res.Count> 0) {
+            var r = res.FirstOrDefault(); 
+            rv.ReportParams["CoName"]       = r.CoName??"";
+            rv.ReportParams["CoAddress"]    = r.CoAdd??"";
+        }
+
+        rv.ReportParams["RunDate"]      = DateTime.Now;
+        rv.ReportParams["ReportTitle"]  = "Employee Status Report";
+        rv.ReportParams["Status"]       = "Active";
+        
+        rv.ShowModal = true; 
+
+
+
+    }
+
 }
