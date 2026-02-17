@@ -63,8 +63,10 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         if(clnumber=="-")
         {
             string sql = $@"select  CONCAT_WS(' ', NULLIF(TRIM(EmpLastNm),', '), NULLIF(TRIM(EmpFirstNm), ' '), NULLIF(TRIM(EmpMidNm), ' ')) AS EmpName, 
-                                e.*, s.Name EmpStatus from {schema}.Empmas e 
+                                e.*, s.Name EmpStatus, c.ClName  
+                            from {schema}.Empmas e 
                             left join {schema}.EmpStat s on s.Code = e.Empstat_  
+                            left join {schema}.client c on c.ClNumber = e.Client_  
                             where e.Empstat_ in 
                                     (select code from {schema}.EmpStat where isResigned = 0 ) 
                             order by empLastNm, EmpFirstNm ";
@@ -78,11 +80,15 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             where e.Client_ = @Clnumber 
                             order by empLastNm, EmpFirstNm ";
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
-        }
-
-        
+        }  
         return data ?? [];
+    }
 
+    public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
+    {
+        string sql  = $@"select  * from {schema}.Coinfo ";
+        var data    = await _sql.FetchData<OCompanyInfoModel?, dynamic>(sql, new { }, conn);
+        return data??[];
     }
 
 
@@ -154,4 +160,5 @@ public interface IOPisReportDataAccess
     Task<List<OClientModel>>    _02ClientByStatus(string status, string schema, string conn);
     Task<List<OEmpstatModel>>   _02Empstats(string status, string schema, string conn); 
     Task<List<OEmpmasModel>>    _02Empmas_By_Clnumbers(string clnumber, string schema, string conn); 
+    Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn); 
 }
