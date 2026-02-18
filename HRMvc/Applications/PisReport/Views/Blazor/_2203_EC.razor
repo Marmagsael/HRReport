@@ -1,33 +1,130 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
-@using HRApiLibrary.Models._10_Pis.OPis
-@using Microsoft.AspNetCore.Mvc
+@using HRApiLibrary.DataAccess._20_Pay.Report
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2203
 
-<_00BT HdrCaption="Employee Clearance">
-	<Details>
-		<div class="card-header"> 
-			<_01DDClient Clients="clients"/>
-		</div>
+<_00BT HdrCaption="Employee Clearance" rv="@rv" >
+    <Details>
+        <div class="p-0"> 
+            <div class="card-header">
+                <div class="d-flex ">
+                    <_01DDClient Clients="@rv.Clients" ChildAction="ClientChanged" />
+                    <span @onclick="FetchData"> <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray"> Fetch Data </div> </span> 
+                    @if(v.Count > 0) 
+                        { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}
+                     
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <_2203_Dtl V2203="@v" /> 
+        </div>
 
 
-		<div>
-			<button class="btn btn-primary" @onclick="FetchClient">Fetch Client</button>
-		</div>
-	</Details>
 
+
+
+
+
+    </Details>
 </_00BT>
 
-@inject IOClientDataAccess _client;
+@inject IOClientDataAccess      _client; 
+@inject IOPisReportDataAccess   _pisRep; 
+
 
 @code {
-			[Parameter] public UserClaimsModel? Uc { get; set; }
 
-			List<OClientModel> clients = [];
+    [Parameter] public UserClaimsModel  Uc      {get; set; } = new(); 
+    [Parameter] public V00_RepVars      rv      {get; set; } = new(); 
 
-			async Task FetchClient() {
-			var res= await _client._02ByStatuss(status: "Active", Uc.OpisDb!, Uc.Conn!);
-			if (res==null ) clients = [];
-			else clients = res!;
+    List<V2203Model> v = [];
+    bool _loaded = false;
 
-			}
 
-	}
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loaded) return;
+        if (string.IsNullOrEmpty(Uc?.OpisDb) || string.IsNullOrEmpty(Uc?.Conn)) return;
+
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!); 
+        rv.Clients = []; 
+        rv.Clients.Add(new() { ClNumber="-", ClName="Select All----" });
+        if(res.Count > 0 ) { 
+            foreach(var r in res){ rv.Clients.Add(r??new()); } 
+            rv.ClNumber="-"; 
+        }; 
+        _loaded = true;
+
+    }
+
+    protected override void OnInitialized()
+    {
+        rv.RelativePath = "Reports/_02HR/_2203_EC.trdp";
+        rv.RefreshToken = 2203000; 
+        rv.MCaption     = "Employee Clearance Report"; 
+    }
+
+    void ClientChanged(string clno) {
+        rv.ClNumber = clno; 
+        v = []; 
+		Console.WriteLine(clno);
+    }
+
+    int ctr = 0; 
+    async Task FetchData() {
+        v=[]; 
+        var res = await _pisRep._02Empmas_By_Clnumbers(rv.ClNumber, Uc.OpisDb!, Uc.Conn!); 
+        foreach(var r in res) {
+            V2203Model rec  = new() {
+                EmpNumber   = r?.EmpNumber??"", 
+                EmpName     = r?.EmpName??"", 
+                ClName      = r?.ClName??"", 
+                StatusName  = r?.EmpStatus??"",
+				Exp_Brgy    = r?.Exp_Brgy,         
+				Exp_Court 	= r?.Exp_Court,
+				Exp_Drug    = r?.Exp_Drug,           
+				Exp_Nbi     = r?.Exp_Nbi,           
+				Exp_Neuro   = r?.Exp_Neuro,          
+				Exp_Pnp     = r?.Exp_Pnp,         
+				Exp_Police  = r?.Exp_Police,          
+				ExpMed		= r?.ExpMed
+
+            };
+            v.Add(rec);  
+        }    
+        
+    }
+
+    async Task CreateReport()
+    {
+      rv.ReportData = v; 
+		rv.ReportParams = []; 
+
+		var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
+		rv.ReportParams["CoName"]       = "-";
+		rv.ReportParams["CoAddress"]    = "-";
+
+		if (res.Count> 0) {
+			var r = res.FirstOrDefault(); 
+			rv.ReportParams["CoName"]       = r.CoName??"";
+			rv.ReportParams["CoAddress"]    = r.CoAdd??"";
+		}
+
+		rv.ReportParams["RunDate"]      = DateTime.Now;
+		rv.ReportParams["ReportTitle"]  = "Employee Clearance Report";
+		rv.ReportParams["Status"]       = "Active";
+		
+		rv.ShowModal = true;
+        
+
+
+        
+    }
+
+
+}
+ 
