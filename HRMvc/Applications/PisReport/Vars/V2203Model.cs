@@ -8,6 +8,7 @@ public class V2203Model
     public string? EmpName                  { get; set; } ="";
     public string? StatusName               { get; set; } ="";
     public string? ClName                   { get; set; } ="";
+    public string? Client_                   { get; set; } ="";
     public DateTime? Exp_Brgy               { get; set; } 
     public DateTime? Exp_Court              { get; set; }
     public DateTime? Exp_Drug               { get; set; }
