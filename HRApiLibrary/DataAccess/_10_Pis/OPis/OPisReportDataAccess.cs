@@ -83,6 +83,27 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         }  
         return data ?? [];
     }
+     public async Task<List<OEmpmasModel>> _02Empmas_By_Status_And_DateRange(string empstat, string startdate, string endDate, string schema, string conn)
+    {
+
+        await _03Empmas_Remove_0_Dates(schema, conn);
+
+        string mstartDate = startdate;
+        string mendDate   = endDate;
+
+        List<OEmpmasModel> data = [];
+    
+            string sql = $@"select  CONCAT_WS(' ', NULLIF(TRIM(EmpLastNm),', '), NULLIF(TRIM(EmpFirstNm), ' '), NULLIF(TRIM(EmpMidNm), ' ')) AS EmpName, 
+                                e.*, s.Name EmpStatus from {schema}.Empmas e 
+                            left join {schema}.EmpStat s on s.Code = e.Empstat_  
+                            where e.empstat_ = @Empstat and e.movdate between @StartDate and @EndDate
+                            order by empLastNm, EmpFirstNm ";
+
+            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Empstat = empstat, StartDate = mstartDate, EndDate = mendDate, }, conn);
+        
+        return data ?? [];
+    }
+    
 
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
     {
@@ -159,6 +180,7 @@ public interface IOPisReportDataAccess
     Task<List<OClientModel>>    _02Client(string schema, string conn);
     Task<List<OClientModel>>    _02ClientByStatus(string status, string schema, string conn);
     Task<List<OEmpstatModel>>   _02Empstats(string status, string schema, string conn); 
-    Task<List<OEmpmasModel>>    _02Empmas_By_Clnumbers(string clnumber, string schema, string conn); 
+    Task<List<OEmpmasModel>>    _02Empmas_By_Clnumbers(string clnumber, string schema, string conn);
+    Task<List<OEmpmasModel>>   _02Empmas_By_Status_And_DateRange(string empstat, string startdate, string endDate, string schema, string conn); 
     Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn); 
 }

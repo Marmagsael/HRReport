@@ -9,6 +9,9 @@ namespace HRMvc.Applications.Vars;
 
 public class V00_RepVars
 {
+
+    public DateTime                     StartDate       { get; set; }
+    public DateTime                     EndDate         { get; set; }
     public bool                         Isloaded        { get; set; } = false; 
     public int                          RefreshToken    { get; set; } = 0;
     public string                       SelectedFormat  { get; set; } = "PDF";
