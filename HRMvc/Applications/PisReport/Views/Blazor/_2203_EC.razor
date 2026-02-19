@@ -11,8 +11,7 @@
                     <_01DDClient Clients="@rv.Clients" ChildAction="ClientChanged" />
                     <span @onclick="FetchData"> <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray"> Fetch Data </div> </span> 
                     @if(v.Count > 0) 
-                        { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}
-                     
+                        { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}                   
                 </div>
             </div>
         </div>
@@ -20,34 +19,21 @@
         <div>
             <_2203_Dtl V2203="@v" /> 
         </div>
-
-
-
-
-
-
-
     </Details>
 </_00BT>
 
 @inject IOClientDataAccess      _client; 
 @inject IOPisReportDataAccess   _pisRep; 
 
-
 @code {
 
     [Parameter] public UserClaimsModel  Uc      {get; set; } = new(); 
     [Parameter] public V00_RepVars      rv      {get; set; } = new(); 
-
     List<V2203Model> v = [];
-    bool _loaded = false;
-
-
-
-
+    
     protected override async Task OnParametersSetAsync()
     {
-        if (_loaded) return;
+        if (rv.Isloaded) return;
         if (string.IsNullOrEmpty(Uc?.OpisDb) || string.IsNullOrEmpty(Uc?.Conn)) return;
 
         var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!); 
@@ -57,8 +43,7 @@
             foreach(var r in res){ rv.Clients.Add(r??new()); } 
             rv.ClNumber="-"; 
         }; 
-        _loaded = true;
-
+        rv.Isloaded = true;
     }
 
     protected override void OnInitialized()
@@ -71,10 +56,9 @@
     void ClientChanged(string clno) {
         rv.ClNumber = clno; 
         v = []; 
-		Console.WriteLine(clno);
     }
 
-    int ctr = 0; 
+ 
     async Task FetchData() {
         v=[]; 
         var res = await _pisRep._02Empmas_By_Clnumbers(rv.ClNumber, Uc.OpisDb!, Uc.Conn!); 
@@ -82,7 +66,8 @@
             V2203Model rec  = new() {
                 EmpNumber   = r?.EmpNumber??"", 
                 EmpName     = r?.EmpName??"", 
-                ClName      = r?.ClName??"", 
+                ClName      = r?.ClName??"",
+                Client_      = r?.Client_??"",
                 StatusName  = r?.EmpStatus??"",
 				Exp_Brgy    = r?.Exp_Brgy,         
 				Exp_Court 	= r?.Exp_Court,
@@ -92,16 +77,14 @@
 				Exp_Pnp     = r?.Exp_Pnp,         
 				Exp_Police  = r?.Exp_Police,          
 				ExpMed		= r?.ExpMed
-
             };
             v.Add(rec);  
-        }    
-        
+        }     
     }
 
     async Task CreateReport()
     {
-      rv.ReportData = v; 
+        rv.ReportData = v; 
 		rv.ReportParams = []; 
 
 		var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
@@ -118,13 +101,7 @@
 		rv.ReportParams["ReportTitle"]  = "Employee Clearance Report";
 		rv.ReportParams["Status"]       = "Active";
 		
-		rv.ShowModal = true;
-        
-
-
-        
+		rv.ShowModal = true;      
     }
-
-
 }
  
