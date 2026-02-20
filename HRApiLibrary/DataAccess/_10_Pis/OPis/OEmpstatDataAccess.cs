@@ -29,6 +29,13 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
         var data = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, new { Code = code }, conn);
         return data;
     }
+    
+    public async Task<List<OEmpstatModel?>?> _02s(string schema, string conn)
+    {
+        string sql = $@"select  *  from {schema}.Empstat order by Name ";
+        var data = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, new {  }, conn);
+        return data;
+    }
 
 
     public async Task<OEmpstatModel?> _03(OEmpstatModel empstat, string schema, string conn)
@@ -60,6 +67,8 @@ public interface IOEmpstatDataAccess
 {
     Task<OEmpstatModel?> _01(OEmpstatModel empstat, string schema, string conn);
     Task<List<OEmpstatModel?>?> _02ByCodes(string code, string schema, string conn);
+    Task<List<OEmpstatModel?>?> _02s(string schema, string conn); 
     Task<OEmpstatModel?> _03(OEmpstatModel empstat, string schema, string conn);
     Task _04(string code, string schema, string conn);
+    
 }
