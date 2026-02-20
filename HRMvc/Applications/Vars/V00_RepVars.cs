@@ -48,7 +48,8 @@ public class V00_RepVars
 
     //--- Modal Details ----------------------------------------------
     public bool                 ShowModal       { get; set; } = false;  
-    public string               MCaption       { get; set; } = "-";  
+    public bool                 ShowReport      { get; set; } = false;  
+    public string               MCaption        { get; set; } = "-";  
 
     
 
