@@ -1,0 +1,222 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@{ var hdr = ts.AttReqhdr??new(); }
+
+<div class="d-flex gap-1 p-1 border-bottom ">
+    <div class="p-1 mb-cbtn mb-cbtn-gray card w-75p ">New </div>
+    <div @onclick="SaveHdr" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSave ? "" : "disabled-div") "> Save </div>
+    <div @onclick="Send" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSend ? "" : " disabled-div ") "> Send For Approval </div>
+    <div class="p-1 mb-cbtn mb-cbtn-red card w-100p @(hdr.Status=="S" ? "" : " disabled-div ")"> Cancel </div>
+</div>
+
+
+
+@* --- Header Content  *@
+<div class="p-2 border-bottom">
+    <div class="p-0 d-flex justify-content-between ">
+        <div class="d-flex p-1">
+            <div class="w-120p p-2">Control No.</div>
+            <div class="w-175p border-bottom fw-bold text-center p-2 text-primary "> 
+                @(ts.AttReqhdr.Id < 1 ? "-" : ts.AttReqhdr.Id) 
+            </div>
+        </div>
+        
+        <div class="d-flex p-1">
+            <div class="w-75p p-2">Status</div>
+            <div class="w-175p   text-start p-2 text-primary "> 
+                @(ts.AttReqhdr.Status switch {"N" => "New", "S" => "Saved", "F" => "For Approval", "A" => "Approved", _ => "Unknown" } )
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-a-blue d-flex p-1 ">
+        <div class="w-120p p-2">Date</div>
+        <RadzenDatePicker @bind-Value="ts.AttReqhdr.DateRequested" 
+            DateFormat="MM/dd/yyyy"
+            AllowInput="false"
+            class="mb-date-accent w-150p" />
+    </div>
+
+    <div class="mb-a-blue d-flex p-1">
+        <div class="w-120p p-2">Coverage</div>
+        <div >
+            <RadzenDatePicker 
+                @bind-Value="ts.AttReqhdr.CovStart" 
+                DateFormat="MM/dd/yyyy"
+                AllowInput="false"
+                class="mb-date-accent w-150p" />
+        </div>
+        <div class=" p-2"> - </div>
+        <div >
+            <RadzenDatePicker 
+                @bind-Value="ts.AttReqhdr.CovEnd" 
+                DateFormat="MM/dd/yyyy"
+                AllowInput="false"
+                class="mb-date-accent w-150p" />
+        </div>    
+    </div>
+
+    <div class="d-flex p-1">
+        <div class="w-120p p-2"> Approver </div>
+        <div class="mb-a-blue w-150p "> 
+            <RadzenTextBox 
+                @bind-Value="ts.AttReqhdr.EmpNumber_Approver"
+                Change="FetchApprover"
+                MaxLength="5"
+                class="mb-input-accent"
+                Style="width: 100%;" />
+        </div>
+        
+        <div class="mb-a-blue  flex-grow-1 ms-2 "> 
+            <RadzenTextBox 
+                @bind-Value="ts.AttReqhdr.ApproverName"
+                Disabled
+                class="mb-input-accent"
+                Style="width: 100%;" />
+        </div>
+
+    </div>
+    
+    <div class="d-flex">
+        <div class="w-120p p-2"> Remarks </div>
+        <div class=" flex-grow-1 p-1 "> 
+            <RadzenTextArea 
+                @bind-Value="ts.AttReqhdr.Remarks"
+                MaxLength="120"
+                Rows="3"
+                class="mb-input-accent"
+                Style="width:100%;" />
+        </div>
+    </div>
+
+</div>
+
+@* --- Detail Content  *@
+@* <div class=" w-100 @(CanEditDtls ? "" : " disabled-div ")"> *@
+<div class=" w-100 ">
+    <div class="w-100 p-1 border-bottom">
+        <div @onclick="AddEntry" class="mb-cbtn mb-cbtn-blue p-1 card w-125p">
+            Add Entry
+        </div>
+    </div>
+    @* --- Header --------------------------------------- *@
+    <div class="d-flex gap-2 p-1 border-bottom">
+        <div class="w-190p p-1">Date Start</div>
+        <div class="w-190p p-1">Date End</div>
+        <div class="w-100p p-1 text-center">Hours </div>
+    </div>
+
+    @foreach(var dtl in ts.AttReqdtls) {
+        <div class="d-flex gap-2 p-1">
+            <div class="w-190p p-1 mb-a-blue">
+                <RadzenDatePicker @bind-Value="dtl.DStart" 
+                    DateFormat="MM/dd/yyyy HH:mm"
+                    ShowTime 
+                    AllowInput="false"
+                    class="mb-date-accent w-100" />
+            </div>
+            <div class="w-190p p-1 mb-a-blue">
+                <RadzenDatePicker @bind-Value="dtl.DEnd" 
+                    DateFormat="MM/dd/yyyy HH:mm"
+                    ShowTime 
+                    AllowInput="false"
+                    class="mb-date-accent w-100" />
+            </div>
+            <div class="w-100p p-2 text-center ">
+                @ComputeHours(dtl).ToString("N2")
+            </div>
+            
+            <div class="w-100p p-2 ">
+                <div class=" w-100p mb-cbtn mb-cbtn-red p-1 card ">
+                    Remove
+                </div>
+            </div>
+
+        </div>
+    }
+    
+
+
+</div>
+
+
+
+
+
+@inject IOEmpmasDataAccess      _empmas; 
+@inject IAttreqhdrDataAccess    _attreqhdr; 
+
+@code {
+    [Parameter] public UserClaimsModel?         Uc  { get; set; } = new();
+
+    V12_102TS   ts = new(); 
+
+
+    async Task SaveHdr()
+    { 
+        ts.AttReqhdr.Status = "S"; 
+        if(ts.AttReqhdr.Id > 0) {
+            var res = await _attreqhdr._03(ts.AttReqhdr.Id, ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+            ts.AttReqhdr = res; 
+        } else {
+            ts.AttReqhdr.UserId         = Uc.UserId; 
+            ts.AttReqhdr.AttReqTypeId   = 3; 
+            ts.AttReqhdr.EmpNumber      = Uc.OempNumber; 
+            var res     = await _attreqhdr._01(ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+            ts.AttReqhdr                = res; 
+        }  
+        await FetchApprover(); 
+
+    }
+    void AddEntry()
+    {
+        ts.AttReqdtls.Add(new(){
+            AttReqHdrId =ts.AttReqhdr.Id, 
+            AttReqTypeId=ts.AttReqhdr.AttReqTypeId, 
+            DStart      = DateTime.Now, 
+            DEnd        = DateTime.Now }); 
+    }
+    async Task Send()
+    {
+        
+        var res = await _attreqhdr._03SendForApproval(ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+         ts.AttReqhdr           = res; 
+        await FetchApprover(); 
+    }
+    
+
+    async Task FetchApprover()
+    {
+        ts.AttReqhdr.ApproverName = "";
+        if (string.IsNullOrWhiteSpace(ts.AttReqhdr.EmpNumber_Approver)) return;
+        var res = await _empmas._02(ts.AttReqhdr.EmpNumber_Approver,  Uc.OpisDb,  Uc.Conn);
+        var emp = res.FirstOrDefault();
+        if (emp != null) { ts.AttReqhdr.ApproverName = emp.EmpName ?? ""; }
+    }
+    
+    
+    double ComputeHours(AttreqdtlModel dtl)
+    {
+        if (dtl.DStart == default || dtl.DEnd == default || dtl.DEnd <= dtl.DStart) return 0;
+        return (dtl.DEnd - dtl.DStart).TotalHours;
+    }
+
+    AttreqhdrModel hdr => ts.AttReqhdr ??= new AttreqhdrModel();
+    bool CanSave => hdr.Status is "S" or "N" && 
+                    !string.IsNullOrWhiteSpace(hdr.ApproverName) && 
+                    hdr.DateRequested   != default && 
+                    hdr.CovStart        != default && 
+                    hdr.CovEnd          != default;
+
+    bool CanSend => hdr.Status is "S" && 
+                    !string.IsNullOrWhiteSpace(hdr.ApproverName) && 
+                    hdr.DateRequested   != default && 
+                    hdr.CovStart        != default && 
+                    hdr.CovEnd          != default;
+
+    bool CanEditDtls => hdr.Status is "S" ; 
+
+
+    
+
+
+}
