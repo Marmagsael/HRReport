@@ -107,6 +107,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _01AttenanceTemplate(schema, connName);
         await _01AttendanceType(schema, connName);
         await _01AttendanceDutyType(schema, connName);
+        await _01AttReq(schema, connName);
         await _01RCivStat(schema, connName);
         await _01RCoInfoPH(schema, connName);
         await _01RCollege(schema, connName);
@@ -542,6 +543,73 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                         PRIMARY KEY (EmpmasId, Month, year)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { });
     }
+    
+    private async Task _01AttReq(string schema, string connName)
+    {
+
+        
+        string sql = @$"CREATE TABLE if not exists  {schema}.AttReqHdr (
+                            Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            UserId              INTEGER UNSIGNED,
+                            EmpNumber           CHAR(5),
+                            DateRequested       DATETIME,
+                            CovStart            DateTime, 
+                            CovEnd              DateTime, 
+                            AttReqTypeId        INTEGER UNSIGNED NOT NULL,
+                            Remarks             VARCHAR(120),
+                            Status              char(1),
+                            EmpNumber_Approver  Char(5),
+                            TotHrs              Double(6,2) default 0 , 
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB;
+
+                        CREATE TABLE if not exists  {schema}.AttReqDtl (
+                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            AttReqHdrId     INTEGER UNSIGNED NOT NULL,
+                            DStart          DATETIME,
+                            DEnd            DATETIME,
+                            TotHrs          DOUBLE(6,2),
+                            AttReqTypeId    INTEGER UNSIGNED NOT NULL,
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; 
+                        
+                        CREATE TABLE if not exists  {schema}.AttReqType (
+                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            Code            Char(5),
+                            Category        Char(10),
+                            Name            VARCHAR(45),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; 
+
+                        CREATE TABLE if not exists  {schema}.AttReqHist (
+                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            AttReqHdrId     INTEGER UNSIGNED NOT NULL,
+                            DActionTaken    DATETIME,
+                            SetStatusTo     Char(1),
+                            Remarks         VARCHAR(120),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; ";
+        await _sql.ExecuteCmd(sql, new { });
+
+        sql = @$"select * from {schema}.AttReqType limit 1 ";
+        var res = await _sql.FetchData<PositionModel, dynamic>(sql, new { }, connName);
+        if (res == null || res.Count == 0)
+        {
+            sql = $@"insert into {schema}.AttReqType 
+                            (Code,  Category,       Name) values 
+                            ('PI',  'Attendance',   'Punch-In'), 
+                            ('PO',  'Attendance',   'Punch-Out'),
+                            ('PIO', 'Attendance',   'Punch-In/Punch-Out'), 
+                            ('OT',  'Attendance',   'Overtime'),
+                            ('OL',  'Attendance',   'Over-Load'),
+                            ('OB',  'OB',           'Business Trip'),
+                            ('SIL', 'Leave',        'Service Incentive Leave'),
+                            ('VL',  'Leave',        'Vacation Leave'),
+                            ('SL',  'Leave',        'Sick Leave'),
+                            ('ML',  'Leave',        'Maternity Leave'),
+                            ('PL',  'Leave',        'Paternity Leave')
+                            ";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+    }
+
+
 
     private async Task _01EmpMovement(string schema, string connName)
     {

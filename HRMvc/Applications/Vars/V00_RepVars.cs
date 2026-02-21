@@ -3,45 +3,55 @@ using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._20_Pay;
 using HRApiLibrary.Models._90_Utils;
 using System.Globalization;
+using DocumentFormat.OpenXml.Bibliography;
 
 namespace HRMvc.Applications.Vars;
 
 public class V00_RepVars
 {
-    public int                          RefreshToken    { get; set; } = 0;
-    public string                       SelectedFormat  { get; set; } = "PDF";
-    public string                       RelativePath    { get; set; } = "Reports/_03Payroll/mSample.trdp";
-    public IEnumerable<object>         ReportData       { get; set; } = [];
+    public bool                         Isloaded                { get; set; } = false; 
+    public int                          RefreshToken            { get; set; } = 0;
+    public string                       SelectedFormat          { get; set; } = "PDF";
+    public string                       RelativePath            { get; set; } = "Reports/_03Payroll/mSample.trdp";
+    public IEnumerable<object>          ReportData              { get; set; } = [];
 
-    public Dictionary<string, object>   ReportParams    { get; set; } = new()
+    public Dictionary<string, object>   ReportParams            { get; set; } = new()
     {
         ["CoName"]     = "Morpheusbox Inc.",
         ["pPrintedBy"] = "SYSTEM",
         ["pPrintDate"] = DateTime.Now
     };
+    public List<string>                 ReportFormats           { get; set; } = ["PDF","XLSX"]; 
+        
+    
 
     //--------------------------------------------------------------------------------------
-    public int    Year   { get; set; } = DateTime.Now.Year;
-    public string Month  { get; set; } = DateTime.Now.ToString("MM");
-    public string Period { get; set; } = DateTime.Now.Day <= 15 ? "01" : "02";
+    public int                  Year            { get; set; } = DateTime.Now.Year;
+    public string               Month           { get; set; } = DateTime.Now.ToString("MM");
+    public string               Period          { get; set; } = DateTime.Now.Day <= 15 ? "01" : "02";
+    public DateTime?            DStart          { get; set; } 
+    public DateTime?            DEnd            { get; set; } 
+
 
     //---------------------------------------------------------------------------------------
     // ✅ Integrated defaults
-    public List<YearsModel>  Years   { get; set; } = GetDefaultYears();
-    public List<MonthsModel> Months  { get; set; } = GetDefaultMonths();
-    public List<PeriodModel> Periods { get; set; } = GetDefaultPeriods();
+    public List<YearsModel>     Years           { get; set; } = GetDefaultYears();
+    public List<MonthsModel>    Months          { get; set; } = GetDefaultMonths();
+    public List<PeriodModel>    Periods         { get; set; } = GetDefaultPeriods();
 
     //---------------------------------------------------------------------------------------
     public string               ClNumber        { get; set; } = "";
     public List<OClientModel>   Clients         { get; set; } = [];
-    
+    public string               Empstat_        { get; set; } = "";
+    public List<OEmpstatModel>  Empstats       { get; set; } = [];
+
 
     //--- Modal Details ----------------------------------------------
     public bool                 ShowModal       { get; set; } = false;  
-    public string               MCaption       { get; set; } = "-";  
+    public bool                 ShowReport      { get; set; } = false;  
+    public string               MCaption        { get; set; } = "-";  
 
-
-
+    
 
 
     //---------------------------------------------------------------------------------------
