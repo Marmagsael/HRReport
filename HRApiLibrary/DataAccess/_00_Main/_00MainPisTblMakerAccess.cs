@@ -558,7 +558,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             AttReqTypeId        INTEGER UNSIGNED NOT NULL,
                             Remarks             VARCHAR(120),
                             Status              char(1),
-                            UserId_FApprover    INTEGER UNSIGNED,
+                            EmpNumber_Approver  Char(5),
                             TotHrs              Double(6,2) default 0 , 
                             PRIMARY KEY (`Id`) ) ENGINE = InnoDB;
 

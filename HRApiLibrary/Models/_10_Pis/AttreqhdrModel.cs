@@ -10,7 +10,10 @@ public class AttreqhdrModel
 	public 	DateTime		CovEnd 				{get; set; } 
 	public 	int 			AttReqTypeId 		{get; set; } 
 	public 	string?			Remarks 			{get; set; } 
-	public 	string?			Status 				{get; set; } 
+	public 	string?			Status 				{get; set; } = "N"; 
 	public 	double			TotHrs 				{get; set; } = 0; 
-	public 	int 			UserId_FApprover 	{get; set; } 
+	public 	string? 		EmpNumber_Approver 	{get; set; } = "";
+
+	// --- Others -----------------------------------------------------
+	public string? 			ApproverName 		{ get; set; } = string.Empty; 
 }
