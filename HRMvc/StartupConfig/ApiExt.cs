@@ -104,6 +104,10 @@ public static class ApiExt
         builder.Services.AddScoped<IParaDataAccess, ParaDataAccess>();
         builder.Services.AddScoped<IDesignationDataAccess, DesignationDataAccess>();
         builder.Services.AddScoped<IPenaltyDataAccess, RpenaltyDataAccess>();
+        builder.Services.AddScoped<IAttreqtypeDataAccess, AttreqtypeDataAccess>();
+        builder.Services.AddScoped<IAttreqhistDataAccess, AttreqhistDataAccess>();
+        builder.Services.AddScoped<IAttreqhdrDataAccess, AttreqhdrDataAccess>();
+        builder.Services.AddScoped<IAttreqdtlDataAccess, AttreqdtlDataAccess>();
 
         builder.Services.AddScoped<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
         builder.Services.AddScoped<DA222>();
