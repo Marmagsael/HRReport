@@ -11,10 +11,21 @@
             <div class="d-flex gap-2 card-header">
                 <_01DDClient Clients="@rv.Clients" ChildAction="ClientChanged" /> 
                 <div @onclick="FetchData" class=" p-2 card mb-cbtn mb-cbtn-gray"> Fetch Data</div>
-                <div @onclick="ShowReport" class=" p-2 card mb-cbtn mb-cbtn-blue @(v.Count>0?"":"disabled-div") "> Show Report</div>
+                <div @onclick="ShowReport" class=" p-2 card mb-cbtn mb-cbtn-blue @(v.RepDtls.Count>0?"":"disabled-div") "> Show Report</div>
             </div>
 
-          <_2103_Dtl V2103s="@v"  />  
+
+          <div class="d-flex">
+                <div class="w-250p">
+                    <_2103_ClientList Clients="@rv.Clients" />
+                </div>
+
+                <div>
+                    <_2103_Dtl V2103s="@v.RepDtls"  />
+                </div>
+          </div>  
+
+            
 
 
         </div>
@@ -28,7 +39,7 @@
 
     [Parameter] public UserClaimsModel Uc { get; set; } = new();  
     V00_RepVars         rv  = new V00_RepVars();  
-    List<V2103Model>    v   = [];
+    V2103Model          v   = new();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -49,26 +60,26 @@
 
     private void ClientChanged(string clno) {
          rv.ClNumber = clno;  
-         v=[]; 
+         v.RepDtls=[]; 
     }
 
     async Task FetchData() {
-        v=[]; 
+        v.RepDtls=[]; 
         var res = await _pisRep._02Empmas_By_Clnumbers(rv.ClNumber, Uc.OpisDb!, Uc.Conn!); 
         foreach(var r in res) {
-            V2103Model rec  = new() {
+            R2103Model rec  = new() {
                 EmpNumber   = r?.EmpNumber??"", 
                 EmpName     = r?.EmpName??"", 
                 ClName      = r?.ClName??"", 
                 StatusName  = r?.EmpStatus??"" 
             };
-            v.Add(rec);  
+            v.RepDtls.Add(rec);  
         }    
         
     }
 
     async Task ShowReport() {
-        rv.ReportData = v; 
+        rv.ReportData = v.RepDtls; 
         rv.ReportParams = []; 
 
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 

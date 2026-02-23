@@ -1,0 +1,100 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2103
+<_00BT HdrCaption="Employee Status Report">
+    <Details>
+
+        @if(v.Empmass.Any()) { <_2103_Report Rv="rv" V2103="@v" ChildAction="ChildActionCatcher"  />  }
+
+
+
+        @* --- Button -------------------------------------- *@
+        <div class="w-100 p-2 border-bottom"> <div @onclick="FetchData" class="mb-cbtn mb-cbtn-gray p-2 card w-150p">Fetch Data</div> </div>
+        @* --- Error Message -------------------------------------- *@
+        @if(v.Msg.Length > 0 ) {<div class="text-danger ms-2 p-2 "> @v.Msg </div>}
+        @* --- Variable Selection -------------------------------------- *@
+        <div class="d-flex p-0">
+            <div class="w-50 "> <_2103_ClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
+            <div class="w-50 "> <_2103_StatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" />  </div>
+        </div>
+            
+
+
+            
+
+
+
+    </Details>
+</_00BT>
+
+
+@inject IOClientDataAccess      _client; 
+@inject IOEmpstatDataAccess     _empstat; 
+@inject IOPisReportDataAccess   _pis; 
+
+
+
+@code {
+    [Parameter] public UserClaimsModel Uc   {get; set; } = new();
+
+    V00_RepVars rv      = new();
+    V2103Model  v       = new(); 
+
+
+
+
+    async Task FetchData() {
+        v.Msg       = ""; 
+        v.Empmass   = []; 
+
+        List<string?> clNumbers = rv.Clients
+                                    .Where(c=> c.IsSelectedB )
+                                    .Select(c => c.ClNumber)
+                                    .ToList(); 
+        if(!clNumbers.Any())    { v.Msg = "Please select at least one payroll group to proceed. "; return; }
+        
+        List<string?> empstatuss = rv.Empstats
+                                    .Where(e=> e.IsSelectedB )
+                                    .Select(e => e.Code)
+                                    .ToList();
+        if(!empstatuss.Any())   { v.Msg = "Please select at least one status to proceed. "; return; }
+
+        var res = await _pis._02ByClNumbersByStatus(clNumbers!, empstatuss!, Uc.OpisDb!, Uc.Conn!); 
+        if(res.Any()) { v.Empmass = res;  rv.ShowModal =true; }
+
+
+    }
+
+    void ChildActionCatcher() { v.Msg = ""; }
+    void CloseReportModal(bool ans) { rv.ShowModal = ans;  }
+
+    void OnClientChanged(OClientModel c)
+    {
+        Console.WriteLine($"Checkbox changed: {c.IsSelectedB}");
+    }
+
+
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        rv.Clients = []; 
+        rv.Empstats = []; 
+
+        @* --- Payroll Group ------------------------------------------- *@
+        var res = await _client._02ByStatuss("Active",Uc.OpisDb!, Uc.Conn!); 
+        if(res.Count > 0 ) { rv.Clients = res!;  }
+        
+        @* --- Employee Status ------------------------------------------- *@
+        var res1 = await _empstat._02s(Uc.OpisDb!, Uc.Conn!); 
+        if(res1.Count > 0 ) { rv.Empstats = res1!;  }
+        
+
+    }
+}

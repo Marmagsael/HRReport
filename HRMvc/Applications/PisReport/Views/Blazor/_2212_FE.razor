@@ -1,53 +1,80 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
-@using HRApiLibrary.DataAccess._20_Pay.Report
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2212
-
-<_00BT HdrCaption="Floating Employees" rv="@rv" >
+<_00BT HdrCaption="Floating Employees">
     <Details>
         <div class="p-0"> 
             <div class="card-header">
-                <div class="d-flex ">
-                    <span @onclick="FetchData"> <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray"> Fetch Data </div> </span> 
-                    @* @if(v.Count > 0) { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}                    *@
+                <div class="d-flex">
+
+                    <div>
+                        Start<InputDate @bind-Value="rv.DStart" class="form-control" /><hr>
+                        End<InputDate @bind-Value="rv.DEnd" class="form-control" />
+                    </div>
+
+                    <span @onclick="FetchData">
+                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray">
+                            Fetch Data
+                        </div>
+                    </span>
+                    @if(v.Count > 0) 
+                        { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}                   
+
                 </div>
             </div>
         </div>
-
         <div>
-            @* <_2203_Dtl V2203="@v" />  *@
-            <_2212_Dtl V2212="@v" />
+            <_2212_Dtl V="@v"/>
         </div>
+    
     </Details>
 </_00BT>
-
-@inject IOClientDataAccess      _client; 
-@inject IOPisReportDataAccess   _pisRep; 
-
+@inject IOPisReportDataAccess _pisrep;
 @code {
-
-    [Parameter] public UserClaimsModel  Uc      {get; set; } = new(); 
-    [Parameter] public V00_RepVars      rv      {get; set; } = new(); 
-
-    List<V2212Model> v = [];
-    private async Task FetchData(){
+    [Parameter]public UserClaimsModel Uc {get; set;} = new();
+    V00_RepVars rv {get; set;} = new();
+    List<V2212Model> v {get; set;} = [];
+    async Task FetchData(){
         v = [];
-        var status = "B";
-        var StartDate = new DateTime(2025,02,19).ToString("yyyy-MM-dd");
-        var EndDate = new DateTime(2026,02,19).ToString("yyyy-MM-dd");
-        var res = await _pisRep._02Empmas_By_Status_And_DateRange(status,StartDate,EndDate,Uc.OpisDb!,Uc.Conn!);
-        if(res.Count > 0){
-        foreach(var r in res) {
-     
-     V2212Model rec  = new() {
-         EmpNumber   = r?.EmpNumber??"", 
-         EmpName     = r?.EmpName??"",
-         ClName     = r?.ClName??"", 
-         MovDate     = r?.MovDate,
-         Remarks     = r?.Remarks??""
-     };
-     v.Add(rec);  
- }
+        string? empstat = "B";
+        string dstart = rv.DStart?.ToString("yyyy-MM-dd") ?? "";
+        string dend   = rv.DEnd?.ToString("yyyy-MM-dd") ?? "";
+        
+        var res = await _pisrep._02Empmas_By_Status_And_DateRange(empstat,dstart,dend,Uc.OpisDb!,Uc.Conn!);
+        Console.WriteLine(dstart);
+        Console.WriteLine(dend);
+        if(res.Any()){
+            foreach(var f in res){
+                V2212Model rec = new(){
+                    EmpNumber   = f.EmpNumber,   
+                    EmpName     = f.EmpName,      
+                    MovDate     = f.MovDate,    
+                    ClName      = f.ClName,      
+                    Remarks     = f.Remarks, 
+                };
+                v.Add(rec);
+            }         
         }
+    }
+    async Task CreateReport()
+    {
+        rv.ReportData = v; 
+		rv.ReportParams = []; 
+
+		var res = await _pisrep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
+		rv.ReportParams["CoName"]       = "-";
+		rv.ReportParams["CoAddress"]    = "-";
+
+		if (res.Count> 0) {
+			var r = res.FirstOrDefault(); 
+			rv.ReportParams["CoName"]       = r.CoName??"";
+			rv.ReportParams["CoAddress"]    = r.CoAdd??"";
+		}
+
+		rv.ReportParams["RunDate"]      = DateTime.Now;
+		rv.ReportParams["ReportTitle"]  = "Floating Employees";
+		rv.ReportParams["Status"]       = "Active";
+		
+		rv.ShowModal = true;      
     }
 }
