@@ -579,11 +579,12 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             PRIMARY KEY (`Id`) ) ENGINE = InnoDB; 
 
                         CREATE TABLE if not exists  {schema}.AttReqHist (
-                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-                            AttReqHdrId     INTEGER UNSIGNED NOT NULL,
-                            DActionTaken    DATETIME,
-                            SetStatusTo     Char(1),
-                            Remarks         VARCHAR(120),
+                            Id                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            AttReqHdrId             INTEGER UNSIGNED NOT NULL,
+                            DActionTaken            DATETIME,
+                            SetStatusTo             Char(1),
+                            Empnumber_Approver      Char(5),
+                            Remarks                 VARCHAR(120),
                             PRIMARY KEY (`Id`) ) ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { });
 
