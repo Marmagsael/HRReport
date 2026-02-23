@@ -1,0 +1,125 @@
+@using Blazorise
+@* --- Request Details ----------------------------------- *@
+<div class="card w-100 p-0">
+    @* --- Header ----------------------- *@
+    <div class="d-flex p-1 fw-bold card-header small  ">
+        <div class="w-75p text-center">     Trn No.             </div>
+        <div class="w-100p ">    Requested           </div>
+        <div class="w-100p ">    Status              </div>
+        <div class="w-250p ">    Current Approver    </div>
+        <div class="flex-grow-1">Remarks            </div>
+        
+    </div>
+    
+    @* --- Empty Request ------------------------------ *@
+    @if(!Attreqhdrs.Any()) 
+    { 
+        <div class="d-flex justify-content-center align-items-center h-100p p-4">
+            <div class="text-danger text-center">
+                <h5>
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </h5>
+            </div>
+        </div> 
+    }
+    
+    @* --- Details ----------------------- *@
+    @{int i = 0; }
+    @foreach(var d in Attreqhdrs) {
+        i++; 
+        var rowClass = (i % 2 == 0) ? "bg-light" : "";
+        <div @onclick="()=>PickData(d)" class="d-flex p-1 small cur-pointer @rowClass text-start ">
+            <div class="w-75p text-center">@d.Id</div>
+            <div class="w-100p">@d.DateRequested.ToShortDateString()</div>
+            <div class="w-100p @GetStatusClass(d.Status) ">@GetStatus(d.Status)</div>
+            <div class="w-250p">@d.ApproverName</div>
+            <div class="flex-grow-1 text-start">@d.Remarks</div>
+        </div>
+    }
+</div>
+
+
+
+
+@* --- Request Hostory ----------------------------------- *@
+@if(attreqhdr.Id > 0)
+{
+    <div class="w-100 p-2 border-bottom">
+        <div @onclick="LoadRequest" class="mb-cbtn mb-cbtn-gray p-1 card w-125p">
+            Load Request 
+        </div>
+    </div>
+
+
+    <div class="card w-100 p-0 mt-3">
+
+        <div class="card-header text-white bg-black p-1 "> Request History </div>
+    @* --- Header ----------------------- *@
+    <div class="d-flex p-2 fw-bold card-header small  ">
+        <div class="w-200p text-center"> Trans Date and Time  </div>
+        <div class="w-150p "> Details </div>
+        <div class="flex-grow-1 "> Current Approver    </div>
+        
+    </div>
+
+    @* --- Empty History -------------------------------- *@
+    @if(!attreqhists.Any()) 
+    { 
+        <div class="d-flex justify-content-center align-items-center h-100p p-4">
+            <div class="text-danger text-center">
+                <h5>
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </h5>
+            </div>
+        </div> 
+    }
+    
+
+    @foreach(var ah in attreqhists) {
+        <div class="d-flex p-2 small  ">
+            <div class="w-200p text-center"> @ah.DActionTaken.ToString("MMMM dd, yyyy hh:ss tt")  </div>
+            <div class="w-150p "> @ah.Remarks </div>
+            <div class="flex-grow-1 "> @ah.ApproverName    </div>
+            
+        </div>
+    }
+
+
+</div>
+
+}
+
+
+@inject IAttreqhistDataAccess       _attreqhist; 
+
+@code {
+    [Parameter] public UserClaimsModel?                 Uc              { get; set; } = new();
+    [Parameter] public List<AttreqhdrModel>             Attreqhdrs      { set; get; } = [];
+    [Parameter] public EventCallback<AttreqhdrModel>    EC_Attreqhdr    { get; set; } 
+    
+
+    AttreqhdrModel          attreqhdr   = new(); 
+    List<AttreqhistModel>   attreqhists  = []; 
+
+
+
+    async Task PickData(AttreqhdrModel hdr) {
+        attreqhdr   = hdr ; 
+        attreqhists = []; 
+        attreqhists = await _attreqhist._02ByAttreqhdrId(hdr.Id, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn); 
+    }
+
+    async Task LoadRequest() {  await EC_Attreqhdr.InvokeAsync(attreqhdr);  }
+
+    string GetStatus(string code) => code switch {"N" => "New", "S" => "Saved", "F" => "For Approval", "A" => "Approved", _   => "Unknown" }; 
+    string GetStatusClass(string code) => code switch
+        {
+            "N" => " text-secondary",
+            "S" => " text-info",
+            "F" => " text-primary",
+            "A" => " text-success",
+            _   => " text-dark"
+        };
+    
+
+}
