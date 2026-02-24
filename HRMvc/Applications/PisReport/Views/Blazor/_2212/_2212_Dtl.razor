@@ -1,35 +1,54 @@
 @using HRMvc.Applications.PisReport.Vars
-<div>
+<div class="">
     @* --- Header ---------------------- *@
     <div class=" d-flex p-2 border-bottom fw-bold ">
-        <div class="w-100p">No</div>
-        <div class="w-100p">Emp. No.</div>
-        <div class="w-250p">Emp. Name</div>
-        <div class="w-250p">Date</div>
-        <div class="w-250p">Client</div>
-        <div class="w-250p">Reason</div>
+        <div class="w-100p">    No</div>
+        <div class="w-150p">    Emp. No.</div>
+        <div class="w-250p pe-3">Emp. Name</div>
+        <div class="w-150p">    Date</div>
+        <div class="w-350p">    Client</div>
+        <div class="w-350p ps-3">Reason</div>
     </div>
     
     @* --- Details ---------------------- *@
-    @{int ctr = 1; }
-    @foreach(var v in V) {
-        <div class=" d-flex p-2 border-bottom">
-            <div class="w-100p"> @ctr </div>
-            <div class="w-100p">@v.EmpNumber </div>
-            <div class="w-250p">@v.EmpName </div>
-            <div class="w-250p">@v.MovDate </div>
-            <div class="w-350p">@v.ClName </div>
-            <div class="w-350p">@v.Remarks </div>
-        </div>
-        ctr++; 
-    }
+    <div class="vh-max vh75">
+        @{
+
+            int row = 0; int ctr = 1;
+            if(V.Count() > 0)
+            {
+                foreach (var v in V)
+                {
+                    <div class=" d-flex p-2 border-bottom @(row % 2 == 0 ? "bg-light" : "") ">
+                        <div class="w-100p">        @ctr </div>
+                        <div class="w-150p">        @v.EmpNumber </div>
+                        <div class="w-250p pe-3">   @v.EmpName </div>
+                        <div class="w-150p">        @(v.MovDate?.ToString("MM/dd/yyyy") ?? "") </div>
+                        <div class="w-350p">        @v.ClName </div>
+                        <div class="w-350p ps-3">   @v.Remarks </div>
+                    </div>
+                    row++; ctr++;
+                }
+            }
+            else
+            {
+
+                <div class="d-flex justify-content-center align-items-center w-100 h-100 pt-5 ">
+                    No records to display.
+                </div>
+                
+            }
+           
+        }
+    </div>
+  
 
 
 </div>
 
 
 @code {
-    [Parameter]public List<V2212Model> V {get; set;}=[];
+    [Parameter] public List<V2212Model> V {get; set;}=[];
   
 
 }
