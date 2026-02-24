@@ -61,8 +61,8 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
 
 public interface IOtreqhdrDataAccess
 {
-    Task<OtreqhdrModel?> _01(OtreqhdrModel otreqhdr, string schema, string conn);
-    Task<OtreqhdrModel?> _02(int id, string schema, string conn);
-    Task<OtreqhdrModel?> _03(int id, OtreqhdrModel otreqhdr, string schema, string conn);
-    Task _04(int id, string schema, string conn);
+    Task<OtreqhdrModel?> 	_01(OtreqhdrModel otreqhdr, string schema, string conn);
+    Task<OtreqhdrModel?> 	_02(int id, string schema, string conn);
+    Task<OtreqhdrModel?> 	_03(int id, OtreqhdrModel otreqhdr, string schema, string conn);
+    Task 					_04(int id, string schema, string conn);
 }
