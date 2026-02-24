@@ -97,7 +97,8 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         }  
         return data ?? [];
     }
-     public async Task<List<OEmpmasModel>> _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn)
+   
+    public async Task<List<OEmpmasModel>> _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn)
     {
 
         await _03Empmas_Remove_0_Dates(schema, conn);
@@ -117,7 +118,29 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         
         return data ?? [];
     }
-    
+
+
+    public async Task<List<OEmpmasModel>> _02Empmas_ByLicenseExpiry( DateTime? startdate, DateTime? endDate, string schema, string conn)
+    {
+
+        await _03Empmas_Remove_0_Dates(schema, conn);
+
+        DateTime mstartDate = startdate ?? DateTime.Today;
+        DateTime mendDate = endDate ?? DateTime.Today;
+
+        List<OEmpmasModel> data = [];
+
+        string sql = $@"select  CONCAT_WS(' ', NULLIF(TRIM(EmpLastNm),', '), NULLIF(TRIM(EmpFirstNm), ' '), NULLIF(TRIM(EmpMidNm), ' ')) AS EmpName, 
+                                e.*, s.Name EmpStatus from {schema}.Empmas e 
+                            left join {schema}.EmpStat s on s.Code = e.Empstat_  
+                            where e.LicExpire between @StartDate and @EndDate
+                            order by empLastNm, EmpFirstNm ";
+
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new {  StartDate = mstartDate, EndDate = mendDate, }, conn);
+
+        return data ?? [];
+    }
+
 
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
     {
@@ -357,4 +380,6 @@ public interface IOPisReportDataAccess
     Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn); 
     Task<List<OEmpmasModel>>        _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry(DateTime? startdate, DateTime? endDate, string schema, string conn);
 }
+
