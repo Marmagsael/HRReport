@@ -97,13 +97,13 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         }  
         return data ?? [];
     }
-     public async Task<List<OEmpmasModel>> _02Empmas_By_Status_And_DateRange(string empstat, string startdate, string endDate, string schema, string conn)
+     public async Task<List<OEmpmasModel>> _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn)
     {
 
         await _03Empmas_Remove_0_Dates(schema, conn);
 
-        string mstartDate = startdate;
-        string mendDate   = endDate;
+        DateTime mstartDate = startdate ?? DateTime.Today;
+        DateTime mendDate   = endDate ?? DateTime.Today;
 
         List<OEmpmasModel> data = [];
     
@@ -356,5 +356,5 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_By_Clnumbers(string clnumber, string schema, string conn); 
     Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn); 
     Task<List<OEmpmasModel>>        _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn);
-    Task<List<OEmpmasModel>>        _02Empmas_By_Status_And_DateRange(string empstat, string startdate, string endDate, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn);
 }
