@@ -1,7 +1,9 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2212
-<_00BT HdrCaption="Floating Employees" Rv="@rv">
+@using HRMvc.Applications.PisReport.Views.Blazor._2217
+
+<_00BT HdrCaption="License Expiry" Rv="@rv">
     <Details>
         <div class="p-0"> 
             <div class="card-header">
@@ -26,52 +28,49 @@
 
         @*--- Grid ------------------------------------------------*@
         <div>
-            <_2212_Dtl V="@v"/>
+            <_2217_Dtl V="@v"/>
         </div>
     
     </Details>
 </_00BT>
 
-
 @inject IOPisReportDataAccess _pisrep;
 
-
 @code {
-    [Parameter]public UserClaimsModel   Uc  {get; set;} = new();
-    V00_RepVars                         rv  {get; set;} = new();
-    List<V2212Model>                    v   {get; set;} = [];
-
+        [Parameter]public UserClaimsModel   Uc  {get; set;} = new();
+        V00_RepVars                         rv  {get; set;} = new();
+        List<V2217Model>                    v   {get; set;} = [];
 
     protected override void OnInitialized()
     {
         rv.DStart   = DateTime.Now;
         rv.DEnd     = DateTime.Now;
 
-        rv.RelativePath = "Reports/_02HR/K_2212_FE.trdp";
+        rv.RelativePath = "Reports/_02HR/K_2217_LE.trdp";
         rv.RefreshToken = 2212000; 
-        rv.MCaption     = "Floating Employee";
+        rv.MCaption     = "License Expiry";
     }
 
-    async Task FetchData(){
+        async Task FetchData(){
         v = [];
-        string? empstat = "B"; // Code for Floating 
-        var res = await _pisrep._02Empmas_By_Status_And_DateRange(empstat,rv.DStart,rv.DEnd,Uc.OpisDb!,Uc.Conn!);
-
-
-        if(res.Any()){
+        var res = await _pisrep._02Empmas_ByLicenseExpiry(rv.DStart,rv.DEnd,Uc.OpisDb!,Uc.Conn!);
+                if(res.Any()){
             foreach(var f in res){
-                V2212Model rec = new(){
+                V2217Model rec = new(){
                     EmpNumber   = f.EmpNumber,   
-                    EmpName     = f.EmpName,      
-                    MovDate     = f.MovDate,    
-                    ClName      = f.ClName,      
-                    Remarks     = f.Remarks, 
+                    EmpName     = f.EmpName,
+                    EmpStatus     = f.EmpStatus,     
+                    LicExpire     = f.Licexpire,
+                    SecLicense     = f.SecLicense,    
+                    ClName      = f.ClName,     
                 };
                 v.Add(rec);
-            }         
+                     
         }
     }
-    async Task CreateReport()
+        }
+
+        async Task CreateReport()
     {
 
 
@@ -92,8 +91,8 @@
 
         rv.ReportParams["DateRange"] = $"For the month covering {dstart} - {dend}";
 		rv.ReportParams["RunDate"]      = DateTime.Now;
-		rv.ReportParams["ReportTitle"]  = "Floating Employees";
-		rv.ReportParams["Status"]       = "Active";
+		rv.ReportParams["ReportTitle"]  = "Summary of Expired Licenses";
+		
 		
 		rv.ShowModal = true;      
     }
