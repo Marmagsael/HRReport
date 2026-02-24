@@ -60,6 +60,21 @@ public class OClientDataAccess : IOClientDataAccess
     }
 
 
+    public async Task<List<OClientModel?>?> _02ByStatuses(List<string> statuses, string schema, string conn)
+    {
+        string sql = $@"update {schema}.Client set 
+                            ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
+                            ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
+                            ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) 
+                        where  Status = @Status ";
+        _sql.ExecuteCmd<dynamic>(sql, new { Status = statuses }, conn);
+
+        sql = $@"select  * from {schema}.Client where Status in @Status order by ClName ";
+        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = statuses }, conn);
+        return data;
+    }
+
+
     public async Task<OClientModel?> _03(OClientModel client, string schema, string conn)
     {
         string sql = $@"Update {schema}.Client set CLNUMBER = @CLNUMBER, CLNAME = @CLNAME, ADDR1 = @ADDR1, ADDR2 = @ADDR2, 
