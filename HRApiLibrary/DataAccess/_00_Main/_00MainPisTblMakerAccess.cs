@@ -108,6 +108,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _01AttendanceType(schema, connName);
         await _01AttendanceDutyType(schema, connName);
         await _01AttReq(schema, connName);
+        await _01OTReq(schema, connName);
         await _01RCivStat(schema, connName);
         await _01RCoInfoPH(schema, connName);
         await _01RCollege(schema, connName);
@@ -608,6 +609,84 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             ";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
+    }
+    private async Task _01OTReq(string schema, string connName)
+    {
+
+        
+        string sql = @$"CREATE TABLE if not exists  {schema}.OTReqHdr (
+                            Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            UserId              INTEGER UNSIGNED,
+                            EmpNumber           CHAR(5),
+                            DateRequested       DATETIME,
+                            CovStart            DateTime, 
+                            CovEnd              DateTime, 
+                            AttReqTypeId        INTEGER UNSIGNED NOT NULL,
+                            Remarks             VARCHAR(120),
+                            Status              char(1),
+                            EmpNumber_Approver  Char(5),
+                            TotHrs              Double(6,2) default 0 ,
+                            PayYear             int, 
+                            PayMo               char(2), 
+                            PayPP               char(2), 
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB;
+
+                        CREATE TABLE if not exists  {schema}.OTReqDtl (
+                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            OtReqHdrId     INTEGER UNSIGNED NOT NULL,
+                            DStart          DATETIME,
+                            DEnd            DATETIME,
+                            TotHrs          DOUBLE(6,2),
+                            DutyTypeId      INTEGER UNSIGNED NOT NULL Default 1,
+                            DayTypeId       INTEGER,
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; 
+                        
+                        CREATE TABLE if not exists  {schema}.OTDutyType (
+                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            Code            Char(5),
+                            Name            VARCHAR(45),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; 
+                        
+                        CREATE TABLE if not exists  {schema}.OTDayType (
+                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            Code            Char(5),
+                            Name            VARCHAR(45),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; 
+                        
+                        CREATE TABLE if not exists  {schema}.OTReqHist (
+                            Id                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            OtReqHdrId             INTEGER UNSIGNED NOT NULL,
+                            DActionTaken            DATETIME,
+                            SetStatusTo             Char(1),
+                            Empnumber_Approver      Char(5),
+                            Remarks                 VARCHAR(60),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; ";
+        await _sql.ExecuteCmd(sql, new { });
+
+        sql = @$"select * from {schema}.OTDayType limit 1 ";
+        var res = await _sql.FetchData<PositionModel, dynamic>(sql, new { }, connName);
+        if (res == null || res.Count == 0)
+        {
+            sql = $@"insert into {schema}.OTDayType 
+                            (Code,   Name) values 
+                            ('R',     'Reg. Day'         ),
+                            ('LH',    'Legal Holiday'    ),
+                            ('SH',    'Special Holiday'  ),
+                            ('DH',    'Double Holiday'   )";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+            
+        sql = @$"select * from {schema}.OTDutyType limit 1 ";
+        var res1 = await _sql.FetchData<PositionModel, dynamic>(sql, new { }, connName);
+        if (res == null || res.Count == 0)
+        {
+            sql = $@"insert into {schema}.OTDutyType 
+                            (Code,   Name) values 
+                            ('R',     'Regular'),
+                            ('RD',    'Rest Day')";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+
     }
 
 
