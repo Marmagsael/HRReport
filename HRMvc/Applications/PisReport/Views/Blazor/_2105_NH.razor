@@ -1,0 +1,117 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2105
+@using System.Globalization
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex">
+
+                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher"/>
+                  
+
+                    @*--- Buttons ------------------------------------------------*@
+                     <span @onclick="FetchData">
+                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray">
+                            Fetch Data
+                        </div>
+                    </span>
+                   
+
+                     @if (v.Count > 0)
+                    {
+                        <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>
+                    }  
+
+                </div>
+            </div>
+        </div>
+
+        @*--- Grid ------------------------------------------------*@
+        <div>
+             <_2105_Dtl V="@v" /> 
+        </div>
+
+    </Details>
+</_00BT_FullW>
+
+@inject IOPisReportDataAccess _pisRep;
+@code {
+    [Parameter] public  UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars                         rv { get; set; } = new();
+
+    List<V2105Model>                    v = [];
+    int selectedValue = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        @* --- Report Details -------------------------------------------- *@
+        // rv.RelativePath = "Reports/_02HR/_2103_ESR.trdp";
+        rv.RefreshToken = 2105000;
+        rv.MCaption     = "Newly Hired For The Month";
+
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        rv.ReportParams = [];
+
+        rv.ReportParams["CoName"]       = "-";
+        rv.ReportParams["CoAddress"]    = "-";
+
+        if (res.Count > 0)
+        {
+            var r = res.FirstOrDefault();
+            rv.ReportParams["CoName"]       = r.CoName ?? "";
+            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
+        }
+
+        rv.ReportParams["ReportTitle"] = "Newly Hired Employees";
+        rv.ReportParams["RunDate"] = DateTime.Now;
+    }
+
+    async Task FetchData()
+    {
+        v = [];
+        string fld  = "datehired";
+        int mo      = Convert.ToInt32(rv.Month);
+
+        var res = await _pisRep._02Empmas_ByMonth_And_Year(fld, mo, rv.Year, Uc.OpisDb!, Uc.Conn!);
+        if (res.Any())
+        {
+            foreach (var r in res)
+            {
+                V2105Model rec = new()
+                    {
+                        EmpNumber       = r.EmpNumber,
+                        EmpName         = r.EmpName,
+                        DateHired       = r.DateHired,
+                        PositionName    = r.PositionName,
+                        SecLicense      = r.SecLicense,
+                        LicExpire       = r.Licexpire,
+                        ClName          = r.ClName,
+                    };
+                v.Add(rec);
+            }
+        }
+
+    }
+
+
+    void ChildActionCatcher()
+    {
+
+    }
+
+
+    void CreateReport()
+    {
+        rv.ReportData = v;
+        int monthNumber  = Convert.ToInt32(rv.Month); 
+        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+
+        rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName}, {rv.Year}";
+        Console.WriteLine(rv.ReportParams["MonthYearCoverage"]);
+    }
+}
