@@ -108,6 +108,7 @@ public static class ApiExt
         builder.Services.AddScoped<IAttreqhistDataAccess, AttreqhistDataAccess>();
         builder.Services.AddScoped<IAttreqhdrDataAccess, AttreqhdrDataAccess>();
         builder.Services.AddScoped<IAttreqdtlDataAccess, AttreqdtlDataAccess>();
+        builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
         
         builder.Services.AddScoped<IOtdaytypeDataAccess, OtdaytypeDataAccess>();
         builder.Services.AddScoped<IOtdutytypeDataAccess, OtdutytypeDataAccess>();

@@ -1,0 +1,97 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
+
+
+
+<div class="w-100 p-1 bordered-bottom mb-2">
+    <div class=" p-1 mb-cbtn mb-cbtn-blue w-175p card " @onclick="SubmitForApproval" >
+        Submit for Approval 
+    </div>
+</div>
+<div class=" w-100 d-flex p-2 "  >
+    <div class="p-1">Total OT Applied : </div>
+    <div class="p-1 fw-bold txt mb-a-blue ">@GetTotalHours().ToString("N2") hours </div>
+</div>
+
+
+@* --- Details ----------------------------------- *@
+<div class="card ">
+    <div class="card-header p-0 ">
+        <div class="w-100 d-flex p-1 bg-secondary text-white small fw-bold ">
+            <div class="w-250p"> Date and Time </div>
+            <div class="w-100p text-center "> OT Applied </div>
+            <div class="w-100p text-center "> Duty Type </div>
+        </div>
+    </div>
+
+    <div class="card-body p-0 ">
+        @foreach(var dtl in Ot.OTReqdtls) 
+        {
+            if(dtl.OtReqHdrId != Ot.OTReqhdr.Id) continue; //-- Filter Details for Current Header Only
+
+            <div class="w-100 d-flex p-1 py-2" >
+                <div class="w-250p d-flex"> 
+                    <span class="px-2">@dtl.PunchIn.ToString("MMM dd")</span>
+                    <span class="px-2 text-secondary">@dtl.PunchIn.ToString("HH:ss tt")</span>
+
+                </div>
+                <div class="w-100p text-center "> @dtl.TotHrs.ToString("N2") </div>
+                <div class="w-100p text-center @(GetDutyTypeCss(dtl.DutyTypeId)) "> @(GetDutyType(dtl.DutyTypeId)) </div>
+                
+            </div>
+        }
+    </div>
+</div>
+
+
+
+
+
+
+@inject IOtreqdtlDataAccess _otreqdtl; 
+@inject IOtreqhdrDataAccess _otreqhdr; 
+
+@code {
+
+    [Parameter] public  UserClaimsModel?        Uc  { get; set; } = new();
+    [Parameter] public  V12_102OT               Ot  { get; set; } = new(); 
+    [Parameter] public EventCallback            Ca  { get; set; } = new();
+
+    List<OtreqdtlModel> OtReqdtls = [];
+    bool showLoadBtn = false;
+    OtreqhdrModel otReqhdr = new();
+
+
+    async Task FetchDtl(OtreqhdrModel hdr) {
+        showLoadBtn = true;
+        otReqhdr    = hdr;
+        OtReqdtls   = [];
+        var res = await _otreqdtl._02ByOtReqHdrId(hdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
+        if(res.Any()) { 
+            OtReqdtls   = res!;
+            Ot.OTReqdtls = res!;  }   
+    }
+    
+    async Task SubmitForApproval() {
+        Ot.Action = "SubmitForApproval";
+        await _otreqhdr._03SubmitForApproval(Ot.OTReqhdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
+        Ot.OTReqhdr = await _otreqhdr._02(Ot.OTReqhdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
+        await Ca.InvokeAsync();
+    }
+
+
+    OtreqhdrModel OtHdr => Ot.OTReqhdr;
+    string GetStatusText(string? status) => status?.ToUpper() switch  { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", _   => "Unknown" };
+    string GetDutyType(int dutyTypeId) => dutyTypeId switch  { 1 => "Regular", 2 => "Restday", _   => "Unknown" };
+    string GetDutyTypeCss(int dutyTypeId) => dutyTypeId switch  { 1 => "text-primary", 2 => "text-danger", _   => "text-dark" };
+    double GetTotalHours() => Ot.OTReqdtls.Where(d => d.OtReqHdrId == Ot.OTReqhdr.Id).Sum(d => d.TotHrs);
+    string GetStatusTextCSS(string? status) => 
+        status?.ToUpper() switch
+        {
+            "N" => " text-secondary",
+            "S" => " text-info",
+            "F" => " text-primary",
+            "A" => " text-success",
+            _   => " text-dark"
+        };
+}

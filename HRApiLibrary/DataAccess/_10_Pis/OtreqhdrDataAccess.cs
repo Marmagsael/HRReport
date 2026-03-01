@@ -10,8 +10,8 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
     public async Task<OtreqhdrModel?> _01(OtreqhdrModel otreqhdr, string schema, string conn)
     {
         string sql = $@"Insert into {schema}.Otreqhdr 
-							(UserId,  EmpNumber,  DateRequested,  CovStart,  CovEnd,  AttReqTypeId,  Remarks,  Status,  EmpNumber_Approver,  TotHrs,  PayYear,  PayMo,  PayPP) values 
-							(@UserId, @EmpNumber, @DateRequested, @CovStart, @CovEnd, @AttReqTypeId, @Remarks, @Status, @EmpNumber_Approver, @TotHrs, @PayYear, @PayMo, @PayPP)";
+							(UserId,  EmpNumber,  DateRequested,  CovStart,  CovEnd,  AttReqTypeId,  Remarks,  Status,  EmpNumber_Approver) values 
+							(@UserId, @EmpNumber, @DateRequested, @CovStart, @CovEnd, @AttReqTypeId, @Remarks, @Status, @EmpNumber_Approver)";
         await _sql.ExecuteCmd<dynamic>(sql, otreqhdr, conn);
         sql = $@"SELECT * FROM {schema}.Otreqhdr WHERE ID = (SELECT @@IDENTITY)";
         var res = await _sql.FetchData<OtreqhdrModel?, dynamic>(sql, new { }, conn);
@@ -26,29 +26,40 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
         var data = await _sql.FetchData<OtreqhdrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
+    
+    public async Task<List<OtreqhdrModel?>?> _02ByUserId(int userId, List<string?> status,  string pisdb, string opisdb, string conn)
+    {
+        string sql = $@"select CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName,   
+                            h.*  
+						from {pisdb}.Otreqhdr h 
+                        left join {opisdb}.Empmas e on h.EmpNumber_Approver = e.EmpNumber
+                        where UserId = @UserId and Status IN @Status";
+        var data = await _sql.FetchData<OtreqhdrModel?, dynamic>(sql, new { UserId = userId, Status = status }, conn);
+        return data;
+    }
 
 
     public async Task<OtreqhdrModel?> _03(int id, OtreqhdrModel otreqhdr, string schema, string conn)
     {
         string sql = $@"Update {schema}.Otreqhdr set 
-								UserId 			= @UserId, 
-								EmpNumber 		= @EmpNumber, 
-								DateRequested 	= @DateRequested, 
-								CovStart 		= @CovStart, 
-								CovEnd 			= @CovEnd, 
-								AttReqTypeId 	= @AttReqTypeId, 
-								Remarks 		= @Remarks, 
-								Status 			= @Status, 
-								EmpNumber_Approver = @EmpNumber_Approver, 
-								TotHrs 			= @TotHrs, 
-								PayYear 		= @PayYear, 
-								PayMo 			= @PayMo, 
-								PayPP 			= @PayPP where Id = @Id;";
+								DateRequested 	    = @DateRequested, 
+								CovStart 		    = @CovStart, 
+								CovEnd 			    = @CovEnd, 
+								Remarks 		    = @Remarks, 
+								EmpNumber_Approver  = @EmpNumber_Approver, 
+								TotHrs 			    = @TotHrs 
+						where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, otreqhdr, conn);
 
         sql = $@" select  * from {schema}.Otreqhdr x where x.Id = @Id ;";
         var data = await _sql.FetchData<OtreqhdrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
+    }
+    
+    public async Task _03SubmitForApproval(int id,  string schema, string conn)
+    {
+        string sql = $@"Update {schema}.Otreqhdr set Status = 'F' where Id = @Id;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
     }
 
     public async Task _04(int id, string schema, string conn)
@@ -63,6 +74,8 @@ public interface IOtreqhdrDataAccess
 {
     Task<OtreqhdrModel?> 	_01(OtreqhdrModel otreqhdr, string schema, string conn);
     Task<OtreqhdrModel?> 	_02(int id, string schema, string conn);
+    Task<List<OtreqhdrModel?>?> _02ByUserId(int userId, List<string?> status,  string pisdb, string opisdb, string conn);
     Task<OtreqhdrModel?> 	_03(int id, OtreqhdrModel otreqhdr, string schema, string conn);
+    Task                    _03SubmitForApproval(int id,  string schema, string conn);
     Task 					_04(int id, string schema, string conn);
 }
