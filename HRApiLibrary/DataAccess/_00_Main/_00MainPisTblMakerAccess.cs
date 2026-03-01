@@ -631,15 +631,15 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             PayPP               char(2), 
                             PRIMARY KEY (`Id`) ) ENGINE = InnoDB;
 
-                        CREATE TABLE if not exists  {schema}.OTReqDtl (
-                            Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-                            OtReqHdrId     INTEGER UNSIGNED NOT NULL,
-                            DStart          DATETIME,
-                            DEnd            DATETIME,
-                            TotHrs          DOUBLE(6,2),
-                            DutyTypeId      INTEGER UNSIGNED NOT NULL Default 1,
-                            DayTypeId       INTEGER,
-                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; 
+                        CREATE TABLE  if not exists  {schema}.OTReqDtl (
+                            OtReqHdrId      int             unsigned,
+                            EmpmasId        int             unsigned,
+                            PunchIn         datetime,
+                            TotHrs          double(6,2)                 DEFAULT 0,
+                            DutyTypeId      int             unsigned    DEFAULT 1,
+                            DayTypeId       int                         DEFAULT 1,
+                            PRIMARY KEY (`EmpmasId`,`PunchIn`) ) ENGINE = InnoDB; 
+
                         
                         CREATE TABLE if not exists  {schema}.OTDutyType (
                             Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
