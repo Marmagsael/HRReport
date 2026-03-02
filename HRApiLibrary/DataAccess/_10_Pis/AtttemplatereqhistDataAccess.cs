@@ -61,9 +61,9 @@ public class AtttemplatereqhistDataAccess : IAtttemplatereqhistDataAccess
 
 public interface IAtttemplatereqhistDataAccess
 {
-    Task<AtttemplatereqhistModel?> _01(AtttemplatereqhistModel atttemplatereqhist, string schema, string conn);
-    Task<List<AtttemplatereqhistModel?>?> _02ByAtttemplateReqHdrIds(int atttemplateReqHdrId, string schema, string conn);
-    Task<List<AtttemplatereqhistModel?>?> _02s(int id, string schema, string conn);
-    Task<AtttemplatereqhistModel?> _03(int id, AtttemplatereqhistModel atttemplatereqhist, string schema, string conn);
-    Task _04(int id, string schema, string conn);
+    Task<AtttemplatereqhistModel?> 			_01(AtttemplatereqhistModel atttemplatereqhist, string schema, string conn);
+    Task<List<AtttemplatereqhistModel?>?> 	_02ByAtttemplateReqHdrIds(int atttemplateReqHdrId, string schema, string conn);
+    Task<List<AtttemplatereqhistModel?>?> 	_02s(int id, string schema, string conn);
+    Task<AtttemplatereqhistModel?> 			_03(int id, AtttemplatereqhistModel atttemplatereqhist, string schema, string conn);
+    Task 									_04(int id, string schema, string conn);
 }
