@@ -1,0 +1,100 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2212
+<_00BT HdrCaption="Floating Employees" Rv="@rv">
+    <Details>
+        <div class="p-0"> 
+            <div class="card-header">
+                <div class="d-flex">
+
+
+                    @*--- Date Range ------------------------------------------------*@
+                   <_2212_DatePicker Rv = "@rv"/>
+                    
+                    @*--- Buttons ------------------------------------------------*@
+                    <span @onclick="FetchData">
+                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray">
+                            Fetch Data
+                        </div>
+                    </span>
+                    @if(v.Count > 0) 
+                        { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}                   
+
+                </div>
+            </div>
+        </div>
+
+        @*--- Grid ------------------------------------------------*@
+        <div>
+            <_2212_Dtl V="@v"/>
+        </div>
+    
+    </Details>
+</_00BT>
+
+
+@inject IOPisReportDataAccess _pisrep;
+
+
+@code {
+    [Parameter]public UserClaimsModel   Uc  {get; set;} = new();
+    V00_RepVars                         rv  {get; set;} = new();
+    List<V2212Model>                    v   {get; set;} = [];
+
+
+    protected override void OnInitialized()
+    {
+        rv.DStart   = DateTime.Now;
+        rv.DEnd     = DateTime.Now;
+
+        rv.RelativePath = "Reports/_02HR/K_2212_FE.trdp";
+        rv.RefreshToken = 2212000; 
+        rv.MCaption     = "Floating Employee";
+    }
+
+    async Task FetchData(){
+        v = [];
+        string? empstat = "B"; // Code for Floating 
+        var res = await _pisrep._02Empmas_By_Status_And_DateRange(empstat,rv.DStart,rv.DEnd,Uc.OpisDb!,Uc.Conn!);
+
+
+        if(res.Any()){
+            foreach(var f in res){
+                V2212Model rec = new(){
+                    EmpNumber   = f.EmpNumber,   
+                    EmpName     = f.EmpName,      
+                    MovDate     = f.MovDate,    
+                    ClName      = f.ClName,      
+                    Remarks     = f.Remarks, 
+                };
+                v.Add(rec);
+            }         
+        }
+    }
+    async Task CreateReport()
+    {
+
+
+        rv.ReportData = v; 
+		rv.ReportParams = []; 
+
+		var res = await _pisrep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
+		rv.ReportParams["CoName"]       = "-";
+		rv.ReportParams["CoAddress"]    = "-";
+
+		if (res.Count> 0) {
+			var r = res.FirstOrDefault(); 
+			rv.ReportParams["CoName"]       = r.CoName??"";
+			rv.ReportParams["CoAddress"]    = r.CoAdd??"";
+		}
+        string dstart = rv.DStart?.ToString("d, MMMM yyyy") ?? "-";
+        string dend = rv.DEnd?.ToString("d, MMMM yyyy") ?? "-";
+
+        rv.ReportParams["DateRange"] = $"For the month covering {dstart} - {dend}";
+		rv.ReportParams["RunDate"]      = DateTime.Now;
+		rv.ReportParams["ReportTitle"]  = "Floating Employees";
+		rv.ReportParams["Status"]       = "Active";
+		
+		rv.ShowModal = true;      
+    }
+}
