@@ -29,8 +29,8 @@ public class OEmpmasModel
     public string? Allow4Fix                { get; set; }
     public string? MovementNumber           { get; set; }
     public string? MovementMode             { get; set; }
-    public string? MovementDate             { get; set; }
-    public string? MovementEnd              { get; set; }
+    public DateTime? MovDate                { get; set; }
+    public DateTime? MovEnd                 { get; set; }
     public string? DutyDate                 { get; set; }
     public string? Address1                 { get; set; }
     public string? Address2                 { get; set; }
