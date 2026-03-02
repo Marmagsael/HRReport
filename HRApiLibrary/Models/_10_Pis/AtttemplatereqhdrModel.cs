@@ -10,4 +10,7 @@ public class AtttemplatereqhdrModel
 	public  string?         Remarks                 {get; set; } 
 	public  string?         Status                  {get; set; } 
 	public  string?         EmpNumber_Approver      {get; set; } 
+
+	// Other fields ---------------------------------------------------
+	public  string?         ApproverName            {get; set; } = string.Empty;
 }
