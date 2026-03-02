@@ -8,6 +8,8 @@ namespace HRMvc.Controllers
         private static readonly Dictionary<string, string> ReportViews = new()
         {
             // Standard
+            ["002"] = "_12_002_Dashboard",
+            ["003"] = "_12_002_Dashboard",
             ["102"] = "_12_102_Dashboard",
             ["103"] = "_12_103_201Record",
             ["104"] = "_12_104_Attendance",
