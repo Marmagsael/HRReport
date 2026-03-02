@@ -101,15 +101,19 @@ public class OPisReportDataAccess : IOPisReportDataAccess
     public async Task<List<OEmpmasModel>> _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn)
     {
 
-        await _03Empmas_Remove_0_Dates(schema, conn);
+        var flds = EmpmasFields();
 
         DateTime mstartDate = startdate ?? DateTime.Today;
-        DateTime mendDate   = endDate ?? DateTime.Today;
+        DateOnly xendDate   = endDate.HasValue
+            ? DateOnly.FromDateTime(endDate.Value)
+            : DateOnly.FromDateTime(DateTime.Today);
+
+        DateTime mendDate = xendDate.ToDateTime(TimeOnly.MaxValue);
 
         List<OEmpmasModel> data = [];
     
             string sql = $@"select  CONCAT_WS(' ', NULLIF(TRIM(EmpLastNm),', '), NULLIF(TRIM(EmpFirstNm), ' '), NULLIF(TRIM(EmpMidNm), ' ')) AS EmpName, 
-                                e.*, s.Name EmpStatus from {schema}.Empmas e 
+                                {flds}, s.Name EmpStatus from {schema}.Empmas e 
                             left join {schema}.EmpStat s on s.Code = e.Empstat_  
                             where e.empstat_ = @Empstat and e.movdate >= @StartDate and  e.movend <= @EndDate
                             order by empLastNm, EmpFirstNm ";
@@ -123,15 +127,19 @@ public class OPisReportDataAccess : IOPisReportDataAccess
     public async Task<List<OEmpmasModel>> _02Empmas_ByLicenseExpiry( DateTime? startdate, DateTime? endDate, string schema, string conn)
     {
 
-        await _03Empmas_Remove_0_Dates(schema, conn);
+        var flds = EmpmasFields();
 
         DateTime mstartDate = startdate ?? DateTime.Today;
-        DateTime mendDate = endDate ?? DateTime.Today;
+        DateOnly xendDate   = endDate.HasValue
+            ? DateOnly.FromDateTime(endDate.Value)
+            : DateOnly.FromDateTime(DateTime.Today);
+
+        DateTime mendDate = xendDate.ToDateTime(TimeOnly.MaxValue);
 
         List<OEmpmasModel> data = [];
 
         string sql = $@"select  CONCAT_WS(' ', NULLIF(TRIM(EmpLastNm),', '), NULLIF(TRIM(EmpFirstNm), ' '), NULLIF(TRIM(EmpMidNm), ' ')) AS EmpName, 
-                                e.*, s.Name EmpStatus from {schema}.Empmas e 
+                                {flds}, s.Name EmpStatus from {schema}.Empmas e 
                             left join {schema}.EmpStat s on s.Code = e.Empstat_  
                             where e.LicExpire between @StartDate and @EndDate
                             order by empLastNm, EmpFirstNm ";
@@ -148,10 +156,10 @@ public class OPisReportDataAccess : IOPisReportDataAccess
 
         string sql = $@"SELECT concat_ws(' ', Concat(Nullif(trim(emplastnm), ''),', '), Nullif(trim(empfirstnm), ''), Nullif(trim(empmidnm), '') ) empname,  
                         p.name PositionName,  s.Name StatusName,
-                        e.* FROM  {schema}.empmas e
+                        {flds} FROM  {schema}.empmas e
                         LEFT JOIN {schema}.position p on p.code = e.position_
                         LEFT JOIN {schema}.empstat s on s.code = e.empstat_
-                        where Month(e.{fld}) = @Month AND Year(e.{fld}) = @Year
+                        WHERE Month(e.{fld}) = @Month AND Year(e.{fld}) = @Year
                         order by emplastnm, empfirstnm
                         ";
 
@@ -400,3 +408,4 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry(DateTime? startdate, DateTime? endDate, string schema, string conn);
 }
+
