@@ -2,6 +2,8 @@
 @using HRApiLibrary.Models._20_Pay
 @using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
 @using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0501
+@using Microsoft.AspNetCore.Components.Forms
+
 @inject DialogService           _DialogService
 @inject NotificationService     _NotificationService;
 
@@ -72,10 +74,51 @@
                 </div>
             </div>
 
-            <div >
 
-            </div>
+
+            <RadzenCard Style="max-width:500px; padding:20px">
+                <h5 class="mb-3">Employee Photo</h5>
+
+                <!-- Preview -->
+                @if (!string.IsNullOrEmpty(imagePreview))
+                {
+                    <div class="text-center mb-3">
+                        <img src="@imagePreview" class="img-thumbnail" style="max-height:250px;" />
+                    </div>
+                }
+                else
+                {
+                    <div class="border p-5 text-center text-muted mb-3">
+                        No Image Selected
+                    </div>
+                }
+
+                <!-- Upload -->
+                <RadzenUpload Url="api/employees/upload-photo"
+                              Accept="image/*"
+                              Auto="false"
+                              MaxFileCount="1"
+                              Change="@OnChange"
+                              @ref="upload" />
+
+                <!-- Buttons -->
+                <div class="mt-3 d-flex gap-2">
+                    <RadzenButton Text="Remove"
+                                  ButtonStyle="ButtonStyle.Danger"
+                                  Click="@RemoveImage"
+                                  Disabled="@string.IsNullOrEmpty(imagePreview)" />
+
+                    <RadzenButton Text="Save Photo"
+                                  ButtonStyle="ButtonStyle.Success"
+                                  Click="@SavePhoto"
+                                  Disabled="@string.IsNullOrEmpty(imagePreview)" />
+                </div>
+            </RadzenCard>
+
+
+
         </div>
+
 
         @* ============ Registration Details ============ *@
         <div class="bordered bg-secondary bg-opacity-10 px-2 py-1 bordered-bottom ">
@@ -400,21 +443,21 @@
     string? paydb               = string.Empty;
     string? conn                = string.Empty;
     string? lblwidth            = "w-125p";
-    
+
     List<string?>? payrollType          = ["Monthly","Bi-Monthly","Weekly"];
     List<string?>? taxPattern           = ["Wk","SM","Mo"];
     List<string?>? taxRevision          = ["2023-01"];
     List<string?>? sssRevision          = ["2025-01"];
     List<string?>? phicRevision         = ["2025-01"];
-    
+
     List<PremcontsourceModel> pcs = new()
     {
         new PremcontsourceModel { Id = 1, Source = "Actual Earnings" },
         new PremcontsourceModel { Id = 2, Source = "Deployment Monthly Rate" }
     };
 
-    
-    
+
+
 
     bool   NotRerender = true; 
 
@@ -452,5 +495,42 @@
             Detail      = detail,
             Duration    = 3000
         });
+    }
+
+
+    // Image Upload
+    RadzenUpload? upload;
+    string? imagePreview;
+
+    async Task OnChange(UploadChangeEventArgs args)
+    {
+        Console.WriteLine($"image {imagePreview}");
+        var file = args.Files.FirstOrDefault();
+        if (file == null) return;
+
+        if (file.Size > 1048576)
+        {
+            Console.WriteLine("File exceeds 1MB.");
+            imagePreview = null;
+            return;
+        }
+
+        using var ms = new MemoryStream();
+        // await file.OpenReadStream(1_048_576).CopyToAsync(ms);
+        var bytes = ms.ToArray();
+
+        imagePreview = $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
+    }
+
+    async Task SavePhoto()
+    {
+        if (upload == null || string.IsNullOrEmpty(imagePreview)) return;
+
+        // await upload.Upload();
+    }
+
+    void RemoveImage()
+    {
+        imagePreview = null;
     }
 }
