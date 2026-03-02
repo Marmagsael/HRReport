@@ -1,5 +1,209 @@
-Change Schedule Request
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
+<RadzenDialog />
+<RadzenNotification />
+<RadzenTooltip />
+<RadzenContextMenu />
+
+<div class="d-flex gap-1 p-1 border-bottom ">
+    <div @onclick="New"                 class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
+    <div @onclick="Save"                class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSave) "> Save  </div>
+    <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSend ) "> Send For Approval </div>
+    <div @onclick="ShowCancel"          class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancel)"> Cancel </div>
+    <div @onclick="ShowMyRequest"       class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+</div>
+
+<div class="card mt-1">
+    <div class="p-2 border-bottom">
+        <div class="p-0 d-flex justify-content-between ">
+            <div class="d-flex p-1">
+                <div class="w-120p p-2">Control No.</div>
+                <div class="w-175p border-bottom fw-bold text-center p-2 text-primary "> 
+                    @(Hdr.Id < 1 ? "-" : Hdr.Id) 
+                </div>
+            </div>
+            
+            <div class="d-flex p-1">
+                <div class="w-75p p-2">Status</div>
+                <div class="w-175p   text-start p-2 text-primary "> 
+                    @(Hdr.Status switch {"N" => "New", "S" => "Saved", "F" => "For Approval", "A" => "Approved", _ => "Unknown" } )
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-a-blue d-flex ">
+            <div class="w-120p p-2">Date</div>
+            <RadzenDatePicker @bind-Value="Hdr.DateRequested" 
+                @ref="dateRequestedPicker"
+                DateFormat="MM/dd/yyyy"
+                AllowInput="false"
+                class="mb-date-accent w-150p" />
+        </div>
+
+        <div class="mb-a-blue d-flex mt-1">
+            <div class="w-120p p-2">Effectivity</div>
+            <div class="  ">
+                <RadzenDatePicker 
+                    @bind-Value="Hdr.Effectivity" 
+                    DateFormat="MM/dd/yyyy"
+                    AllowInput="false"
+                    class="mb-date-accent w-150p" />
+            </div>
+
+        </div>
+
+        <div class="d-flex mt-1">
+            <div class="w-120p px-2"> Approver </div>
+            <div class="w-150p "> 
+                <RadzenTextBox 
+                    @bind-Value="Hdr.EmpNumber_Approver"
+                    Change="FetchApprover"
+                    MaxLength="5"
+                    class="mb-input-accent"
+                    Style="width: 100%;" />
+            </div>
+            <div class="mb-a-blue flex-grow-1 px-1 "> 
+                <RadzenTextBox 
+                    @bind-Value="Hdr.ApproverName"
+                    Disabled
+                    class="mb-input-accent"
+                    Style="width: 100%;" />
+            </div>
+        </div>
+        
+        <div class="d-flex">
+            <div class="w-120p p-2"> Remarks </div>
+            <div class=" flex-grow-1 py-1 "> 
+                <RadzenTextArea 
+                    @bind-Value="Hdr.Remarks"
+                    MaxLength="120"
+                    Rows="3"
+                    class="mb-input-accent"
+                    Style="width:100%;" />
+            </div>
+        </div>  
+    </div>
+
+
+
+    @* --- Details ------------------------------- *@
+    <div class="card-body p-0">
+        <div class="d-flex fw-bold py-2">
+            <div class="w-60 text-center bordered-right">Day/Type</div>
+            <div class="w-20 text-center bordered-right">IN</div>
+            <div class="w-20 text-center">OUT</div>
+        </div>
+        
+        <div class="card-body p-0 ">
+        
+            <_12_102_01_AT_Component
+                DayName="Monday"
+                DutyType="@Dtl?.D1_DutyType"
+                Duration="@Dtl?.D2_HrsLength"
+                In="@Dtl?.D2_In"
+                AttType="@Dtl?.AttendanceTypeId"/>
+
+            <_12_102_01_AT_Component
+                DayName="Tuesday"
+                DutyType="@Dtl?.D2_DutyType"
+                Duration="@Dtl?.D3_HrsLength"
+                In="@Dtl?.D3_In"
+                AttType="@Dtl?.AttendanceTypeId"/>
+
+            <_12_102_01_AT_Component
+                DayName="Wednesday"
+                DutyType="@Dtl?.D3_DutyType"
+                Duration="@Dtl?.D3_HrsLength"
+                In="@Dtl?.D3_In"
+                AttType="@Dtl?.AttendanceTypeId"/>
+
+            <_12_102_01_AT_Component
+                DayName="Thursday"
+                DutyType="@Dtl?.D4_DutyType"
+                Duration="@Dtl?.D4_HrsLength"
+                In="@Dtl?.D4_In"
+                AttType="@Dtl?.AttendanceTypeId"/>
+
+            <_12_102_01_AT_Component
+                DayName="Friday"
+                DutyType="@Dtl?.D5_DutyType"
+                Duration="@Dtl?.D5_HrsLength"
+                In="@Dtl?.D5_In"
+                AttType="@Dtl?.AttendanceTypeId"/>
+
+            <_12_102_01_AT_Component
+                DayName="Saturday"
+                DutyType="@Dtl?.D6_DutyType"
+                Duration="@Dtl?.D6_HrsLength"
+                In="@Dtl?.D6_In"
+                AttType="@Dtl?.AttendanceTypeId"/>
+
+            <_12_102_01_AT_Component
+                DayName="Sunday"
+                DutyType="@Dtl?.D7_DutyType"
+                Duration="@Dtl?.D7_HrsLength"
+                In="@Dtl?.D7_In"
+                AttType="@Dtl?.AttendanceTypeId"/>
+
+        </div>
+
+
+    </div>
+
+
+
+
+</div>
+
+
+
+
+
 
 @code {
+
+    [Parameter] public UserClaimsModel? Uc { get; set; } = new();   
+    V12_102CS   Cs = new();
+    
+    
+    
+    
+    
+    RadzenDatePicker<DateTime?>? dateRequestedPicker;
+    AtttemplatereqhdrModel          Hdr => Cs.Atttemplatereqhdr??new AtttemplatereqhdrModel();
+    AtttemplatereqdtlModel          Dtl => Cs.Atttemplatereqdtls?.FirstOrDefault()??new AtttemplatereqdtlModel();
+    List<AtttemplatereqdtlModel>    Dtls => Cs.Atttemplatereqdtls??[];
+
+
+
+    void New() {
+
+    }
+    void Save() {
+
+    }
+    void ShowSendForApproval() {
+
+    }
+    void ShowCancel() {
+
+    }
+    void ShowMyRequest() {
+
+    }
+    void FetchApprover() {
+
+    }
+
+
+    bool CanSave => true;
+    bool CanSend => true;
+    bool CanCancel => true;
+
+
+
+
+
+
+
 
 }
