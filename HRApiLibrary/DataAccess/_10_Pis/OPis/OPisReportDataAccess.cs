@@ -97,7 +97,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         }  
         return data ?? [];
     }
-
+    
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
     {
         string sql  = $@"select  * from {schema}.Coinfo ";
