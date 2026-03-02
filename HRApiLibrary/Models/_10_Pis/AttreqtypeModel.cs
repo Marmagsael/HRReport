@@ -1,0 +1,9 @@
+namespace HRApiLibrary.Models._10_Pis;
+
+public class AttreqtypeModel
+{
+	public 	int 		Id 				{get; set; } 
+	public 	string? 	Code 			{get; set; } 
+	public 	string? 	Category 		{get; set; } 
+	public 	string? 	Name 			{get; set; } 
+}
