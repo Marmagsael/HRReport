@@ -56,10 +56,18 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task _03SubmitForApproval(int id,  string schema, string conn)
+    public async Task _03SubmitForApproval(int id,string approver_empnumber,  string schema, string conn)
     {
         string sql = $@"Update {schema}.Otreqhdr set Status = 'F' where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+
+        sql = $@" insert into {schema}.otreqhist 
+                        (OtReqHdrId,  DActionTaken, SetStatusTo, Empnumber_Approver,  Remarks) values 
+                        (@OtReqHdrId, now(),        'F',         @EmpNumber_Approver, 'Submit for Approval');";
+        await _sql.ExecuteCmd<dynamic>(sql, new { OtReqHdrId = id, EmpNumber_Approver = approver_empnumber }, conn);
+
+
+
     }
 
     public async Task _04(int id, string schema, string conn)
@@ -76,6 +84,6 @@ public interface IOtreqhdrDataAccess
     Task<OtreqhdrModel?> 	_02(int id, string schema, string conn);
     Task<List<OtreqhdrModel?>?> _02ByUserId(int userId, List<string?> status,  string pisdb, string opisdb, string conn);
     Task<OtreqhdrModel?> 	_03(int id, OtreqhdrModel otreqhdr, string schema, string conn);
-    Task                    _03SubmitForApproval(int id,  string schema, string conn);
+    Task                    _03SubmitForApproval(int id, string approver_empnumber,  string schema, string conn);
     Task 					_04(int id, string schema, string conn);
 }

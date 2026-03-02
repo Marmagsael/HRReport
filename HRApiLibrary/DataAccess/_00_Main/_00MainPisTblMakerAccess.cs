@@ -109,6 +109,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _01AttendanceDutyType(schema, connName);
         await _01AttReq(schema, connName);
         await _01OTReq(schema, connName);
+        await _01AttTemplateReq(schema, connName);
         await _01RCivStat(schema, connName);
         await _01RCoInfoPH(schema, connName);
         await _01RCollege(schema, connName);
@@ -610,6 +611,62 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
+    
+    private async Task _01AttTemplateReq(string schema, string connName)
+    {
+
+        
+        string sql = @$"CREATE TABLE if not exists  {schema}.AtttemplateReqHdr (
+                            Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            UserId              INTEGER UNSIGNED,
+                            EmpNumber           CHAR(5),
+                            DateRequested       DATETIME,
+                            Effectivity         DateTime, 
+                            Remarks             VARCHAR(120),
+                            Status              char(1),
+                            EmpNumber_Approver  Char(5),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB;
+
+                        CREATE TABLE if not exists  {schema}.AtttemplateReqdtl (
+                            Id                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            AtttemplateReqHdrId     INTEGER UNSIGNED NOT NULL,
+                            EmpmasId                int     NOT NULL,
+                            AttendanceTypeId        int     DEFAULT '1',
+                            D1_In                   int     DEFAULT '8000',
+                            D1_HrsLength            int     DEFAULT '8',
+                            D1_DutyType             char(2) DEFAULT 'R',
+                            D2_In                   int     DEFAULT '8000',
+                            D2_HrsLength            int     DEFAULT '8',
+                            D2_DutyType             char(2) DEFAULT 'R',
+                            D3_In                   int     DEFAULT '8000',
+                            D3_HrsLength            int     DEFAULT '8',
+                            D3_DutyType             char(2) DEFAULT 'R',
+                            D4_In                   int     DEFAULT '8000',
+                            D4_HrsLength            int     DEFAULT '8',
+                            D4_DutyType             char(2) DEFAULT 'R',
+                            D5_In                   int     DEFAULT '8000',
+                            D5_HrsLength            int     DEFAULT '8',
+                            D5_DutyType             char(2) DEFAULT 'R',
+                            D6_In                   int     DEFAULT '0',
+                            D6_HrsLength            int     DEFAULT '0',
+                            D6_DutyType             char(2) DEFAULT 'RD',
+                            D7_In                   int     DEFAULT '0',
+                            D7_HrsLength            int     DEFAULT '0',
+                            D7_DutyType             char(2) DEFAULT 'RD',
+                            PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+                        
+                        CREATE TABLE if not exists  {schema}.AtttemplateReqHist (
+                            Id                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            AtttemplateReqHdrId     INTEGER UNSIGNED NOT NULL,
+                            UserId                  INTEGER UNSIGNED,
+                            DActionTaken            DATETIME,
+                            SetStatusTo             Char(1),
+                            Empnumber_Approver      Char(5),
+                            Remarks                 VARCHAR(120),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; ";
+        await _sql.ExecuteCmd(sql, new { });
+    }
+
     private async Task _01OTReq(string schema, string connName)
     {
 

@@ -73,17 +73,17 @@
     }
     
     async Task SubmitForApproval() {
-        Ot.Action = "SubmitForApproval";
-        await _otreqhdr._03SubmitForApproval(Ot.OTReqhdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
+        Ot.Action   = "SubmitForApproval";
+        await _otreqhdr._03SubmitForApproval(Ot.OTReqhdr.Id??0, Ot.OTReqhdr.EmpNumber_Approver, Uc.SchemaUserPis, Uc.Conn);
         Ot.OTReqhdr = await _otreqhdr._02(Ot.OTReqhdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
         await Ca.InvokeAsync();
     }
 
 
     OtreqhdrModel OtHdr => Ot.OTReqhdr;
-    string GetStatusText(string? status) => status?.ToUpper() switch  { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", _   => "Unknown" };
-    string GetDutyType(int dutyTypeId) => dutyTypeId switch  { 1 => "Regular", 2 => "Restday", _   => "Unknown" };
-    string GetDutyTypeCss(int dutyTypeId) => dutyTypeId switch  { 1 => "text-primary", 2 => "text-danger", _   => "text-dark" };
+    string GetStatusText(string? status)    => status?.ToUpper() switch  { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", _   => "Unknown" };
+    string GetDutyType(int dutyTypeId)      => dutyTypeId switch  { 1 => "Regular", 2 => "Restday", _   => "Unknown" };
+    string GetDutyTypeCss(int dutyTypeId)   => dutyTypeId switch  { 1 => "text-primary", 2 => "text-danger", _   => "text-dark" };
     double GetTotalHours() => Ot.OTReqdtls.Where(d => d.OtReqHdrId == Ot.OTReqhdr.Id).Sum(d => d.TotHrs);
     string GetStatusTextCSS(string? status) => 
         status?.ToUpper() switch
