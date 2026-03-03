@@ -147,7 +147,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         List<OEmpmasModel> data = [];
 
         string sql = $@"SELECT concat_ws(' ', Concat(Nullif(trim(emplastnm), ''),', '), Nullif(trim(empfirstnm), ''), Nullif(trim(empmidnm), '') ) empname,  
-                        p.name PositionName,  s.Name StatusName,
+                        p.name PositionName,  s.Name EmpStatus,
                         e.* FROM  {schema}.empmas e
                         LEFT JOIN {schema}.position p on p.code = e.position_
                         LEFT JOIN {schema}.empstat s on s.code = e.empstat_
