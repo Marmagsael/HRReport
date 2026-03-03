@@ -1,57 +1,151 @@
-﻿
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Views.Blazor._2103
+
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
         <div class="p-0">
             <div class="card-header">
-                <div class="d-flex">
+                <div class="d-flex gap-2">
 
-                    <div class="card">
-                        <RadzenRadioButtonList @bind-Value="@selectedValue">
+                    <div class="card p-2 py-1">
+                        <RadzenRadioButtonList @bind-Value="@selectedValue"
+                                               Orientation="Orientation.Vertical"
+                                               >
                             <Items>
-                                <RadzenRadioButtonListItem Text="Filter by Exppiration Date" Value="1" />
+                                <RadzenRadioButtonListItem Text="Filter by Expiration Date" Value="1" />
                                 <RadzenRadioButtonListItem Text="Without Insurance" Value="2" />
                                 <RadzenRadioButtonListItem Text="With Insurance" Value="3" />
                             </Items>
                         </RadzenRadioButtonList>
                     </div>
 
-                    <div class="card">
-                        <RadzenDatePicker @bind-Value="@rv.DStart"
-                                          DateFormat="MM/dd/yyyy" />
+                    <div class="card p-3 w-300p"  >
 
-                        <RadzenDatePicker @bind-Value="@rv.DEnd"
-                                          DateFormat="MM/dd/yyyy" />
+                        <div class="mb-3 d-flex">
+                            <label class="form-label fw-normal w-100p" style="min-width:100px" >Start Date</label>
+                            <RadzenDatePicker @bind-Value="@rv.DStart"
+                                              DateFormat="MM/dd/yyyy"
+                                              class="w-100" />
+                        </div>
+
+                        <div class="mb-3 d-flex">
+                            <label class="form-label fw-normal  w-100p" style="min-width:100px">End Date</label>
+                            <RadzenDatePicker @bind-Value="@rv.DEnd"
+                                              DateFormat="MM/dd/yyyy"
+                                              Min="@rv.DStart"
+                                              class="w-100" />
+                        </div>
+
                     </div>
 
-                    @*--- Buttons ------------------------------------------------*@
-                    @* <span @onclick="FetchData">
-                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray">
-                            Fetch Data
+                    <div class="card p-3 w-255p">
+                        <div class="mb-3">
+                            <RadzenDropDown TValue="int"
+                                            @bind-Value="@selectedFormat"
+                                            Data="@reportFormats"
+                                            TextProperty="Text"
+                                            ValueProperty="Value"
+                                            Placeholder="Select output to"
+                                            class="w-100" />
                         </div>
-                    </span>
 
+                        <div class="d-flex gap-2">
+                            @*--- Buttons ------------------------------------------------*@
+                            <span @onclick="FetchData">
+                                <div class="p-2  card mb-cbtn mb-cbtn-gray">
+                                    Fetch Data
+                                </div>
+                            </span>
 
-                    @if (v.Count > 0)
-                    {
-                        <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>
-                    } *@
+                            @*--- Buttons ------------------------------------------------*@
+                            <span @onclick="CreateReport"> <div class="p-2 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>
+                        </div>
+                       
+                       
+                    </div>
 
+                       
                 </div>
             </div>
         </div>
 
         @*--- Grid ------------------------------------------------*@
         <div>
-            @* <_2105_Dtl V="@v" /> *@
+            <div class="w-50 "> <_2103_StatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" />  </div>
         </div>
 
     </Details>
 </_00BT_FullW>
 
+@inject IOPisReportDataAccess _pisRep;
+@inject IOEmpstatDataAccess _empstat;
+
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
-    V00_RepVars rv { get; set; } = new();
-    string selectedValue = "1";
+    V00_RepVars rv { get; set; }                        = new();
+
+    int selectedValue = 0;
+    int selectedFormat = 0;
+
+    public class FormatOption
+    {
+        public string Text { get; set; }
+        public int Value { get; set; }
+    }
+
+    List<FormatOption> reportFormats = new()
+    {
+        new FormatOption { Text = "PDF", Value = 1 },
+        new FormatOption { Text = "Excel", Value = 2 }
+    };
 
 
+    protected override async Task OnInitializedAsync()
+    {
+
+        List<OEmpstatModel?>? empstats = await _empstat._02s(Uc.OpisDb!, Uc.Conn!) ?? [];
+        if (empstats.Any())
+        {
+            rv.Empstats = empstats;
+        }
+
+        @* --- Report Details -------------------------------------------- *@
+        // rv.RelativePath = "Reports/_02HR/K_2105_NH.trdp";
+        rv.RefreshToken = 211000;
+        rv.MCaption     = "Insurance Report";
+
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        rv.ReportParams = [];
+
+        rv.ReportParams["CoName"] = "-";
+        rv.ReportParams["CoAddress"] = "-";
+
+        if (res.Count > 0)
+        {
+            var r = res.FirstOrDefault();
+            rv.ReportParams["CoName"]       = r.CoName ?? "";
+            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
+        }
+
+        rv.ReportParams["ReportTitle"]  = "Insurance Report";
+        rv.ReportParams["RunDate"]      = DateTime.Now;
+
+
+    }
+
+    void FetchData()
+    {
+
+    }
+
+    void CreateReport()
+    {
+
+    }
+
+    void ChildActionCatcher()
+    {
+        
+    }
 }
