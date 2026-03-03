@@ -43,7 +43,7 @@ public class V00_RepVars
     public string               ClNumber        { get; set; } = "";
     public List<OClientModel>   Clients         { get; set; } = [];
     public string               Empstat_        { get; set; } = "";
-    public List<OEmpstatModel>  Empstats       { get; set; } = [];
+    public List<OEmpstatModel?>?Empstats       { get; set; } = [];
 
 
     //--- Modal Details ----------------------------------------------
