@@ -1,3 +1,4 @@
+@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
 <RadzenDialog />
 <RadzenNotification />
@@ -148,6 +149,7 @@
 
 
     </div>
+    <div>User ID : @Uc.UserId </div>
 
 
 
@@ -155,7 +157,7 @@
 </div>
 
 
-
+@inject IAtttemplateDataAccess _atttemplate;
 
 
 
@@ -166,12 +168,25 @@
     
     
     
-    
+    protected override async Task OnInitializedAsync(){
+        var res = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        if (res.Count > 0 ) {
+            Cs.Atttemplate = res.FirstOrDefault()??new AtttemplateModel();
+            Console.WriteLine($"Empmas ID {Dtl.EmpmasId} * Dtl ID : {Dtl.Id} * Output Count {res.Count}");
+        }
+        else { 
+            var res1 = _atttemplate._02NoSchedule(Uc.UserId); 
+            Cs.Atttemplate = res1;
+            Console.WriteLine("No data found for the user. Default schedule applied."); 
+        }
+
+    }
     
     RadzenDatePicker<DateTime?>? dateRequestedPicker;
-    AtttemplatereqhdrModel          Hdr => Cs.Atttemplatereqhdr??new AtttemplatereqhdrModel();
-    AtttemplatereqdtlModel          Dtl => Cs.Atttemplatereqdtls?.FirstOrDefault()??new AtttemplatereqdtlModel();
-    List<AtttemplatereqdtlModel>    Dtls => Cs.Atttemplatereqdtls??[];
+    AtttemplateModel                ctemp   => Cs.Atttemplate??new AtttemplateModel(); 
+    AtttemplatereqhdrModel          Hdr     => Cs.Atttemplatereqhdr??new AtttemplatereqhdrModel();
+    AtttemplatereqdtlModel          Dtl     => Cs.Atttemplatereqdtls?.FirstOrDefault()??new AtttemplatereqdtlModel();
+    List<AtttemplatereqdtlModel>    Dtls    => Cs.Atttemplatereqdtls??[];
 
 
 
