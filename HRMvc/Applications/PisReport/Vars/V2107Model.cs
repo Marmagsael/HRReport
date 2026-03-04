@@ -1,6 +1,6 @@
 namespace HRMvc.Applications.PisReport.Vars
 {
-    public class V2106Model
+    public class V2107Model
     {
         public string?      EmpNumber       { get; set; } = "";
         public string?      EmpName         { get; set; } = "";
