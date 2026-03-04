@@ -21,9 +21,20 @@ public class V00_RepVars
         ["pPrintedBy"] = "SYSTEM",
         ["pPrintDate"] = DateTime.Now
     };
-    public List<string>                 ReportFormats           { get; set; } = ["PDF","XLSX"]; 
-        
-    
+    public List<string>                 ReportFormats           { get; set; } = ["PDF","XLSX"];
+
+
+    //Newly Added ------------------------------------------------
+    public int                          SelectedFilter          { get; set; } = 0;
+    public List<DataFilterModel>        DataFilters             { get; set; } = [];
+    public class DataFilterModel
+    {
+        public int      Code { get; set; } = 0;
+        public string?  Name { get; set; } = "";
+    }
+
+
+    //-----------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
     public int                  Year            { get; set; } = DateTime.Now.Year;
@@ -43,7 +54,7 @@ public class V00_RepVars
     public string               ClNumber        { get; set; } = "";
     public List<OClientModel>   Clients         { get; set; } = [];
     public string               Empstat_        { get; set; } = "";
-    public List<OEmpstatModel?>?Empstats       { get; set; } = [];
+    public List<OEmpstatModel>  Empstats       { get; set; } = [];
 
 
     //--- Modal Details ----------------------------------------------
