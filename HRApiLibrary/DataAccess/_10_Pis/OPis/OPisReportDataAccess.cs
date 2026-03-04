@@ -29,16 +29,22 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
-    public async Task<List<OEmpmasModel>> _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn)
+        public async Task<List<OEmpmasModel>> _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn)
     {
-        if (clnumbers == null || clnumbers.Count == 0 || statuses == null || statuses.Count == 0) return [];
-        var flds = EmpmasFields(); 
+        if (clnumbers == null || clnumbers.Count == 0 ||  statuses == null || statuses.Count == 0) return [];
+        var flds = EmpmasFields();
+
+        if (clnumbers?.FirstOrDefault() == "-")
+        {
+            clnumbers = [];
+        }
 
         string sql = $@"SELECT {flds}, s.Name AS EmpStatus, c.ClName
                         FROM {schema}.Empmas e
                         LEFT JOIN {schema}.EmpStat s ON s.Code = e.Empstat_
                         LEFT JOIN {schema}.Client  c ON c.ClNumber = e.Client_
-                        WHERE e.Client_  IN @ClNumbers AND e.Empstat_ IN @Statuses
+                        WHERE e.Empstat_ IN @Statuses
+                        {(clnumbers != null && clnumbers.Count > 0 ? "AND e.Client_ IN @ClNumbers" : "")}
                         ORDER BY e.EmpLastNm, e.EmpFirstNm;";
         var data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers=clnumbers, Statuses = statuses }, conn);
         return data ?? [];
@@ -120,23 +126,27 @@ public class OPisReportDataAccess : IOPisReportDataAccess
     }
 
 
-    public async Task<List<OEmpmasModel>> _02Empmas_ByLicenseExpiry( DateTime? startdate, DateTime? endDate, string schema, string conn)
+    public async Task<List<OEmpmasModel>> _02Empmas_ByLicenseExpiry( DateTime? startDate, DateTime? endDate, List<string> statuses,string schema, string conn)
     {
 
-        await _03Empmas_Remove_0_Dates(schema, conn);
+        var flds = EmpmasFields();
 
-        DateTime mstartDate = startdate ?? DateTime.Today;
-        DateTime mendDate = endDate ?? DateTime.Today;
+        DateTime mstartDate = startDate ?? DateTime.Today;
+        DateOnly xendDate   = endDate.HasValue
+            ? DateOnly.FromDateTime(endDate.Value)
+            : DateOnly.FromDateTime(DateTime.Today);
+
+        DateTime mendDate = xendDate.ToDateTime(TimeOnly.MaxValue);
 
         List<OEmpmasModel> data = [];
 
         string sql = $@"select  CONCAT_WS(' ', NULLIF(TRIM(EmpLastNm),', '), NULLIF(TRIM(EmpFirstNm), ' '), NULLIF(TRIM(EmpMidNm), ' ')) AS EmpName, 
-                                e.*, s.Name EmpStatus from {schema}.Empmas e 
+                                {flds}, s.Name EmpStatus from {schema}.Empmas e 
                             left join {schema}.EmpStat s on s.Code = e.Empstat_  
-                            where e.LicExpire between @StartDate and @EndDate
+                            where e.LicExpire between @StartDate and @EndDate and e.empstat_ IN @Statuses
                             order by empLastNm, EmpFirstNm ";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new {  StartDate = mstartDate, EndDate = mendDate, }, conn);
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new {  StartDate = mstartDate, EndDate = mendDate, Statuses=statuses }, conn);
 
         return data ?? [];
     }
@@ -398,6 +408,5 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, int month, int year, string schema, string conn);
-    Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry(DateTime? startdate, DateTime? endDate, string schema, string conn);
+    Task<List<OEmpmasModel>> _02Empmas_ByLicenseExpiry( DateTime? startDate, DateTime? endDate, List<string> statuses,string schema, string conn);
 }
-
