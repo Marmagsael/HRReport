@@ -361,7 +361,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     private async Task _00_001_Settings(string schema, string connName)
     {
-        string sql = @$"CREATE TABLE  u1c2pay.settings (
+        string sql = @$"CREATE TABLE if not exists u1c2pay.settings (
                             Id                  int unsigned NOT NULL AUTO_INCREMENT,
                             Yeartodays          int unsigned DEFAULT '293',
                             Semiannualtodays    int unsigned DEFAULT '148',
@@ -388,8 +388,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             RevPHIC             char(7) NOT NULL DEFAULT '2025-01',
                             RevPagibig          char(7) NOT NULL DEFAULT '2019-01',
                             PremContSourceId    int DEFAULT '1',
-                            LogoAddress         varchar(150) DEFAULT NULL,
-                            PRIMARY             KEY (Id)) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;";
+                            LogoAddress         varchar(150) DEFAULT '',
+                            PRIMARY             KEY (Id)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;";
 
 
         await _sql.ExecuteCmd(sql, new { }, connName);
