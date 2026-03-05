@@ -27,97 +27,119 @@
         <div class="bordered bg-secondary bg-opacity-10 px-2 py-1 bordered-bottom">
             Company Name
         </div>
-        
-        <div class="card-body">
-            @* ----- CoShortName (char(15))----------*@
-            <div class="d-flex flex-wrap p-sm-0">
-                <div class="p-2 @lblwidth rw-sm">Short Name </div>
-                <div class="w-sm-40 w-sm-175p ">
-                    <RadzenTextBox Placeholder="Morpheusbox"
-                                   class="w-100"
-                                   MaxLength="15"
-                                   @bind-Value="@Settings.CoShortName"/>
-                </div>
-            </div>
 
-            @* ----- CoFullName (char(80))----------*@
-            <div class="d-flex flex-wrap py-1">
-                <div class="p-2 w-125p w-sm-100 ">Payroll Name </div>
-                <div class="w-650p rw-sm ">
-                    <RadzenTextBox Placeholder="Morpheusbox Software Development Services"
-                                   class="w-100"
-                                   MaxLength="80"
-                                   @bind-Value="@Settings.CoFullName"/>
-                </div>
-            </div>
+        <div class="d-flex">
+            @* ============ Company Details ============ *@
+            <div class="w-80">
+               
 
-            @* ----- CoAddress (char(160))----------*@
-            <div class="d-flex flex-wrap">
-                <div class="p-2 @lblwidth rw-sm">Address </div>
-                <div class="w-650p rw-sm ">
-                    <RadzenTextArea Placeholder="Co. Address"
-                                    class="w-100"
-                                    Rows="3"
-                                    MaxLength="160"
-                                    @bind-Value="@Settings.CoAddress"/>
-                </div>
-            </div>
-
-            @* ----- CoContactNos (char(80))----------*@
-            <div class="d-flex flex-wrap">
-                <div class="p-2 @lblwidth rw-sm">Contact Nos. </div>
-                <div class="w-350p rw-sm ">
-                    <RadzenTextBox Placeholder="Contact Nos."
-                                   class="w-100"
-                                   MaxLength="80"
-                                   @bind-Value="@Settings.CoContactNos"/>
-                </div>
-            </div>
-
-
-
-            <RadzenCard Style="max-width:500px; padding:20px">
-                <h5 class="mb-3">Employee Photo</h5>
-
-                <!-- Preview -->
-                @if (!string.IsNullOrEmpty(imagePreview))
-                {
-                    <div class="text-center mb-3">
-                        <img src="@imagePreview" class="img-thumbnail" style="max-height:250px;" />
+                <div class="card-body">
+                    @* ----- CoShortName (char(15))----------*@
+                    <div class="d-flex flex-wrap p-sm-0">
+                        <div class="p-2 @lblwidth rw-sm">Short Name </div>
+                        <div class="w-sm-40 w-sm-175p ">
+                            <RadzenTextBox Placeholder="Morpheusbox"
+                                           class="w-100"
+                                           MaxLength="15"
+                                           @bind-Value="@Settings.CoShortName" />
+                        </div>
                     </div>
-                }
-                else
-                {
-                    <div class="border p-5 text-center text-muted mb-3">
-                        No Image Selected
+
+                    @* ----- CoFullName (char(80))----------*@
+                    <div class="d-flex flex-wrap py-1">
+                        <div class="p-2 w-125p w-sm-100 ">Payroll Name </div>
+                        <div class="w-650p rw-sm ">
+                            <RadzenTextBox Placeholder="Morpheusbox Software Development Services"
+                                           class="w-100"
+                                           MaxLength="80"
+                                           @bind-Value="@Settings.CoFullName" />
+                        </div>
                     </div>
-                }
 
-                <!-- Upload -->
-                <RadzenUpload Url="api/employees/upload-photo"
-                              Accept="image/*"
-                              Auto="false"
-                              MaxFileCount="1"
-                              Change="@OnChange"
-                              @ref="upload" />
+                    @* ----- CoAddress (char(160))----------*@
+                    <div class="d-flex flex-wrap">
+                        <div class="p-2 @lblwidth rw-sm">Address </div>
+                        <div class="w-650p rw-sm ">
+                            <RadzenTextArea Placeholder="Co. Address"
+                                            class="w-100"
+                                            Rows="3"
+                                            MaxLength="160"
+                                            @bind-Value="@Settings.CoAddress" />
+                        </div>
+                    </div>
 
-                <!-- Buttons -->
-                <div class="mt-3 d-flex gap-2">
-                    <RadzenButton Text="Remove"
-                                  ButtonStyle="ButtonStyle.Danger"
-                                  Click="@RemoveImage"
-                                  Disabled="@string.IsNullOrEmpty(imagePreview)" />
+                    @* ----- CoContactNos (char(80))----------*@
+                    <div class="d-flex flex-wrap">
+                        <div class="p-2 @lblwidth rw-sm">Contact Nos. </div>
+                        <div class="w-350p rw-sm ">
+                            <RadzenTextBox Placeholder="Contact Nos."
+                                           class="w-100"
+                                           MaxLength="80"
+                                           @bind-Value="@Settings.CoContactNos" />
+                        </div>
 
-                    <RadzenButton Text="Save Photo"
-                                  ButtonStyle="ButtonStyle.Success"
-                                  Click="@SavePhoto"
-                                  Disabled="@string.IsNullOrEmpty(imagePreview)" />
+
+                    </div>
+
                 </div>
-            </RadzenCard>
+            </div>
 
 
+            @* ============ Image Upload ============ *@
+            <div class="d-flex flex-wrap mt-3">
+                <div style="width:180px; height:180px">
+                    <div class="border rounded overflow-hidden position-relative ratio ratio-1x1 img-container">
 
+                        @if (!string.IsNullOrEmpty(imagePreviewUrl))
+                        {
+                            <img src="@imagePreviewUrl"
+                                 class="w-100 h-100 object-fit-cover" />
+
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white img-hover-overlay"
+                                 style="background: rgba(0,0,0,0.4); cursor: pointer;">
+
+                                <InputFile OnChange="OnInputFileChange"
+                                           class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                           accept="image/*" />
+
+                                <span class="btn btn-primary mb-2" style="pointer-events: none;">
+                                    Upload Image
+                                </span>
+
+                                <!-- Remove button -->
+                                <button class="btn btn-sm btn-danger mt-2" @onclick="RemoveImage" style="z-index: 10;">
+                                    Remove Image
+                                </button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex justify-content-center align-items-center">
+                                <span class=" text-center text-muted">
+                                    Click to upload image
+                                </span>
+                            </div>
+                            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white img-hover-overlay"
+                                 style="background: rgba(0,0,0,0.4); cursor: pointer;">
+
+
+                                <InputFile OnChange="OnInputFileChange"
+                                           class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                           accept="image/*" />
+
+                                <span class="btn btn-primary mb-2" style="pointer-events: none;">
+                                    Upload Image
+                                </span>
+
+
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            </div>
         </div>
+   
 
 
         @* ============ Registration Details ============ *@
@@ -477,60 +499,148 @@
 
     async Task LoadSettings()
     {
-        Settings    = await _settings._02(1, paydb!, conn!);
-        NotRerender = false; 
+        Settings        = await _settings._02(1, paydb!, conn!);
+        imagePreviewUrl = Settings.LogoAddress;
+        NotRerender     = false; 
         StateHasChanged();
     }
 
-    async void Save()
+    // ----- File Upload State -----
+    private string? imagePreviewUrl;
+    private string? errorMessage;
+    private byte[] buffer       = Array.Empty<byte>();
+    private string folderPath   = "";
+    private string filePath     = "";
+    private string fileName     = "";
+
+
+
+    private async Task Save()
     {
-        await _settings._03(1, Settings!, paydb!, conn!);
-        var severity    = NotificationSeverity.Info; 
-        var summary     = "";
-        var detail      = "Record Saved."; 
-        _NotificationService.Notify(new NotificationMessage
+
+        try
         {
-            Severity    = severity,
-            Summary     = summary,
-            Detail      = detail,
-            Duration    = 3000
-        });
+
+            // Determine user folder
+            string uc   = UserClaims.DefCompanyId?? "-";
+
+            folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
+            filePath    = Path.Combine(folderPath, fileName); // path for new upload
+
+            // Relative path for DB
+            string relativePath = Path.Combine("/images", uc, fileName).Replace("\\", "/");
+
+            // Delete file if it exists
+            void DeleteFileIfExists(string? relativePath)
+            {
+                if (!string.IsNullOrEmpty(relativePath))
+                {
+                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", relativePath.TrimStart('/'));
+                    if (File.Exists(fullPath))
+                        File.Delete(fullPath); 
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(imagePreviewUrl))
+            {
+                // Remove image
+                DeleteFileIfExists(Settings.LogoAddress); 
+                Settings.LogoAddress = "";                
+            }
+            else
+            {
+                // Check folder exists 
+                Directory.CreateDirectory(folderPath);
+
+                // Delete previous file if exists
+                DeleteFileIfExists(Settings.LogoAddress);
+
+                // Save new file
+                await File.WriteAllBytesAsync(filePath, buffer);
+
+                // Update Logo Address
+                Settings.LogoAddress = relativePath;
+            }
+            
+
+            await _settings._03(1, Settings!, paydb!, conn!);
+
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity    = NotificationSeverity.Info,
+                Summary     = "",
+                Detail      = "Record Saved.",
+                Duration    = 3000
+            });
+
+        }
+        catch (Exception ex)
+        {
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity    = NotificationSeverity.Error,
+                Summary     = "Error",
+                Detail      = $"Failed to save: {ex.Message}",
+                Duration    = 5000
+            });
+        }
     }
 
-
-    // Image Upload
-    RadzenUpload? upload;
-    string? imagePreview;
-
-    async Task OnChange(UploadChangeEventArgs args)
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
-        Console.WriteLine($"image {imagePreview}");
-        var file = args.Files.FirstOrDefault();
-        if (file == null) return;
+        var file = e.File;
 
-        if (file.Size > 1048576)
+        // 1 MB limit
+        long maxFileSize = 1 * 1024 * 1024;
+        if (file.Size > maxFileSize)
         {
-            Console.WriteLine("File exceeds 1MB.");
-            imagePreview = null;
+            errorMessage = "File is too large. Maximum size is 1 MB.";
+            imagePreviewUrl = null;
             return;
         }
 
-        using var ms = new MemoryStream();
-        // await file.OpenReadStream(1_048_576).CopyToAsync(ms);
-        var bytes = ms.ToArray();
+        errorMessage = null;
+        fileName = file.Name;
 
-        imagePreview = $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
+        // Read file into memory
+        buffer = new byte[file.Size];
+        using (var stream = file.OpenReadStream(maxAllowedSize: maxFileSize))
+        {
+            int totalRead = 0;
+            while (totalRead < buffer.Length)
+            {
+                int read = await stream.ReadAsync(buffer.AsMemory(totalRead, buffer.Length - totalRead));
+                if (read == 0) break;
+                totalRead += read;
+            }
+        }
+
+        // Generate Base64 preview
+        var base64 = Convert.ToBase64String(buffer);
+        imagePreviewUrl = $"data:{file.ContentType};base64,{base64}";
     }
 
-    async Task SavePhoto()
+    private void RemoveImage()
     {
-        if (upload == null || string.IsNullOrEmpty(imagePreview)) return;
-
-        // await upload.Upload();
+        imagePreviewUrl = null;
     }
 
-    void RemoveImage()
-    {
-        imagePreview = null;
+  }
+
+<style>
+    .img-hover-overlay {
+        opacity: 0;
+        transition: opacity .2s ease;
+        background: rgba(0,0,0,.45);
     }
-}
+
+    .img-container:hover .img-hover-overlay {
+        opacity: 1;
+    }
+
+    .remove-btn {
+        z-index: 10; 
+        pointer-events: auto; 
+    }
+</style>
+    
