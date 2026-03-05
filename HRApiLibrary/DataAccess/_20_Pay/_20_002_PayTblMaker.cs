@@ -361,34 +361,35 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     private async Task _00_001_Settings(string schema, string connName)
     {
-        string sql = @$"CREATE TABLE if not exists {schema}.Settings (
-                          Id                INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-                          Yeartodays        INTEGER UNSIGNED            DEFAULT 293,
-                          Semiannualtodays  INTEGER UNSIGNED            DEFAULT 148,
-                          Monthtodays       INTEGER UNSIGNED            DEFAULT 22,
-                          SemiMonthtodays   INTEGER UNSIGNED            DEFAULT 10,
-                          DaysPerWeek       INTEGER UNSIGNED            DEFAULT 5,
-                          Daytohours        INTEGER UNSIGNED            DEFAULT 8,
-                          NDStart           INTEGER UNSIGNED            DEFAULT 2200,
-                          NDEnd             INTEGER UNSIGNED            DEFAULT 600,
-                          PayrollType       Char(10)                    Default 'Bi-Monthly',
-                          TaxPeriodCode     Char(3)                     Default  'SM',         /* Mo - Monthly, SM-Bi-Monthly, WK - Weekly */
-                          RevTax            CHAR(7) NOT NULL            DEFAULT '2023-01',
-                          RevSSS            CHAR(7) NOT NULL            DEFAULT '2025-01',
-                          RevPHIC           CHAR(7) NOT NULL            DEFAULT '2025-01',
-                          RevPagibig        CHAR(7) NOT NULL            DEFAULT '2024-02',
-                          PremContSourceId  INTEGER UNSIGNED            DEFAULT 1,
-                          AllowedMoPrd      INTEGER UNSIGNED            DEFAULT 3,
-                          CoShortName       Char(15)                    Default '',
-                          CoFullName        Char(80)                    Default '',
-                          CoAddress         Char(160)                   Default '',
-                          CoContactNos      Char(80)                    Default '',
-                          RegNo             Char(25)                    Default '',
-                          TIN               Char(25)                    Default '',
-                          SSSNo             Char(25)                    Default '',
-                          PhicNo            Char(25)                    Default '',
-                          PagibigNo         Char(25)                    Default '',
-                        PRIMARY KEY(`Id`)) ENGINE = InnoDB;";
+        string sql = @$"CREATE TABLE  u1c2pay.settings (
+                            Id                  int unsigned NOT NULL AUTO_INCREMENT,
+                            Yeartodays          int unsigned DEFAULT '293',
+                            Semiannualtodays    int unsigned DEFAULT '148',
+                            Monthtodays         int unsigned DEFAULT '22',
+                            SemiMonthtodays     int unsigned DEFAULT '10',
+                            DaysPerWeek         int unsigned DEFAULT '5',
+                            Daytohours          int unsigned DEFAULT '8',
+                            NDStart             int unsigned DEFAULT '2200',
+                            NDEnd               int unsigned DEFAULT '600',
+                            PayrollType         char(10) DEFAULT 'Bi-Monthly',
+                            TaxPeriodCode       char(3) DEFAULT 'SM',
+                            AllowedMoPrd        int unsigned DEFAULT '3',
+                            CoShortName         char(15) DEFAULT '',
+                            CoFullName          char(80) DEFAULT '',
+                            CoAddress           char(160) DEFAULT '',
+                            CoContactNos        char(80) DEFAULT '',
+                            RegNo               char(25) DEFAULT '',
+                            TIN                 char(25) DEFAULT '',
+                            SSSNo               char(25) DEFAULT '',
+                            PhicNo              char(25) DEFAULT '',
+                            PagibigNo           char(25) DEFAULT '',
+                            RevTax              char(7) NOT NULL DEFAULT '2023-01',
+                            RevSSS              char(7) NOT NULL DEFAULT '2025-01',
+                            RevPHIC             char(7) NOT NULL DEFAULT '2025-01',
+                            RevPagibig          char(7) NOT NULL DEFAULT '2019-01',
+                            PremContSourceId    int DEFAULT '1',
+                            LogoAddress         varchar(150) DEFAULT NULL,
+                            PRIMARY             KEY (Id)) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;";
 
 
         await _sql.ExecuteCmd(sql, new { }, connName);
