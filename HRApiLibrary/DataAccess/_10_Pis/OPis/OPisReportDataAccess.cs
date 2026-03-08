@@ -1,5 +1,7 @@
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis.OPis;
+using MySqlX.XDevAPI;
+using Org.BouncyCastle.Asn1.X509;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
@@ -33,18 +35,14 @@ public class OPisReportDataAccess : IOPisReportDataAccess
     {
         if (clnumbers == null || clnumbers.Count == 0 ||  statuses == null || statuses.Count == 0) return [];
         var flds = EmpmasFields();
-
-        if (clnumbers?.FirstOrDefault() == "-")
-        {
-            clnumbers = [];
-        }
+        
 
         string sql = $@"SELECT {flds}, s.Name AS EmpStatus, c.ClName
                         FROM {schema}.Empmas e
                         LEFT JOIN {schema}.EmpStat s ON s.Code = e.Empstat_
                         LEFT JOIN {schema}.Client  c ON c.ClNumber = e.Client_
-                        WHERE e.Empstat_ IN @Statuses
-                        {(clnumbers != null && clnumbers.Count > 0 ? "AND e.Client_ IN @ClNumbers" : "")}
+                        WHERE e.Empstat_ IN @Statuses 
+                        {(clnumbers?.FirstOrDefault() ==  "-" ? "": " AND e.client_ IN @ClNumbers ")}
                         ORDER BY e.EmpLastNm, e.EmpFirstNm;";
         var data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers=clnumbers, Statuses = statuses }, conn);
         return data ?? [];
