@@ -601,5 +601,43 @@ public class MsdsDataAccess : IMsdsDataAccess
         
         return Task.FromResult(m605)!;
     }
+
+    public static List<TimeoptionModel> _02Hours(int intervalMinutes = 30)
+    {     
+        int count = 24 * 60 / intervalMinutes;
+        return [.. Enumerable.Range(0, count).Select(i => new TimeoptionModel 
+                { Value = i * intervalMinutes, Text = DateTime.Today.AddMinutes(i * intervalMinutes).ToString("hh:mm tt") })];
+    }
+
+    public static List<TimedurationModel> _02HourDurations(int intervalMinutes = 30)
+    {
+        const int maxMinutes = 23 * 60 + 30; // 23:30
+
+        return [.. Enumerable.Range(1, maxMinutes / intervalMinutes)
+                .Select(i =>
+                {
+                    int minutes = i * intervalMinutes;
+
+                    int h = minutes / 60;
+                    int m = minutes % 60;
+
+                    int value = h * 100 + m;
+
+                    string text = DateTime.Today
+                        .AddMinutes(minutes)
+                        .ToString("h:mmtt")
+                        .ToLower();
+
+                    return new TimedurationModel
+                    {
+                        Value = value,
+                        Text = text
+                    };
+                })];
+    }
+
+
+
+
 }
 
