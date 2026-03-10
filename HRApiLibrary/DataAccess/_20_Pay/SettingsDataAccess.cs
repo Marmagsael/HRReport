@@ -51,10 +51,24 @@ public class SettingsDataAccess : ISettingsDataAccess
                          PhicNo             = @PhicNo, 
                          PagibigNo          = @PagibigNo, 
                          PremContSourceId   = @PremContSourceId, 
-                         LogoAddress        = @LogoAddress 
                          where Id = @Id;
                    """;
         await _sql.ExecuteCmd<dynamic>(sql, settings, conn);
+
+        sql = $@" select  * from {schema}.Settings x where x.Id = @Id ;";
+        var data = await _sql.FetchData<SettingsModel?, dynamic>(sql, new { Id = id }, conn);
+        return data?.FirstOrDefault();
+
+    }
+
+    public async Task<SettingsModel?> _03(int id, string logoAddr, string schema, string conn)
+    {
+        var sql = $"""
+                   Update {schema}.Settings set 
+                         LogoAddress        = @LogoAddr 
+                         where Id           = @Id;
+                   """;
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = id, LogoAddr = logoAddr }, conn);
 
         sql = $@" select  * from {schema}.Settings x where x.Id = @Id ;";
         var data = await _sql.FetchData<SettingsModel?, dynamic>(sql, new { Id = id }, conn);
