@@ -603,10 +603,31 @@ public class MsdsDataAccess : IMsdsDataAccess
     }
 
     public static List<TimeoptionModel> _02Hours(int intervalMinutes = 30)
-    {     
-        int count = 24 * 60 / intervalMinutes;
-        return [.. Enumerable.Range(0, count).Select(i => new TimeoptionModel 
-                { Value = i * intervalMinutes, Text = DateTime.Today.AddMinutes(i * intervalMinutes).ToString("hh:mm tt") })];
+    {
+        List<TimeoptionModel> to = new(); 
+        for(var ctr = 0; ctr < 24; ctr++ )
+        {
+            var pin = ctr * 100;
+            
+            int hr  = pin / 100;
+            int min = pin % 100;
+            
+            string ampm = " am";
+            
+            if (ctr > 11) { hr = hr-12; ampm = " pm"; }
+            
+            to.Add(new(){ Value=pin, Text=$"{hr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}" }); 
+
+
+        }
+
+        return to; 
+
+
+
+        // int count = 24 * 60 / intervalMinutes;
+        // return [.. Enumerable.Range(0, count).Select(i => new TimeoptionModel 
+        //         { Value = i * intervalMinutes, Text = DateTime.Today.AddMinutes(i * intervalMinutes).ToString("hh:mm tt") })];
     }
 
     public static List<TimedurationModel> _02HourDurations(int intervalMinutes = 30)
