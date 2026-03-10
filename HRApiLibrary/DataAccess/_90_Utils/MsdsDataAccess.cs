@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using HRApiLibrary.Models._00_Main;
+using System.Runtime.ExceptionServices;
 
 
 namespace HRApiLibrary.DataAccess._90_Utils;
@@ -616,7 +617,15 @@ public class MsdsDataAccess : IMsdsDataAccess
             
             if (ctr > 11) { hr = hr-12; ampm = " pm"; }
             
-            to.Add(new(){ Value=pin, Text=$"{hr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}" }); 
+            to.Add(new(){ Value=pin, Text=$"{hr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}" });
+
+            if (intervalMinutes > 0 )
+            {
+                for(int i =0; i < 60; i= i +intervalMinutes)
+                {
+                    
+                }
+            }
 
 
         }
