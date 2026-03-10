@@ -29,4 +29,5 @@ public class SettingsModel
     public string?      RevPhic                 {get; set; } = string.Empty; 
     public string?      RevPagibig              {get; set; } = string.Empty;
     public int          PremContSourceId        { get; set; } = 1; 
+    public string       LogoAddress             { get; set; } = ""; 
 }

@@ -28,6 +28,20 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
         var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { EmpmasId = empmasId, Reccount = reccount }, conn);
         return data;
     }
+    
+    public async Task<List<Attpunches1Model?>?> _02ByIdByRange( int empmasId, DateOnly dstart, DateOnly dend, string schema, string conn) 
+    {
+        string sql = $@"select * from {schema}.Attpunches1 
+                        where EmpmasId = @EmpmasId and PunchInDate >= @DStart and PunchInDate <  @DEnd
+                        order by PunchInDate";
+
+        DateTime start = dstart.ToDateTime(TimeOnly.MinValue);
+        DateTime end   = dend.AddDays(1).ToDateTime(TimeOnly.MinValue);
+
+        var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { EmpmasId = empmasId, DStart = start, DEnd = end }, conn);
+        return data;
+
+    }
 
     public async Task<List<Attpunches1Model?>?> _02NoPunchOut(int empmasId, string schema, string conn)
     {
@@ -63,9 +77,10 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 
 public interface IAttpunches1DataAccess
 {
-    Task<Attpunches1Model?> _01(Attpunches1Model attpunches1, string schema, string conn);
-    Task<List<Attpunches1Model?>?> _02LastPunches(int empmasId, int reccount, string schema, string conn);
-    Task<List<Attpunches1Model?>?> _02NoPunchOut(int empmasId, string schema, string conn);
-    Task<List<Attpunches1Model?>?> _03s(Attpunches1Model attpunches1, string schema, string conn);
-    Task _04(int empmasId, DateTime punchInDate, string schema, string conn);
+    Task<Attpunches1Model?>             _01(Attpunches1Model attpunches1, string schema, string conn);
+    Task<List<Attpunches1Model?>?>      _02LastPunches(int empmasId, int reccount, string schema, string conn);
+    Task<List<Attpunches1Model?>?>      _02NoPunchOut(int empmasId, string schema, string conn);
+    Task<List<Attpunches1Model?>?>      _02ByIdByRange( int empmasId, DateOnly dstart, DateOnly dend, string schema, string conn) ; 
+    Task<List<Attpunches1Model?>?>      _03s(Attpunches1Model attpunches1, string schema, string conn);
+    Task                                _04(int empmasId, DateTime punchInDate, string schema, string conn);
 }
