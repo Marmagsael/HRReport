@@ -14,6 +14,8 @@ public class GRefssstblModel
 
 public class RSssPremModel
 {
+	
+	public string?  	EmpNumber 		{ get; set; }
 	public string?  	EmpLastNm 		{ get; set; }
 	public string?  	EmpFirstNm 		{ get; set; }
 	public string?  	EmpMidNm 		{ get; set; }

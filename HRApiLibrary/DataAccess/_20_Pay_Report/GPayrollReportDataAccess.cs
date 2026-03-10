@@ -49,8 +49,8 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
 
 public interface IGPayrollReportDataAccess
 {
-    Task<List<GChartofacctModel?>?> _02ByAcctTypes(string acctType, string schema, string conn);
-    Task<List<GChartofacctModel?>?> _02s(string schema, string conn);
-    Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
+    Task<List<GChartofacctModel?>?>     _02ByAcctTypes(string acctType, string schema, string conn);
+    Task<List<GChartofacctModel?>?>     _02s(string schema, string conn);
+    Task<List<RSssPremModel?>?>         _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
     
 }
