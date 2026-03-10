@@ -27,11 +27,23 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         var data    = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { AcctType = acctType }, conn);
         return data;
     }
-    
+   
+    public async Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn)
+    {
+        string prd = $"{yyyy.ToString().Trim().Substring(2,2)}"; 
+        string sql  = $@"
+                            select  t.EmpNumber, e.EmpLastnm, e.EmpFirstNm, e.EmpMidNm, c.ClName Payrollgrp, 
+                                    e.DateHired, t.Ee, m.Ecc Cc, m.Er, m.Compensation  from
+                                (SELECT EmpNumber, sum(Amount) Ee  FROM {opaydb}.tbltran t
+                                    where AcctNumber = 'D002' and left(trn,4) = @Prd and right(trn,5) in @Pgrps
+                                    group by EmpNumber) t
 
-
-
-
+                                left join {opisdb}.Empmas e on e.empnumber = t.EmpNumber
+                                left join {opisdb}.Client c on c.ClNumber = e.Client_
+                                left join (SELECT * FROM {opaydb}.refssstbl where @Yyyy between yrstart and yrend) m on m.ee = t.ee ";
+        var data    = await _sql.FetchData<RSssPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy }, conn);
+        return data;
+    }
 }
 
 
@@ -39,6 +51,6 @@ public interface IGPayrollReportDataAccess
 {
     Task<List<GChartofacctModel?>?> _02ByAcctTypes(string acctType, string schema, string conn);
     Task<List<GChartofacctModel?>?> _02s(string schema, string conn);
+    Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
     
-
 }
