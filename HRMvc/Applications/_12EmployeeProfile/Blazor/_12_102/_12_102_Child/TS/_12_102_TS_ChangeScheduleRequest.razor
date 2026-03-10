@@ -1,5 +1,6 @@
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._90_Utils
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
 <RadzenDialog />
 <RadzenNotification />
@@ -86,6 +87,80 @@
     </div>
 
 
+    @* --- Details ------------------------------------------------------------ *@
+    <table class="table table-sm table-hover" >
+        <thead>
+            <tr>
+                <th colspan="4" class="text-center bordered-right bg-light " >Current Schedule</th>
+                <th colspan="4" class="text-center" >Request Schedule</th>
+            </tr>
+            <tr >
+
+                <th class="p-2 w-10 bg-light  " >Day</th>
+                <th class="p-2 w-10 text-center bg-light  " >Duty Type</th>
+                <th class="p-2 w-10 text-center bg-light  " >IN</th>
+                <th class="p-2 w-10 text-center bg-light  " >OUT</th>
+                <th class="p-2 w-10 text-center " >Duty Type</th>
+                <th class="p-2 w-15 text-center " >IN</th>
+                <th class="p-2 w-15 text-center " >Duration</th>
+                <th class="p-2 w-15 text-center " >OUT</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+            @* --- Mnday --------------- *@
+            <tr>
+                <td class="bg-light p-2 ">Monday</td>
+                <td class="bg-light p-2 text-center @dutyTypeCss(Dtl?.D1_dutytype) ">@Dtl?.D1_dutytype</td>
+                <td class="bg-light p-2 text-center ">@Dtl?.D1_in</td>
+                <td class="bg-light p-2 text-center ">-</td>
+
+                <td class="text-center">
+                    <RadzenDropDown 
+                        Data="@dutyTypes"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D1_DutyType"
+                        Style="width:80px; "
+                        Placeholder="Select Duty Type" />
+                </td>
+
+                <td class="p-1 ">
+                    <RadzenDropDown
+                        Data="@timeOptions"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D1_In"
+                        Placeholder="Select Time"
+                        Style="width:125px" />
+                    
+                    @Cs.Atttemplatereqdtl.D1_In 
+                </td>
+
+                <td>
+                    <RadzenDropDown
+                        Data="@timedurations"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D1_HrsLength"
+                        Placeholder="Select Duration"
+                        Style="width:125px" />
+
+                </td>
+
+                <td class="text-center p-2 ">@(outRes(DtlReq.D1_DutyType, DtlReq.D1_In,DtlReq.D1_HrsLength))</td>
+            </tr>
+
+
+        </tbody>
+    </table>
+
+    <hr />
+    @* === Details ============================================================ *@
+
+
+
+
+
 
     @* --- Details ------------------------------- *@
     <div class="card-body p-0">
@@ -129,15 +204,15 @@
                     <_12_102_01_AT_Component
                         DayName="Monday"
                         DutyType="@Dtl?.D1_dutytype"
-                        Duration="@Dtl?.D2_hrslength"
-                        In="@Dtl?.D2_in"
+                        Duration="@Dtl?.D1_hrslength"
+                        In="@Dtl?.D1_in"
                         AttType="@Dtl?.AttendancetypeId"/>
 
                     <_12_102_01_AT_Component
                         DayName="Tuesday"
                         DutyType="@Dtl?.D2_dutytype"
-                        Duration="@Dtl?.D3_hrslength"
-                        In="@Dtl?.D3_in"
+                        Duration="@Dtl?.D2_hrslength"
+                        In="@Dtl?.D2_in"
                         AttType="@Dtl?.AttendancetypeId"/>
 
                     <_12_102_01_AT_Component
@@ -280,16 +355,37 @@
     AtttemplateModel                ctemp       => Cs.Atttemplate??new AtttemplateModel(); 
     AtttemplatereqhdrModel          Hdr         => Cs.Atttemplatereqhdr??new AtttemplatereqhdrModel();
     AtttemplatereqdtlModel          DtlReq      => Cs.Atttemplatereqdtl ?? new AtttemplatereqdtlModel();
-    AtttemplateModel                Dtl      => Cs.Atttemplate ?? new AtttemplateModel();
+    AtttemplateModel                Dtl         => Cs.Atttemplate ?? new AtttemplateModel();
     List<AtttemplatereqdtlModel>    Dtls        => Cs.Atttemplatereqdtls??[];
-    List<string>                    dutyTypes = new() {"R","RD"}; 
+    List<string>                    dutyTypes = new() {"R","RD"};    
+    
     List<TimeoptionModel> times = Enumerable.Range(0, 48).Select(i =>    
                                     {   var time = DateTime.Today.AddMinutes(i * 30);
                                         return new TimeoptionModel { Value = i * 30, Text = time.ToString("hh:mm tt") };
                                     }).ToList();      
     List<TimeoptionModel> timeOptions =  MsdsDataAccess._02Hours();  
     List<TimedurationModel> timedurations = MsdsDataAccess._02HourDurations();      
+    string dutyTypeCss(string dt) => dt=="RD" ? " text-danger " : "" ;
     
+    string outRes(string dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
+
+    string outSched(string dutyType, int? pin, int? duration)
+    {
+        if(dutyType==null)  return "-"; 
+        if(pin==null)       return "-"; 
+
+        int punchin      = pin ?? 0;
+        double duration1 = (duration ?? 0) / 100.0;
+
+        int hr  = punchin / 100;
+        int min = punchin % 100;
+
+        DateTime dt = new DateTime(2000, 1, 1, hr, min, 0);
+
+        //dt = dt.AddHours(duration1);
+
+        return dt.ToString("h:mm tt");
+    } 
 
     AtttemplatereqdtlModel AttTemplateReq_To_AttTemplate( AtttemplateModel at  ) 
     {
