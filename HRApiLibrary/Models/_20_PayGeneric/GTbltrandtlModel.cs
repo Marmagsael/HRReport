@@ -8,3 +8,5 @@ public class GTbltrandtlModel
 	public double 	NVal 		{ get; set; } 
 	public string? 	Uom 		{ get; set; } 
 }
+
+

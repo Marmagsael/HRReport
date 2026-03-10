@@ -69,9 +69,9 @@ public class OEmpmasModel
     public string? TrainingAt               { get; set; }
     public string? TrainingDate             { get; set; }
     public string? Insurance                { get; set; }
-    public string? PolicyNumber             { get; set; }
-    public string? FaceValue                { get; set; }
-    public string? Premium                  { get; set; }
+    public string? PolicyNo                 { get; set; }
+    public Double  FaceValue                { get; set; }
+    public Double  Premium                  { get; set; }
     public DateTime? InsExpire              { get; set; }
     public string? EmergencyContactName     { get; set; }
     public string? EmergencyContactTel      { get; set; }
