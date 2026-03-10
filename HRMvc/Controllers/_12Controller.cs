@@ -10,7 +10,8 @@ namespace HRMvc.Controllers
             // Standard
             ["002"] = "_12_002_PasswordAndSecurity",
             ["003"] = "_12_003_MyEngagement",
-            ["004"] = "_12_010_Logout",
+            ["004"] = "_12_004_PayrollSettings",
+            ["010"] = "_12_010_Logout",
             ["102"] = "_12_102_Dashboard",
             ["103"] = "_12_103_201Record",
             ["104"] = "_12_104_Attendance",
