@@ -43,7 +43,6 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                                 left join (SELECT * FROM {opaydb}.refssstbl where @Yyyy between yrstart and yrend) m on m.ee = t.ee ";
         var data    = await _sql.FetchData<RSssPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy }, conn);
         
-        Console.WriteLine($"Count {data.Count}");
         return data;
     }
 
