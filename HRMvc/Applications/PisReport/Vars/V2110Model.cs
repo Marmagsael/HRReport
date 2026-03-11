@@ -7,8 +7,8 @@
         public string? Insurance    { get; set; } = "";
         public string? PolicyNo     { get; set; } = "";
         public string? EmpStatus    { get; set; } = "";
-        public Double? FaceValue    { get; set; } = 0.00;
-        public Double? Premium      { get; set; } = 0.00;
+        public string? FaceValue    { get; set; } = "0.00";
+        public string? Premium      { get; set; } = "0.00";
         public DateTime? InsExpire  { get; set; } 
         public DateTime? EmpBirth   { get; set; } 
         public DateTime? DateHired  { get; set; } 

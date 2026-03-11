@@ -1,4 +1,5 @@
 @using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._90_Utils
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
@@ -91,15 +92,15 @@
     <table class="table table-sm table-hover" >
         <thead>
             <tr>
-                <th colspan="4" class="text-center bordered-right bg-light " >Current Schedule</th>
-                <th colspan="4" class="text-center" >Request Schedule</th>
+                <th colspan="4" class="text-center bordered-right bg-light text-primary p-2" >Current Schedule</th>
+                <th colspan="4" class="text-center  text-primary p-2" >Request Schedule</th>
             </tr>
             <tr >
 
                 <th class="p-2 w-10 bg-light  " >Day</th>
                 <th class="p-2 w-10 text-center bg-light  " >Duty Type</th>
                 <th class="p-2 w-10 text-center bg-light  " >IN</th>
-                <th class="p-2 w-10 text-center bg-light  " >OUT</th>
+                <th class="p-2 w-10 text-center bg-light  " >Duration</th>
                 <th class="p-2 w-10 text-center " >Duty Type</th>
                 <th class="p-2 w-15 text-center " >IN</th>
                 <th class="p-2 w-15 text-center " >Duration</th>
@@ -109,12 +110,346 @@
         </thead>
 
         <tbody>
-            @* --- Mnday --------------- *@
+            @* --- Monday --------------- *@
             <tr>
-                <td class="bg-light p-2 ">Monday</td>
-                <td class="bg-light p-2 text-center @dutyTypeCss(Dtl?.D1_dutytype) ">@Dtl?.D1_dutytype</td>
-                <td class="bg-light p-2 text-center ">@Dtl?.D1_in</td>
-                <td class="bg-light p-2 text-center ">-</td>
+                <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D2_dutytype)  ">Monday</td>
+                <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D2_dutytype) ">@Dtl?.D2_dutytype</td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl.D2_dutytype=="R" ? Dtl.D2_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl.D2_dutytype=="R" ? Dtl.D2_hrslength : "-") </td>
+
+                <td class="text-center">
+                    <RadzenDropDown 
+                        Data="@dutyTypes"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D2_DutyType"
+                        Style="width:80px; "
+                        Placeholder="Select Duty Type" />
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D2_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timeOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            Change="@(()=>{ Cs.Atttemplatereqdtl.D2_In=0; Cs.Atttemplatereqdtl.D2_HrsLength=0; })"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D2_In"
+                            Placeholder="Select Time"
+                            Style="width:125px" />    
+                    } else { <span>-</span>}
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D2_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timedurations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D2_HrsLength"
+                            Placeholder="Select Duration"
+                            Style="width:125px;"
+                            Class="center-dropdown" />
+                    } else { <span>-</span>}
+
+                </td>
+
+                <td class="text-center align-middle">
+                    @if(DtlReq.D2_DutyType=="R"){
+                        <span class="px-1 ">    @(outRes(DtlReq.D2_DutyType, DtlReq.D2_In,DtlReq.D2_HrsLength)) </span>
+                    } else { <span>-</span>}
+
+
+                    
+                </td>
+            </tr>
+            @* === Monday ============================================================================================= *@
+            
+            @* --- Tuesday --------------- *@
+            <tr>
+                <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D3_dutytype)  ">Tuesday</td>
+                <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D3_dutytype) ">@Dtl?.D3_dutytype</td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D3_dutytype) ">@(Dtl.D3_dutytype=="R" ? Dtl.D3_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D3_dutytype) ">@(Dtl.D3_dutytype=="R" ? Dtl.D3_hrslength : "-") </td>
+
+                <td class="text-center">
+                    <RadzenDropDown 
+                        Data="@dutyTypes"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D3_DutyType"
+                        Style="width:80px; "
+                        Placeholder="Select Duty Type" />
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D3_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timeOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            Change="@(()=>{ Cs.Atttemplatereqdtl.D3_In=0; Cs.Atttemplatereqdtl.D3_HrsLength=0; })"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D3_In"
+                            Placeholder="Select Time"
+                            Style="width:125px" />    
+                    } else { <span>-</span>}
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D3_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timedurations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D3_HrsLength"
+                            Placeholder="Select Duration"
+                            Style="width:125px;"
+                            Class="center-dropdown" />
+                    } else { <span>-</span>}
+
+                </td>
+
+                <td class="text-center align-middle">
+                    @if(DtlReq.D3_DutyType=="R"){
+                        <span class="px-1 ">    @(outRes(DtlReq.D3_DutyType, DtlReq.D3_In,DtlReq.D3_HrsLength)) </span>
+                    } else { <span>-</span>}
+
+
+                    
+                </td>
+            </tr>
+            @* === Tuesday ============================================================================================= *@
+            
+            @* --- Wednesday --------------- *@
+            <tr>
+                <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D4_dutytype)  ">Wednesday</td>
+                <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D4_dutytype) ">@Dtl?.D4_dutytype</td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D4_dutytype) ">@(Dtl.D4_dutytype=="R" ? Dtl.D4_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D4_dutytype) ">@(Dtl.D4_dutytype=="R" ? Dtl.D4_hrslength : "-") </td>
+
+                <td class="text-center">
+                    <RadzenDropDown 
+                        Data="@dutyTypes"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D4_DutyType"
+                        Style="width:80px; "
+                        Placeholder="Select Duty Type" />
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D4_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timeOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            Change="@(()=>{ Cs.Atttemplatereqdtl.D4_In=0; Cs.Atttemplatereqdtl.D4_HrsLength=0; })"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D4_In"
+                            Placeholder="Select Time"
+                            Style="width:125px" />    
+                    } else { <span>-</span>}
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D4_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timedurations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D4_HrsLength"
+                            Placeholder="Select Duration"
+                            Style="width:125px;"
+                            Class="center-dropdown" />
+                    } else { <span>-</span>}
+
+                </td>
+
+                <td class="text-center align-middle">
+                    @if(DtlReq.D4_DutyType=="R"){
+                        <span class="px-1 ">    @(outRes(DtlReq.D4_DutyType, DtlReq.D4_In,DtlReq.D4_HrsLength)) </span>
+                    } else { <span>-</span>}
+
+
+                    
+                </td>
+            </tr>
+            @* === Wednesday ============================================================================================= *@
+            
+            
+            @* --- Thursday --------------- *@
+            <tr>
+                <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D5_dutytype)  ">Thursday</td>
+                <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D5_dutytype) ">@Dtl?.D5_dutytype</td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D5_dutytype) ">@(Dtl.D5_dutytype=="R" ? Dtl.D5_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D5_dutytype) ">@(Dtl.D5_dutytype=="R" ? Dtl.D5_hrslength : "-") </td>
+
+                <td class="text-center">
+                    <RadzenDropDown 
+                        Data="@dutyTypes"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D5_DutyType"
+                        Style="width:80px; "
+                        Placeholder="Select Duty Type" />
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D5_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timeOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            Change="@(()=>{ Cs.Atttemplatereqdtl.D5_In=0; Cs.Atttemplatereqdtl.D5_HrsLength=0; })"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D5_In"
+                            Placeholder="Select Time"
+                            Style="width:125px" />    
+                    } else { <span>-</span>}
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D5_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timedurations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D5_HrsLength"
+                            Placeholder="Select Duration"
+                            Style="width:125px;"
+                            Class="center-dropdown" />
+                    } else { <span>-</span>}
+
+                </td>
+
+                <td class="text-center align-middle">
+                    @if(DtlReq.D5_DutyType=="R"){
+                        <span class="px-1 ">    @(outRes(DtlReq.D5_DutyType, DtlReq.D5_In,DtlReq.D5_HrsLength)) </span>
+                    } else { <span>-</span>}
+
+
+                    
+                </td>
+            </tr>
+            @* === Thursday ============================================================================================= *@
+            
+            
+            @* --- Friday --------------- *@
+            <tr>
+                <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D6_dutytype)  ">Friday</td>
+                <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D6_dutytype) ">@Dtl?.D6_dutytype</td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D6_dutytype) ">@(Dtl.D6_dutytype=="R" ? Dtl.D6_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D6_dutytype) ">@(Dtl.D6_dutytype=="R" ? Dtl.D6_hrslength : "-") </td>
+
+                <td class="text-center">
+                    <RadzenDropDown 
+                        Data="@dutyTypes"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D6_DutyType"
+                        Style="width:80px; "
+                        Placeholder="Select Duty Type" />
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D6_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timeOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            Change="@(()=>{ Cs.Atttemplatereqdtl.D6_In=0; Cs.Atttemplatereqdtl.D6_HrsLength=0; })"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D6_In"
+                            Placeholder="Select Time"
+                            Style="width:125px" />    
+                    } else { <span>-</span>}
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D6_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timedurations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D6_HrsLength"
+                            Placeholder="Select Duration"
+                            Style="width:125px;"
+                            Class="center-dropdown" />
+                    } else { <span>-</span>}
+
+                </td>
+
+                <td class="text-center align-middle">
+                    @if(DtlReq.D6_DutyType=="R"){
+                        <span class="px-1 ">    @(outRes(DtlReq.D6_DutyType, DtlReq.D6_In,DtlReq.D6_HrsLength)) </span>
+                    } else { <span>-</span>}
+
+
+                    
+                </td>
+            </tr>
+            @* === Fiday ============================================================================================= *@
+            
+            
+            @* --- Saturday --------------- *@
+            <tr>
+                <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D7_dutytype)  ">Saturday</td>
+                <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D7_dutytype) ">@Dtl?.D7_dutytype</td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D7_dutytype) ">@(Dtl.D7_dutytype=="R" ? Dtl.D7_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D7_dutytype) ">@(Dtl.D7_dutytype=="R" ? Dtl.D7_hrslength : "-") </td>
+
+                <td class="text-center">
+                    <RadzenDropDown 
+                        Data="@dutyTypes"
+                        @bind-Value="@Cs.Atttemplatereqdtl.D7_DutyType"
+                        Style="width:80px; "
+                        Placeholder="Select Duty Type" />
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D7_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timeOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            Change="@(()=>{ Cs.Atttemplatereqdtl.D7_In=0; Cs.Atttemplatereqdtl.D7_HrsLength=0; })"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D7_In"
+                            Placeholder="Select Time"
+                            Style="width:125px" />    
+                    } else { <span>-</span>}
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D7_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timedurations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D7_HrsLength"
+                            Placeholder="Select Duration"
+                            Style="width:125px;"
+                            Class="center-dropdown" />
+                    } else { <span>-</span>}
+
+                </td>
+
+                <td class="text-center align-middle">
+                    @if(DtlReq.D7_DutyType=="R"){
+                        <span class="px-1 ">    @(outRes(DtlReq.D7_DutyType, DtlReq.D7_In,DtlReq.D7_HrsLength)) </span>
+                    } else { <span>-</span>}
+
+
+                    
+                </td>
+            </tr>
+            @* === Saturday ============================================================================================= *@
+            
+            
+            @* --- Sunday --------------- *@
+            <tr>
+                <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D1_dutytype)  ">Sunday</td>
+                <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D1_dutytype) ">@Dtl?.D1_dutytype</td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D1_dutytype) ">@(Dtl.D1_dutytype=="R" ? Dtl.D1_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D1_dutytype) ">@(Dtl.D1_dutytype=="R" ? Dtl.D1_hrslength : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
@@ -122,33 +457,50 @@
                         @bind-Value="@Cs.Atttemplatereqdtl.D1_DutyType"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
-                </td>
-
-                <td class="p-1 ">
-                    <RadzenDropDown
-                        Data="@timeOptions"
-                        TextProperty="Text"
-                        ValueProperty="Value"
-                        @bind-Value="@Cs.Atttemplatereqdtl.D1_In"
-                        Placeholder="Select Time"
-                        Style="width:125px" />
                     
-                    @Cs.Atttemplatereqdtl.D1_In 
                 </td>
 
-                <td>
-                    <RadzenDropDown
-                        Data="@timedurations"
-                        TextProperty="Text"
-                        ValueProperty="Value"
-                        @bind-Value="@Cs.Atttemplatereqdtl.D1_HrsLength"
-                        Placeholder="Select Duration"
-                        Style="width:125px" />
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D1_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timeOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            Change="@(()=>{ Cs.Atttemplatereqdtl.D1_In=0; Cs.Atttemplatereqdtl.D1_HrsLength=0; })"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D1_In"
+                            Placeholder="Select Time"
+                            Style="width:125px" />    
+                    } else { <span>-</span>}
+                    
+                </td>
+
+                <td class="p-1 text-center align-middle">
+                    @if(DtlReq.D1_DutyType=="R"){
+                        <RadzenDropDown
+                            Data="@timedurations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@Cs.Atttemplatereqdtl.D1_HrsLength"
+                            Placeholder="Select Duration"
+                            Style="width:125px;"
+                            Class="center-dropdown" />
+                    } else { <span>-</span>}
 
                 </td>
 
-                <td class="text-center p-2 ">@(outRes(DtlReq.D1_DutyType, DtlReq.D1_In,DtlReq.D1_HrsLength))</td>
+                <td class="text-center align-middle">
+                    @if(DtlReq.D1_DutyType=="R"){
+                        <span class="px-1 ">    @(outRes(DtlReq.D1_DutyType, DtlReq.D1_In,DtlReq.D1_HrsLength)) </span>
+                    } else { <span>-</span>}
+
+
+                    
+                </td>
             </tr>
+            @* === Sunday ============================================================================================= *@
+            
+
+            
 
 
         </tbody>
@@ -162,135 +514,7 @@
 
 
 
-    @* --- Details ------------------------------- *@
-    <div class="card-body p-0">
-        @* --- Header ----------------------------------------------------------------- *@
-        <div class="d-flex"> 
-            @* --- Current Header ----------------------------------------------------- *@
-            <div class="w-50 txt mb-a-gray ">
-                <div class="d-flex fw-bold py-2 border-bottom">
-                    <div class="w-60 text-center bordered-right"></div>
-                    <div class="w-40 text-center bordered-right">Current Schedule</div>
-                </div>
-                
-                <div class="d-flex fw-bold py-2">
-                    <div class="w-60 text-center bordered-right">Duty Type</div>
-                    <div class="w-20 text-center bordered-right">IN</div>
-                    <div class="w-20 text-center bordered-right">OUT</div>
-                </div>
-            </div>
-            
-            @* --- Request Header ----------------------------------------------------- *@
-            <div class="w-50">
-                <div class="d-flex fw-bold py-2 border-bottom">
-                    <div class="w-100 text-center bordered-right">Request Schedule</div>
-                </div>
-                
-                <div class="d-flex fw-bold py-2  border-bottom">
-                    <div class="w-25 text-center bordered-right">Duty Type</div>
-                    <div class="w-25 text-center bordered-right">IN</div>
-                    <div class="w-25 text-center bordered-right">Duration</div>
-                    <div class="w-25 text-center ">OUT</div>
-                </div>
-            </div>
-            
-        </div>
-        
-        @* --- Details -------------------------------------------------------- *@
-        <div class="card-body p-0 ">
-            <div class="d-flex">
-                @* --- Current Details ---------------------------------------- *@
-                <div class="w-50 txt mb-a-gray">
-                    <_12_102_01_AT_Component
-                        DayName="Monday"
-                        DutyType="@Dtl?.D1_dutytype"
-                        Duration="@Dtl?.D1_hrslength"
-                        In="@Dtl?.D1_in"
-                        AttType="@Dtl?.AttendancetypeId"/>
-
-                    <_12_102_01_AT_Component
-                        DayName="Tuesday"
-                        DutyType="@Dtl?.D2_dutytype"
-                        Duration="@Dtl?.D2_hrslength"
-                        In="@Dtl?.D2_in"
-                        AttType="@Dtl?.AttendancetypeId"/>
-
-                    <_12_102_01_AT_Component
-                        DayName="Wednesday"
-                        DutyType="@Dtl?.D3_dutytype"
-                        Duration="@Dtl?.D3_hrslength"
-                        In="@Dtl?.D3_in"
-                        AttType="@Dtl?.AttendancetypeId"/>
-
-                    <_12_102_01_AT_Component
-                        DayName="Thursday"
-                        DutyType="@Dtl?.D4_dutytype"
-                        Duration="@Dtl?.D4_hrslength"
-                        In="@Dtl?.D4_in"
-                        AttType="@Dtl?.AttendancetypeId"/>
-
-                    <_12_102_01_AT_Component
-                        DayName="Friday"
-                        DutyType="@Dtl?.D5_dutytype"
-                        Duration="@Dtl?.D5_hrslength"
-                        In="@Dtl?.D5_in"
-                        AttType="@Dtl?.AttendancetypeId"/>
-
-                    <_12_102_01_AT_Component
-                        DayName="Saturday"
-                        DutyType="@Dtl?.D6_dutytype"
-                        Duration="@Dtl?.D6_hrslength"
-                        In="@Dtl?.D6_in"
-                        AttType="@Dtl?.AttendancetypeId"/>
-
-                    <_12_102_01_AT_Component
-                        DayName="Sunday"
-                        DutyType="@Dtl?.D7_dutytype"
-                        Duration="@Dtl?.D7_hrslength"
-                        In="@Dtl?.D7_in"
-                        AttType="@Dtl?.AttendancetypeId"/>
-
-                </div>
-
-                @* --- Request Details ------------------------------------------------ *@
-                <div class="w-50 ">
-                    <div class="d-flex py-2 bordered-bottom">
-                        
-                        <div class="w-25 bordered-left text-center p-0 "> 
-                            <RadzenDropDown 
-                                Data="@dutyTypes"
-                                @bind-Value="@Cs.Atttemplatereqdtl.D1_DutyType"
-                                Style="width:90%; "
-                                Placeholder="Select Duty Type" />
-                        </div>
-                        <div class="w-25 bordered-left"> 
-                            <RadzenDropDown
-                                Data="@timeOptions"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="@Cs.Atttemplatereqdtl.D1_In"
-                                Placeholder="Select Time"
-                                Style="width:97%" />
-                        </div>
-                        <div class="w-25 bordered-left"> 
-                            <RadzenDropDown
-                                Data="@timedurations"
-                                TextProperty="Text"
-                                ValueProperty="Value"
-                                @bind-Value="@Cs.Atttemplatereqdtl.D1_HrsLength"
-                                Placeholder="Select Duration"
-                                Style="width:97%" />
-                        </div>
-                        <div class="w-25 bordered-left"> @DtlReq.D1_HrsLength</div>
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-
-
-    </div>
+    
 
 
 
@@ -299,7 +523,7 @@
 
 
 @inject IAtttemplateDataAccess _atttemplate;
-
+@inject IOEmpmasDataAccess      _empmas; 
 
 
 @code {
@@ -343,21 +567,31 @@
     void ShowMyRequest() {
 
     }
-    void FetchApprover() {
-
+    async Task FetchApprover()
+    {
+        Cs.Atttemplatereqhdr.ApproverName = "";
+        if (string.IsNullOrWhiteSpace(Hdr.EmpNumber_Approver)) return;
+        var res = await _empmas._02(Hdr.EmpNumber_Approver,  Uc.OpisDb,  Uc.Conn);
+        var emp = res.FirstOrDefault();
+        if (emp != null) { Cs.Atttemplatereqhdr.ApproverName = emp.EmpName ?? ""; }
     }
 
 
-    bool CanSave => true;
-    bool CanSend => true;
-    bool CanCancel => true;
+    string CanSave => (Hdr.Status is "N" or "S" ) ? "" : " disabled-div ";
+    string CanSend => (Hdr.Status is "S" &&
+                    Hdr.DateRequested > DateTime.MinValue &&
+                    Hdr.Effectivity > DateTime.MinValue &&
+                    !string.IsNullOrWhiteSpace(Hdr.ApproverName) ? "" : " disabled-div ");
+    bool CanCancel => Hdr.Status is "S" ;
 
     AtttemplateModel                ctemp       => Cs.Atttemplate??new AtttemplateModel(); 
     AtttemplatereqhdrModel          Hdr         => Cs.Atttemplatereqhdr??new AtttemplatereqhdrModel();
     AtttemplatereqdtlModel          DtlReq      => Cs.Atttemplatereqdtl ?? new AtttemplatereqdtlModel();
     AtttemplateModel                Dtl         => Cs.Atttemplate ?? new AtttemplateModel();
     List<AtttemplatereqdtlModel>    Dtls        => Cs.Atttemplatereqdtls??[];
-    List<string>                    dutyTypes = new() {"R","RD"};    
+    List<string>                    dutyTypes = new() {"R","RD"};  
+
+    bool IsShowRequest(string dutyType="R")    => dutyType=="R";   
     
     List<TimeoptionModel> times = Enumerable.Range(0, 48).Select(i =>    
                                     {   var time = DateTime.Today.AddMinutes(i * 30);
@@ -382,7 +616,7 @@
 
         DateTime dt = new DateTime(2000, 1, 1, hr, min, 0);
 
-        //dt = dt.AddHours(duration1);
+        dt = dt.AddHours(duration1);
 
         return dt.ToString("h:mm tt");
     } 
@@ -424,14 +658,19 @@
         return atreq;
 
     }
-
-
-
-
-
-
-
-
-
-
 }
+
+<style>
+
+    /* center selected value */
+    .center-dropdown .rz-dropdown-label {
+        text-align: center !important;
+        width: 100%;
+    }
+
+    /* center dropdown popup items */
+    .rz-dropdown-items-wrapper .rz-dropdown-item {
+        text-align: center !important;
+    }
+
+</style>
