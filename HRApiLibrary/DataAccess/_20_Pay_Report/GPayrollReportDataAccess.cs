@@ -29,7 +29,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
     }
    
     
-    public async Task<List<RSssPremModel?>?> _02Tbltran_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctNumber, string opaydb,  string opisdb, string conn)
+    public async Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctNumber, string opaydb,  string opisdb, string conn)
     {
         string prd = $"{yyyy.ToString().Trim().Substring(2,2)}{mm}"; 
         string sql  = $@"
@@ -55,6 +55,6 @@ public interface IGPayrollReportDataAccess
 {
     Task<List<GChartofacctModel?>?>     _02ByAcctTypes(string acctType, string schema, string conn);
     Task<List<GChartofacctModel?>?>     _02s(string schema, string conn);
-    Task<List<RSssPremModel?>?> _02Tbltran_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
+    Task<List<RSssPremModel?>?>         _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
     
 }
