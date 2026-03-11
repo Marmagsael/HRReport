@@ -605,69 +605,78 @@ public class MsdsDataAccess : IMsdsDataAccess
 
     public static List<TimeoptionModel> _02Hours(int intervalMinutes = 30)
     {
-        List<TimeoptionModel> to = new(); 
-        for(var ctr = 0; ctr < 24; ctr++ )
-        {
-            var pin = ctr * 100;
-            
-            int hr  = pin / 100;
-            int min = pin % 100;
-            
-            string ampm = " am";
-            
-            if (ctr > 11) { hr = hr-12; ampm = " pm"; }
-            
-            to.Add(new(){ Value=pin, Text=$"{hr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}" });
+        List<TimeoptionModel> tos = new();
 
-            if (intervalMinutes > 0 )
+        for (int ctr = 0; ctr < 24; ctr++)
+        {
+            int basePin = ctr * 100;
+
+            if (intervalMinutes > 0)
             {
-                for(int i =0; i < 60; i= i +intervalMinutes)
+                for (int i = 0; i < 60; i += intervalMinutes)
                 {
-                    
+                    int pin = basePin + i;
+
+                    int hr  = pin / 100;
+                    int min = pin % 100;
+
+                    string ampm = hr >= 12 ? " pm" : " am";
+
+                    int displayHr = hr % 12;
+                    if (displayHr == 0) displayHr = 12;
+
+                    TimeoptionModel to = new()
+                    {
+                        Value = pin,
+                        Text = $"{displayHr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}"
+                    };
+
+                    tos.Add(to);
                 }
             }
+            else
+            {
+                int hr  = basePin / 100;
+                int min = basePin % 100;
 
+                string ampm = hr >= 12 ? " pm" : " am";
 
+                int displayHr = hr % 12;
+                if (displayHr == 0) displayHr = 12;
+
+                tos.Add(new TimeoptionModel
+                {
+                    Value = basePin,
+                    Text = $"{displayHr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}"
+                });
+            }
         }
 
-        return to; 
-
-
-
-        // int count = 24 * 60 / intervalMinutes;
-        // return [.. Enumerable.Range(0, count).Select(i => new TimeoptionModel 
-        //         { Value = i * intervalMinutes, Text = DateTime.Today.AddMinutes(i * intervalMinutes).ToString("hh:mm tt") })];
+        return tos;
     }
 
-    public static List<TimedurationModel> _02HourDurations(int intervalMinutes = 30)
+    public static List<TimedurationModel> _02HourDurations(int interval = 50)
     {
-        const int maxMinutes = 23 * 60 + 30; // 23:30
 
-        return [.. Enumerable.Range(1, maxMinutes / intervalMinutes)
-                .Select(i =>
-                {
-                    int minutes = i * intervalMinutes;
+        List<TimedurationModel> tds = []; 
+        for(int ctr = interval; ctr < 2400; ctr += interval)
+        {
+            int val = ctr; 
+            int hr  = val / 100;
+            int dec = val % 100;
 
-                    int h = minutes / 60;
-                    int m = minutes % 60;
+            string text = $"{hr}.{dec.ToString().PadRight(2,'0')}"; 
+            TimedurationModel td = new() {Value=val, Text=text}; 
+            tds.Add(td); 
+        }
 
-                    int value = h * 100 + m;
-
-                    string text = DateTime.Today
-                        .AddMinutes(minutes)
-                        .ToString("h:mmtt")
-                        .ToLower();
-
-                    return new TimedurationModel
-                    {
-                        Value = value,
-                        Text = text
-                    };
-                })];
+        return tds; 
     }
 
 
 
 
 }
+
+
 
