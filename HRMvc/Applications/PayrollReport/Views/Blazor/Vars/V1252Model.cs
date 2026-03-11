@@ -5,8 +5,6 @@ namespace HRMvc.Applications.PisReport.Vars;
 public class V1252Model
 {
     public string           Msg         { get; set; } = ""; 
-
-    public List<OEmpmasModel> Empmass   { get; set; } = []; 
     public List<R1252Model> RepDtls     { get; set; } = []; 
 }
 
