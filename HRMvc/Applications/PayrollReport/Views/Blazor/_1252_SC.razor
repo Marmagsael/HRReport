@@ -1,3 +1,5 @@
+@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PayrollReport.Views.Blazor._1252
@@ -5,10 +7,31 @@
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
 
-        @* @if (v.Any())
+        @if ((reps??[]).Any())
         {
-            <_1252_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />
-        } *@
+            <_1252_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
+        }
+
+
+        @* <div>
+            <div>Year : @rv.Year </div>
+            <div>Month : @trn </div>
+            <div>Clients   : 
+
+                @foreach(var c in clNumbers){
+                    <div>@c</div>
+                }
+                    
+             </div>
+
+             <div>
+                @foreach(var r in v.RepDtls){
+                    <div>@r.EmpLastNm @r.Ee </div>
+                }
+             </div>
+
+
+        </div> *@
 
         <div class="p-0">
             <div class="card-header">
@@ -30,14 +53,19 @@
     </Details>
 </_00BT_FullW>
 
-@inject IOPisReportDataAccess _pisRep;
-@inject IOClientDataAccess      _client; 
+@inject IOPisReportDataAccess       _pisRep;
+@inject IOClientDataAccess          _client; 
 @inject IGPayrollReportDataAccess   _payRep;
 
 @code{
     [Parameter] public UserClaimsModel  Uc   { get; set; } = new();
-    V00_RepVars                         rv   = new();
-    V1252Model                          v = new();
+    V00_RepVars                         rv      = new();
+    V1252Model                          v       = new();
+
+    List<RSssPremModel?>?               reps    = []; 
+
+    string trn => $"{rv.Year.ToString().Substring(2,2)}{rv.Month}"; 
+    List<string?>? clNumbers => rv.Clients.Where(c=>c.IsSelectedB).Select(c=>c.ClNumber).ToList()??[]; 
 
  protected override async Task OnInitializedAsync()
     {
@@ -82,15 +110,13 @@
         rv.ShowReport=false; 
         v.Msg       = "";
         rv.ShowModal    = true;
-        return;
-        List<string?> clNumbers = rv.Clients
-                                    .Where(c=> c.IsSelectedB )
-                                    .Select(c => c.ClNumber)
-                                    .ToList(); 
-        if(!clNumbers.Any())    { v.Msg = "Please select at least one payroll group to proceed. "; return; }
+      
+        if(!(clNumbers??[]).Any())    { v.Msg = "Please select at least one payroll group to proceed. "; return; }
 
-        string accttype = "D002";
-        var res = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!,rv.Year,rv.Month,accttype,Uc.OpayDb!,Uc.OpisDb!,Uc.Conn!);
-        Console.WriteLine(clNumbers.Count);
+        reps  = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        
+        
+        
+        ///Console.WriteLine(clNumbers.Count);
     }
 }
