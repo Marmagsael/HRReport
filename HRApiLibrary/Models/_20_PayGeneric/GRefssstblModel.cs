@@ -20,7 +20,7 @@ public class RSssPremModel
 	public string?  	EmpFirstNm 		{ get; set; }
 	public string?  	EmpMidNm 		{ get; set; }
 	public string?  	Payrollgrp 		{ get; set; }
-	public string?  	DateHired 		{ get; set; }
+	public DateTime?  	DateHired 		{ get; set; }
 	public double?  	Ee 				{ get; set; }
 	public double?  	Er 				{ get; set; }
 	public double?  	Ec 				{ get; set; }
