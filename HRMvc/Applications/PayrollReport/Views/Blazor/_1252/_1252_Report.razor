@@ -1,0 +1,96 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+
+
+<_02BTModal MCaption="@Rv.MCaption" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
+    <Details>
+
+        @if (Rv.ShowReport)
+        {
+            <IframeReportRenderer DataSource="@Rv.ReportData"
+                                  ReportRelativePath="@Rv.RelativePath"
+                                  OutputFormat="@Rv.SelectedFormat"
+                                  Parameters="@Rv.ReportParams"
+                                  AutoGenerate="@(Rv.ReportData?.Any() == true)"
+                                  RefreshToken="@Rv.RefreshToken" />
+        }
+        else
+        {
+
+
+            <div class="p-2">
+                <div class="sticky-top bg-white ">
+                    <div class="p-2 border-bottom">
+                        <div @onclick="CreateReport" class="mb-cbtn mb-cbtn-blue w-150p card p-1 "> Show Report  </div>
+                    </div>
+
+                    <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
+                        <div class=" w-75p text-center">No</div>
+                        <div class=" w-100p">Last Name</div>
+                        <div class=" w-150p">First Name</div>
+                        <div class=" w-150p">Middle Name</div>
+                        <div class=" w-200p">Curr. Deployment</div>
+                        <div class=" w-150p">Date Hired</div>
+                        <div class=" w-100p text-end">  EE </div>
+                        <div class=" w-100p text-end">  ER</div>
+                        <div class=" w-100p text-end">  EC</div>
+                    </div>
+                </div>
+
+                @{
+                    int ctr = 0; string stat = string.Empty;
+                }
+                @foreach (var rec in V)
+                {
+                    ctr++; 
+
+                    <div class="d-flex gap-2 border-bottom py-1 ">
+                        <div class=" w-75p text-center ">@ctr</div>
+                        <div class=" w-100p">   @rec.EmpLastNm</div>
+                        <div class=" w-150p">   @rec.EmpFirstNm</div>
+                        <div class=" w-150p">   @rec.EmpFirstNm</div>
+                        <div class=" w-200p">  @rec.Payrollgrp</div> 
+                        <div class=" w-150p">  @rec.DateHired?.ToString("MMM dd,yyyy")</div> 
+                        <div class=" w-100p text-end">  @rec.Ee?.ToString("N2") </div>
+                        <div class=" w-100p text-end">  @rec.Er?.ToString("N2")</div>
+                        <div class=" w-100p text-end">  @rec.Ec?.ToString("N2")</div>
+                    </div>
+
+                }
+            </div>
+
+        }
+
+    </Details>
+</_02BTModal>
+
+
+
+
+
+@inject IOCoinfoDataAccess          _coinfo;
+@inject IGPayrollReportDataAccess   _payreport; 
+
+
+
+@code {
+    [Parameter] public V00_RepVars              Rv  { get; set; } = new();
+    [Parameter] public List<RSssPremModel>      V   { get; set; } = new();
+    [Parameter] public EventCallback<bool>      ChildAction { get; set; }
+
+
+    void CreateReport()
+    {
+        Rv.ReportData = V;
+        Rv.ShowReport = true;
+
+    }
+
+    async Task CloseReportModal(bool ans)
+    {
+        Rv.ShowModal = ans;
+        await ChildAction.InvokeAsync(ans);
+
+    }
+}
