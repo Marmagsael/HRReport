@@ -86,7 +86,7 @@
 
 
             @* ============ Image Upload ============ *@
-            <div class="d-flex flex-wrap mt-3">
+            <div class="d-flex flex-column gap-1 my-3">
                 <div style="width:180px; height:180px">
                     <div class="border rounded overflow-hidden position-relative ratio ratio-1x1 img-container">
 
@@ -103,20 +103,15 @@
                                            accept="image/*" />
 
                                 <span class="btn btn-primary mb-2" style="pointer-events: none;">
-                                    Upload Image
+                                    Load Image
                                 </span>
-
-                                <!-- Remove button -->
-                                <button class="btn btn-sm btn-danger mt-2" @onclick="RemoveImage" style="z-index: 10;">
-                                    Remove Image
-                                </button>
                             </div>
                         }
                         else
                         {
                             <div class="d-flex justify-content-center align-items-center">
                                 <span class=" text-center text-muted">
-                                    Click to upload image
+                                    Click to load image
                                 </span>
                             </div>
                             <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white img-hover-overlay"
@@ -128,7 +123,7 @@
                                            accept="image/*" />
 
                                 <span class="btn btn-primary mb-2" style="pointer-events: none;">
-                                    Upload Image
+                                    Load Image
                                 </span>
 
 
@@ -137,7 +132,22 @@
 
                     </div>
                 </div>
+
+                <div style="min-width:0">
+                    @if (imagePreviewUrl != "")
+                    {
+                        <button class="btn btn-primary  w-100" @onclick="UploadImage">
+                            Upload
+                        </button>
+                        <button class="btn btn-danger mt-1 w-100" @onclick="RemoveImage">
+                            Remove
+                        </button>
+                    }
+                </div>
             </div>
+
+           
+           
         </div>
 
 
@@ -551,9 +561,17 @@
 
         // 1 MB limit
         long maxFileSize = 1 * 1024 * 1024;
+
         if (file.Size > maxFileSize)
         {
-            errorMessage = "File is too large. Maximum size is 1 MB.";
+             _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Warning",
+                Detail = "The image is too large. Maximum size is 1 MB.",
+                Duration = 3000
+            });
+
             imagePreviewUrl = null;
             return;
         }
@@ -582,7 +600,7 @@
     private async Task UploadImage()
     {
         // Determine user folder
-        string uc   = UserClaims.DefCompanyId ?? "-";
+        string uc = $"U{UserClaims.DefCompanyId}";
 
         folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
         filePath    = Path.Combine(folderPath, fileName); // path for new upload
@@ -613,9 +631,9 @@
 
         _NotificationService.Notify(new NotificationMessage
         {
-            Severity = NotificationSeverity.Info,
+            Severity = NotificationSeverity.Success,
             Summary = "",
-            Detail = "Logo Saved.",
+            Detail = "The logo was successfully saved.",
             Duration = 3000
         });
     }

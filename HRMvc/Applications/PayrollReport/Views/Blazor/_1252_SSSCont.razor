@@ -1,8 +1,8 @@
-﻿@using Blazorise
+@using Blazorise
 @using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
-@using HRMvc.Applications.PayrollReport.Views.Blazor._1254
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1252
 
 @inject NotificationService _NotificationService;
 
@@ -11,14 +11,13 @@
 
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-
         @*--- Looader ------------------------------------------------*@
         <_00Loader Rv="@rv" />
 
-        @if ((reps ?? []).Any())
+        @if ((reps??[]).Any())
         {
             @*--- Report ------------------------------------------------*@
-            <_1254_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
+            <_1252_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
         }
 
 
@@ -27,14 +26,14 @@
                 <div class="d-flex gap-2">
                     @*--- Period ------------------------------------------------*@
                     <div class="card  p-3 w-250p">
-                        <_01YYMM Rv="rv" ClassParams="@periodClass" ChildAction="ChildActionCatcher" />
+                        <_01YYMM Rv="rv"  ClassParams ="@periodClass" ChildAction="ChildActionCatcher" />
                     </div>
 
                     <div class="card p-3 w-180p">
-                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher"/>
                         @*--- Fetch Button ------------------------------------------------*@
                         <div class="mt-1 p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
-                    </div>
+                    </div>  
                 </div>
             </div>
         </div>
@@ -48,39 +47,38 @@
 
 
 
-@inject IOPisReportDataAccess _pisRep;
-@inject IOClientDataAccess _client;
-@inject IGPayrollReportDataAccess _payRep;
+@inject IOPisReportDataAccess       _pisRep;
+@inject IOClientDataAccess          _client; 
+@inject IGPayrollReportDataAccess   _payRep;
 
-@code {
-    [Parameter] public UserClaimsModel Uc { get; set; } = new();
-    V00_RepVars rv = new();
-    List<RPagIbigPremModel?>? reps = [];
+@code{
+    [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
+    V00_RepVars                         rv      = new();
 
-    List<string?>? clNumbers => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
+    List<RSssPremModel?>?               reps    = []; 
+
+    List<string?>? clNumbers => rv.Clients.Where(c=>c.IsSelectedB).Select(c=>c.ClNumber).ToList()??[];
 
     string errorMsg = "";
 
-    Dictionary<string, object> periodClass = new(){["FlexDirection"] = "flex-column"};
-    Dictionary<string, object> clientClass = new(){["VH"] = "vh65"};
+    Dictionary<string, object> periodClass = new(){["FlexDirection"]   = "flex-column"};
+    Dictionary<string, object> clientClass = new(){ ["VH"] = "vh65"};
 
 
     protected override async Task OnInitializedAsync()
     {
-        rv.Clients = [];
-        rv.RefreshToken     = 12520000;
-        rv.MCaption         = "PagIbig Contribution";
+        rv.Clients          = [];  
 
+        rv.RefreshToken     = 12520000;
+        rv.MCaption         = "SSS Contribution";
 
         @* --- Payroll Group ------------------------------------------- *@
-        var resc = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
-        if (resc.Count > 0) { rv.Clients = resc!; }
-
+        var resc = await _client._02ByStatuss("Active",Uc.OpisDb!, Uc.Conn!); 
+        if(resc.Count > 0 ) { rv.Clients = resc!;  }
+               
         @* --- Report Details -------------------------------------------- *@
-        rv.RelativePath = "Reports/_03Payroll/K_PagIbig.trdp";
-
-
-
+        rv.RelativePath = "Reports/_03Payroll/K_SSS.trdp";
+     
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
         rv.ReportParams = [];
 
@@ -90,16 +88,16 @@
         if (res.Count > 0)
         {
             var r = res.FirstOrDefault();
-            rv.ReportParams["CoName"] = r.CoName ?? "";
-            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+            rv.ReportParams["CoName"]       = r.CoName ?? "";
+            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
         }
 
-        rv.ReportParams["ReportTitle"] = "PagIbig Contribution";
-        rv.ReportParams["RunDate"] = DateTime.Now;
+        rv.ReportParams["ReportTitle"]      = "SSS Contribution";
+        rv.ReportParams["RunDate"]          = DateTime.Now;
     }
 
 
-    void ChildActionCatcher() { }
+    void ChildActionCatcher(){}
 
     async Task FetchData()
     {
@@ -109,10 +107,10 @@
         {
             ShowNotification(new NotificationMessage
             {
-                Severity    = NotificationSeverity.Warning,
-                Summary     = "Warning",
-                Detail      = $"Please select at least one deployment to proceed.",
-                Duration    = 4000
+                Severity = NotificationSeverity.Warning,
+                Summary = "Warning",
+                Detail = $"Please select at least one deployment to proceed.",
+                Duration = 4000
             });
             return;
         }
@@ -120,7 +118,7 @@
         try
         {
             rv.Isloaded = true;
-            reps = await _payRep._02PagIbigPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, "D004",Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            reps = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, "D002", Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
         }
         finally
         {
@@ -138,7 +136,8 @@
             });
             return;
         }
-        if(!rv.Isloaded) rv.ShowModal = true;
+
+        if (!rv.Isloaded) rv.ShowModal = true;
     }
 
 

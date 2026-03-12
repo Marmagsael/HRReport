@@ -1,8 +1,8 @@
-@using Blazorise
+﻿@using Blazorise
 @using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
-@using HRMvc.Applications.PayrollReport.Views.Blazor._1252
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1257
 
 @inject NotificationService _NotificationService;
 
@@ -11,20 +11,15 @@
 
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-    
-        @if (isLoading)
-        {
-            <div class="vh-100 w-100 d-flex justify-content-center align-items-center text-center"
-                  style=" background-color: rgba(248,249,250,0.05);">
-                    Loading...
-            </div>
-        }
-        
+
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
 
 
-        @if ((reps??[]).Any())
+        @if ((reps ?? []).Any())
         {
-            <_1252_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
+            @*--- Report ------------------------------------------------*@
+            <_1257_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
         }
 
 
@@ -33,14 +28,14 @@
                 <div class="d-flex gap-2">
                     @*--- Period ------------------------------------------------*@
                     <div class="card  p-3 w-250p">
-                        <_01YYMM Rv="rv"  ClassParams ="@periodClass" ChildAction="ChildActionCatcher" />
+                        <_01YYMM Rv="rv" ClassParams="@periodClass" ChildAction="ChildActionCatcher" />
                     </div>
 
                     <div class="card p-3 w-180p">
-                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher"/>
+                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
                         @*--- Fetch Button ------------------------------------------------*@
                         <div class="mt-1 p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
-                    </div>  
+                    </div>
                 </div>
             </div>
         </div>
@@ -54,44 +49,39 @@
 
 
 
-@inject IOPisReportDataAccess       _pisRep;
-@inject IOClientDataAccess          _client; 
-@inject IGPayrollReportDataAccess   _payRep;
+@inject IOPisReportDataAccess _pisRep;
+@inject IOClientDataAccess _client;
+@inject IGPayrollReportDataAccess _payRep;
 
-@code{
-    [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
-    V00_RepVars                         rv      = new();
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
 
-    List<RSssPremModel?>?               reps    = []; 
-
-    List<string?>? clNumbers => rv.Clients.Where(c=>c.IsSelectedB).Select(c=>c.ClNumber).ToList()??[];
+    List<RPhicPremModel?>? reps = [];
+    List<string?>? clNumbers => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
 
     string errorMsg = "";
     bool isLoading  = false;
 
-    Dictionary<string, object> periodClass = new()
-    {
-        ["FlexDirection"]   = "flex-column",
-    };
+    Dictionary<string, object> periodClass = new(){["FlexDirection"] = "flex-column"};
 
-    Dictionary<string, object> clientClass = new()
-    {
-        ["VH"] = "vh65",
-    };
+    Dictionary<string, object> clientClass = new(){["VH"] = "vh65"};
 
 
     protected override async Task OnInitializedAsync()
     {
-        rv.Clients = [];  
+        rv.Clients = [];
+
+        rv.RefreshToken = 12520000;
+        rv.MCaption     = "PHIC Contribution";
 
         @* --- Payroll Group ------------------------------------------- *@
-        var resc = await _client._02ByStatuss("Active",Uc.OpisDb!, Uc.Conn!); 
-        if(resc.Count > 0 ) { rv.Clients = resc!;  }
-               
+        var resc = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        if (resc.Count > 0) { rv.Clients = resc!; }
+
         @* --- Report Details -------------------------------------------- *@
         rv.RelativePath = "Reports/_03Payroll/K_SSS.trdp";
-        rv.RefreshToken = 12520000;
-        rv.MCaption     = "SSS Contribution";
+
 
 
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
@@ -103,16 +93,16 @@
         if (res.Count > 0)
         {
             var r = res.FirstOrDefault();
-            rv.ReportParams["CoName"]       = r.CoName ?? "";
-            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
+            rv.ReportParams["CoName"] = r.CoName ?? "";
+            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
         }
 
-        rv.ReportParams["ReportTitle"]      = "SSS Contribution";
-        rv.ReportParams["RunDate"]          = DateTime.Now;
+        rv.ReportParams["ReportTitle"]  = "PHIC Contribution";
+        rv.ReportParams["RunDate"]      = DateTime.Now;
     }
 
 
-    void ChildActionCatcher(){}
+    void ChildActionCatcher() { }
 
     async Task FetchData()
     {
@@ -132,16 +122,12 @@
 
         try
         {
-            isLoading = true;
-
-            reps = await _payRep._02SSSPrem_ByPGrps_ByYYMM(
-                clNumbers!, rv.Year, rv.Month, "D002",
-                Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!
-            );
+            rv.Isloaded = true;
+            reps = await _payRep._02PHICPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, "D003",Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
         }
         finally
         {
-            isLoading = false;
+            rv.Isloaded = false;
         }
 
         if (!(reps ?? []).Any())
@@ -150,7 +136,7 @@
             {
                 Severity = NotificationSeverity.Info,
                 Summary = "Info",
-                Detail = $"No data found for this period.",
+                Detail = $"No data found for this period and deployment.",
                 Duration = 4000
             });
             return;

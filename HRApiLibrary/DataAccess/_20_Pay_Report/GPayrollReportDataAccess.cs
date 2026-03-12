@@ -48,6 +48,44 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         return data;
     }
 
+    public async Task<List<RPhicPremModel?>?> _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctNumber, string opaydb, string opisdb, string conn)
+    {
+        string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
+        string sql = $@"
+                            select  t.EmpNumber, e.EmpLastnm, e.EmpFirstNm, e.EmpMidNm,  e.EmpBirth, E.Sex_ Gender, 
+                                    e.Phic, t.Ee,  m.Er, m.Compensation  from
+                                (SELECT EmpNumber, sum(Amount) Ee  FROM {opaydb}.tbltran t
+                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd 
+                                    group by EmpNumber) t
+
+                                left join {opisdb}.Empmas e on e.empnumber = t.EmpNumber
+                                left join {opisdb}.Client c on c.ClNumber = e.Client_
+                                left join (SELECT * FROM {opaydb}.refphictbl where @Yyyy between yrstart and yrend) m on m.ee = t.ee  
+                            where t.empnumber in (select empnumber  FROM {opaydb}.tbltran 
+                                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd and right(trn,5) in @Pgrps ) ";
+        var data = await _sql.FetchData<RPhicPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
+        return data;
+    }
+
+    public async Task<List<RPagIbigPremModel?>?> _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctNumber, string opaydb, string opisdb, string conn)
+    {
+        string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
+        string sql = $@"
+                            select  t.EmpNumber, e.EmpLastnm, e.EmpFirstNm, e.EmpMidNm,  e.PagIbiGNo, e.EmpBirth, e.Tin,
+                                    e.DateHired, t.Ee,  m.FEr, m.Compensation  from
+                                (SELECT EmpNumber, sum(Amount) Ee  FROM {opaydb}.tbltran t
+                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd 
+                                    group by EmpNumber) t
+
+                                left join {opisdb}.Empmas e on e.empnumber = t.EmpNumber
+                                left join {opisdb}.Client c on c.ClNumber = e.Client_
+                                left join (SELECT * FROM {opaydb}.refpagibigtbl where @Yyyy between yrstart and yrend) m on m.Fee = t.ee  
+                            where t.empnumber in (select empnumber  FROM {opaydb}.tbltran 
+                                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd and right(trn,5) in @Pgrps ) ";
+        var data = await _sql.FetchData<RPagIbigPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
+        return data;
+    }
+
 }
 
 
@@ -56,5 +94,7 @@ public interface IGPayrollReportDataAccess
     Task<List<GChartofacctModel?>?>     _02ByAcctTypes(string acctType, string schema, string conn);
     Task<List<GChartofacctModel?>?>     _02s(string schema, string conn);
     Task<List<RSssPremModel?>?>         _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
+    Task<List<RPhicPremModel?>?>        _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
+    Task<List<RPagIbigPremModel?>?>     _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
     
 }
