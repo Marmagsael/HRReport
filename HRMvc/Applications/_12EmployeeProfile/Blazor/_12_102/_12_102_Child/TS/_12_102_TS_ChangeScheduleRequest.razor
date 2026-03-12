@@ -1,8 +1,10 @@
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._90_Utils
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
+@using SQLitePCL
 <RadzenDialog />
 <RadzenNotification />
 <RadzenTooltip />
@@ -10,9 +12,9 @@
 
 <div class="d-flex gap-1 p-1 border-bottom ">
     <div @onclick="New"                 class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
-    <div @onclick="Save"                class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSave) "> Save  </div>
-    <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSend ) "> Send For Approval </div>
-    <div @onclick="ShowCancel"          class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancel)"> Cancel </div>
+    <div @onclick="Save"                class="p-1 mb-cbtn mb-cbtn-blue card w-75p @CanSave1 "> Save  </div>
+    <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @CanSend "> Send For Approval </div>
+    <div @onclick="ShowCancel"          class="p-1 mb-cbtn mb-cbtn-red card w-100p  @CanCancel "> Cancel </div>
     <div @onclick="ShowMyRequest"       class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
 </div>
 
@@ -115,12 +117,13 @@
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D2_dutytype)  ">Monday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D2_dutytype) ">@Dtl?.D2_dutytype</td>
                 <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl.D2_dutytype=="R" ? Dtl.D2_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl.D2_dutytype=="R" ? Dtl.D2_hrslength : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl.D2_dutytype=="R" ? ((Dtl?.D2_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
                         Data="@dutyTypes"
                         @bind-Value="@Cs.Atttemplatereqdtl.D2_DutyType"
+                        Change="@(()=>{ Cs.Atttemplatereqdtl.D2_In=0; Cs.Atttemplatereqdtl.D2_HrsLength=0; })"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
                     
@@ -132,7 +135,6 @@
                             Data="@timeOptions"
                             TextProperty="Text"
                             ValueProperty="Value"
-                            Change="@(()=>{ Cs.Atttemplatereqdtl.D2_In=0; Cs.Atttemplatereqdtl.D2_HrsLength=0; })"
                             @bind-Value="@Cs.Atttemplatereqdtl.D2_In"
                             Placeholder="Select Time"
                             Style="width:125px" />    
@@ -170,12 +172,13 @@
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D3_dutytype)  ">Tuesday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D3_dutytype) ">@Dtl?.D3_dutytype</td>
                 <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D3_dutytype) ">@(Dtl.D3_dutytype=="R" ? Dtl.D3_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D3_dutytype) ">@(Dtl.D3_dutytype=="R" ? Dtl.D3_hrslength : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D3_dutytype) ">@(Dtl.D3_dutytype=="R" ? ((Dtl?.D3_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
                         Data="@dutyTypes"
                         @bind-Value="@Cs.Atttemplatereqdtl.D3_DutyType"
+                        Change="@(()=>{ Cs.Atttemplatereqdtl.D3_In=0; Cs.Atttemplatereqdtl.D3_HrsLength=0; })"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
                     
@@ -187,7 +190,6 @@
                             Data="@timeOptions"
                             TextProperty="Text"
                             ValueProperty="Value"
-                            Change="@(()=>{ Cs.Atttemplatereqdtl.D3_In=0; Cs.Atttemplatereqdtl.D3_HrsLength=0; })"
                             @bind-Value="@Cs.Atttemplatereqdtl.D3_In"
                             Placeholder="Select Time"
                             Style="width:125px" />    
@@ -225,11 +227,12 @@
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D4_dutytype)  ">Wednesday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D4_dutytype) ">@Dtl?.D4_dutytype</td>
                 <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D4_dutytype) ">@(Dtl.D4_dutytype=="R" ? Dtl.D4_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D4_dutytype) ">@(Dtl.D4_dutytype=="R" ? Dtl.D4_hrslength : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D4_dutytype) ">@(Dtl.D4_dutytype=="R" ? ((Dtl?.D4_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
                         Data="@dutyTypes"
+                        Change="@(()=>{ Cs.Atttemplatereqdtl.D4_In=0; Cs.Atttemplatereqdtl.D4_HrsLength=0; })"
                         @bind-Value="@Cs.Atttemplatereqdtl.D4_DutyType"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
@@ -242,7 +245,6 @@
                             Data="@timeOptions"
                             TextProperty="Text"
                             ValueProperty="Value"
-                            Change="@(()=>{ Cs.Atttemplatereqdtl.D4_In=0; Cs.Atttemplatereqdtl.D4_HrsLength=0; })"
                             @bind-Value="@Cs.Atttemplatereqdtl.D4_In"
                             Placeholder="Select Time"
                             Style="width:125px" />    
@@ -281,12 +283,13 @@
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D5_dutytype)  ">Thursday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D5_dutytype) ">@Dtl?.D5_dutytype</td>
                 <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D5_dutytype) ">@(Dtl.D5_dutytype=="R" ? Dtl.D5_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D5_dutytype) ">@(Dtl.D5_dutytype=="R" ? Dtl.D5_hrslength : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D5_dutytype) ">@(Dtl.D5_dutytype=="R" ? ((Dtl?.D5_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
                         Data="@dutyTypes"
                         @bind-Value="@Cs.Atttemplatereqdtl.D5_DutyType"
+                        Change="@(()=>{ Cs.Atttemplatereqdtl.D5_In=0; Cs.Atttemplatereqdtl.D5_HrsLength=0; })"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
                     
@@ -298,7 +301,6 @@
                             Data="@timeOptions"
                             TextProperty="Text"
                             ValueProperty="Value"
-                            Change="@(()=>{ Cs.Atttemplatereqdtl.D5_In=0; Cs.Atttemplatereqdtl.D5_HrsLength=0; })"
                             @bind-Value="@Cs.Atttemplatereqdtl.D5_In"
                             Placeholder="Select Time"
                             Style="width:125px" />    
@@ -337,11 +339,12 @@
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D6_dutytype)  ">Friday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D6_dutytype) ">@Dtl?.D6_dutytype</td>
                 <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D6_dutytype) ">@(Dtl.D6_dutytype=="R" ? Dtl.D6_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D6_dutytype) ">@(Dtl.D6_dutytype=="R" ? Dtl.D6_hrslength : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D6_dutytype) ">@(Dtl.D6_dutytype=="R" ? ((Dtl?.D6_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
                         Data="@dutyTypes"
+                        Change="@(()=>{ Cs.Atttemplatereqdtl.D6_In=0; Cs.Atttemplatereqdtl.D6_HrsLength=0; })"
                         @bind-Value="@Cs.Atttemplatereqdtl.D6_DutyType"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
@@ -354,7 +357,6 @@
                             Data="@timeOptions"
                             TextProperty="Text"
                             ValueProperty="Value"
-                            Change="@(()=>{ Cs.Atttemplatereqdtl.D6_In=0; Cs.Atttemplatereqdtl.D6_HrsLength=0; })"
                             @bind-Value="@Cs.Atttemplatereqdtl.D6_In"
                             Placeholder="Select Time"
                             Style="width:125px" />    
@@ -393,12 +395,13 @@
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D7_dutytype)  ">Saturday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D7_dutytype) ">@Dtl?.D7_dutytype</td>
                 <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D7_dutytype) ">@(Dtl.D7_dutytype=="R" ? Dtl.D7_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D7_dutytype) ">@(Dtl.D7_dutytype=="R" ? Dtl.D7_hrslength : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D7_dutytype) ">@(Dtl.D7_dutytype=="R" ? ((Dtl?.D7_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
                         Data="@dutyTypes"
                         @bind-Value="@Cs.Atttemplatereqdtl.D7_DutyType"
+                        Change="@(()=>{ Cs.Atttemplatereqdtl.D7_In=0; Cs.Atttemplatereqdtl.D7_HrsLength=0; })"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
                     
@@ -410,7 +413,6 @@
                             Data="@timeOptions"
                             TextProperty="Text"
                             ValueProperty="Value"
-                            Change="@(()=>{ Cs.Atttemplatereqdtl.D7_In=0; Cs.Atttemplatereqdtl.D7_HrsLength=0; })"
                             @bind-Value="@Cs.Atttemplatereqdtl.D7_In"
                             Placeholder="Select Time"
                             Style="width:125px" />    
@@ -449,11 +451,12 @@
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D1_dutytype)  ">Sunday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D1_dutytype) ">@Dtl?.D1_dutytype</td>
                 <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D1_dutytype) ">@(Dtl.D1_dutytype=="R" ? Dtl.D1_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D1_dutytype) ">@(Dtl.D1_dutytype=="R" ? Dtl.D1_hrslength : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D1_dutytype) ">@(Dtl.D1_dutytype=="R" ? ((Dtl?.D1_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
                         Data="@dutyTypes"
+                        Change="@(()=>{ Cs.Atttemplatereqdtl.D1_In=0; Cs.Atttemplatereqdtl.D1_HrsLength=0; })"
                         @bind-Value="@Cs.Atttemplatereqdtl.D1_DutyType"
                         Style="width:80px; "
                         Placeholder="Select Duty Type" />
@@ -466,7 +469,6 @@
                             Data="@timeOptions"
                             TextProperty="Text"
                             ValueProperty="Value"
-                            Change="@(()=>{ Cs.Atttemplatereqdtl.D1_In=0; Cs.Atttemplatereqdtl.D1_HrsLength=0; })"
                             @bind-Value="@Cs.Atttemplatereqdtl.D1_In"
                             Placeholder="Select Time"
                             Style="width:125px" />    
@@ -522,8 +524,10 @@
 </div>
 
 
-@inject IAtttemplateDataAccess _atttemplate;
-@inject IOEmpmasDataAccess      _empmas; 
+@inject IAtttemplateDataAccess          _atttemplate;
+@inject IOEmpmasDataAccess              _empmas; 
+@inject IAtttemplatereqhdrDataAccess    _attTemplateReqhdr; 
+@inject IAtttemplatereqdtlDataAccess    _attTemplateReqdtl; 
 
 
 @code {
@@ -534,14 +538,12 @@
     
     
     protected override async Task OnInitializedAsync(){
+        Cs.Atttemplatereqhdr = new();
         var res = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
         if (res.Count > 0 ) {
             Cs.Atttemplate = res.FirstOrDefault()??new AtttemplateModel();
             AtttemplateModel? re = res.FirstOrDefault();
             Cs.Atttemplatereqdtl = AttTemplateReq_To_AttTemplate(re);
-            
-
-
         }
         else { 
             var res1 = _atttemplate._02NoSchedule(Uc.UserId); 
@@ -553,11 +555,60 @@
     RadzenDatePicker<DateTime?>? dateRequestedPicker;
 
     void New() {
+        Cs.Atttemplatereqhdr = new(); 
+        //Cs.Atttemplatereqdtl = AttTemplateReq_To_AttTemplate(Cs.Atttemplate);
+    }
+    async Task Save() {
+        if(Hdr==null || Uc==null ) return; 
+
+        if(Hdr.Id == 0) {
+            @* --- Save header ------------------------- *@
+            AtttemplatereqhdrModel? h = Cs.Atttemplatereqhdr; 
+            h.UserId = Uc.UserId; 
+            h.EmpNumber = Uc.OempNumber; 
+            h.Status = "S"; 
+
+            AtttemplatereqhdrModel reshdr = await _attTemplateReqhdr._01_02(Hdr, Uc.SchemaUserPis, Uc.Conn); 
+            Cs.Atttemplatereqhdr = reshdr; 
+
+            @* --- Save Details -------------------------- *@
+            AtttemplatereqdtlModel? d = Cs.Atttemplatereqdtl; 
+            d.AtttemplateReqHdrId = reshdr.Id; 
+            d.EmpmasId = Uc.UserId; 
+            d.AttendanceTypeId = 1; // --- Fixed Punch Period  
+            RD_To_0Sched(); 
+            await _attTemplateReqdtl._01(DtlReq, Uc.SchemaUserPis, Uc.Conn); 
+            List<AtttemplatereqdtlModel?>? resd = await _attTemplateReqdtl._02ByAtttemplateReqHdrId(reshdr?.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+            Cs.Atttemplatereqdtl = resd.FirstOrDefault()??new(); 
+        }
+
+        if(Hdr.Id > 0) {
+            @* --- Update Header ----------------------- *@
+            await _attTemplateReqhdr._03(Hdr, Uc.SchemaUserPis, Uc.Conn); 
+            List<AtttemplatereqhdrModel?>? resh = await _attTemplateReqhdr._02s(Hdr.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+            Cs.Atttemplatereqhdr = resh.FirstOrDefault() ??new(); 
+            
+            @* --- Update Details ---------------------- *@
+            RD_To_0Sched(); 
+            await _attTemplateReqdtl._03ByAtttemplateReqHdrId(Hdr?.Id??0, DtlReq, Uc.SchemaUserPis, Uc.Conn); 
+            List<AtttemplatereqdtlModel?>? resd = await _attTemplateReqdtl._02ByAtttemplateReqHdrId(Hdr?.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+            Cs.Atttemplatereqdtl = resd.FirstOrDefault()??new(); 
+        }
+
 
     }
-    void Save() {
 
+    void RD_To_0Sched() {
+        AtttemplatereqdtlModel? d = Cs.Atttemplatereqdtl; 
+        if(d.D1_DutyType=="RD") { d.D1_In=0; d.D1_HrsLength=0; }
+        if(d.D2_DutyType=="RD") { d.D2_In=0; d.D2_HrsLength=0; }
+        if(d.D3_DutyType=="RD") { d.D3_In=0; d.D3_HrsLength=0; }
+        if(d.D4_DutyType=="RD") { d.D4_In=0; d.D4_HrsLength=0; }
+        if(d.D5_DutyType=="RD") { d.D5_In=0; d.D5_HrsLength=0; }
+        if(d.D6_DutyType=="RD") { d.D6_In=0; d.D6_HrsLength=0; }
+        if(d.D7_DutyType=="RD") { d.D7_In=0; d.D7_HrsLength=0; }
     }
+
     void ShowSendForApproval() {
 
     }
@@ -576,13 +627,22 @@
         if (emp != null) { Cs.Atttemplatereqhdr.ApproverName = emp.EmpName ?? ""; }
     }
 
+    bool IsCanSave      =>  Cs.Atttemplatereqhdr != null &&
+                            Cs.Atttemplatereqhdr.Status is "N" or "S" && 
+                            Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue && 
+                            Cs.Atttemplatereqhdr.Effectivity > DateTime.MinValue && 
+                            Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
+    string  CanSave1     =>  IsCanSave ? " " : " disabled-div " ; 
 
-    string CanSave => (Hdr.Status is "N" or "S" ) ? "" : " disabled-div ";
-    string CanSend => (Hdr.Status is "S" &&
-                    Hdr.DateRequested > DateTime.MinValue &&
-                    Hdr.Effectivity > DateTime.MinValue &&
-                    !string.IsNullOrWhiteSpace(Hdr.ApproverName) ? "" : " disabled-div ");
-    bool CanCancel => Hdr.Status is "S" ;
+    bool IsCanSend =>   Cs.Atttemplatereqhdr != null &&
+                        Cs.Atttemplatereqhdr.Status is "S" && 
+                        Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue && 
+                        Cs.Atttemplatereqhdr.Effectivity > DateTime.MinValue && 
+                        Cs.Atttemplatereqhdr.EmpNumber_Approver.Any() ;
+    string CanSend => IsCanSend ? " " : " disabled-div " ; 
+
+    bool IsCanCancel =>  Hdr.Status is "S" ;
+    string CanCancel => IsCanCancel ? " " : " disabled-div " ; 
 
     AtttemplateModel                ctemp       => Cs.Atttemplate??new AtttemplateModel(); 
     AtttemplatereqhdrModel          Hdr         => Cs.Atttemplatereqhdr??new AtttemplatereqhdrModel();
@@ -591,7 +651,31 @@
     List<AtttemplatereqdtlModel>    Dtls        => Cs.Atttemplatereqdtls??[];
     List<string>                    dutyTypes = new() {"R","RD"};  
 
-    bool IsShowRequest(string dutyType="R")    => dutyType=="R";   
+    bool IsShowRequest(string dutyType="R")    => dutyType=="R";  
+
+    bool IsRequest_Equal_To_Template =>   Dtl.D1_dutytype==DtlReq.D1_DutyType && 
+                                        Dtl.D2_dutytype==DtlReq.D2_DutyType && 
+                                        Dtl.D3_dutytype==DtlReq.D3_DutyType && 
+                                        Dtl.D4_dutytype==DtlReq.D4_DutyType && 
+                                        Dtl.D5_dutytype==DtlReq.D5_DutyType && 
+                                        Dtl.D6_dutytype==DtlReq.D6_DutyType && 
+                                        Dtl.D7_dutytype==DtlReq.D7_DutyType && 
+
+                                        Dtl.D1_hrslength==DtlReq.D1_HrsLength && 
+                                        Dtl.D2_hrslength==DtlReq.D2_HrsLength && 
+                                        Dtl.D3_hrslength==DtlReq.D3_HrsLength && 
+                                        Dtl.D4_hrslength==DtlReq.D4_HrsLength && 
+                                        Dtl.D5_hrslength==DtlReq.D5_HrsLength && 
+                                        Dtl.D6_hrslength==DtlReq.D6_HrsLength && 
+                                        Dtl.D7_hrslength==DtlReq.D7_HrsLength && 
+                                        
+                                        Dtl.D1_in==DtlReq.D1_In && 
+                                        Dtl.D2_in==DtlReq.D2_In &&
+                                        Dtl.D3_in==DtlReq.D3_In &&
+                                        Dtl.D4_in==DtlReq.D4_In &&
+                                        Dtl.D5_in==DtlReq.D5_In &&
+                                        Dtl.D6_in==DtlReq.D6_In &&
+                                        Dtl.D7_in==DtlReq.D7_In ;  
     
     List<TimeoptionModel> times = Enumerable.Range(0, 48).Select(i =>    
                                     {   var time = DateTime.Today.AddMinutes(i * 30);
@@ -600,6 +684,9 @@
     List<TimeoptionModel> timeOptions =  MsdsDataAccess._02Hours();  
     List<TimedurationModel> timedurations = MsdsDataAccess._02HourDurations();      
     string dutyTypeCss(string dt) => dt=="RD" ? " text-danger " : "" ;
+    AtttemplatereqdtlModel template_To_Request => AttTemplateReq_To_AttTemplate( Cs.Atttemplate  ) ; 
+    
+
     
     string outRes(string dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
 

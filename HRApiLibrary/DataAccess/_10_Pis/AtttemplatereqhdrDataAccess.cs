@@ -14,6 +14,16 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
 							(@UserId, @EmpNumber, @DateRequested, @Effectivity, @Remarks, @Status, @EmpNumber_Approver)";
         await _sql.ExecuteCmd<dynamic>(sql, atttemplatereqhdr, conn);
     }
+    
+    public async Task<AtttemplatereqhdrModel?> _01_02(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn)
+    {
+        string sql = $@"Insert into {schema}.Atttemplatereqhdr 
+							(UserId,  EmpNumber,  DateRequested,  Effectivity,  Remarks,  Status,  EmpNumber_Approver) values 
+							(@UserId, @EmpNumber, @DateRequested, @Effectivity, @Remarks, @Status, @EmpNumber_Approver); 
+                        select * from {schema}.Atttemplatereqhdr where Id = (SELECT @@IDENTITY); ";
+        var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, atttemplatereqhdr, conn);   
+        return data.FirstOrDefault();
+    }
 
 
     public async Task<List<AtttemplatereqhdrModel?>?> _02s(int id, string schema, string conn)
@@ -46,8 +56,9 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
 
 public interface IAtttemplatereqhdrDataAccess
 {
-    Task _01(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
-    Task<List<AtttemplatereqhdrModel?>?> _02s(int id, string schema, string conn);
-    Task<AtttemplatereqhdrModel?> _03(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
-    Task _04(int id, string schema, string conn);
+    Task                                    _01(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
+    Task<AtttemplatereqhdrModel?>           _01_02(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn); 
+    Task<List<AtttemplatereqhdrModel?>?>    _02s(int id, string schema, string conn);
+    Task<AtttemplatereqhdrModel?>           _03(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
+    Task                                    _04(int id, string schema, string conn);
 }
