@@ -4,8 +4,24 @@
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PayrollReport.Views.Blazor._1252
 
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+<RadzenNotification />
+
+
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
+    
+        @if (isLoading)
+        {
+            <div class="vh-100 w-100 d-flex justify-content-center align-items-center text-center"
+                  style=" background-color: rgba(248,249,250,0.05);">
+                    Loading...
+            </div>
+        }
+        
+
 
         @if ((reps??[]).Any())
         {
@@ -13,61 +29,59 @@
         }
 
 
-        @* <div>
-            <div>Year : @rv.Year </div>
-            <div>Month : @trn </div>
-            <div>Clients   : 
-
-                @foreach(var c in clNumbers){
-                    <div>@c</div>
-                }
-                    
-             </div>
-
-             <div>
-                @foreach(var r in v.RepDtls){
-                    <div>@r.EmpLastNm @r.Ee </div>
-                }
-             </div>
-
-
-        </div> *@
-
         <div class="p-0">
             <div class="card-header">
                 <div class="d-flex gap-2">
-                     <_01YYMM Rv="rv" ChildAction="ChildActionCatcher"/>
+                    @*--- Period ------------------------------------------------*@
+                    <div class="card  p-3 w-250p">
+                        <_01YYMM Rv="rv"  ClassParams ="@periodClass" ChildAction="ChildActionCatcher" />
+                    </div>
 
-
-                    <div class="card p-3 w-255p">
+                    <div class="card p-3 w-180p">
                         <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher"/>
                         @*--- Fetch Button ------------------------------------------------*@
-                        <div class="mt-3 p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                        <div class="mt-1 p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
                     </div>  
                 </div>
             </div>
         </div>
 
-        @*--- Status List ------------------------------------------------*@
-        <div class="w-50  "> <_ClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
+        @*--- Client List ------------------------------------------------*@
+        <div class="w-100"> <_00TClientList Clients="@rv.Clients" ClassParams="@clientClass" ChildAction="ChildActionCatcher" /> </div>
     </Details>
 </_00BT_FullW>
+
+
+
+
 
 @inject IOPisReportDataAccess       _pisRep;
 @inject IOClientDataAccess          _client; 
 @inject IGPayrollReportDataAccess   _payRep;
 
 @code{
-    [Parameter] public UserClaimsModel  Uc   { get; set; } = new();
+    [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
     V00_RepVars                         rv      = new();
-    V1252Model                          v       = new();
 
     List<RSssPremModel?>?               reps    = []; 
 
-    string trn => $"{rv.Year.ToString().Substring(2,2)}{rv.Month}"; 
-    List<string?>? clNumbers => rv.Clients.Where(c=>c.IsSelectedB).Select(c=>c.ClNumber).ToList()??[]; 
+    List<string?>? clNumbers => rv.Clients.Where(c=>c.IsSelectedB).Select(c=>c.ClNumber).ToList()??[];
 
- protected override async Task OnInitializedAsync()
+    string errorMsg = "";
+    bool isLoading  = false;
+
+    Dictionary<string, object> periodClass = new()
+    {
+        ["FlexDirection"]   = "flex-column",
+    };
+
+    Dictionary<string, object> clientClass = new()
+    {
+        ["VH"] = "vh65",
+    };
+
+
+    protected override async Task OnInitializedAsync()
     {
         rv.Clients = [];  
 
@@ -75,13 +89,10 @@
         var resc = await _client._02ByStatuss("Active",Uc.OpisDb!, Uc.Conn!); 
         if(resc.Count > 0 ) { rv.Clients = resc!;  }
                
-
-        
-
         @* --- Report Details -------------------------------------------- *@
-        // rv.RelativePath = "Reports/_02HR/K_2105_NH.trdp";
+        rv.RelativePath = "Reports/_03Payroll/K_SSS.trdp";
         rv.RefreshToken = 12520000;
-        rv.MCaption     = "SSS Contributions";
+        rv.MCaption     = "SSS Contribution";
 
 
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
@@ -97,26 +108,63 @@
             rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
         }
 
-        rv.ReportParams["ReportTitle"]  = "Insurance Report";
-        rv.ReportParams["RunDate"]      = DateTime.Now;
-
-
+        rv.ReportParams["ReportTitle"]      = "SSS Contribution";
+        rv.ReportParams["RunDate"]          = DateTime.Now;
     }
 
 
     void ChildActionCatcher(){}
-    
-    async Task FetchData(){
-        rv.ShowReport=false; 
-        v.Msg       = "";
-        rv.ShowModal    = true;
-      
-        if(!(clNumbers??[]).Any())    { v.Msg = "Please select at least one payroll group to proceed. "; return; }
 
-        @* reps  = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!); *@
-        reps  = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month,"D002", Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
-        
-        
-        ///Console.WriteLine(clNumbers.Count);
+    async Task FetchData()
+    {
+        rv.ShowReport = false;
+
+        if (!(clNumbers ?? []).Any())
+        {
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Warning",
+                Detail = $"Please select at least one deployment to proceed.",
+                Duration = 4000
+            });
+            return;
+        }
+
+        try
+        {
+            isLoading = true;
+
+            reps = await _payRep._02SSSPrem_ByPGrps_ByYYMM(
+                clNumbers!, rv.Year, rv.Month, "D002",
+                Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!
+            );
+        }
+        finally
+        {
+            isLoading = false;
+        }
+
+        if (!(reps ?? []).Any())
+        {
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Info,
+                Summary = "Info",
+                Detail = $"No data found for this period.",
+                Duration = 4000
+            });
+            return;
+        }
+
+        rv.ShowModal = true;
     }
+
+
+
+    void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
+    }
+
 }
