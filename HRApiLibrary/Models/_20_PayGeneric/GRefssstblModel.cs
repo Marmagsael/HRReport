@@ -38,11 +38,11 @@ public class RPhicPremModel
     public string?      EmpMidNm        { get; set; }
     public string?      Suffix          { get; set; }
     public string?      Phic            { get; set; }
-    public DateTime?    EmpBirth       { get; set; }
+    public DateTime?    EmpBirth        { get; set; }
     public DateTime?    EffectiveDate   { get; set; } = DateTime.Now;
     public double?      Ee              { get; set; }
     public double?      Er              { get; set; }
-    public double?      Salary          { get; set; } // to confirm what field to map here
+    public double?      Compensation    { get; set; }
     public string?      Status          { get; set; } 
     public string?      Gender          { get; set; } // M or F
 
