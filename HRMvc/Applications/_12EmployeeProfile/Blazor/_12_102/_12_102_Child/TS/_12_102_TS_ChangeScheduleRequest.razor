@@ -2,6 +2,7 @@
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._90_Utils
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.CS
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
 @using SQLitePCL
@@ -17,6 +18,8 @@
     <div @onclick="ShowCancel"          class="p-1 mb-cbtn mb-cbtn-red card w-100p  @CanCancel "> Cancel </div>
     <div @onclick="ShowMyRequest"       class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
 </div>
+
+<_12_102_ChangeSchedule Cs="@Cs" Uc="@Uc" Ec="@EcCatcher" />
 
 <div class="card mt-1">
     <div class="p-2 border-bottom">
@@ -532,7 +535,8 @@
 
 @code {
 
-    [Parameter] public UserClaimsModel? Uc { get; set; } = new();   
+    [Parameter] public  UserClaimsModel?    Uc          { get; set; } = new();   
+    [Parameter] public  EventCallback       Ec          { get; set; } 
     V12_102CS   Cs = new();
     
     
@@ -553,6 +557,10 @@
     }
     
     RadzenDatePicker<DateTime?>? dateRequestedPicker;
+
+    void EcCatcher() {
+
+    }
 
     void New() {
         Cs.Atttemplatereqhdr = new(); 
@@ -610,12 +618,16 @@
     }
 
     void ShowSendForApproval() {
-
+        Cs.ShowSendForApproval = true; 
     }
     void ShowCancel() {
 
     }
-    void ShowMyRequest() {
+    async Task ShowMyRequest() {
+        Cs.ShowMyReqquest = true; 
+        Cs.Atttemplatereqhdrs =  []; 
+        var res = await _attTemplateReqhdr._02ByUserIds(Uc.UserId, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn)??[]; 
+        if(res.Any()) Cs.Atttemplatereqhdrs= res; 
 
     }
     async Task FetchApprover()
