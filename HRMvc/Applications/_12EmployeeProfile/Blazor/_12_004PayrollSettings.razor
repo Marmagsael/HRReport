@@ -134,7 +134,7 @@
                 </div>
 
                 <div style="min-width:0">
-                    @if (imagePreviewUrl != "")
+                @if (!string.IsNullOrWhiteSpace(imagePreviewUrl))
                     {
                         <button class="btn btn-primary  w-100" @onclick="UploadImage">
                             Upload
@@ -517,7 +517,6 @@
 
     // ----- File Upload State -----
     private string? imagePreviewUrl = string.Empty;
-    private string? errorMessage;
     private byte[] buffer = Array.Empty<byte>();
     private string folderPath = "";
     private string filePath = "";
@@ -564,7 +563,7 @@
 
         if (file.Size > maxFileSize)
         {
-             _NotificationService.Notify(new NotificationMessage
+            _NotificationService.Notify(new NotificationMessage
             {
                 Severity = NotificationSeverity.Warning,
                 Summary = "Warning",
@@ -576,7 +575,6 @@
             return;
         }
 
-        errorMessage = null;
         fileName = file.Name;
 
         // Read file into memory
@@ -599,33 +597,45 @@
 
     private async Task UploadImage()
     {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "",
+                Detail = "No image to upload. Please load an image to proceed.",
+                Duration = 3000
+            });
+            return;
+
+        }
+
         // Determine user folder
         string uc = $"U{UserClaims.DefCompanyId}";
 
-        folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
-        filePath    = Path.Combine(folderPath, fileName); // path for new upload
-
-        // Relative path for DB
-        string relativePath = Path.Combine("/complogo", uc, fileName).Replace("\\", "/");
-
+        folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
 
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
         }
 
-
         string prefix = "complogo";
 
+        // Remove old logo files
         DeleteFileIfExistsByPrefix(folderPath, prefix);
 
-        
+        // Build new filename with prefix
+        string newFileName = $"{prefix}_{fileName}";
+        filePath = Path.Combine(folderPath, newFileName);
+
+        // Relative path for DB
+        string relativePath = $"/images/{uc}/{newFileName}".Replace("\\", "/");
+
         // Save new file
         await File.WriteAllBytesAsync(filePath, buffer);
-           
+
         Settings.LogoAddress = relativePath;
-
-
 
         await _settings._03(1, Settings.LogoAddress!, paydb!, conn!);
 
@@ -633,7 +643,7 @@
         {
             Severity = NotificationSeverity.Success,
             Summary = "",
-            Detail = "The logo was successfully saved.",
+            Detail = "Logo was successfully saved.",
             Duration = 3000
         });
     }
@@ -654,19 +664,27 @@
 
     private async Task RemoveImage()
     {
+        string uc   = $"U{UserClaims.DefCompanyId}";
+       
+        folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
+        string prefix = "complogo";
+ 
+        // Delete existing logo file(s)
+        DeleteFileIfExistsByPrefix(folderPath, prefix);
+
+        // Clear DB value
         Settings.LogoAddress = "";
         await _settings._03(1, Settings.LogoAddress!, paydb!, conn!);
-        
+        imagePreviewUrl = null;
 
         _NotificationService.Notify(new NotificationMessage
         {
-            Severity = NotificationSeverity.Info,
+            Severity = NotificationSeverity.Success,
             Summary = "",
-            Detail = "Logo Removed.",
+            Detail = "Logo was successfully removed.",
             Duration = 3000
         });
 
-        imagePreviewUrl = null;
     }
 
 }
