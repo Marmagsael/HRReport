@@ -44,7 +44,7 @@
 @* --- Request History ----------------------------------- *@
 @if(attreqhdr.Id > 0)
 {
-    <div class="w-100 p-2 border-bottom">
+    <div class="w-100 p-2 border-bottom bordered-top ">
         <div @onclick="LoadRequest" class="mb-cbtn mb-cbtn-gray p-1 card w-125p">
             Load Request 
         </div>
@@ -106,7 +106,8 @@
     async Task PickData(AttreqhdrModel hdr) {
         attreqhdr   = hdr ; 
         attreqhists = []; 
-        attreqhists = await _attreqhist._02ByAttreqhdrId(hdr.Id, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn); 
+        var res = await _attreqhist._02ByAttreqhdrId(hdr.Id, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn)??[]; 
+        if(res!=null) attreqhists = res!; 
     }
 
     async Task LoadRequest() {  await EC_Attreqhdr.InvokeAsync(attreqhdr);  }

@@ -28,10 +28,23 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
 
     public async Task<List<AtttemplatereqhdrModel?>?> _02s(int id, string schema, string conn)
     {
-        string sql = $@"select  Id, UserId, EmpNumber, DateRequested, Effectivity, Remarks, Status, EmpNumber_Approver from {schema}.Atttemplatereqhdr where Id = @Id";
+        string sql = $@"select  Id, UserId, EmpNumber, DateRequested, Effectivity, Remarks, Status, EmpNumber_Approver 
+                            from {schema}.Atttemplatereqhdr where Id = @Id";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { Id = id }, conn);
         return data;
     }
+    
+    public async Task<List<AtttemplatereqhdrModel?>?> _02ByUserIds(int userId, string pisdb, string opisdb, string conn)
+    {
+        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*
+                        from {pisdb}.Atttemplatereqhdr h 
+                        left join {opisdb}.Empmas e on e.empnumber = h.empnumber 
+                        where h.UserId = @UserId 
+                        order by h.DateRequested ";
+        var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { UserId = userId }, conn);
+        return data;
+    }
+
 
 
     public async Task<AtttemplatereqhdrModel?> _03(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn)
@@ -59,6 +72,7 @@ public interface IAtttemplatereqhdrDataAccess
     Task                                    _01(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
     Task<AtttemplatereqhdrModel?>           _01_02(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn); 
     Task<List<AtttemplatereqhdrModel?>?>    _02s(int id, string schema, string conn);
+    Task<List<AtttemplatereqhdrModel?>?>    _02ByUserIds(int userId, string pisdb, string opisdb, string conn); 
     Task<AtttemplatereqhdrModel?>           _03(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
     Task                                    _04(int id, string schema, string conn);
 }
