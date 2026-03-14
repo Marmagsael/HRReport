@@ -59,6 +59,35 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, atttemplatereqhdr, conn);
         return data?.FirstOrDefault();
     }
+    
+    public async Task<AtttemplatereqhdrModel?> _03SendForApproval(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn)
+    {
+        string sql = $@"Update {schema}.Atttemplatereqhdr set 
+							DateRequested 		= @DateRequested, 
+							Effectivity 		= @Effectivity, 
+							Remarks 			= @Remarks, 
+							Status 				= 'F', 
+							EmpNumber_Approver 	= @EmpNumber_Approver where Id = @Id;
+						select  * from {schema}.Atttemplatereqhdr x where x.Id = @Id ;";
+        var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, atttemplatereqhdr, conn);
+
+        // *************************************************************************************************
+        var h = atttemplatereqhdr; 
+        AtttemplatereqhistModel hist = new()
+        {
+            AtttemplateReqHdrId = h.Id, 
+            DActionTaken        = DateTime.Now, 
+            Empnumber_Approver  = h.EmpNumber_Approver, 
+            Remarks             = h.Remarks??"For Approval", 
+            SetStatusTo         = "F" 
+        }; 
+
+
+
+
+        return data?.FirstOrDefault();
+    }
+
 
     public async Task _04(int id, string schema, string conn)
     {
@@ -74,5 +103,6 @@ public interface IAtttemplatereqhdrDataAccess
     Task<List<AtttemplatereqhdrModel?>?>    _02s(int id, string schema, string conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ByUserIds(int userId, string pisdb, string opisdb, string conn); 
     Task<AtttemplatereqhdrModel?>           _03(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
+    Task<AtttemplatereqhdrModel?>           _03SendForApproval(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn); 
     Task                                    _04(int id, string schema, string conn);
 }
