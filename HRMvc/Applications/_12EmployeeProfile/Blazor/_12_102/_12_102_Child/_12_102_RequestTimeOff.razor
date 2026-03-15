@@ -1,5 +1,103 @@
-﻿<h5>_12_102_02_RequestTimeOff</h5>
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+<div class="card-header"> Leave Request </div>
+
+<div class="card-body p-0 ">
+    <table class="table table-small table-bordered">
+        <tbody>
+            <tr>
+                <td class="w-150p p-2  ">
+                    <div class="mt-1">
+                        TRN # 
+                    </div>
+                </td>
+                <td class="p-2 ">
+                    <div class="border-bottom w-100p text-center  p-1">
+                        <h6 class=""> @v.LeaveApplication.Id </h6> 
+                    </div>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="w-150p">Leave Type </td>
+                <td> 
+                     <RadzenDropDown
+                        TValue="int"
+                        Data="@v.LeaveTypes"
+                        TextProperty="LeaveName"
+                        ValueProperty="Id"
+                        @bind-Value="v.LeaveApplication.LeaveTypeId"
+                        Placeholder="Clients Name"
+                        Style="width:250px" />
+                        
+                </td>
+            </tr>
+            
+            @* --- Date Covered ----------------------------- *@
+            <tr>
+                <td class="align-middle">Date Covered</td>
+                <td class="p-1">
+                    <div class="w-100 ">
+                        <div class="d-flex gap-2 ">
+                            <div class="w-50p p-2 d-flex align-items-center">Start</div>
+                            <div class="w-120p">
+                                <RadzenDatePicker 
+                                    @bind-Value="v.LeaveApplication.LvStart" 
+                                    DateFormat="MM/dd/yyyy"
+                                    AllowInput="false"
+                                    class="mb-date-accent w-150p" />
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 mt-1">
+                            <div class="w-50p p-2 d-flex align-items-center">End</div>
+                            <div class="w-150p ">
+                                <RadzenDatePicker 
+                                    @bind-Value="v.LeaveApplication.LvEnd" 
+                                    DateFormat="MM/dd/yyyy"
+                                    AllowInput="false"
+                                    class="mb-date-accent w-150p" />
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="w-150p">Reason </td>
+                <td>
+                    <RadzenTextArea @bind-Value="v.LeaveApplication.Reason" MaxLength="150" Rows="2" Style="width:100%;" /> 
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+@* --- Leave Details ----------------------------------------- *@
+<div>
+    <div class="card-header">Leave Details</div>
+    
+</div>
+
+
+
+@inject ILeavetypeDataAccess _lvtype; 
 
 @code {
+    [Parameter] public UserClaimsModel Uc { get; set; }
+    V12_102Lv v = new();
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Uc == null) return;
+        await LoadDatas(); 
+        
+    }
+
+    async Task LoadDatas() {
+        if(!v.LeaveTypes.Any())  {
+            var res  = await _lvtype._02(Uc.SchemaUserPis, Uc.Conn) ?? [];
+            if (res != null && res.Any()) v.LeaveTypes = res!; 
+        }
+    }
 
 }
