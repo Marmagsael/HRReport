@@ -2223,14 +2223,14 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     private async Task _01LeaveCredit(string schema, string conn)
     {
         string sql = $@"CREATE TABLE if not exists {schema}.LeaveCredit (
-                          Year          INTEGER UNSIGNED    NOT NULL AUTO_INCREMENT,
-                          EmpmasId      CHAR(5)             NOT NULL,
-                          LeaveTypeId   Integer         Default 0,
+                          Year          INTEGER UNSIGNED    Default 0,
+                          EmpmasId      CHAR(5)             Default '',
+                          LeaveTypeId   Integer             Default 0,
                           AnnivStart    DATE,
                           AnnivEnd      DATE,
-                          Credit        DOUBLE(12,2)    Default 0,
-                          Consumed      DOUBLE(12,2)    Default 0,
-                        PRIMARY KEY(`Year`, `EmpmasId`)) ENGINE = InnoDB; ";
+                          Credit        DOUBLE(12,2)        Default 0,
+                          Consumed      DOUBLE(12,2)        Default 0,
+                        PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `AnnivStart`)) ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -2269,6 +2269,17 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                               Status        VARCHAR(10)                 DEFAULT 'New',
                         PRIMARY KEY(`Id`)) ENGINE = InnoDB;
 ";
+        await _sql.ExecuteCmd(sql, new { }, conn);
+        
+         sql = $@"CREATE TABLE if not exists {schema}.LeaveApplicationDtl (
+                    Id              INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
+                    EmpmasId        INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
+                    EmpNumber       CHAR(5)                 NOT NULL DEFAULT '',
+                    Start           DATETIME,
+                    End             DATETIME,
+                    CreditedHrs     DOUBLE(12,2)            NOT NULL DEFAULT 0,
+                    IsPayable       INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                    PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
