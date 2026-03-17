@@ -50,7 +50,7 @@ public class SettingsDataAccess : ISettingsDataAccess
                          SSSNo              = @SSSNo, 
                          PhicNo             = @PhicNo, 
                          PagibigNo          = @PagibigNo, 
-                         PremContSourceId   = @PremContSourceId, 
+                         PremContSourceId   = @PremContSourceId 
                          where Id = @Id;
                    """;
         await _sql.ExecuteCmd<dynamic>(sql, settings, conn);
