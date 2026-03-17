@@ -53,16 +53,18 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
         string sql = $@"
                             select  t.EmpNumber, e.EmpLastnm, e.EmpFirstNm, e.EmpMidNm,  e.EmpBirth, E.Sex_ Gender, 
-                                    e.Phic, t.Ee,  m.Er, m.Compensation  from
+                                    e.Phic, t.Ee,  t.Ee Er, t1.Compensation  from
                                 (SELECT EmpNumber, sum(Amount) Ee  FROM {opaydb}.tbltran t
                                     where AcctNumber = @AcctNumber and left(trn,4) = @Prd 
                                     group by EmpNumber) t
 
                                 left join {opisdb}.Empmas e on e.empnumber = t.EmpNumber
+                                left join (SELECT EmpNumber, sum(Amount) Compensation  FROM {opaydb}.tbltran t
+                                     where AcctNumber = 'E001' and left(trn,4) = @Prd 
+                                     group by EmpNumber) t1 on t1.empnumber = t.empnumber
                                 left join {opisdb}.Client c on c.ClNumber = e.Client_
-                                left join (SELECT * FROM {opaydb}.refphictbl where @Yyyy between yrstart and yrend) m on m.ee = t.ee  
-                            where t.empnumber in (select empnumber  FROM {opaydb}.tbltran 
-                                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd and right(trn,5) in @Pgrps ) ";
+                            where t.empnumber in (select DISTINCT empnumber  FROM {opaydb}.tbltran 
+                                                    where left(trn,4) = @Prd and right(trn,5) in @Pgrps ) ";
         var data = await _sql.FetchData<RPhicPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
     }
@@ -72,7 +74,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
         string sql = $@"
                             select  t.EmpNumber, e.EmpLastnm, e.EmpFirstNm, e.EmpMidNm,  e.PagIbiGNo, e.EmpBirth, e.Tin,
-                                    e.DateHired, t.Ee,  m.FEr, m.Compensation  from
+                                    e.DateHired, t.FEe,  t.FEe FEr, m.Compensation  from
                                 (SELECT EmpNumber, sum(Amount) Ee  FROM {opaydb}.tbltran t
                                     where AcctNumber = @AcctNumber and left(trn,4) = @Prd 
                                     group by EmpNumber) t
@@ -80,8 +82,8 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                                 left join {opisdb}.Empmas e on e.empnumber = t.EmpNumber
                                 left join {opisdb}.Client c on c.ClNumber = e.Client_
                                 left join (SELECT * FROM {opaydb}.refpagibigtbl where @Yyyy between yrstart and yrend) m on m.Fee = t.ee  
-                            where t.empnumber in (select empnumber  FROM {opaydb}.tbltran 
-                                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd and right(trn,5) in @Pgrps ) ";
+                             where t.empnumber in (select DISTINCT empnumber  FROM {opaydb}.tbltran 
+                                                    where left(trn,4) = @Prd and right(trn,5) in @Pgrps ) ";
         var data = await _sql.FetchData<RPagIbigPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
     }
