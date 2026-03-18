@@ -60,7 +60,7 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
 		var data = await _sql.FetchData<AtttemplateModel?, dynamic>(sql, new { Id = id }, conn); 
 		return data;
 	}
-
+	
     public AtttemplateModel? _02NoSchedule(int empmasId)
     {
         AtttemplateModel at = new()
