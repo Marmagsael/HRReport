@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using HRApiLibrary.Models._00_Main;
+using System.Runtime.ExceptionServices;
 
 
 namespace HRApiLibrary.DataAccess._90_Utils;
@@ -601,5 +602,81 @@ public class MsdsDataAccess : IMsdsDataAccess
         
         return Task.FromResult(m605)!;
     }
+
+    public static List<TimeoptionModel> _02Hours(int intervalMinutes = 30)
+    {
+        List<TimeoptionModel> tos = new();
+
+        for (int ctr = 0; ctr < 24; ctr++)
+        {
+            int basePin = ctr * 100;
+
+            if (intervalMinutes > 0)
+            {
+                for (int i = 0; i < 60; i += intervalMinutes)
+                {
+                    int pin = basePin + i;
+
+                    int hr  = pin / 100;
+                    int min = pin % 100;
+
+                    string ampm = hr >= 12 ? " pm" : " am";
+
+                    int displayHr = hr % 12;
+                    if (displayHr == 0) displayHr = 12;
+
+                    TimeoptionModel to = new()
+                    {
+                        Value = pin,
+                        Text = $"{displayHr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}"
+                    };
+
+                    tos.Add(to);
+                }
+            }
+            else
+            {
+                int hr  = basePin / 100;
+                int min = basePin % 100;
+
+                string ampm = hr >= 12 ? " pm" : " am";
+
+                int displayHr = hr % 12;
+                if (displayHr == 0) displayHr = 12;
+
+                tos.Add(new TimeoptionModel
+                {
+                    Value = basePin,
+                    Text = $"{displayHr.ToString().PadLeft(2,'0')}:{min.ToString().PadLeft(2,'0')}{ampm}"
+                });
+            }
+        }
+
+        return tos;
+    }
+
+    public static List<TimedurationModel> _02HourDurations(int interval = 50)
+    {
+
+        List<TimedurationModel> tds = []; 
+        for(int ctr = interval; ctr < 2400; ctr += interval)
+        {
+            int val = ctr; 
+            int hr  = val / 100;
+            int dec = val % 100;
+
+            string text = $"{hr}.{dec.ToString().PadRight(2,'0')}"; 
+            TimedurationModel td = new() {Value=val, Text=text}; 
+            tds.Add(td); 
+        }
+
+        return tds; 
+    }
+
+
+
+
 }
+
+
 
