@@ -48,10 +48,7 @@ namespace HRMvc.Controllers
             ["1308"] = "_1308_GroupRetirement",
             ["1309"] = "_1309_AccountTotal",
             ["1312"] = "_1312_GrandTotal",
-            ["1313"] = "_1313_AccountTotal",
-            ["1314"] = "_1314_SSSRemittance",
-            ["1315"] = "_1315_PHICRemittance",
-            ["1316"] = "_1316_PagIbigRemittance"
+            ["1313"] = "_1313_AccountTotal"
         };
 
         [HttpGet("")]

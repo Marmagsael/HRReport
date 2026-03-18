@@ -86,7 +86,7 @@
 
 
             @* ============ Image Upload ============ *@
-            <div class="d-flex flex-wrap mt-3">
+            <div class="d-flex flex-column gap-1 my-3">
                 <div style="width:180px; height:180px">
                     <div class="border rounded overflow-hidden position-relative ratio ratio-1x1 img-container">
 
@@ -103,32 +103,27 @@
                                            accept="image/*" />
 
                                 <span class="btn btn-primary mb-2" style="pointer-events: none;">
-                                    Upload Image
+                                    Load Image
                                 </span>
-
-                                <!-- Remove button -->
-                                <button class="btn btn-sm btn-danger mt-2" @onclick="RemoveImage" style="z-index: 10;">
-                                    Remove Image
-                                </button>
                             </div>
                         }
                         else
                         {
                             <div class="d-flex justify-content-center align-items-center">
                                 <span class=" text-center text-muted">
-                                    Click to upload image
+                                    Click or Drag image to load 
                                 </span>
                             </div>
                             <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white img-hover-overlay"
                                  style="background: rgba(0,0,0,0.4); cursor: pointer;">
 
-
-                                <InputFile OnChange="OnInputFileChange"
-                                           class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
-                                           accept="image/*" />
-
+                                
+                                    <InputFile OnChange="OnInputFileChange"
+                                               class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
+                                               accept="image/*" />
+                                
                                 <span class="btn btn-primary mb-2" style="pointer-events: none;">
-                                    Upload Image
+                                    Load Image
                                 </span>
 
 
@@ -137,7 +132,32 @@
 
                     </div>
                 </div>
+
+                @if (!string.IsNullOrWhiteSpace(imageUploaderInstruction))
+                {
+                    <div class="text-muted fs-6"><small>@imageUploaderInstruction</small></div>
+                }
+
+                <div style="min-width:0">
+                @if (!string.IsNullOrWhiteSpace(imagePreviewUrl))
+                    {
+                        @if (isNewLogo){
+                            <button class="btn btn-primary  w-100" @onclick="UploadImage">
+                                Upload
+                            </button>
+                        }
+                        @if (imageExist)
+                        {
+                            <button class="btn btn-danger mt-1 w-100" @onclick="RemoveImage">
+                                Remove
+                            </button>
+                        }
+                    }
+                </div>
             </div>
+
+           
+           
         </div>
 
 
@@ -462,6 +482,7 @@
     string? paydb = string.Empty;
     string? conn = string.Empty;
     string? lblwidth = "w-125p";
+    string? imageUploaderInstruction = "";
 
     List<string?>? payrollType = ["Monthly", "Bi-Monthly", "Weekly"];
     List<string?>? taxPattern = ["Wk", "SM", "Mo"];
@@ -499,7 +520,6 @@
 
 
         Settings = await _settings._02(1, paydb!, conn!);
-
         imagePreviewUrl = Settings.LogoAddress ?? "";
         NotRerender = false;
         StateHasChanged();
@@ -507,11 +527,12 @@
 
     // ----- File Upload State -----
     private string? imagePreviewUrl = string.Empty;
-    private string? errorMessage;
     private byte[] buffer = Array.Empty<byte>();
     private string folderPath = "";
     private string filePath = "";
     private string fileName = "";
+    private bool isNewLogo  = false;
+    private bool imageExist => !string.IsNullOrEmpty(imagePreviewUrl) && ImageExists(imagePreviewUrl);
 
 
 
@@ -545,20 +566,41 @@
         }
     }
 
+    public bool ImageExists(string imageName)
+    {
+        if (string.IsNullOrEmpty(imageName))
+            return false;
+
+        string dbPath = imageName.TrimStart('/');
+        string fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", dbPath.Replace("/", Path.DirectorySeparatorChar.ToString()));
+        return File.Exists(fullPath);
+    }
+
+
+
     private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
+        isNewLogo =  true;
+
         var file = e.File;
 
         // 1 MB limit
         long maxFileSize = 1 * 1024 * 1024;
+
         if (file.Size > maxFileSize)
         {
-            errorMessage = "File is too large. Maximum size is 1 MB.";
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Warning",
+                Detail = "The image is too large. Maximum size is 1 MB.",
+                Duration = 3000
+            });
+
             imagePreviewUrl = null;
             return;
         }
 
-        errorMessage = null;
         fileName = file.Name;
 
         // Read file into memory
@@ -577,47 +619,68 @@
         // Generate Base64 preview
         var base64 = Convert.ToBase64String(buffer);
         imagePreviewUrl = $"data:{file.ContentType};base64,{base64}";
+        imageUploaderInstruction = "Click 'Upload' to save image";
     }
 
     private async Task UploadImage()
     {
+        isNewLogo       = false;
+
+
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "",
+                Detail = "No image to upload. Please load an image to proceed.",
+                Duration = 3000
+            });
+            return;
+
+        }
+
         // Determine user folder
-        string uc   = UserClaims.DefCompanyId ?? "-";
+        string uc = $"U{UserClaims.DefCompanyId}";
 
-        folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
-        filePath    = Path.Combine(folderPath, fileName); // path for new upload
-
-        // Relative path for DB
-        string relativePath = Path.Combine("/complogo", uc, fileName).Replace("\\", "/");
-
+        folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
 
         if (!Directory.Exists(folderPath))
         {
             Directory.CreateDirectory(folderPath);
         }
 
-
         string prefix = "complogo";
 
+        // Remove old logo files
         DeleteFileIfExistsByPrefix(folderPath, prefix);
 
-        
+        // Build new filename with prefix
+        string newFileName = $"{prefix}_{fileName}";
+        filePath = Path.Combine(folderPath, newFileName);
+
+        // Relative path for DB
+        string relativePath = $"/images/{uc}/{newFileName}".Replace("\\", "/");
+
         // Save new file
         await File.WriteAllBytesAsync(filePath, buffer);
-           
-        Settings.LogoAddress = relativePath;
 
-
+        Settings.LogoAddress    = relativePath;
+        imagePreviewUrl         = Settings.LogoAddress ?? "";
 
         await _settings._03(1, Settings.LogoAddress!, paydb!, conn!);
 
+        imageUploaderInstruction = "";
+
+
         _NotificationService.Notify(new NotificationMessage
         {
-            Severity = NotificationSeverity.Info,
+            Severity = NotificationSeverity.Success,
             Summary = "",
-            Detail = "Logo Saved.",
+            Detail = "Logo was successfully saved.",
             Duration = 3000
         });
+         
     }
 
     void DeleteFileIfExistsByPrefix(string folderPath, string prefix)
@@ -636,19 +699,27 @@
 
     private async Task RemoveImage()
     {
+        string uc   = $"U{UserClaims.DefCompanyId}";
+       
+        folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
+        string prefix = "complogo";
+ 
+        // Delete existing logo file(s)
+        DeleteFileIfExistsByPrefix(folderPath, prefix);
+
+        // Clear DB value
         Settings.LogoAddress = "";
         await _settings._03(1, Settings.LogoAddress!, paydb!, conn!);
-        
+        imagePreviewUrl = null;
 
         _NotificationService.Notify(new NotificationMessage
         {
-            Severity = NotificationSeverity.Info,
+            Severity = NotificationSeverity.Success,
             Summary = "",
-            Detail = "Logo Removed.",
+            Detail = "Logo was successfully removed.",
             Duration = 3000
         });
 
-        imagePreviewUrl = null;
     }
 
 }
