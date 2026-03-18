@@ -15,6 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+683cb26736a95e2cb6bf611bb25653dcb8372e39")]
 =======
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a252277ac9aba2c890994613e95772e864ee4a87")]
@@ -22,6 +23,9 @@ using System.Reflection;
 =======
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b15ec738a76c4eac3c359d7a985c4b5836d407ea")]
 >>>>>>> DA
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8768dfe88e40ece9ed6f4945a131c3ecdc31b865")]
+>>>>>>> origin/dithreport
 [assembly: System.Reflection.AssemblyProductAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApiLibrary.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
