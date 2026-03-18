@@ -63,7 +63,7 @@ public class OEmpmasModel
     public DateTime? Separate               { get; set; }
     public string? Position_                { get; set; }
     public string? EmpStat_                 { get; set; }
-    public string? StatusDate               { get; set; }
+    public DateTime? StatusDate               { get; set; }
     public string? SecLicense               { get; set; }
     public DateTime? Licexpire              { get; set; }
     public string? TrainingAt               { get; set; }
