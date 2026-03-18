@@ -108,36 +108,37 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
     public async Task<List<OEmpmasModel?>?> _02ByEmail(string email, string schema, string conn)
 	{
+
         var usql = $@"UPDATE {schema}.Empmas SET
-                        MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
-                        MovEnd     = IF(MovEnd     < '1000-01-01', NULL, MovEnd),
-                        DutyDate   = IF(DutyDate   < '1000-01-01', NULL, DutyDate),
-                        EmpBirth   = IF(EmpBirth   < '1000-01-01', NULL, EmpBirth),
-                        DateHired  = IF(DateHired  < '1000-01-01', NULL, DateHired),
-                        Separate   = IF(Separate   < '1000-01-01', NULL, Separate),
-                        StatusDate = IF(StatusDate < '1000-01-01', NULL, StatusDate),
-                        LicExpire  = IF(LicExpire  < '1000-01-01', NULL, LicExpire),
-                        DateTrain  = IF(DateTrain  < '1000-01-01', NULL, DateTrain),
-                        InsExpire  = IF(InsExpire  < '1000-01-01', NULL, InsExpire),
-                        AStart     = IF(AStart     < '1000-01-01', NULL, AStart),
-                        AEnd       = IF(AEnd       < '1000-01-01', NULL, AEnd),
-                        DStart     = IF(DStart     < '1000-01-01', NULL, DStart),
-                        DEnd       = IF(DEnd       < '1000-01-01', NULL, DEnd),
-                        ComTaxDate = IF(ComTaxDate < '1000-01-01', NULL, ComTaxDate),
-                        Exp_Nbi    = IF(Exp_Nbi    < '1000-01-01', NULL, Exp_Nbi),
-                        Exp_Police = IF(Exp_Police < '1000-01-01', NULL, Exp_Police),
-                        Exp_Pnp    = IF(Exp_Pnp    < '1000-01-01', NULL, Exp_Pnp),
-                        Exp_Brgy   = IF(Exp_Brgy   < '1000-01-01', NULL, Exp_Brgy),
-                        Exp_Court  = IF(Exp_Court  < '1000-01-01', NULL, Exp_Court),
-                        Exp_Neuro  = IF(Exp_Neuro  < '1000-01-01', NULL, Exp_Neuro),
-                        Exp_Drug   = IF(Exp_Drug   < '1000-01-01', NULL, Exp_Drug),
-                        ExpMed     = IF(ExpMed     < '1000-01-01', NULL, ExpMed),
-                        RegRef     = IF(RegRef     < '1000-01-01', NULL, RegRef),
-                        Drv_Exp    = IF(Drv_Exp    < '1000-01-01', NULL, Drv_Exp),
-                        DpaDate    = IF(DpaDate    < '1000-01-01', NULL, DpaDate)
-                        WHERE Email = @Email;"; 
+                        MovDate    = IF(MovDate    < '0001-01-01', NULL, MovDate),
+                        MovEnd     = IF(MovEnd     < '0001-01-01', NULL, MovEnd),
+                        DUTYDATE   = IF(DUTYDATE   < '0001-01-01', NULL, DUTYDATE),
+                        EmpBirth   = IF(EmpBirth   < '0001-01-01', NULL, EmpBirth),
+                        DateHired  = IF(DateHired  < '0001-01-01', NULL, DateHired),
+                        Separate   = IF(Separate   < '0001-01-01', NULL, Separate),
+                        StatusDate = IF(StatusDate < '0001-01-01', NULL, StatusDate),
+                        LicExpire  = IF(LicExpire  < '0001-01-01', NULL, LicExpire),
+                        DateTrain  = IF(DateTrain  < '0001-01-01', NULL, DateTrain),
+                        InsExpire  = IF(InsExpire  < '0001-01-01', NULL, InsExpire),
+                        AStart     = IF(AStart     < '0001-01-01', NULL, AStart),
+                        AEnd       = IF(AEnd       < '0001-01-01', NULL, AEnd),
+                        DStart     = IF(DStart     < '0001-01-01', NULL, DStart),
+                        DEnd       = IF(DEnd       < '0001-01-01', NULL, DEnd),
+                        ComTaxDate = IF(ComTaxDate < '0001-01-01', NULL, ComTaxDate),
+                        Exp_Nbi    = IF(Exp_Nbi    < '0001-01-01', NULL, Exp_Nbi),
+                        Exp_Police = IF(Exp_Police < '0001-01-01', NULL, Exp_Police),
+                        Exp_Pnp    = IF(Exp_Pnp    < '0001-01-01', NULL, Exp_Pnp),
+                        Exp_Brgy   = IF(Exp_Brgy   < '0001-01-01', NULL, Exp_Brgy),
+                        Exp_Court  = IF(Exp_Court  < '0001-01-01', NULL, Exp_Court),
+                        Exp_Neuro  = IF(Exp_Neuro  < '0001-01-01', NULL, Exp_Neuro),
+                        Exp_Drug   = IF(Exp_Drug   < '0001-01-01', NULL, Exp_Drug),
+                        ExpMed     = IF(ExpMed     < '0001-01-01', NULL, ExpMed),
+                        RegRef     = IF(RegRef     < '0001-01-01', NULL, RegRef),
+                        Drv_Exp    = IF(Drv_Exp    < '0001-01-01', NULL, Drv_Exp),
+                        DpaDate    = IF(DpaDate    < '0001-01-01', NULL, DpaDate)
+                    WHERE Email = @Email;"; 
         await _sql.ExecuteCmd<dynamic>(usql, new { Email = email }, conn);
-        
+
         var sql = $@"SELECT s.name AS EmpStatus, p.name AS PositionName, c.ClName,
                         e.* from {schema}.Empmas e
                      left join   {schema}.position    p on p.code = e.position_
