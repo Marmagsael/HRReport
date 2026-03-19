@@ -63,15 +63,15 @@ public class OEmpmasModel
     public DateTime? Separate               { get; set; }
     public string? Position_                { get; set; }
     public string? EmpStat_                 { get; set; }
-    public string? StatusDate               { get; set; }
+    public DateTime? StatusDate               { get; set; }
     public string? SecLicense               { get; set; }
     public DateTime? Licexpire              { get; set; }
     public string? TrainingAt               { get; set; }
     public string? TrainingDate             { get; set; }
     public string? Insurance                { get; set; }
     public string? PolicyNo                 { get; set; }
-    public Double  FaceValue                { get; set; }
-    public Double  Premium                  { get; set; }
+    public string? FaceValue                { get; set; }
+    public string? Premium                  { get; set; }
     public DateTime? InsExpire              { get; set; }
     public string? EmergencyContactName     { get; set; }
     public string? EmergencyContactTel      { get; set; }
@@ -116,4 +116,3 @@ public class OEmpmasModel
     public string? Addr1                    { get; set; }
     public string? Addr2                    { get; set; }
 }
-
