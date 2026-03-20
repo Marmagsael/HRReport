@@ -1,4 +1,8 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._90_Utils
+@using Radzen
+@using Radzen.Blazor
+
 <div class="card-header"> Leave Request </div>
 
 <div class="card-body p-0 ">
@@ -18,7 +22,10 @@
             </tr>
 
             <tr>
-                <td class="w-150p">Leave Type </td>
+                <td class="w-150p ">
+                    <div class="py-2"> Leave Type  </div>
+                    
+                </td>
                 <td> 
                      <RadzenDropDown
                         TValue="int"
@@ -26,7 +33,7 @@
                         TextProperty="LeaveName"
                         ValueProperty="Id"
                         @bind-Value="v.LeaveApplication.LeaveTypeId"
-                        Placeholder="Clients Name"
+                        Placeholder="Leave Type"
                         Style="width:250px" />
                         
                 </td>
@@ -42,6 +49,7 @@
                             <div class="w-120p">
                                 <RadzenDatePicker 
                                     @bind-Value="v.LeaveApplication.LvStart" 
+                                    Change="Populatedtls"
                                     DateFormat="MM/dd/yyyy"
                                     AllowInput="false"
                                     class="mb-date-accent w-150p" />
@@ -52,6 +60,7 @@
                             <div class="w-150p ">
                                 <RadzenDatePicker 
                                     @bind-Value="v.LeaveApplication.LvEnd" 
+                                    Change="Populatedtls"
                                     DateFormat="MM/dd/yyyy"
                                     AllowInput="false"
                                     class="mb-date-accent w-150p" />
@@ -74,30 +83,185 @@
 @* --- Leave Details ----------------------------------------- *@
 <div>
     <div class="card-header">Leave Details</div>
+    <div class="card-body p-0">
+
+        <div class="w-100 d-flex gap-1 py-2 border-bottom">
+            <div class="w-130p text-center ">Date</div>
+            <div class="w-75p text-center text-primary ">
+                Day
+            </div>
+            <div class="w-75p text-center">Duty Type</div>
+            <div class="w-130p text-center">Time Start</div>
+            <div class="w-130p text-center">Duration</div>
+            <div class="w-100p text-center">Time End</div>
+            <div class="w-100p text-center">Payable</div>
+            <div class="w-100p text-center">Credited Hrs. </div>
+        </div>
+
+        @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
+            string dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
+            string dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
+
+            <div class="w-100 d-flex p-0 gap-1 mt-1 @dTypeCss ">
+                <div class="w-130p text-center py-2 ">
+                    @ld.Start?.ToString("MMM dd, yyyy").Trim() 
+                </div>
+                <div class="w-75p text-center  py-2 ">
+                    @ld.Start?.ToString("ddd")
+                </div>
+                <div class="w-75p text-center py-2 ">
+                    @dtype
+                </div>
+                <div class="w-130p">
+                    <RadzenDropDown
+                        Data="@v.Hrs"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        @bind-Value="@ld.TimeStart"
+                        Placeholder="Select Time"
+                        Style="width:125px" /> 
+                </div>
+                <div class="w-130p">
+                    <RadzenDropDown
+                        Data="@v.Durations"
+                        TextProperty="Text"
+                        ValueProperty="Value"
+                        @bind-Value="@ld.TimeDuration"
+                        Placeholder="Hr Duration"
+                        Style="width:125px; align-items: center;" /> 
+                </div>
+                <div class="w-100p text-center py-2 ">
+                    @ld.End?.ToString("hh:mm tt")
+                </div>
+                
+                <div class="w-100p text-center py-2 ">
+                    <input 
+                        class="form-check-input" 
+                        type="checkbox"
+                        checked="@ld!.IsPayableB"
+                        @onchange="@((ChangeEventArgs e) => MarkPayable(e, ld))" />
+                </div>
+                <div class="w-100p text-center py-2 @(ld?.IsPayableB??false ? "" : " disabled-div ") ">
+                    <RadzenNumeric @bind-Value="ld.CreditedHrs"
+                        TValue="decimal?"
+                        Min="@(0m)"
+                        Max="@(23.5m)"
+                        Step="0.5"
+                        Format="0.00"
+                        Style="width:100px;"
+                        TextAlign="TextAlign.Center"/>
+                        
+                </div>
+
+            </div>    
+
+
+        }
+
+    </div>
+
     
+    
+
 </div>
 
 
 
+
+
 @inject ILeavetypeDataAccess _lvtype; 
+@inject IAtttemplateDataAccess _attTemplate; 
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; }
     V12_102Lv v = new();
 
 
+
+
+    void Populatedtls()
+    {
+        v.LeaveApplicationdtls = new List<LeaveapplicationdtlModel>();
+        if (v.LeaveApplication.LvStart > v.LeaveApplication.LvEnd) return;
+
+        var leaveApp = v.LeaveApplication;
+        for (DateTime date = leaveApp.LvStart; date <= leaveApp.LvEnd; date = date.AddDays(1))
+        {
+            string                      ddd     = date.ToString("ddd");
+            LeaveapplicationdtlModel?   dtl     = _02LA(ddd);
+            dtl.Start                           = date;
+            if(dtl.DutyType=="RD") {dtl.TimeStart=0; dtl.TimeDuration=0;}
+            else{
+                int hr              = (dtl.TimeStart / 100)??0; 
+                int min             = (dtl.TimeStart % 100)??0;  
+                Double duration     = (dtl.TimeDuration / 100)??0; 
+
+                DateTime dStart = date; 
+                dtl.Start   = dStart.AddHours(hr).AddMinutes(min); 
+                dtl.End     = dStart.AddHours(hr).AddMinutes(min).AddHours(duration);
+
+            }
+
+
+
+            v.LeaveApplicationdtls.Add(dtl);
+            
+        }
+    }
+    
     protected override async Task OnParametersSetAsync()
     {
         if (Uc == null) return;
         await LoadDatas(); 
-        
     }
 
     async Task LoadDatas() {
         if(!v.LeaveTypes.Any())  {
             var res  = await _lvtype._02(Uc.SchemaUserPis, Uc.Conn) ?? [];
             if (res != null && res.Any()) v.LeaveTypes = res!; 
+
+            v.Hrs       = MsdsDataAccess._02Hours() ; 
+            v.Durations  = MsdsDataAccess._02HourDurations(); 
+            v.AttTemplate = await _attTemplate._02(Uc.UserId, Uc.SchemaUserPis, Uc.Conn); 
+
         }
     }
 
+    private async Task MarkPayable(ChangeEventArgs e, LeaveapplicationdtlModel l)
+    {
+        var val = (bool)(e.Value??false); 
+        l.IsPayableB = val;
+
+        var cHrs = (decimal?)((decimal?)(l.TimeDuration)/100); 
+        if(val) { l.CreditedHrs = (cHrs>=5 ? cHrs -1 : cHrs)??0 ; }
+        else l.CreditedHrs = 0; 
+        
+    }
+
+    string _02DutyType(string ddd) => ddd switch {
+        "Mon" => v?.AttTemplate?.D2_dutytype??"",
+        "Tue" => v?.AttTemplate?.D3_dutytype??"",
+        "Wed" => v?.AttTemplate?.D4_dutytype??"",
+        "Thu" => v?.AttTemplate?.D5_dutytype??"",
+        "Fri" => v?.AttTemplate?.D6_dutytype??"",
+        "Sat" => v?.AttTemplate?.D7_dutytype??"",
+        "Sun" => v?.AttTemplate?.D1_dutytype??"",
+        _ => "Unknown"
+    };
+
+    string DTypeCss(string ddd) => _02DutyType(ddd) == "RD" ? " text-danger " : "";
+    AtttemplateModel at =>  v.AttTemplate; 
+    LeaveapplicationdtlModel _02LA(string ddd) => ddd switch
+    {
+        "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype, TimeStart = at.D2_in, TimeDuration = at.D2_hrslength },
+        "Tue" => new LeaveapplicationdtlModel { DutyType = at.D3_dutytype, TimeStart = at.D3_in, TimeDuration = at.D3_hrslength },
+        "Wed" => new LeaveapplicationdtlModel { DutyType = at.D4_dutytype, TimeStart = at.D4_in, TimeDuration = at.D4_hrslength },
+        "Thu" => new LeaveapplicationdtlModel { DutyType = at.D5_dutytype, TimeStart = at.D5_in, TimeDuration = at.D5_hrslength },
+        "Fri" => new LeaveapplicationdtlModel { DutyType = at.D6_dutytype, TimeStart = at.D6_in, TimeDuration = at.D6_hrslength },
+        "Sat" => new LeaveapplicationdtlModel { DutyType = at.D7_dutytype, TimeStart = at.D7_in, TimeDuration = at.D7_hrslength },
+        "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype, TimeStart = at.D1_in, TimeDuration = at.D1_hrslength },
+        _ => new LeaveapplicationdtlModel()
+    };
+
+    
 }
