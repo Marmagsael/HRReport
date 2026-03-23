@@ -369,8 +369,9 @@ public class AuthenticationController : Controller
         _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
 
         CreateClaims(user, uc);
-        await CreateCompany(user, uc, conn);    
-        
+        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+        if (isExclusive != "true") await CreateCompany(user, uc, conn); 
+         
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
         HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
         
@@ -419,7 +420,6 @@ public class AuthenticationController : Controller
 
         
         var userId = user.Id;
-        //var usr = await _userAccess._02ById(userId); 
         var coId   = user.DefaultCoId;
         var userDb = "U"+userId.ToString().Trim();
         await _mainPisTblMaker._01UserTable(userDb, conn);
