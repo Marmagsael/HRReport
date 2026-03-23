@@ -8,9 +8,9 @@ public class EmpmasInsuranceModel
 
     public string? PolicyNo { get; set; }
 
-    public string? FaceValue { get; set; }
+    public double? FaceValue { get; set; }
 
-    public string? Premium { get; set; }
+    public double? Premium { get; set; }
 
     public DateTime InsExpire { get; set; }
 }

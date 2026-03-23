@@ -21,9 +21,20 @@ public class V00_RepVars
         ["pPrintedBy"] = "SYSTEM",
         ["pPrintDate"] = DateTime.Now
     };
-    public List<string>                 ReportFormats           { get; set; } = ["PDF","XLSX"]; 
-        
-    
+    public List<string>                 ReportFormats           { get; set; } = ["PDF","XLSX"];
+
+
+    //Newly Added ------------------------------------------------
+    public int                          SelectedFilter          { get; set; } = 0;
+    public List<DataFilterModel>        DataFilters             { get; set; } = [];
+    public class DataFilterModel
+    {
+        public int      Code { get; set; } = 0;
+        public string?  Name { get; set; } = "";
+    }
+
+
+    //-----------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
     public int                  Year            { get; set; } = DateTime.Now.Year;
@@ -58,7 +69,7 @@ public class V00_RepVars
     // Helpers
     //=======================================================================================
     private static List<YearsModel> GetDefaultYears() =>
-            Enumerable.Range(0, 5).Select(i =>
+            Enumerable.Range(0, 10).Select(i =>
             { var y = DateTime.Now.Year - i; return new YearsModel { Year = y, Name = y.ToString() };
             }).ToList();
 

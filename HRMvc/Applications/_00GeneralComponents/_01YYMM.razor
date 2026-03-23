@@ -1,56 +1,88 @@
-@{ var cp = ClassParams; }
+@{
+    var cp = ClassParams;
+}
 
-<div class="d-flex gap-1">
+<div class="d-flex gap-1 @cp.GetValueOrDefault("FlexDirection") ">
 
     @* --- Year ------------------------------ *@
-    <div class="@cp["CYear"]">Year</div>
-    <div class="@cp["DDYear"]">
-        <RadzenDropDown
-            Data="@Rv.Years"
-            TextProperty="Name"
-            ValueProperty="Year"
-            @bind-Value="Rv.Year"
-            Change="@(_ => ValueChanged())"
-            Placeholder="Year"
-            Style="width:100%" />
+    <div class="d-flex gap-1">
+        <div class="@cp.GetValueOrDefault("CYear")" style="min-width:@cp.GetValueOrDefault("CYearMin")">Year</div>
+        <div class="@cp.GetValueOrDefault("DDYear")" style="min-width:@cp.GetValueOrDefault("DDMonthMin")">
+            <RadzenDropDown Data="@Rv.Years"
+                            TextProperty="Name"
+                            ValueProperty="Year"
+                            @bind-Value="Rv.Year"
+                            Change="@(_ => ValueChanged())"
+                            Placeholder="Year"
+                            Style="width:100%" />
+        </div>
     </div>
+   
+
 
     @* --- Month ----------------------------- *@
-    <div class="@cp["CMonth"]">Month</div>
-    <div class="@cp["DDMonth"]">
-        <RadzenDropDown
-            Data="@Rv.Months"
-            TextProperty="Name"
-            ValueProperty="Code"
-            @bind-Value="Rv.Month"
-            Change="@(_ => ValueChanged())"
-            Placeholder="Month"
-            Style="width:100%" />
+    <div class="d-flex gap-1">
+        <div class="@cp.GetValueOrDefault("CMonth")" style="min-width:@cp.GetValueOrDefault("CMonthMin")">Month</div>
+        <div class="@cp.GetValueOrDefault("DDMonth")" style="min-width:@cp.GetValueOrDefault("DDMonthMin")">
+            <RadzenDropDown Data="@Rv.Months"
+                            TextProperty="Name"
+                            ValueProperty="Code"
+                            @bind-Value="Rv.Month"
+                            Change="@(_ => ValueChanged())"
+                            Placeholder="Month"
+                            Style="width:100%" />
+        </div>
     </div>
-
 </div>
 
 
 
 @code {
-    
-    [Parameter] public V00_RepVars                  Rv              { get; set; } = new(); 
-    [Parameter] public EventCallback<V00_RepVars>   ChildAction     { get; set; } = new();
-    public Dictionary<string, object>               ClassParams     { get; set; } = new()
+
+    [Parameter] public V00_RepVars Rv { get; set; } = new();
+    [Parameter] public EventCallback<V00_RepVars> ChildAction { get; set; } = new();
+    [Parameter]
+    public Dictionary<string, object> ClassParams { get; set; } = new()
     {
+
+
+        ["FlexDirection"] = "",
+
         ["CYear"]       = " p-2 w-50p ",
         ["DDYear"]      = " w-120p ",
-        
+        ["CYearMin"]    = "",
+        ["DDYearMin"]   = "auto",
+
         ["CMonth"]      = " p-2 w-70p ",
         ["DDMonth"]     = " w-175p ",
-        
+        ["CMonthMin"]   = "",
+        ["DDMonthMin"]  = "auto",
+
         ["CPeriod"]     = " p-2 w-75p ",
         ["DDPeriod"]    = " w-75p ",
 
     };
 
-    async Task ValueChanged() {
-        await ChildAction.InvokeAsync(Rv); 
+    protected override void OnParametersSet()
+    {
+        if (ClassParams.GetValueOrDefault("FlexDirection")?.ToString() == "flex-column")
+        {
+            ClassParams["CYear"] = " py-2";
+            ClassParams["CYearMin"] = "80px";
+            ClassParams["DDYear"] = "";
+            ClassParams["DDYearMin"] = "0px";
+
+            ClassParams["CMonth"] = " py-2";
+            ClassParams["CMonthMin"] = "80px";
+            ClassParams["DDMonth"] = "";
+            ClassParams["DDMonthMin"] = "0px";
+        }
+    }
+
+
+    async Task ValueChanged()
+    {
+        await ChildAction.InvokeAsync(Rv);
     }
 
 
