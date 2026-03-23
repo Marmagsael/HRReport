@@ -35,7 +35,7 @@
     [Parameter] public UserClaimsModel  Uc      {get; set; } = new(); 
     [Parameter] public V00_RepVars      rv      {get; set; } = new(); 
     List<V2203Model> v = [];
-    
+
     protected override async Task OnParametersSetAsync()
     {
         if (rv.Isloaded) return;
@@ -63,10 +63,16 @@
         v = []; 
     }
 
- 
+
     async Task FetchData() {
         v=[]; 
-        var res = await _pisRep._02Empmas_By_Clnumbers(rv.ClNumber, Uc.OpisDb!, Uc.Conn!); 
+        var statuses    = new List<string> { "A" };
+
+        List<string> clnumbers = [];
+        clnumbers.Add(rv.ClNumber);
+
+
+        var res = await _pisRep._02ByClNumbersByStatus(clnumbers, statuses, Uc.OpisDb!, Uc.Conn!);
         foreach(var r in res) {
             V2203Model rec  = new() {
                 EmpNumber   = r?.EmpNumber??"", 
