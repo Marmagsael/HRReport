@@ -31,19 +31,44 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
     
     public async Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctNumber, string opaydb,  string opisdb, string conn)
     {
-        string prd = $"{yyyy.ToString().Trim().Substring(2,2)}{mm}"; 
-        string sql  = $@"
-                            select  t.EmpNumber, e.EmpLastnm, e.EmpFirstNm, e.EmpMidNm, c.ClName Payrollgrp, 
-                                    e.DateHired, t.Ee, m.Ecc Ec, m.Er, m.Compensation  from
-                                (SELECT EmpNumber, sum(Amount) Ee  FROM {opaydb}.tbltran t
-                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd 
-                                    group by EmpNumber) t
+       
 
-                                left join {opisdb}.Empmas e on e.empnumber = t.EmpNumber
-                                left join {opisdb}.Client c on c.ClNumber = e.Client_
-                                left join (SELECT * FROM {opaydb}.refssstbl where @Yyyy between yrstart and yrend) m on m.ee = t.ee  
-                            where t.empnumber in (select empnumber  FROM {opaydb}.tbltran 
-                                                    where AcctNumber = @AcctNumber and left(trn,4) = @Prd and right(trn,5) in @Pgrps ) ";
+        string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
+        string sql = $@" DROP TEMPORARY TABLE IF EXISTS tTbltran; 
+                        DROP TEMPORARY TABLE IF EXISTS tRefssstbl; 
+                        DROP TEMPORARY TABLE IF EXISTS tEmplist;
+
+                        CREATE TEMPORARY TABLE tTbltran AS 
+                        SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
+
+                        CREATE TEMPORARY TABLE tRefssstbl AS 
+                        SELECT * FROM {opaydb}.refssstbl WHERE @Yyyy BETWEEN yrstart AND yrend; 
+
+                        CREATE TEMPORARY TABLE tEmplist as 
+                        SELECT DISTINCT empnumber FROM tTbltran WHERE RIGHT(trn,5) IN @Pgrps; 
+
+                        SELECT  
+                            t.EmpNumber, 
+                            e.EmpLastnm, 
+                            e.EmpFirstNm, 
+                            e.EmpMidNm,  
+                            c.ClName Payrollgrp, 
+                            e.DateHired, 
+                            t.Ee,  
+                            m.Ecc AS Ec, 
+                            m.Er   
+                        FROM (
+                            SELECT EmpNumber, SUM(Amount) Ee  
+                            FROM tTbltran 
+                            WHERE AcctNumber = @AcctNumber 
+                            GROUP BY EmpNumber
+                        ) t 
+                        LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
+                        LEFT JOIN {opisdb}.Client c ON c.ClNumber = e.Client_
+                        LEFT JOIN tRefssstbl m ON m.ee = t.Ee 
+                        WHERE t.empnumber IN (select * from tEmplist); ";
+
+
         var data    = await _sql.FetchData<RSssPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber=acctNumber }, conn);
         return data;
     }
@@ -52,42 +77,42 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
     {
         string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
         string sql = $@"DROP TEMPORARY TABLE IF EXISTS tTbltran; 
-                DROP TEMPORARY TABLE IF EXISTS tRefphictbl; 
-                DROP TEMPORARY TABLE IF EXISTS tEmplist;
+                        DROP TEMPORARY TABLE IF EXISTS t2Tbltran;
+                        DROP TEMPORARY TABLE IF EXISTS tEmplist;
 
-                CREATE TEMPORARY TABLE tTbltran AS 
-                SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
+                        CREATE TEMPORARY TABLE tTbltran AS 
+                        SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
 
-                CREATE TEMPORARY TABLE tRefphictbl AS 
-                SELECT * FROM {opaydb}.refphictbl WHERE @Yyyy BETWEEN yrstart AND yrend; 
+                        CREATE TEMPORARY TABLE t2Tbltran AS 
+                        SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
 
-                CREATE TEMPORARY TABLE tEmplist as 
-                SELECT DISTINCT empnumber FROM tTbltran WHERE RIGHT(trn,5) IN @Pgrps; 
-                
-                SELECT  
-                    t.EmpNumber, 
-                    e.EmpLastnm, 
-                    e.EmpFirstNm, 
-                    e.EmpMidNm, 
-                    e.EmpBirth,
-                    e.Sex_ Gender,
-                    e.Phic,  
-                    t.Ee,  
-                    t.Ee AS Er, 
-                    m.Compensation   
-                FROM (
-                    SELECT EmpNumber, SUM(Amount) Ee  
-                    FROM tTbltran 
-                    WHERE AcctNumber = @AcctNumber 
-                    GROUP BY EmpNumber
-                ) t 
-                LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
-                LEFT JOIN {opisdb}.Client c ON c.ClNumber = e.Client_
-                LEFT JOIN (SELECT EmpNumber, sum(Amount) Compensation  FROM tTbltran t
-                             where AcctNumber = 'E001' and left(trn,4) = @Prd 
-                             group by EmpNumber) t1 on t1.empnumber = t.empnumber
-                LEFT JOIN tRefphictbl m ON m.ee = t.Ee 
-                WHERE t.empnumber IN (select * from tEmplist); ";
+                        CREATE TEMPORARY TABLE tEmplist as 
+                        SELECT DISTINCT empnumber FROM tTbltran WHERE RIGHT(trn,5) IN @Pgrps; 
+                        
+
+                        SELECT  
+                            t.EmpNumber, 
+                            e.EmpLastnm, 
+                            e.EmpFirstNm, 
+                            e.EmpMidNm,  
+                            e.Phic, 
+                            e.EmpBirth, 
+                            e.Sex_ Gender,
+                            t.Ee,  
+                            t.Ee AS Er, 
+                            t1.Compensation   
+                        FROM (SELECT EmpNumber, SUM(Amount) Ee  
+                            FROM tTbltran 
+                            WHERE AcctNumber = @AcctNumber 
+                            GROUP BY EmpNumber
+                        ) t 
+                        LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
+                        LEFT JOIN (SELECT EmpNumber, sum(Amount) Compensation 
+                                     FROM t2Tbltran 
+                                     WHERE AcctNumber = 'E001' 
+                                     GROUP BY EmpNumber) t1 on t1.EmpNumber = t.EmpNumber
+                        WHERE t.empnumber IN (select * from tEmplist); ";
+
         var data = await _sql.FetchData<RPhicPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
     }
@@ -118,7 +143,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                             e.Tin,
                             e.DateHired, 
                             t.Ee,  
-                            t.Ee AS FEr, 
+                            t.Ee AS Er, 
                             m.Compensation   
                         FROM (
                             SELECT EmpNumber, SUM(Amount) Ee  
@@ -127,7 +152,6 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                             GROUP BY EmpNumber
                         ) t 
                         LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
-                        LEFT JOIN {opisdb}.Client c ON c.ClNumber = e.Client_
                         LEFT JOIN tRefpagibigtbl m ON m.Fee = t.Ee 
                         WHERE t.empnumber IN (select * from tEmplist); ";  
 
