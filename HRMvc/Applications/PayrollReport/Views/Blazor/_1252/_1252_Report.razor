@@ -1,7 +1,9 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using System.Globalization
+@inject NotificationService _NotificationService;
 
+<RadzenNotification />
 
 
 <_02BTModal MCaption="@Rv.MCaption" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
@@ -108,8 +110,15 @@
 
         if (Rv.SelectedFormat == "XLSX")
         {
-            await Task.Delay(2500);
+            await Task.Delay(2000);
             Rv.ShowReport = false;
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Success",
+                Detail = $"Your SSS Contribution Excel file has been downloaded.",
+                Duration = 4000
+            });
         }
     }
 
@@ -124,5 +133,11 @@
     private async Task ValueChanged()
     {
         await ChildAction.InvokeAsync(Rv.SelectedFormat);
+    }
+
+
+    void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
     }
 }

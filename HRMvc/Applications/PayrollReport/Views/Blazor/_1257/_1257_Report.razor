@@ -1,6 +1,9 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using System.Globalization
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
 
 
 
@@ -42,7 +45,7 @@
                         <div class=" w-100p">Suffix</div>
                         <div class=" w-150p">First Name</div>
                         <div class=" w-150p">Middle Name</div>
-                        <div class=" w-150p">Salary</div>
+                        <div class=" w-150p text-end">Salary</div>
                         <div class=" w-100p">Status</div>
                         <div class=" w-100p">Effective Date</div>
                         <div class=" w-100p">Birth Date</div>
@@ -67,7 +70,7 @@
                         <div class=" w-100p">@rec.Suffix</div>
                         <div class=" w-150p">@rec.EmpFirstNm</div>
                         <div class=" w-150p">@rec.EmpMidNm</div>
-                        <div class=" w-150p">@rec.Compensation?.ToString("N2")</div>
+                        <div class=" w-150p text-end">@rec.Compensation?.ToString("N2")</div>
                         <div class=" w-100p">@rec.Status</div> 
                         <div class=" w-100p">@rec.EffectiveDate?.ToString("MM/dd/yyyy")</div>
                         <div class=" w-100p">@rec.EmpBirth?.ToString("MM/dd/yyyy")</div>
@@ -116,8 +119,15 @@
 
         if (Rv.SelectedFormat == "XLSX")
         {
-            await Task.Delay(2500);
+            await Task.Delay(2000);
             Rv.ShowReport = false;
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Success",
+                Detail = $"Your PHIC Contribution Excel file has been downloaded.",
+                Duration = 4000
+            });
         }
     }
 
@@ -132,5 +142,11 @@
     private async Task ValueChanged()
     {
         await ChildAction.InvokeAsync(Rv.SelectedFormat);
+    }
+
+
+    void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
     }
 }

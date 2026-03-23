@@ -33,13 +33,14 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
     {
        
 
+
         string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
         string sql = $@" DROP TEMPORARY TABLE IF EXISTS tTbltran; 
                         DROP TEMPORARY TABLE IF EXISTS tRefssstbl; 
                         DROP TEMPORARY TABLE IF EXISTS tEmplist;
 
                         CREATE TEMPORARY TABLE tTbltran AS 
-                        SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
+                        SELECT TRN, AcctNumber, EmpNumber, Amount FROM {opaydb}.tbltran  WHERE LEFT(trn,4) = @Prd; 
 
                         CREATE TEMPORARY TABLE tRefssstbl AS 
                         SELECT * FROM {opaydb}.refssstbl WHERE @Yyyy BETWEEN yrstart AND yrend; 
@@ -66,8 +67,8 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
                         LEFT JOIN {opisdb}.Client c ON c.ClNumber = e.Client_
                         LEFT JOIN tRefssstbl m ON m.ee = t.Ee 
-                        WHERE t.empnumber IN (select * from tEmplist)
-                        ORDER BY e.EmpLastnm, e.EmpFirstNm; ";
+                        WHERE t.empnumber IN (select * from tEmplist) 
+                        Order by EmplastNm, EmpfirstNm; ";
 
 
         var data    = await _sql.FetchData<RSssPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber=acctNumber }, conn);
@@ -82,10 +83,10 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         DROP TEMPORARY TABLE IF EXISTS tEmplist;
 
                         CREATE TEMPORARY TABLE tTbltran AS 
-                        SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
+                        SELECT TRN, AcctNumber, EmpNumber, Amount FROM {opaydb}.tbltran  WHERE LEFT(trn,4) = @Prd; 
 
                         CREATE TEMPORARY TABLE t2Tbltran AS 
-                        SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
+                        SELECT TRN, AcctNumber, EmpNumber, Amount FROM {opaydb}.tbltran  WHERE LEFT(trn,4) = @Prd; 
 
                         CREATE TEMPORARY TABLE tEmplist as 
                         SELECT DISTINCT empnumber FROM tTbltran WHERE RIGHT(trn,5) IN @Pgrps; 
@@ -113,7 +114,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                                      WHERE AcctNumber = 'E001' 
                                      GROUP BY EmpNumber) t1 on t1.EmpNumber = t.EmpNumber
                         WHERE t.empnumber IN (select * from tEmplist)
-                        ORDER BY e.EmpLastnm, e.EmpFirstNm; ";
+                        Order by EmplastNm, EmpfirstNm; ";
 
         var data = await _sql.FetchData<RPhicPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
@@ -127,7 +128,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         DROP TEMPORARY TABLE IF EXISTS tEmplist;
 
                         CREATE TEMPORARY TABLE tTbltran AS 
-                        SELECT * FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
+                        SELECT TRN, AcctNumber, EmpNumber, Amount FROM {opaydb}.tbltran WHERE LEFT(trn,4) = @Prd; 
 
                         CREATE TEMPORARY TABLE tRefpagibigtbl AS 
                         SELECT * FROM {opaydb}.refpagibigtbl WHERE @Yyyy BETWEEN yrstart AND yrend; 
@@ -156,11 +157,13 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
                         LEFT JOIN tRefpagibigtbl m ON m.Fee = t.Ee 
                         WHERE t.empnumber IN (select * from tEmplist)
-                        ORDER BY e.EmpLastnm, e.EmpFirstNm; ";
+                        Order by EmplastNm, EmpfirstNm; ";  
 
         var data = await _sql.FetchData<RPagIbigPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
     }
+
+    // --- --------------- 
 
 }
 
