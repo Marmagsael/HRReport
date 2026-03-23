@@ -70,8 +70,8 @@ public class OEmpmasModel
     public string? TrainingDate             { get; set; }
     public string? Insurance                { get; set; }
     public string? PolicyNo                 { get; set; }
-    public string? FaceValue                { get; set; }
-    public string? Premium                  { get; set; }
+    public double? FaceValue                { get; set; } = 0.00;
+    public double? Premium                  { get; set; } = 0.00;
     public DateTime? InsExpire              { get; set; }
     public string? EmergencyContactName     { get; set; }
     public string? EmergencyContactTel      { get; set; }
