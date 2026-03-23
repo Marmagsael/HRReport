@@ -66,7 +66,8 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
                         LEFT JOIN {opisdb}.Client c ON c.ClNumber = e.Client_
                         LEFT JOIN tRefssstbl m ON m.ee = t.Ee 
-                        WHERE t.empnumber IN (select * from tEmplist); ";
+                        WHERE t.empnumber IN (select * from tEmplist)
+                        ORDER BY e.EmpLastnm, e.EmpFirstNm; ";
 
 
         var data    = await _sql.FetchData<RSssPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber=acctNumber }, conn);
@@ -111,7 +112,8 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                                      FROM t2Tbltran 
                                      WHERE AcctNumber = 'E001' 
                                      GROUP BY EmpNumber) t1 on t1.EmpNumber = t.EmpNumber
-                        WHERE t.empnumber IN (select * from tEmplist); ";
+                        WHERE t.empnumber IN (select * from tEmplist)
+                        ORDER BY e.EmpLastnm, e.EmpFirstNm; ";
 
         var data = await _sql.FetchData<RPhicPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
@@ -153,7 +155,8 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         ) t 
                         LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
                         LEFT JOIN tRefpagibigtbl m ON m.Fee = t.Ee 
-                        WHERE t.empnumber IN (select * from tEmplist); ";  
+                        WHERE t.empnumber IN (select * from tEmplist)
+                        ORDER BY e.EmpLastnm, e.EmpFirstNm; ";
 
         var data = await _sql.FetchData<RPagIbigPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
