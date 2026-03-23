@@ -20,10 +20,19 @@
         {
 
 
+
             <div class="pt-0 p-2">
                 <div class="sticky-top bg-white ">
                     <div class="pt-2 p-2 border-bottom">
-                        <div @onclick="CreateReport" class="mb-cbtn mb-cbtn-blue w-150p card p-1 "> Show Report  </div>
+                        <div class="p-0">
+                            <div class="card-header">
+                                <div class="d-flex gap-2">
+                                    <_01ReportFormat Rv="@Rv" ChildAction="ValueChanged" />
+                                    @*--- Fetch Button ------------------------------------------------*@
+                                    <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
@@ -87,23 +96,41 @@
 @code {
     [Parameter] public V00_RepVars              Rv  { get; set; } = new();
     [Parameter] public List<RPhicPremModel>     V   { get; set; } = new();
-    [Parameter] public EventCallback<bool>      ChildAction { get; set; }
+    [Parameter] public EventCallback<object>      ChildAction { get; set; }
 
-
-    void CreateReport()
+    private async Task CreateReport()
     {
+        Rv.RelativePath = "";
         Rv.ReportData = V;
-        int monthNumber     = Convert.ToInt32(Rv.Month);
-        string monthName    = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+
+        int monthNumber = Convert.ToInt32(Rv.Month);
+        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
+
+        Rv.RelativePath = Rv.SelectedFormat == "XLSX"
+            ? "Reports/_03Payroll/K_PHIC_xlsx.trdp"
+            : "Reports/_03Payroll/K_PHIC.trdp";
+
         Rv.ShowReport = true;
+
+        if (Rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2500);
+            Rv.ShowReport = false;
+        }
     }
 
-    async Task CloseReportModal(bool ans)
+    private async Task CloseReportModal(bool ans)
     {
-        Rv.ShowModal = ans;
-        await ChildAction.InvokeAsync(ans);
+        if (Rv.ShowReport) Rv.ShowReport = ans;
+        else Rv.ShowModal = ans;
 
+        await ChildAction.InvokeAsync(ans);
+    }
+
+    private async Task ValueChanged()
+    {
+        await ChildAction.InvokeAsync(Rv.SelectedFormat);
     }
 }

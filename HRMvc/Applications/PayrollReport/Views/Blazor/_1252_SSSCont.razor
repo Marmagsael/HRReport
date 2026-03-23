@@ -25,15 +25,9 @@
             <div class="card-header">
                 <div class="d-flex gap-2">
                     @*--- Period ------------------------------------------------*@
-                    <div class="card  p-3 w-250p">
-                        <_01YYMM Rv="rv"  ClassParams ="@periodClass" ChildAction="ChildActionCatcher" />
-                    </div>
-
-                    <div class="card p-3 w-180p">
-                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher"/>
-                        @*--- Fetch Button ------------------------------------------------*@
-                        <div class="mt-1 p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
-                    </div>  
+                    <_01YYMM Rv="rv"   ChildAction="ChildActionCatcher" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
                 </div>
             </div>
         </div>
@@ -62,13 +56,12 @@
     string errorMsg = "";
 
     Dictionary<string, object> periodClass = new(){["FlexDirection"]   = "flex-column"};
-    Dictionary<string, object> clientClass = new(){ ["VH"] = "vh65"};
+    Dictionary<string, object> clientClass = new(){ ["VH"] = "vh70"};
 
 
     protected override async Task OnInitializedAsync()
     {
         rv.Clients          = [];  
-
         rv.RefreshToken     = 12520000;
         rv.MCaption         = "SSS Contribution";
 
@@ -77,7 +70,7 @@
         if(resc.Count > 0 ) { rv.Clients = resc!;  }
                
         @* --- Report Details -------------------------------------------- *@
-        rv.RelativePath = "Reports/_03Payroll/K_SSS.trdp";
+        
      
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
         rv.ReportParams = [];
@@ -102,6 +95,7 @@
     async Task FetchData()
     {
         rv.ShowReport = false;
+        rv.ShowModal  = false;
 
         if (!(clNumbers ?? []).Any())
         {

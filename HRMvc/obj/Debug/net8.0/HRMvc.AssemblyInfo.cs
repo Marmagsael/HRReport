@@ -14,11 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-<<<<<<< HEAD
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a511f8d09af93dc9e51d4d58ec184fc71dd1a771")]
-=======
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1c32977f3dead19b5f314dad8c968494fedc15a8")]
->>>>>>> dithreport
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fbce8b88657f65d810badb48bea0dce2d8fa55b3")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
