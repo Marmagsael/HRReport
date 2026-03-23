@@ -98,15 +98,20 @@
     [Parameter] public List<RPhicPremModel>     V   { get; set; } = new();
     [Parameter] public EventCallback<object>      ChildAction { get; set; }
 
-    async Task CreateReport()
+    private async Task CreateReport()
     {
-
-
+        Rv.RelativePath = "";
         Rv.ReportData = V;
+
         int monthNumber = Convert.ToInt32(Rv.Month);
         string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
+
+        Rv.RelativePath = Rv.SelectedFormat == "XLSX"
+            ? "Reports/_03Payroll/K_PHIC_xlsx.trdp"
+            : "Reports/_03Payroll/K_PHIC.trdp";
+
         Rv.ShowReport = true;
 
         if (Rv.SelectedFormat == "XLSX")
@@ -114,21 +119,17 @@
             await Task.Delay(2500);
             Rv.ShowReport = false;
         }
-        ;
     }
 
-    async Task CloseReportModal(bool ans)
+    private async Task CloseReportModal(bool ans)
     {
-        if (Rv.ShowReport == true) Rv.ShowReport = ans;
+        if (Rv.ShowReport) Rv.ShowReport = ans;
         else Rv.ShowModal = ans;
 
-
         await ChildAction.InvokeAsync(ans);
-
     }
 
-
-    async Task ValueChanged()
+    private async Task ValueChanged()
     {
         await ChildAction.InvokeAsync(Rv.SelectedFormat);
     }
