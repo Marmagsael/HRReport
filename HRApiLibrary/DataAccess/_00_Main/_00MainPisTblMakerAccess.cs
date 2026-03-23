@@ -2273,14 +2273,11 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         
          sql = $@"CREATE TABLE if not exists {schema}.LeaveApplicationDtl (
                     Id              INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
-                    EmpmasId        INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                    EmpmasId        INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
                     EmpNumber       CHAR(5)                 NOT NULL DEFAULT '',
                     Start           DATETIME,
-                    DutyType        CHAR(2)                 NOT NULL DEFAULT 'R',
-                    TimeStart       INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
-                    TimeDuration    INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
                     End             DATETIME,
-                    CreditedHrs     INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
+                    CreditedHrs     DOUBLE(12,2)            NOT NULL DEFAULT 0,
                     IsPayable       INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
                     PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, conn);
