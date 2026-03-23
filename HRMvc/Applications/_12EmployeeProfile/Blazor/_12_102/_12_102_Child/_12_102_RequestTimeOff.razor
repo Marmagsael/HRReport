@@ -1,9 +1,23 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+﻿@using Blazorise.Extensions
+@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._90_Utils
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.Leave
 @using Radzen
 @using Radzen.Blazor
 
 <div class="card-header"> Leave Request </div>
+
+<div class="d-flex gap-1 p-1 border-bottom ">
+    <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
+    <div @onclick="Save" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSaveCss) "> Save  </div>
+    <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSendCss ) "> Send For Approval </div>
+    <div @onclick="ShowCancel" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancelCss)"> Cancel </div>
+    <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+</div>
+
+<_12_102_Lv_Modal ChildAction="ChildActionCatcher" Uc="@Uc" V="@v" />
+
+<div>Count : @v.LeaveApplicationdtls.Count * @Uc.UserId </div>
 
 <div class="card-body p-0 ">
     <table class="table table-small table-bordered">
@@ -11,19 +25,28 @@
             <tr>
                 <td class="w-150p p-2  ">
                     <div class="mt-1">
-                        TRN # 
+                        TRN # <spa class="txt-red">*</spa>
                     </div>
                 </td>
-                <td class="p-2 ">
+                <td class="p-2 d-flex justify-content-between  ">
                     <div class="border-bottom w-100p text-center  p-1">
                         <h6 class=""> @v.LeaveApplication.Id </h6> 
                     </div>
+                    <div class="w-175p d-flex p-1 ">
+                        <div class=""> Status : </div>
+                        <div class="ms-2 bordered-bottom w-75p text-center text-primary"> 
+                            @(_02LvStatus(@v.LeaveApplication.Status)) 
+                        </div>
+                    </div>
+
                 </td>
             </tr>
 
+
+            @* --- Leave Type ------------------------------------------- *@
             <tr>
                 <td class="w-150p ">
-                    <div class="py-2"> Leave Type  </div>
+                    <div class="py-2"> Leave Type<spa class="txt-red">*</spa>  </div>
                     
                 </td>
                 <td> 
@@ -39,13 +62,29 @@
                 </td>
             </tr>
             
+            @* --- Year Of Application ------------------------------------------- *@
+            <tr>
+                <td class="w-150p ">
+                    <div class="py-2"> Credit Period<spa class="txt-red">*</spa>  </div>
+                    
+                </td>
+                <td> 
+                     <RadzenDropDown
+                        TValue="int"
+                        Data="@v.LvYrs"
+                        @bind-Value="v.LeaveApplication.Yr"
+                        Placeholder="Leave Year"
+                        Style="width:125px" />
+                </td>
+            </tr>
+            
             @* --- Date Covered ----------------------------- *@
             <tr>
-                <td class="align-middle">Date Covered</td>
+                <td class="align-middle">Date Covered<spa class="txt-red">*</spa></td>
                 <td class="p-1">
                     <div class="w-100 ">
                         <div class="d-flex gap-2 ">
-                            <div class="w-50p p-2 d-flex align-items-center">Start</div>
+                            <div class="w-50p p-2 d-flex align-items-center">Start<spa class="txt-red">*</spa></div>
                             <div class="w-120p">
                                 <RadzenDatePicker 
                                     @bind-Value="v.LeaveApplication.LvStart" 
@@ -56,7 +95,7 @@
                             </div>
                         </div>
                         <div class="d-flex gap-2 mt-1">
-                            <div class="w-50p p-2 d-flex align-items-center">End</div>
+                            <div class="w-50p p-2 d-flex align-items-center">End<spa class="txt-red">*</spa></div>
                             <div class="w-150p ">
                                 <RadzenDatePicker 
                                     @bind-Value="v.LeaveApplication.LvEnd" 
@@ -70,12 +109,61 @@
                 </td>
             </tr>
 
+            @* --- Address ------------------------------------ *@
             <tr>
-                <td class="w-150p">Reason </td>
+                <td class="w-150p">Address<spa class="txt-red">*</spa> </td>
+                <td>
+                    <RadzenTextArea @bind-Value="v.LeaveApplication.Address" MaxLength="150" Rows="2" Style="width:100%;" /> 
+                </td>
+            </tr>
+            
+            @* --- Telephone Number ------------------------------------ *@
+            <tr>
+                <td class="w-150p">Contact # <spa class="txt-red">*</spa></td>
+                <td>
+                    <RadzenTextBox 
+                        @bind-Value="@v.LeaveApplication.TelNo"
+                        MaxLength="45" 
+                        Style="width:250px;" /> 
+                        
+                </td>
+            </tr>
+            
+            @* --- Reason ------------------------------------ *@
+            <tr>
+                <td class="w-150p">Reason <spa class="txt-red">*</spa></td>
                 <td>
                     <RadzenTextArea @bind-Value="v.LeaveApplication.Reason" MaxLength="150" Rows="2" Style="width:100%;" /> 
                 </td>
             </tr>
+
+            @* --- Parameters ------------------------------------------- *@
+            <tr>
+                <td>Parameter</td>
+                <td>
+                   <div class="d-flex gap-2">
+                        
+                        @* --- Leave Balance --------- *@
+                        <div class="text-primary">Leave Balance : </div>
+                        <div class="text-center">
+                            @lva.LvBalance.ToString("N2")
+                        </div>`
+                        @* --- Available Credit --------- *@
+                        <div class="text-primary">Days Count : </div>
+                        <div class="text-center">
+                            @lva.DaysCnt.ToString("N2")
+                        </div>
+                        @* --- Leave with Pay *@
+                        <div class="text-primary">With Pay : </div>
+                        <div class="text-center">
+                            @lvWPay.ToString("N2") 
+                        </div>
+
+
+                   </div> 
+                </td>
+            </tr>
+
         </tbody>
     </table>
 </div>
@@ -102,7 +190,7 @@
             string dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
             string dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
 
-            <div class="w-100 d-flex p-0 gap-1 mt-1 @dTypeCss ">
+            <div class="w-100 d-flex p-0 mt-1 gap-1 @dTypeCss ">
                 <div class="w-130p text-center py-2 ">
                     @ld.Start?.ToString("MMM dd, yyyy").Trim() 
                 </div>
@@ -114,6 +202,7 @@
                 </div>
                 <div class="w-130p">
                     <RadzenDropDown
+                        Change="@(() => ComputeEnd(ld))"
                         Data="@v.Hrs"
                         TextProperty="Text"
                         ValueProperty="Value"
@@ -123,6 +212,7 @@
                 </div>
                 <div class="w-130p">
                     <RadzenDropDown
+                        Change="@(() => ComputeEnd(ld))"
                         Data="@v.Durations"
                         TextProperty="Text"
                         ValueProperty="Value"
@@ -141,7 +231,7 @@
                         checked="@ld!.IsPayableB"
                         @onchange="@((ChangeEventArgs e) => MarkPayable(e, ld))" />
                 </div>
-                <div class="w-100p text-center py-2 @(ld?.IsPayableB??false ? "" : " disabled-div ") ">
+                <div class="w-100p text-center @(ld?.IsPayableB??false ? "" : " disabled-div ") ">
                     <RadzenNumeric @bind-Value="ld.CreditedHrs"
                         TValue="decimal?"
                         Min="@(0m)"
@@ -149,8 +239,7 @@
                         Step="0.5"
                         Format="0.00"
                         Style="width:100px;"
-                        TextAlign="TextAlign.Center"/>
-                        
+                        TextAlign="TextAlign.Center"/>  
                 </div>
 
             </div>    
@@ -176,6 +265,76 @@
     [Parameter] public UserClaimsModel Uc { get; set; }
     V12_102Lv v = new();
 
+    @* =================================================== *@
+    void ChildActionCatcher() {
+
+    }
+
+    void New() { 
+        @* Console.WriteLine($"Test");  *@
+
+        v.LeaveApplication      = new(); 
+        v.LeaveApplicationdtl   = new(); 
+        v.LeaveApplicationdtls  = []; 
+
+        
+
+
+        Populatedtls(); 
+        StateHasChanged(); 
+
+    }
+
+    async Task Save()
+    { 
+        @* ts.AttReqhdr.Status = "S"; 
+        if(ts.AttReqhdr.Id > 0) {
+            var res = await _attreqhdr._03(ts.AttReqhdr.Id, ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+            ts.AttReqhdr = res; 
+        } else {
+            ts.AttReqhdr.UserId         = Uc.UserId; 
+            ts.AttReqhdr.AttReqTypeId   = 3; 
+            ts.AttReqhdr.EmpNumber      = Uc.OempNumber; 
+            var res     = await _attreqhdr._01(ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+            ts.AttReqhdr                = res; 
+        }  
+        await FetchApprover(); 
+
+        await SaveDtl();  *@
+
+    }
+
+    async Task ShowSendForApproval() { 
+        @* await SaveHdr(); *@
+        v.ShowSendForApproval   = true; 
+    }
+
+    void ShowCancel() {}
+    void ShowMyRequest() { v.ShowMyReqquest = true; }
+
+
+    bool IsCanSave => lva != null
+               && lva.Status is "N" or "S"
+               && (lva.LeaveTypeId) > 0
+               && lva.LvEnd >= lva.LvStart
+               && !string.IsNullOrWhiteSpace(lva.Address)
+               && !string.IsNullOrWhiteSpace(lva.Reason)
+               && !string.IsNullOrWhiteSpace(lva.TelNo);
+    bool IsCanSend  =>  lva != null
+                        && lva.Status is "S"
+                        && (lva.LeaveTypeId) > 0
+                        && lva.LvEnd >= lva.LvStart
+                        && !string.IsNullOrWhiteSpace(lva.Address)
+                        && !string.IsNullOrWhiteSpace(lva.Reason)
+                        && !string.IsNullOrWhiteSpace(lva.TelNo); 
+    bool IsCanCancel    => lva != null
+                        && lva.Status is "S"; 
+
+    string CanSaveCss =>    IsCanSave ? "" : " disabled-div ";
+    string CanSendCss =>    IsCanSend ? "" : " disabled-div ";
+    string CanCancelCss =>  IsCanCancel ? "" : " disabled-div ";
+
+    @* =================================================== *@
 
 
 
@@ -185,8 +344,9 @@
         if (v.LeaveApplication.LvStart > v.LeaveApplication.LvEnd) return;
 
         var leaveApp = v.LeaveApplication;
-        for (DateTime date = leaveApp.LvStart; date <= leaveApp.LvEnd; date = date.AddDays(1))
+        for (DateTime date = leaveApp.LvStart; date < leaveApp.LvEnd.AddDays(1); date = date.AddDays(1))
         {
+            @* Console.WriteLine($"{date}"); *@
             string                      ddd     = date.ToString("ddd");
             LeaveapplicationdtlModel?   dtl     = _02LA(ddd);
             dtl.Start                           = date;
@@ -201,12 +361,37 @@
                 dtl.End     = dStart.AddHours(hr).AddMinutes(min).AddHours(duration);
 
             }
-
-
-
-            v.LeaveApplicationdtls.Add(dtl);
-            
+            v.LeaveApplicationdtls.Add(dtl);            
         }
+
+        @* --- Days Count -------------------------------- *@
+        if(lva.LvEnd<lva.LvStart) { v.LeaveApplication.DaysCnt = 0; }
+        else { v.LeaveApplication.DaysCnt = (lva.LvEnd - lva.LvStart).TotalDays + 1;  }
+
+    }
+
+    void ComputeEnd(LeaveapplicationdtlModel ld) {
+        if(ld==null) return; 
+        if(ld.Start==null) return; 
+        if(ld.TimeStart==null) return; 
+        if(ld.TimeDuration==null) return; 
+
+        int hr              = (ld.TimeStart / 100)??0; 
+        int min             = (ld.TimeStart % 100)??0;  
+        Double duration     = (ld.TimeDuration / 100)??0; 
+        DateTime dstart     = ld.Start?.Date ?? DateTime.MinValue;
+        DateTime dEnd       = dstart.AddHours(hr).AddSeconds(min).AddHours(duration); 
+
+        ld.End = dEnd; 
+
+        if(ld.IsPayableB) {
+            decimal? cHrs = (decimal?)((decimal?)(ld.TimeDuration)/100); 
+
+
+            if(ld.IsPayableB) { ld.CreditedHrs = (cHrs>=5 ? cHrs -1 : cHrs)??0 ; }
+            else ld.CreditedHrs = 0; 
+        }
+
     }
     
     protected override async Task OnParametersSetAsync()
@@ -223,6 +408,10 @@
             v.Hrs       = MsdsDataAccess._02Hours() ; 
             v.Durations  = MsdsDataAccess._02HourDurations(); 
             v.AttTemplate = await _attTemplate._02(Uc.UserId, Uc.SchemaUserPis, Uc.Conn); 
+
+            v.LvYrs = []; 
+            v.LvYrs.Add(DateTime.Now.Year); 
+            v.LvYrs.Add(DateTime.Now.Year-1); 
 
         }
     }
@@ -250,7 +439,12 @@
     };
 
     string DTypeCss(string ddd) => _02DutyType(ddd) == "RD" ? " text-danger " : "";
-    AtttemplateModel at =>  v.AttTemplate; 
+    AtttemplateModel        at    =>  v.AttTemplate; 
+    LeaveapplicationModel   lva   => v.LeaveApplication; 
+    double lvWPay => v.LeaveApplicationdtls 
+                        .Where(l => l.IsPayableB)
+                        .Sum(l => l.CreditedHrs < 8 ? .5 : 1 ); 
+
     LeaveapplicationdtlModel _02LA(string ddd) => ddd switch
     {
         "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype, TimeStart = at.D2_in, TimeDuration = at.D2_hrslength },
@@ -262,6 +456,7 @@
         "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype, TimeStart = at.D1_in, TimeDuration = at.D1_hrslength },
         _ => new LeaveapplicationdtlModel()
     };
+    string _02LvStatus(string code) => code switch { "N" => "New", "Save" => "Save", "F" => "For Approval", "C" => "Cancelled", "A" => "Approved", _ => "Unknown" };
 
     
 }
