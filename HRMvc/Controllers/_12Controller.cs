@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
 
 namespace HRMvc.Controllers
 {
@@ -11,7 +12,7 @@ namespace HRMvc.Controllers
             ["002"] = "_12_002_PasswordAndSecurity",
             ["003"] = "_12_003_MyEngagement",
             ["004"] = "_12_004_PayrollSettings",
-            ["010"] = "_12_010_Logout",
+            // ["010"] = "_12_010_Logout",
             ["102"] = "_12_102_Dashboard",
             ["103"] = "_12_103_201Record",
             ["104"] = "_12_104_Attendance",
@@ -35,25 +36,16 @@ namespace HRMvc.Controllers
             return View($"~/Applications/_12EmployeeProfile/Pages/{viewName}.cshtml");
         }
 
+        [HttpGet("010")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync();
 
+            // 👉 optional: if switching company
+            // await CreateClaims(user, uc);
 
+            return Redirect("/13"); // change if needed
+        }
 
-        // [HttpGet("")]
-        // public IActionResult Index()
-        // {
-        //     return View("~/Applications/_12EmployeeProfile/Pages/Index.cshtml");
-        // }
-        
-        // // 🔥 Clean numeric route
-        // [HttpGet("{code:int}")]
-        // public IActionResult Report(int code)
-        // {
-        //     var key = code.ToString();
-
-        //     if (!ReportViews.TryGetValue(key, out var viewName))
-        //         return NotFound();
-
-        //     return View($"~/Applications/_12EmployeeProfile/Pages/{viewName}.cshtml");
-        // }
     }
 }
