@@ -152,7 +152,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
-    public async Task<List<OEmpmasModel>> _02Empmas_ByMonth_And_Year( string fld, int month, int year, string schema, string conn)
+    public async Task<List<OEmpmasModel>> _02Empmas_ByMonth_And_Year( string fld, List<string?>? statuses, int month, int year, string schema, string conn)
     {
         var flds = EmpmasFields();
         List<OEmpmasModel> data = [];
@@ -166,7 +166,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         order by emplastnm, empfirstnm
                         ";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year}, conn);
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year, Statuses = statuses}, conn);
         return data ?? [];
     }
     public async Task<List<OEmpmasModel>> _02Empmas_ByInsurance_And_Status(int filterValue,  List<string> statuses,  DateTime? startDate, DateTime? endDate, string schema, string conn)
@@ -456,6 +456,6 @@ public interface IOPisReportDataAccess
     Task<List<OCompanyInfoModel?>>  _02CoInfo(string schema, string conn); 
     Task<List<OEmpmasModel>>        _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn);
-    Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, int month, int year, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, List<string?>? statuses, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry( DateTime? startDate, DateTime? endDate, List<string> statuses,string schema, string conn);
 }
