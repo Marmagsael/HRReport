@@ -112,12 +112,26 @@
         try
         {
             rv.Isloaded = true;
+
             reps = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, "D002", Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Error",
+                Detail = $"Failed to load data.",
+                Duration = 4000
+            });
+            return;
         }
         finally
         {
             rv.Isloaded = false;
         }
+
 
         if (!(reps ?? []).Any())
         {
