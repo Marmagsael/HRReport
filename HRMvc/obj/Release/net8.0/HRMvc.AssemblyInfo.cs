@@ -12,9 +12,9 @@ using System.Reflection;
 
 [assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("20bd3c22-c82f-40ee-9fe3-601760111754")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRMvc")]
-[assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+[assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7f01b77685d24f9a9ee0b7c27e69b30eb23eb77e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+14dc85f46460272a1e948ea2d778a3d02e4c6528")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRMvc")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
