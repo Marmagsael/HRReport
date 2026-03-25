@@ -369,7 +369,10 @@ public class AuthenticationController : Controller
         _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
 
         CreateClaims(user, uc);
-        await CreateCompany(user, uc, conn);    
+        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+        if (isExclusive != "true") await CreateCompany(user, uc, conn);
+
+        // await CreateCompany(user, uc, conn);    
         
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
         HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
@@ -718,17 +721,17 @@ public class AuthenticationController : Controller
         var userId = user.Id.ToString() ?? "0";;
         var prefix = "U" + userId.Trim() + "C1"; 
 
-        var pisSchema       = prefix + "Pis";
-        var paySchema       = prefix + "Pay";
-        var acctgSchema     = prefix + "Acctg";
-        var appSchema       = prefix + "App";
-        var amsSchema       = prefix + "Ams";
-        var conn           = user.Domain;
+        var pisSchema   = prefix + "Pis";
+        var paySchema   = prefix + "Pay";
+        var acctgSchema = prefix + "Acctg";
+        var appSchema   = prefix + "App";
+        var amsSchema   = prefix + "Ams";
+        var conn        = user.Domain;
         var defCoId               = "0";
-        var email           = user.Email ?? "-";
+        var email       = user.Email ?? "-";
         
-        var resUc = await _mainDA._02UserCompanyPerOwnerId(user.Id); 
-        var coName                = resUc.FirstOrDefault()?.CompanyName ?? "Undefined Company";
+        var resUc       = await _mainDA._02UserCompanyPerOwnerId(user.Id); 
+        var coName      = resUc.FirstOrDefault()?.CompanyName ?? "Undefined Company";
 
         var currUser    = await _mainDA._02UsersById(user.Id);
         defCoId                   = currUser?.DefaultCoId.ToString().Trim() ?? "0"; 
@@ -772,4 +775,6 @@ public class AuthenticationController : Controller
         await HttpContext.SignInAsync(claimPrincipal);
 
     }
+
+    
 }
