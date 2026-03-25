@@ -1,0 +1,146 @@
+﻿@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1257
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+
+        @if ((reps ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------*@
+            <_1257_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
+        }
+
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2">
+                    @*--- Period ------------------------------------------------*@
+                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Client List ------------------------------------------------*@
+        <div class="w-100"> <_00TClientList Clients="@rv.Clients" ClassParams="@clientClass" ChildAction="ChildActionCatcher" /> </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+
+
+@inject IOPisReportDataAccess _pisRep;
+@inject IOClientDataAccess _client;
+@inject IGPayrollReportDataAccess _payRep;
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
+
+    List<RPhicPremModel?>? reps = [];
+    List<string?>? clNumbers => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
+
+    string errorMsg = "";
+    bool isLoading  = false;
+
+    Dictionary<string, object> periodClass = new(){["FlexDirection"] = "flex-column"};
+
+    Dictionary<string, object> clientClass = new(){["VH"] = "vh70"};
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        rv.Clients = [];
+        rv.RefreshToken = 12520000;
+        rv.MCaption     = "PHIC Contribution";
+
+        @* --- Payroll Group ------------------------------------------- *@
+        var resc = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        if (resc.Count > 0) { rv.Clients = resc!; }
+
+        @* --- Report Details -------------------------------------------- *@
+
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        rv.ReportParams = [];
+
+        rv.ReportParams["CoName"] = "-";
+        rv.ReportParams["CoAddress"] = "-";
+
+        if (res.Count > 0)
+        {
+            var r = res.FirstOrDefault();
+            rv.ReportParams["CoName"] = r.CoName ?? "";
+            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        }
+
+        rv.ReportParams["ReportTitle"]  = "PHIC Contribution";
+        rv.ReportParams["RunDate"]      = DateTime.Now;
+    }
+
+
+    void ChildActionCatcher() { }
+
+    async Task FetchData()
+    {
+        rv.ShowReport = false;
+
+        if (!(clNumbers ?? []).Any())
+        {
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Warning,
+                Summary = "Warning",
+                Detail = $"Please select at least one deployment to proceed.",
+                Duration = 4000
+            });
+            return;
+        }
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02PHICPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, "D003",Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!(reps ?? []).Any())
+        {
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Info,
+                Summary = "Info",
+                Detail = $"No data found for this period and deployment.",
+                Duration = 4000
+            });
+            return;
+        }
+
+        rv.ShowModal = true;
+    }
+
+
+
+    void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
+    }
+
+}

@@ -1,6 +1,9 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
+@using System.Globalization
+@inject NotificationService _NotificationService;
 
+<RadzenNotification />
 
 
 <_02BTModal MCaption="@Rv.MCaption" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
@@ -19,10 +22,18 @@
         {
 
 
-            <div class="p-2">
+            <div class="">
                 <div class="sticky-top bg-white ">
-                    <div class="pt-0 p-2 border-bottom">
-                        <div @onclick="CreateReport" class="mb-cbtn mb-cbtn-blue w-150p card p-1 "> Show Report  </div>
+                    <div class=" border-bottom">
+                        <div class="p-0">
+                            <div class="card-header">
+                                <div class="d-flex gap-2">
+                                    <_01ReportFormat Rv="@Rv" ChildAction="ValueChanged" />
+                                    @*--- Fetch Button ------------------------------------------------*@
+                                    <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
@@ -30,10 +41,10 @@
                         <div class=" w-100p">Last Name</div>
                         <div class=" w-150p">First Name</div>
                         <div class=" w-150p">Middle Name</div>
-                        <div class=" w-300p">Curr. Deployment</div>
+                        <div class=" w-300p">Current Deployment</div>
                         <div class=" w-100p">Date Hired</div>
-                        <div class=" w-100p text-end">ER</div>
                         <div class=" w-100p text-end">EE</div>
+                        <div class=" w-100p text-end">ER</div>
                         <div class=" w-100p text-end">EC</div>
                     </div>
                 </div>
@@ -52,7 +63,7 @@
                         <div class=" w-150p">@rec.EmpFirstNm</div>
                         <div class=" w-150p">@rec.EmpMidNm</div>
                         <div class=" w-300p">@rec.Payrollgrp</div> 
-                        <div class=" w-100p">@rec.DateHired?.ToString("MMM dd, yyyy")</div>
+                        <div class=" w-100p">@rec.DateHired?.ToString("MM/dd/yyyy")</div>
                         <div class=" w-100p text-end">@rec.Ee?.ToString("N2")</div>
                         <div class=" w-100p text-end">@rec.Er?.ToString("N2")</div>
                         <div class=" w-100p text-end">@rec.Ec?.ToString("N2")</div>
@@ -78,20 +89,55 @@
 @code {
     [Parameter] public V00_RepVars              Rv  { get; set; } = new();
     [Parameter] public List<RSssPremModel>      V   { get; set; } = new();
-    [Parameter] public EventCallback<bool>      ChildAction { get; set; }
+    [Parameter] public EventCallback<object>    ChildAction { get; set; }
 
-
-    void CreateReport()
+    private async Task CreateReport()
     {
+        Rv.RelativePath = "";
+
         Rv.ReportData = V;
+
+        int monthNumber = Convert.ToInt32(Rv.Month);
+        string monthName = new DateTime(1, monthNumber, 1) .ToString("MMMM", CultureInfo.InvariantCulture);
+
+        Rv.ReportParams["MonthYearCoverage"] =$"For the Month of {monthName} {Rv.Year}";
+
+        Rv.RelativePath = Rv.SelectedFormat == "XLSX"
+            ? "Reports/_03Payroll/K_SSS_xlsx.trdp"
+            : "Reports/_03Payroll/K_SSS.trdp";
+
         Rv.ShowReport = true;
 
+        if (Rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2000);
+            Rv.ShowReport = false;
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Success",
+                Detail = $"Your SSS Contribution Excel file has been downloaded.",
+                Duration = 4000
+            });
+        }
     }
 
-    async Task CloseReportModal(bool ans)
+    private async Task CloseReportModal(bool ans)
     {
-        Rv.ShowModal = ans;
-        await ChildAction.InvokeAsync(ans);
+        if (Rv.ShowReport) Rv.ShowReport = ans;
+        else Rv.ShowModal = ans;
 
+        await ChildAction.InvokeAsync(ans);
+    }
+
+    private async Task ValueChanged()
+    {
+        await ChildAction.InvokeAsync(Rv.SelectedFormat);
+    }
+
+
+    void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
     }
 }
