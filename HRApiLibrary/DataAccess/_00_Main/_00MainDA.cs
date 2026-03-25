@@ -151,8 +151,6 @@ public class _00MainDA : I_00MainDA
     {
         string sql = $@"select  * from {schema}.Userscompany where Id = @Id";
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { Id = id }, conn);
-
-        Console.WriteLine($"=====> OPIS : {data.FirstOrDefault().OldPis} * ID : {id} ** {data.FirstOrDefault().Id}");
         return data?.FirstOrDefault();
     }
     public async Task<List<UserCompanyModel?>> _02UserCompanyPerUser(int id, string schema = "Main", string conn = "MySqlConn")

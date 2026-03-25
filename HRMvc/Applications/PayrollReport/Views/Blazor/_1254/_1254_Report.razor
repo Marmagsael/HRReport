@@ -2,7 +2,9 @@
 @using HRMvc.Applications.PisReport.Vars
 @using System.Globalization
 
+@inject NotificationService _NotificationService;
 
+<RadzenNotification />
 
 <_02BTModal MCaption="@Rv.MCaption" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
     <Details>
@@ -20,9 +22,9 @@
         {
 
 
-            <div class="pt-0 p-2">
+            <div class="">
                 <div class="sticky-top bg-white ">
-                    <div class="pt-2 p-2 border-bottom">
+                    <div class="border-bottom">
                         <div class="p-0">
                             <div class="card-header">
                                 <div class="d-flex gap-2">
@@ -108,8 +110,15 @@
 
         if (Rv.SelectedFormat == "XLSX")
         {
-            await Task.Delay(2500);
+            await Task.Delay(2000);
             Rv.ShowReport = false;
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Success",
+                Detail = $"Your Pag-Ibig Contribution Excel file has been downloaded.",
+                Duration = 4000
+            });
         }
     }
 
@@ -124,5 +133,11 @@
     private async Task ValueChanged()
     {
         await ChildAction.InvokeAsync(Rv.SelectedFormat);
+    }
+
+
+    void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
     }
 }

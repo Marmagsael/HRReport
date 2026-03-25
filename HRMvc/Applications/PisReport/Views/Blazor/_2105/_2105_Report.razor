@@ -1,10 +1,9 @@
-@using HRApiLibrary.DataAccess._10_Pis.OPis
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using System.Globalization
 @inject NotificationService _NotificationService;
 
 <RadzenNotification />
-
 
 
 <_02BTModal MCaption="@Rv.MCaption" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
@@ -23,7 +22,6 @@
         {
 
 
-
             <div class="">
                 <div class="sticky-top bg-white ">
                     <div class=" border-bottom">
@@ -38,45 +36,35 @@
                         </div>
                     </div>
 
-                    <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
-                        <div class=" w-75p text-center">No.</div>
-                        <div class=" w-180p">PIN</div>
-                        <div class=" w-150p">Last Name</div>
-                        <div class=" w-100p">Suffix</div>
-                        <div class=" w-150p">First Name</div>
-                        <div class=" w-150p">Middle Name</div>
-                        <div class=" w-150p text-end">Salary</div>
-                        <div class=" w-100p">Status</div>
-                        <div class=" w-100p">Effective Date</div>
-                        <div class=" w-100p">Birth Date</div>
-                        <div class=" w-100p text-end">PS</div>
-                        <div class=" w-100p text-end">ES</div>
-                        <div class=" w-80p text-center">Gender</div>
+                    <div class="d-flex gap-2 p-2 border-bottom fw-bold  bg-lightgray ">
+                        <div class="w-75p ">    No</div>
+                        <div class="w-150p">    Emp. No.</div>
+                        <div class="w-250p">    Emp. Name</div>
+                        <div class="w-150p">    Date Hired</div>
+                        <div class="w-200p">    Position</div>
+                        <div class="w-200p">    License No.</div>
+                        <div class="w-150p">    Exp. Date</div>
+                        <div class="w-250p">    Deployment</div>
                     </div>
                 </div>
 
                 @{
                     int ctr = 0; int row = 0; string stat = string.Empty;
                 }
-                @foreach (var rec in V)
+                @foreach (var v in V)
                 {
                     ctr++;
                     row++;
 
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " ">
-                        <div class=" w-75p text-center ">@ctr.</div>
-                        <div class=" w-180p">@rec.Phic</div>
-                        <div class=" w-150p">@rec.EmpLastNm</div>
-                        <div class=" w-100p">@rec.Suffix</div>
-                        <div class=" w-150p">@rec.EmpFirstNm</div>
-                        <div class=" w-150p">@rec.EmpMidNm</div>
-                        <div class=" w-150p text-end">@rec.Compensation?.ToString("N2")</div>
-                        <div class=" w-100p">@rec.Status</div> 
-                        <div class=" w-100p">@rec.EffectiveDate?.ToString("MM/dd/yyyy")</div>
-                        <div class=" w-100p">@rec.EmpBirth?.ToString("MM/dd/yyyy")</div>
-                        <div class=" w-100p text-end">@rec.Ee?.ToString("N2")</div>
-                        <div class=" w-100p text-end">@rec.Er?.ToString("N2")</div>
-                        <div class=" w-80p text-center">@rec.Gender</div>
+                    <div class="d-flex gap-2 border-bottom px-2 py-1 @(row % 2 == 0 ? "bg-light" : "") " ">
+                        <div class="w-75p ">    @ctr</div>
+                        <div class="w-150p">    @v.EmpNumber</div>
+                        <div class="w-250p">    @v.EmpName</div>
+                        <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
+                        <div class="w-200p">    @v.PositionName</div>
+                        <div class="w-200p">    @v.SecLicense</div>
+                        <div class="w-150p">    @v.LicExpire?.ToString("MM/dd/yyyy")</div>
+                        <div class="w-250p">    @v.ClName</div>
                     </div>
 
                 }
@@ -92,14 +80,13 @@
 
 
 @inject IOCoinfoDataAccess          _coinfo;
-@inject IGPayrollReportDataAccess   _payreport; 
 
 
 
 @code {
     [Parameter] public V00_RepVars              Rv  { get; set; } = new();
-    [Parameter] public List<RPhicPremModel>     V   { get; set; } = new();
-    [Parameter] public EventCallback<object>      ChildAction { get; set; }
+    [Parameter] public List<V2105Model>         V   { get; set; } = new();
+    [Parameter] public EventCallback<object>    ChildAction { get; set; }
 
     private async Task CreateReport()
     {
@@ -107,13 +94,13 @@
         Rv.ReportData = V;
 
         int monthNumber = Convert.ToInt32(Rv.Month);
-        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+        string monthName = new DateTime(1, monthNumber, 1) .ToString("MMMM", CultureInfo.InvariantCulture);
 
-        Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
+        Rv.ReportParams["MonthYearCoverage"] =$"For the Month of {monthName} {Rv.Year}";
 
         Rv.RelativePath = Rv.SelectedFormat == "XLSX"
-            ? "Reports/_03Payroll/K_PHIC_xlsx.trdp"
-            : "Reports/_03Payroll/K_PHIC.trdp";
+            ? "Reports/_02HR/K_2105_NH.trdp"
+            : "Reports/_02HR/K_2105_NH.trdp";
 
         Rv.ShowReport = true;
 
@@ -125,7 +112,7 @@
             {
                 Severity = NotificationSeverity.Success,
                 Summary = "Success",
-                Detail = $"Your PHIC Contribution Excel file has been downloaded.",
+                Detail = $"The Newly Hired Employees Excel file has been downloaded.",
                 Duration = 4000
             });
         }
