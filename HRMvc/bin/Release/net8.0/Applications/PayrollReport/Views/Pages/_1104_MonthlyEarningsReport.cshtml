@@ -1,0 +1,28 @@
+﻿@using System.Security.Claims
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._20_Pay_Report
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+
+@inject I_00MainDA _mainDA
+@inject IGPayrollReportDataAccess   _pr;
+
+@{
+    Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
+    
+    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
+    IEnumerable<Claim?> claims = User.Claims;
+    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
+    
+    var conn = userClaims.Conn;
+    var paydb = "Pay";
+
+    var chartOfAccts = await _pr._02ByAcctTypes("E", paydb, conn!);
+    V1104 v1104      = new V1104();
+
+    if (chartOfAccts.Count > 0) v1104.ChartOfAccts = chartOfAccts; 
+}
+
+<div>
+    @(await Html.RenderComponentAsync<HRMvc.Applications.PayrollReport.Views.Blazor._1104_Rep>(RenderMode.ServerPrerendered, new { UserClaims = userClaims, V1104=v1104 }))
+</div>
