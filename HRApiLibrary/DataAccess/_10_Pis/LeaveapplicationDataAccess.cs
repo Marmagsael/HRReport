@@ -38,6 +38,13 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
+    
+    public async Task<List<LeaveapplicationModel?>?> _02Chk_Entry_LvType(int leaveTypeId, string schema, string conn)
+    {
+        string sql  = $@"select  * from {schema}.Leaveapplication where LeaveTypeId = @LeaveTypeId limit 1 ";
+        var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { LeaveTypeId = leaveTypeId }, conn);
+        return data;
+    }
 
 
     public async Task<LeaveapplicationModel?> _03(int id, LeaveapplicationModel leaveapplication, string schema, string conn)

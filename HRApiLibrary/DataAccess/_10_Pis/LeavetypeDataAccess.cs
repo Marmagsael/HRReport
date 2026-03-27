@@ -39,6 +39,14 @@ public class LeavetypeDataAccess : ILeavetypeDataAccess
         var data    = await _sql.FetchData<LeavetypeModel?, dynamic>(sql, new { }, conn);
         return data;
     }
+    
+    public async Task<List<LeavetypeModel?>?> _02ById(int id, string schema, string conn)
+    {
+        string sql  = $@"select  * from {schema}.Leavetype where Id = @Id";
+        var data    = await _sql.FetchData<LeavetypeModel?, dynamic>(sql, new {Id = id }, conn);
+        return data;
+    }
+
 
     public async Task<LeavetypeModel?> _02(int id, string schema, string conn)
     {

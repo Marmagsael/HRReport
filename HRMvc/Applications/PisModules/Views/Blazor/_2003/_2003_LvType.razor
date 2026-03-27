@@ -1,0 +1,162 @@
+@using Blazorise
+@using DocumentFormat.OpenXml.Wordprocessing
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+<RadzenDialog />
+
+<div class="card ">
+
+    <div class="card-body">
+
+        <div class="w-100  p-2 border mt-1 mb-1">
+            <button class="btn btn-primary btn-sm"> Add New </button>
+        </div>
+
+        <div class="d-flex border-bottom card-header fw-bold">
+            <div class="w-100p"> Code </div>
+            <div class="w-250p"> Lv Name </div>
+            <div class="w-100p text-center"> 
+                <div>Def. Value</div>
+                <div>(in Days)</div>
+            </div>
+            <div class="w-100p text-center"> 
+                Actions
+            </div>
+        </div>
+
+        @if(v.ErrorMsg.Any()) {
+            <div class="bg-danger bg-opacity-10 b-red p-2 br-5 text-danger  ">
+                @v.ErrorMsg 
+            </div>
+        }
+
+
+        @foreach(LeavetypeModel l in v.LvTypes) {
+            <div class="d-flex p2-1 ">
+                <div class="d-flex  gap-1 @EditableCss(l.IsEditable) ">
+                    <div class="w-100p mt-1"> 
+                        <RadzenTextBox Placeholder="Lv Code" class="w-100" MaxLength="5" @bind-Value=@l.Code   />
+                    </div>
+                    <div class="w-250p mt-1">  
+                        <RadzenTextBox Placeholder="Lv Code" class="w-100" MaxLength="45" @bind-Value=@l.LeaveName />
+                    </div>
+                    <div class="w-100p mt-1">  
+                        <RadzenNumeric @bind-Value="@l.DefValue" Name="Defvalue" ShowUpDown=false Format="#,##0.00"
+                                    TextAlign="TextAlign.Right" />
+                    </div>
+                </div>
+
+                @if(l.IsEditable) {
+                    <div class="d-flex p-1 gap-1">
+                        <button @onclick="() => Update(l)" class="btn btn-sm txt mb-a-green ">Save</button>
+                    </div>
+                    <div class="d-flex p-1 gap-1">
+                        <button @onclick="()=>CancelEdit(l)" class="btn btn-sm txt mb-a-red ">X</button>
+                    </div>
+                    
+                } else {
+                    <div class="d-flex p-1 gap-1">
+                        <button @onclick="@(_ => l.IsEditable = true)" class="btn btn-sm txt mb-a-blue ">Edit</button>
+                        <button @onclick="()=>Delete(l)" class="btn btn-sm txt mb-a-red ">Delete</button>
+                    </div>
+                }
+                
+            </div>
+
+            
+        }
+
+    </div>
+</div>
+
+
+
+
+
+@inject ILeavetypeDataAccess            _lvTypes; 
+@inject ILeaveapplicationDataAccess     _lvApplication; 
+
+@code {
+    [Parameter] public UserClaimsModel Uc {get; set; } = new(); 
+    V2003_LvTypesModel      v = new();
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDatas(); 
+    }
+
+    async Task LoadDatas() {
+        var res = await _lvTypes._02(Uc.SchemaUserPis, Uc.Conn); 
+        if(res.Count>0) v.LvTypes = res!; 
+    }
+
+    string EditableCss(bool IsEditable) => IsEditable ? " " : " disabled-div-50 ";
+    async Task Update(LeavetypeModel l)
+    {
+        int     id      = l.Id;
+        string? code    = l.Code;
+        string? name    = l.LeaveName;
+
+        v.ErrorMsg      = "";
+
+        bool exists = v.LvTypes.Any(lv => (lv.Code == code || lv.LeaveName == name) && lv.Id != id );
+
+        if (exists) {
+            v.ErrorMsg = "Unable to update, Duplicate Data found.";
+            return;
+        }
+
+        await _lvTypes._03(id, l, Uc.SchemaUserPis, Uc.Conn);
+        await LoadDatas();
+
+        
+        
+        // proceed update here
+    }
+
+    async Task CancelEdit(LeavetypeModel l) {
+        l.IsEditable    = false; 
+        v.ErrorMsg      = string.Empty;
+
+        var id = l.Id; 
+
+        var res = await _lvTypes._02ById(l.Id, Uc.SchemaUserPis, Uc.Conn); 
+        var re = res.FirstOrDefault(); 
+        v.LvTypes.Where(lv => lv.Id==id)
+                 .ToList()
+                 .ForEach(lv => {
+                    lv.Code         = re?.Code ;
+                    lv.LeaveName    = re?.LeaveName ;
+                    lv.DefValue     = re.DefValue ;
+                  });  
+    }
+
+    async Task Delete(LeavetypeModel l) {
+        var res = await _lvApplication._02Chk_Entry_LvType(l.Id, Uc.SchemaUserPis, Uc.Conn); 
+        if(res.Count>0) {
+            var msg = "Unable to delete. Leave type already used in transaction.";
+            await _DialogService.Alert(msg, "Record Exists in transaction", new AlertOptions() { OkButtonText = "Exit" });
+            return;
+
+        }
+
+        var option = await _DialogService.Confirm("Delete " + l.LeaveName + "?", "Confirm Delete",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (option == true)
+        {
+            await _lvTypes._04(l.Id,Uc.SchemaUserPis, Uc.Conn); 
+            v.LvTypes.Remove(l); 
+        }
+
+        
+    }
+
+
+
+    
+
+}
