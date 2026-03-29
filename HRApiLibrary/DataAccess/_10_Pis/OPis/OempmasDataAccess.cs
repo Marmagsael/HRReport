@@ -49,6 +49,22 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 	}
 
 
+    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNames(string name, string schema, string conn)
+    {
+        name = name.Trim();
+        var flds = EmpmasFields(); 
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName 
+                        from {schema}.Empmas e
+                     left join {schema}.position    p on p.code = e.position_
+                     left join {schema}.empstat     s on s.code = e.empstat_                              
+                     left join {schema}.Client      c  on c.ClNumber = e.Client_                              
+                     where e.EmpLastNm like @Name or e.EmpFirstNm like @Name
+                     order by e.EmpLastNm, e.EmpFirstNm;";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
+        Console.WriteLine($"Name param: '{name}%'");
+        return data;    
+    }
+
     public async Task<List<OEmpmasModel?>?> _02(string empnumber, string schema, string conn)
     {
         var flds = EmpmasFields(); 
@@ -385,7 +401,8 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 public interface IOEmpmasDataAccess
 {
 	Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string schema, string conn);
-	Task<List<OEmpmasModel?>?>  _02(string empnumber, string schema, string conn); 
+	Task<List<OEmpmasModel?>?>  _02(string empnumber, string schema, string conn);
+    Task<List<OEmpmasModel?>?> _02ByLNameAndFNames(string name, string schema, string conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string clnumber, string schema, string conn); 
 	Task<List<OEmpmasModel?>?>  _02ByEmail(string email, string schema, string conn); 
 	

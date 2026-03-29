@@ -2,6 +2,7 @@
 @using DocumentFormat.OpenXml.Wordprocessing
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications.PisModules.Views.Blazor._2003._2003_LvType_Items
 
 @inject NotificationService _NotificationService;
 @inject DialogService _DialogService;
@@ -11,31 +12,31 @@
 
     <div class="card-body">
 
-        <div class="w-100  p-2 border mt-1 mb-1">
-            <button class="btn btn-primary btn-sm"> Add New </button>
-        </div>
+        @if (!v.ShowDE)
+        {
+            <div class="w-100  p-2 border mt-1 mb-1">
+                <button @onclick="()=>v.ShowDE = true" class="btn btn-primary btn-sm"> Add New </button>
+            </div>
+        }
 
-        <div class="d-flex border-bottom card-header fw-bold">
+        @if(v.ShowDE) { <_2003_LvType_DataEntry Uc="@Uc" V="@v" CA="DACatcher" /> }
+
+        <div class=" small d-flex border-bottom card-header fw-bold">
             <div class="w-100p"> Code </div>
-            <div class="w-250p"> Lv Name </div>
+            <div class="w-250p"> Description </div>
             <div class="w-100p text-center"> 
-                <div>Def. Value</div>
-                <div>(in Days)</div>
+                <div>Days Credit</div>
             </div>
             <div class="w-100p text-center"> 
                 Actions
             </div>
         </div>
 
-        @if(v.ErrorMsg.Any()) {
-            <div class="bg-danger bg-opacity-10 b-red p-2 br-5 text-danger  ">
-                @v.ErrorMsg 
-            </div>
-        }
-
+        @if(v.ErrorMsg.Any()) { <div class="bg-danger bg-opacity-10 b-red p-2 br-5 text-danger  "> @v.ErrorMsg  </div> }
 
         @foreach(LeavetypeModel l in v.LvTypes) {
             <div class="d-flex p2-1 ">
+
                 <div class="d-flex  gap-1 @EditableCss(l.IsEditable) ">
                     <div class="w-100p mt-1"> 
                         <RadzenTextBox Placeholder="Lv Code" class="w-100" MaxLength="5" @bind-Value=@l.Code   />
@@ -49,20 +50,18 @@
                     </div>
                 </div>
 
-                @if(l.IsEditable) {
-                    <div class="d-flex p-1 gap-1">
-                        <button @onclick="() => Update(l)" class="btn btn-sm txt mb-a-green ">Save</button>
-                    </div>
-                    <div class="d-flex p-1 gap-1">
-                        <button @onclick="()=>CancelEdit(l)" class="btn btn-sm txt mb-a-red ">X</button>
-                    </div>
-                    
-                } else {
-                    <div class="d-flex p-1 gap-1">
-                        <button @onclick="@(_ => l.IsEditable = true)" class="btn btn-sm txt mb-a-blue ">Edit</button>
-                        <button @onclick="()=>Delete(l)" class="btn btn-sm txt mb-a-red ">Delete</button>
-                    </div>
-                }
+                <div class=" py-2 gap-1 @DECss(v.ShowDE) ">
+                    @if (l.IsEditable)
+                    {
+                            <button @onclick="() => Update(l)" class="btn btn-sm txt mb-a-green ">Save</button>
+                            <button @onclick="() => CancelEdit(l)" class="btn btn-sm txt mb-a-red ">X</button>
+                    }
+                    else
+                    {
+                            <button @onclick="@(_ => l.IsEditable = true)" class="btn btn-sm txt mb-a-blue ">Edit</button>
+                            <button @onclick="() => Delete(l)" class="btn btn-sm txt mb-a-red ">Delete</button>
+                    }
+                </div>
                 
             </div>
 
@@ -94,7 +93,11 @@
         if(res.Count>0) v.LvTypes = res!; 
     }
 
-    string EditableCss(bool IsEditable) => IsEditable ? " " : " disabled-div-50 ";
+    void DACatcher() {}
+
+    string EditableCss(bool IsEditable) => IsEditable   ? " " : " disabled-div-50 ";
+    string DECss(bool ShowDE)           => ShowDE       ? " disabled-div-50 " : " ";
+
     async Task Update(LeavetypeModel l)
     {
         int     id      = l.Id;
