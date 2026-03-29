@@ -40,6 +40,13 @@ public class LeavetypeDataAccess : ILeavetypeDataAccess
         return data;
     }
     
+    public async Task<List<LeavetypeModel?>?> _02ByCode_Or_ByName(string code, string lvName, string schema, string conn)
+    {
+        string sql  = $@"select  * from {schema}.Leavetype where Code = @Code or LeaveName = @LeaveName";
+        var data    = await _sql.FetchData<LeavetypeModel?, dynamic>(sql, new { Code = code, LeaveName = lvName }, conn);
+        return data;
+    }
+    
     public async Task<List<LeavetypeModel?>?> _02ById(int id, string schema, string conn)
     {
         string sql  = $@"select  * from {schema}.Leavetype where Id = @Id";
