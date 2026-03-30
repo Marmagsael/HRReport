@@ -1,100 +1,211 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
-@using HRMvc.Applications.PisReport.Views.Blazor._2212
 @using HRMvc.Applications.PisReport.Views.Blazor._2217
+@using System.Globalization
 
-<_00BT HdrCaption="License Expiry" Rv="@rv">
+@inject NotificationService _NotificationService
+@inject IOPisReportDataAccess _pisRep
+@inject IOEmpstatDataAccess _empstat
+
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-        <div class="p-0"> 
-            <div class="card-header">
-                <div class="d-flex">
 
+        <_00Loader Rv="@rv" />
+        <_02BTRep Rv="rv" ChildAction="ChildActionCatcher" />
 
-                    @*--- Date Range ------------------------------------------------*@
-                   <_2212_DatePicker Rv = "@rv"/>
-                    
-                    @*--- Buttons ------------------------------------------------*@
-                    <span @onclick="FetchData">
-                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray">
-                            Fetch Data
-                        </div>
-                    </span>
-                    @if(v.Count > 0) 
-                        { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}                   
+        @*--- Filter and Button ------------------------------------------------*@
+        <div class="p-0">
+            <div class="card-header d-flex gap-5">
+                <div class="d-flex flex-row gap-2 card p-2">
+                    <div class="text-muted p-2 pe-4 border-end"> <small>Date Range</small> </div>
+                    <_01MMDDYYYY Rv="rv" ChildAction="ChildActionCatcher" />
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">
+                        Fetch Data
+                    </div>
 
                 </div>
+               
+                <div class="d-flex flex-row gap-2 card p-2 ">
+                    <div class="text-muted p-2 pe-4 border-end"> <small>Export Format </small> </div>
+                    <div class="d-flex w-150p ">
+                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                    </div>
+                    <button class="p-2 card mb-cbtn mb-cbtn-gray @(v.Count == 0 ? "pe-none cursor-not-allowed opacity-50" : "")"
+                            disabled="@(v.Count == 0)"
+                            @onclick="CreateReport">
+                        Show Report
+                    </button>
+                </div>
+                
             </div>
         </div>
-
-        @*--- Grid ------------------------------------------------*@
-        <div>
-            <_2217_Dtl V="@v"/>
+        @*--- Grid -------------------------------------------------------------*@
+        <div class="w-100">
+            <_2217_Dtl V="@v" />
         </div>
-    
-    </Details>
-</_00BT>
 
-@inject IOPisReportDataAccess _pisrep;
+
+    </Details>
+</_00BT_FullW>
 
 @code {
-        [Parameter]public UserClaimsModel   Uc  {get; set;} = new();
-        V00_RepVars                         rv  {get; set;} = new();
-        List<V2217Model>                    v   {get; set;} = [];
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
-    protected override void OnInitialized()
+    V00_RepVars rv = new();
+    List<V2217Model> v = new();
+
+
+    protected override async Task OnInitializedAsync()
     {
-        rv.DStart   = DateTime.Now;
-        rv.DEnd     = DateTime.Now;
+        if (!HasConnection())
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
+            return;
+        }
 
-        rv.RelativePath = "Reports/_02HR/K_2217_LE.trdp";
-        rv.RefreshToken = 2212000; 
-        rv.MCaption     = "License Expiry";
+        rv = new()
+        {
+            RefreshToken = 22170000,
+            MCaption = "Expired License",
+            ReportParams = new()
+            {
+                ["CoName"] = "-",
+                ["CoAddress"] = "-",
+                ["ReportTitle"] = "Summary of Expired Licenses",
+                ["RunDate"] = DateTime.Now
+            }
+        };
+
+        await LoadCompanyInfo();
     }
 
-        async Task FetchData(){
+
+
+    async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+
+        if (res?.Any() == true)
+        {
+            var r = res.First();
+            rv.ReportParams["CoName"] = r.CoName ?? "";
+            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        }
+    }
+
+    void ChildActionCatcher() { }
+
+    async Task FetchData()
+    {
+
         v = [];
-        var status = new List<string> { "A","E","H","K","L","M","V","Y" };
-        var res = await _pisrep._02Empmas_ByLicenseExpiry(rv.DStart,rv.DEnd,status,Uc.OpisDb!,Uc.Conn!);
-                if(res.Any()){
-            foreach(var f in res){
-                V2217Model rec = new(){
-                    EmpNumber   = f.EmpNumber,   
-                    EmpName     = f.EmpName,
-                    EmpStatus   = f.EmpStatus,     
-                    LicExpire   = f.Licexpire,
-                    SecLicense  = f.SecLicense,    
-                    ClName      = f.ClName,     
-                };
-                v.Add(rec);
-                     
+        rv.ReportData = [];
+        rv.ShowModal = false;
+
+
+        if (!HasConnection())
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
+            return;
         }
+
+        if (rv.DStart == null )
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter a date start to proceed..");
+            return;
+        }
+
+        if (rv.DEnd == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter a date end to proceed..");
+            return;
+        }
+
+       
+
+        try
+        {
+            rv.Isloaded = true;
+            var res = await _pisRep._02Empmas_ByLicenseExpiry(rv.DStart, rv.DEnd,  Uc.OpisDb!, Uc.Conn!);
+
+            if (res?.Any() == true)
+            {
+                v = res.Select(r => new V2217Model
+                {
+                    EmpNumber   = r.EmpNumber,
+                    EmpName     = r.EmpName,
+                    EmpStatus   = r.EmpStatus,
+                    SecLicense  = r.SecLicense,
+                    LicExpire   = r.Licexpire,
+                    ClName      = r.ClName,
+                }).ToList();
+
+   
+            }
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh the page or contact your system administrator."); ;
+            Console.WriteLine(ex.Message);
+            return;
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!v.Any())
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+            return;
+        }
+        rv.ReportData = v;
+
     }
-        }
 
-        async Task CreateReport()
+    private async Task CreateReport()
     {
+        rv.RelativePath = "";
 
 
-        rv.ReportData = v; 
-		rv.ReportParams = []; 
+        int monthNumber = Convert.ToInt32(rv.Month);
+        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
-		var res = await _pisrep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
-		rv.ReportParams["CoName"]       = "-";
-		rv.ReportParams["CoAddress"]    = "-";
-
-		if (res.Count> 0) {
-			var r = res.FirstOrDefault(); 
-			rv.ReportParams["CoName"]       = r.CoName??"";
-			rv.ReportParams["CoAddress"]    = r.CoAdd??"";
-		}
-        string dstart = rv.DStart?.ToString("d, MMMM yyyy") ?? "-";
-        string dend = rv.DEnd?.ToString("d, MMMM yyyy") ?? "-";
+        string dstart   = rv.DStart?.ToString("d, MMMM yyyy") ?? "-";
+        string dend     = rv.DEnd?.ToString("d, MMMM yyyy") ?? "-";
 
         rv.ReportParams["DateRange"] = $"For the month covering {dstart} - {dend}";
-		rv.ReportParams["RunDate"]      = DateTime.Now;
-		rv.ReportParams["ReportTitle"]  = "Summary of Expired Licenses";
-		
-		
-		rv.ShowModal = true;      
+        rv.RelativePath = "Reports/_02HR/K_2217_LE.trdp";
+
+        rv.ShowModal = true;
+
+        if (rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(1000);
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
+            rv.ShowModal = false;
+        }
+    }
+
+
+    void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+
+    bool HasConnection()
+    {
+        if (Uc == null) return false;
+        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
+        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
+        return true;
     }
 }

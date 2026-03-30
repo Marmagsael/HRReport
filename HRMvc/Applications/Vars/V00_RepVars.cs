@@ -40,8 +40,8 @@ public class V00_RepVars
     public int                  Year            { get; set; } = DateTime.Now.Year;
     public string               Month           { get; set; } = DateTime.Now.ToString("MM");
     public string               Period          { get; set; } = DateTime.Now.Day <= 15 ? "01" : "02";
-    public DateTime?            DStart          { get; set; } 
-    public DateTime?            DEnd            { get; set; } 
+    public DateTime?            DStart          { get; set; } = DateTime.Now;
+    public DateTime?            DEnd            { get; set; } = DateTime.Now;
 
 
     //---------------------------------------------------------------------------------------

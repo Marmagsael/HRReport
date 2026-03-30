@@ -1,28 +1,65 @@
-﻿<div class="card p-3 w-300p">
+﻿@{
+    var cp = ClassParams;
+}
 
-    <div class="mb-3 d-flex">
-        <label class="form-label fw-normal w-100p" style="min-width:100px">Start Date</label>
+<div class="d-flex gap-1 @cp.GetValueOrDefault("FlexDirection") ">
+
+    <div class="@cp.GetValueOrDefault("CStart") text-end" style="min-width:@cp.GetValueOrDefault("CStartMin")">Start</div>
+    <div class="@cp.GetValueOrDefault("DStart")" style="min-width:@cp.GetValueOrDefault("DStartMin")">
         <RadzenDatePicker @bind-Value="@Rv.DStart"
                           DateFormat="MM/dd/yyyy"
                           Change="@(_ => ValueChanged())"
-                          class="w-100" />
+                          Style="width:100%" />
     </div>
 
-    <div class="mb-3 d-flex">
-        <label class="form-label fw-normal  w-100p" style="min-width:100px">End Date</label>
+    <div class="@cp.GetValueOrDefault("CEnd") text-end" style="min-width:@cp.GetValueOrDefault("CEndMin")">End</div>
+    <div class="@cp.GetValueOrDefault("DEnd")" style="min-width:@cp.GetValueOrDefault("DEndMin")">
         <RadzenDatePicker @bind-Value="@Rv.DEnd"
                           DateFormat="MM/dd/yyyy"
                           Min="@Rv.DStart"
                           Change="@(_ => ValueChanged())"
-                          class="w-100" />
+                          Style="width:100%" />
     </div>
-
+    
 </div>
 
 @code {
     [Parameter] public V00_RepVars Rv { get; set; } = new();
     [Parameter] public EventCallback<V00_RepVars> ChildAction { get; set; } = new();
 
+    [Parameter]
+    public Dictionary<string, object> ClassParams { get; set; } = new()
+    {
+
+
+        ["FlexDirection"] = "",
+
+        ["CStart"] = " p-2 w-60p ",
+        ["DStart"] = " w-160p ",
+        ["CStartMin"] = "",
+        ["DStartMin"] = "auto",
+
+        ["CEnd"] = " p-2 w-60p ",
+        ["DEnd"] = " w-160p ",
+        ["CEndMin"] = "",
+        ["DEndMin"] = "auto",
+    };
+
+    protected override void OnParametersSet()
+    {
+        if (ClassParams.GetValueOrDefault("FlexDirection")?.ToString() == "flex-column")
+        {
+            ClassParams["CStart"] = " py-2";
+            ClassParams["CStartMin"] = "80px";
+            ClassParams["DStart"] = "";
+            ClassParams["DStartMin"] = "0px";
+
+            ClassParams["CEnd"] = " py-2";
+            ClassParams["CEndMin"] = "80px";
+            ClassParams["DEnd"] = "";
+            ClassParams["DEndMin"] = "0px";
+        }
+    }
     async Task ValueChanged()
     {
         await ChildAction.InvokeAsync(Rv);
