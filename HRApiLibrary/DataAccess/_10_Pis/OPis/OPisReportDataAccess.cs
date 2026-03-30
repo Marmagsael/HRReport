@@ -102,7 +102,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
    
-    public async Task<List<OEmpmasModel>> _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startDate, DateTime? endDate, string schema, string conn)
+    public async Task<List<OEmpmasModel>> _02Empmas_ByMovDate(DateTime? startDate, DateTime? endDate, string schema, string conn)
     {
 
         var flds = EmpmasFields();
@@ -116,12 +116,18 @@ public class OPisReportDataAccess : IOPisReportDataAccess
 
         List<OEmpmasModel> data = [];
     
-            string sql = $@"select {flds}, s.Name EmpStatus from {schema}.Empmas e 
-                            left join {schema}.EmpStat s on s.Code = e.Empstat_  
-                            where e.empstat_ = @Empstat and e.movdate >= @StartDate and  e.movend <= @EndDate
-                            order by empLastNm, EmpFirstNm ";
+            string sql = $@"SELECT CONCAT_WS(' ',CONCAT(NULLIF(TRIM(e.emplastnm), ''), ','), NULLIF(TRIM(e.empfirstnm), ''),  NULLIF(TRIM(e.empmidnm), '')   ) AS EmpName,
+                           e.empnumber, m.date movdate, m.reason Remarks, b.ClName
+                        FROM {schema}.movedtl m
+                        LEFT JOIN {schema}.movehdr a ON m.number = a.number
+                        LEFT JOIN {schema}.client b ON a.ClNumber = b.ClNumber
+                        LEFT JOIN {schema}.empmas e ON e.empnumber = m.empnumber
+                        WHERE m.mode = 'R'
+                          AND m.date >= @StartDate 
+                          AND m.sadate <= @EndDate
+                        ORDER BY e.emplastnm, e.empfirstnm";
 
-            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Empstat = empstat, StartDate = mstartDate, EndDate = mendDate, }, conn);
+            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, }, conn);
         
         return data ?? [];
     }
@@ -229,9 +235,6 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         }
         return data ?? [];
     }
-
-
-
 
 
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
@@ -470,7 +473,7 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_By_Clnumbers(string clnumber, string schema, string conn); 
     Task<List<OCompanyInfoModel?>>  _02CoInfo(string schema, string conn); 
     Task<List<OEmpmasModel>>        _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn);
-    Task<List<OEmpmasModel>>        _02Empmas_By_Status_And_DateRange(string empstat, DateTime? startdate, DateTime? endDate, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ByMovDate( DateTime? startdate, DateTime? endDate, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year_And_Status(string fld, List<string?>? statuses, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry( DateTime? startDate, DateTime? endDate,string schema, string conn);
