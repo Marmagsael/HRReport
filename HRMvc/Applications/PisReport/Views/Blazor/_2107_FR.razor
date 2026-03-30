@@ -3,109 +3,171 @@
 @using HRMvc.Applications.PisReport.Views.Blazor._2107
 @using System.Globalization
 
+@inject NotificationService _NotificationService
+<RadzenNotification />
 
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        @if ((v ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------*@
+             <_2107_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
+        }
+
+
         <div class="p-0">
             <div class="card-header">
-                <div class="d-flex">
-                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher"/>
-                    @*--- Buttons ------------------------------------------------*@
-                     <span @onclick="FetchData">
-                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray">
-                            Fetch Data
-                        </div>
-                    </span>
-                   
-                     @if (v.Count > 0)
-                    {
-                        <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>
-                    }  
+                <div class="d-flex gap-2">
+                    @*--- Period ------------------------------------------------*@
+                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
                 </div>
             </div>
         </div>
 
-        @*--- Grid ------------------------------------------------*@
-        <div>
-             <_2107_Dtl V="@v" /> 
-        </div>
-    </Details>
+        @*--- Client List ------------------------------------------------*@
+        <div class="w-100"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
 
+    </Details>
 </_00BT_FullW>
-@inject IOPisReportDataAccess _pisRep;
+
+
+
+
+@inject IOPisReportDataAccess   _pisRep;
+@inject IOEmpstatDataAccess     _empstat;
 @code {
     [Parameter] public  UserClaimsModel Uc { get; set; } = new();
     V00_RepVars                         rv { get; set; } = new();
     List<V2107Model>                    v = [];
-    int selectedValue = 0;
+
+
+    List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
 
     protected override async Task OnInitializedAsync()
     {
-        @* --- Report Details -------------------------------------------- *@
-        rv.RelativePath = "Reports/_02HR/K_2107_FR.trdp";
-        rv.RefreshToken = 2107000;
-        rv.MCaption     = "For Regularization";
-
-
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        rv.ReportParams = [];
-
-        rv.ReportParams["CoName"]       = "-";
-        rv.ReportParams["CoAddress"]    = "-";
-
-        if (res.Count > 0)
+        if (!HasConnection())
         {
-            var r = res.FirstOrDefault();
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
+            return;
+        }
+
+        rv = new()
+        {
+            RefreshToken    = 21070000,
+            MCaption        = "For Regularization",
+            ReportParams    = new()
+            {
+                ["CoName"]      = "-",
+                ["CoAddress"]   = "-",
+                ["ReportTitle"] = "Candidate For Regularization",
+                ["RunDate"]     = DateTime.Now
+            }
+        };
+
+        await LoadCompanyInfo();
+        await LoadEmployeeStatus();
+    }
+
+    async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+
+        if (res?.Any() == true)
+        {
+            var r = res.First();
             rv.ReportParams["CoName"]       = r.CoName ?? "";
             rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
         }
+    }
 
-        rv.ReportParams["ReportTitle"] = "Candidate for Regularization Status";
-        rv.ReportParams["RunDate"] = DateTime.Now;
+    async Task LoadEmployeeStatus()
+    {
+        rv.Empstats = [];
+        var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() == true){ rv.Empstats = res; }
     }
 
     async Task FetchData()
     {
-        v = [];
-        string fld  = "datehired";
-        int mo      = Convert.ToInt32(rv.Month);
+        if (!HasConnection())
+        {
+            Notify(NotificationSeverity.Error,"Failed to connect to server","Please refresh the page or contact your system administrator.");
+            return;
+        }
 
-        // var res = await _pisRep._02Empmas_ByMonth_And_Year(fld, mo, rv.Year, Uc.OpisDb!, Uc.Conn!);
-        // if (res.Any())
-        // {
-        //     foreach (var r in res)
-        //     {
-        //         V2107Model rec = new()
-        //             {
-        //                 EmpNumber       = r.EmpNumber,
-        //                 EmpName         = r.EmpName,
-        //                 DateHired       = r.DateHired,
-        //                 regref          = r.RegRef,
-        //                 StatusName      = r.EmpStatus,
-        //                 ClName          = r.ClName,
-        //             };
-        //         v.Add(rec);
-        //     }
-        // }
+        if (!(statuses ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning,"Warning","Please select at least one employee status to proceed..");
+            return;
+        }
 
-    }
+       
 
+        v = new List<V2107Model>();
 
-    void ChildActionCatcher()
-    {
+        try
+        {
+            rv.Isloaded = true;
 
-    }
+            var res = await _pisRep._02Empmas_ByMonth_And_Year_And_Status( "regref",statuses, Convert.ToInt32(rv.Month), rv.Year, Uc.OpisDb!, Uc.Conn!);
 
+            if (res?.Any() == true)
+            {
+                v = res.Select(r => new V2107Model
+                {
+                    EmpNumber   = r.EmpNumber,
+                    EmpName     = r.EmpName,
+                    DateHired   = r.DateHired,
+                    regref      = r.RegRef,
+                    StatusName  = r.EmpStatus,
+                    ClName      = r.ClName,
+                }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error,"Failed to load data","Please refresh the page or contact your system administrator.");
+            Console.WriteLine(ex);
+            return;
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
 
-    void CreateReport()
-    {
+        if (!v.Any())
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+            return;
+        }
+
         rv.ReportData = v;
-        int monthNumber  = Convert.ToInt32(rv.Month); 
-        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+        rv.ShowModal = true;
+    }
 
-        rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {rv.Year}";
-        Console.WriteLine(rv.ReportParams["MonthYearCoverage"]);
 
-        rv.ShowModal = true; 
+    void ChildActionCatcher() { }
+
+    void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+    bool HasConnection()
+    {
+        if (Uc == null) return false;
+        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
+        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
+        return true;
     }
 }
