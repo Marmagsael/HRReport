@@ -23,15 +23,15 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
     }
     public async Task<List<GChartofacctModel?>?> _02ByAcctTypes(string acctType, string schema, string conn)
     {
-        string sql  = $@"select  * from {schema}.Chartofacct where AcctType = @AcctType order by AcctName ";
-        var data    = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { AcctType = acctType }, conn);
+        string sql = $@"select  * from {schema}.Chartofacct where AcctType = @AcctType order by AcctName ";
+        var data = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { AcctType = acctType }, conn);
         return data;
     }
-   
-    
-    public async Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctNumber, string opaydb,  string opisdb, string conn)
+
+
+    public async Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctNumber, string opaydb, string opisdb, string conn)
     {
-       
+
 
 
         string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
@@ -71,7 +71,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         Order by EmplastNm, EmpfirstNm; ";
 
 
-        var data    = await _sql.FetchData<RSssPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber=acctNumber }, conn);
+        var data = await _sql.FetchData<RSssPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
     }
 
@@ -145,6 +145,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                             e.EmpBirth, 
                             e.Tin,
                               IF(e.DateHired IS NULL OR e.DateHired < '1000-01-01', NULL, e.DateHired) AS DateHired,
+                           IF(e.DateHired IS NULL OR e.DateHired < '1000-01-01', NULL, e.DateHired) AS DateHired,
                             t.Ee,  
                             t.Ee AS Er, 
                             m.Compensation   
@@ -157,7 +158,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
                         LEFT JOIN tRefpagibigtbl m ON m.Fee = t.Ee 
                         WHERE t.empnumber IN (select * from tEmplist)
-                        Order by EmplastNm, EmpfirstNm; ";  
+                        Order by EmplastNm, EmpfirstNm; ";
 
         var data = await _sql.FetchData<RPagIbigPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
@@ -172,10 +173,10 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
 
 public interface IGPayrollReportDataAccess
 {
-    Task<List<GChartofacctModel?>?>     _02ByAcctTypes(string acctType, string schema, string conn);
-    Task<List<GChartofacctModel?>?>     _02s(string schema, string conn);
-    Task<List<RSssPremModel?>?>         _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
-    Task<List<RPhicPremModel?>?>        _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
-    Task<List<RPagIbigPremModel?>?>     _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm,  string acctType, string opaydb,  string opisdb, string conn); 
-    
+    Task<List<GChartofacctModel?>?> _02ByAcctTypes(string acctType, string schema, string conn);
+    Task<List<GChartofacctModel?>?> _02s(string schema, string conn);
+    Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctType, string opaydb, string opisdb, string conn);
+    Task<List<RPhicPremModel?>?> _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctType, string opaydb, string opisdb, string conn);
+    Task<List<RPagIbigPremModel?>?> _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctType, string opaydb, string opisdb, string conn);
+
 }
