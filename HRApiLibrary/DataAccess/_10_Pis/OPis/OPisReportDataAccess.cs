@@ -173,11 +173,12 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         var flds = EmpmasFields();
         List<OEmpmasModel> data = [];
 
-        string sql = $@"SELECT p.name PositionName,  s.Name EmpStatus, c.ClName,
+        string sql = $@"SELECT p.name PositionName,  s.Name EmpStatus, c.ClName, sr.Remarks Reason,
                         {flds} FROM  {schema}.empmas e
                         LEFT JOIN {schema}.position p on p.code = e.position_
                         LEFT JOIN {schema}.empstat s on s.code = e.empstat_
                         LEFT JOIN {schema}.client c on e.client_ = c.clnumber
+                        LEFT JOIN {schema}.statusremarks sr on sr.Empnumber = e.EmpNumber 
                         WHERE e.empstat_ IN @Statuses AND Month(e.{fld}) = @Month AND Year(e.{fld}) = @Year
                         order by emplastnm, empfirstnm
                         ";
