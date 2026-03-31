@@ -31,13 +31,13 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
-    public async Task<List<OEmpmasModel>> _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn)
+    public async Task<List<OEmpmasModel>> _02ByClNumbersByStatus(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn)
     {
         if (clnumbers == null || clnumbers.Count == 0 ||  statuses == null || statuses.Count == 0) return [];
         var flds = EmpmasFields();
         
 
-        string sql = $@"SELECT {flds}, s.Name AS EmpStatus, c.ClName
+        string sql = $@"SELECT {flds}, s.Name AS EmpStatus, c.ClName, c.clNumber
                         FROM {schema}.Empmas e
                         LEFT JOIN {schema}.EmpStat s ON s.Code = e.Empstat_
                         LEFT JOIN {schema}.Client  c ON c.ClNumber = e.Client_
@@ -489,7 +489,7 @@ public interface IOPisReportDataAccess
     Task<List<OEmpstatModel>>       _02Empstats(string schema, string conn); 
     Task<List<OEmpmasModel>>        _02Empmas_By_Clnumbers(string clnumber, string schema, string conn); 
     Task<List<OCompanyInfoModel?>>  _02CoInfo(string schema, string conn); 
-    Task<List<OEmpmasModel>>        _02ByClNumbersByStatus(List<string> clnumbers, List<string> statuses, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02ByClNumbersByStatus(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMovDate( DateTime? startdate, DateTime? endDate, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year_And_Status(string fld, List<string?>? statuses, int month, int year, string schema, string conn);
