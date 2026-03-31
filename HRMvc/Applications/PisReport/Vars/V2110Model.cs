@@ -3,6 +3,9 @@
     public class V2110Model
     {
         public string? EmpNumber    { get; set; } = "";
+        public string? EmpLastNm    { get; set; } = "";
+        public string? EmpFirstNm   { get; set; } = "";
+        public string? EmpMidNm     { get; set; } = "";
         public string? EmpName      { get; set; } = "";
         public string? Insurance    { get; set; } = "";
         public string? PolicyNo     { get; set; } = "";

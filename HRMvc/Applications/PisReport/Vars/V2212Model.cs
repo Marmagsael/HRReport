@@ -6,6 +6,5 @@ public class V2212Model
     public DateTime? MovDate    { get; set; } 
     public string? ClName       { get; set; }="";
     public string? Remarks      { get; set; }="";
-    public string? Client_      { get; set; } ="";
 
 }

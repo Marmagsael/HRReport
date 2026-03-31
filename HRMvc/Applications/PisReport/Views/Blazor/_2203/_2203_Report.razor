@@ -1,7 +1,6 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using System.Globalization
-
 @inject NotificationService _NotificationService;
 
 <RadzenNotification />
@@ -21,8 +20,6 @@
         }
         else
         {
-
-
             <div class="card m-2">
                 <div class="sticky-top bg-white ">
                     <div class=" border-bottom">
@@ -38,17 +35,18 @@
                     </div>
 
                     <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
-                        <div class="w-60p text-end pe-2">     No.</div>
+                        <div class="w-75p text-end pe-2">     No.</div>
                         <div class="w-100p">    Emp. No.</div>
                         <div class="w-250p">    Emp. Name</div>
-                        <div class="w-250p">    Insurance Company</div>
-                        <div class="w-150p">    Policy No.</div>
-                        <div class="w-120p">    Face Value </div>
-                        <div class="w-100p  text-end pe-2">    Premium</div>
-                        <div class="w-120p text-center">    Exp. Date</div>
-                        <div class="w-120p text-center">    Date of Birth</div>
-                        <div class="w-120p text-center">    Date Hired</div>
-                        <div class="w-130p">    Status</div>
+                        <div class="w-100p text-center">    Brgy</div>
+                        <div class="w-100p text-center">    Court</div>
+                        <div class="w-100p text-center">    Drug</div>
+                        <div class="w-100p text-center">    NBI</div>
+                        <div class="w-100p text-center">    Neuro</div>
+                        <div class="w-100p text-center">    Police</div>
+                        <div class="w-100p text-center">    Medical</div>
+                        <div class="w-100p text-center">    HEPA</div>
+                        
                     </div>
                 </div>
 
@@ -60,18 +58,18 @@
                     ctr++;
                     row++;
 
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") ">
-                        <div class="w-60p text-end pe-2">     @ctr.</div>
+                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " >
+                        <div class="w-75p text-end pe-2">     @ctr.</div>
                         <div class="w-100p">    @v.EmpNumber</div>
                         <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-250p">    @v.Insurance</div>
-                        <div class="w-150p">    @v.PolicyNo</div>
-                        <div class="w-120p">    @v.FaceValue </div>
-                        <div class="w-100p text-end pe-2">    @v.Premium</div>
-                        <div class="w-120p text-center">    @v.InsExpire?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-120p text-center">    @v.EmpBirth?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-120p text-center">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-130p">    @v.EmpStatus</div>
+                        <div class="w-100p text-center">   @(v.Exp_Brgy?.ToString("MM/dd/yyyy") ?? "")</div>
+                        <div class="w-100p text-center">   @(v.Exp_Court?.ToString("MM/dd/yyyy") ?? "")</div>
+                        <div class="w-100p text-center">    @(v.Exp_Drug?.ToString("MM/dd/yyyy") ?? "")</div>
+                        <div class="w-100p text-center">    @(v.Exp_Nbi?.ToString("MM/dd/yyyy") ?? "")</div>
+                        <div class="w-100p text-center">    @(v.Exp_Neuro?.ToString("MM/dd/yyyy") ?? "")</div>
+                        <div class="w-100p text-center">    @(v.Exp_Police?.ToString("MM/dd/yyyy") ?? "")</div>
+                        <div class="w-100p text-center">    @(v.ExpMed?.ToString("MM/dd/yyyy") ?? "")</div>
+                        <div class="w-100p text-center">    @(v.ExpMed?.ToString("MM/dd/yyyy") ?? "")</div>
                     </div>
 
                 }
@@ -82,22 +80,22 @@
     </Details>
 </_02BTModal>
 
-@inject IOCoinfoDataAccess _coinfo;
+
 @code {
-    [Parameter] public V00_RepVars Rv { get; set; } = new();
-    [Parameter] public List<V2110Model> V { get; set; } = new();
-    [Parameter] public EventCallback<object> ChildAction { get; set; }
+    [Parameter] public V00_RepVars              Rv  { get; set; } = new();
+    [Parameter] public List<V2203Model>         V   { get; set; } = new();
+    [Parameter] public EventCallback<object>    ChildAction { get; set; }
 
     private async Task CreateReport()
     {
         Rv.RelativePath = "";
 
-        Rv.ReportData = V;
-
         int monthNumber = Convert.ToInt32(Rv.Month);
         string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
-        Rv.RelativePath = "Reports/_02HR/K_2110_IP.trdp";
+        Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
+
+        Rv.RelativePath = "Reports/_02HR/K_2203_EC.trdp"; 
 
         Rv.ShowReport = true;
 
@@ -135,5 +133,5 @@
         });
     }
 
-
+    
 }

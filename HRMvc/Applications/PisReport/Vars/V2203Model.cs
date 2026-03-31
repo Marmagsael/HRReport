@@ -6,7 +6,6 @@ public class V2203Model
 {
     public string? EmpNumber                { get; set; } ="";
     public string? EmpName                  { get; set; } ="";
-    public string? StatusName               { get; set; } ="";
     public string? ClName                   { get; set; } ="";
     public string? Client_                   { get; set; } ="";
     public DateTime? Exp_Brgy               { get; set; } 

@@ -1,46 +1,69 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
-<div class="">
-    @* --- Header ---------------------- *@
-    <div class=" d-flex p-2 border-bottom fw-bold ">
-        <div class="w-75p">     No</div>
-        <div class="w-150p">    Emp. No.</div>
-        <div class="w-250p">    Emp. Name</div>
-        <div class="w-250p">    Position</div>
-        <div class="w-150p">    Date Hired</div>
-        <div class="w-150p">    Date Resigned</div>
-        <div class="w-200p">    Reason</div>
+@using System.Globalization
+@inject NotificationService _NotificationService;
+
+
+<div class="card mx-3 my-2 d-flex flex-column" style="height:81vh;">
+    <!-- HEADER -->
+    <div class="sticky-header bg-white ">
+        <div class="d-flex gap-2 p-2 border-bottom fw-bold  bg-lightgray ">
+            <div class="w-60p text-end pe-2">     No.</div>
+            <div class="w-150p">    Emp. No.</div>
+            <div class="w-250p">    Emp. Name</div>
+            <div class="w-250p">    Position</div>
+            <div class="w-150p">    Date Hired</div>
+            <div class="w-150p">    Date Resigned</div>
+            <div class="w-200p">    Reason</div>
+        </div>
     </div>
-    @* --- Details ---------------------- *@
-    <div class="vh-max vh75">
-        @{
-            int row = 0; int ctr = 1;
-            if (V.Count() > 0)
-            {
-                foreach (var v in V)
-                {
-                    <div class=" d-flex p-2 border-bottom @(row % 2 == 0 ? "bg-light" : "") ">
-                        <div class="w-75p">     @ctr</div>
-                        <div class="w-150p">    @v.EmpNumber</div>
-                        <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-250p">    @v.PositionName</div>
-                        <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-150p">    @v.Separate?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-200p">    @v.Remarks</div>
-                    </div>
-                    row++; ctr++;
-                }
-            }
-            else
-            {
-                <div class="d-flex justify-content-center align-items-center w-100 h-100 pt-5 ">
-                    No records to display.
-                </div>
-            }
+
+    <!-- BODY -->
+    <div class="flex-grow-1 overflow-auto">
+    @{
+        int ctr = 0; int row = 0; string stat = string.Empty;
+    }
+
+    @if (V.Count() > 0)
+    {
+        @foreach (var v in V)
+        {
+            ctr++;
+            row++;
+
+            <div class="d-flex gap-2 border-bottom px-2 py-1 @(row % 2 == 0 ? "bg-light" : "") ">
+                <div class="w-60p text-end pe-2">     @ctr.</div>
+                <div class="w-150p">    @v.EmpNumber</div>
+                <div class="w-250p">    @v.EmpName</div>
+                <div class="w-250p">    @v.PositionName</div>
+                <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
+                <div class="w-150p">    @v.Separate?.ToString("MM/dd/yyyy")</div>
+                <div class="w-200p">    @v.Remarks</div>
+            </div>
+
         }
+    }
+    else
+    {
+        <div class="d-flex justify-content-center align-items-center w-100 h-100" style="min-height: 30vh;">
+            <div class="text-muted text-center">
+                No data to display.
+            </div>
+        </div>
+    }
     </div>
 </div>
+
+
+
+
+
+
+
+@inject IOCoinfoDataAccess _coinfo;
+
+
+
 @code {
-    [Parameter] public List<V2108Model> V { get; set; } = [];
-
-
+    [Parameter] public List<V2108Model> V { get; set; } = new();
 }

@@ -1,6 +1,6 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
-@using HRMvc.Applications.PisReport.Views.Blazor._2107
+@using HRMvc.Applications.PisReport.Views.Blazor._2104
 @using System.Globalization
 
 @inject NotificationService _NotificationService
@@ -14,25 +14,24 @@
         @if ((v ?? []).Any())
         {
             @*--- Report ------------------------------------------------*@
-             <_2107_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
+             <_2104_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />  
         }
 
          @*--- Filter and Button ------------------------------------------------*@
         <div class="p-0">
             <div class="card-header d-flex gap-3">
-                <div class="d-flex flex-row gap-2 card p-2">
-                    <div class="text-muted p-2 pe-4 border-end"> <small>Date Covered</small> </div>
-                    @*--- Period ------------------------------------------------*@
-                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
-                    @*--- Fetch Button ------------------------------------------------*@
-                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
-                </div>
+                @*--- Fetch Button ------------------------------------------------*@
+                <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
             </div>
         </div>
 
 
-        @*--- Client List ------------------------------------------------*@
-        <div class="w-100"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
+        @*--- Client and Status List ------------------------------------------------*@
+        <div class="w-100 d-flex">
+            <div class="w-50"> <_00TClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
+            <div class="w-50"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
+        </div>
+       
 
     </Details>
 </_00BT_FullW>
@@ -42,13 +41,15 @@
 
 @inject IOPisReportDataAccess   _pisRep;
 @inject IOEmpstatDataAccess     _empstat;
+@inject IOClientDataAccess      _client;
 @code {
     [Parameter] public  UserClaimsModel Uc { get; set; } = new();
     V00_RepVars                         rv { get; set; } = new();
-    List<V2107Model>                    v = [];
+    List<V2104Model>                    v = [];
 
 
     List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
+    List<string?>? clients => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,19 +61,20 @@
 
         rv = new()
         {
-            RefreshToken    = 21070000,
-            MCaption        = "For Regularization",
+            RefreshToken    = 21040000,
+            MCaption        = "Employee Age",
             ReportParams    = new()
             {
                 ["CoName"]      = "-",
                 ["CoAddress"]   = "-",
-                ["ReportTitle"] = "Candidate For Regularization",
+                ["ReportTitle"] = "Employee Age Report",
                 ["RunDate"]     = DateTime.Now
             }
         };
 
         await LoadCompanyInfo();
         await LoadEmployeeStatus();
+        await LoadClients();
     }
 
     async Task LoadCompanyInfo()
@@ -94,6 +96,13 @@
         if (res?.Any() == true){ rv.Empstats = res; }
     }
 
+    async Task LoadClients()
+    {
+        rv.Clients = [];
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() == true) { rv.Clients = res!; }
+    }
+
     async Task FetchData()
     {
         if (!HasConnection())
@@ -102,33 +111,53 @@
             return;
         }
 
+        v = [];
+        rv.ReportData = [];
+        rv.ShowModal = false;
+
+        if (!(clients ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed..");
+            return;
+        }
+
+
+
         if (!(statuses ?? []).Any())
         {
             Notify(NotificationSeverity.Warning,"Warning","Please select at least one employee status to proceed..");
             return;
         }
 
-       
-
-        v = new List<V2107Model>();
-
         try
         {
             rv.Isloaded = true;
 
-            var res = await _pisRep._02Empmas_ByMonth_And_Year_And_Status( "regref",statuses, Convert.ToInt32(rv.Month), rv.Year, Uc.OpisDb!, Uc.Conn!);
+            var res = await _pisRep._02ByClNumbersByStatus(clients, statuses,  Uc.OpisDb!, Uc.Conn!);
 
             if (res?.Any() == true)
             {
-                v = res.Select(r => new V2107Model
+                
+                var today = DateTime.Today; 
+                foreach (var r in res)
                 {
-                    EmpNumber   = r.EmpNumber,
-                    EmpName     = r.EmpName,
-                    DateHired   = r.DateHired,
-                    regref      = r.RegRef,
-                    StatusName  = r.EmpStatus,
-                    ClName      = r.ClName,
-                }).ToList();
+                    V2104Model v1 = new() { EmpNumber = r.EmpNumber, EmpBirth = r.EmpBirth, EmpName = r.EmpName, EmpStatus = r.EmpStatus, Client_ = r.Client_, ClName = r.ClName };
+
+                    if (v1.EmpBirth != null)
+                    {
+                        var birth = v1.EmpBirth.Value;
+                        int years = today.Year - birth.Year;
+                        int months = today.Month - birth.Month;
+
+                        if (today.Day < birth.Day) months--;
+                        if (months < 0) { years--; months += 12; }
+
+                        v1.Age = years + (months / 12.0);
+                    }
+                    else { v1.Age = null; }
+
+                    v.Add(v1);
+                }
             }
         }
         catch (Exception ex)

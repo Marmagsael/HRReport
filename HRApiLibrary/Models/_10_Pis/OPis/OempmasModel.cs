@@ -115,4 +115,6 @@ public class OEmpmasModel
     
     public string? Addr1                    { get; set; }
     public string? Addr2                    { get; set; }
+
+    public string? Reason                  { get; set; }
 }

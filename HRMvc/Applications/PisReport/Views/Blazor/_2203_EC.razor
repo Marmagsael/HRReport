@@ -1,118 +1,176 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
-@using HRApiLibrary.DataAccess._20_Pay.Report
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2203
+@using System.Globalization
 
-<_00BT HdrCaption="Employee Clearance" rv="@rv" >
+@inject NotificationService _NotificationService
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
 
-        <div class="p-0"> 
-            <div class="card-header">
-                <div class="d-flex ">
-                    @*--- Drop Down  --------------------------------- *@
-                    <_01DDClient Clients="@rv.Clients" ChildAction="ClientChanged" />
+        @if ((v ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------*@
+            <_2203_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
+        }
 
-                    @*--- Buttons ------------------------------------ *@
-                    <span @onclick="FetchData"> <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray"> Fetch Data </div> </span> 
-                    @if(v.Count > 0) { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}                   
-                </div>
+        @*--- Filter and Button ------------------------------------------------*@
+        <div class="p-0">
+            <div class="card-header d-flex gap-3">
+                @*--- Fetch Button ------------------------------------------------*@
+                <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
             </div>
         </div>
 
-        @*--- Grid ------------------------------------ *@
-        <div>
-            <_2203_Dtl V2203="@v" /> 
-        </div>
+
+        @*--- Client List ------------------------------------------------*@
+        <div class="w-100"> <_00TClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
 
     </Details>
-</_00BT>
+</_00BT_FullW>
 
-@inject IOClientDataAccess      _client; 
-@inject IOPisReportDataAccess   _pisRep; 
 
+
+
+@inject IOPisReportDataAccess _pisRep;
+@inject IOClientDataAccess _client;
 @code {
-
-    [Parameter] public UserClaimsModel  Uc      {get; set; } = new(); 
-    [Parameter] public V00_RepVars      rv      {get; set; } = new(); 
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv { get; set; } = new();
     List<V2203Model> v = [];
 
-    protected override async Task OnParametersSetAsync()
+
+    List<string?>? clients => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
+
+    protected override async Task OnInitializedAsync()
     {
-        if (rv.Isloaded) return;
-        if (string.IsNullOrEmpty(Uc?.OpisDb) || string.IsNullOrEmpty(Uc?.Conn)) return;
+        if (!HasConnection())
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
+            return;
+        }
 
-        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!); 
-        rv.Clients = []; 
-        rv.Clients.Add(new() { ClNumber="-", ClName="Select All----" });
-        if(res.Count > 0 ) { 
-            foreach(var r in res){ rv.Clients.Add(r??new()); } 
-            rv.ClNumber="-"; 
-        }; 
-        rv.Isloaded = true;
+        rv = new()
+        {
+            RefreshToken = 21070000,
+            MCaption = "Employee Clearance",
+            ReportParams = new()
+            {
+                ["CoName"] = "-",
+                ["CoAddress"] = "-",
+                ["ReportTitle"] = "Employee Clearance Report",
+                ["RunDate"] = DateTime.Now
+            }
+        };
+
+        await LoadCompanyInfo();
+        await LoadClients();
     }
 
-    protected override void OnInitialized()
+    async Task LoadCompanyInfo()
     {
-        rv.RelativePath = "Reports/_02HR/K_2203_EC.trdp";
-        rv.RefreshToken = 2203000; 
-        rv.MCaption     = "Employee Clearance Report"; 
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+
+        if (res?.Any() == true)
+        {
+            var r = res.First();
+            rv.ReportParams["CoName"] = r.CoName ?? "";
+            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        }
     }
 
-    void ClientChanged(string clno) {
-        rv.ClNumber = clno; 
-        v = []; 
-    }
-
-
-    async Task FetchData() {
-        v=[]; 
-        var statuses    = new List<string> { "A" };
-
-        List<string> clnumbers = [];
-        clnumbers.Add(rv.ClNumber);
-
-
-        var res = await _pisRep._02ByClNumbersByStatus(clnumbers, statuses, Uc.OpisDb!, Uc.Conn!);
-        foreach(var r in res) {
-            V2203Model rec  = new() {
-                EmpNumber   = r?.EmpNumber??"", 
-                EmpName     = r?.EmpName??"", 
-                ClName      = r?.ClName??"",
-                Client_     = r?.Client_??"",
-                StatusName  = r?.EmpStatus??"",
-				Exp_Brgy    = r?.Exp_Brgy,         
-				Exp_Court 	= r?.Exp_Court,
-				Exp_Drug    = r?.Exp_Drug,           
-				Exp_Nbi     = r?.Exp_Nbi,           
-				Exp_Neuro   = r?.Exp_Neuro,          
-				Exp_Pnp     = r?.Exp_Pnp,         
-				Exp_Police  = r?.Exp_Police,          
-				ExpMed		= r?.ExpMed
-            };
-            v.Add(rec);  
-        }     
-    }
-
-    async Task CreateReport()
+    async Task LoadClients()
     {
-        rv.ReportData = v; 
-		rv.ReportParams = []; 
+        rv.Clients = [];
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() == true) { rv.Clients = res!; }
+    }
 
-		var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
-		rv.ReportParams["CoName"]       = "-";
-		rv.ReportParams["CoAddress"]    = "-";
+    async Task FetchData()
+    {
+        if (!HasConnection())
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
+            return;
+        }
 
-		if (res.Count> 0) {
-			var r = res.FirstOrDefault(); 
-			rv.ReportParams["CoName"]       = r.CoName??"";
-			rv.ReportParams["CoAddress"]    = r.CoAdd??"";
-		}
+        v = [];
+        rv.ReportData = [];
+        rv.ShowModal = false;
 
-		rv.ReportParams["RunDate"]      = DateTime.Now;
-		rv.ReportParams["ReportTitle"]  = "Employee Clearance Report";
-		rv.ReportParams["Status"]       = "Active";
-		
-		rv.ShowModal = true;      
+        if (!(clients ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed..");
+            return;
+        }
+
+        try
+        {
+            rv.Isloaded = true;
+
+            var res = await _pisRep._02Empmas_EmployeeClerance(clients,  Uc.OpisDb!, Uc.Conn!);
+
+            if (res?.Any() == true)
+            {
+                v = res.Select(r => new V2203Model
+                {
+                    EmpNumber   = r.EmpNumber,
+                    EmpName     = r.EmpName,
+                    ClName      = r.ClName,
+                    Client_     = r.Client_,
+                    Exp_Brgy    = r.Exp_Brgy,
+                    Exp_Court   = r.Exp_Court,
+                    Exp_Drug    = r.Exp_Drug,
+                    Exp_Nbi     = r.Exp_Nbi,
+                    Exp_Neuro   = r.Exp_Neuro,
+                    Exp_Pnp     = r.Exp_Pnp,
+                    Exp_Police  = r.Exp_Police,
+                    ExpMed      = r.ExpMed,
+                }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh the page or contact your system administrator.");
+            Console.WriteLine(ex);
+            return;
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!v.Any())
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this deployment.");
+            return;
+        }
+
+        rv.ReportData = v;
+        rv.ShowModal = true;
+    }
+
+
+    void ChildActionCatcher() { }
+
+    void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+    bool HasConnection()
+    {
+        if (Uc == null) return false;
+        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
+        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
+        return true;
     }
 }
- 
