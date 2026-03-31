@@ -124,7 +124,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         LEFT JOIN {schema}.empmas e ON e.empnumber = m.empnumber
                         WHERE m.mode = 'R'
                           AND m.date >= @StartDate 
-                          AND m.sadate <= @EndDate
+                          AND m.date <= @EndDate
                         ORDER BY e.emplastnm, e.empfirstnm";
 
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, }, conn);
