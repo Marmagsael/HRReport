@@ -1,0 +1,123 @@
+@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1252
+
+<div>count @reps.Count</div>
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+
+        @if ((reps??[]).Any())
+        {
+            <_1252_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
+        }
+
+
+        @* <div>
+            <div>Year : @rv.Year </div>
+            <div>Month : @trn </div>
+            <div>Clients   : 
+
+                @foreach(var c in clNumbers){
+                    <div>@c</div>
+                }
+                    
+             </div>
+
+             <div>
+                @foreach(var r in v.RepDtls){
+                    <div>@r.EmpLastNm @r.Ee </div>
+                }
+             </div>
+
+
+        </div> *@
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2">
+                     <_01YYMM Rv="rv" ChildAction="ChildActionCatcher"/>
+
+
+                    <div class="card p-3 w-255p">
+                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher"/>
+                        @*--- Fetch Button ------------------------------------------------*@
+                        <div class="mt-3 p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                    </div>  
+                </div>
+            </div>
+        </div>
+
+        @*--- Status List ------------------------------------------------*@
+        <div class="w-50  "> <_ClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
+    </Details>
+</_00BT_FullW>
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IOClientDataAccess          _client; 
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc   { get; set; } = new();
+    V00_RepVars                         rv      = new();
+    V1252Model                          v       = new();
+
+    List<RSssPremModel?>?               reps    = []; 
+
+    string trn => $"{rv.Year.ToString().Substring(2,2)}{rv.Month}"; 
+    List<string?>? clNumbers => rv.Clients.Where(c=>c.IsSelectedB).Select(c=>c.ClNumber).ToList()??[]; 
+
+ protected override async Task OnInitializedAsync()
+    {
+        rv.Clients = [];  
+
+        @* --- Payroll Group ------------------------------------------- *@
+        var resc = await _client._02ByStatuss("Active",Uc.OpisDb!, Uc.Conn!); 
+        if(resc.Count > 0 ) { rv.Clients = resc!;  }
+               
+
+        
+
+        @* --- Report Details -------------------------------------------- *@
+        // rv.RelativePath = "Reports/_02HR/K_2105_NH.trdp";
+        rv.RefreshToken = 12520000;
+        rv.MCaption     = "SSS Contributions";
+
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        rv.ReportParams = [];
+
+        rv.ReportParams["CoName"] = "-";
+        rv.ReportParams["CoAddress"] = "-";
+
+        if (res.Count > 0)
+        {
+            var r = res.FirstOrDefault();
+            rv.ReportParams["CoName"]       = r.CoName ?? "";
+            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
+        }
+
+        rv.ReportParams["ReportTitle"]  = "Insurance Report";
+        rv.ReportParams["RunDate"]      = DateTime.Now;
+
+
+    }
+
+
+    void ChildActionCatcher(){}
+    
+    async Task FetchData(){
+        rv.ShowReport=false; 
+        v.Msg       = "";
+        rv.ShowModal    = true;
+      
+        if(!(clNumbers??[]).Any())    { v.Msg = "Please select at least one payroll group to proceed. "; return; }
+
+        @* reps  = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!); *@
+        reps  = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month,"D002", Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        
+        
+        ///Console.WriteLine(clNumbers.Count);
+    }
+}
