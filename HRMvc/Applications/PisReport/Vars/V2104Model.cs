@@ -10,6 +10,7 @@ public class V2104Model
     public string?      EmpName     { get; set; }
     public DateTime?    EmpBirth    { get; set; }
     public Double?      Age         { get; set; }
+    public string?      FullAge     { get; set; }
     public string?      EmpStatus   { get; set; }
     
 }
