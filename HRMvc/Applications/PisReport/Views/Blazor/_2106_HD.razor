@@ -19,8 +19,17 @@
         <div class="p-0">
             <div class="card-header d-flex gap-3">
                 <div class="d-flex flex-row gap-2 card p-2">
-                    <div class="text-muted p-2 pe-4 border-end"> <small>Date Covered</small> </div>
-                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    <div class="text-muted p-2 pe-4 border-end"> <small>Filter By</small> </div>
+                    <_01ReportFilter Rv="@rv" ChildAction="ChildActionCatcher" />
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">
+                        Fetch Data
+                    </div>
+
+                </div>
+
+                <div class="d-flex flex-row gap-2 card p-2">
+                    <div class="text-muted p-2 pe-4 border-end"> <small>Filter By</small> </div>
+                    <_01ReportFilter Rv="@rv" ChildAction="ChildActionCatcher" />
                     <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">
                         Fetch Data
                     </div>
@@ -42,11 +51,11 @@
             </div>
         </div>
 
-
+      
 
         @*--- Grid -----------------------------------------------------------*@
         <div class="w-100">
-            <_2105_Dtl V="@v" />
+            <_2106_Dtl V="@v" />
         </div>
 
     </Details>
@@ -56,7 +65,7 @@
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     V00_RepVars rv = new();
-    List<V2105Model> v = new();
+    List<V2105Model>    v  = new();
 
 
     protected override async Task OnInitializedAsync()
@@ -69,14 +78,14 @@
 
         rv = new()
         {
-            RefreshToken = 21050000,
-            MCaption = "Newly Hired For The Month",
-            ReportParams = new()
+            RefreshToken    = 21050000,
+            MCaption        = "Hired Date Report",
+            ReportParams    = new()
             {
-                ["CoName"] = "-",
-                ["CoAddress"] = "-",
-                ["ReportTitle"] = "Newly Hired Employees",
-                ["RunDate"] = DateTime.Now
+                ["CoName"]          = "-",
+                ["CoAddress"]       = "-",
+                ["ReportTitle"]     = "-",
+                ["RunDate"]         = DateTime.Now
             }
         };
 
@@ -92,8 +101,8 @@
         if (res?.Any() == true)
         {
             var r = res.First();
-            rv.ReportParams["CoName"] = r.CoName ?? "";
-            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+            rv.ReportParams["CoName"]       = r.CoName ?? "";
+            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
         }
     }
 
@@ -119,13 +128,13 @@
             {
                 v = res.Select(r => new V2105Model
                 {
-                    EmpNumber = r.EmpNumber,
-                    EmpName = r.EmpName,
-                    DateHired = r.DateHired,
-                    PositionName = r.PositionName,
-                    SecLicense = r.SecLicense,
-                    LicExpire = r.Licexpire,
-                    ClName = r.ClName,
+                    EmpNumber       = r.EmpNumber,
+                    EmpName         = r.EmpName,
+                    DateHired       = r.DateHired,
+                    PositionName    = r.PositionName,
+                    SecLicense      = r.SecLicense,
+                    LicExpire       = r.Licexpire,
+                    ClName          = r.ClName,
                 }).ToList();
             }
         }
@@ -153,9 +162,9 @@
     private async Task CreateReport()
     {
         rv.RelativePath = "";
+       
 
-
-        int monthNumber = Convert.ToInt32(rv.Month);
+        int monthNumber  = Convert.ToInt32(rv.Month);
         string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {rv.Year}";
@@ -185,9 +194,9 @@
 
     bool HasConnection()
     {
-        if (Uc == null) return false;
+        if (Uc == null)  return false;
         if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
+        if (string.IsNullOrWhiteSpace(Uc.Conn))return false;
         return true;
     }
 }
