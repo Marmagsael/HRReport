@@ -193,7 +193,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year, Statuses = statuses }, conn);
         return data ?? [];
     }
-    public async Task<List<OEmpmasModel>> _02Empmas_ByInsurance_And_Status(int filterValue,  List<string> statuses,  DateTime? startDate, DateTime? endDate, string schema, string conn)
+    public async Task<List<OEmpmasModel>> _02Empmas_ByInsurance_And_Status(int filterValue,  List<string?>? statuses,  DateTime? startDate, DateTime? endDate, string schema, string conn)
     {
         var flds                = EmpmasFields();
         List<OEmpmasModel> data = [];
@@ -211,7 +211,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
             sql = $@"SELECT {flds}, s.Name EmpStatus
                     FROM {schema}.empmas e
                     LEFT JOIN {schema}.empstat s on s.code = e.empstat_
-                    WHERE e.insexpire between @StartDate and @EndDate AND empstat_ IN @statuses
+                    WHERE e.insexpire between @StartDate and @EndDate AND e.empstat_ IN @statuses
                     order by e.emplastnm, e.empfirstnm";
 
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, Statuses = statuses }, conn);
@@ -220,8 +220,9 @@ public class OPisReportDataAccess : IOPisReportDataAccess
             sql = $@"SELECT {flds}, s.Name EmpStatus
                     FROM {schema}.empmas e
                     LEFT JOIN {schema}.empstat s on s.code = e.empstat_
-                    WHERE (e.insurance IS NULL or TRIM(e.insurance) = '') AND empstat_ IN @statuses
+                    WHERE (e.insurance IS NULL or TRIM(e.insurance) = '') AND e.empstat_ IN @statuses
                     order by e.emplastnm, e.empfirstnm";
+
 
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses }, conn);
         } else
@@ -231,6 +232,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                     LEFT JOIN {schema}.empstat s on s.code = e.empstat_
                     WHERE e.insurance IS NOT NULL AND TRIM(e.insurance) <> '' AND empstat_ IN @statuses
                     order by e.emplastnm, e.empfirstnm";
+
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses }, conn);
         }
         return data ?? [];
@@ -493,4 +495,5 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year_And_Status(string fld, List<string?>? statuses, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry( DateTime? startDate, DateTime? endDate,string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_EmployeeClerance(List<string?>? clnumbers, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ByInsurance_And_Status(int filterValue, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
 }   
