@@ -236,6 +236,21 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
+    public async Task<List<OEmpmasModel>> _02Empmas_EmployeeClerance(List<string?>? clnumbers,  string schema, string conn)
+    {
+        var flds = EmpmasFields();
+        List<OEmpmasModel> data = [];
+        string sql = "";
+
+        sql = $@"SELECT  {flds},a.clnumber,a.clname FROM {schema}.empmas e 
+                INNER JOIN {schema}.client a  ON a.clnumber = e.client_ 
+                WHERE e.client_ in @Clnumbers 
+                AND e.movmode = 'A'
+                AND e.empstat_ = 'A'
+            ORDER BY e.emplastnm, e.empfirstnm;";
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumbers = clnumbers }, conn);
+        return data ?? [];
+    }
 
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
     {
@@ -477,4 +492,5 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year_And_Status(string fld, List<string?>? statuses, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry( DateTime? startDate, DateTime? endDate,string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_EmployeeClerance(List<string?>? clnumbers, string schema, string conn);
 }   
