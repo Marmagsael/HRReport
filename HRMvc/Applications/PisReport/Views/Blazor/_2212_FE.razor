@@ -40,7 +40,9 @@
                     </div>
 
                     @*--- Show Report -------------------------------------------*@
-                    <button class="p-2 card mb-cbtn mb-cbtn-gray @(v.Count == 0 ? "pe-none cursor-not-allowed opacity-50" : "")" disabled="@(v.Count == 0)"
+                    <button class="p-2 card mb-cbtn mb-cbtn-gray  
+                            @(!(v.RepDtls?.Any() ?? false) ? "pe-none cursor-not-allowed opacity-50" : "")"
+                            disabled="@(!(v.RepDtls?.Any() ?? false))"
                             @onclick="CreateReport">
                         Show Report
                     </button>
@@ -62,7 +64,7 @@
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     V00_RepVars rv = new();
-    List<V2212Model> v = new();
+    V2212Model v = new();
 
 
     protected override async Task OnInitializedAsync()
@@ -91,6 +93,7 @@
         await LoadCompanyInfo();     
     }
 
+
     async Task LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
@@ -103,7 +106,10 @@
         }
     }
 
-
+    void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy") SortBy();
+    } 
 
     async Task FetchData()
     {
@@ -118,7 +124,7 @@
 
             if (res?.Any() == true)
             {
-                v = res.Select(r => new V2212Model
+                v.RepDtls = res.Select(r => new R2102Model
                 {
                     EmpNumber   = r.EmpNumber,
                     EmpName     = r.EmpName,
@@ -143,7 +149,7 @@
             rv.Isloaded = false;
         }
 
-        if (!v.Any())
+        if (!v.RepDtls.Any())
         {
             Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
             return;
@@ -154,24 +160,24 @@
 
     private void SortBy()
     {
-        if (!v.Any()) { return; }
+        if (!v.RepDtls.Any()) { return; }
 
         if (rv.SortFld == "EmpName")
         {
-            var sorted = v.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
-            v = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
+            var sorted = v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+            v.RepDtls = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
         }
 
         if (rv.SortFld == "MovDate")
         {
-            var sorted = v.OrderBy(x => x.MovDate);
-            v = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
+            var sorted = v.RepDtls.OrderBy(x => x.MovDate);
+            v.RepDtls = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
         }
     }
 
     private void ResetVars()
     {
-        v = [];
+        v.RepDtls = [];
         rv.ShowModal = false;
         rv.ShowReport = false;
 
@@ -198,11 +204,11 @@
 
     private async Task CreateReport()
     {
-        if (!v.Any()) { return; }
+        if (!v.RepDtls.Any()) { return; }
 
         rv.RelativePath = "";
         rv.ReportData   = [];
-        rv.ReportData   = v;
+        rv.ReportData   = v.RepDtls;
 
         rv.RelativePath = "Reports/_02HR/K_2212_FE.trdp";
 
@@ -218,13 +224,13 @@
         if (rv.SelectedFormat == "XLSX")
         {
             await Task.Delay(1000);
-            rv.ShowReport = false;    // Close the report modal after 1 second
+            rv.ShowReport = false;  
             Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
         }
     }
 
 
-    void ChildActionCatcher() { }
+
 
 
     bool HasConnection()
