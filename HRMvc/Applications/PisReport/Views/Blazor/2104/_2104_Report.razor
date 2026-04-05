@@ -33,7 +33,7 @@
                                 <div class="d-flex flex-row gap-2 card p-2 ">
                                     <div class="text-muted p-2 pe-4 border-end"> <small>Export Format </small> </div>
                                     <_01ReportFormat Rv="@Rv" ChildAction="ValueChanged" />
-                                    <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                                    <button class="p-2  card mb-cbtn mb-cbtn-gray @(V.Any() ? "pointer-events-none" :"")" @onclick="CreateReport"> Show Report</button>
                                 </div>
                                 @*-- Group By ------------------------------------------------*@
                                 <div class="d-flex flex-row gap-2 card p-2 justify-content-center align-items-center">
@@ -114,15 +114,17 @@
 
     private async Task CreateReport()
     {
+        if(!V.Any()){ return; }
+
         Rv.RelativePath = "";
         Rv.ReportData   = [];
         Rv.ReportData   = V;
 
         Rv.RelativePath = "Reports/_02HR/K_2104_EA.trdp";
         Rv.ReportParams["GroupByClient"] = isGroupByClient;
-       
 
         Rv.ShowReport = true;
+
         if (Rv.SelectedFormat == "XLSX")
         {
             await Task.Delay(1000);  
