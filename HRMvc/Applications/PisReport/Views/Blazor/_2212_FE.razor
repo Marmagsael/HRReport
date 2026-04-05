@@ -13,14 +13,19 @@
     <Details>
 
         <_00Loader Rv="@rv" />
+        @*--- Report ------------------------------------------------*@
         <_02BTRep Rv="rv" ChildAction="ChildActionCatcher" />
 
+        @*----------------------------------------------------------------------*@
         @*--- Filter and Button ------------------------------------------------*@
         <div class="p-0">
             <div class="card-header d-flex gap-3">
                 <div class="d-flex flex-row gap-2 card p-2">
+                    @*--- Date Range -------------------------------------------*@
                     <div class="text-muted p-2 pe-4 border-end"> <small>Date Range</small> </div>
                     <_01MMDDYYYY Rv="rv" ChildAction="ChildActionCatcher" />
+
+                    @*--- Fetch Data -------------------------------------------*@
                     <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">
                         Fetch Data
                     </div>
@@ -28,12 +33,14 @@
                 </div>
 
                 <div class="d-flex flex-row gap-2 card p-2 ">
+                    @*--- Export Format -----------------------------------------*@
                     <div class="text-muted p-2 pe-4 border-end"> <small>Export Format </small> </div>
                     <div class="d-flex w-150p ">
                         <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
                     </div>
-                    <button class="p-2 card mb-cbtn mb-cbtn-gray @(v.Count == 0 ? "pe-none cursor-not-allowed opacity-50" : "")"
-                            disabled="@(v.Count == 0)"
+
+                    @*--- Show Report -------------------------------------------*@
+                    <button class="p-2 card mb-cbtn mb-cbtn-gray @(v.Count == 0 ? "pe-none cursor-not-allowed opacity-50" : "")" disabled="@(v.Count == 0)"
                             @onclick="CreateReport">
                         Show Report
                     </button>
@@ -41,9 +48,10 @@
 
             </div>
         </div>
+
         @*--- Grid -------------------------------------------------------------*@
         <div class="w-100">
-            <_2212_Dtl V="@v" />
+            <_2212_Dtl V="@v" Rv="@rv" ChildAction="SortBy" />
         </div>
 
 
@@ -59,16 +67,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
-            return;
-        }
+        if (!HasConnection()) return;
 
         rv = new()
         {
-            RefreshToken = 22170000,
             MCaption = "Floating Employees",
+            RefreshToken = 22120000,
+
             ReportParams = new()
             {
                 ["CoName"] = "-",
@@ -78,10 +83,13 @@
             }
         };
 
-        await LoadCompanyInfo();
+        rv.DataFilters = new List<V00_RepVars.DataFilterModel>
+        {
+            new(){ Code = 1, Name = "Current Deployment" }
+        };
+
+        await LoadCompanyInfo();     
     }
-
-
 
     async Task LoadCompanyInfo()
     {
@@ -90,40 +98,18 @@
         if (res?.Any() == true)
         {
             var r = res.First();
-            rv.ReportParams["CoName"]       = r.CoName ?? "";
-            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
+            rv.ReportParams["CoName"] = r.CoName ?? "";
+            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
         }
     }
 
-    void ChildActionCatcher() { }
+
 
     async Task FetchData()
     {
-
-        v = [];
-        rv.ReportData = [];
-        rv.ShowModal = false;
-
-
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
-            return;
-        }
-
-        if (rv.DStart == null)
-        {
-            Notify(NotificationSeverity.Warning, "Warning", "Please enter a date start to proceed..");
-            return;
-        }
-
-        if (rv.DEnd == null)
-        {
-            Notify(NotificationSeverity.Warning, "Warning", "Please enter a date end to proceed..");
-            return;
-        }
-
-
+        ResetVars();
+        if (!HasConnection()) return;
+        if(!ValidateFilters()) return;
 
         try
         {
@@ -136,6 +122,8 @@
                 {
                     EmpNumber   = r.EmpNumber,
                     EmpName     = r.EmpName,
+                    EmpLastNm   = r.EmpLastNm,
+                    EmpFirstNm  = r.EmpFirstNm,
                     MovDate     = r.MovDate,
                     ClName      = r.ClName,
                     Remarks     = r.Remarks,
@@ -160,14 +148,63 @@
             Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
             return;
         }
-        rv.ReportData = v;
+
 
     }
 
+    private void SortBy()
+    {
+        if (!v.Any()) { return; }
+
+        if (rv.SortFld == "EmpName")
+        {
+            var sorted = v.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+            v = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
+        }
+
+        if (rv.SortFld == "MovDate")
+        {
+            var sorted = v.OrderBy(x => x.MovDate);
+            v = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
+        }
+    }
+
+    private void ResetVars()
+    {
+        v = [];
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+        if (rv.ReportFormats != null && rv.ReportFormats.Any()) rv.SelectedFormat = "PDF";
+    }
+
+    private bool ValidateFilters()
+    {
+        if (rv.DStart == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter a date start to proceed.");
+            return false;
+        }
+
+        if (rv.DEnd == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter a date end to proceed.");
+            return false;
+        }
+
+        return true;
+    }
+
+
     private async Task CreateReport()
     {
-        rv.RelativePath = "";
+        if (!v.Any()) { return; }
 
+        rv.RelativePath = "";
+        rv.ReportData   = [];
+        rv.ReportData   = v;
+
+        rv.RelativePath = "Reports/_02HR/K_2212_FE.trdp";
 
         int monthNumber     = Convert.ToInt32(rv.Month);
         string monthName    = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
@@ -175,36 +212,40 @@
         string dstart       = rv.DStart?.ToString("d, MMMM yyyy") ?? "-";
         string dend         = rv.DEnd?.ToString("d, MMMM yyyy") ?? "-";
 
-        rv.ReportParams["DateRange"]    = $"For the month covering {dstart} - {dend}";
-        rv.RelativePath                 = "Reports/_02HR/K_2212_FE.trdp";
-
+        rv.ReportParams["DateRange"] = $"For the month covering {dstart} - {dend}";
         rv.ShowModal = true;
 
         if (rv.SelectedFormat == "XLSX")
         {
             await Task.Delay(1000);
+            rv.ShowReport = false;    // Close the report modal after 1 second
             Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
-            rv.ShowModal = false;
         }
     }
 
+
+    void ChildActionCatcher() { }
+
+
+    bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) ||string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error,"Failed to connect to server","Please refresh the page or contact your system administrator.");
+            return false;
+        }
+
+        return true;
+    }
 
     void Notify(NotificationSeverity severity, string summary, string detail)
     {
         _NotificationService.Notify(new NotificationMessage
         {
-            Severity    = severity,
-            Summary     = summary,
-            Detail      = detail,
-            Duration    = 5000
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
         });
-    }
-
-    bool HasConnection()
-    {
-        if (Uc == null) return false;
-        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
-        return true;
     }
 }

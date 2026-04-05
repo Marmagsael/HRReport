@@ -11,7 +11,7 @@
         @*--- Looader --------------------------------------------------------------*@
         <_00Loader Rv="@rv" />
 
-        @if ((v ?? []).Any())
+        @if ((v.RepDtls ?? []).Any())
         {
             @*--- Report ------------------------------------------------------------*@
              <_2104_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />  
@@ -45,7 +45,7 @@
 @code {
     [Parameter] public  UserClaimsModel Uc { get; set; } = new();
     V00_RepVars                         rv { get; set; } = new();
-    List<V2104Model>                    v = [];
+    V2104Model                          v = new();
 
     // Gets the latest selected employee statuses/clients every time it is called
     List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
@@ -53,14 +53,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // 1. Check if the system/server connection is available
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error,"Failed to connect to server", "Please refresh the page or contact your system administrator.");
-            return;
-        }
+        if (!HasConnection()) return;
 
-        // Initialize report variables and default values
         rv = new()
         {
             MCaption = "Employee Age",
@@ -79,10 +73,16 @@
             new(){ Code = 1, Name = "Current Deployment" }
         };
 
-        await LoadCompanyInfo();     // Get company name and address
-        await LoadEmployeeStatus();  // Get list of employee statuses
-        await LoadClients();         // Get list of clients
+        await LoadCompanyInfo();     
+        await LoadEmployeeStatus();  
+        await LoadClients();         
     }
+
+    private void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy") SortBy();
+    }
+
 
     async Task LoadCompanyInfo()
     {
@@ -126,50 +126,20 @@
 
     async Task FetchData()
     {
-        // 1. Reset all data 
-        v               = [];
-        rv.ShowModal    = false;
-        rv.ShowReport   = false;
-
-        // Set default report format to PDF if formats exist to prevent excel from automatic download
-        if (rv.ReportFormats != null && rv.ReportFormats.Any()) rv.SelectedFormat = "PDF";
-
-        // 2. Check if the system/server connection is available
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error,"Failed to connect to server","Please refresh the page or contact your system administrator.");
-            return;
-        }
-
-        // 3. Make sure at least one client is selected
-        if (!(clients ?? []).Any())
-        {
-            Notify(NotificationSeverity.Warning,"Warning","Please select at least one deployment to proceed.");
-            return;
-        }
-
-        // 4. Make sure at least one employee status is selected
-        if (!(statuses ?? []).Any())
-        {
-            Notify(NotificationSeverity.Warning, "Warning","Please select at least one employee status to proceed.");
-            return;
-        }
+        ResetVars();
+        if (!HasConnection()) return;
+        if (!ValidateFilters()) return;
 
         try
         {
-            // 5. Show loading indicator while fetching data
             rv.Isloaded = true;
-
-            // get data based on selected filters
             var res = await _pisRep._02ByClNumbersByStatus(clients, statuses, Uc.OpisDb!, Uc.Conn!);
 
-            // Check if data exists
             if (res?.Any() == true)
             {
                 foreach (var r in res)
                 {
-                    // Map result to local model
-                    var employee = new V2104Model
+                    var employee = new R2104Model
                     {
                         EmpNumber   = r.EmpNumber,
                         EmpBirth    = r.EmpBirth,
@@ -189,7 +159,7 @@
                         var years = age.Years;
                         var months = age.Months;
 
-                      
+
                         employee.FullAge = $"{years} yrs {months} mos"; // use to display the complete age
                         employee.Age = years + (months / 12.0); // use to sort age
                     }
@@ -200,14 +170,12 @@
                         employee.Age        = 0;
                     }
 
-                    v.Add(employee);
+                    v.RepDtls.Add(employee);
                 }
             }
         }
         catch (Exception ex)
         {
-            // 6. Handle errors during processing 
-            // This prevents the app from crashing and shows a friendly message to the user
             Notify(NotificationSeverity.Error,"Failed to load data","Please refresh the page or contact your system administrator.");
 
             Console.WriteLine(ex);
@@ -215,17 +183,82 @@
         }
         finally
         {
-            // 7. Hide loading indicator regardless of success or failure
             rv.Isloaded = false;
         }
 
-        // 8. If no data found, notify user
-        if (!v.Any())
+        if (!v.RepDtls.Any())
         {
             Notify(NotificationSeverity.Info,"Info","No data found for this period.");
             return;
         }
         rv.ShowModal     = true;
+    }
+
+    private void SortBy()
+    {
+        IOrderedEnumerable<R2104Model> sorted;
+
+        if (v.IsGroupByClient)
+        {
+            // Always keep Client ascending
+            sorted = v.RepDtls.OrderBy(x => x.ClName);
+
+            // Then sort by EmpName or Age
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else if (rv.SortFld == "Age")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.Age)
+                                        : sorted.ThenByDescending(x => x.Age);
+            }
+        }
+        else
+        {
+            // If no grouping is applied, sort by Empname or Age
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.Age)
+                                        : v.RepDtls.OrderByDescending(x => x.Age);
+            }
+
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
+    private void ResetVars()
+    {
+        v.RepDtls = [];
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+        if (rv.ReportFormats != null && rv.ReportFormats.Any()) rv.SelectedFormat = "PDF";
+
+    }
+
+    private bool ValidateFilters()
+    {
+        if (!(clients ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed.");
+            return false;
+        }
+
+        if (!(statuses ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status to proceed.");
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -248,14 +281,17 @@
         return (years, months);
     }
 
-    void ChildActionCatcher() { }
+   
 
 
     bool HasConnection()
     {
-        if (Uc == null) return false;
-        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
+            return false;
+        }
+
         return true;
     }
 

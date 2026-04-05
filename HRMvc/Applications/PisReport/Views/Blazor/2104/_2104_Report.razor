@@ -33,13 +33,13 @@
                                 <div class="d-flex flex-row gap-2 card p-2 ">
                                     <div class="text-muted p-2 pe-4 border-end"> <small>Export Format </small> </div>
                                     <_01ReportFormat Rv="@Rv" ChildAction="ValueChanged" />
-                                    <button class="p-2  card mb-cbtn mb-cbtn-gray @(V.Any() ? "pointer-events-none" :"")" @onclick="CreateReport"> Show Report</button>
+                                    <button class="p-2  card mb-cbtn mb-cbtn-gray @(V.RepDtls.Count == 0 ? "pe-none cursor-not-allowed opacity-50" : "")" disabled="@(!(V.RepDtls?.Any() ?? false))" @onclick="CreateReport"> Show Report</button>
                                 </div>
                                 @*-- Group By ------------------------------------------------*@
                                 <div class="d-flex flex-row gap-2 card p-2 justify-content-center align-items-center">
                                     <div class="text-muted p-2 pe-4 border-end"> <small>Group By Curr. Deployment</small> </div>
                                     <div class="px-2 pe-1">
-                                        <RadzenSwitch @bind-Value=@isGroupByClient Change=@(args => GroupByClient(args)) InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Switch value" } })" class="custom-switch" />
+                                        <RadzenSwitch @bind-Value=@V.IsGroupByClient Change="@GroupByClient" InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Switch value" } })" class="custom-switch" />
                                     </div>
                                 </div>
 
@@ -51,13 +51,11 @@
                         <div class="w-75p text-end pe-2">     No.</div>
                         <div class="w-100p">    Emp. No.</div>
                         <div class="w-250p">    Emp. Name &nbsp;
-                            <button class="btn btn-link p-0 text-decoration-none shadow-none" @onclick="@(() => SortBy("EmpName", "asc"))"><i class="fa fa-arrow-up"></i></button>
-                            <button class="btn btn-link p-0 text-decoration-none shadow-none" @onclick="@(() => SortBy("EmpName", "desc"))"><i class="fa fa-arrow-down"></i></button>
+                            &nbsp; <_01SortByField ColName="EmpName" Rv="@Rv" ChildAction="SortBy" />
                         </div>
                         <div class="w-150p">    Date of Birth</div>
-                        <div class="w-150p">    Age &nbsp;
-                            <button class="btn btn-link p-0 text-decoration-none shadow-none" @onclick="@(() => SortBy("Age", "asc"))"><i class="fa fa-arrow-up"></i></button>
-                            <button class="btn btn-link p-0 text-decoration-none shadow-none" @onclick="@(() => SortBy("Age", "desc"))"><i class="fa fa-arrow-down"></i></button>
+                        <div class="w-150p">    Age
+                            &nbsp; <_01SortByField ColName="Age" Rv="@Rv" ChildAction="SortBy" />
                         </div>
                         <div class="w-350p">    Curr. Deployment </div>
                         <div class="w-150p">    Curr. Status</div>
@@ -67,31 +65,36 @@
                 @{
                     int ctr = 0; int row = 0; string stat = string.Empty;
                 }
-                @foreach (var v in V)
-                {
-                    ctr++;
-                    row++;
-                    if (isGroupByClient && stat != v.ClName){
+    @foreach (var v in V.RepDtls)
+    {
+        ctr++;
+        row++;
+        if (V.IsGroupByClient && stat != v.ClName)
+        {
+            stat = v?.ClName ?? "";
+                        <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@v.ClName</div>
+        }
 
-                        stat = v?.ClName??""; 
-                        <div class=" w-100 fw-bold border-bottom  px-4 py-2 mt-2   "> @v.ClName  </div>
-                    }
-
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !isGroupByClient ? "bg-light" : "") ">
-                        <div class="w-75p text-end pe-2">     @ctr.</div>
-                        <div class="w-100p">    @v.EmpNumber</div>
-                        <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-150p">    @v.EmpBirth?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-150p">    @v.FullAge</div>
-                        <div class="w-350p">    @v.ClName</div>
+                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !V.IsGroupByClient ? "bg-light" : "")">
+                        <div class="w-75p text-end pe-2">@ctr.</div>
+                        <div class="w-100p">@v.EmpNumber</div>
+                        <div class="w-250p">@v.EmpName</div>
+                        <div class="w-150p">@v.EmpBirth?.ToString("MM/dd/yyyy")</div>
+                        <div class="w-150p">@v.FullAge</div>
+                        <div class="w-350p">@v.ClName</div>
 
                         <div class="w-150p">
-                            @if( v.EmpStatus.Trim() == "Active") {<RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />}
-                            else @v.EmpStatus
+                            @if (v.EmpStatus.Trim() == "Active")
+                            {
+                                <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
+                            }
+                            else
+                            {
+                                @v.EmpStatus
+                            }
                         </div>
                     </div>
-
-                }
+                 }
             </div>
 
         }
@@ -101,36 +104,37 @@
 
 @code {
     [Parameter] public V00_RepVars              Rv  { get; set; } = new();
-    [Parameter] public List<V2104Model>         V   { get; set; } = new();
+    [Parameter] public V2104Model               V   { get; set; } = new();
     [Parameter] public EventCallback<object>    ChildAction { get; set; }
-    bool isGroupByClient = false;
-
 
     private async Task ValueChanged()
     {
-        await ChildAction.InvokeAsync(Rv);
+        await ChildAction.InvokeAsync();
     }
 
 
     private async Task CreateReport()
     {
-        if(!V.Any()){ return; }
+        if(!V.RepDtls.Any()){ return; }
+
 
         Rv.RelativePath = "";
         Rv.ReportData   = [];
-        Rv.ReportData   = V;
+        Rv.ReportData   = V.RepDtls;
 
         Rv.RelativePath = "Reports/_02HR/K_2104_EA.trdp";
-        Rv.ReportParams["GroupByClient"] = isGroupByClient;
+        Rv.ReportParams["GroupByClient"] = V.IsGroupByClient;
 
         Rv.ShowReport = true;
 
         if (Rv.SelectedFormat == "XLSX")
         {
             await Task.Delay(1000);  
-            Rv.ShowReport = false;    // Close the report modal after 1 second
+            Rv.ShowReport = false;    
             Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
         }
+
+        await ChildAction.InvokeAsync(Rv);
     }
 
 
@@ -138,58 +142,27 @@
     {
         if (Rv.ShowReport) Rv.ShowReport = ans;
         else { 
-            Rv.ShowModal    = ans;
-            isGroupByClient = false; 
+            Rv.ShowModal        = ans;
+            V.IsGroupByClient = false; 
         }
 
         await ChildAction.InvokeAsync(ans);
     }
 
 
-    private void SortBy(string fld, string order)
+    private async Task SortBy()
     {
-        IOrderedEnumerable<V2104Model> sorted;
-
-        if (isGroupByClient)
-        {
-            // Always keep Client ascending
-            sorted = V.OrderBy(x => x.ClName);
-
-            // Then sort by EmpName or Age
-            if (fld == "EmpName")
-            {
-                sorted = order == "asc" ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
-                                        : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
-            }
-            else if (fld == "Age")
-            {
-                sorted = order == "asc"? sorted.ThenBy(x => x.Age)
-                                        : sorted.ThenByDescending(x => x.Age);
-            }
-        }
-        else
-        {
-            // If no grouping is applied, sort by Empname or Age
-            if (fld == "EmpName")
-            {
-                sorted = order == "asc"? V.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
-                                        : V.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
-            }
-            else 
-            {
-                sorted = order == "asc"? V.OrderBy(x => x.Age)
-                                        : V.OrderByDescending(x => x.Age);
-            }
-            
-        }
-
-        V = sorted.ToList();
+        if (!V.RepDtls.Any()) { return; }
+        V.Action = "SortBy";
+        await ChildAction.InvokeAsync(V);
     }
 
 
-    private void GroupByClient(bool val)
+    private void GroupByClient()
     {
-        SortBy("EmpName", "asc");
+        Rv.SortFld = "EmpName";
+        Rv.SortOdr = "asc";
+        SortBy();
     }
 
     void Notify(NotificationSeverity severity, string summary, string detail)

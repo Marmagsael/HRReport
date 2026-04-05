@@ -1,8 +1,17 @@
+using HRApiLibrary.Models._10_Pis.OPis;
 using System;
 
 namespace HRMvc.Applications.PisReport.Vars;
 
 public class V2104Model
+{
+    public string Action            { get; set; } = "";
+    public bool IsGroupByClient     { get; set; } = false;
+    public List<R2104Model> RepDtls { get; set; } = [];
+}
+
+
+public class R2104Model
 {
     public string?      ClName      { get; set; }
     public string?      Client_      { get; set; }

@@ -11,10 +11,14 @@
         <div class="d-flex gap-2 p-2 border-bottom fw-bold bg-lightgray">
             <div class="w-60p text-end pe-2">No.</div>
             <div class="w-100p">    Emp. No.</div>
-            <div class="w-250p">    Emp. Name</div>
-            <div class="w-100p">    Date</div>
-            <div class="w-250p">    Deployment</div>
-            <div class="w-150p">    Reason</div>
+            <div class="w-250p">    Emp. Name
+                &nbsp; <_01SortByField ColName="EmpName" Rv="@Rv" ChildAction="SortBy"/>
+            </div>
+            <div class="w-150p">    Mov. Date
+                &nbsp; <_01SortByField ColName="MovDate" Rv="@Rv" ChildAction="SortBy" />
+            </div>
+            <div class="w-250p">    Mov. Deployment</div>
+            <div class="w-250p">    Reason</div>
         </div>
     </div>
 
@@ -34,9 +38,9 @@
                     <div class="w-60p text-end pe-2">    @ctr.</div>
                     <div class="w-100p">        @v.EmpNumber </div>
                     <div class="w-250p">        @v.EmpName </div>
-                    <div class="w-100p">        @(v.MovDate?.ToString("MM/dd/yyyy") ?? "") </div>
+                    <div class="w-150p">        @(v.MovDate?.ToString("MM/dd/yyyy") ?? "") </div>
                     <div class="w-250p">        @v.ClName </div>
-                    <div class="w-150p">        @v.Remarks </div>
+                    <div class="w-250p">        @v.Remarks </div>
                 </div>
             }
         }
@@ -54,5 +58,17 @@
 </div>
 
 @code {
-    [Parameter] public List<V2212Model> V { get; set; } = new();
+    [Parameter] public V00_RepVars Rv           { get; set; } = new();
+    [Parameter] public List<V2212Model> V       { get; set; } = new();
+    [Parameter] public EventCallback<object>    ChildAction { get; set; }
+
+
+    private async Task SortBy()
+    {
+        await ChildAction.InvokeAsync();
+
+    }
+
+
+
 }
