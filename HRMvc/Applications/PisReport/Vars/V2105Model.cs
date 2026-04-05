@@ -9,6 +9,7 @@
         public string?      SecLicense      { get; set; } = "";
         public DateTime?    LicExpire       { get; set; } 
         public string?      ClName          { get; set; } = "";
+        public string?      EmpStatus       { get; set; } = "";
         
     }
 }

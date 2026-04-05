@@ -8,19 +8,19 @@
 
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-        @*--- Looader ------------------------------------------------*@
+        @*--- Looader --------------------------------------------------------------*@
         <_00Loader Rv="@rv" />
 
         @if ((v ?? []).Any())
         {
-            @*--- Report ------------------------------------------------*@
+            @*--- Report ------------------------------------------------------------*@
              <_2104_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />  
         }
 
-         @*--- Filter and Button ------------------------------------------------*@
+         @*--- Fetch Button --------------------------------------------------------*@
         <div class="p-0">
             <div class="card-header d-flex gap-3">
-                @*--- Fetch Button ------------------------------------------------*@
+                @*--- Fetch Button --------------------------------------------------*@
                 <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
             </div>
         </div>
@@ -31,8 +31,6 @@
             <div class="w-50"> <_00TClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
             <div class="w-50"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
         </div>
-       
-
     </Details>
 </_00BT_FullW>
 
@@ -42,39 +40,48 @@
 @inject IOPisReportDataAccess   _pisRep;
 @inject IOEmpstatDataAccess     _empstat;
 @inject IOClientDataAccess      _client;
+
+
 @code {
     [Parameter] public  UserClaimsModel Uc { get; set; } = new();
     V00_RepVars                         rv { get; set; } = new();
     List<V2104Model>                    v = [];
 
-
+    // Gets the latest selected employee statuses/clients every time it is called
     List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
     List<string?>? clients => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
 
     protected override async Task OnInitializedAsync()
     {
+        // 1. Check if the system/server connection is available
         if (!HasConnection())
         {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
+            Notify(NotificationSeverity.Error,"Failed to connect to server", "Please refresh the page or contact your system administrator.");
             return;
         }
 
+        // Initialize report variables and default values
         rv = new()
         {
-            RefreshToken    = 21040000,
-            MCaption        = "Employee Age",
-            ReportParams    = new()
+            MCaption = "Employee Age",
+            RefreshToken = 21040000,
+            ReportParams = new()
             {
-                ["CoName"]      = "-",
-                ["CoAddress"]   = "-",
-                ["ReportTitle"] = "Employee Age Report",
-                ["RunDate"]     = DateTime.Now
+                ["CoName"]      = "-",                
+                ["CoAddress"]   = "-",                
+                ["ReportTitle"] = "Employee Age Report", 
+                ["RunDate"]     = DateTime.Now        
             }
         };
 
-        await LoadCompanyInfo();
-        await LoadEmployeeStatus();
-        await LoadClients();
+        rv.DataFilters = new List<V00_RepVars.DataFilterModel>
+        {
+            new(){ Code = 1, Name = "Current Deployment" }
+        };
+
+        await LoadCompanyInfo();     // Get company name and address
+        await LoadEmployeeStatus();  // Get list of employee statuses
+        await LoadClients();         // Get list of clients
     }
 
     async Task LoadCompanyInfo()
@@ -92,94 +99,137 @@
     async Task LoadEmployeeStatus()
     {
         rv.Empstats = [];
+
         var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
-        if (res?.Any() == true){ rv.Empstats = res; }
+
+        if (res?.Any() == true)
+        {
+            rv.Empstats = res;
+
+            rv.Empstats.ForEach(x =>
+            {
+                // If employee status does not belong to the isresigned category, mark it check by default
+                if (x.IsResigned == "0")
+                {
+                    x.IsSelectedB = true;
+                }
+            });
+        }
     }
 
     async Task LoadClients()
     {
         rv.Clients = [];
-        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!); // Only get active clients
         if (res?.Any() == true) { rv.Clients = res!; }
     }
 
     async Task FetchData()
     {
+        // 1. Reset all data 
+        v               = [];
+        rv.ReportData   = [];
+        rv.ShowModal    = false;
+        rv.ShowReport   = false;
+
+        // Set default report format to PDF if formats exist to prevent excel from automatic download
+        if (rv.ReportFormats != null && rv.ReportFormats.Any()) rv.SelectedFormat = "PDF";
+
+        // 2. Check if the system/server connection is available
         if (!HasConnection())
         {
             Notify(NotificationSeverity.Error,"Failed to connect to server","Please refresh the page or contact your system administrator.");
             return;
         }
 
-        v = [];
-        rv.ReportData = [];
-        rv.ShowModal = false;
-
+        // 3. Make sure at least one client is selected
         if (!(clients ?? []).Any())
         {
-            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed..");
+            Notify(NotificationSeverity.Warning,"Warning","Please select at least one deployment to proceed.");
             return;
         }
 
-
-
+        // 4. Make sure at least one employee status is selected
         if (!(statuses ?? []).Any())
         {
-            Notify(NotificationSeverity.Warning,"Warning","Please select at least one employee status to proceed..");
+            Notify(NotificationSeverity.Warning, "Warning","Please select at least one employee status to proceed.");
             return;
         }
 
         try
         {
+            // 5. Show loading indicator while fetching data
             rv.Isloaded = true;
 
-            var res = await _pisRep._02ByClNumbersByStatus(clients, statuses,  Uc.OpisDb!, Uc.Conn!);
+            // get data based on selected filters
+            var res = await _pisRep._02ByClNumbersByStatus(clients, statuses, Uc.OpisDb!, Uc.Conn!);
 
+            // Check if data exists
             if (res?.Any() == true)
             {
-
-                var today = DateTime.Today; 
                 foreach (var r in res)
                 {
-                    V2104Model v1 = new() { EmpNumber = r.EmpNumber, EmpBirth = r.EmpBirth, EmpName = r.EmpName, EmpStatus = r.EmpStatus, Client_ = r.Client_, ClName = r.ClName };
-
-                    if (v1.EmpBirth != null)
+                    // Map result to local model
+                    var employee = new V2104Model
                     {
-                        var birth = v1.EmpBirth ?? DateTime.MinValue;
-                        var age = CalculateAge(birth);
+                        EmpNumber   = r.EmpNumber,
+                        EmpBirth    = r.EmpBirth,
+                        EmpName     = r.EmpName,
+                        EmpStatus   = r.EmpStatus,
+                        Client_     = r.Client_,
+                        ClName      = r.ClName,
+                        EmpFirstNm  = r.EmpFirstNm,
+                        EmpLastNm   = r.EmpLastNm
+                    };
 
-                        var yrs = age.Years;
+                    // Compute age if birthdate exists
+                    if (employee.EmpBirth != null)
+                    {
+                        var age = CalculateAge(employee.EmpBirth.Value);
+
+                        var years = age.Years;
                         var months = age.Months;
 
-                        v1.FullAge = $"{yrs} yrs {months} mos";
-
+                      
+                        employee.FullAge = $"{years} yrs {months} mos"; // use to display the complete age
+                        employee.Age = years + (months / 12.0); // use to sort age
                     }
-                    else { v1.Age = null; }
+                    else
+                    {
+                        // Default values if no birthdate
+                        employee.FullAge    = null;
+                        employee.Age        = 0;
+                    }
 
-                    v.Add(v1);
+                    v.Add(employee);
                 }
             }
         }
         catch (Exception ex)
         {
+            // 6. Handle errors during processing 
+            // This prevents the app from crashing and shows a friendly message to the user
             Notify(NotificationSeverity.Error,"Failed to load data","Please refresh the page or contact your system administrator.");
+
             Console.WriteLine(ex);
             return;
         }
         finally
         {
+            // 7. Hide loading indicator regardless of success or failure
             rv.Isloaded = false;
         }
 
+        // 8. If no data found, notify user
         if (!v.Any())
         {
-            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+            Notify(NotificationSeverity.Info,"Info","No data found for this period.");
             return;
         }
-
         rv.ReportData = v;
-        rv.ShowModal = true;
+        rv.ShowModal     = true;
     }
+
 
     private (int Years, int Months) CalculateAge(DateTime birthDate)
     {
@@ -202,6 +252,15 @@
 
     void ChildActionCatcher() { }
 
+
+    bool HasConnection()
+    {
+        if (Uc == null) return false;
+        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
+        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
+        return true;
+    }
+
     void Notify(NotificationSeverity severity, string summary, string detail)
     {
         _NotificationService.Notify(new NotificationMessage
@@ -212,11 +271,5 @@
             Duration = 5000
         });
     }
-    bool HasConnection()
-    {
-        if (Uc == null) return false;
-        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
-        return true;
-    }
+    
 }
