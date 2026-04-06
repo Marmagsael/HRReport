@@ -2220,19 +2220,33 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
+    // private async Task _01LeaveCredit(string schema, string conn)
+    // {
+    //     string sql = $@"CREATE TABLE if not exists {schema}.LeaveCredit (
+    //                       Year          INTEGER UNSIGNED    Default 0,
+    //                       EmpmasId      CHAR(5)             Default '',
+    //                       LeaveTypeId   Integer             Default 0,
+    //                       AnnivStart    DATE,
+    //                       AnnivEnd      DATE,
+    //                       Credit        DOUBLE(12,2)        Default 0,
+    //                       Consumed      DOUBLE(12,2)        Default 0,
+    //                     PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `AnnivStart`)) ENGINE = InnoDB; ";
+    //     await _sql.ExecuteCmd(sql, new { }, conn);
+    // }
+
     private async Task _01LeaveCredit(string schema, string conn)
     {
-        string sql = $@"CREATE TABLE if not exists {schema}.LeaveCredit (
+        string sql = $@"CREATE TABLE if not exists {schema}.LvCredit (
                           Year          INTEGER UNSIGNED    Default 0,
                           EmpmasId      CHAR(5)             Default '',
                           LeaveTypeId   Integer             Default 0,
-                          AnnivStart    DATE,
-                          AnnivEnd      DATE,
+                          CreditStart   DATE,
+                          CreditEnd     DATE,
                           Credit        DOUBLE(12,2)        Default 0,
-                          Consumed      DOUBLE(12,2)        Default 0,
-                        PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `AnnivStart`)) ENGINE = InnoDB; ";
+                        PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `CreditStart`)) ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
+
 
     private async Task _01LeaveDefaultApprover(string schema, string conn)
     {

@@ -15,7 +15,7 @@ public class V2003_LvGrpModel
 
     public string?                  ErrorMsg            { get; set; } = string.Empty;
     public bool                     ShowDE              { get; set; } = false;
-    public bool                     ShowApproverEntry   { get; set; } = true;
+    public bool                     ShowApproverEntry   { get; set; } = false;
 
 
 
