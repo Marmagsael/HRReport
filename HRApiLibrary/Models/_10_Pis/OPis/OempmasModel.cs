@@ -108,11 +108,12 @@ public class OEmpmasModel
     public DateTime? ExpMed                 { get; set; }
 
     //-------------------------------------------------------
-    public string? EmpName                  { get; set; } = string.Empty;
-    public string? PositionName             { get; set; } = string.Empty;
-    public string? EmpStatus                { get; set; } = string.Empty;
-    public string? ClName                   { get; set; } = string.Empty;
-    
-    public string? Addr1                    { get; set; }
-    public string? Addr2                    { get; set; }
+    public string?  EmpName                 { get; set; } = string.Empty;
+    public string?  PositionName            { get; set; } = string.Empty;
+    public string?  EmpStatus               { get; set; } = string.Empty;
+    public string?  ClName                  { get; set; } = string.Empty;
+    public string?  Addr1                   { get; set; }
+    public string?  Addr2                   { get; set; }
+    public int?     CntNotMigrated          { get; set; } = 0; 
+
 }

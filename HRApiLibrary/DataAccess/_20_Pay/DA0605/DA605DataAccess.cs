@@ -287,7 +287,7 @@ public class Da605DataAccess : IDa605DataAccess
                                left(fe.trnPosted,6) != left(@Trn,6) and
                                fe.EmpNumber in ( SELECT e.EmpNumber
                                                  FROM {paydb}.tmptbltranemplist l
-                                                 left join U1C2Pis.Empmas e on e.Id = l.EmpmasId
+                                                 left join {pisdb}.Empmas e on e.Id = l.EmpmasId
                                                  where l.trn = @Trn)) 
                 fe on fe.EmpmasId = t.EmpmasId and fe.AcctNumber = t.AcctNumber
                     set t.Qty = fe.Qty, t.Rate = fe.Rate 

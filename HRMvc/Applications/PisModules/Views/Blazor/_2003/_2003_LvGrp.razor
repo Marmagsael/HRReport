@@ -1,16 +1,20 @@
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications.PisModules.Views.Blazor._2003._2003_LvGrp_Items
+@inject DialogService _DialogService;
+@inject NotificationService _NotificationService;
+<RadzenDialog />
 
 <div class="card ">
     <div class="card-body">
 
         @if (!v.ShowDE)
-        {
-            <div class="w-100  p-2 border mt-1 mb-1">
-                <button @onclick="() => v.ShowDE = true" class="btn btn-primary btn-sm"> Add New </button>
-            </div>
-        }
+        {   <div class="w-100  p-2 border mt-1 mb-1"> 
+                <button @onclick="() => v.ShowDE = true" class="btn btn-primary btn-sm"> Add New </button> 
+            </div> }
+        else { <_2003_LvGrp_NewEntry WidthLength="@wLvGrp"  Uc="@Uc" V="@v" CA="CA_Catcher" /> }
+
+
 
         <div class=" small d-flex border-bottom card-header fw-bold">
             <div class="@wLvGrp "> Leave Group </div>
@@ -19,11 +23,13 @@
             <div class="@wApprover "> Final Approver </div>
         </div>
 
-        <_2003_LvGrp_Approver Uc="@Uc" V="@v" />
-
+        <_2003_LvGrp_Approver1 Uc="@Uc" V="@v" CA="CA_Catcher" />
+        @{int i = 0;}
         @foreach (LeavegrpModel lg in v.Leavegrps)
-        {
-            <div class="d-flex p2-1 ">
+        {   
+            i++;
+            var css = i % 2 == 0 ? "bg-light" : "bg-white"; 
+            <div class="d-flex p2-1 @css  align-items-center">
                 <div class="d-flex  gap-1 @EditableCss(lg.IsEditable) ">
                     <div class=" @wLvGrp mt-1"> 
                         <RadzenTextBox Placeholder="Lv Code" class="w-100" MaxLength="45" @bind-Value=@lg.Name />
@@ -46,13 +52,13 @@
                 </div>
 
                 <div class=" mt-1 d-flex gap-1 disabled-div-50  ">
-                    <div class="@wApprover  ">
-                        <RadzenTextBox Placeholder="First Approver" class="w-100" MaxLength="45"
-                                       @bind-Value=lg.Approver1Name />
+                    <div class="@wApprover small ">
+                        @* <RadzenTextBox Placeholder="First Approver" class="w-100 small" Value="@fApprover(lg.Id)" ReadOnly="true" /> *@
+                        @(fApprover(lg.Id, 1))
                     </div>
-                    <div class="@wApprover  ">
-                        <RadzenTextBox Placeholder="Final Approver" class="w-100" MaxLength="45"
-                                       @bind-Value=lg.FinalApproverName />
+                    <div class="@wApprover  small text-primary">
+                        @(fApprover(lg.Id, 2))
+                        @* <RadzenTextBox Placeholder="Final Approver" class="w-100" MaxLength="45" @bind-Value=lg.FinalApproverName /> *@
                     </div>
                 </div>
                 <div class=" d-flex gap-1 p-1 ">
@@ -74,24 +80,45 @@
 
 @code {
     [Parameter] public UserClaimsModel Uc {get; set; } = new(); 
+
+    void CA_Catcher(){} 
+
     V2003_LvGrpModel      v = new(); 
     string wLvGrp => "w-250p";
     string wAction => "w-120p";
     string wApprover => "w-200p";
+    string fApprover(int lvApproverId, int approverLevel) => 
+        (string.Join("; ",
+            v.Leavegrpapprovers
+             .Where(l => l.ApproverLevel == approverLevel && l.LeaveGrpId == lvApproverId)
+             .Select(l => l.ApproverName)
+        ))??"";
 
+
+    @* --- Functions ------------------------------------------- *@
     void Update(LeavegrpModel lg) { lg.IsEditable = true;  }
 
     void CancelEdit(LeavegrpModel lg) {
         lg.IsEditable = false; 
     }
-    void Delete(LeavegrpModel lg) {
-        v.Leavegrps.Remove(lg);
+    async Task Delete(LeavegrpModel lg) {
+        
+        if (lg != null)
+        {
+            var option = await _DialogService.Confirm("Delete " + lg.Name  + "?", "Confirm Delete", 
+                                new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+
+            if (option == true)
+            {
+                await _lvgrp._04(lg.Id, Uc.SchemaUserPis, Uc.Conn);
+                v.Leavegrps.Remove(lg);
+                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully deleted a record.", Detail = "Record has been deleted from the list.", Duration = 4000 });
+            }
+        }   
     }
 
-    protected override async Task OnParametersSetAsync()
-    {
-        await LoadDatas();
-    }
+    private void ShowNotification(NotificationMessage message)  { _NotificationService.Notify(message); }
+    protected override async Task OnParametersSetAsync()        { await LoadDatas(); }
 
     async Task LoadDatas()
     {
@@ -99,7 +126,7 @@
         if (res.Count > 0) v.Leavegrps = res!;
 
         var resApprovers = await _lvgrpapprover._02s(Uc.SchemaUserPis, Uc.Conn);
-        if (resApprovers.Count > 0) v.Leavegrpapprovers = resApprovers; 
+        if (resApprovers.Count > 0) v.Leavegrpapprovers = resApprovers!; 
     }
 
     void ShowApproverModal(LeavegrpModel lg) {

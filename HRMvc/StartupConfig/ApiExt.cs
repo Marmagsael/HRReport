@@ -64,6 +64,7 @@ public static class ApiExt
         builder.Services.AddScoped<ILeavedefaultapproverDataAccess, LeavedefaultapproverDataAccess>();
         builder.Services.AddScoped<ILeaveapproverDataAccess, LeaveapproverDataAccess>();
         builder.Services.AddScoped<ILeavegrpapproverDataAccess, LeavegrpapproverDataAccess>();
+        builder.Services.AddScoped<ILvcreditDataAccess, LvcreditDataAccess>();
         builder.Services.AddScoped<IDeprecDataAccess, DeprecDataAccess>();
         builder.Services.AddScoped<IEmpblockpostDataAccess, EmpblockpostDataAccess>();
         builder.Services.AddScoped<IEmploymenttypeDataAccess, EmploymenttypeDataAccess>();
@@ -110,6 +111,7 @@ public static class ApiExt
         builder.Services.AddScoped<IAttreqdtlDataAccess, AttreqdtlDataAccess>();
         builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
         builder.Services.AddScoped<ILeaveapplicationDataAccess, LeaveapplicationDataAccess>();
+        builder.Services.AddScoped<IEmpmasgrpDataAccess, EmpmasgrpDataAccess>();
 
         builder.Services.AddScoped<IAtttemplatereqdtlDataAccess, AtttemplatereqdtlDataAccess>();
         builder.Services.AddScoped<IAtttemplatereqhdrDataAccess, AtttemplatereqhdrDataAccess>();
