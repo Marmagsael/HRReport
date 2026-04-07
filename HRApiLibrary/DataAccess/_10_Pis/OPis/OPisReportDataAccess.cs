@@ -238,19 +238,20 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
-    public async Task<List<OEmpmasModel>> _02Empmas_EmployeeClerance(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn)
+    public async Task<List<OEmpmasModel>> _02Empmas_EmployeeClearance(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn)
     {
         var flds = EmpmasFields();
         List<OEmpmasModel> data = [];
         string sql = "";
 
-        sql = $@"SELECT  {flds},c.clnumber,c.clname FROM {schema}.empmas e 
-                INNER JOIN {schema}.client c  ON c.clnumber = e.client_ 
-                WHERE e.client_ in @Clnumbers 
+        sql = $@"SELECT  {flds},c.clnumber,c.clname, s.Name Empstatus FROM {schema}.empmas e 
+                INNER JOIN {schema}.client c  ON c.clnumber = e.client_
+                LEFT JOIN {schema}.empstat s on s.code = e.empstat_
+                WHERE  e.client_ in @ClNumbers
                 AND e.empstat_ in @Statuses
                 AND e.movmode = 'A'
             ORDER BY c.clname, e.emplastnm, e.empfirstnm;";
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumbers = clnumbers, Statuses = statuses }, conn);
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers = clnumbers, Statuses = statuses }, conn);
         return data ?? [];
     }
 
@@ -494,6 +495,6 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year(string fld, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByMonth_And_Year_And_Status(string fld, List<string?>? statuses, int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry(List<string?>? clients, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
-    Task<List<OEmpmasModel>>        _02Empmas_EmployeeClerance(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_EmployeeClearance(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByInsurance_And_Status(int filterValue, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
 }   

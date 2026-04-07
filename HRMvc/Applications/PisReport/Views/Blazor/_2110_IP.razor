@@ -11,7 +11,7 @@
         @*--- Looader ------------------------------------------------*@
         <_00Loader Rv="@rv" />
 
-        @if ((v ?? []).Any())
+        @if ((v.RepDtls ?? []).Any())
         {
             @*--- Report ------------------------------------------------*@
             <_2110_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
@@ -20,7 +20,7 @@
         @*--- Filter and Button ------------------------------------------------*@
         <div class="p-0">
             <div class="card-header d-flex gap-3">
-                <div class="d-flex gap-2 card p-2">
+                <div class="d-flex gap-2 card p-2 w-240p">
                     <div class="text-muted p-2 pe-4 border-bottom"> <small>Filter By</small> </div>
                     <_01ReportFilter Rv="@rv" ChildAction="ChildActionCatcher" />
                 </div>
@@ -36,8 +36,8 @@
         </div>
 
 
-        @*--- Client List ------------------------------------------------*@
-        <div class="w-100"> <_00TStatusList Empstats="@rv.Empstats" ClassParams="@statusClass" ChildAction="ChildActionCatcher" /> </div>
+        @*---  Status List ------------------------------------------------*@
+        <div class="w-100"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" ClassParams="statusClass" /> </div>
 
     </Details>
 </_00BT_FullW>
@@ -47,13 +47,16 @@
 
 @inject IOPisReportDataAccess _pisRep;
 @inject IOEmpstatDataAccess _empstat;
+@inject IOClientDataAccess _client;
+
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
     V00_RepVars rv { get; set; } = new();
-    List<V2110Model> v = [];
+    V2110Model  v = new();
 
 
-    List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
+    private List<string?> statuses => rv.Empstats?.Where(x => x.IsSelectedB).Select(x => x.Code).ToList() ?? new();
+
     public Dictionary<string, object> periodClass  = new()
     {
         ["FlexDirection"] = "flex-column",
@@ -64,14 +67,22 @@
         ["VH"] = "vh60",
     };
 
+    public Dictionary<string, object> clientClass = new()
+    {
+        ["VH"] = "vh60",
+    };
+
+
     protected override async Task OnInitializedAsync()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
-            return;
-        }
+        if (!HasConnection()) return;
 
+        InitializeReport();
+        await LoadInitialData();
+    }
+
+    private void InitializeReport()
+    {
         rv = new()
         {
             RefreshToken = 21100000,
@@ -91,101 +102,156 @@
             new(){Code = 2, Name="Without Insurance"},
             new(){Code = 3, Name="With Insurance"}
         };
+    }
 
-
+    private async Task LoadInitialData()
+    {
         await LoadCompanyInfo();
         await LoadEmployeeStatus();
     }
 
-    async Task LoadCompanyInfo()
+    private async Task LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() != true) return;
 
-        if (res?.Any() == true)
-        {
-            var r = res.First();
-            rv.ReportParams["CoName"] = r.CoName ?? "";
-            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
-        }
+        var r = res.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
     }
 
-    async Task LoadEmployeeStatus()
+    private async Task LoadEmployeeStatus()
     {
-        rv.Empstats = [];
         var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
-        if (res?.Any() == true) { rv.Empstats = res; }
+        if (res?.Any() != true) return;
+
+        rv.Empstats = res;
+        rv.Empstats.ForEach(x =>
+        {
+            if (x.IsResigned == "0") x.IsSelectedB = true;
+        });
     }
 
-    async Task FetchData()
+  
+    private void ChildActionCatcher()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
-            return;
-        }
+        if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
+    }
 
-        v = [];
-        rv.ReportData = [];
-        rv.ShowModal = false;
 
-        if (!(statuses ?? []).Any())
-        {
-            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status to proceed..");
-            return;
-        }
+
+    private async Task FetchData()
+    {
+        ResetVars();
+
+        if (!HasConnection() || !ValidateFilters()) return;
 
         try
         {
             rv.Isloaded = true;
 
             var res = await _pisRep._02Empmas_ByInsurance_And_Status(rv.SelectedFilter, statuses, rv.DStart, rv.DEnd, Uc.OpisDb!, Uc.Conn!);
-
-            if (res?.Any() == true)
+            v.RepDtls = res.Select(r => new R2110Model
             {
-                v = res.Select(r => new V2110Model
-                {
-                    EmpNumber   = r.EmpNumber,    
-                    EmpName     = r.EmpName,      
-                    EmpLastNm   = r.EmpLastNm,
-                    EmpFirstNm  = r.EmpFirstNm,
-                    EmpMidNm    = r.EmpMidNm,
-                    Insurance   = r.Insurance,    
-                    PolicyNo    = r.PolicyNo,     
-                    EmpStatus   = r.EmpStatus,    
-                    FaceValue   = r.FaceValue,    
-                    Premium     = r.Premium,      
-                    InsExpire   = r.InsExpire,  
-                    EmpBirth    = r.EmpBirth,   
-                    DateHired   = r.DateHired  
+                EmpNumber   = r.EmpNumber,
+                EmpName     = r.EmpName,
+                EmpLastNm   = r.EmpLastNm,
+                EmpFirstNm  = r.EmpFirstNm,
+                EmpMidNm    = r.EmpMidNm,
+                Insurance   = r.Insurance,
+                PolicyNo    = r.PolicyNo,
+                EmpStatus   = r.EmpStatus,
+                FaceValue   = r.FaceValue,
+                Premium     = r.Premium,
+                InsExpire   = r.InsExpire,
+                EmpBirth    = r.EmpBirth,
+                DateHired   = r.DateHired,
+            }).ToList();
 
-                }).ToList();
-            }
         }
         catch (Exception ex)
         {
-            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh the page or contact your system administrator.");
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
             Console.WriteLine(ex);
-            return;
         }
         finally
         {
             rv.Isloaded = false;
         }
 
-        if (!v.Any())
+        if (v.RepDtls?.Any() != true)
         {
             Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
             return;
         }
 
-        rv.ReportData = v;
+
         rv.ShowModal = true;
+
     }
 
+    private bool ValidateFilters()
+    {
 
-    void ChildActionCatcher() { }
+        if (!statuses.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status.");
+            return false;
+        }
 
-    void Notify(NotificationSeverity severity, string summary, string detail)
+        return true;
+    }
+
+    private void SortBy()
+    {
+        IOrderedEnumerable<R2110Model> sorted = v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+
+        if (v.IsGroupByClient)
+        {
+            sorted = v.RepDtls.OrderBy(x => x.ClName);
+
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc"
+                    ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                    : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+        }
+        else
+        {
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc"
+                    ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                    : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
+    private void ResetVars()
+    {
+        v.RepDtls = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string summary, string detail)
     {
         _NotificationService.Notify(new NotificationMessage
         {
@@ -194,12 +260,5 @@
             Detail = detail,
             Duration = 5000
         });
-    }
-    bool HasConnection()
-    {
-        if (Uc == null) return false;
-        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
-        return true;
     }
 }
