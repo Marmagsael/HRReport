@@ -36,13 +36,27 @@ public class LeaveapproverDataAccess : ILeaveapproverDataAccess
     {
         string sql = $@"select l.*,  
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ',trim(e.EmpMidNm)) Fullname
-                        from {schema}.Leaveapprover l 
+                        from {schema}.Leavegrpapprover l 
                         left join {schema}.empmas e on e.Id = l.EmpmasId 
                         where l.ApproverLevel = @Lvl 
                         order by e.EmpLastNm, EmpFirstNm, EmpMidNm";
         var data = await _sql.FetchData<LeaveapproverModel?, dynamic>(sql, new { Lvl = lvl }, conn);
         return data;
     }
+    
+    public async Task<List<LeaveapproverModel?>?> _02Approver(int empmasId, string schema, string conn)
+    {
+        string sql = $@"select l.*,  
+                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ',trim(e.EmpMidNm)) Fullname
+                        from {schema}.LeaveGrpapprover l
+                        left join {schema}.empmas e on e.Id = l.ApproverId
+                        where l.LeaveGrpId in ( select LeavegrpId from {schema}.empmasgrp where empmasId = @EmpmasId)
+                        order by e.EmpLastNm, EmpFirstNm, EmpMidNm;";
+        
+        var data = await _sql.FetchData<LeaveapproverModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
+        return data;
+    }
+
 
 
     public async Task<LeaveapproverModel?> _03(int id, LeaveapproverModel leaveapprover, string schema, string conn)
