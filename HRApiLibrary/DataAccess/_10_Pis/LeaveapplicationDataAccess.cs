@@ -39,6 +39,30 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         return data?.FirstOrDefault();
     }
     
+    public async Task<double> _02LvBalance(int lvTypeId, int empmasId, int yr, string schema, string conn)
+    {
+        double lvBal =0; 
+        string  q   = @$"select sum(Credit) Credit from {schema}.LvCredit where EmpmasId = @EmpmasId and LeaveTypeId = @LvTypeId and Year = @Year ";
+        var     r1  = await _sql.FetchData<LvcreditModel?, dynamic>(q, new { EmpmasId=empmasId, LvTypeId = lvTypeId, Year = yr }, conn);
+        double lvTotal = r1.FirstOrDefault().Credit??0; 
+
+        if (lvTotal < 1) return 0;
+
+        string  q2 = @$"select sum(DaysWithPay) DaysWithPay from {schema}.leaveapplication  
+                            where EmpmasId = @EmpmasId and LeaveTypeId = @LvTypeId and Year = @Year 
+                                  and Status in ('A', 'FA')  ";
+        var     r2 = await _sql.FetchData<LeaveapplicationModel?, 
+                        dynamic>(q2, new { EmpmasId = empmasId, LvTypeId = lvTypeId, Year = yr }, conn);
+        double  lvUsed = r2.FirstOrDefault().DaysWithPay ;
+
+        lvBal = lvTotal - lvUsed;
+
+        // Console.WriteLine($" lvBal : {lvBal}");
+
+        return lvBal;
+    }
+
+    
     public async Task<List<LeaveapplicationModel?>?> _02Chk_Entry_LvType(int leaveTypeId, string schema, string conn)
     {
         string sql  = $@"select  * from {schema}.Leaveapplication where LeaveTypeId = @LeaveTypeId limit 1 ";

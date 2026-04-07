@@ -50,8 +50,7 @@
                     
                 </td>
                 <td class="p-1"> 
-                     <RadzenDropDown
-                        TValue="int"
+                     <RadzenDropDown Change="_02LeaveBalance"                   TValue="int"
                         Data="@v.LeaveTypes"
                         TextProperty="LeaveName"
                         ValueProperty="Id"
@@ -69,8 +68,7 @@
                     
                 </td>
                 <td class="p-1"> 
-                     <RadzenDropDown
-                        TValue="int"
+                     <RadzenDropDown Change="_02LeaveBalance"                TValue="int"
                         Data="@v.LvYrs"
                         @bind-Value="v.LeaveApplication.Yr"
                         Placeholder="Leave Year"
@@ -95,7 +93,7 @@
                             </div>
                         </div>
                         <div class="d-flex gap-2 mt-1">
-                            <div class="w-50p p-2 d-flex align-items-center">End<spa class="txt-red">*</spa></div>
+                            <div class="w-50p p-2 d-flex align-items-center">End<span class="txt-red">*</span></div>
                             <div class="w-150p ">
                                 <RadzenDatePicker 
                                     @bind-Value="v.LeaveApplication.LvEnd" 
@@ -144,10 +142,22 @@
                         @* --- First Approver *@
                         <div class="w-50 p-1">
                             <div>
-                                <RadzenTextBox 
-                                    @bind-Value="@v.LeaveApplication.TelNo"
-                                    MaxLength="45" 
-                                    Style="width:100%;" /> 
+                                <RadzenDropDown Data="@v.LvFirstApprovers" 
+                                    TextProperty="ApproverName"
+                                    ValueProperty="ApproverId" 
+                                    @bind-Value="v.LeaveApplication.Approver1Id" 
+                                    Placeholder="First Approver" 
+                                    Style="width:100%"
+                                    PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;" >
+                                    
+                                    <Template Context="item">
+                                        <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
+                                            @item.ApproverName
+                                        </div>
+                                    </Template>
+
+
+                                </RadzenDropDown>
                             </div>
                             <div class="text-center">
                                 Approver
@@ -157,10 +167,21 @@
                         @* --- Second Approver *@
                         <div class="w-50 p-1">
                             <div>
-                                <RadzenTextBox 
-                                    @bind-Value="@v.LeaveApplication.TelNo"
-                                    MaxLength="45" 
-                                    Style="width:100%;" /> 
+                                <RadzenDropDown Data="@v.LvFinalApprovers" 
+                                    TextProperty="ApproverName"
+                                    ValueProperty="ApproverId" 
+                                    @bind-Value="v.LeaveApplication.Approver2Id" 
+                                    Placeholder="Final Approver" 
+                                    Style="width:100%"
+                                    PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;">
+                                    
+                                    <Template Context="item">
+                                        <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
+                                            @item.ApproverName
+                                        </div>
+                                    </Template>
+                                    
+                                </RadzenDropDown>
                             </div>
                             <div class="text-center">
                                 Final Approver
@@ -183,10 +204,10 @@
                    <div class="d-flex gap-2">
                         
                         @* --- Leave Balance --------- *@
-                        @* <div class="text-primary">Leave Balance : </div>
+                        <div class="text-primary">Leave Balance : </div>
                         <div class="text-center">
                             @lva.LvBalance.ToString("N2")
-                        </div> *@
+                        </div>
                         @* --- Available Credit --------- *@
                         <div class="text-primary">Days Count : </div>
                         <div class="text-center">
@@ -297,8 +318,10 @@
 
 
 
-@inject ILeavetypeDataAccess _lvtype; 
-@inject IAtttemplateDataAccess _attTemplate; 
+@inject ILeavetypeDataAccess            _lvtype; 
+@inject IAtttemplateDataAccess          _attTemplate; 
+@inject ILeavegrpapproverDataAccess     _lvgrpApprover; 
+@inject ILeaveapplicationDataAccess     _lvApplication; 
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; }
@@ -315,9 +338,6 @@
         v.LeaveApplication      = new(); 
         v.LeaveApplicationdtl   = new(); 
         v.LeaveApplicationdtls  = []; 
-
-        
-
 
         Populatedtls(); 
         StateHasChanged(); 
@@ -374,13 +394,22 @@
     string CanCancelCss =>  IsCanCancel ? "" : " disabled-div ";
 
     @* =================================================== *@
+    async Task _02LeaveBalance() {
+        var res = await _lvApplication
+                    ._02LvBalance(v.LeaveApplication.LeaveTypeId, 
+                                  Uc.UserId, 
+                                  v.LeaveApplication.Yr, Uc.SchemaUserPis, Uc.Conn); 
+        v.LeaveApplication.LvBalance = res; 
 
+        Console.WriteLine($@"--- _02LeaveBalance ---- {res} ");
+    }
 
 
     void Populatedtls()
     {
-        v.LeaveApplicationdtls = new List<LeaveapplicationdtlModel>();
-        if (v.LeaveApplication.LvStart > v.LeaveApplication.LvEnd) return;
+        v.LeaveApplicationdtls = [];
+        
+        if (v.LeaveApplication.LvStart.Date > v.LeaveApplication.LvEnd.Date) return;
 
         var leaveApp = v.LeaveApplication;
         for (DateTime date = leaveApp.LvStart; date < leaveApp.LvEnd.AddDays(1); date = date.AddDays(1))
@@ -404,8 +433,9 @@
         }
 
         @* --- Days Count -------------------------------- *@
-        if(lva.LvEnd<lva.LvStart) { v.LeaveApplication.DaysCnt = 0; }
+        if(lva.LvEnd.Date < lva.LvStart.Date) { v.LeaveApplication.DaysCnt = 0; }
         else { v.LeaveApplication.DaysCnt = (lva.LvEnd - lva.LvStart).TotalDays + 1;  }
+
 
     }
 
@@ -435,11 +465,15 @@
     
     protected override async Task OnParametersSetAsync()
     {
+        
         if (Uc == null) return;
         await LoadDatas(); 
+        await _02LeaveBalance();
+        Populatedtls(); 
     }
 
     async Task LoadDatas() {
+        
         if(!v.LeaveTypes.Any())  {
             var res  = await _lvtype._02(Uc.SchemaUserPis, Uc.Conn) ?? [];
             if (res != null && res.Any()) v.LeaveTypes = res!; 
@@ -451,8 +485,18 @@
             v.LvYrs = []; 
             v.LvYrs.Add(DateTime.Now.Year); 
             v.LvYrs.Add(DateTime.Now.Year-1); 
-
         }
+
+        List<LeavegrpapproverModel?>? resApprovers = await _lvgrpApprover._02ByEmpmasId(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        var firstApprovers = (resApprovers.Where(a=> a.ApproverLevel==1).ToList()) ??[];
+        v.LvFirstApprovers = firstApprovers!;
+        v.LvFirstApprovers.Insert(0, new(){ApproverId=0, ApproverName="No Assigned Approver"});
+
+        
+        var finalApprovers = (resApprovers.Where(a=> a.ApproverLevel==2).ToList()) ??[];
+        v.LvFinalApprovers = finalApprovers!; 
+        v.LvFinalApprovers.Insert(0, new() { ApproverId = 0, ApproverName = "No Assigned Approver" });
+
     }
 
     private async Task MarkPayable(ChangeEventArgs e, LeaveapplicationdtlModel l)
