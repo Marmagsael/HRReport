@@ -180,12 +180,11 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         var flds = EmpmasFields();
         List<OEmpmasModel> data = [];
 
-        string sql = $@"SELECT p.name PositionName,  s.Name EmpStatus, c.ClName, sr.Remarks Reason,
+        string sql = $@"SELECT p.name PositionName,  s.Name EmpStatus, c.ClName,
                         {flds} FROM  {schema}.empmas e
                         LEFT JOIN {schema}.position p on p.code = e.position_
                         LEFT JOIN {schema}.empstat s on s.code = e.empstat_
                         LEFT JOIN {schema}.client c on e.client_ = c.clnumber
-                        LEFT JOIN {schema}.statusremarks sr on sr.Empnumber = e.EmpNumber 
                         WHERE e.empstat_ IN @Statuses AND Month(e.{fld}) = @Month AND Year(e.{fld}) = @Year
                         order by emplastnm, empfirstnm
                         ";
@@ -193,6 +192,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year, Statuses = statuses }, conn);
         return data ?? [];
     }
+
     public async Task<List<OEmpmasModel>> _02Empmas_ByInsurance_And_Status(int filterValue,  List<string?>? statuses,  DateTime? startDate, DateTime? endDate, string schema, string conn)
     {
         var flds                = EmpmasFields();
@@ -255,6 +255,25 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
+    public async Task<List<OEmpmasModel>> _02Empmas_ResignedForTheMonth(int month, int year, string schema, string conn)
+    {
+        var flds = EmpmasFields();
+        List<OEmpmasModel> data = [];
+
+        string sql = $@"SELECT p.name PositionName,  s.Name EmpStatus, sr.Remarks Reason,
+                        {flds} FROM  {schema}.empmas e
+                        LEFT JOIN {schema}.position p on p.code = e.position_
+                        LEFT JOIN {schema}.empstat s on s.code = e.empstat_
+                        LEFT JOIN {schema}.statusremarks sr on sr.Empnumber = e.EmpNumber 
+                        WHERE Month(e.separate) = @Month AND Year(e.separate) = @Year
+                        order by emplastnm, empfirstnm
+                        ";
+
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year }, conn);
+        return data ?? [];
+    }
+
+    
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
     {
         string sql  = $@"select  * from {schema}.Coinfo ";
@@ -497,4 +516,5 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry(List<string?>? clients, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_EmployeeClearance(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByInsurance_And_Status(int filterValue, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ResignedForTheMonth(int month, int year, string schema, string conn);
 }   
