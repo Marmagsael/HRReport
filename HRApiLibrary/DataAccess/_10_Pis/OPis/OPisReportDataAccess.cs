@@ -255,7 +255,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
-    public async Task<List<OEmpmasModel>> _02Empmas_ResignedForTheMonth(int month, int year, string schema, string conn)
+    public async Task<List<OEmpmasModel>> _02Empmas_ByDateResigned(int month, int year, string schema, string conn)
     {
         var flds = EmpmasFields();
         List<OEmpmasModel> data = [];
@@ -273,7 +273,33 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         return data ?? [];
     }
 
-    
+    public async Task<List<OEmpmasModel>> _02Empmas_ByDateHired(List<string?>? clients, List<string?>? statuses,int category, int lnmonths, string schema, string conn)
+    {
+        var flds = EmpmasFields();
+        List<OEmpmasModel> data = [];
+
+        string sql = "";
+        if (category == 1)
+        {
+            sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus  FROM {schema}.empmas e
+                    LEFT JOIN {schema}.client c on c.clnumber = e.client_
+                    LEFT JOIN {schema}.empstat s on s.code = e.empstat_
+                    WHERE e.client_ in @Clients AND e.empstat_ in @Statuses
+                    AND datehired >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL @Lnmonths MONTH), '%Y-%m-01')
+                    AND datehired <  DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL (@Lnmonths - 1) MONTH), '%Y-%m-01')
+                    ORDER BY emplastnm, empfirstnm;";
+        }
+        else
+        {
+            sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus  FROM {schema}.empmas e c.ClName, s.Name EmpStat  FROM {schema}.empmas e
+                    LEFT JOIN {schema}.client c on c.clnumber = e.client_
+                    LEFT JOIN {schema}.empstat s on s.code = e.empstat_
+                    WHERE e.client_ in @Clients AND e.empstat_ in @Statuses AND DATE(datehired) = DATE_SUB(CURDATE(), INTERVAL @Lnmonths MONTH) ORDER BY emplastnm, empfirstnm;";
+        }
+
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clients = clients, Statuses = statuses, Lnmonths = lnmonths }, conn);
+        return data ?? [];
+    }
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
     {
         string sql  = $@"select  * from {schema}.Coinfo ";
@@ -500,6 +526,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         OR STATUSDATE   < '1800-01-01';"; 
         await _sql.ExecuteCmd<dynamic>(sql, new{}, conn); 
     }
+
 }
 
 public interface IOPisReportDataAccess
@@ -516,5 +543,6 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_ByLicenseExpiry(List<string?>? clients, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_EmployeeClearance(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByInsurance_And_Status(int filterValue, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
-    Task<List<OEmpmasModel>>        _02Empmas_ResignedForTheMonth(int month, int year, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ByDateResigned(int month, int year, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ByDateHired(List<string?>? clients, List<string?>? statuses, int category, int lnmonths, string schema, string conn);
 }   
