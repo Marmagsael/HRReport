@@ -266,38 +266,65 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         LEFT JOIN {schema}.empstat s on s.code = e.empstat_
                         LEFT JOIN {schema}.statusremarks sr on sr.Empnumber = e.EmpNumber 
                         WHERE Month(e.separate) = @Month AND Year(e.separate) = @Year
-                        order by emplastnm, empfirstnm
-                        ";
+                        order by emplastnm, empfirstnm";
 
         data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year }, conn);
         return data ?? [];
     }
+
+   
 
     public async Task<List<OEmpmasModel>> _02Empmas_ByDateHired(List<string?>? clients, List<string?>? statuses,int category, int lnmonths, string schema, string conn)
     {
         var flds = EmpmasFields();
         List<OEmpmasModel> data = [];
 
-        string sql = "";
+        DateTime startDate;
+        DateTime endDate;
+
         if (category == 1)
         {
-            sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus  FROM {schema}.empmas e
-                    LEFT JOIN {schema}.client c on c.clnumber = e.client_
-                    LEFT JOIN {schema}.empstat s on s.code = e.empstat_
-                    WHERE e.client_ in @Clients AND e.empstat_ in @Statuses
-                    AND datehired >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL @Lnmonths MONTH), '%Y-%m-01')
-                    AND datehired <  DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL (@Lnmonths - 1) MONTH), '%Y-%m-01')
-                    ORDER BY emplastnm, empfirstnm;";
+            startDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-lnmonths);
+            endDate = startDate.AddMonths(1);
         }
         else
         {
-            sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus FROM {schema}.empmas e
-                    LEFT JOIN {schema}.client c on c.clnumber = e.client_
-                    LEFT JOIN {schema}.empstat s on s.code = e.empstat_
-                    WHERE e.client_ in @Clients AND e.empstat_ in @Statuses AND DATE(datehired) = DATE_SUB(CURDATE(), INTERVAL @Lnmonths MONTH) ORDER BY emplastnm, empfirstnm;";
+            startDate = DateTime.Today.AddMonths(-lnmonths);
+            endDate = startDate.AddDays(1);
         }
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clients = clients, Statuses = statuses, Lnmonths = lnmonths }, conn);
+        string sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus  FROM {schema}.empmas e
+                        LEFT JOIN {schema}.client c ON c.clnumber = e.client_
+                        LEFT JOIN {schema}.empstat s ON s.code = e.empstat_
+                        WHERE e.client_ IN @Clients 
+                          AND e.empstat_ IN @Statuses
+                          AND e.datehired >= @StartDate 
+                          AND e.datehired < @EndDate
+                        ORDER BY emplastnm, empfirstnm;";
+
+        data = await _sql.FetchData<OEmpmasModel, dynamic>( sql, new { Clients = clients, Statuses = statuses, StartDate = startDate, EndDate = endDate },conn);
+        return data ?? [];
+    }
+
+    public async Task<List<OEmpmasModel>> _02Empmas_ForRegularization(List<string?>? statuses, int year, int month, string schema, string conn)
+    {
+        var flds = EmpmasFields();
+        List<OEmpmasModel> data = new List<OEmpmasModel>();
+
+        var startDate = new DateTime(year, month, 1).AddMonths(-6);
+        var endDate = startDate.AddMonths(1);
+
+        string sql = $@"SELECT {flds}, c.ClName, s.Name AS EmpStatus
+                        FROM {schema}.empmas e
+                        LEFT JOIN {schema}.client c ON c.clnumber = e.client_
+                        LEFT JOIN {schema}.empstat s ON s.code = e.empstat_
+                        WHERE e.empstat_ IN @Statuses
+                            AND e.datehired >= @StartDate
+                            AND e.datehired < @EndDate
+                            AND (e.regref IS NULL OR e.regref = '1900-01-01')
+                        ORDER BY e.emplastnm, e.empfirstnm; ";
+
+        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, StartDate = startDate, EndDate = endDate }, conn);
         return data ?? [];
     }
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
@@ -545,4 +572,5 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>>        _02Empmas_ByInsurance_And_Status(int filterValue, List<string?>? statuses, DateTime? startDate, DateTime? endDate, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByDateResigned(int month, int year, string schema, string conn);
     Task<List<OEmpmasModel>>        _02Empmas_ByDateHired(List<string?>? clients, List<string?>? statuses, int category, int lnmonths, string schema, string conn);
+    Task<List<OEmpmasModel>>        _02Empmas_ForRegularization(List<string?>? statuses, int year, int month, string schema, string conn);
 }   
