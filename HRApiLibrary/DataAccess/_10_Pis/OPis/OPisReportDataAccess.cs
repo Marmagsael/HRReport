@@ -291,7 +291,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         }
         else
         {
-            sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus  FROM {schema}.empmas e c.ClName, s.Name EmpStat  FROM {schema}.empmas e
+            sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus FROM {schema}.empmas e
                     LEFT JOIN {schema}.client c on c.clnumber = e.client_
                     LEFT JOIN {schema}.empstat s on s.code = e.empstat_
                     WHERE e.client_ in @Clients AND e.empstat_ in @Statuses AND DATE(datehired) = DATE_SUB(CURDATE(), INTERVAL @Lnmonths MONTH) ORDER BY emplastnm, empfirstnm;";

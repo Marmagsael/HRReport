@@ -80,7 +80,7 @@
     V00_RepVars rv { get; set; } = new();
     V2106Model v = new();
     int customMonthsAgo = 0;
-   
+
 
     // Gets the latest selected employee statuses/clients every time it is called
     List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
@@ -108,17 +108,16 @@
 
     private void InitializeReport()
     {
-        rv = new()
+
+        rv.RefreshToken = 210600000;
+        rv.MCaption = "Hired Date Report";
+        rv.ReportParams = new()
         {
-            RefreshToken = 210600000,
-            MCaption = "Hired Date Report",
-            ReportParams = new()
-            {
-                ["CoName"] = "-",
-                ["CoAddress"] = "-",
-                ["RunDate"] = DateTime.Now
-            }
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["RunDate"] = DateTime.Now
         };
+
 
         rv.DataFilters = new List<V00_RepVars.DataFilterModel>
         {
@@ -184,25 +183,27 @@
         if (v.SelectedMonthsAgo == 1)       v.LnMonths = 3;
         else if(v.SelectedMonthsAgo == 2)   v.LnMonths = 5;
         else                                v.LnMonths = customMonthsAgo;
-      
+
 
         try
         {
             rv.Isloaded = true;
 
             var res = await _pisRep._02Empmas_ByDateHired(clients, statuses, rv.SelectedFilter, v.LnMonths, Uc.OpisDb!, Uc.Conn!);
-            v.RepDtls = res.Select(r => new R2106Model
+            if ((res ?? []).Any())
             {
-                EmpNumber = r.EmpNumber,
-                EmpName = r.EmpName,
-                EmpLastNm = r.EmpLastNm,
-                EmpFirstNm = r.EmpFirstNm,
-                DateHired = r.DateHired,
-                EmpStatus = r.EmpStatus,
-                Client_   = r.Client_,
-                ClName    = r.ClName,
-            }).ToList();
-
+                v.RepDtls = res!.Select(r => new R2106Model
+                {
+                    EmpNumber   = r.EmpNumber,
+                    EmpName     = r.EmpName,
+                    EmpLastNm   = r.EmpLastNm,
+                    EmpFirstNm  = r.EmpFirstNm,
+                    DateHired   = r.DateHired,
+                    EmpStatus   = r.EmpStatus,
+                    Client_     = r.Client_,
+                    ClName      = r.ClName,
+                }).ToList();
+            }
         }
         catch (Exception ex)
         {
@@ -236,6 +237,24 @@
         if (!(statuses ?? []).Any())
         {
             Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status to proceed.");
+            return false;
+        }
+
+        if (rv.SelectedFilter == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one date filter to proceed.");
+            return false;
+        }
+
+        if (v.SelectedMonthsAgo == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter the duration to proceed.");
+            return false;
+        }
+
+        if (customMonthsAgo < 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter a correct the duration to proceed.");
             return false;
         }
 
