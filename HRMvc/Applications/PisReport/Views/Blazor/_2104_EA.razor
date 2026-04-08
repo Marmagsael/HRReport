@@ -112,7 +112,7 @@
         });
     }
 
- 
+
 
     //===================================
     // Core Functions ====================
@@ -175,13 +175,14 @@
         {
             Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
             Console.WriteLine(ex);
+            return;
         }
         finally
         {
             rv.Isloaded = false;
         }
 
-        if (!v.RepDtls.Any())
+        if (!(v.RepDtls ?? []).Any())
         {
             Notify(NotificationSeverity.Info,"Info","No data found for this period.");
             return;
@@ -229,14 +230,14 @@
 
     private void SortBy()
     {
-        if (!v.RepDtls.Any()) { return; }
+        if (!(v.RepDtls ?? []).Any())  return; 
 
         IOrderedEnumerable<R2104Model> sorted;
 
         if (v.IsGroupByClient)
         {
             // Always keep Client ascending
-            sorted = v.RepDtls.OrderBy(x => x.ClName);
+            sorted = v.RepDtls!.OrderBy(x => x.ClName);
 
             // Then sort by EmpName or Age
             if (rv.SortFld == "EmpName")
@@ -255,13 +256,13 @@
             // If no grouping is applied, sort by Empname or Age
             if (rv.SortFld == "EmpName")
             {
-                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
-                                        : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+                sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
             }
             else
             {
-                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
-                                        : v.RepDtls.OrderByDescending(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+                sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
             }
         }
 
