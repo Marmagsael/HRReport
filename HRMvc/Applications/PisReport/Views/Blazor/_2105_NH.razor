@@ -13,7 +13,12 @@
     <Details>
 
         <_00Loader Rv="@rv" />
-        <_02BTRep Rv="rv" ChildAction="ChildActionCatcher" />
+        @if ((v.RepDtls ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------------------*@
+            <_02BTRep Rv="rv" ChildAction="ChildActionCatcher" />
+        }
+       
 
         @*--- Filter and Button ------------------------------------------------*@
         <div class="p-0">
@@ -62,57 +67,67 @@
 
     protected override async Task OnInitializedAsync()
     {
+
         if (!HasConnection()) return;
 
-        rv = new()
-        {
-            MCaption = "Newly Hired For The Month",
-            RefreshToken = 21050000,
-            ReportParams = new()
-            {
-                ["CoName"] = "-",
-                ["CoAddress"] = "-",
-                ["ReportTitle"] = "Newly Hired Employees",
-                ["RunDate"] = DateTime.Now
-            }
-        };
+        InitializeReport();
+        await LoadInitialData();
+    }
 
+    //===================================
+    // Initial Data =====================
+    private void InitializeReport()
+    {
+        rv.MCaption = "Newly Hired For The Month";
+        rv.RefreshToken = 21050000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "Newly Hired Employees",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadInitialData()
+    {
         await LoadCompanyInfo();
     }
 
-
-    async Task LoadCompanyInfo()
+    private async Task LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
 
-        if (res?.Any() == true)
-        {
-            var r = res.First();
-            rv.ReportParams["CoName"] = r.CoName ?? "";
-            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
-        }
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
     }
 
+   
 
+    //===================================
+    // Core Functions ====================
     private void ChildActionCatcher()
     {
         if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
     }
 
 
     async Task FetchData()
     {
         ResetVars();
-        if (!HasConnection()) return;
+        if (!HasConnection() || !ValidateFilters()) return;
 
         try
         {
             rv.Isloaded = true;
             var res = await _pisRep._02Empmas_ByMonth_And_Year("datehired", Convert.ToInt32(rv.Month), rv.Year, Uc.OpisDb!, Uc.Conn!);
 
-            if (res?.Any() == true)
+            if ((res ?? []).Any())
             {
-                v.RepDtls = res.Select(r => new R2105Model
+                v.RepDtls = res!.Select(r => new R2105Model
                 {
                     EmpNumber       = r.EmpNumber,
                     EmpName         = r.EmpName,
@@ -144,13 +159,50 @@
 
     }
 
+    private bool ValidateFilters()
+    {
+        if (rv.Year == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a year.");
+            return false;
+        }
+
+        if (rv.Month == string.Empty || rv.Month == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a month.");
+            return false;
+        }
+        return true;
+    }
+
+   
+    private void SortBy()
+    {
+        if (!(v.RepDtls ?? []).Any()) return;
+        IOrderedEnumerable<R2105Model> sorted;
+
+        if (rv.SortFld == "EmpName")
+        {
+            sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+        }
+
+        else
+        {
+            sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
     private async Task CreateReport()
     {
         if (!v.RepDtls.Any()) { return; }
 
         rv.RelativePath = "";
-        rv.ReportData   = [];
-        rv.ReportData   = v.RepDtls;
+        rv.ReportData = [];
+        rv.ReportData = v.RepDtls;
 
         rv.RelativePath = "Reports/_02HR/K_2105_NH.trdp";
 
@@ -170,34 +222,16 @@
     }
 
 
-    private void SortBy()
-    {
-        if (!v.RepDtls.Any()) { return; }
-
-        Console.WriteLine(rv.SortOdr);
-        if (rv.SortFld == "EmpName")
-        {
-            var sorted = v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
-            v.RepDtls = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
-        }
-
-        if (rv.SortFld == "DateHired")
-        {
-            var sorted = v.RepDtls.OrderBy(x => x.DateHired);
-            v.RepDtls = rv.SortOdr == "asc" ? sorted.ToList() : sorted.Reverse().ToList();
-        }
-    }
-
-
     
+    //=====================================
+    // Helper Functions ===================
     private void ResetVars()
     {
-        v.RepDtls = [];
+        v.RepDtls = new();
         rv.ShowModal = false;
         rv.ShowReport = false;
 
-        if (rv.ReportFormats != null && rv.ReportFormats.Any()) rv.SelectedFormat = "PDF";
-
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
     }
 
     bool HasConnection()
@@ -207,6 +241,7 @@
             Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
             return false;
         }
+
         return true;
     }
 
@@ -220,5 +255,7 @@
             Duration = 5000
         });
     }
+
 }
+
 
