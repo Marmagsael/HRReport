@@ -21,7 +21,6 @@
         else
         {
 
-
             <div class="card m-2">
                 <div class="sticky-top bg-white ">
                     <div class=" border-bottom">
@@ -32,13 +31,17 @@
                                 @*-- Export Format ------------------------------------------------*@
                                 <div class="d-flex flex-row gap-2 card p-2 ">
                                     <div class="text-muted p-2 pe-4 border-end"> <small>Export Format </small> </div>
+                                    
                                     <_01ReportFormat Rv="@Rv" ChildAction="ValueChanged" />
+
                                     @*-- Show Report ------------------------------------------------*@
                                     <button class="p-2  card mb-cbtn mb-cbtn-gray 
                                         @(!(V.RepDtls?.Any() ?? false) ? "pe-none cursor-not-allowed opacity-50" : "")"
                                         disabled="@(!(V.RepDtls?.Any() ?? false))" 
                                         @onclick="CreateReport"> Show Report</button>
                                 </div>
+
+
                                 @*-- Group By ------------------------------------------------*@
                                 <div class="d-flex flex-row gap-2 card p-2 justify-content-center align-items-center">
                                     <div class="text-muted p-2 pe-4 border-end"> <small>Group By Curr. Deployment</small> </div>
@@ -46,11 +49,12 @@
                                         <RadzenSwitch @bind-Value=@V.IsGroupByClient Change="@GroupByClient" InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "Switch value" } })" class="custom-switch" />
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
 
+
+                    @*-- Grid ------------------------------------------------*@
                     <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
                         <div class="w-75p text-end pe-2">     No.</div>
                         <div class="w-100p">    Emp. No.</div>
@@ -69,35 +73,35 @@
                 @{
                     int ctr = 0; int row = 0; string stat = string.Empty;
                 }
-            @foreach (var v in V.RepDtls)
-            {
-                ctr++;
-                row++;
-                if (V.IsGroupByClient && stat != v.ClName)
+                @foreach (var v in V.RepDtls)
                 {
-                    stat = v?.ClName ?? "";
-                                <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@v.ClName</div>
+                    ctr++;
+                    row++;
+
+                    if (V.IsGroupByClient && stat != v.ClName)
+                    {
+                        stat = v?.ClName ?? "";
+                       <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@v.ClName</div>
+                    }
+
+                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !V.IsGroupByClient ? "bg-light" : "")">
+                        <div class="w-75p text-end pe-2">@ctr.</div>
+                        <div class="w-100p">@v.EmpNumber</div>
+                        <div class="w-250p">@v.EmpName</div>
+                        <div class="w-150p">@v.EmpBirth?.ToString("MM/dd/yyyy")</div>
+                        <div class="w-150p">@v.FullAge</div>
+                        <div class="w-350p">@v.ClName</div>
+
+                        <div class="w-150p">
+                            @if (v.EmpStatus.Trim() == "Active")
+                            {
+                                <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
+                            }
+                            else  @v.EmpStatus
+                        </div>
+                    </div>
                 }
-
-                            <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !V.IsGroupByClient ? "bg-light" : "")">
-                                <div class="w-75p text-end pe-2">@ctr.</div>
-                                <div class="w-100p">@v.EmpNumber</div>
-                                <div class="w-250p">@v.EmpName</div>
-                                <div class="w-150p">@v.EmpBirth?.ToString("MM/dd/yyyy")</div>
-                                <div class="w-150p">@v.FullAge</div>
-                                <div class="w-350p">@v.ClName</div>
-
-                                <div class="w-150p">
-                                    @if (v.EmpStatus.Trim() == "Active")
-                                    {
-                                        <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
-                                    }
-                                    else  @v.EmpStatus
-                                </div>
-                            </div>
-                         }
-            </div>
-
+                </div>
         }
 
     </Details>
@@ -110,18 +114,17 @@
 
     private async Task ValueChanged()
     {
-        await ChildAction.InvokeAsync();
+        await ChildAction.InvokeAsync(Rv);
     }
 
 
     private async Task CreateReport()
     {
-        if(!V.RepDtls.Any()){ return; }
-
+        if(!(V.RepDtls ?? []).Any()){ return; }
 
         Rv.RelativePath = "";
         Rv.ReportData   = [];
-        Rv.ReportData   = V.RepDtls;
+        Rv.ReportData   = V.RepDtls!;
 
         Rv.RelativePath = "Reports/_02HR/K_2104_EA.trdp";
         Rv.ReportParams["GroupByClient"] = V.IsGroupByClient;
@@ -153,17 +156,18 @@
 
     private async Task SortBy()
     {
-        if (!V.RepDtls.Any()) { return; }
-        V.Action = "SortBy";
+        if (!(V.RepDtls ?? []).Any())  return; 
+
+        V.Action        = "SortBy";
         await ChildAction.InvokeAsync(V);
     }
 
 
-    private void GroupByClient()
+    private async Task GroupByClient()
     {
         Rv.SortFld = "EmpName";
         Rv.SortOdr = "asc";
-        SortBy();
+        await SortBy(); 
     }
 
     void Notify(NotificationSeverity severity, string summary, string detail)
