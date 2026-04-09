@@ -52,41 +52,42 @@
                     </div>
                 </div>
 
-                @{
-                    int ctr = 0; int row = 0; string stat = string.Empty;
-                }
-                @foreach (var v in V.RepDtls)
+
+                @if ((V.RepDtls ?? []).Any())
                 {
-                    ctr++;
-                    row++;
+                    int ctr = 0;  string stat = string.Empty;
 
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") ">
-                        <div class="w-60p text-end pe-2">     @ctr.</div>
-                        <div class="w-100p">    @v.EmpNumber</div>
-                        <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-250p">    @v.Insurance</div>
-                        <div class="w-150p">    @v.PolicyNo</div>
-                        <div class="w-120p">    @v.FaceValue </div>
-                        <div class="w-100p text-end pe-2">    @v.Premium</div>
-                        <div class="w-120p text-center @(v.InsExpire.HasValue
-                                                 ? (DateTime.Today > v.InsExpire.Value ? "text-danger" 
-                                                 : (DateTime.Today >= v.InsExpire.Value.AddMonths(-1)? "text-warning" 
-                                                  : "")) 
-                                                  : "") ">
-                                                @(v.InsExpire.HasValue && v.InsExpire.Value != new DateTime(1900, 1, 1) ? v.InsExpire.Value.ToString("MM/dd/yyyy") : "")
-                </div>
-                        <div class="w-120p text-center">    @v.EmpBirth?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-120p text-center">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-150">
-                            @if (v.EmpStatus.Trim() == "Active")
-                                    {
-                                        <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
-                                    }
-                                    else @v.EmpStatus
+                    @foreach (var v in V.RepDtls)
+                    {
+                        ctr++;
+                        bool isEvenRow = ctr % 2 == 0;
+
+                        <div class="d-flex gap-2 border-bottom py-1 @(isEvenRow ? "bg-light" : "")">
+                            <div class="w-60p text-end pe-2">@ctr.</div>
+                            <div class="w-100p">@v.EmpNumber</div>
+                            <div class="w-250p">@v.EmpName</div>
+                            <div class="w-250p">@v.Insurance</div>
+                            <div class="w-150p">@v.PolicyNo</div>
+                            <div class="w-120p">@v.FaceValue</div>
+                            <div class="w-100p text-end pe-2">@v.Premium</div>
+                            <div class="w-120p text-center @(GetCssClass(v.InsExpire))">@FormatDate(v.InsExpire)</div>
+                            <div class="w-120p text-center">@FormatDate(v.EmpBirth)</div>
+                            <div class="w-120p text-center">@FormatDate(v.DateHired)</div>
+                            <div class="w-150p">
+                                @if (v.EmpStatus?.Trim() == "Active")
+                                {
+                                    <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
+                                }
+                                else
+                                {
+                                    @v.EmpStatus
+                                }
+                            </div>
                         </div>
-                    </div>
-
+                    }
                 }
+
+
             </div>
 
         }
@@ -99,6 +100,17 @@
     [Parameter] public V00_RepVars Rv { get; set; } = new();
     [Parameter] public V2110Model  V  { get; set; } = new();
     [Parameter] public EventCallback<object> ChildAction { get; set; }
+
+    private static readonly DateTime PlaceholderDate = new DateTime(1900, 1, 1);
+    private string FormatDate(DateTime? date)  => date.HasValue && date.Value != PlaceholderDate ? date.Value.ToString("MM/dd/yyyy") : "";
+
+    private string GetCssClass(DateTime? date)
+    {
+        if (!date.HasValue || date.Value == PlaceholderDate) return "";
+        if (DateTime.Today > date.Value) return "text-danger";
+        if (DateTime.Today >= date.Value.AddMonths(-1)) return "text-warning";
+        return "";
+    }
 
     private async Task CreateReport()
     {

@@ -55,46 +55,48 @@
                         <div class="w-75p text-end pe-2">No.    </div>
                         <div class="w-100p">    Emp. No.        </div>
                         <div class="w-250p">    Emp. Name  &nbsp; <_01SortByField ColName="EmpName" Rv="@Rv" ChildAction="SortBy" /></div>
-                        <div class="w-150p">    Curr. Status    </div>
                         <div class="w-200p">    License No.     </div>
-                        <div class="w-180p">    License Expiry &nbsp; <_01SortByField ColName="LicExpire" Rv="@Rv" ChildAction="SortBy" />
-                        </div>
+                        <div class="w-180p">    License Expiry &nbsp; <_01SortByField ColName="LicExpire" Rv="@Rv" ChildAction="SortBy" /> </div>
                         <div class="w-350p">    Curr. Deployment </div>
+                        <div class="w-150p">    Curr. Status    </div>
                     </div>
                 </div>
 
-                @{
-                    int ctr = 0; int row = 0; string stat = string.Empty;
-                }
-            @foreach (var v in V.RepDtls)
-            {
-                ctr++;
-                row++;
-                if (V.IsGroupByClient && stat != v.ClName.Trim())
+                @if((V.RepDtls ?? []).Any())
                 {
-                    stat = v?.ClName ?? "";
-                                <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@v.ClName</div>
-                }
+                    int ctr = 0; int row = 0; string stat = string.Empty;
+                    @foreach (var v in V.RepDtls)
+                    {
+                        ctr++;
+                        row++;
+                        if (V.IsGroupByClient && stat != v.ClName.Trim())
+                        {
+                            stat = v?.ClName ?? "";
+                            <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@v.ClName</div>
+                        }
 
-                            <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !V.IsGroupByClient ? "bg-light" : "")">
-                                <div class="w-75p text-end pe-2">@ctr.</div>
-                                <div class="w-100p">@v.EmpNumber</div>
-                                <div class="w-250p">@v.EmpName</div>
-                                <div class="w-150p">
-                                    @if (v.EmpStatus.Trim() == "Active")
-                                    {
-                                        <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
-                                    }
-                                    else @v.EmpStatus
-                    
+                        <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !V.IsGroupByClient ? "bg-light" : "")">
+                            <div class="w-75p text-end pe-2">@ctr.</div>
+                            <div class="w-100p">@v.EmpNumber</div>
+                            <div class="w-250p">@v.EmpName</div>
+                            
+                            <div class="w-200p">        @v.SecLicense </div>
+                            <div class="w-180p">        @(v.LicExpire?.ToString("MM/dd/yyyy") ?? "") </div>
+                            <div class="w-350p">        @v.ClName </div>
+                            <div class="w-150p">
+                                @if (v.EmpStatus.Trim() == "Active")
+                                {
+                                    <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
+                                }
+                                else
+                                {
+                                    @v.EmpStatus
+                                }
                                 </div>
-                                <div class="w-200p">        @v.SecLicense </div>
-                                <div class="w-180p">        @(v.LicExpire?.ToString("MM/dd/yyyy") ?? "") </div>
-                                <div class="w-350p">        @v.ClName </div>
-
-                               
-                            </div>
-                         }
+                        </div>
+                    }
+                }
+               
             </div>
 
         }

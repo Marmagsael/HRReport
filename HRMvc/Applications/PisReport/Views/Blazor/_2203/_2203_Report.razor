@@ -50,35 +50,39 @@
                     </div>
                 </div>
 
-                @{
-                    int ctr = 0; int row = 0; string stat = string.Empty;
-                }
+           
+
+            @if ((V.RepDtls ?? []).Any())
+            {
+                int ctr = 0;
+                string stat = string.Empty;
+
                 @foreach (var v in V.RepDtls)
                 {
                     ctr++;
-                    row++;
 
-                    if ( stat != v.ClName.Trim())
+                    // Group header
+                    if (stat != v.ClName?.Trim())
                     {
-                        stat = v?.ClName ?? "";
-                        <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@v.ClName</div>
+                        stat = v.ClName ?? "";
+                        <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@stat</div>
                     }
 
-                    <div class="d-flex gap-2 border-bottom py-1 " >
-                        <div class="w-75p text-end pe-2">     @ctr.</div>
-                        <div class="w-100p">    @v.EmpNumber</div>
-                        <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-100p text-center  @(v.Exp_Brgy.HasValue && DateTime.Today >= v.Exp_Brgy.Value.AddMonths(-1) ? "text-danger" : "")">       @(v.Exp_Brgy.HasValue && v.Exp_Brgy.Value != new DateTime(1900, 1, 1) ? v.Exp_Brgy.Value.ToString("MM/dd/yyyy") : "")</div>
-                        <div class="w-100p text-center  @(v.Exp_Court.HasValue && DateTime.Today >= v.Exp_Court.Value.AddMonths(-1) ? "text-danger" : "")">     @(v.Exp_Court.HasValue && v.Exp_Court.Value != new DateTime(1900, 1, 1) ? v.Exp_Court.Value.ToString("MM/dd/yyyy") : "")</div>
-                        <div class="w-100p text-center  @(v.Exp_Drug.HasValue && DateTime.Today >= v.Exp_Drug.Value.AddMonths(-1) ? "text-danger" : "")">       @(v.Exp_Drug.HasValue && v.Exp_Drug.Value != new DateTime(1900, 1, 1) ? v.Exp_Drug.Value.ToString("MM/dd/yyyy") : "") </div>
-                        <div class="w-100p text-center  @(v.Exp_Nbi.HasValue && DateTime.Today >= v.Exp_Nbi.Value.AddMonths(-1) ? "text-danger" : "")">         @(v.Exp_Nbi.HasValue && v.Exp_Nbi.Value != new DateTime(1900, 1, 1) ? v.Exp_Nbi.Value.ToString("MM/dd/yyyy") : "") </div>
-                        <div class="w-100p text-center  @(v.Exp_Neuro.HasValue && DateTime.Today >= v.Exp_Neuro.Value.AddMonths(-1) ? "text-danger" : "")">     @(v.Exp_Neuro.HasValue && v.Exp_Neuro.Value != new DateTime(1900, 1, 1) ? v.Exp_Neuro.Value.ToString("MM/dd/yyyy") : "")</div>
-                        <div class="w-100p text-center  @(v.Exp_Police.HasValue && DateTime.Today >= v.Exp_Police.Value.AddMonths(-1) ? "text-danger" : "")">   @(v.Exp_Police.HasValue && v.Exp_Police.Value != new DateTime(1900, 1, 1) ? v.Exp_Police.Value.ToString("MM/dd/yyyy") : "")</div>
-                        <div class="w-100p text-center  @(v.ExpMed.HasValue && DateTime.Today >= v.ExpMed.Value.AddMonths(-1) ? "text-danger" : "")">           @(v.ExpMed.HasValue && v.ExpMed.Value != new DateTime(1900, 1, 1) ? v.ExpMed.Value.ToString("MM/dd/yyyy") : "")</div>
-                        @* <div class="w-100p text-center">    @(v.ExpMed?.ToString("MM/dd/yyyy") ?? "")</div> *@
+                    <div class="d-flex gap-2 border-bottom py-1">
+                        <div class="w-75p text-end pe-2">@ctr.</div>
+                        <div class="w-100p">@v.EmpNumber</div>
+                        <div class="w-250p">@v.EmpName</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Brgy))">@FormatDate(v.Exp_Brgy)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Court))">@FormatDate(v.Exp_Court)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Drug))">@FormatDate(v.Exp_Drug)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Nbi))">@FormatDate(v.Exp_Nbi)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Neuro))">@FormatDate(v.Exp_Neuro)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Police))">@FormatDate(v.Exp_Police)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.ExpMed))">@FormatDate(v.ExpMed)</div>
                     </div>
-
                 }
+            }
+                
             </div>
 
         }
@@ -91,6 +95,17 @@
     [Parameter] public V00_RepVars              Rv  { get; set; } = new();
     [Parameter] public V2203Model               V   { get; set; } = new();
     [Parameter] public EventCallback<object>    ChildAction { get; set; }
+
+    private static readonly DateTime PlaceholderDate = new DateTime(1900, 1, 1);
+    private string FormatDate(DateTime? date)=> date.HasValue && date.Value != PlaceholderDate ? date.Value.ToString("MM/dd/yyyy") : "";
+
+    private string GetCssClass(DateTime? date)
+    {
+        if (!date.HasValue || date.Value == PlaceholderDate) return "";
+        if (DateTime.Today > date.Value) return "text-danger";
+        if (DateTime.Today >= date.Value.AddMonths(-1)) return "text-warning";
+        return "";
+    }
 
     private async Task CreateReport()
     {

@@ -42,7 +42,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         LEFT JOIN {schema}.EmpStat s ON s.Code = e.Empstat_
                         LEFT JOIN {schema}.Client  c ON c.ClNumber = e.Client_
                         WHERE e.Empstat_ IN @Statuses 
-                        {(clnumbers?.FirstOrDefault() ==  "-" ? "": " AND e.client_ IN @ClNumbers ")}
+                        AND IFNULL(e.client_ ,'-') IN @ClNumbers 
                         ORDER BY e.EmpLastNm, e.EmpFirstNm;";
         var data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers=clnumbers, Statuses = statuses }, conn);
         return data ?? [];
@@ -149,7 +149,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         string sql = $@"SELECT  {flds}, s.Name EmpStatus, c.clName from {schema}.Empmas e
                             LEFT JOIN {schema}.empstat s on s.code      = e.empstat_
                             LEFT JOIN {schema}.client c on e.client_    = c.clnumber  
-                            WHERE e.client_ in @Clients and e.empstat_ in @Statuses and e.LicExpire between @StartDate and @EndDate 
+                            WHERE IFNULL(e.client_ ,'-') in @Clients and e.empstat_ in @Statuses and e.LicExpire between @StartDate and @EndDate 
                             order by empLastNm, EmpFirstNm ";
 
         data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new {  Clients = clients, Statuses = statuses, StartDate = mstartDate, EndDate = mendDate }, conn);
@@ -247,7 +247,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         sql = $@"SELECT  {flds},c.clnumber,c.clname, s.Name Empstatus FROM {schema}.empmas e 
                 INNER JOIN {schema}.client c  ON c.clnumber = e.client_
                 LEFT JOIN {schema}.empstat s on s.code = e.empstat_
-                WHERE  e.client_ in @ClNumbers
+                WHERE IFNULL(e.client_ ,'-') in @ClNumbers
                 AND e.empstat_ in @Statuses
                 AND e.movmode = 'A'
             ORDER BY c.clname, e.emplastnm, e.empfirstnm;";
@@ -296,7 +296,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         string sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus  FROM {schema}.empmas e
                         LEFT JOIN {schema}.client c ON c.clnumber = e.client_
                         LEFT JOIN {schema}.empstat s ON s.code = e.empstat_
-                        WHERE e.client_ IN @Clients 
+                        WHERE IFNULL(e.client_ ,'-') IN @Clients 
                           AND e.empstat_ IN @Statuses
                           AND e.datehired >= @StartDate 
                           AND e.datehired < @EndDate
@@ -321,7 +321,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         WHERE e.empstat_ IN @Statuses
                             AND e.datehired >= @StartDate
                             AND e.datehired < @EndDate
-                            AND (e.regref IS NULL OR e.regref = '1900-01-01')
+                            AND (e.regref IS NULL OR e.regref <= '1901-01-01')
                         ORDER BY e.emplastnm, e.empfirstnm; ";
 
         data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, StartDate = startDate, EndDate = endDate }, conn);
