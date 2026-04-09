@@ -29,7 +29,6 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
 
     }
 
-
     public async Task<LeaveapplicationModel?> _02(int id, string schema, string conn)
     {
         string sql  = $@"select  Id, Yr, EmpmasId, DateApplied, LeaveTypeId, LvBalance, DaysCnt, LvTime, DaysWithPay, 
@@ -37,6 +36,16 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
                          from {schema}.Leaveapplication where Id = @Id";
         var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
+    }
+    
+    public async Task<List<LeaveapplicationModel?>?> _02ByRequest(int empmasId, string schema, string conn)
+    {
+        string sql  = $@"select  Id, Yr, EmpmasId, DateApplied, LeaveTypeId, LvBalance, DaysCnt, LvTime, DaysWithPay, 
+                                 Urgency, LvStart, LvEnd, Reason, Address, TelNo, Approver1Id, Approver2Id, Approver3Id, Status 
+                         from {schema}.Leaveapplication where EmpmasId = @EmpmasId and Status in ('S','F') ";
+        var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
+        return data;
+
     }
     
     public async Task<double> _02LvBalance(int lvTypeId, int empmasId, int yr, string schema, string conn)
@@ -49,7 +58,7 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         if (lvTotal < 1) return 0;
 
         string  q2 = @$"select sum(DaysWithPay) DaysWithPay from {schema}.leaveapplication  
-                            where EmpmasId = @EmpmasId and LeaveTypeId = @LvTypeId and Year = @Year 
+                            where EmpmasId = @EmpmasId and LeaveTypeId = @LvTypeId and Yr = @Year 
                                   and Status in ('A', 'FA')  ";
         var     r2 = await _sql.FetchData<LeaveapplicationModel?, 
                         dynamic>(q2, new { EmpmasId = empmasId, LvTypeId = lvTypeId, Year = yr }, conn);
@@ -62,7 +71,6 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         return lvBal;
     }
 
-    
     public async Task<List<LeaveapplicationModel?>?> _02Chk_Entry_LvType(int leaveTypeId, string schema, string conn)
     {
         string sql  = $@"select  * from {schema}.Leaveapplication where LeaveTypeId = @LeaveTypeId limit 1 ";
@@ -76,7 +84,6 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         string sql = $@"Update {schema}.Leaveapplication set 
                             Yr          = @Yr,  
                             EmpmasId    = @EmpmasId,  
-                            DateApplied = @DateApplied,  
                             LeaveTypeId = @LeaveTypeId,  
                             LvBalance   = @LvBalance,  
                             DaysCnt     = @DaysCnt,  
