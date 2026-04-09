@@ -132,7 +132,7 @@
         });
     }
 
-  
+
     private void ChildActionCatcher()
     {
         if (v.Action == "SortBy") SortBy();
@@ -193,10 +193,28 @@
 
     private bool ValidateFilters()
     {
+        if (rv.SelectedFilter == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one option in the 'Filter By' section to proceed.");
+            return false;
+        }
+
+        if (rv.DStart == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a start date to proceed.");
+            return false;
+        }
+
+        if (rv.DEnd == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a end date to proceed.");
+            return false;
+        }
+
 
         if (!statuses.Any())
         {
-            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status.");
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status to proceed.");
             return false;
         }
 
@@ -205,27 +223,20 @@
 
     private void SortBy()
     {
-        IOrderedEnumerable<R2110Model> sorted = v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+        IOrderedEnumerable<R2110Model> sorted;
 
-        if (v.IsGroupByClient)
+
+        if (rv.SortFld == "EmpName")
         {
-            sorted = v.RepDtls.OrderBy(x => x.ClName);
-
-            if (rv.SortFld == "EmpName")
-            {
-                sorted = rv.SortOdr == "asc"
-                    ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
-                    : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
-            }
+            sorted = rv.SortOdr == "asc"
+                ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
         }
         else
         {
-            if (rv.SortFld == "EmpName")
-            {
-                sorted = rv.SortOdr == "asc"
-                    ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
-                    : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
-            }
+            sorted = rv.SortOdr == "asc"
+               ? v.RepDtls.OrderBy(x => x.InsExpire).ThenBy(x => x.EmpFirstNm)
+               : v.RepDtls.OrderByDescending(x => x.InsExpire).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
         }
 
         v.RepDtls = sorted.ToList();
@@ -236,6 +247,8 @@
         v.RepDtls = new();
         rv.ShowModal = false;
         rv.ShowReport = false;
+        v.IsGroupByClient = false;
+
 
         if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
     }

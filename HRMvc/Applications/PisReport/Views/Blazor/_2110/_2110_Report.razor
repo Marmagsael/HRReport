@@ -40,12 +40,12 @@
                     <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
                         <div class="w-60p text-end pe-2">     No.</div>
                         <div class="w-100p">    Emp. No.</div>
-                        <div class="w-250p">    Emp. Name</div>
+                        <div class="w-250p">    Emp. Name  &nbsp; <_01SortByField ColName="EmpName" Rv="@Rv" ChildAction="SortBy" /></div>
                         <div class="w-250p">    Insurance Company</div>
                         <div class="w-150p">    Policy No.</div>
-                        <div class="w-120p">    Face Value </div>
+                        <div class="w-120p text-end pe-2">    Face Value </div>
                         <div class="w-100p  text-end pe-2">    Premium</div>
-                        <div class="w-120p text-center">    Exp. Date</div>
+                        <div class="w-120p text-center">    Exp. Date  &nbsp; <_01SortByField ColName="InsExpire" Rv="@Rv" ChildAction="SortBy" /></div>
                         <div class="w-120p text-center">    Date of Birth</div>
                         <div class="w-120p text-center">    Date Hired</div>
                         <div class="w-150p"> Curr. Status</div>
@@ -68,8 +68,8 @@
                             <div class="w-250p">@v.EmpName</div>
                             <div class="w-250p">@v.Insurance</div>
                             <div class="w-150p">@v.PolicyNo</div>
-                            <div class="w-120p">@v.FaceValue</div>
-                            <div class="w-100p text-end pe-2">@v.Premium</div>
+                            <div class="w-120p text-end pe-2">@v.FaceValue?.ToString("N2")</div>
+                            <div class="w-100p text-end pe-2">@v.Premium?.ToString("N2")</div>
                             <div class="w-120p text-center @(GetCssClass(v.InsExpire))">@FormatDate(v.InsExpire)</div>
                             <div class="w-120p text-center">@FormatDate(v.EmpBirth)</div>
                             <div class="w-120p text-center">@FormatDate(v.DateHired)</div>
@@ -101,15 +101,28 @@
     [Parameter] public V2110Model  V  { get; set; } = new();
     [Parameter] public EventCallback<object> ChildAction { get; set; }
 
-    private static readonly DateTime PlaceholderDate = new DateTime(1900, 1, 1);
-    private string FormatDate(DateTime? date)  => date.HasValue && date.Value != PlaceholderDate ? date.Value.ToString("MM/dd/yyyy") : "";
+    private static readonly DateTime PlaceholderDate = new DateTime(1902, 1, 1);
+    private string FormatDate(DateTime? date)  => date.HasValue && date.Value > PlaceholderDate ? date.Value.ToString("MM/dd/yyyy") : "";
 
     private string GetCssClass(DateTime? date)
     {
-        if (!date.HasValue || date.Value == PlaceholderDate) return "";
-        if (DateTime.Today > date.Value) return "text-danger";
-        if (DateTime.Today >= date.Value.AddMonths(-1)) return "text-warning";
+        if (!date.HasValue || date.Value == PlaceholderDate)
+            return "";
+
+        if (DateTime.Today > date.Value)
+            return "text-danger"; //  Expired
+
+        if (DateTime.Today >= date.Value.AddMonths(-1) && DateTime.Today <= date.Value)
+            return "text-warning"; //  Expiring within 1 month
+
         return "";
+    }
+
+    private async Task SortBy()
+    {
+        if (!V.RepDtls.Any()) { return; }
+        V.Action = "SortBy";
+        await ChildAction.InvokeAsync(V);
     }
 
     private async Task CreateReport()

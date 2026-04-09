@@ -62,37 +62,42 @@
                     </div>
                 </div>
 
-                @{
-                    int ctr = 0; int row = 0; string stat = string.Empty;
-                }
-                @foreach (var v in V.RepDtls)
+                @if((V.RepDtls ?? []).Any())
                 {
-                    ctr++;
-                    row++;
-
-                    if (V.IsGroupByClient && stat != v.ClName.Trim())
+                    int ctr = 0; int row = 0; string stat = string.Empty;
+                    @foreach (var v in V.RepDtls)
                     {
-                        stat = v?.ClName ?? "";
-                        <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@v.ClName</div>
-                    }
+                        ctr++;
+                        row++;
 
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !V.IsGroupByClient ? "bg-light" : "") ">
-                        <div class="w-60p text-end pe-2">     @ctr.</div>
-                        <div class="w-150p">    @v.EmpNumber</div>
-                        <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-350p">    @v.ClName</div>
-                        <div class="w-200p">
-                            @if (v.EmpStatus.Trim() == "Active")
-                            {
-                                <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
-                            }
-                            else @v.EmpStatus
-                    
+                        if (V.IsGroupByClient && stat != v.ClName.Trim())
+                        {
+                            stat = v?.ClName ?? "";
+                            ctr = 1;
+                            <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@stat</div>
+                        }
+
+                        <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 && !V.IsGroupByClient ? "bg-light" : "") ">
+                            <div class="w-60p text-end pe-2">     @ctr.</div>
+                            <div class="w-150p">    @v.EmpNumber</div>
+                            <div class="w-250p">    @v.EmpName</div>
+                            <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
+                            <div class="w-350p">    @v.ClName</div>
+                            <div class="w-200p">
+                                @if (v.EmpStatus.Trim() == "Active")
+                                {
+                                    <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
+                                }
+                                else
+                                {
+                                    @v.EmpStatus
+
+                                }
+                                </div>
                             </div>
-                    </div>
-
+                        }
                 }
+                    
             </div>
 
         }
@@ -128,7 +133,9 @@
         Rv.RelativePath = "";
         Rv.ReportData = [];
         Rv.ReportData = V.RepDtls;
-        Rv.ReportParams["ReportTitle"] = $"List of Employees Employed {V.LnMonths} Months From Hiring Date";
+        string monthtext = V.LnMonths == 1 ? "Month" : "Months";
+
+        Rv.ReportParams["ReportTitle"] = $"List of Employees Employed {V.LnMonths} {monthtext} From Hiring Date";
         Rv.ReportParams["GroupByClient"] = V.IsGroupByClient;
 
         Rv.RelativePath = "Reports/_02HR/K_2106_HDR.trdp";

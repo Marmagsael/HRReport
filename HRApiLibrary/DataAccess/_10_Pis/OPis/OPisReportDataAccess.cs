@@ -42,7 +42,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         LEFT JOIN {schema}.EmpStat s ON s.Code = e.Empstat_
                         LEFT JOIN {schema}.Client  c ON c.ClNumber = e.Client_
                         WHERE e.Empstat_ IN @Statuses 
-                        AND IFNULL(e.client_ ,'-') IN @ClNumbers 
+                        AND COALESCE(NULLIF(TRIM(e.client_), ''), '-') IN @ClNumbers 
                         ORDER BY e.EmpLastNm, e.EmpFirstNm;";
         var data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers=clnumbers, Statuses = statuses }, conn);
         return data ?? [];
@@ -115,18 +115,37 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         DateTime mendDate = xendDate.ToDateTime(TimeOnly.MaxValue);
 
         List<OEmpmasModel> data = [];
-    
-            string sql = $@"SELECT CONCAT_WS(' ',CONCAT(NULLIF(TRIM(e.emplastnm), ''), ','), NULLIF(TRIM(e.empfirstnm), ''),  NULLIF(TRIM(e.empmidnm), '')   ) AS EmpName,
-                           e.emplastnm, e.empfirstnm, e.empnumber, m.date movdate, m.reason Remarks, b.ClName
-                        FROM {schema}.movedtl m
-                        LEFT JOIN {schema}.movehdr a ON m.number = a.number
-                        LEFT JOIN {schema}.client b ON a.ClNumber = b.ClNumber
-                        LEFT JOIN {schema}.empmas e ON e.empnumber = m.empnumber
-                        WHERE m.mode = 'R'
-                          AND m.date >= @StartDate 
-                          AND m.date <= @EndDate
-                        ORDER BY e.emplastnm, e.empfirstnm";
 
+        //string sql = $@"SELECT CONCAT_WS(' ',CONCAT(NULLIF(TRIM(e.emplastnm), ''), ','), NULLIF(TRIM(e.empfirstnm), ''),  NULLIF(TRIM(e.empmidnm), '')   ) AS EmpName,
+        //               e.emplastnm, e.empfirstnm, e.empnumber, m.date movdate, m.reason Remarks, b.ClName
+        //            FROM {schema}.movedtl m
+        //            LEFT JOIN {schema}.movehdr a ON m.number = a.number
+        //            LEFT JOIN {schema}.client b ON a.ClNumber = b.ClNumber
+        //            LEFT JOIN {schema}.empmas e ON e.empnumber = m.empnumber
+        //            WHERE m.mode = 'R'
+        //              AND m.date >= @StartDate 
+        //              AND m.date <= @EndDate
+        //            ORDER BY e.emplastnm, e.empfirstnm";
+        string sql = $@"SELECT
+                        e.empnumber,
+                        CONCAT_WS(' ',CONCAT(NULLIF(TRIM(e.emplastnm), ''), ','), NULLIF(TRIM(e.empfirstnm), ''),  NULLIF(TRIM(e.empmidnm), '')   ) AS EmpName,
+                        e.emplastnm, e.empfirstnm,e.empmidnm,d.date AS movdate, d.reason AS Remarks,c.ClName
+                    FROM {schema}.movedtl d
+                    LEFT JOIN {schema}.movehdr h ON h.number = d.number
+                    LEFT JOIN {schema}.Client c ON c.ClNumber = h.ClNumber
+                    LEFT JOIN {schema}.empmas e ON e.empnumber = d.empnumber
+                    INNER JOIN (
+                        SELECT empnumber, MAX(date) AS MaxDate
+                        FROM {schema}.movedtl
+                        WHERE mode = 'R'
+                          AND date >= @StartDate
+                          AND date <= @EndDate
+                        GROUP BY empnumber
+                    ) dd ON d.empnumber = dd.empnumber AND d.date = dd.MaxDate
+                    WHERE d.mode = 'R'
+                      AND d.date >= @StartDate
+                      AND d.date <= @EndDate
+                    ORDER BY e.emplastnm, e.empfirstnm;";
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, }, conn);
         
         return data ?? [];
@@ -149,7 +168,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         string sql = $@"SELECT  {flds}, s.Name EmpStatus, c.clName from {schema}.Empmas e
                             LEFT JOIN {schema}.empstat s on s.code      = e.empstat_
                             LEFT JOIN {schema}.client c on e.client_    = c.clnumber  
-                            WHERE IFNULL(e.client_ ,'-') in @Clients and e.empstat_ in @Statuses and e.LicExpire between @StartDate and @EndDate 
+                            WHERE COALESCE(NULLIF(TRIM(e.client_), ''), '-') in @Clients and e.empstat_ in @Statuses and e.LicExpire between @StartDate and @EndDate 
                             order by empLastNm, EmpFirstNm ";
 
         data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new {  Clients = clients, Statuses = statuses, StartDate = mstartDate, EndDate = mendDate }, conn);
@@ -247,7 +266,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         sql = $@"SELECT  {flds},c.clnumber,c.clname, s.Name Empstatus FROM {schema}.empmas e 
                 INNER JOIN {schema}.client c  ON c.clnumber = e.client_
                 LEFT JOIN {schema}.empstat s on s.code = e.empstat_
-                WHERE IFNULL(e.client_ ,'-') in @ClNumbers
+                WHERE COALESCE(NULLIF(TRIM(e.client_), ''), '-') in @ClNumbers
                 AND e.empstat_ in @Statuses
                 AND e.movmode = 'A'
             ORDER BY c.clname, e.emplastnm, e.empfirstnm;";
@@ -296,7 +315,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         string sql = $@"SELECT {flds}, c.ClName, s.Name EmpStatus  FROM {schema}.empmas e
                         LEFT JOIN {schema}.client c ON c.clnumber = e.client_
                         LEFT JOIN {schema}.empstat s ON s.code = e.empstat_
-                        WHERE IFNULL(e.client_ ,'-') IN @Clients 
+                        WHERE COALESCE(NULLIF(TRIM(e.client_), ''), '-') IN @Clients 
                           AND e.empstat_ IN @Statuses
                           AND e.datehired >= @StartDate 
                           AND e.datehired < @EndDate
