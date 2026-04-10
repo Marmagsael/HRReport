@@ -98,6 +98,27 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         var data = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
+    
+    public async Task<LeaveapplicationModel?> _03SendForApproval(LeaveapplicationModel lva, string schema, string conn)
+    {
+        var     lvaId   = lva.Id; 
+        var     empasId = lva.EmpmasId; 
+        var     date    = DateTime.Now; 
+        string  action  = "Send for Approval";
+
+        string  sql     = $@"Update {schema}.Leaveapplication set Status      = 'F' where Id = @Id;
+                             
+                             Insert into {schema}.LeaveApplicationHist 
+                                (LvaId, EmpasId,  Date,  Action) values  (@id,   @EmpasId, @Date, @Action); 
+                             
+                             select  * from {schema}.Leaveapplication x where x.Id = @Id ; ";
+
+        var     data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>
+                          (sql, new { Id = lva.Id, LvaId = lvaId, EmpasId = empasId, Date = date, Action = action}, conn);
+
+        return  data?.FirstOrDefault();
+
+    }
 
     public async Task<LeaveapplicationModel?> _04(int id, string schema, string conn)
     {

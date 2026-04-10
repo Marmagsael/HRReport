@@ -9,6 +9,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<LeaveapplicationModel?>?>     _02Chk_Entry_LvType(int leaveTypeId, string schema, string conn);
         Task<double>                            _02LvBalance(int lvTypeId, int empmasId, int yr, string schema, string conn); 
         Task<LeaveapplicationModel?>            _03(int id, LeaveapplicationModel leaveapplication, string schema, string conn);
+        Task<LeaveapplicationModel?>            _03SendForApproval(LeaveapplicationModel lva, string schema, string conn); 
         Task<LeaveapplicationModel?>            _04(int id, string schema, string conn);
     }
 }

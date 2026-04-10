@@ -2281,8 +2281,15 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                               Approver2Id   INTEGER         UNSIGNED    DEFAULT 0,
                               Approver3Id   INTEGER         UNSIGNED    DEFAULT 0,
                               Status        VARCHAR(10)                 DEFAULT 'New',
-                        PRIMARY KEY(`Id`)) ENGINE = InnoDB;
-";
+                        PRIMARY KEY(`Id`)) ENGINE = InnoDB; 
+                    
+                    CREATE TABLE if not exists  {schema}.LeaveApplicationHist (
+                            Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            LvaId               INTEGER, 
+                            EmpasId             INTEGER UNSIGNED,
+                            Date                DATETIME,
+                            Action              VARCHAR(120),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
         
          sql = $@"CREATE TABLE if not exists {schema}.LeaveApplicationDtl (
