@@ -39,65 +39,73 @@
                     <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
                         <div class="w-75p text-end pe-2">     No.</div>
                         <div class="w-150p">    Emp. No.</div>
-                        <div class="w-250p">    Emp. Name</div>
-                        <div class="w-150p">    Date Hired</div>
-                        <div class="w-150p">    Date Regularization</div>
-                        <div class="w-150p">    Status</div>
-                        <div class="w-250p">    Deployment</div>
+                        <div class="w-250p">    Emp. Name   &nbsp; <_01SortByField ColName="EmpName" Rv="@Rv" ChildAction="SortBy" /></div>
+                        <div class="w-150p">    Date Hired  &nbsp; <_01SortByField ColName="DateHired" Rv="@Rv" ChildAction="SortBy" /></div>
+                        <div class="w-150p">    Exp. Regularization</div>
+                        <div class="w-250p">    Curr. Deployment</div>
+                        <div class="w-150p">    Curr. Status</div>
+
                     </div>
                 </div>
 
-                @{
-                    int ctr = 0; int row = 0; string stat = string.Empty;
-                }
-                @foreach (var v in V)
+                @if (V.RepDtls.Any())
                 {
-                    ctr++;
-                    row++;
+                    int ctr = 0; int row = 0; string stat = string.Empty;
+                
+                    foreach (var v in V.RepDtls)
+                    {
+                        ctr++;
+                        row++;
 
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " >
-                        <div class="w-75p text-end pe-2">     @ctr.</div>
-                        <div class="w-150p">    @v.EmpNumber</div>
-                        <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-150p">    @v.regref?.ToString("MM/dd/yyyy")</div>
-                        <div class="w-150p">    @v.StatusName</div>
-                        <div class="w-250p">    @v.ClName</div>
-                    </div>
-
+                        <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " >
+                            <div class="w-75p text-end pe-2">     @ctr.</div>
+                            <div class="w-150p">    @v.EmpNumber</div>
+                            <div class="w-250p">    @v.EmpName</div>
+                            <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
+                            <div class="w-150p">    @v.DateHired?.AddMonths(6).ToString("MM/dd/yyyy")</div>
+                            <div class="w-250p">    @v.ClName</div>
+                            <div class="w-150p">
+                                @if (v.StatusName.Trim() == "Active")
+                                {
+                                    <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
+                                }
+                                else @v.StatusName
+                    
+                            </div>
+                        </div>
+                    }
                 }
+               
             </div>
-
         }
 
     </Details>
 </_02BTModal>
 
-
-
-
-
-@inject IOCoinfoDataAccess          _coinfo;
-
-
-
 @code {
     [Parameter] public V00_RepVars              Rv  { get; set; } = new();
-    [Parameter] public List<V2107Model>         V   { get; set; } = new();
+    [Parameter] public V2107Model               V   { get; set; } = new();
     [Parameter] public EventCallback<object>    ChildAction { get; set; }
+
+    private async Task ValueChanged()
+    {
+        await ChildAction.InvokeAsync(Rv);
+    }
+
 
     private async Task CreateReport()
     {
-        Rv.RelativePath = "";
+        if (!(V.RepDtls ?? []).Any()) { return; }
 
-        Rv.ReportData = V;
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls!;
 
         int monthNumber = Convert.ToInt32(Rv.Month);
         string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
-
-        Rv.RelativePath = "Reports/_02HR/K_2107_FR.trdp"; 
+        Rv.RelativePath = "Reports/_02HR/K_2107_FR.trdp";
 
         Rv.ShowReport = true;
 
@@ -107,20 +115,30 @@
             Rv.ShowReport = false;
             Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
         }
+
+        await ChildAction.InvokeAsync(Rv);
     }
 
 
     private async Task CloseReportModal(bool ans)
     {
         if (Rv.ShowReport) Rv.ShowReport = ans;
-        else Rv.ShowModal = ans;
+        else
+        {
+            Rv.ShowModal = ans;
+            V.IsGroupByClient = false;
+        }
 
         await ChildAction.InvokeAsync(ans);
     }
 
-    private async Task ValueChanged()
+
+    private async Task SortBy()
     {
-        await ChildAction.InvokeAsync(Rv.SelectedFormat);
+        if (!(V.RepDtls ?? []).Any()) return;
+
+        V.Action = "SortBy";
+        await ChildAction.InvokeAsync(V);
     }
 
 
@@ -134,6 +152,6 @@
             Duration = 5000
         });
     }
-
-    
 }
+
+   

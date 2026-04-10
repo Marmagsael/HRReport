@@ -11,10 +11,10 @@
         @*--- Looader ------------------------------------------------*@
         <_00Loader Rv="@rv" />
 
-        @if ((v ?? []).Any())
+        @if ((v.RepDtls ?? []).Any())
         {
             @*--- Report ------------------------------------------------*@
-            <_2203_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
+            <_2203_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />
         }
 
         @*--- Filter and Button ------------------------------------------------*@
@@ -26,8 +26,11 @@
         </div>
 
 
-        @*--- Client List ------------------------------------------------*@
-        <div class="w-100"> <_00TClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
+        @*--- Client and Status List ------------------------------------------------*@
+        <div class="w-100 d-flex">
+            <div class="w-50"> <_00TClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
+            <div class="w-50"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
+        </div>
 
     </Details>
 </_00BT_FullW>
@@ -36,127 +39,212 @@
 
 
 @inject IOPisReportDataAccess _pisRep;
+@inject IOEmpstatDataAccess _empstat;
 @inject IOClientDataAccess _client;
+
+
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
     V00_RepVars rv { get; set; } = new();
-    List<V2203Model> v = [];
+    V2203Model v = new();
 
 
-    List<string?>? clients => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
+    private List<string?> statuses => rv.Empstats?.Where(x => x.IsSelectedB).Select(x => x.Code).ToList() ?? new();
+    private List<string?> clients => rv.Clients?.Where(x => x.IsSelectedB).Select(x => x.ClNumber).ToList() ?? new();
+
 
     protected override async Task OnInitializedAsync()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
-            return;
-        }
+        if (!HasConnection()) return;
 
+        InitializeReport();
+        await LoadInitialData();
+    }
+
+    private void InitializeReport()
+    {
         rv = new()
         {
-            RefreshToken = 21070000,
             MCaption = "Employee Clearance",
+            RefreshToken = 22030000,
             ReportParams = new()
             {
                 ["CoName"] = "-",
                 ["CoAddress"] = "-",
                 ["ReportTitle"] = "Employee Clearance Report",
                 ["RunDate"] = DateTime.Now
+            },
+            DataFilters = new()
+            {
+                new() { Code = 1, Name = "Current Deployment" }
             }
         };
+    }
 
+    private async Task LoadInitialData()
+    {
         await LoadCompanyInfo();
+        await LoadEmployeeStatus();
         await LoadClients();
     }
 
-    async Task LoadCompanyInfo()
+    private async Task LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() != true) return;
 
-        if (res?.Any() == true)
-        {
-            var r = res.First();
-            rv.ReportParams["CoName"] = r.CoName ?? "";
-            rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
-        }
+        var r = res.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
     }
 
-    async Task LoadClients()
+    private async Task LoadEmployeeStatus()
     {
-        rv.Clients = [];
+        var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() != true) return;
+
+        rv.Empstats = res;
+        rv.Empstats.ForEach(x =>
+        {
+            if (x.IsResigned == "0") x.IsSelectedB = true;
+        });
+    }
+
+    private async Task LoadClients()
+    {
         var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
-        if (res?.Any() == true) { rv.Clients = res!; }
+        if (res?.Any() == true) rv.Clients = res!;
+        rv.Clients.Insert(0, new() { ClNumber = "-", ClName = "Undeployed" });
     }
 
-    async Task FetchData()
+    private void ChildActionCatcher()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
-            return;
-        }
+        if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
+    }
 
-        v = [];
-        rv.ReportData = [];
-        rv.ShowModal = false;
+    private async Task FetchData()
+    {
+        ResetVars();
 
-        if (!(clients ?? []).Any())
-        {
-            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed..");
-            return;
-        }
+        if (!HasConnection() || !ValidateFilters()) return;
 
         try
         {
             rv.Isloaded = true;
 
-            var res = await _pisRep._02Empmas_EmployeeClerance(clients,  Uc.OpisDb!, Uc.Conn!);
-
-            if (res?.Any() == true)
+            var res = await _pisRep._02Empmas_EmployeeClearance(clients, statuses, Uc.OpisDb!, Uc.Conn!);
+            v.RepDtls = res.Select(r => new R2203Model
             {
-                v = res.Select(r => new V2203Model
-                {
-                    EmpNumber   = r.EmpNumber,
-                    EmpName     = r.EmpName,
-                    ClName      = r.ClName,
-                    Client_     = r.Client_,
-                    Exp_Brgy    = r.Exp_Brgy,
-                    Exp_Court   = r.Exp_Court,
-                    Exp_Drug    = r.Exp_Drug,
-                    Exp_Nbi     = r.Exp_Nbi,
-                    Exp_Neuro   = r.Exp_Neuro,
-                    Exp_Pnp     = r.Exp_Pnp,
-                    Exp_Police  = r.Exp_Police,
-                    ExpMed      = r.ExpMed,
-                }).ToList();
-            }
+                EmpNumber   = r.EmpNumber,
+                EmpName     = r.EmpName,
+                ClName      = string.IsNullOrWhiteSpace(r.ClName) ? "-" : r.ClName,
+                Client_     = r.Client_,
+                Exp_Brgy    = r.Exp_Brgy,
+                Exp_Court   = r.Exp_Court,
+                Exp_Drug    = r.Exp_Drug,
+                Exp_Nbi     = r.Exp_Nbi,
+                Exp_Neuro   = r.Exp_Neuro,
+                Exp_Pnp     = r.Exp_Pnp,
+                Exp_Police  = r.Exp_Police,
+                ExpMed      = r.ExpMed,
+                EmpLastNm   = r.EmpLastNm,
+                EmpFirstNm  = r.EmpFirstNm,
+            }).ToList();
+
         }
         catch (Exception ex)
         {
-            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh the page or contact your system administrator.");
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
             Console.WriteLine(ex);
-            return;
         }
         finally
         {
             rv.Isloaded = false;
         }
 
-        if (!v.Any())
+        if (v.RepDtls?.Any() != true)
         {
-            Notify(NotificationSeverity.Info, "Info", "No data found for this deployment.");
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
             return;
         }
 
-        rv.ReportData = v;
+
         rv.ShowModal = true;
+
     }
 
 
-    void ChildActionCatcher() { }
 
-    void Notify(NotificationSeverity severity, string summary, string detail)
+
+    private bool ValidateFilters()
+    {
+        if (!clients.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment.");
+            return false;
+        }
+
+        if (!statuses.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void SortBy()
+    {
+        IOrderedEnumerable<R2203Model> sorted = v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+
+        if (v.IsGroupByClient)
+        {
+            sorted = v.RepDtls.OrderBy(x => x.ClName);
+
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc"
+                    ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                    : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+        }
+        else
+        {
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc"
+                    ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                    : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
+    private void ResetVars()
+    {
+        v.RepDtls = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        v.IsGroupByClient = false;
+
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string summary, string detail)
     {
         _NotificationService.Notify(new NotificationMessage
         {
@@ -165,12 +253,5 @@
             Detail = detail,
             Duration = 5000
         });
-    }
-    bool HasConnection()
-    {
-        if (Uc == null) return false;
-        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
-        return true;
     }
 }

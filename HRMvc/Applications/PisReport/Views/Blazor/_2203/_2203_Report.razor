@@ -45,34 +45,45 @@
                         <div class="w-100p text-center">    Neuro</div>
                         <div class="w-100p text-center">    Police</div>
                         <div class="w-100p text-center">    Medical</div>
-                        <div class="w-100p text-center">    HEPA</div>
+                        @* <div class="w-100p text-center">    HEPA</div> *@
                         
                     </div>
                 </div>
 
-                @{
-                    int ctr = 0; int row = 0; string stat = string.Empty;
-                }
-                @foreach (var v in V)
+           
+
+            @if ((V.RepDtls ?? []).Any())
+            {
+                int ctr = 0;
+                string stat = string.Empty;
+
+                @foreach (var v in V.RepDtls)
                 {
                     ctr++;
-                    row++;
 
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " >
-                        <div class="w-75p text-end pe-2">     @ctr.</div>
-                        <div class="w-100p">    @v.EmpNumber</div>
-                        <div class="w-250p">    @v.EmpName</div>
-                        <div class="w-100p text-center">   @(v.Exp_Brgy?.ToString("MM/dd/yyyy") ?? "")</div>
-                        <div class="w-100p text-center">   @(v.Exp_Court?.ToString("MM/dd/yyyy") ?? "")</div>
-                        <div class="w-100p text-center">    @(v.Exp_Drug?.ToString("MM/dd/yyyy") ?? "")</div>
-                        <div class="w-100p text-center">    @(v.Exp_Nbi?.ToString("MM/dd/yyyy") ?? "")</div>
-                        <div class="w-100p text-center">    @(v.Exp_Neuro?.ToString("MM/dd/yyyy") ?? "")</div>
-                        <div class="w-100p text-center">    @(v.Exp_Police?.ToString("MM/dd/yyyy") ?? "")</div>
-                        <div class="w-100p text-center">    @(v.ExpMed?.ToString("MM/dd/yyyy") ?? "")</div>
-                        <div class="w-100p text-center">    @(v.ExpMed?.ToString("MM/dd/yyyy") ?? "")</div>
+                    // Group header
+                    if (stat != v.ClName?.Trim())
+                    {
+                        stat = v.ClName ?? "";
+                        ctr = 1;
+                        <div class="w-100 fw-bold border-bottom px-4 py-2 mt-2">@stat</div>
+                    }
+
+                    <div class="d-flex gap-2 border-bottom py-1">
+                        <div class="w-75p text-end pe-2">@ctr.</div>
+                        <div class="w-100p">@v.EmpNumber</div>
+                        <div class="w-250p">@v.EmpName</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Brgy))">@FormatDate(v.Exp_Brgy)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Court))">@FormatDate(v.Exp_Court)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Drug))">@FormatDate(v.Exp_Drug)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Nbi))">@FormatDate(v.Exp_Nbi)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Neuro))">@FormatDate(v.Exp_Neuro)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.Exp_Police))">@FormatDate(v.Exp_Police)</div>
+                        <div class="w-100p text-center @(GetCssClass(v.ExpMed))">@FormatDate(v.ExpMed)</div>
                     </div>
-
                 }
+            }
+                
             </div>
 
         }
@@ -83,20 +94,30 @@
 
 @code {
     [Parameter] public V00_RepVars              Rv  { get; set; } = new();
-    [Parameter] public List<V2203Model>         V   { get; set; } = new();
+    [Parameter] public V2203Model               V   { get; set; } = new();
     [Parameter] public EventCallback<object>    ChildAction { get; set; }
+
+    private static readonly DateTime PlaceholderDate = new DateTime(1901, 1, 1);
+    private string FormatDate(DateTime? date)=> date.HasValue && date.Value > PlaceholderDate ? date.Value.ToString("MM/dd/yyyy") : "";
+
+    private string GetCssClass(DateTime? date)
+    {
+        if (!date.HasValue || date.Value == PlaceholderDate) return "";
+        if (DateTime.Today > date.Value) return "text-danger";
+        if (DateTime.Today >= date.Value.AddMonths(-1)) return "text-primary";
+        return "";
+    }
 
     private async Task CreateReport()
     {
         Rv.RelativePath = "";
+        Rv.ReportData = V.RepDtls;
+        Rv.RelativePath = "Reports/_02HR/K_2203_EC.trdp";
 
-        int monthNumber = Convert.ToInt32(Rv.Month);
-        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+        int monthNumber     = Convert.ToInt32(Rv.Month);
+        string monthName    = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
-
-        Rv.RelativePath = "Reports/_02HR/K_2203_EC.trdp"; 
-
         Rv.ShowReport = true;
 
         if (Rv.SelectedFormat == "XLSX")

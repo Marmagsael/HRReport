@@ -48,107 +48,151 @@
 @code{
     [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
     V00_RepVars                         rv      = new();
-
     List<RSssPremModel?>?               reps    = []; 
 
-    List<string?>? clNumbers => rv.Clients.Where(c=>c.IsSelectedB).Select(c=>c.ClNumber).ToList()??[];
+    private List<string?> clients => rv.Clients?.Where(x => x.IsSelectedB).Select(x => x.ClNumber).ToList() ?? new();
 
-    string errorMsg = "";
 
     Dictionary<string, object> periodClass = new(){["FlexDirection"]   = "flex-column"};
     Dictionary<string, object> clientClass = new(){ ["VH"] = "vh77"};
 
-
     protected override async Task OnInitializedAsync()
     {
-        rv.Clients          = [];  
-        rv.RefreshToken     = 12520000;
-        rv.MCaption         = "SSS Contribution";
 
-        @* --- Payroll Group ------------------------------------------- *@
-        var resc = await _client._02ByStatuss("Active",Uc.OpisDb!, Uc.Conn!); 
-        if(resc.Count > 0 ) { rv.Clients = resc!;  }
-               
-        @* --- Report Details -------------------------------------------- *@
-        
-     
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        rv.ReportParams = [];
+        if (!HasConnection()) return;
 
-        rv.ReportParams["CoName"] = "-";
-        rv.ReportParams["CoAddress"] = "-";
-
-        if (res.Count > 0)
-        {
-            var r = res.FirstOrDefault();
-            rv.ReportParams["CoName"]       = r.CoName ?? "";
-            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
-        }
-
-        rv.ReportParams["ReportTitle"]      = "SSS Contribution";
-        rv.ReportParams["RunDate"]          = DateTime.Now;
+        InitializeReport();
+        await LoadInitialData();
     }
 
+    //===================================
+    // Initial Data =====================
+    private void InitializeReport()
+    {
+        rv.RefreshToken     = 12520000;
+        rv.MCaption         = "SSS Contribution";
+        rv.ReportParams     = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "SSS Contribution",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadInitialData()
+    {
+        await LoadCompanyInfo();
+        await LoadClients();
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+    private async Task LoadClients()
+    {
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() == true) rv.Clients = res!;
+        // rv.Clients.Insert(0, new() { ClNumber = "-", ClName = "Undeployed" });
+    }
+
+    
 
     void ChildActionCatcher(){}
 
-    async Task FetchData()
+    private async Task FetchData()
     {
-        rv.ShowReport = false;
-        rv.ShowModal  = false;
+        ResetVars();
 
-        if (!(clNumbers ?? []).Any())
-        {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Warning,
-                Summary = "Warning",
-                Detail = $"Please select at least one deployment to proceed.",
-                Duration = 4000
-            });
-            return;
-        }
+        if (!HasConnection() || !ValidateFilters()) return;
 
         try
         {
             rv.Isloaded = true;
-
-            reps = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clNumbers!, rv.Year, rv.Month, "D002", Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            reps = await _payRep._02SSSPrem_ByPGrps_ByYYMM(clients!, rv.Year, rv.Month, "D002", Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!) ?? [];
         }
         catch (Exception ex)
         {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
             Console.WriteLine(ex);
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Error",
-                Detail = $"Failed to load data.",
-                Duration = 4000
-            });
-            return;
         }
         finally
         {
             rv.Isloaded = false;
         }
 
-
-        if (!(reps ?? []).Any())
+        if (reps?.Any() != true)
         {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Info,
-                Summary = "Info",
-                Detail = $"No data found for this period and deployment.",
-                Duration = 4000
-            });
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period and deployment.");
             return;
         }
 
-        if (!rv.Isloaded) rv.ShowModal = true;
+
+        rv.ShowModal = true;
+
     }
 
 
+    private bool ValidateFilters()
+    {
+        if (!clients.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed.");
+            return false;
+        }
+
+        if (rv.DStart == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a starting date to proceed.");
+            return false;
+        }
+
+        if (rv.DEnd == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select an ending date to proceed.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ResetVars()
+    {
+        reps = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
 
     void ShowNotification(NotificationMessage message)
     {

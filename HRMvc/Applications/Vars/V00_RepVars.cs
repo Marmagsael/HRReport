@@ -33,7 +33,8 @@ public class V00_RepVars
         public string?  Name { get; set; } = "";
     }
 
-
+    public string SortFld { get; set; } = "";
+    public string SortOdr { get; set; } = "asc";
     //-----------------------------------------------------------
 
     //--------------------------------------------------------------------------------------

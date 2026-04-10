@@ -13,7 +13,12 @@
     <Details>
 
         <_00Loader Rv="@rv" />
-        <_02BTRep Rv="rv" ChildAction="ChildActionCatcher" />
+        @if ((v.RepDtls ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------------------*@
+            <_02BTRep Rv="rv" ChildAction="ChildActionCatcher" />
+        }
+       
 
         @*--- Filter and Button ------------------------------------------------*@
         <div class="p-0">
@@ -27,13 +32,16 @@
 
                 </div>
 
+                @*-- Export Format ------------------------------------------------*@
                 <div class="d-flex flex-row gap-2 card p-2 ">
                     <div class="text-muted p-2 pe-4 border-end"> <small>Export Format </small> </div>
                     <div class="d-flex w-150p ">
                         <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
                     </div>
-                    <button class="p-2 card mb-cbtn mb-cbtn-gray @(v.Count == 0 ? "pe-none cursor-not-allowed opacity-50" : "")"
-                            disabled="@(v.Count == 0)"
+                    @*-- Show Report ----------------------------------------------*@
+                    <button class="p-2 card mb-cbtn mb-cbtn-gray 
+                             @(!(v.RepDtls?.Any() ?? false) ? "pe-none cursor-not-allowed opacity-50" : "")"
+                            disabled="@(!(v.RepDtls?.Any() ?? false))"
                             @onclick="CreateReport">
                         Show Report
                     </button>
@@ -42,11 +50,9 @@
             </div>
         </div>
 
-      
-
         @*--- Grid -----------------------------------------------------------*@
         <div class="w-100">
-            <_2105_Dtl V="@v" />
+            <_2105_Dtl V="@v" Rv="@rv" ChildAction="ChildActionCatcher" />
         </div>
 
     </Details>
@@ -56,76 +62,81 @@
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     V00_RepVars rv = new();
-    List<V2105Model>    v  = new();
+    V2105Model v = new();
 
 
     protected override async Task OnInitializedAsync()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
-            return;
-        }
 
-        rv = new()
+        if (!HasConnection()) return;
+
+        InitializeReport();
+        await LoadInitialData();
+    }
+
+    //===================================
+    // Initial Data =====================
+    private void InitializeReport()
+    {
+        rv.MCaption = "Newly Hired For The Month";
+        rv.RefreshToken = 21050000;
+        rv.ReportParams = new()
         {
-            RefreshToken    = 21050000,
-            MCaption        = "Newly Hired For The Month",
-            ReportParams    = new()
-            {
-                ["CoName"]          = "-",
-                ["CoAddress"]       = "-",
-                ["ReportTitle"]     = "Newly Hired Employees",
-                ["RunDate"]         = DateTime.Now
-            }
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "Newly Hired Employees",
+            ["RunDate"] = DateTime.Now
         };
+    }
 
+    private async Task LoadInitialData()
+    {
         await LoadCompanyInfo();
     }
 
-
-
-    async Task LoadCompanyInfo()
+    private async Task LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
 
-        if (res?.Any() == true)
-        {
-            var r = res.First();
-            rv.ReportParams["CoName"]       = r.CoName ?? "";
-            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
-        }
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
     }
 
-    void ChildActionCatcher() { }
+   
+
+    //===================================
+    // Core Functions ====================
+    private void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
+    }
+
 
     async Task FetchData()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
-            return;
-        }
-
-        v = [];
-        rv.ShowModal = false;
+        ResetVars();
+        if (!HasConnection() || !ValidateFilters()) return;
 
         try
         {
             rv.Isloaded = true;
             var res = await _pisRep._02Empmas_ByMonth_And_Year("datehired", Convert.ToInt32(rv.Month), rv.Year, Uc.OpisDb!, Uc.Conn!);
 
-            if (res?.Any() == true)
+            if ((res ?? []).Any())
             {
-                v = res.Select(r => new V2105Model
+                v.RepDtls = res!.Select(r => new R2105Model
                 {
                     EmpNumber       = r.EmpNumber,
                     EmpName         = r.EmpName,
                     DateHired       = r.DateHired,
                     PositionName    = r.PositionName,
-                    SecLicense      = r.SecLicense,
-                    LicExpire       = r.Licexpire,
                     ClName          = r.ClName,
+                    EmpStatus       = r.EmpStatus,
+                    EmpLastNm       = r.EmpLastNm,
+                    EmpFirstNm      = r.EmpFirstNm,
                 }).ToList();
             }
         }
@@ -140,37 +151,100 @@
             rv.Isloaded = false;
         }
 
-        if (!v.Any())
+        if (!v.RepDtls.Any())
         {
             Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
             return;
         }
-        rv.ReportData = [];
-        rv.ReportData = v;
 
+    }
+
+    private bool ValidateFilters()
+    {
+        if (rv.Year == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a year.");
+            return false;
+        }
+
+        if (rv.Month == string.Empty || rv.Month == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a month.");
+            return false;
+        }
+        return true;
+    }
+
+   
+    private void SortBy()
+    {
+        if (!(v.RepDtls ?? []).Any()) return;
+        IOrderedEnumerable<R2105Model> sorted;
+
+        if (rv.SortFld == "EmpName")
+        {
+            sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+        }
+
+        else
+        {
+            sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+        }
+
+        v.RepDtls = sorted.ToList();
     }
 
     private async Task CreateReport()
     {
-        rv.RelativePath = "";
-       
+        if (!v.RepDtls.Any()) { return; }
 
-        int monthNumber  = Convert.ToInt32(rv.Month);
+        rv.RelativePath = "";
+        rv.ReportData = [];
+        rv.ReportData = v.RepDtls;
+
+        rv.RelativePath = "Reports/_02HR/K_2105_NH.trdp";
+
+        int monthNumber = Convert.ToInt32(rv.Month);
         string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {rv.Year}";
-        rv.RelativePath = "Reports/_02HR/K_2105_NH.trdp";
 
         rv.ShowModal = true;
 
         if (rv.SelectedFormat == "XLSX")
         {
             await Task.Delay(1000);
-            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
             rv.ShowModal = false;
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
         }
     }
 
+
+    
+    //=====================================
+    // Helper Functions ===================
+    private void ResetVars()
+    {
+        v.RepDtls = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
+            return false;
+        }
+
+        return true;
+    }
 
     void Notify(NotificationSeverity severity, string summary, string detail)
     {
@@ -183,11 +257,6 @@
         });
     }
 
-    bool HasConnection()
-    {
-        if (Uc == null)  return false;
-        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn))return false;
-        return true;
-    }
 }
+
+

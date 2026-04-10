@@ -8,19 +8,18 @@
 
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-        @*--- Looader ------------------------------------------------*@
+        @*--- Looader --------------------------------------------------------------*@
         <_00Loader Rv="@rv" />
 
-        @if ((v ?? []).Any())
+        @if ((v.RepDtls ?? []).Any())
         {
-            @*--- Report ------------------------------------------------*@
+            @*--- Report ------------------------------------------------------------*@
              <_2104_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />  
         }
 
-         @*--- Filter and Button ------------------------------------------------*@
         <div class="p-0">
             <div class="card-header d-flex gap-3">
-                @*--- Fetch Button ------------------------------------------------*@
+                @*--- Fetch Button --------------------------------------------------*@
                 <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
             </div>
         </div>
@@ -28,11 +27,9 @@
 
         @*--- Client and Status List ------------------------------------------------*@
         <div class="w-100 d-flex">
-            <div class="w-50"> <_00TClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
-            <div class="w-50"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
+            <div class="w-50"> <_00TClientList Clients="@rv.Clients"    ChildAction="ChildActionCatcher" /> </div>
+            <div class="w-50"> <_00TStatusList Empstats="@rv.Empstats"  ChildAction="ChildActionCatcher" /> </div>
         </div>
-       
-
     </Details>
 </_00BT_FullW>
 
@@ -42,127 +39,142 @@
 @inject IOPisReportDataAccess   _pisRep;
 @inject IOEmpstatDataAccess     _empstat;
 @inject IOClientDataAccess      _client;
+
+
 @code {
     [Parameter] public  UserClaimsModel Uc { get; set; } = new();
     V00_RepVars                         rv { get; set; } = new();
-    List<V2104Model>                    v = [];
-
+    V2104Model                          v = new();
 
     List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
     List<string?>? clients => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
 
+
     protected override async Task OnInitializedAsync()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator."); ;
-            return;
-        }
 
-        rv = new()
-        {
-            RefreshToken    = 21040000,
-            MCaption        = "Employee Age",
-            ReportParams    = new()
-            {
-                ["CoName"]      = "-",
-                ["CoAddress"]   = "-",
-                ["ReportTitle"] = "Employee Age Report",
-                ["RunDate"]     = DateTime.Now
-            }
-        };
+        if (!HasConnection()) return;
 
-        await LoadCompanyInfo();
-        await LoadEmployeeStatus();
-        await LoadClients();
+        InitializeReport();
+        await LoadInitialData();
     }
 
-    async Task LoadCompanyInfo()
+    //===================================
+    // Initial Data =====================
+    private void InitializeReport()
+    {
+        rv.MCaption = "Employee Age";
+        rv.RefreshToken = 21040000;
+
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "Employee Age Report",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadInitialData()
+    {
+        await LoadCompanyInfo();
+        await LoadClients();
+        await LoadEmployeeStatus();
+    }
+
+    private async Task LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
 
-        if (res?.Any() == true)
-        {
-            var r = res.First();
-            rv.ReportParams["CoName"]       = r.CoName ?? "";
-            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
-        }
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
     }
 
-    async Task LoadEmployeeStatus()
+    private async Task LoadClients()
     {
-        rv.Empstats = [];
-        var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
-        if (res?.Any() == true){ rv.Empstats = res; }
-    }
-
-    async Task LoadClients()
-    {
-        rv.Clients = [];
         var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
-        if (res?.Any() == true) { rv.Clients = res!; }
+        if (!(res ?? []).Any()) return;
+
+        rv.Clients = res!;
+        rv.Clients.Insert(0, new() { ClNumber = "-", ClName = "Undeployed" });
     }
+
+    private async Task LoadEmployeeStatus()
+    {
+        var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        rv.Empstats = res!;
+        rv.Empstats.ForEach(x =>
+        {
+            if (x.IsResigned == "0") x.IsSelectedB = true;
+        });
+    }
+
+
+
+    //===================================
+    // Core Functions ====================
+    private void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
+    }
+
 
     async Task FetchData()
     {
-        if (!HasConnection())
-        {
-            Notify(NotificationSeverity.Error,"Failed to connect to server","Please refresh the page or contact your system administrator.");
-            return;
-        }
-
-        v = [];
-        rv.ReportData = [];
-        rv.ShowModal = false;
-
-        if (!(clients ?? []).Any())
-        {
-            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed..");
-            return;
-        }
-
-
-
-        if (!(statuses ?? []).Any())
-        {
-            Notify(NotificationSeverity.Warning,"Warning","Please select at least one employee status to proceed..");
-            return;
-        }
+        ResetVars();
+        if (!HasConnection() || !ValidateFilters()) return;
 
         try
         {
             rv.Isloaded = true;
+            var res = await _pisRep._02ByClNumbersByStatus(clients, statuses, Uc.OpisDb!, Uc.Conn!);
 
-            var res = await _pisRep._02ByClNumbersByStatus(clients, statuses,  Uc.OpisDb!, Uc.Conn!);
-
-            if (res?.Any() == true)
+            if ((res?? []).Any())
             {
-
-                var today = DateTime.Today; 
                 foreach (var r in res)
                 {
-                    V2104Model v1 = new() { EmpNumber = r.EmpNumber, EmpBirth = r.EmpBirth, EmpName = r.EmpName, EmpStatus = r.EmpStatus, Client_ = r.Client_, ClName = r.ClName };
-
-                    if (v1.EmpBirth != null)
+                    var employee = new R2104Model
                     {
-                        var birth = v1.EmpBirth ?? DateTime.MinValue;
-                        var age = CalculateAge(birth);
+                        EmpNumber   = r.EmpNumber,
+                        EmpBirth    = r.EmpBirth,
+                        EmpName     = r.EmpName,
+                        EmpStatus   = r.EmpStatus,
+                        Client_     = r.Client_,
+                        ClName      = string.IsNullOrWhiteSpace(r.ClName) ? "-" : r.ClName,
+                        EmpFirstNm  = r.EmpFirstNm,
+                        EmpLastNm   = r.EmpLastNm
+                    };
 
-                        var yrs = age.Years;
-                        var months = age.Months;
+                    // Compute age if birthdate exists
+                    if (employee.EmpBirth != null)
+                    {
+                        var age = CalculateAge(employee.EmpBirth.Value);
 
-                        v1.FullAge = $"{yrs} yrs {months} mos";
+                        var years   = age.Years;
+                        var months  = age.Months;
 
+
+                        employee.FullAge = $"{years} yrs {months} mos"; // use to display the complete age
+                        employee.Age = years + (months / 12.0); // use to sort age
                     }
-                    else { v1.Age = null; }
+                    else
+                    {
+                        employee.FullAge    = null;
+                        employee.Age        = 0;
+                    }
 
-                    v.Add(v1);
+                    v.RepDtls.Add(employee);
                 }
             }
         }
         catch (Exception ex)
         {
-            Notify(NotificationSeverity.Error,"Failed to load data","Please refresh the page or contact your system administrator.");
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
             Console.WriteLine(ex);
             return;
         }
@@ -171,15 +183,15 @@
             rv.Isloaded = false;
         }
 
-        if (!v.Any())
+        if (!(v.RepDtls ?? []).Any())
         {
-            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+            Notify(NotificationSeverity.Info,"Info","No data found for this period.");
             return;
         }
 
-        rv.ReportData = v;
-        rv.ShowModal = true;
+        rv.ShowModal     = true;
     }
+
 
     private (int Years, int Months) CalculateAge(DateTime birthDate)
     {
@@ -200,7 +212,88 @@
         return (years, months);
     }
 
-    void ChildActionCatcher() { }
+
+    private bool ValidateFilters()
+    {
+        if (!(clients ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment.");
+            return false;
+        }
+
+        if (!(statuses ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status.");
+            return false;
+        }
+        return true;
+    }
+
+    private void SortBy()
+    {
+        if (!(v.RepDtls ?? []).Any())  return; 
+
+        IOrderedEnumerable<R2104Model> sorted;
+
+        if (v.IsGroupByClient)
+        {
+            // Always keep Client ascending
+            sorted = v.RepDtls!.OrderBy(x => x.ClName);
+
+            // Then sort by EmpName or Age
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else if (rv.SortFld == "Age")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : sorted.ThenByDescending(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+            }
+        }
+        else
+        {
+            // If no grouping is applied, sort by Empname or Age
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.Age).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+            }
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
+
+    //=====================================
+    // Helper Functions ===================
+    private void ResetVars()
+    {
+
+        v.RepDtls       = new();
+        rv.ShowModal    = false;
+        rv.ShowReport   = false;
+        v.IsGroupByClient = false;
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
+            return false;
+        }
+
+        return true;
+    }
 
     void Notify(NotificationSeverity severity, string summary, string detail)
     {
@@ -212,11 +305,5 @@
             Duration = 5000
         });
     }
-    bool HasConnection()
-    {
-        if (Uc == null) return false;
-        if (string.IsNullOrWhiteSpace(Uc.OpisDb)) return false;
-        if (string.IsNullOrWhiteSpace(Uc.Conn)) return false;
-        return true;
-    }
+    
 }
