@@ -6,6 +6,7 @@ public class V12_102Lv
 {
 
     public LeaveapplicationModel            LeaveApplication        { get; set; } = new();        
+    public List<LeaveapplicationModel>?     LeaveApplications       { get; set; } = new();        
     public LeaveapplicationdtlModel         LeaveApplicationdtl     { get; set; } = new();  
     public List<LeaveapplicationdtlModel>   LeaveApplicationdtls    { get; set; } = [];  
     public List<LeavetypeModel>             LeaveTypes              { get; set; } = [];    

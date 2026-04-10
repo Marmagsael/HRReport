@@ -1,320 +1,328 @@
 ﻿@using Blazorise.Extensions
+@using FastReport.Utils
+@using Google.Protobuf.Reflection
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._90_Utils
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.Leave
 @using Radzen
 @using Radzen.Blazor
 
-@* <div class="card-header"> Leave Request </div> *@
+<RadzenDialog />
+@inject DialogService _DialogService
 
-<div class="d-flex gap-1 p-1 border-bottom ">
-    <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
-    <div @onclick="Save" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSaveCss) "> Save  </div>
-    <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSendCss ) "> Send For Approval </div>
-    <div @onclick="ShowCancel" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancelCss)"> Cancel </div>
-    <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
-</div>
+<CascadingValue Value="Uc" IsFixed="true">
+<CascadingValue Value="v">
+    <div class="d-flex gap-1 p-1 border-bottom ">
+        <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
+        <div @onclick="Save" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSaveCss) "> Save  </div>
+        <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSendCss ) "> Send For Approval </div>
+        <div @onclick="ShowCancel" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancelCss)"> Cancel </div>
+        <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+        <div @onclick="Print" class="p-1 mb-cbtn mb-cbtn-blue card w-80p @CanPrintCss "> Print </div>
+    </div>
 
-<_12_102_Lv_Modal ChildAction="ChildActionCatcher" Uc="@Uc" V="@v" />
+    <_12_102_Lv_Modal ChildAction="ChildActionCatcher" Uc="@Uc" V="@v" />
 
-@* <div>Count : @v.LeaveApplicationdtls.Count * @Uc.UserId </div> *@
+    @* <div>Count : @v.LeaveApplicationdtls.Count * @Uc.UserId </div> *@
 
-<div class="card-body p-0 ">
-    <table class="table table-small table-bordered">
-        <tbody>
-            <tr>
-                <td class="w-150p p-2  ">
-                    <div class="mt-1">
-                        TRN # <spa class="txt-red">*</spa>
-                    </div>
-                </td>
-                <td class="p-2 d-flex justify-content-between  ">
-                    <div class="border-bottom w-100p text-center  p-1">
-                        <h6 class=""> @v.LeaveApplication.Id </h6> 
-                    </div>
-                    <div class="w-175p d-flex p-1 ">
-                        <div class=""> Status : </div>
-                        <div class="ms-2 bordered-bottom w-75p text-center text-primary"> 
-                            @(_02LvStatus(@v.LeaveApplication.Status)) 
+    <div class="card-body p-0 ">
+        <table class="table table-small table-bordered">
+            <tbody>
+                <tr>
+                    <td class="w-150p p-2  ">
+                        <div class="mt-1">
+                            TRN # <spa class="txt-red">*</spa>
                         </div>
-                    </div>
+                    </td>
+                    <td class="p-2 d-flex justify-content-between  ">
+                        <div class="border-bottom w-100p text-center  p-1">
+                            <h6 class=""> @v.LeaveApplication.Id </h6> 
+                        </div>
+                        <div class="w-175p d-flex p-1 ">
+                            <div class=""> Status : </div>
+                            <div class="ms-2 bordered-bottom w-75p text-center text-primary"> 
+                                @(_02LvStatus(@v.LeaveApplication.Status)) 
+                            </div>
+                        </div>
 
-                </td>
-            </tr>
+                    </td>
+                </tr>
 
 
-            @* --- Leave Type ------------------------------------------- *@
-            <tr>
-                <td class="w-150p p-1 ">
-                    <div class="py-2"> Leave Type<spa class="txt-red">*</spa>  </div>
-                    
-                </td>
-                <td class="p-1"> 
-                     <RadzenDropDown Change="_02LeaveBalance"                   TValue="int"
-                        Data="@v.LeaveTypes"
-                        TextProperty="LeaveName"
-                        ValueProperty="Id"
-                        @bind-Value="v.LeaveApplication.LeaveTypeId"
-                        Placeholder="Leave Type"
-                        Style="width:250px" />
+                @* --- Leave Type ------------------------------------------- *@
+                <tr>
+                    <td class="w-150p p-1 ">
+                        <div class="py-2"> Leave Type<spa class="txt-red">*</spa>  </div>
                         
-                </td>
-            </tr>
-            
-            @* --- Year Of Application ------------------------------------------- *@
-            <tr>
-                <td class="w-150p ">
-                    <div class="p-1"> Credit Period<spa class="txt-red">*</spa>  </div>
-                    
-                </td>
-                <td class="p-1"> 
-                     <RadzenDropDown Change="_02LeaveBalance"                TValue="int"
-                        Data="@v.LvYrs"
-                        @bind-Value="v.LeaveApplication.Yr"
-                        Placeholder="Leave Year"
-                        Style="width:125px" />
-                </td>
-            </tr>
-            
-            @* --- Date Covered ----------------------------- *@
-            <tr>
-                <td class="align-middle">Date Covered<spa class="txt-red">*</spa></td>
-                <td class="p-1">
-                    <div class="w-100 ">
-                        <div class="d-flex gap-2 ">
-                            <div class="w-50p p-2 d-flex align-items-center">Start<spa class="txt-red">*</spa></div>
-                            <div class="w-120p">
-                                <RadzenDatePicker 
-                                    @bind-Value="v.LeaveApplication.LvStart" 
-                                    Change="Populatedtls"
-                                    DateFormat="MM/dd/yyyy"
-                                    AllowInput="false"
-                                    class="mb-date-accent w-150p" />
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2 mt-1">
-                            <div class="w-50p p-2 d-flex align-items-center">End<span class="txt-red">*</span></div>
-                            <div class="w-150p ">
-                                <RadzenDatePicker 
-                                    @bind-Value="v.LeaveApplication.LvEnd" 
-                                    Change="Populatedtls"
-                                    DateFormat="MM/dd/yyyy"
-                                    AllowInput="false"
-                                    class="mb-date-accent w-150p" />
-                            </div>
-                        </div>
-                    </div>
-                </td>
-            </tr>
-
-            @* --- Address ------------------------------------ *@
-            <tr>
-                <td class="w-150p">Address<spa class="txt-red">*</spa> </td>
-                <td class="p-1">
-                    <RadzenTextArea @bind-Value="v.LeaveApplication.Address" MaxLength="150" Rows="2" Style="width:100%;" /> 
-                </td>
-            </tr>
-            
-            @* --- Telephone Number ------------------------------------ *@
-            <tr>
-                <td class="w-150p ">Contact # <spa class="txt-red">*</spa></td>
-                <td class="p-1">
-                    <RadzenTextBox 
-                        @bind-Value="@v.LeaveApplication.TelNo"
-                        MaxLength="45" 
-                        Style="width:250px;" /> 
-                        
-                </td>
-            </tr>
-            
-            @* --- Reason ------------------------------------ *@
-            <tr>
-                <td class="w-150p">Reason <spa class="txt-red">*</spa></td>
-                <td class="p-1">
-                    <RadzenTextArea @bind-Value="v.LeaveApplication.Reason" MaxLength="150" Rows="2" Style="width:100%;" /> 
-                </td>
-            </tr>
-
-            <tr>
-                <td>Approvers</td>
-                <td class="p-0">
-                    <div class="w-100 d-flex ">
-                        @* --- First Approver *@
-                        <div class="w-50 p-1">
-                            <div>
-                                <RadzenDropDown Data="@v.LvFirstApprovers" 
-                                    TextProperty="ApproverName"
-                                    ValueProperty="ApproverId" 
-                                    @bind-Value="v.LeaveApplication.Approver1Id" 
-                                    Placeholder="First Approver" 
-                                    Style="width:100%"
-                                    PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;" >
-                                    
-                                    <Template Context="item">
-                                        <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
-                                            @item.ApproverName
-                                        </div>
-                                    </Template>
-
-
-                                </RadzenDropDown>
-                            </div>
-                            <div class="text-center">
-                                Approver
-                            </div>
-                        </div>
-                        
-                        @* --- Second Approver *@
-                        <div class="w-50 p-1">
-                            <div>
-                                <RadzenDropDown Data="@v.LvFinalApprovers" 
-                                    TextProperty="ApproverName"
-                                    ValueProperty="ApproverId" 
-                                    @bind-Value="v.LeaveApplication.Approver2Id" 
-                                    Placeholder="Final Approver" 
-                                    Style="width:100%"
-                                    PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;">
-                                    
-                                    <Template Context="item">
-                                        <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
-                                            @item.ApproverName
-                                        </div>
-                                    </Template>
-                                    
-                                </RadzenDropDown>
-                            </div>
-                            <div class="text-center">
-                                Final Approver
-                            </div>
-                        </div>
-
-
-
-                    </div>
-                </td>
+                    </td>
+                    <td class="p-1"> 
+                        <RadzenDropDown Change="_02LeaveBalance"                   TValue="int"
+                            Data="@v.LeaveTypes"
+                            TextProperty="LeaveName"
+                            ValueProperty="Id"
+                            @bind-Value="v.LeaveApplication.LeaveTypeId"
+                            Placeholder="Leave Type"
+                            Style="width:250px" />
+                            
+                    </td>
+                </tr>
                 
-            </tr>
-
-
-
-            @* --- Parameters ------------------------------------------- *@
-            <tr>
-                <td>Parameter</td>
-                <td>
-                   <div class="d-flex gap-2">
+                @* --- Year Of Application ------------------------------------------- *@
+                <tr>
+                    <td class="w-150p ">
+                        <div class="p-1"> Credit Period<spa class="txt-red">*</spa>  </div>
                         
-                        @* --- Leave Balance --------- *@
-                        <div class="text-primary">Leave Balance : </div>
-                        <div class="text-center">
-                            @lva.LvBalance.ToString("N2")
+                    </td>
+                    <td class="p-1"> 
+                        <RadzenDropDown Change="_02LeaveBalance"                TValue="int"
+                            Data="@v.LvYrs"
+                            @bind-Value="v.LeaveApplication.Yr"
+                            Placeholder="Leave Year"
+                            Style="width:125px" />
+                    </td>
+                </tr>
+                
+                @* --- Date Covered ----------------------------- *@
+                <tr>
+                    <td class="align-middle">Date Covered<spa class="txt-red">*</spa></td>
+                    <td class="p-1">
+                        <div class="w-100 ">
+                            <div class="d-flex gap-2 ">
+                                <div class="w-50p p-2 d-flex align-items-center">Start<spa class="txt-red">*</spa></div>
+                                <div class="w-120p">
+                                    <RadzenDatePicker 
+                                        @bind-Value="v.LeaveApplication.LvStart" 
+                                        Change="Populatedtls"
+                                        DateFormat="MM/dd/yyyy"
+                                        AllowInput="false"
+                                        class="mb-date-accent w-150p" />
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 mt-1">
+                                <div class="w-50p p-2 d-flex align-items-center">End<span class="txt-red">*</span></div>
+                                <div class="w-150p ">
+                                    <RadzenDatePicker 
+                                        @bind-Value="v.LeaveApplication.LvEnd" 
+                                        Change="Populatedtls"
+                                        DateFormat="MM/dd/yyyy"
+                                        AllowInput="false"
+                                        class="mb-date-accent w-150p" />
+                                </div>
+                            </div>
                         </div>
-                        @* --- Available Credit --------- *@
-                        <div class="text-primary">Days Count : </div>
-                        <div class="text-center">
-                            @lva.DaysCnt.ToString("N2")
+                    </td>
+                </tr>
+
+                @* --- Address ------------------------------------ *@
+                <tr>
+                    <td class="w-150p">Address<spa class="txt-red">*</spa> </td>
+                    <td class="p-1">
+                        <RadzenTextArea @bind-Value="v.LeaveApplication.Address" MaxLength="150" Rows="2" Style="width:100%;" /> 
+                    </td>
+                </tr>
+                
+                @* --- Telephone Number ------------------------------------ *@
+                <tr>
+                    <td class="w-150p ">Contact # <spa class="txt-red">*</spa></td>
+                    <td class="p-1">
+                        <RadzenTextBox 
+                            @bind-Value="@v.LeaveApplication.TelNo"
+                            MaxLength="45" 
+                            Style="width:250px;" /> 
+                            
+                    </td>
+                </tr>
+                
+                @* --- Reason ------------------------------------ *@
+                <tr>
+                    <td class="w-150p">Reason <spa class="txt-red">*</spa></td>
+                    <td class="p-1">
+                        <RadzenTextArea @bind-Value="v.LeaveApplication.Reason" MaxLength="150" Rows="2" Style="width:100%;" /> 
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>Approvers</td>
+                    <td class="p-0">
+                        <div class="w-100 d-flex ">
+                            @* --- First Approver *@
+                            <div class="w-50 p-1">
+                                <div>
+                                    <RadzenDropDown Data="@v.LvFirstApprovers" 
+                                        TextProperty="ApproverName"
+                                        ValueProperty="ApproverId" 
+                                        @bind-Value="v.LeaveApplication.Approver1Id" 
+                                        Placeholder="First Approver" 
+                                        Style="width:100%"
+                                        PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;" >
+                                        
+                                        <Template Context="item">
+                                            <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
+                                                @item.ApproverName
+                                            </div>
+                                        </Template>
+
+
+                                    </RadzenDropDown>
+                                </div>
+                                <div class="text-center">
+                                    Approver
+                                </div>
+                            </div>
+                            
+                            @* --- Second Approver *@
+                            <div class="w-50 p-1">
+                                <div>
+                                    <RadzenDropDown Data="@v.LvFinalApprovers" 
+                                        TextProperty="ApproverName"
+                                        ValueProperty="ApproverId" 
+                                        @bind-Value="v.LeaveApplication.Approver2Id" 
+                                        Placeholder="Final Approver" 
+                                        Style="width:100%"
+                                        PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;">
+                                        
+                                        <Template Context="item">
+                                            <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
+                                                @item.ApproverName
+                                            </div>
+                                        </Template>
+                                        
+                                    </RadzenDropDown>
+                                </div>
+                                <div class="text-center">
+                                    Final Approver <span class="text-danger">*</span>
+                                </div>
+                            </div>
+
+
+
                         </div>
-                        @* --- Leave with Pay *@
-                        <div class="text-primary">With Pay : </div>
-                        <div class="text-center">
-                            @lvWPay.ToString("N2") 
-                        </div>
+                    </td>
+                    
+                </tr>
 
 
-                   </div> 
-                </td>
-            </tr>
 
-        </tbody>
-    </table>
-</div>
+                @* --- Parameters ------------------------------------------- *@
+                <tr>
+                    <td>Parameter</td>
+                    <td>
+                    <div class="d-flex gap-2">
+                            
+                            @* --- Leave Balance --------- *@
+                            <div class="text-primary">Leave Balance : </div>
+                            <div class="text-center">
+                                @lva.LvBalance.ToString("N2")
+                            </div>
+                            @* --- Available Credit --------- *@
+                            <div class="text-primary">Days Count : </div>
+                            <div class="text-center">
+                                @lva.DaysCnt.ToString("N2")
+                            </div>
+                            @* --- Leave with Pay *@
+                            <div class="text-primary">With Pay : </div>
+                            <div class="text-center">
+                                @lvWPay.ToString("N2") 
+                            </div>
 
-@* --- Leave Details ----------------------------------------- *@
-<div>
-    <div class="card-header">Leave Details</div>
-    <div class="card-body p-0">
 
-        <div class="w-100 d-flex gap-1 py-2 border-bottom">
-            <div class="w-130p text-center ">Date</div>
-            <div class="w-75p text-center text-primary ">
-                Day
+                    </div> 
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+
+    @* --- Leave Details ----------------------------------------- *@
+    <div>
+        <div class="card-header">Leave Details</div>
+        <div class="card-body p-0">
+
+            <div class="w-100 d-flex gap-1 py-2 border-bottom">
+                <div class="w-130p text-center ">Date</div>
+                <div class="w-75p text-center text-primary ">
+                    Day
+                </div>
+                <div class="w-75p text-center">Duty Type</div>
+                <div class="w-130p text-center">Time Start</div>
+                <div class="w-130p text-center">Duration</div>
+                <div class="w-100p text-center">Time End</div>
+                <div class="w-100p text-center">Payable</div>
+                <div class="w-100p text-center">Credited Hrs. </div>
             </div>
-            <div class="w-75p text-center">Duty Type</div>
-            <div class="w-130p text-center">Time Start</div>
-            <div class="w-130p text-center">Duration</div>
-            <div class="w-100p text-center">Time End</div>
-            <div class="w-100p text-center">Payable</div>
-            <div class="w-100p text-center">Credited Hrs. </div>
+
+            @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
+                string dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
+                string dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
+
+                <div class="w-100 d-flex p-0 mt-1 gap-1 @dTypeCss ">
+                    <div class="w-130p text-center py-2 ">
+                    @ld.Start?.ToString("MMM dd, yyyy").Trim() 
+                    </div>
+                    <div class="w-75p text-center  py-2 ">
+                        @ld.Start?.ToString("ddd")
+                    </div>
+                    <div class="w-75p text-center py-2 ">
+                        @dtype
+                    </div>
+                    <div class="w-130p">
+                        <RadzenDropDown
+                            Change="@(() => ComputeEnd(ld))"
+                            Data="@v.Hrs"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@ld.TimeStart"
+                            Placeholder="Select Time"
+                            Style="width:125px" /> 
+                    </div>
+                    <div class="w-130p">
+                        <RadzenDropDown
+                            Change="@(() => ComputeEnd(ld))"
+                            Data="@v.Durations"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="@ld.TimeDuration"
+                            Placeholder="Hr Duration"
+                            Style="width:125px; align-items: center;" /> 
+                    </div>
+                    <div class="w-100p text-center py-2 ">
+                        @ld.End?.ToString("hh:mm tt")
+                    </div>
+                    
+                    <div class="w-100p text-center py-2 ">
+                        <input 
+                            class="form-check-input" 
+                            type="checkbox"
+                            checked="@ld!.IsPayableB"
+                            @onchange="@((ChangeEventArgs e) => MarkPayable(e, ld))" />
+                    </div>
+                    <div class="w-100p text-center @(ld?.IsPayableB??false ? "" : " disabled-div ") ">
+                        <RadzenNumeric @bind-Value="ld.CreditedHrs"
+                            TValue="decimal?"
+                            Min="@(0m)"
+                            Max="@(23.5m)"
+                            Step="0.5"
+                            Format="0.00"
+                            Style="width:100px;"
+                            TextAlign="TextAlign.Center"/>  
+                    </div>
+
+                </div>    
+
+
+            }
+
         </div>
 
-        @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
-            string dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
-            string dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
-
-            <div class="w-100 d-flex p-0 mt-1 gap-1 @dTypeCss ">
-                <div class="w-130p text-center py-2 ">
-                    @ld.Start?.ToString("MMM dd, yyyy").Trim() 
-                </div>
-                <div class="w-75p text-center  py-2 ">
-                    @ld.Start?.ToString("ddd")
-                </div>
-                <div class="w-75p text-center py-2 ">
-                    @dtype
-                </div>
-                <div class="w-130p">
-                    <RadzenDropDown
-                        Change="@(() => ComputeEnd(ld))"
-                        Data="@v.Hrs"
-                        TextProperty="Text"
-                        ValueProperty="Value"
-                        @bind-Value="@ld.TimeStart"
-                        Placeholder="Select Time"
-                        Style="width:125px" /> 
-                </div>
-                <div class="w-130p">
-                    <RadzenDropDown
-                        Change="@(() => ComputeEnd(ld))"
-                        Data="@v.Durations"
-                        TextProperty="Text"
-                        ValueProperty="Value"
-                        @bind-Value="@ld.TimeDuration"
-                        Placeholder="Hr Duration"
-                        Style="width:125px; align-items: center;" /> 
-                </div>
-                <div class="w-100p text-center py-2 ">
-                    @ld.End?.ToString("hh:mm tt")
-                </div>
-                
-                <div class="w-100p text-center py-2 ">
-                    <input 
-                        class="form-check-input" 
-                        type="checkbox"
-                        checked="@ld!.IsPayableB"
-                        @onchange="@((ChangeEventArgs e) => MarkPayable(e, ld))" />
-                </div>
-                <div class="w-100p text-center @(ld?.IsPayableB??false ? "" : " disabled-div ") ">
-                    <RadzenNumeric @bind-Value="ld.CreditedHrs"
-                        TValue="decimal?"
-                        Min="@(0m)"
-                        Max="@(23.5m)"
-                        Step="0.5"
-                        Format="0.00"
-                        Style="width:100px;"
-                        TextAlign="TextAlign.Center"/>  
-                </div>
-
-            </div>    
-
-
-        }
+        
+        
 
     </div>
 
-    
-    
-
-</div>
-
-
+</CascadingValue>
+</CascadingValue>
 
 
 
@@ -322,44 +330,69 @@
 @inject IAtttemplateDataAccess          _attTemplate; 
 @inject ILeavegrpapproverDataAccess     _lvgrpApprover; 
 @inject ILeaveapplicationDataAccess     _lvApplication; 
+@inject ILeaveapplicationdtlDataAccess  _lvaDtls; 
+@* @inject ILeaveapplicationdtlDataAccess  _lvApplicationdtl;  *@
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; }
     V12_102Lv v = new();
 
     @* =================================================== *@
-    void ChildActionCatcher() {
-
+    async Task ChildActionCatcher() {
+        if(v.Action=="LoadLvApplication") await LoadLvApplication(); 
+        v.Action = string.Empty; 
     }
 
-    void New() { 
+    async Task LoadLvApplication() {
+
+        v.LeaveApplicationdtl = new();
+        v.LeaveApplicationdtls = [];
+
+        await Populatedtls();
+        await _02LeaveBalance();
+        StateHasChanged();
+    }
+
+    async Task New() { 
         @* Console.WriteLine($"Test");  *@
 
         v.LeaveApplication      = new(); 
         v.LeaveApplicationdtl   = new(); 
         v.LeaveApplicationdtls  = []; 
 
-        Populatedtls(); 
+        await Populatedtls(); 
+        await _02LeaveBalance(); 
         StateHasChanged(); 
 
     }
 
     async Task Save()
-    { 
-        @* ts.AttReqhdr.Status = "S"; 
-        if(ts.AttReqhdr.Id > 0) {
-            var res = await _attreqhdr._03(ts.AttReqhdr.Id, ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
-            ts.AttReqhdr = res; 
-        } else {
-            ts.AttReqhdr.UserId         = Uc.UserId; 
-            ts.AttReqhdr.AttReqTypeId   = 3; 
-            ts.AttReqhdr.EmpNumber      = Uc.OempNumber; 
-            var res     = await _attreqhdr._01(ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
-            ts.AttReqhdr                = res; 
-        }  
-        await FetchApprover(); 
+    {
+        v.LeaveApplication.Status       = "S";
+        v.LeaveApplication.EmpmasId     = Uc.UserId; 
+        v.LeaveApplication.DaysWithPay  = lvWPay; 
 
-        await SaveDtl();  *@
+        if (lva.Id == 0 ) {
+            var res = await _lvApplication._01(lva, Uc.SchemaUserPis, Uc.Conn);
+            v.LeaveApplication.Id = res.Id; 
+        } else {
+            await _lvApplication._03(lva.Id, lva, Uc.SchemaUserPis, Uc.Conn); 
+        }
+
+        await _lvaDtls._04OutRange(lva.Id,lva.LvStart.Date, lva.LvEnd.Date, Uc.SchemaUserPis, Uc.Conn); 
+
+        foreach(var d in v.LeaveApplicationdtls) {
+            d.LeaveApplicationId = lva.Id; 
+            d.EmpmasId  = Uc.UserId; 
+            d.EmpNumber = Uc.OempNumber??"";
+
+            if(d.Id == 0)   { await _lvaDtls._01(d, Uc.SchemaUserPis, Uc.Conn);  } 
+            else            { await _lvaDtls._03(d.Id??0, d, Uc.SchemaUserPis, Uc.Conn); }; 
+
+        }
+
+        var resd = await _lvaDtls._02ByLvApplicationId(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
+        if(resd!=null) v.LeaveApplicationdtls = resd!; 
 
     }
 
@@ -371,8 +404,25 @@
 
     }
 
-    void ShowCancel() {}
-    void ShowMyRequest() { v.ShowMyReqquest = true; }
+    async Task ShowCancel() {
+        var option = await _DialogService.Confirm("Cancel current Leave Application and delete details?", "Cancel Leave Application",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (option == true)
+        {
+            await _lvApplication._04(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
+            await New(); 
+        }
+    }
+    async Task ShowMyRequest() 
+    { 
+        v.ShowMyReqquest = true; 
+
+        var res = await _lvApplication._02ByRequest(Uc.UserId,Uc.SchemaUserPis, Uc.Conn); 
+        if(res!=null) v.LeaveApplications = res!; 
+
+
+    }
+    void Print() {}
 
 
     bool IsCanSave => lva != null
@@ -381,20 +431,24 @@
                && lva.LvEnd >= lva.LvStart
                && !string.IsNullOrWhiteSpace(lva.Address)
                && !string.IsNullOrWhiteSpace(lva.Reason)
-               && !string.IsNullOrWhiteSpace(lva.TelNo);
+               && !string.IsNullOrWhiteSpace(lva.TelNo) ;
     bool IsCanSend  =>  lva != null
                         && lva.Status is "S"
                         && (lva.LeaveTypeId) > 0
                         && lva.LvEnd >= lva.LvStart
                         && !string.IsNullOrWhiteSpace(lva.Address)
                         && !string.IsNullOrWhiteSpace(lva.Reason)
-                        && !string.IsNullOrWhiteSpace(lva.TelNo); 
+                        && !string.IsNullOrWhiteSpace(lva.TelNo) 
+                        && lva.Approver2Id > 0;
     bool IsCanCancel    => lva != null
                         && lva.Status is "S"; 
+    bool IsCanPrint     => lva != null
+                            && lva.Status is "S" or "FA"; 
 
     string CanSaveCss =>    IsCanSave ? "" : " disabled-div ";
     string CanSendCss =>    IsCanSend ? "" : " disabled-div ";
     string CanCancelCss =>  IsCanCancel ? "" : " disabled-div ";
+    string CanPrintCss =>  IsCanPrint ? "" : " disabled-div ";
 
     @* =================================================== *@
     async Task _02LeaveBalance() {
@@ -407,7 +461,7 @@
     }
 
 
-    void Populatedtls()
+    async Task Populatedtls()
     {
         v.LeaveApplicationdtls = [];
         
@@ -432,6 +486,29 @@
 
             }
             v.LeaveApplicationdtls.Add(dtl);            
+        }
+
+        int lvaId = lva.Id; 
+        if(lvaId>0) {
+            var res = await _lvaDtls._02ByLvApplicationId(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
+            res.ForEach(fd => {
+                v.LeaveApplicationdtls.ForEach(d => {
+                    if(d.Start?.Date == fd.Start?.Date) 
+                    {
+                        d.Id                    = fd.Id; 
+                        d.LeaveApplicationId    = fd.LeaveApplicationId; 
+                        d.EmpmasId              = fd.EmpmasId; 
+                        d.EmpNumber             = fd.EmpNumber; 
+                        d.Start                 = fd.Start; 
+                        d.DutyType              = fd.DutyType; 
+                        d.TimeStart             = fd.TimeStart; 
+                        d.TimeDuration          = fd.TimeDuration; 
+                        d.End                   = fd.End; 
+                        d.CreditedHrs           = fd.CreditedHrs; 
+                        d.IsPayable             = fd.IsPayable; 
+                    }
+                }); 
+            }); 
         }
 
         @* --- Days Count -------------------------------- *@
@@ -471,7 +548,7 @@
         if (Uc == null) return;
         await LoadDatas(); 
         await _02LeaveBalance();
-        Populatedtls(); 
+        await Populatedtls(); 
     }
 
     async Task LoadDatas() {
@@ -541,7 +618,7 @@
         "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype, TimeStart = at.D1_in, TimeDuration = at.D1_hrslength },
         _ => new LeaveapplicationdtlModel()
     };
-    string _02LvStatus(string code) => code switch { "N" => "New", "Save" => "Save", "F" => "For Approval", "C" => "Cancelled", "A" => "Approved", _ => "Unknown" };
+    string _02LvStatus(string code) => code switch { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", "A" => "Approved", _ => "Unknown" };
 
     
 }

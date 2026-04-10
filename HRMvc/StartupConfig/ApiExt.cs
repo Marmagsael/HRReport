@@ -111,6 +111,7 @@ public static class ApiExt
         builder.Services.AddScoped<IAttreqdtlDataAccess, AttreqdtlDataAccess>();
         builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
         builder.Services.AddScoped<ILeaveapplicationDataAccess, LeaveapplicationDataAccess>();
+        builder.Services.AddScoped<ILeaveapplicationdtlDataAccess, LeaveapplicationdtlDataAccess>();
         builder.Services.AddScoped<IEmpmasgrpDataAccess, EmpmasgrpDataAccess>();
 
         builder.Services.AddScoped<IAtttemplatereqdtlDataAccess, AtttemplatereqdtlDataAccess>();
