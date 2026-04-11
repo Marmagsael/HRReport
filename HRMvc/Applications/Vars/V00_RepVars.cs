@@ -25,6 +25,7 @@ public class V00_RepVars
 
 
     //Newly Added ------------------------------------------------
+    public string                       Action                  { get; set; } = string.Empty;
     public int                          SelectedFilter          { get; set; } = 0;
     public List<DataFilterModel>        DataFilters             { get; set; } = [];
     public class DataFilterModel

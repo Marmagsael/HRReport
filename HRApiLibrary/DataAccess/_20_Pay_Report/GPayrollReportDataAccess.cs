@@ -144,6 +144,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                             e.PagIbiGNo, 
                             e.EmpBirth, 
                             e.Tin,
+                              IF(e.DateHired IS NULL OR e.DateHired < '1000-01-01', NULL, e.DateHired) AS DateHired,
                            IF(e.DateHired IS NULL OR e.DateHired < '1000-01-01', NULL, e.DateHired) AS DateHired,
                             t.Ee,  
                             t.Ee AS Er, 
