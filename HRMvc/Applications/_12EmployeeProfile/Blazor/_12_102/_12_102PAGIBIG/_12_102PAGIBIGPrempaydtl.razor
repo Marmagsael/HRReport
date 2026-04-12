@@ -1,0 +1,54 @@
+﻿<div class="d-flex gap-2 w-100 mt-3">
+     <div class="card w-100 p-0 ">
+          <div class="card-header d-flex gap-2 w-100 p-0 py-2 fw-bold text-center">
+               <div class="w-100p p-2 bordered-right ">TRN</div>
+               <div class="w-150p p-2 bordered-right">OR No.</div>
+               <div class="w-100p p-2 bordered-right">EES</div>
+               <div class="w-115p p-2 bordered-right">ERS</div>
+               <div class="w-100p p-2 bordered-right">Total</div>
+          </div>
+
+          <div class="card-body p-0">
+               @{ 
+                    int i = 0; var prems = PagibigPrems??[]; 
+                    double totee = 0, toter = 0, totamt = 0;    
+               }
+               <div class="vh-max vh55" >
+                @foreach(var p in prems){
+                    var rowClass = i++ % 2 == 0 ? "" : "bg-lightgray";
+                    var total = (p.Ees ?? 0) + (p.Ers ?? 0) ;
+                    totee     += p.Ees??0; 
+                    toter     += p.Ers??0; 
+                    totamt    += total;
+
+                    <div class="d-flex gap-2 w-100  @rowClass p-0">
+                         <div class="w-100p p-2 bordered-right text-start"> @p.Trn.Substring(0,6) </div>
+                         <div class="w-150p p-2 bordered-right">@p.OrNo</div>
+                         <div class="w-100p p-2 bordered-right text-end ">@(p.Ees?.ToString("N2") ?? "-")</div>
+                         <div class="w-115p p-2 bordered-right text-end ">@(p.Ers?.ToString("N2") ?? "0.00")</div>
+                         <div class="w-100p p-2 bordered-right text-end ">@total.ToString("N2")</div>
+                    </div>
+               } 
+               </div>
+
+               <div class="d-flex gap-2 w-100  p-0  bordered-top ">
+                    <div class="w-100p p-2 text-start">  </div>
+                    <div class="w-150p p-2 bordered-right fw-bold">Total </div>
+                    <div class="w-100p p-2 bordered-right text-end ">@(totee.ToString("N2") ?? "-")</div>
+                    <div class="w-115p p-2 bordered-right text-end ">@(toter.ToString("N2") ?? "0.00")</div>
+                    <div class="w-100p p-2 bordered-right text-end ">@totamt.ToString("N2")</div>
+               </div>
+
+          </div>
+          
+          
+
+     </div>
+
+</div>
+
+@code {
+
+    [Parameter] public List<GPagibigpaydtlModel>  PagibigPrems  { get; set; } = []; 
+
+}

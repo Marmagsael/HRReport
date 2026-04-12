@@ -1,54 +1,74 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
-<div class="">
-    @* --- Header ---------------------- *@
-    <div class=" d-flex p-2 border-bottom fw-bold ">
-        <div class="w-100p">   No</div>
-        <div class="w-150p">    Emp. No.</div>
-        <div class="w-250p">    Emp. Name</div>
-        <div class="w-150p">    Date</div>
-        <div class="w-350p">    Deployment</div>
-        <div class="w-350p">    Reason</div>
+@using System.Globalization
+@inject NotificationService _NotificationService;
+
+
+<div class="card mx-3 my-2 d-flex flex-column" style="height:81vh;">
+
+    <!-- HEADER -->
+    <div class="sticky-header bg-white">
+        <div class="d-flex gap-2 p-2 border-bottom fw-bold bg-lightgray">
+            <div class="w-60p text-end pe-2">No.</div>
+            <div class="w-100p">    Emp. No.</div>
+            <div class="w-250p">    Emp. Name
+                &nbsp; <_01SortByField ColName="EmpName" Rv="@Rv" ChildAction="SortBy"/>
+            </div>
+            <div class="w-150p">    Mov. Date
+                &nbsp; <_01SortByField ColName="MovDate" Rv="@Rv" ChildAction="SortBy" />
+            </div>
+            <div class="w-250p">    Mov. Deployment</div>
+            <div class="w-250p">    Reason</div>
+        </div>
     </div>
-    
-    @* --- Details ---------------------- *@
-    <div class="vh-max vh75">
+
+    <!-- BODY -->
+    <div class="flex-grow-1 overflow-auto">
         @{
-
-            int row = 0; int ctr = 1;
-            if(V.Count() > 0)
-            {
-                foreach (var v in V)
-                {
-                    <div class=" d-flex p-2 border-bottom @(row % 2 == 0 ? "bg-light" : "") ">
-                        <div class="w-100p">        @ctr </div>
-                        <div class="w-150p">        @v.EmpNumber </div>
-                        <div class="w-250p">        @v.EmpName </div>
-                        <div class="w-150p">        @(v.MovDate?.ToString("MM/dd/yyyy") ?? "") </div>
-                        <div class="w-350p">        @v.ClName </div>
-                        <div class="w-350p">        @v.Remarks </div>
-                    </div>
-                    row++; ctr++;
-                }
-            }
-            else
-            {
-
-                <div class="d-flex justify-content-center align-items-center w-100 h-100 pt-5 ">
-                    No records to display.
-                </div>
-                
-            }
-           
+            int ctr = 0; int row = 0; string stat = string.Empty;
         }
-    </div>
-  
+        @if ((V.RepDtls ?? []).Any())
+        {
+            @foreach (var v in V.RepDtls)
+            {
+                ctr++;
+                row++;
 
+                <div class="d-flex gap-2 border-bottom px-2 py-1  @(row % 2 == 0 ? "bg-light" : "") ">
+                    <div class="w-60p text-end pe-2">    @ctr.</div>
+                    <div class="w-100p">        @v.EmpNumber </div>
+                    <div class="w-250p">        @v.EmpName </div>
+                    <div class="w-150p">        @(v.MovDate?.ToString("MM/dd/yyyy") ?? "") </div>
+                    <div class="w-250p">        @v.ClName </div>
+                    <div class="w-250p">        @v.Remarks </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="text-muted text-center">
+                    No data to display.
+                </div>
+            </div>
+        }
+
+    </div>
 
 </div>
 
-
 @code {
-    [Parameter] public List<V2212Model> V {get; set;}=[];
-  
+    [Parameter] public V00_RepVars Rv           { get; set; } = new();
+    [Parameter] public V2212Model V             { get; set; } = new();
+    [Parameter] public EventCallback<object>    ChildAction { get; set; }
+
+
+    private async Task SortBy()
+    {
+        V.Action = "SortBy";
+        await ChildAction.InvokeAsync(V);
+    }
+
+
 
 }

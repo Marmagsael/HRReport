@@ -1,58 +1,63 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace HRMvc.Controllers
+namespace HRMvc.Controllers;
+
+[Route("14")]
+public class PisReportController : Controller
 {
-    [Route("14")]
-    public class PisReportController : Controller
+    // Management
+    private static readonly Dictionary<string, string> ManagementViews = new()
     {
-        private static readonly Dictionary<string, string> ReportViews = new()
-        {
-            // Standard
-            ["2102"] = "_2102_EmployeeMasterList",
-            ["2103"] = "_2103_EmployeeStatusReport",
-            ["2104"] = "_2104_EmployeeAgeReport",
-            ["2105"] = "_2105_NewlyHiredfortheMonth",
-            ["2106"] = "_2106_HireDateReport",
-            ["2107"] = "_2107_ForRegularization",
-            ["2108"] = "_2108_ResignedPersonnelfortheMonth",
-            ["2109"] = "_2109_ManpowerMovement",
-            ["2110"] = "_2110_InsurancePolicy",
+        ["2002"] = "_2002_UserManagement",
+        ["2003"] = "_2003_TimeOffSettings"
+    };
 
-            // Compliance
-            ["2202"] = "_2202_ClientGuardDetail",
-            ["2203"] = "_2203_EmployeeClearance",
-            ["2204"] = "_2204_PNPSAGSDReport",
-            ["2205"] = "_2205_FEDReport",
-            ["2206"] = "_2206_GroupDDO",
-            ["2207"] = "_2207_RTUReport",
-            ["2208"] = "_2208_RecalledEmployeeReport",
-            ["2209"] = "_2209_AssignmentHistory",
-            ["2210"] = "_2210_ClientContractExpirationReport",
-            ["2211"] = "_2211_UniformQuery",
-            ["2212"] = "_2212_FloatingEmployees",
-            ["2213"] = "_2213_OnLeaveEmployees",
-            ["2214"] = "_2214_DetailedDeviationReport",
-            ["2215"] = "_2215_SummarizedDeviationReport",
-            ["2216"] = "_2216_LicenseVerification",
-            ["2217"] = "_2217_LicenseExpiration"
-        };
+    // Reports 
+    private static readonly Dictionary<string, string> ReportViews = new()
+    {
+        ["2102"] = "_2102_EmployeeMasterList",
+        ["2103"] = "_2103_EmployeeStatusReport",
+        ["2104"] = "_2104_EmployeeAgeReport",
+        ["2105"] = "_2105_NewlyHiredfortheMonth",
+        ["2106"] = "_2106_HireDateReport",
+        ["2107"] = "_2107_ForRegularization",
+        ["2108"] = "_2108_ResignedPersonnelfortheMonth",
+        ["2109"] = "_2109_ManpowerMovement",
+        ["2110"] = "_2110_InsurancePolicy",
 
-        [HttpGet("")]
-        public IActionResult Index()
-        {
-            return View("~/Applications/PisReport/Views/Pages/Index.cshtml");
-        }
-        
-        // 🔥 Clean numeric route
-        [HttpGet("{pisCode:int}")]
-        public IActionResult Report(int pisCode)
-        {
-            var key = pisCode.ToString();
+        ["2202"] = "_2202_ClientGuardDetail",
+        ["2203"] = "_2203_EmployeeClearance",
+        ["2204"] = "_2204_PNPSAGSDReport",
+        ["2205"] = "_2205_FEDReport",
+        ["2206"] = "_2206_GroupDDO",
+        ["2207"] = "_2207_RTUReport",
+        ["2208"] = "_2208_RecalledEmployeeReport",
+        ["2209"] = "_2209_AssignmentHistory",
+        ["2210"] = "_2210_ClientContractExpirationReport",
+        ["2211"] = "_2211_UniformQuery",
+        ["2212"] = "_2212_FloatingEmployees",
+        ["2213"] = "_2213_OnLeaveEmployees",
+        ["2214"] = "_2214_DetailedDeviationReport",
+        ["2215"] = "_2215_SummarizedDeviationReport",
+        ["2216"] = "_2216_LicenseVerification",
+        ["2217"] = "_2217_LicenseExpiration"
+    };
 
-            if (!ReportViews.TryGetValue(key, out var viewName))
-                return NotFound();
+    [HttpGet("")]
+    public IActionResult Index()
+    {
+        return View("~/Applications/PisReport/Views/Pages/Index.cshtml");
+    }
 
-            return View($"~/Applications/PisReport/Views/Pages/{viewName}.cshtml");
-        }
+    [HttpGet("{pisCode:int}")]
+    public IActionResult Report(int pisCode)
+    {
+        var key = pisCode.ToString();
+
+        if (ManagementViews.TryGetValue(key, out var mgmtView)) return View($"~/Applications/PisModules/Views/Pages/{mgmtView}.cshtml");
+                                                                             
+        if (ReportViews.TryGetValue(key, out var reportView))   return View($"~/Applications/PisReport/Views/Pages/{reportView}.cshtml");
+
+        return NotFound();
     }
 }

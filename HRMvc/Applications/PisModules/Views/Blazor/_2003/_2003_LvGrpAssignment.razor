@@ -1,0 +1,105 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications.PisModules.Views.Blazor._2003._2003_LvGrpAssignment_Items
+@using Microsoft.AspNetCore.Mvc
+
+
+<CascadingValue Value="Uc" IsFixed="true">
+
+    <div class="card">
+        
+        <div class="card-header d-flex gap-2 p-2">
+            <div class="w-125p p-2">Leave Group</div>
+            <div class="w-400p">
+                <RadzenDropDown 
+                        Data="@v.Leavegrps" 
+                        TextProperty="Name" 
+                        ValueProperty="Id" 
+                        @bind-Value="v.Leavegrp.Id"
+                        Change="LvGrpChange" Placeholder="Leave Group" Style="width:100%"
+                        PopupStyle="min-height: 300px; max-height: 600px;  overflow-y: auto;" />
+            </div>
+        </div>
+
+        <div class="card-body vh-80min p-2 ">
+            
+            <div class="d-flex gap-2 w-100">
+                @* --- Left Content ---------------------------------- *@
+                <div class="w-600p">
+
+                    <div class="d-flex bg-secondary p-2 bg-opacity-10 small fw-bold justify-content-between ">
+                        <div>Assigned Employees</div>
+                        <div @onclick="() => v.ShowAddMember = true " class="px-2 fw-normal text-primary cur-pointer @enableAddMemberCSS ">
+                            <i class="fa-solid fa-plus"></i>
+                        </div>
+                    </div>
+
+                    @if(v.ShowAddMember)
+                    {   <_2003_LvGrpAssignment_AddMember V="v" CA="CA_Catcher" /> }
+                    
+                    <_2003_LvGrpAssignment_Dtls V="v" CA="CA_Catcher" />
+
+
+                    
+                
+                </div>
+
+
+            </div>
+            
+
+
+        </div>
+    </div>
+
+
+
+</CascadingValue>
+    
+@inject ILeavegrpDataAccess         _lvGrp;
+@inject IEmpmasgrpDataAccess       _empmasgrp;
+
+@code {
+    [Parameter] public UserClaimsModel?     Uc { get; set; }
+    V2003_LvGrpAssignmentModel              v                   = new();
+    List<EmpmasgrpModel?>?                  empmasAssigned      = [];
+    List<EmpmasInternalModel?>?             sEmpmas             = [];
+
+    string enableAddMemberCSS => v.Leavegrp.Id > 0 ? "" : " disabled-div ";
+
+    @* ==> Search Functions -------------------------------------------------------------- *@
+    List<EmpmasInternalModel?>? empmasUnAssigned => sEmpmas?
+    .Where(s => s != null && !(empmasAssigned?.Any(a => a?.EmpmasId == s.Id) ?? false))
+    .ToList();
+
+    
+
+    @* --- Functions --------------------------------------------------------------------- *@
+    protected async override Task OnInitializedAsync()
+    {
+        await LoadDatas();
+        @* empmasAssigned.First().EmpmasId *@
+    }
+
+    async Task LoadDatas()
+    {
+        var res = await _lvGrp._02(Uc.SchemaUserPis, Uc.Conn);
+        if (res.Count > 0) v.Leavegrps = res!;
+        
+    }
+
+    async Task LvGrpChange()
+    {
+        v.Empmasgrps = [];
+       var res = await _empmasgrp._02ByFldId("LeavegrpId", v.Leavegrp.Id, Uc.SchemaUserPis, Uc.Conn);
+       if(res != null) v.Empmasgrps = res!; 
+
+
+       
+    }
+
+    void CA_Catcher() {    }
+
+        
+}

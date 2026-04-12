@@ -1,0 +1,194 @@
+@using FastReport.Utils
+@using HRApiLibrary.DataAccess._10_Pis
+<div class="d-flex p-1 fw-bold card-header small  ">
+        <div class="w-120p ">Date Requested</div>
+        <div class="w-120p ">Effectivity</div>
+        <div class="w-220p ">Approver </div>
+        <div class="w-120p ">Status</div>
+        <div class="w-220p ">Remarks</div>
+    </div>
+
+@{int i = 0; }
+@foreach(AtttemplatereqhdrModel h in hdrs) {
+    i++; 
+    var rowClass = (i % 2 == 0) ? "bg-light" : "";
+    <div @onclick="()=>PickData(h)"  class="d-flex p-1 small cur-pointer @rowClass text-start @(h.Id == hdrId ? " fw-bold " : "") ">
+        <div class="w-120p ">@h.DateRequested?.ToString("MMM dd, yyyy")</div>
+        <div class="w-120p ">@h.Effectivity?.ToString("MMM dd, yyyy")</div>
+        <div class="w-220p ">@h.ApproverName</div>
+        <div class="w-120p ">@h.Status</div>
+        <div class="w-220p ">@h.Remarks</div>
+    </div>
+}
+
+
+@if(hdrId<1) { return; } 
+
+<div class="w-100 p-2 border-bottom mt-4">
+    <div @onclick="LoadRequest" class="mb-cbtn mb-cbtn-gray p-1 card w-125p">
+        Load Data
+    </div>
+</div>
+
+@* --- Details ---------------------------------- *@
+<table class="table table-sm table-hover" >
+    <thead>
+        <tr >
+            <th class="p-2 w-10 bg-light  " >Day</th>
+            <th class="p-2 w-10 text-center " >Duty Type</th>
+            <th class="p-2 w-15 text-center " >IN</th>
+            <th class="p-2 w-15 text-center " >Duration</th>
+            <th class="p-2 w-15 text-center " >OUT</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @* --- Monday ----------------------------------- *@
+        <tr >
+            <td class="p-2 w-10 bg-light    @dutyTypeCss(dtl?.D2_DutyType) " >Monday</td>
+            <td class="p-2 w-10 text-center @dutyTypeCss(dtl?.D2_DutyType) " >@dtl.D2_DutyType</td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D2_DutyType) " >@(dtl.D2_DutyType=="R" ? dtl.D2_In?.ToString("##:##") : "-")  </td> 
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D2_DutyType) " >@(dtl.D2_DutyType=="R" ? ((dtl.D2_HrsLength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D2_DutyType) " >
+                @(dtl.D2_DutyType=="R" ?  (outRes(dtl.D2_DutyType, dtl.D2_In, dtl.D2_HrsLength)) : "-"  )
+            </td>
+        </tr>
+        
+        @* --- Tuesday ----------------------------------- *@
+        <tr >
+            <td class="p-2 w-10 bg-light    @dutyTypeCss(dtl?.D3_DutyType) " >Tuesday</td>
+            <td class="p-2 w-10 text-center @dutyTypeCss(dtl?.D3_DutyType) " >@dtl.D3_DutyType</td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D3_DutyType) " >@(dtl.D3_DutyType=="R" ? dtl.D3_In?.ToString("##:##") : "-")  </td> 
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D3_DutyType) " >@(dtl.D3_DutyType=="R" ? ((dtl.D3_HrsLength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D3_DutyType) " >
+                @(dtl.D3_DutyType=="R" ?  (outRes(dtl.D3_DutyType, dtl.D3_In, dtl.D3_HrsLength)) : "-"  )
+            </td>
+        </tr>
+        
+        @* --- Wednesday ----------------------------------- *@
+        <tr >
+            <td class="p-2 w-10 bg-light    @dutyTypeCss(dtl?.D4_DutyType) " >Wednesday</td>
+            <td class="p-2 w-10 text-center @dutyTypeCss(dtl?.D4_DutyType) " >@dtl.D4_DutyType</td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D4_DutyType) " >@(dtl.D4_DutyType=="R" ? dtl.D4_In?.ToString("##:##") : "-")  </td> 
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D4_DutyType) " >@(dtl.D4_DutyType=="R" ? ((dtl.D4_HrsLength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D4_DutyType) " >
+                @(dtl.D4_DutyType=="R" ?  (outRes(dtl.D4_DutyType, dtl.D4_In, dtl.D4_HrsLength)) : "-"  )
+            </td>
+        </tr>
+
+        @* --- Thursday ----------------------------------- *@
+        <tr >
+            <td class="p-2 w-10 bg-light    @dutyTypeCss(dtl?.D5_DutyType) " >Thursday</td>
+            <td class="p-2 w-10 text-center @dutyTypeCss(dtl?.D5_DutyType) " >@dtl.D5_DutyType</td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D5_DutyType) " >@(dtl.D5_DutyType=="R" ? dtl.D5_In?.ToString("##:##") : "-")  </td> 
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D5_DutyType) " >@(dtl.D5_DutyType=="R" ? ((dtl.D5_HrsLength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D5_DutyType) " >
+                @(dtl.D5_DutyType=="R" ?  (outRes(dtl.D5_DutyType, dtl.D5_In, dtl.D5_HrsLength)) : "-"  )
+            </td>
+        </tr>
+        
+        @* --- Friday ----------------------------------- *@
+        <tr >
+            <td class="p-2 w-10 bg-light    @dutyTypeCss(dtl?.D6_DutyType) " >Friday</td>
+            <td class="p-2 w-10 text-center @dutyTypeCss(dtl?.D6_DutyType) " >@dtl.D6_DutyType</td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D6_DutyType) " >@(dtl.D6_DutyType=="R" ? dtl.D6_In?.ToString("##:##") : "-")  </td> 
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D6_DutyType) " >@(dtl.D6_DutyType=="R" ? ((dtl.D6_HrsLength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D6_DutyType) " >
+                @(dtl.D6_DutyType=="R" ?  (outRes(dtl.D6_DutyType, dtl.D6_In, dtl.D6_HrsLength)) : "-"  )
+            </td>
+        </tr>
+
+        @* --- Saturday ----------------------------------- *@
+        <tr >
+            <td class="p-2 w-10 bg-light    @dutyTypeCss(dtl?.D7_DutyType) " >Saturday</td>
+            <td class="p-2 w-10 text-center @dutyTypeCss(dtl?.D7_DutyType) " >@dtl.D7_DutyType</td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D7_DutyType) " >@(dtl.D7_DutyType=="R" ? dtl.D7_In?.ToString("##:##") : "-")  </td> 
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D7_DutyType) " >@(dtl.D7_DutyType=="R" ? ((dtl.D7_HrsLength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D7_DutyType) " >
+                @(dtl.D7_DutyType=="R" ?  (outRes(dtl.D7_DutyType, dtl.D7_In, dtl.D7_HrsLength)) : "-"  )
+            </td>
+        </tr>
+        
+
+        @* --- Sunday ----------------------------------- *@
+        <tr >
+            <td class="p-2 w-10 bg-light    @dutyTypeCss(dtl?.D1_DutyType) " >Sunday</td>
+            <td class="p-2 w-10 text-center @dutyTypeCss(dtl?.D1_DutyType) " >@dtl.D1_DutyType</td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D1_DutyType) " >@(dtl.D1_DutyType=="R" ? dtl.D1_In?.ToString("##:##") : "-")  </td> 
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D1_DutyType) " >@(dtl.D1_DutyType=="R" ? ((dtl.D1_HrsLength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+            <td class="p-2 w-15 text-center @dutyTypeCss(dtl?.D1_DutyType) " >
+                @(dtl.D1_DutyType=="R" ?  (outRes(dtl.D1_DutyType, dtl.D1_In, dtl.D1_HrsLength)) : "-"  )
+            </td>
+        </tr>
+
+
+
+    </tbody>
+</table>
+
+
+
+
+
+
+@inject     IAtttemplatereqdtlDataAccess _dtl ;  
+
+
+
+@code {
+    [Parameter] public UserClaimsModel  Uc      { get; set; } = new(); 
+    [Parameter] public V12_102CS        Cs      { get; set; } = new(); 
+    [Parameter] public EventCallback    Ec      { get; set; } 
+    AtttemplatereqhdrModel hdrSelected = new();
+
+
+    List<AtttemplatereqhdrModel> hdrs => Cs.Atttemplatereqhdrs;  
+    AtttemplatereqdtlModel dtl = new(); 
+    int hdrId = 0; 
+    
+
+    async Task PickData(AtttemplatereqhdrModel hdr) {
+        hdrId       = hdr?.Id??0; 
+        hdrSelected = hdr; 
+
+        Cs.Atttemplatereqhdr    = hdr ; 
+        dtl    = new AtttemplatereqdtlModel() ; 
+
+        var res = await _dtl._02ByAtttemplateReqHdrId(hdr.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+        if(res!=null) dtl = res.FirstOrDefault();     
+    }
+
+    async Task LoadRequest() {
+        Cs.Atttemplatereqhdr    = hdrSelected; 
+        Cs.Atttemplatereqdtl    = dtl; 
+        Cs.ShowMyReqquest       = false; 
+        await Ec.InvokeAsync(); 
+
+
+    }
+
+
+
+
+    string dutyTypeCss(string dt) => dt=="RD" ? " text-danger " : "" ;
+    string outRes(string dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
+
+    string outSched(string dutyType, int? pin, int? duration)
+    {
+        if(dutyType==null)  return "-"; 
+        if(pin==null)       return "-"; 
+
+        int punchin      = pin ?? 0;
+        double duration1 = (duration ?? 0) / 100.0;
+
+        int hr  = punchin / 100;
+        int min = punchin % 100;
+
+        DateTime dt = new DateTime(2000, 1, 1, hr, min, 0);
+
+        dt = dt.AddHours(duration1);
+
+        return dt.ToString("h:mm tt");
+    }
+    
+}

@@ -1,100 +1,269 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
-@using HRMvc.Applications.PisReport.Views.Blazor._2212
+
 @using HRMvc.Applications.PisReport.Views.Blazor._2217
+@using System.Globalization
 
-<_00BT HdrCaption="License Expiry" Rv="@rv">
+@inject NotificationService _NotificationService
+@inject IOPisReportDataAccess _pisRep
+@inject IOEmpstatDataAccess _empstat
+
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-        <div class="p-0"> 
-            <div class="card-header">
-                <div class="d-flex">
+        @*--- Looader --------------------------------------------------------------*@
+        <_00Loader Rv="@rv" />
 
+        @if ((v.RepDtls ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------------------*@
+             <_2217_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
+        }
 
-                    @*--- Date Range ------------------------------------------------*@
-                   <_2212_DatePicker Rv = "@rv"/>
-                    
-                    @*--- Buttons ------------------------------------------------*@
-                    <span @onclick="FetchData">
-                        <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray">
-                            Fetch Data
-                        </div>
-                    </span>
-                    @if(v.Count > 0) 
-                        { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}                   
-
+        @*--- Date Range --------------------------------------------------------*@
+         <div class="p-0">
+            <div class="card-header d-flex gap-3">
+                <div class="d-flex flex-row gap-2 card p-2">
+                    <div class="text-muted p-2 pe-4 border-end"> <small>Date Range</small> </div>
+                    <_01MMDDYYYY Rv="rv" ChildAction="ChildActionCatcher" />
+                    @*--- Fetch Button --------------------------------------------------------*@
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">
+                        Fetch Data
+                    </div>
                 </div>
             </div>
         </div>
 
-        @*--- Grid ------------------------------------------------*@
-        <div>
-            <_2217_Dtl V="@v"/>
+        @*--- Client and Status List ------------------------------------------------*@
+        <div class="w-100 d-flex">
+            <div class="w-50"> <_00TClientList Clients="@rv.Clients" ChildAction="ChildActionCatcher" /> </div>
+            <div class="w-50"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
         </div>
-    
     </Details>
-</_00BT>
+</_00BT_FullW>
 
-@inject IOPisReportDataAccess _pisrep;
+
+
+@inject IOPisReportDataAccess _pisRep;
+@inject IOEmpstatDataAccess _empstat;
+@inject IOClientDataAccess _client;
+
 
 @code {
-        [Parameter]public UserClaimsModel   Uc  {get; set;} = new();
-        V00_RepVars                         rv  {get; set;} = new();
-        List<V2217Model>                    v   {get; set;} = [];
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
-    protected override void OnInitialized()
+    private V00_RepVars rv = new();
+    private V2217Model v = new();
+
+    private List<string?> statuses =>rv.Empstats?.Where(x => x.IsSelectedB).Select(x => x.Code).ToList() ?? new();
+    private List<string?> clients => rv.Clients?.Where(x => x.IsSelectedB).Select(x => x.ClNumber).ToList() ?? new();
+
+    protected override async Task OnInitializedAsync()
     {
-        rv.DStart   = DateTime.Now;
-        rv.DEnd     = DateTime.Now;
+        if (!HasConnection()) return;
 
-        rv.RelativePath = "Reports/_02HR/K_2217_LE.trdp";
-        rv.RefreshToken = 2212000; 
-        rv.MCaption     = "License Expiry";
+        InitializeReport();
+        await LoadInitialData();
     }
 
-        async Task FetchData(){
-        v = [];
-        var status = new List<string> { "A","E","H","K","L","M","V","Y" };
-        var res = await _pisrep._02Empmas_ByLicenseExpiry(rv.DStart,rv.DEnd,status,Uc.OpisDb!,Uc.Conn!);
-                if(res.Any()){
-            foreach(var f in res){
-                V2217Model rec = new(){
-                    EmpNumber   = f.EmpNumber,   
-                    EmpName     = f.EmpName,
-                    EmpStatus   = f.EmpStatus,     
-                    LicExpire   = f.Licexpire,
-                    SecLicense  = f.SecLicense,    
-                    ClName      = f.ClName,     
-                };
-                v.Add(rec);
-                     
-        }
-    }
-        }
-
-        async Task CreateReport()
+    private void InitializeReport()
     {
+        rv = new()
+        {
+            MCaption = "Expired License",
+            RefreshToken = 22170000,
+            ReportParams = new()
+            {
+                ["CoName"] = "-",
+                ["CoAddress"] = "-",
+                ["ReportTitle"] = "Summary of Expired Licenses",
+                ["RunDate"] = DateTime.Now
+            },
+            DataFilters = new()
+            {
+                new() { Code = 1, Name = "Current Deployment" }
+            }
+        };
+    }
+
+    private async Task LoadInitialData()
+    {
+        await LoadCompanyInfo();
+        await LoadEmployeeStatus();
+        await LoadClients();
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() != true) return;
+
+        var r = res.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+    private async Task LoadEmployeeStatus()
+    {
+        var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() != true) return;
+
+        rv.Empstats = res;
+        rv.Empstats.ForEach(x =>
+        {
+            if (x.IsResigned == "0") x.IsSelectedB = true;
+        });
+    }
+
+    private async Task LoadClients()
+    {
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() == true) rv.Clients = res!;
+        rv.Clients.Insert(0, new() { ClNumber = "-", ClName = "Undeployed" }); 
+    }
+
+    private void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy")SortBy();
+        v.Action = string.Empty;
+    }
+
+    private async Task FetchData()
+    {
+        ResetVars();
+
+        if (!HasConnection() || !ValidateFilters()) return;
+
+        try
+        {
+            rv.Isloaded = true;
+
+            var res = await _pisRep._02Empmas_ByLicenseExpiry(clients, statuses, rv.DStart, rv.DEnd, Uc.OpisDb!, Uc.Conn!);
+            v.RepDtls = res.Select(r => new R2217Model
+            {
+                EmpNumber   = r.EmpNumber,
+                EmpName     = r.EmpName,
+                EmpStatus   = r.EmpStatus,
+                LicExpire   = r.Licexpire,
+                SecLicense  = r.SecLicense,
+                ClName      = string.IsNullOrWhiteSpace(r.ClName) ? "-" : r.ClName,
+                EmpFirstNm  = r.EmpFirstNm,
+                EmpLastNm   = r.EmpLastNm,
+                Client_     = r.Client_
+            }).ToList();
+
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data",
+                "Please refresh or contact your system administrator.");
+
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (v.RepDtls?.Any() != true)
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+            return;
+        }
 
 
-        rv.ReportData = v; 
-		rv.ReportParams = []; 
+        rv.ShowModal = true;
 
-		var res = await _pisrep._02CoInfo(Uc.OpisDb!, Uc.Conn!); 
-		rv.ReportParams["CoName"]       = "-";
-		rv.ReportParams["CoAddress"]    = "-";
+    }
 
-		if (res.Count> 0) {
-			var r = res.FirstOrDefault(); 
-			rv.ReportParams["CoName"]       = r.CoName??"";
-			rv.ReportParams["CoAddress"]    = r.CoAdd??"";
-		}
-        string dstart = rv.DStart?.ToString("d, MMMM yyyy") ?? "-";
-        string dend = rv.DEnd?.ToString("d, MMMM yyyy") ?? "-";
+    private bool ValidateFilters()
+    {
+        if (!clients.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning","Please select at least one deployment.");
+            return false;
+        }
 
-        rv.ReportParams["DateRange"] = $"For the month covering {dstart} - {dend}";
-		rv.ReportParams["RunDate"]      = DateTime.Now;
-		rv.ReportParams["ReportTitle"]  = "Summary of Expired Licenses";
-		
-		
-		rv.ShowModal = true;      
+        if (!statuses.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void SortBy()
+    {
+        IOrderedEnumerable<R2217Model> sorted;
+
+        if (v.IsGroupByClient)
+        {
+            // Always keep Client ascending
+            sorted = v.RepDtls.OrderBy(x => x.ClName);
+
+            // Then sort by Empname or License Expiry
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else if (rv.SortFld == "LicExpire")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.LicExpire)
+                                        : sorted.ThenByDescending(x => x.LicExpire);
+            }
+        }
+        else
+        {
+            // If no grouping is applied, sort by Empname or License Expiry
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.LicExpire)
+                                        : v.RepDtls.OrderByDescending(x => x.LicExpire);
+            }
+
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
+    private void ResetVars()
+    {
+        v.RepDtls       = new();
+        rv.ShowModal    = false;
+        rv.ShowReport   = false;
+        v.IsGroupByClient = false;
+
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error,"Failed to connect","Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity    = severity,
+            Summary     = summary,
+            Detail      = detail,
+            Duration    = 5000
+        });
     }
 }

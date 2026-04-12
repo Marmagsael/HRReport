@@ -1,0 +1,38 @@
+@using Blazorise
+@{
+    var empmas = OEmpmass.FirstOrDefault() ?? new OEmpmasModel();
+    var currIn  = "00:00"; 
+    var currOut = "00:00"; 
+    var prevIn  = "00:00"; 
+    var prevOut = "00:00"; 
+    
+    var currInDisabled   = false;
+    var currOutDisabled  = false;
+    var prevInDisabled   = false; 
+    var prevOutDisabled  = false;
+}
+
+
+<h6>
+    <div class="w-100 ">
+        <div class="p-1 text-primary ">Hello <span class="text-black">@empmas.EmpLastNm</span>, </div>
+        @* <div class="p-1 text-success "> @DateTime.Now.ToString("D") </div> *@
+        <div class="py-2">The current date and time today is <span class="text-success" id="clock"></span> </div>
+
+    </div>
+</h6>
+
+@inject IJSRuntime JS
+
+@code {
+
+    [Parameter] public List<OEmpmasModel?>?     OEmpmass   { get; set; } = [];
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await JS.InvokeVoidAsync("startClock", "clock"); }
+        @* await JS.InvokeVoidAsync("startClockWithTextbox", "clockLabel", "pout"); *@
+    }
+    
+
+}

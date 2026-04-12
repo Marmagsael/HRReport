@@ -1,0 +1,67 @@
+@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@inject DialogService _DialogService;
+<RadzenDialog />
+
+<div class="card p-0">
+    <div class="card-header small fw-bold ">Leave Group Entry</div>
+    <div class="d-flex gap-1 mb-2  bg-success  p-2 bg-opacity-10    ">
+        <div class=" @WidthLength mt-1">
+            <RadzenTextBox Placeholder="Lv Group Name" class="w-100" MaxLength="45" @bind-Value=@lvGrpName />
+        </div>
+        <div class=" mt-1 d-flex gap-1 p-1 ">
+            <button @onclick="Save" class="btn p-1 txt w-50p mb-a-green h-30p b-blue  ">Save</button>
+            <button @onclick="Close" class="btn p-1 txt w-50p mb-a-red h-30p  b-red ">Close</button>
+        </div>
+    </div>
+</div>
+
+
+@inject ILeavegrpDataAccess _lvgrp; 
+
+@code {
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    [Parameter] public V2003_LvGrpModel V           { get; set; } = new();
+    [Parameter] public EventCallback    CA          { get; set; }
+    [Parameter] public string           WidthLength { get; set; } = "w-30p";
+    
+    string lvGrpName = string.Empty;
+    
+
+    async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(lvGrpName))
+        {
+            await _DialogService.Alert("Leave Group Name is required.", "Validation");
+            return;
+        }
+
+        var exists = V.Leavegrps
+            .Any(a => a.Name 
+            .Equals(lvGrpName, StringComparison.OrdinalIgnoreCase));
+
+        if (exists)
+        {
+            await _DialogService.Alert($"'{lvGrpName}' already exists.", "Duplicate Name", new AlertOptions() { OkButtonText = "Exit" });
+            return;
+        }
+
+        //--- TODO: Save to DB here
+        LeavegrpModel lvgrp = new() {
+            Name = lvGrpName
+        };  
+        await _lvgrp._01(lvgrp, Uc.SchemaUserPis, Uc.Conn);
+        var res = await _lvgrp._02(Uc.SchemaUserPis, Uc.Conn);
+        if (res.Count > 0) { V.Leavegrps = res!; }
+        
+        V.ShowDE = false;
+        await CA.InvokeAsync();
+    }
+    async Task Close() 
+    {
+        V.ShowDE = false;
+        await CA.InvokeAsync();
+    }
+    
+}

@@ -25,6 +25,7 @@ public class V00_RepVars
 
 
     //Newly Added ------------------------------------------------
+    public string                       Action                  { get; set; } = string.Empty;
     public int                          SelectedFilter          { get; set; } = 0;
     public List<DataFilterModel>        DataFilters             { get; set; } = [];
     public class DataFilterModel
@@ -33,15 +34,16 @@ public class V00_RepVars
         public string?  Name { get; set; } = "";
     }
 
-
+    public string SortFld { get; set; } = "";
+    public string SortOdr { get; set; } = "asc";
     //-----------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
     public int                  Year            { get; set; } = DateTime.Now.Year;
     public string               Month           { get; set; } = DateTime.Now.ToString("MM");
     public string               Period          { get; set; } = DateTime.Now.Day <= 15 ? "01" : "02";
-    public DateTime?            DStart          { get; set; } 
-    public DateTime?            DEnd            { get; set; } 
+    public DateTime?            DStart          { get; set; } = DateTime.Now;
+    public DateTime?            DEnd            { get; set; } = DateTime.Now;
 
 
     //---------------------------------------------------------------------------------------
@@ -54,7 +56,7 @@ public class V00_RepVars
     public string               ClNumber        { get; set; } = "";
     public List<OClientModel>   Clients         { get; set; } = [];
     public string               Empstat_        { get; set; } = "";
-    public List<OEmpstatModel>  Empstats       { get; set; } = [];
+    public List<OEmpstatModel?>  Empstats       { get; set; } = [];
 
 
     //--- Modal Details ----------------------------------------------

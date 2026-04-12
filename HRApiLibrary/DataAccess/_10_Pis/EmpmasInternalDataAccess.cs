@@ -29,7 +29,7 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
 
     public async Task<EmpmasInternalModel?> _02(int id, string schema, string conn)
     {
-        string sql = $@"select  * from {schema}.Empmas where Id = @Id";
+        string sql = $@"select concat(trim(EmpLastNm),', ', trim(EmpFirstNm),' ' , trim(EmpMidNm)) Fullname, e.* from {schema}.Empmas e where e.Id = @Id";
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
@@ -44,7 +44,7 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
     
     public async Task<List<EmpmasInternalModel?>?> _02(string schema, string conn)
     {
-        string sql = $@"select  e.concat(trim(EmpLastNm),', ' trim(EmpFirstNm),' ' , trim(EmpMidNm)) Fullname, e.*  
+        string sql = $@"select  concat(trim(EmpLastNm),', ', trim(EmpFirstNm),' ' , trim(EmpMidNm)) Fullname, e.*  
                         from {schema}.Empmas e
                         order by EmpLastNm, EmpFirstNm, EmpMidNm";
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new {  }, conn);

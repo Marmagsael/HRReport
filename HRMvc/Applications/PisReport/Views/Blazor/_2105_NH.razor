@@ -1,153 +1,262 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2105
+@using System.Globalization
 
-
-@inject NotificationService _NotificationService;
+@inject NotificationService _NotificationService
+@inject IOPisReportDataAccess _pisRep
+@inject IOEmpstatDataAccess _empstat
 
 <RadzenNotification />
 
-
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-        @*--- Looader ------------------------------------------------*@
+
         <_00Loader Rv="@rv" />
-
-        @if ((v ?? []).Any())
+        @if ((v.RepDtls ?? []).Any())
         {
-            @*--- Report ------------------------------------------------*@
-            <_2105_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />
+            @*--- Report ------------------------------------------------------------*@
+            <_02BTRep Rv="rv" ChildAction="ChildActionCatcher" />
         }
+       
 
-
+        @*--- Filter and Button ------------------------------------------------*@
         <div class="p-0">
-            <div class="card-header">
-                <div class="d-flex gap-2">
-                    @*--- Period ------------------------------------------------*@
+            <div class="card-header d-flex gap-3">
+                <div class="d-flex flex-row gap-2 card p-2">
+                    <div class="text-muted p-2 pe-4 border-end"> <small>Date Covered</small> </div>
                     <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
-                    @*--- Fetch Button ------------------------------------------------*@
-                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">
+                        Fetch Data
+                    </div>
+
                 </div>
+
+                @*-- Export Format ------------------------------------------------*@
+                <div class="d-flex flex-row gap-2 card p-2 ">
+                    <div class="text-muted p-2 pe-4 border-end"> <small>Export Format </small> </div>
+                    <div class="d-flex w-150p ">
+                        <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                    </div>
+                    @*-- Show Report ----------------------------------------------*@
+                    <button class="p-2 card mb-cbtn mb-cbtn-gray 
+                             @(!(v.RepDtls?.Any() ?? false) ? "pe-none cursor-not-allowed opacity-50" : "")"
+                            disabled="@(!(v.RepDtls?.Any() ?? false))"
+                            @onclick="CreateReport">
+                        Show Report
+                    </button>
+                </div>
+
             </div>
         </div>
 
-        @*--- Client List ------------------------------------------------*@
-        <div class="w-100"> <_00TStatusList Empstats="@rv.Empstats" ClassParams="@statusClass"  ChildAction="ChildActionCatcher" /> </div>
+        @*--- Grid -----------------------------------------------------------*@
+        <div class="w-100">
+            <_2105_Dtl V="@v" Rv="@rv" ChildAction="ChildActionCatcher" />
+        </div>
+
     </Details>
 </_00BT_FullW>
 
-
-
-@inject IOPisReportDataAccess _pisRep;
-@inject IOEmpstatDataAccess _empstat;
-
 @code {
-    [Parameter] public UserClaimsModel  Uc   { get; set; }  = new();
-                        V00_RepVars     rv                  = new();
-                  List<V2105Model>      v                   = [];
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
-    List<string?>? statuses => rv.Empstats.Where(e => e.IsSelectedB).Select(e => e.Code).ToList() ?? [];
-    Dictionary<string, object> statusClass = new() { ["VH"] = "vh77" };
+    V00_RepVars rv = new();
+    V2105Model v = new();
+
 
     protected override async Task OnInitializedAsync()
     {
-        rv.Empstats = [];
+
+        if (!HasConnection()) return;
+
+        InitializeReport();
+        await LoadInitialData();
+    }
+
+    //===================================
+    // Initial Data =====================
+    private void InitializeReport()
+    {
+        rv.MCaption = "Newly Hired For The Month";
         rv.RefreshToken = 21050000;
-        rv.MCaption     = "Newly Hired For The Month";
-
-        @* --- Employee Status  ------------------------------------------- *@
-        List<OEmpstatModel?>? empstats = await _empstat._02s(Uc.OpisDb!, Uc.Conn!) ?? [];
-        if (empstats.Any()) rv.Empstats = empstats!;
-        rv.Empstats?.Where(e => e != null).ToList().ForEach(e => e.IsSelectedB = (e.Code == "_"));
-
-        @* --- Report Details -------------------------------------------- *@
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        rv.ReportParams = [];
-
-        rv.ReportParams["CoName"]       = "-";
-        rv.ReportParams["CoAddress"]    = "-";
-
-        if (res.Count > 0)
+        rv.ReportParams = new()
         {
-            var r = res.FirstOrDefault();
-            rv.ReportParams["CoName"]       = r.CoName ?? "";
-            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
-        }
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "Newly Hired Employees",
+            ["RunDate"] = DateTime.Now
+        };
+    }
 
-        rv.ReportParams["ReportTitle"]  = "Newly Hired Employees";
-        rv.ReportParams["RunDate"]      = DateTime.Now;
+    private async Task LoadInitialData()
+    {
+        await LoadCompanyInfo();
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+   
+
+    //===================================
+    // Core Functions ====================
+    private void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
     }
 
 
-    void ChildActionCatcher() { }
-
     async Task FetchData()
     {
-        v = [];
-        rv.ShowReport = false;
-        rv.ShowModal = false;
-
-        if (!(statuses ?? []).Any())
-        {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Warning,
-                Summary = "Warning",
-                Detail = $"Please select at least one employee status to proceed.",
-                Duration = 4000
-            });
-            return;
-        }
+        ResetVars();
+        if (!HasConnection() || !ValidateFilters()) return;
 
         try
         {
             rv.Isloaded = true;
-            string fld  = "datehired";
-            int mo      = Convert.ToInt32(rv.Month);
+            var res = await _pisRep._02Empmas_ByMonth_And_Year("datehired", Convert.ToInt32(rv.Month), rv.Year, Uc.OpisDb!, Uc.Conn!);
 
-            var res = await _pisRep._02Empmas_ByMonth_And_Year(fld, statuses, mo, rv.Year, Uc.OpisDb!, Uc.Conn!);
-            if (res.Any())
+            if ((res ?? []).Any())
             {
-                foreach (var r in res)
+                v.RepDtls = res!.Select(r => new R2105Model
                 {
-                    V2105Model rec = new()
-                    {
-                        EmpNumber = r.EmpNumber,
-                        EmpName = r.EmpName,
-                        DateHired = r.DateHired,
-                        PositionName = r.PositionName,
-                        SecLicense = r.SecLicense,
-                        LicExpire = r.Licexpire,
-                        ClName = r.ClName,
-                    };
-                    v.Add(rec);
-                }
+                    EmpNumber       = r.EmpNumber,
+                    EmpName         = r.EmpName,
+                    DateHired       = r.DateHired,
+                    PositionName    = r.PositionName,
+                    ClName          = r.ClName,
+                    EmpStatus       = r.EmpStatus,
+                    EmpLastNm       = r.EmpLastNm,
+                    EmpFirstNm      = r.EmpFirstNm,
+                }).ToList();
             }
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh the page or contact your system administrator."); ;
+            Console.WriteLine(ex.Message);
+            return;
         }
         finally
         {
             rv.Isloaded = false;
         }
 
-        if (!(v ?? []).Any())
+        if (!v.RepDtls.Any())
         {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Info,
-                Summary = "Info",
-                Detail = $"No data found for this period.",
-                Duration = 4000
-            });
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
             return;
         }
 
-        if (!rv.Isloaded) rv.ShowModal = true;
     }
 
-
-
-    void ShowNotification(NotificationMessage message)
+    private bool ValidateFilters()
     {
-        _NotificationService.Notify(message);
+        if (rv.Year == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a year.");
+            return false;
+        }
+
+        if (rv.Month == string.Empty || rv.Month == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a month.");
+            return false;
+        }
+        return true;
     }
+
+   
+    private void SortBy()
+    {
+        if (!(v.RepDtls ?? []).Any()) return;
+        IOrderedEnumerable<R2105Model> sorted;
+
+        if (rv.SortFld == "EmpName")
+        {
+            sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+        }
+
+        else
+        {
+            sorted = rv.SortOdr == "asc" ? v.RepDtls!.OrderBy(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls!.OrderByDescending(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
+    private async Task CreateReport()
+    {
+        if (!v.RepDtls.Any()) { return; }
+
+        rv.RelativePath = "";
+        rv.ReportData = [];
+        rv.ReportData = v.RepDtls;
+
+        rv.RelativePath = "Reports/_02HR/K_2105_NH.trdp";
+
+        int monthNumber = Convert.ToInt32(rv.Month);
+        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+
+        rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {rv.Year}";
+
+        rv.ShowModal = true;
+
+        if (rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(1000);
+            rv.ShowModal = false;
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
+        }
+    }
+
+
+    
+    //=====================================
+    // Helper Functions ===================
+    private void ResetVars()
+    {
+        v.RepDtls = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect to server", "Please refresh the page or contact your system administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+
 }
+
+

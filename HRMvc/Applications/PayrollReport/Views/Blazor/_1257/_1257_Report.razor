@@ -55,16 +55,15 @@
                     </div>
                 </div>
 
-                @{
-                    int ctr = 0; int row = 0; string stat = string.Empty;
-                }
-                @foreach (var rec in V)
+                @if ((V ?? []).Any())
                 {
-                    ctr++;
-                    row++;
-
-                    <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " ">
-                        <div class=" w-75p text-center ">@ctr.</div>
+                    int ctr = 0; int row = 0; string stat = string.Empty;
+                    foreach (var rec in V)
+                    {
+                        ctr++;
+                        row++;
+                        <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " ">
+                            <div class=" w-75p text-center ">@ctr.</div>
                         <div class=" w-180p">@rec.Phic</div>
                         <div class=" w-150p">@rec.EmpLastNm</div>
                         <div class=" w-100p">@rec.Suffix</div>
@@ -78,7 +77,7 @@
                         <div class=" w-100p text-end">@rec.Er?.ToString("N2")</div>
                         <div class=" w-80p text-center">@rec.Gender</div>
                     </div>
-
+                    }
                 }
             </div>
 
@@ -86,14 +85,6 @@
 
     </Details>
 </_02BTModal>
-
-
-
-
-
-@inject IOCoinfoDataAccess          _coinfo;
-@inject IGPayrollReportDataAccess   _payreport; 
-
 
 
 @code {
@@ -105,31 +96,22 @@
     {
         Rv.RelativePath = "";
         Rv.ReportData = V;
+        Rv.RelativePath =  "Reports/_03Payroll/K_PHIC.trdp";
 
         int monthNumber = Convert.ToInt32(Rv.Month);
         string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
-
-        Rv.RelativePath = Rv.SelectedFormat == "XLSX"
-            ? "Reports/_03Payroll/K_PHIC_xlsx.trdp"
-            : "Reports/_03Payroll/K_PHIC.trdp";
-
         Rv.ShowReport = true;
 
         if (Rv.SelectedFormat == "XLSX")
         {
             await Task.Delay(2000);
             Rv.ShowReport = false;
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Success",
-                Detail = $"Your PHIC Contribution Excel file has been downloaded.",
-                Duration = 4000
-            });
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
         }
     }
+
 
     private async Task CloseReportModal(bool ans)
     {
@@ -145,8 +127,17 @@
     }
 
 
-    void ShowNotification(NotificationMessage message)
+    void Notify(NotificationSeverity severity, string summary, string detail)
     {
-        _NotificationService.Notify(message);
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
     }
 }
+
+
+   

@@ -5,15 +5,15 @@ public class LeaveapplicationModel
     public int          Id              { get; set; }
     public int          Yr              { get; set; } = DateTime.Now.Year; 
     public int          EmpmasId        { get; set; }
-    public DateTime     DateApplied     { get; set; } = DateTime.Now;
+    public DateTime     DateApplied     { get; set; } = DateTime.Now.Date;
     public int          LeaveTypeId     { get; set; } = 3; 
     public double       LvBalance       { get; set; }
     public double       DaysCnt         { get; set; }
     public string?      LvTime          { get; set; }
     public double       DaysWithPay     { get; set; }
     public string?      Urgency         { get; set; }
-    public DateTime     LvStart         { get; set; } = DateTime.Now;
-    public DateTime     LvEnd           { get; set; } = DateTime.Now;
+    public DateTime     LvStart         { get; set; } = DateTime.Now.Date;
+    public DateTime     LvEnd           { get; set; } = DateTime.Now.Date;
     public string?      Reason          { get; set; }
     public string?      Address         { get; set; }
     public string?      TelNo           { get; set; }
