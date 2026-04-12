@@ -24,6 +24,7 @@ public class V12_102Lv
     public bool                             ShowSendForApproval     { get; set; } = false; 
     public bool                             ShowCancel              { get; set; } = false; 
     public bool                             ShowLoadTransaction     { get; set; } = false; 
+    public bool                             ShowPrint               { get; set; } = false; 
     public string                           Action                  { get; set; } = string.Empty;
 
 

@@ -1,9 +1,11 @@
 @using HRMvc.Applications._00GeneralComponents
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
 
 <CascadingValue Value="V" IsFixed="true">
 
 @* === Show Request ================================================================ *@
 @if(V.ShowMyReqquest) {
+    
     <_00Modal ModuleCaption="Leave Request" ChildAction="@(()=>CloseModal())" > 
         <Content>
             <_12_102_Lv_Modal_Request ChildAction="ChildAction" />
@@ -12,13 +14,20 @@
 }
 
 @* === Send For Approval ================================================================ *@
-@if(V.ShowSendForApproval)
+@if(V.ShowPrint)
 {
-    <_00Modal ModuleCaption="For Leave Approval" ChildAction="CloseModal" > 
-        <Content>
+    <div class="w-100">
+        <div class="text-end bordered-bottom p-2"> <button @onclick="CloseModal" class="btn btn-sm btn-outline-danger">x</button> </div>        
 
-        </Content>
-    </_00Modal> 
+            <_ReportRenderer DataSource     ="@Rv.ReportData"
+                        ReportRelativePath    ="@Rv.RelativePath"
+                        OutputFormat          ="@Rv.SelectedFormat"
+                        Parameters            ="@Rv.ReportParams"
+                        AutoGenerate          ="@(Rv.ReportData?.Any() == true)"
+                        RefreshToken          ="@Rv.RefreshToken" />
+
+
+    </div>
 }
 
 @* === Cancel Request ================================================================ *@
@@ -36,12 +45,16 @@
 @code {
     [Parameter] public UserClaimsModel  Uc              { get; set; }
     [Parameter] public V12_102Lv        V               { get; set; } = new();
+    [Parameter] public V00_RepVars      Rv              { get; set; } = new();
+
     [Parameter] public EventCallback    ChildAction     { get; set; } 
 
+    
     async Task CloseModal() {
         V.ShowMyReqquest        = false; 
         V.ShowSendForApproval   = false; 
         V.ShowCancel            = false; 
+        V.ShowPrint             = false; 
         await ChildAction.InvokeAsync(); 
 
     }

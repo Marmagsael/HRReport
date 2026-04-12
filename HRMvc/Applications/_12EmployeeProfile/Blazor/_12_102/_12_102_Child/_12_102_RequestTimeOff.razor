@@ -3,6 +3,7 @@
 @using Google.Protobuf.Reflection
 @using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.DataAccess._90_Utils
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.Leave
 @using Radzen
@@ -13,16 +14,23 @@
 
 <CascadingValue Value="Uc" IsFixed="true">
 <CascadingValue Value="v">
-    <div class="d-flex gap-1 p-1 border-bottom ">
-        <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
-        <div @onclick="Save" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSaveCss) "> Save  </div>
-        <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSendCss ) "> Send For Approval </div>
-        <div @onclick="ShowCancel" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancelCss)"> Cancel </div>
-        <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
-        <div @onclick="Print" class="p-1 mb-cbtn mb-cbtn-blue card w-80p @CanPrintCss "> Print </div>
-    </div>
 
-    <_12_102_Lv_Modal ChildAction="ChildActionCatcher" Uc="@Uc" V="@v" />
+    @if (!v.ShowPrint)
+    {
+        <div class="d-flex gap-1 p-1 border-bottom ">
+            <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
+            <div @onclick="Save" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSaveCss) "> Save </div>
+            <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSendCss) "> 
+                Send For Approval 
+            </div>
+            <div @onclick="ShowCancel" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancelCss)"> Cancel </div>
+            <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+            <div @onclick="Print" class="p-1 mb-cbtn mb-cbtn-blue card w-80p @CanPrintCss "> Print </div>
+        </div>
+    }
+        
+    <_12_102_Lv_Modal ChildAction="ChildActionCatcher" Uc="@Uc" V="@v" Rv="@rv" />
+    @if(v.ShowPrint) { return; } 
 
     @* <div>Count : @v.LeaveApplicationdtls.Count * @Uc.UserId </div> *@
 
@@ -41,7 +49,7 @@
                         </div>
                         <div class="w-175p d-flex p-1 ">
                             <div class=""> Status : </div>
-                            <div class="ms-2 bordered-bottom w-75p text-center text-primary"> 
+                            <div class="ms-2 bordered-bottom text-center text-primary"> 
                                 @(_02LvStatus(@v.LeaveApplication.Status)) 
                             </div>
                         </div>
@@ -331,11 +339,18 @@
 @inject ILeavegrpapproverDataAccess     _lvgrpApprover; 
 @inject ILeaveapplicationDataAccess     _lvApplication; 
 @inject ILeaveapplicationdtlDataAccess  _lvaDtls; 
+@inject ISettingsDataAccess             _settings; 
+@inject IEmpmasInternalDataAccess       _empmasInternal; 
+@inject I_10_EmpmasDataAccess           _empmas; 
+
+
 @* @inject ILeaveapplicationdtlDataAccess  _lvApplicationdtl;  *@
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; }
-    V12_102Lv v = new();
+    V12_102Lv   v = new();
+    V00_RepVars rv = new(); 
+    int ctr = 0; 
 
     @* =================================================== *@
     async Task ChildActionCatcher() {
@@ -399,9 +414,16 @@
     async Task ShowSendForApproval() { 
         @* v.ShowSendForApproval   = true;  *@
 
+        var option = await _DialogService.Confirm("Send Request for Approval?", "Send for Approval",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (option == true)
+        {
+            await Save(); 
+            var res = await _lvApplication._03SendForApproval(v.LeaveApplication,Uc.SchemaUserPis, Uc.Conn); 
+            v.LeaveApplication.Status = res.Status??"";
+        }
+
         await _lvApplication._03(1,v.LeaveApplication,Uc.SchemaUserPis, Uc.Conn); 
-
-
     }
 
     async Task ShowCancel() {
@@ -422,7 +444,51 @@
 
 
     }
-    void Print() {}
+    async Task Print()
+    {
+        var res = await _settings._02(1, Uc.SchemaUserPay, Uc.Conn);
+        var resEmpmas   = await _empmasInternal._02(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        var resEmpmas1  = await _empmas._02Deprecs(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+
+
+        ctr++;
+
+        rv.RelativePath = "Reports/_02HR/LvApplication.trdp";
+        rv.RefreshToken = 12102000 + ctr;
+        rv.MCaption = "Leave Application";
+
+        rv.ReportData = v.LeaveApplicationdtls;
+
+        // ✔ gamitin mo yung style mo
+        rv.ReportParams = [];
+
+       
+        rv.ReportParams["CoName"] = res?.CoFullName ?? "-";
+        rv.ReportParams["RunDate"] = DateTime.Now;
+        rv.ReportParams["ReportTitle"] = "Leave Application";
+        rv.ReportParams["CoAddress"] = res?.CoAddress ?? "-";
+
+        rv.ReportParams["TRN"] = lva.Id;
+        rv.ReportParams["TypeOfLeave"] = _02LvTypeName(lva.LeaveTypeId);
+        rv.ReportParams["DateCovered"] = $"{lva.LvStart:MMM dd, yyyy} - {lva.LvEnd:MMM dd, yyyy}";
+        rv.ReportParams["DateFiled"] = lva.DateApplied.ToString("MMM dd, yyyy");
+
+        
+        rv.ReportParams["EmpName"] = resEmpmas.Fullname ?? "-";
+        rv.ReportParams["Position"] = resEmpmas1?.FirstOrDefault()?.Positionname ?? "-";
+        rv.ReportParams["AddressWhileOnLeave"] = lva.Address ?? "-";
+        rv.ReportParams["TelNos"] = lva.TelNo ?? "-"; 
+
+        StateHasChanged(); 
+        // 🔥 IMPORTANT: force refresh
+        rv.RefreshToken++;
+        rv.ShowModal = true; 
+        //rv.ShowReport = true;
+        
+
+        v.ShowPrint = true;
+        
+    }
 
 
     bool IsCanSave => lva != null
@@ -443,7 +509,7 @@
     bool IsCanCancel    => lva != null
                         && lva.Status is "S"; 
     bool IsCanPrint     => lva != null
-                            && lva.Status is "S" or "FA"; 
+                            && (lva.Status is "S" or "FA" or "F"); 
 
     string CanSaveCss =>    IsCanSave ? "" : " disabled-div ";
     string CanSendCss =>    IsCanSend ? "" : " disabled-div ";
@@ -459,7 +525,6 @@
         v.LeaveApplication.LvBalance = res; 
 
     }
-
 
     async Task Populatedtls()
     {
@@ -618,7 +683,9 @@
         "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype, TimeStart = at.D1_in, TimeDuration = at.D1_hrslength },
         _ => new LeaveapplicationdtlModel()
     };
-    string _02LvStatus(string code) => code switch { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", "A" => "Approved", _ => "Unknown" };
+    
+    string _02LvTypeName(int lvTypeId)  => (v?.LeaveTypes.FirstOrDefault(l=>l.Id == lvTypeId).LeaveName)??"-";
+    string _02LvStatus(string code)     => code switch { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", "A" => "Approved", _ => "Unknown" };
 
     
 }
