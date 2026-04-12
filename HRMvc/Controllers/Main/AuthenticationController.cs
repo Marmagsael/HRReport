@@ -389,7 +389,8 @@ public class AuthenticationController : Controller
         var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
         if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
                 
-        return Redirect("13");
+        return Redirect("12/102");
+        // return Redirect("13");
 
     }
 
