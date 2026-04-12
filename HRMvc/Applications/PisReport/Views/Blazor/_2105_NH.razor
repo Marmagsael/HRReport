@@ -1,11 +1,7 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2105
-
-
-@inject NotificationService _NotificationService;
-
-<RadzenNotification />
+@using System.Globalization
 
 @inject NotificationService _NotificationService
 @inject IOPisReportDataAccess _pisRep
@@ -161,49 +157,6 @@
             return;
         }
 
-        try
-        {
-            rv.Isloaded = true;
-            string fld  = "datehired";
-            int mo      = Convert.ToInt32(rv.Month);
-
-            var res = await _pisRep._02Empmas_ByMonth_And_Year(fld, statuses, mo, rv.Year, Uc.OpisDb!, Uc.Conn!);
-            if (res.Any())
-            {
-                foreach (var r in res)
-                {
-                    V2105Model rec = new()
-                    {
-                        EmpNumber = r.EmpNumber,
-                        EmpName = r.EmpName,
-                        DateHired = r.DateHired,
-                        PositionName = r.PositionName,
-                        SecLicense = r.SecLicense,
-                        LicExpire = r.Licexpire,
-                        ClName = r.ClName,
-                    };
-                    v.Add(rec);
-                }
-            }
-        }
-        finally
-        {
-            rv.Isloaded = false;
-        }
-
-        if (!(v ?? []).Any())
-        {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Info,
-                Summary = "Info",
-                Detail = $"No data found for this period.",
-                Duration = 4000
-            });
-            return;
-        }
-
-        if (!rv.Isloaded) rv.ShowModal = true;
     }
 
     private bool ValidateFilters()
