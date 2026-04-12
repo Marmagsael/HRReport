@@ -15,25 +15,6 @@
 
 <_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
     <Details>
-<<<<<<< HEAD
-        @*--- Looader ------------------------------------------------*@
-        <_00Loader Rv="@rv" />
-
-        @if ((v ?? []).Any())
-        {
-            @*--- Report ------------------------------------------------*@
-            <_2105_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" />
-        }
-
-
-        <div class="p-0">
-            <div class="card-header">
-                <div class="d-flex gap-2">
-                    @*--- Period ------------------------------------------------*@
-                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
-                    @*--- Fetch Button ------------------------------------------------*@
-                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
-=======
 
         <_00Loader Rv="@rv" />
         @if ((v.RepDtls ?? []).Any())
@@ -53,7 +34,6 @@
                         Fetch Data
                     </div>
 
->>>>>>> origin/dithreport
                 </div>
 
                 @*-- Export Format ------------------------------------------------*@
@@ -74,73 +54,6 @@
             </div>
         </div>
 
-<<<<<<< HEAD
-        @*--- Client List ------------------------------------------------*@
-        <div class="w-100"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" /> </div>
-    </Details>
-</_00BT_FullW>
-
-
-
-@inject IOPisReportDataAccess _pisRep;
-@inject IOEmpstatDataAccess _empstat;
-
-@code {
-    [Parameter] public UserClaimsModel  Uc   { get; set; }  = new();
-                        V00_RepVars     rv                  = new();
-                  List<V2105Model>      v                   = [];
-
-    List<string?>? statuses => rv.Empstats.Where(e => e.IsSelectedB).Select(e => e.Code).ToList() ?? [];
-
-    protected override async Task OnInitializedAsync()
-    {
-        rv.Empstats = [];
-        rv.RefreshToken = 21050000;
-        rv.MCaption     = "Newly Hired For The Month";
-
-        @* --- Employee Status  ------------------------------------------- *@
-        List<OEmpstatModel?>? empstats = await _empstat._02s(Uc.OpisDb!, Uc.Conn!) ?? [];
-        if (empstats.Any()) rv.Empstats = empstats!;
-        rv.Empstats?.Where(e => e != null).ToList().ForEach(e => e.IsSelectedB = (e.Code == "_"));
-
-        @* --- Report Details -------------------------------------------- *@
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        rv.ReportParams = [];
-
-        rv.ReportParams["CoName"]       = "-";
-        rv.ReportParams["CoAddress"]    = "-";
-
-        if (res.Count > 0)
-        {
-            var r = res.FirstOrDefault();
-            rv.ReportParams["CoName"]       = r.CoName ?? "";
-            rv.ReportParams["CoAddress"]    = r.CoAdd ?? "";
-        }
-
-        rv.ReportParams["ReportTitle"]  = "Newly Hired Employees";
-        rv.ReportParams["RunDate"]      = DateTime.Now;
-    }
-
-
-    void ChildActionCatcher() { }
-
-    async Task FetchData()
-    {
-        v = [];
-        rv.ShowReport = false;
-        rv.ShowModal = false;
-
-        if (!(statuses ?? []).Any())
-        {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Warning,
-                Summary = "Warning",
-                Detail = $"Please select at least one employee status to proceed.",
-                Duration = 4000
-            });
-            return;
-=======
         @*--- Grid -----------------------------------------------------------*@
         <div class="w-100">
             <_2105_Dtl V="@v" Rv="@rv" ChildAction="ChildActionCatcher" />
@@ -230,7 +143,6 @@
                     EmpFirstNm      = r.EmpFirstNm,
                 }).ToList();
             }
->>>>>>> origin/dithreport
         }
         catch (Exception ex)
         {
@@ -294,15 +206,6 @@
         if (!rv.Isloaded) rv.ShowModal = true;
     }
 
-<<<<<<< HEAD
-
-
-    void ShowNotification(NotificationMessage message)
-    {
-        _NotificationService.Notify(message);
-    }
-}
-=======
     private bool ValidateFilters()
     {
         if (rv.Year == 0)
@@ -404,4 +307,3 @@
 }
 
 
->>>>>>> origin/dithreport
