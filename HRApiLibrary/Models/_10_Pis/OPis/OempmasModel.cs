@@ -114,6 +114,7 @@ public class OEmpmasModel
     public string?  ClName                  { get; set; } = string.Empty;
     public string?  Addr1                   { get; set; }
     public string?  Addr2                   { get; set; }
-    public int?     CntNotMigrated          { get; set; } = 0; 
+    public string?  Reason                  { get; set; }
+    public int?     CntNotMigrated          { get; set; } = 0;
 
 }

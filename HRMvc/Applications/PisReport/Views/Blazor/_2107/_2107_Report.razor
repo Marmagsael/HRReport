@@ -1,0 +1,157 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using System.Globalization
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_02BTModal MCaption="@Rv.MCaption" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
+    <Details>
+
+        @if (Rv.ShowReport)
+        {
+            <IframeReportRenderer DataSource="@Rv.ReportData"
+                                  ReportRelativePath="@Rv.RelativePath"
+                                  OutputFormat="@Rv.SelectedFormat"
+                                  Parameters="@Rv.ReportParams"
+                                  AutoGenerate="@(Rv.ReportData?.Any() == true)"
+                                  RefreshToken="@Rv.RefreshToken" />
+        }
+        else
+        {
+
+
+            <div class="card m-2">
+                <div class="sticky-top bg-white ">
+                    <div class=" border-bottom">
+                        <div class="p-0">
+                            <div class="card-header">
+                                <div class="d-flex gap-2">
+                                    <_01ReportFormat Rv="@Rv" ChildAction="ValueChanged" />
+                                    @*--- Fetch Button ------------------------------------------------*@
+                                    <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
+                        <div class="w-75p text-end pe-2">     No.</div>
+                        <div class="w-150p">    Emp. No.</div>
+                        <div class="w-250p">    Emp. Name   &nbsp; <_01SortByField ColName="EmpName" Rv="@Rv" ChildAction="SortBy" /></div>
+                        <div class="w-150p">    Date Hired  &nbsp; <_01SortByField ColName="DateHired" Rv="@Rv" ChildAction="SortBy" /></div>
+                        <div class="w-150p">    Exp. Regularization</div>
+                        <div class="w-250p">    Curr. Deployment</div>
+                        <div class="w-150p">    Curr. Status</div>
+
+                    </div>
+                </div>
+
+                @if (V.RepDtls.Any())
+                {
+                    int ctr = 0; int row = 0; string stat = string.Empty;
+                
+                    foreach (var v in V.RepDtls)
+                    {
+                        ctr++;
+                        row++;
+
+                        <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") " >
+                            <div class="w-75p text-end pe-2">     @ctr.</div>
+                            <div class="w-150p">    @v.EmpNumber</div>
+                            <div class="w-250p">    @v.EmpName</div>
+                            <div class="w-150p">    @v.DateHired?.ToString("MM/dd/yyyy")</div>
+                            <div class="w-150p">    @v.DateHired?.AddMonths(6).ToString("MM/dd/yyyy")</div>
+                            <div class="w-250p">    @v.ClName</div>
+                            <div class="w-150p">
+                                @if (v.StatusName.Trim() == "Active")
+                                {
+                                    <RadzenBadge Text="Active" BadgeStyle="BadgeStyle.Success" />
+                                }
+                                else @v.StatusName
+                    
+                            </div>
+                        </div>
+                    }
+                }
+               
+            </div>
+        }
+
+    </Details>
+</_02BTModal>
+
+@code {
+    [Parameter] public V00_RepVars              Rv  { get; set; } = new();
+    [Parameter] public V2107Model               V   { get; set; } = new();
+    [Parameter] public EventCallback<object>    ChildAction { get; set; }
+
+    private async Task ValueChanged()
+    {
+        await ChildAction.InvokeAsync(Rv);
+    }
+
+
+    private async Task CreateReport()
+    {
+        if (!(V.RepDtls ?? []).Any()) { return; }
+
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls!;
+
+        int monthNumber = Convert.ToInt32(Rv.Month);
+        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+
+        Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
+        Rv.RelativePath = "Reports/_02HR/K_2107_FR.trdp";
+
+        Rv.ShowReport = true;
+
+        if (Rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(1000);
+            Rv.ShowReport = false;
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
+        }
+
+        await ChildAction.InvokeAsync(Rv);
+    }
+
+
+    private async Task CloseReportModal(bool ans)
+    {
+        if (Rv.ShowReport) Rv.ShowReport = ans;
+        else
+        {
+            Rv.ShowModal = ans;
+            V.IsGroupByClient = false;
+        }
+
+        await ChildAction.InvokeAsync(ans);
+    }
+
+
+    private async Task SortBy()
+    {
+        if (!(V.RepDtls ?? []).Any()) return;
+
+        V.Action = "SortBy";
+        await ChildAction.InvokeAsync(V);
+    }
+
+
+    void Notify(NotificationSeverity severity, string summary, string detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+}
+
+   
