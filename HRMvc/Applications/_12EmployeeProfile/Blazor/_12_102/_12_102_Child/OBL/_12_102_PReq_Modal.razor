@@ -1,0 +1,96 @@
+﻿@using HRMvc.Applications._00GeneralComponents
+@using Org.BouncyCastle.Crypto.Prng.Drbg
+<_00Modal ModuleCaption="Punch Request Details" ChildAction="CloseModal" ModalWidth=" w-100 ">
+    <Content>
+        <div class="card p-0">
+
+            <div class="d-flex gap-1 p-1 bordered-bottom ">
+                <button class="btn btn-secondary">Approve Request</button>
+                <button class="btn btn-secondary">Partially Approve</button>
+                <button class="btn btn-danger">Deny Request</button>
+                <div class="bordered-right "></div>
+                
+            </div>
+
+            <div class="p-2">
+                <div class="d-flex ">
+                    <div class="@lblcss  "> Control No </div>
+                    <div class="p-2 bordered"> @V.Attreqhdr.Id </div>
+                </div>
+                <div class="d-flex mt-1">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Requestor Name </div>
+                    <div class="p-2 bordered"> @V.Attreqhdr.RequestorName </div>
+                </div>
+                <div class="d-flex mt-1">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Coverage </div>
+                    <div class="p-2 bordered"> @V.Attreqhdr.CovStart.ToShortDateString() - @V.Attreqhdr.CovEnd.ToShortDateString() </div>
+                </div>
+                
+                <div class="d-flex mt-1">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Remarks </div>
+                    <div class="p-2 bordered"> @V.Attreqhdr.Remarks </div>
+                </div>
+
+            </div>
+
+
+
+            @* --- Header --------------------------------------- *@
+            <div class="d-flex gap-2 p-1 border-bottom  border-top small fw-bold mt-2 ">
+                <div class="w-220p p-1">Request Type</div>
+                <div class="w-190p p-1">Date Start</div>
+                <div class="w-190p p-1">Date End</div>
+                <div class="w-100p p-1 text-center">Hours </div>
+            </div>
+
+            @{int ctr = 0; }
+            @foreach(AttreqdtlModel? r in V.Attreqdtls) {
+                ctr++; 
+                string css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
+                <div class="d-flex gap-2 p-1 gap-1 @css ">
+                    <div class="w-220p mb-a-blue">
+                        @entryTypeName(r?.AttReqTypeId??0) 
+                    </div>
+                    <div class="w-190p txt mb-a-blue ">
+                        @r.DStart?.ToString("MM/dd/yyyy HH:mm")
+                    </div>
+                    <div class="w-190p txt mb-a-blue ">
+                        @r.DEnd?.ToString("MM/dd/yyyy HH:mm")
+                    </div>
+                    <div class="w-100p text-center ">
+                        @(ComputeHours(r) == 0 ? "-" : ComputeHours(r).ToString("N2"))
+                    </div>
+
+                </div>
+            }
+
+
+
+
+        </div>
+    </Content>
+</_00Modal>
+
+@code {
+
+    [Parameter] public EventCallback<bool>      Ec      { get; set; } 
+    [Parameter] public V12_102Obligation        V       { get; set; } = new();
+    string lblcss => " w-150p bg mb-a-greenlight p-2 bordered ";
+
+    string entryTypeName(int etnId) => V.Attreqtypes.FirstOrDefault(a=>a.Id == etnId).Name??"-"; 
+    double ComputeHours(AttreqdtlModel dtl)
+    {
+        if (dtl.DStart is null || dtl.DEnd is null || dtl.DEnd <= dtl.DStart || dtl.AttReqTypeId != 3) return 0;
+        return (dtl.DEnd.Value - dtl.DStart.Value).TotalHours;
+    }
+    
+
+    @* --- Functions----------------------------------------------------------------------------- *@
+    async Task CloseModal() {
+        await  Ec.InvokeAsync(false); 
+    }
+
+    
+
+
+}

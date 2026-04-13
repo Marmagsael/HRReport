@@ -1,5 +1,39 @@
-﻿<h3>_12_102_Obligation</h3>
+﻿@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.OBL
+
+<CascadingValue Value="Uc" IsFixed="true">
+
+    @if (v?.Attreqhdrs!=null && v.Attreqhdrs.Count>0)
+    {
+        <_12_102_PReq V="@v" />
+    }
+</CascadingValue>
+
+
+@inject IAttreqhdrDataAccess    _attreqh; 
+@inject IAttreqtypeDataAccess   _attreqtype; 
 
 @code {
+
+    [Parameter] public UserClaimsModel?         Uc  { get; set; } = new();
+
+    V12_102Obligation   v = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDatas(); 
+    }
+
+    
+    async Task LoadDatas() {
+        var rAttreqhdrs = await _attreqh._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+        if (rAttreqhdrs.Count > 0) v.Attreqhdrs = rAttreqhdrs??[]; 
+
+        @* Attendance Type ---------------------- *@
+        v.Attreqtypes = [];
+        List<AttreqtypeModel?>? rAttTypes = await _attreqtype._02s(Uc.SchemaUserPis, Uc.Conn);
+        if (rAttTypes != null && rAttTypes.Count>0) v.Attreqtypes = rAttTypes!;
+
+
+    }
 
 }
