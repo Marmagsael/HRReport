@@ -1,0 +1,92 @@
+﻿@if(ShowModal) { <div> <_12_102_PReq_Modal V="@V" Ec="EC_Catcher" />  </div> }
+
+
+<div class="card">
+    <div class="card-header">
+        <div class="bordered-bottom py-2 small fw-bold ">
+            Punch Request
+        </div>
+
+        <div class="p-1 d-flex gap-2 small">
+            <button @onclick="MarkAll" class="btn text-primary w-80p bordered-bottom p-1 @markAllCss ">Mark All </button>
+            <button @onclick="UnmarkAll"  class="btn text-primary w-90p bordered-bottom p-1 @unmarkAllCss ">Unmark All </button>
+            <div class="w-10p bordered-left">&nbsp; </div>
+            <button class="btn text-successw  w-130p bordered-bottom p-1 @noSelectedCss ">Approve Selected </button>
+            <button class="btn text-success w-130p bordered-bottom p-1 @noSelectedCss ">Partially Approve </button>
+            
+        </div>
+    </div>
+
+    <div class="card-body">
+        
+        <div class="d-flex gap-2 small fw-bold border-bottom  py-1">
+            <div class="w-200p">Requestor</div>
+            <div class="w-50p">TRN</div>
+            <div class="w-100p">Requested</div>
+            <div class="d-flex flex-grow-1 ">Remarks</div>
+            
+        </div>
+
+        @foreach(var r in V.Attreqhdrs) {
+            <div class="d-flex gap-2 mt-1">
+                <div class="w-200p py-1 d-flex gap-1">
+                    <div>
+                        <RadzenCheckBox @bind-Value=@r.IsSelected  TValue="bool" />
+                    </div>
+                    <div>@r.RequestorName</div>
+                </div>
+                <div class="w-50p" py-1>@r.Id</div>
+                <div class="w-100p py-1">@r.DateRequested.ToShortDateString()</div>
+                <div class="d-flex flex-grow-1 ">
+                    <div class="w-75 py-1">Remarks</div>
+                    <div class="w-25">
+                        <button @onclick="()=>ShowDtl(r)" class="btn btn-outline-secondary">Show Details</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+</div>
+
+
+@inject IAttreqdtlDataAccess _attreqdtl; 
+
+@code {
+    [CascadingParameter]    public UserClaimsModel          Uc          { get; set; } = new(); 
+    [Parameter]             public V12_102Obligation        V           { get; set; } = new();
+
+    bool                    ShowModal   = false; 
+
+
+    bool isMarkAll => (V.Attreqhdrs.Where(a=>a.IsSelected==true).ToList().Count == V.Attreqhdrs.Count ); 
+    string markAllCss => isMarkAll ? " disabled-div " : " ";
+    bool isUnmarkAll => (V.Attreqhdrs.Where(a=>a.IsSelected==false).ToList().Count == V.Attreqhdrs.Count ); 
+    string unmarkAllCss => isUnmarkAll ? " disabled-div " : " ";
+    
+    bool isNoSelected => (V.Attreqhdrs.Where(a=>a.IsSelected==true).ToList().Count > 0 ); 
+    string noSelectedCss => !isNoSelected ? " disabled-div " : " ";
+
+
+    @* --- Functions --------------------------------------------------------------------------------- *@
+    async Task ShowDtl(AttreqhdrModel h) {
+        var res = await _attreqdtl._02ByAttReqHdrIds(h.Id, Uc.SchemaUserPis, Uc.Conn); 
+        V.Attreqdtls = []; 
+        if (res!=null && res.Count > 0) {
+            V.Attreqdtls    = res!;
+            V.Attreqhdr     = h; 
+        }
+
+        ShowModal = true; 
+    }
+
+    void EC_Catcher(bool ans) {
+        ShowModal = ans; 
+    }
+
+    void MarkAll() { V.Attreqhdrs.ForEach(a=> {a.IsSelected=true; });  }
+    void UnmarkAll() { V.Attreqhdrs.ForEach(a=> {a.IsSelected=false; });  }
+
+    
+
+}
