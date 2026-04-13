@@ -15,5 +15,7 @@ public class AttreqhdrModel
 	public 	string? 		EmpNumber_Approver 	{get; set; } = "";
 
 	// --- Others -----------------------------------------------------
+	public string? 			RequestorName 		{ get; set; } = string.Empty; 
 	public string? 			ApproverName 		{ get; set; } = string.Empty; 
+    public bool             IsSelected          { get; set; } = false; 
 }

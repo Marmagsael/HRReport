@@ -44,6 +44,17 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
                         new { UserId=userid, TypeId=typeId, Status=status }, conn);
         return data ?? [];
     }
+    
+    public async Task<List<AttreqhdrModel?>> _02ForApproval_PerApprover(string approver_empnumber, string pisdb, string conn)
+    {
+        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName, h.*
+                        from      {pisdb}.Attreqhdr h
+                        left join {pisdb}.empmas e on e.Id = h.UserId    
+                        where h.Empnumber_Approver = @EmpNumber_Approver and Status in ('F', 'FA') ";
+        var data = await _sql.FetchData<AttreqhdrModel?, dynamic>(sql, 
+                        new { EmpNumber_Approver =approver_empnumber }, conn);
+        return data ?? [];
+    }
 
 
     public async Task<AttreqhdrModel?> _03(int id,AttreqhdrModel attreqhdr, string schema, string conn)
@@ -106,6 +117,7 @@ public interface IAttreqhdrDataAccess
     Task<AttreqhdrModel?> _01(AttreqhdrModel attreqhdr, string schema, string conn);
     Task<List<AttreqhdrModel?>> _02s(int id, string schema, string conn);
     Task<List<AttreqhdrModel?>> _02ByUserId_ByTypeId_ByStatus(int userid, int typeId, List<string> status, string pisdb, string opisdb, string conn);
+    Task<List<AttreqhdrModel?>> _02ForApproval_PerApprover(string approver_empnumber, string pisdb, string conn); 
     Task<AttreqhdrModel?> _03(int id, AttreqhdrModel attreqhdr, string schema, string conn);
     Task<AttreqhdrModel?> _03SendForApproval(AttreqhdrModel attreqhdr, string schema, string conn); 
     Task<AttreqhdrModel?> _04(int id, string schema, string conn);
