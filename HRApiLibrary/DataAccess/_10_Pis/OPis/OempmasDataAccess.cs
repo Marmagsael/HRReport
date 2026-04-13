@@ -1,5 +1,7 @@
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._10_Pis.OPis;
+using HRApiLibrary.Models._90_Utils;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
@@ -12,7 +14,60 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 			_sql = sql;
 	}
 
-	public async Task<OEmpmasModel?> _01(OEmpmasModel empmas, string schema, string conn )
+    public async Task _00CreateEmpmasMigration_Marker(string oPisDb, string conn)
+    {
+        string sql = $@"SELECT '1' Column_Name
+                            FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'empmas'
+                            AND COLUMN_NAME = 'IsMigrated'
+                            AND TABLE_SCHEMA = '{oPisDb}';"; 
+        var res = await _sql.FetchData<TableModel?, dynamic>(sql, new { }, conn);
+        
+        if (res == null || res.Count == 0) { 
+            string usql = $@"ALTER TABLE {oPisDb}.Empmas ADD COLUMN IsMigrated int Default 0;"; 
+            await _sql.ExecuteCmd<dynamic>(usql, new { }, conn);
+        }
+    }
+    public async Task _00MigrateData(string pisDb, string oPisDb, string conn)
+    {
+        
+        
+        var sql = $@"  drop table if exists tmp_users;
+                       create temporary table tmp_users as select LoginName empnumber from main.Users; 
+                       insert into main.users (loginName, Password,             Email, Domain,             UserType, Status, DefaultCoId)  
+                       
+                       select                  empnumber, sha2(empnumber, 512), email, 'morpheusbox.info', 1,        empstat_, 2
+                     from {oPisDb}.Empmas e
+                     where  IsMigrated = 0 
+                            and empstat_ = 'A' 
+                            and email is not null 
+                            and email != '' 
+                            and empnumber not in (select empnumber from tmp_users) ;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+
+        sql = $@"drop table if exists tmp_empmas;
+
+                 create temporary table tmp_empmas as 
+                 select u.id SystemId, e.Empnumber, e.EmplastNm, e.EmpFirstnm, e.EmpMidNm, e.Suffix,e.EmpAlias 
+                 from main.users u
+                 left join {pisDb}.empmas e on e.empnumber = u.loginName;
+
+                insert into {pisDb}.empmas (SystemId,      EmpNumber,   EmpLastNm,   EmpFirstNm,   EmpMidNm,   Suffix,   EmpAlias)
+                select                      u.id SystemId, u.loginName, e.EmplastNm, e.EmpFirstnm, e.EmpMidNm, e.Suffix, e.EmpAlias
+                from main.users u
+                    left join {oPisDb}.empmas e on e.empnumber = u.loginName
+                    left join {pisDb}.empmas e1 on e1.systemId = u.Id
+                where e1.systemId is null; ";
+        var res = await _sql.FetchData<UsersModel?, dynamic>(sql, new { }, conn);
+        
+        sql = $@"update {oPisDb}.Empmas set IsMigrated = 1 
+                 where IsMigrated = 0 and empstat_ = 'A' and email is not null and email != '' ;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+
+        
+    }
+
+    public async Task<OEmpmasModel?> _01(OEmpmasModel empmas, string schema, string conn )
 	{
 		string sql = $@"Insert into {schema}.Empmas 
     					(EMPNUMBER, EMPLASTNM, EMPFIRSTNM, EMPMIDNM, suffix, EMPALIAS, CLIENT, CLIENT_, BASICRATE, PAYTYPE, ADMIN, CASHBOND, WORKDAYS, 
@@ -47,6 +102,33 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
 		return res.FirstOrDefault();
 	}
+
+
+    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNames(string name, string schema, string conn)
+    {
+        name = name.Trim();
+        var flds = EmpmasFields(); 
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName 
+                        from {schema}.Empmas e
+                     left join {schema}.position    p on p.code = e.position_
+                     left join {schema}.empstat     s on s.code = e.empstat_                              
+                     left join {schema}.Client      c  on c.ClNumber = e.Client_                              
+                     where e.EmpLastNm like @Name or e.EmpFirstNm like @Name
+                     order by e.EmpLastNm, e.EmpFirstNm;";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
+        return data;    
+    }
+    
+    public async Task<List<OEmpmasModel?>?> _02Migrated( string schema, string conn)
+    {
+        var sql = $@"select count(*) as CntNotMigrated from {schema}.Empmas e 
+                     where  IsMigrated = 0 
+                            and empstat_ = 'A' 
+                            and email is not null 
+                            and email != '';";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { }, conn);
+        return data;    
+    }
 
 
     public async Task<List<OEmpmasModel?>?> _02(string empnumber, string schema, string conn)
@@ -384,8 +466,12 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
 public interface IOEmpmasDataAccess
 {
-	Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string schema, string conn);
-	Task<List<OEmpmasModel?>?>  _02(string empnumber, string schema, string conn); 
+    Task                        _00CreateEmpmasMigration_Marker(string oPisDb, string conn);
+    Task                        _00MigrateData(string pisDb, string oPisDb, string conn);
+    Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string schema, string conn);
+	Task<List<OEmpmasModel?>?>  _02(string empnumber, string schema, string conn);
+    Task<List<OEmpmasModel?>?>  _02Migrated(string schema, string conn); 
+    Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string name, string schema, string conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string clnumber, string schema, string conn); 
 	Task<List<OEmpmasModel?>?>  _02ByEmail(string email, string schema, string conn); 
 	

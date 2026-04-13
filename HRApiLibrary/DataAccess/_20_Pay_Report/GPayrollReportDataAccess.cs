@@ -34,6 +34,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
 
 
 
+
         string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
         string sql = $@" DROP TEMPORARY TABLE IF EXISTS tTbltran; 
                         DROP TEMPORARY TABLE IF EXISTS tRefssstbl; 
@@ -158,15 +159,13 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                         LEFT JOIN {opisdb}.Empmas e ON e.empnumber = t.EmpNumber
                         LEFT JOIN tRefpagibigtbl m ON m.Fee = t.Ee 
                         WHERE t.empnumber IN (select * from tEmplist)
-                        Order by EmplastNm, EmpfirstNm; ";
+                        Order by EmplastNm, EmpfirstNm; ";  
 
         var data = await _sql.FetchData<RPagIbigPremModel?, dynamic>(sql, new { Prd = prd, Pgrps = pgrps, Yyyy = yyyy, AcctNumber = acctNumber }, conn);
         return data;
     }
 
     // --- --------------- 
-
-
 
 }
 

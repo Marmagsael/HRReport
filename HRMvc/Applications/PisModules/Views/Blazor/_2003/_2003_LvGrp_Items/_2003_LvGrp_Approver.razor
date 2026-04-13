@@ -1,0 +1,142 @@
+@using Blazorise
+@using DocumentFormat.OpenXml.Bibliography
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis
+
+<_02BTModal ShowModal="V.ShowApproverEntry" MCaption="Approver Assignment" ChildAction="HandleHideModal" >
+    <Details>
+        
+       
+        <div class="p-2">
+            <div class="bordered-bottom p-2"> 
+                <h6>
+                    <span>Leave Group : </span>
+                    <span class="text-primary">@V.Leavegrp?.Name </span>
+                </h6>
+            </div>
+
+            <div class="d-flex ">
+                @* --- First Approver *@
+                <div class="card w-30 ">
+                    <div class="card-header d-flex justify-content-between ">
+                        <div>First Approver</div>
+                        <div>
+                            <btn class="card txt mb-a-green cur-pointer px-2 fw-bold">+</btn>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0 ">
+                        <div class="w-100 d-flex gap-1 bordered-bottom p-1 ">
+                            <div class="p-0 w-100">
+                                <RadzenTextBox Placeholder="1st Appr Name" class="w-100" MaxLength="45"
+                                               @oninput="OnInput" />
+                                
+                            </div>
+
+                            <div class="p-2 @firstApproverEntryCss ">
+                                <btn @onclick="SearchFirstApprover" class="txt mb-a-green p-1 cur-pointer "><i
+                                    class="fa fa-search"></i></btn>
+                                </div>
+                                <div class="p-2">
+                                    <btn class="txt mb-a-red p-1 cur-pointer "><i class="fa-solid fa-xmark"></i></btn>
+                                </div>
+                            </div>
+                            
+                            @* ---- First Approver Search Output *@
+                            <div class="bordered-bottom mb-2 text-end p-2 ">
+                                @foreach (var emp in sFirstApproverEmpmass)
+                                {
+                                    <div class="d-flex w-100 p-1 ">
+                                        <div class=" w-100 text-end ">@emp.EmpName</div>
+                                        <div @onclick="()=>AddFirstApprover(emp)" class="txt mb-a-blue px-2 cur-pointer ">
+                                            +
+                                        </div>
+                                    </div>
+                                }
+
+                            </div>
+
+                            
+
+
+
+                            @* ---- First Approver Details *@
+                            <div>
+                                Juan Dela Cruz * @firstApproverEntryCss
+                            </div>
+                        
+                        </div>
+                    </div>
+                
+
+
+
+                @* --- Final Approver    *@
+                <div class="card w-30 ">
+                    <div class="card-header d-flex justify-content-between ">
+                        <div>Final Approver</div>
+                        <div>
+                            <btn class="card txt mb-a-green cur-pointer px-2 fw-bold">+</btn>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        Maria Santos
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+
+
+
+
+    </Details>
+</_02BTModal>
+
+@inject IOEmpmasDataAccess _oempmas;
+
+@code {
+    [Parameter] public UserClaimsModel      Uc      { get; set; } = new();
+    [Parameter] public V2003_LvGrpModel     V       { get; set; } = new();
+    [Parameter] public EventCallback        CA      { get; set; }
+
+    List<OEmpmasModel> sFirstApproverEmpmass     = [];
+    List<OEmpmasModel> sFinalApproverEmpmass     = [];
+
+    string sFirstApprover = string.Empty;
+    string sFinalApprover = string.Empty;
+
+    bool showFirstApproverEntry = false;
+    bool showFinalApproverEntry = false;
+
+
+    string firstApproverEntryCss => sFirstApprover.Length > 2 ? " " : " disabled-div-50 "; 
+    string finalApproverEntryCss => sFinalApprover.Length > 2 ? " " : " disabled-div-50 ";
+
+
+    async Task SearchFirstApprover() {
+        sFirstApproverEmpmass = [];
+        if (sFirstApprover.Length < 2) return;
+        var res = await _oempmas._02ByLNameAndFNames(sFirstApprover, Uc.OpisDb, Uc.Conn);
+        if (res.Count > 0) { 
+            sFirstApproverEmpmass = res!; 
+        }
+    }
+    async Task AddFirstApprover(OEmpmasModel emp)
+    {
+        
+        sFirstApprover = emp.EmpName;
+        sFirstApproverEmpmass = [];
+    }
+
+    private void OpenModal()    {   V.ShowApproverEntry = true; }
+    private async Task HandleHideModal(bool action)    { V.ShowApproverEntry = action; await CA.InvokeAsync(); }
+
+    void OnInput(ChangeEventArgs e) { sFirstApprover = e.Value?.ToString(); sFirstApproverEmpmass = []; }
+}

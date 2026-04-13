@@ -2220,19 +2220,33 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
+    // private async Task _01LeaveCredit(string schema, string conn)
+    // {
+    //     string sql = $@"CREATE TABLE if not exists {schema}.LeaveCredit (
+    //                       Year          INTEGER UNSIGNED    Default 0,
+    //                       EmpmasId      CHAR(5)             Default '',
+    //                       LeaveTypeId   Integer             Default 0,
+    //                       AnnivStart    DATE,
+    //                       AnnivEnd      DATE,
+    //                       Credit        DOUBLE(12,2)        Default 0,
+    //                       Consumed      DOUBLE(12,2)        Default 0,
+    //                     PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `AnnivStart`)) ENGINE = InnoDB; ";
+    //     await _sql.ExecuteCmd(sql, new { }, conn);
+    // }
+
     private async Task _01LeaveCredit(string schema, string conn)
     {
-        string sql = $@"CREATE TABLE if not exists {schema}.LeaveCredit (
+        string sql = $@"CREATE TABLE if not exists {schema}.LvCredit (
                           Year          INTEGER UNSIGNED    Default 0,
                           EmpmasId      CHAR(5)             Default '',
                           LeaveTypeId   Integer             Default 0,
-                          AnnivStart    DATE,
-                          AnnivEnd      DATE,
+                          CreditStart   DATE,
+                          CreditEnd     DATE,
                           Credit        DOUBLE(12,2)        Default 0,
-                          Consumed      DOUBLE(12,2)        Default 0,
-                        PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `AnnivStart`)) ENGINE = InnoDB; ";
+                        PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `CreditStart`)) ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
+
 
     private async Task _01LeaveDefaultApprover(string schema, string conn)
     {
@@ -2267,21 +2281,29 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                               Approver2Id   INTEGER         UNSIGNED    DEFAULT 0,
                               Approver3Id   INTEGER         UNSIGNED    DEFAULT 0,
                               Status        VARCHAR(10)                 DEFAULT 'New',
-                        PRIMARY KEY(`Id`)) ENGINE = InnoDB;
-";
+                        PRIMARY KEY(`Id`)) ENGINE = InnoDB; 
+                    
+                    CREATE TABLE if not exists  {schema}.LeaveApplicationHist (
+                            Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            LvaId               INTEGER, 
+                            EmpasId             INTEGER UNSIGNED,
+                            Date                DATETIME,
+                            Action              VARCHAR(120),
+                            PRIMARY KEY (`Id`) ) ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
         
          sql = $@"CREATE TABLE if not exists {schema}.LeaveApplicationDtl (
-                    Id              INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
-                    EmpmasId        INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
-                    EmpNumber       CHAR(5)                 NOT NULL DEFAULT '',
-                    Start           DATETIME,
-                    DutyType        CHAR(2)                 NOT NULL DEFAULT 'R',
-                    TimeStart       INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
-                    TimeDuration    INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
-                    End             DATETIME,
-                    CreditedHrs     INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
-                    IsPayable       INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                    Id                  INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
+                    LeaveApplicationId  Integer     UNSIGNED    NOT NULL DEFAULT 0,
+                    EmpmasId            INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                    EmpNumber           CHAR(5)                 NOT NULL DEFAULT '',
+                    Start               DATETIME,
+                    DutyType            CHAR(2)                 NOT NULL DEFAULT 'R',
+                    TimeStart           INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
+                    TimeDuration        INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
+                    End                 DATETIME,
+                    CreditedHrs         INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
+                    IsPayable           INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
                     PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }

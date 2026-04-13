@@ -1,0 +1,181 @@
+﻿@using HRApiLibrary.Models._10_Pis
+<div class="card-header fw-bold "> Time Sheet Entry </div>
+<div>
+    <div class="d-flex gap-1 p-2 border-bottom">
+        <div class="p-1 w-100p card mb-cbtn mb-cbtn-gay h-50p" >New</div>
+        <div class="p-1 w-100p card mb-cbtn mb-cbtn-gay h-50p @(ArHdr.Id>0?"":"disabled-div-50")  " >Save</div>
+        <div class="p-1 w-100p card mb-cbtn mb-cbtn-gay h-50p @(ArHdr.Id>0?"":"disabled-div-50")" >Cancel</div>
+        <div class="p-1 w-115p card mb-cbtn mb-cbtn-gay h-50p @(ArHdr.Id>0?"":"disabled-div-50")" >Create Form</div>
+        <div class="p-1 w-125p card mb-cbtn mb-cbtn-gay h-50p @(ArHdr.Id>0?"":"disabled-div-50")" >Send Request</div>
+    </div>
+
+    <div class="p-2">
+        <div class="d-flex gap-2 p-1">
+            <div class="mt-2 w-125p"> Control No </div>
+            <div class="w-150p"> <RadzenNumeric @bind-Value="@ArHdr.Id" TValue="int" Style="width:100%" ShowUpDown="false" Disabled TextAlign="TextAlign.End" /> </div>
+        </div>
+        <div class="d-flex gap-2 p-1 bg-lightgray">
+            <div class="mt-2 w-125p text-align-center mt-4"> Coverage </div>    
+            
+            <div>
+                <div class="mt-2 w-50p fs-6"> Start </div>
+                <div class="w-150p"> 
+                    <RadzenDatePicker @bind-Value="@ArHdr.CovStart" DateFormat="MM/dd/yyyy" Style="width:100%" />
+                </div>
+            </div>
+            <div>
+                <div class="mt-2 w-50p"> End </div>
+                <div class="w-150p"> 
+                    <RadzenDatePicker @bind-Value="@ArHdr.CovEnd" DateFormat="MM/dd/yyyy" Style="width:100%" />
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="d-flex gap-2 p-1">
+            
+            
+        </div>
+        <div class="d-flex gap-2 p-1">
+            <div class="mt-2 w-125p"> Total Hours </div>
+            <div class="w-150p"> 
+                <RadzenNumeric @bind-Value="@ArHdr.TotHrs" TValue="double" Style="width:100%" Disabled />
+                
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+                <div id="wrapper">
+
+                    <div id="hdrbtn"> 
+                        <table class="w-100">
+                            <tr>
+                                <div class="d-flex gap-2 bordered-bottom p-1 ">
+                                    
+                                    
+                                </div>
+                                
+                            </tr>
+                        </table>
+                        </div>
+                    <div id="hdrcontent">
+                        <asp:Label ID="tmsg"  Text="" CssClass="errorDesign" Font-Size="14px" ></asp:Label>
+                    </div>
+                    <div id="dtlsbtn"></div>
+                    <div id="dtls">
+                        <table>  
+                            
+                            <tr>
+                                <td class=""> End</td> 
+                                <td>
+                                    
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class=""> Total Hours</td> 
+                                <td>
+                                    
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class=""> Entry Type</td> 
+                                <td>
+                                    <RadzenDropDown Data="@ArTypes"
+                                        TextProperty="Name"
+                                        ValueProperty="Id"
+                                        @bind-Value="ArDtl.AttReqTypeId"
+                                        Style="width:100%" />
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
+
+                    @* --- Details -------------------------------------------- *@
+                    <table> 
+                        <tr>
+                            <td class=""> Start</td> 
+                            <td class=""> End</td> 
+                            <td class=""> Total Hours</td> 
+                            <td class=""> Entry Type</td> 
+                        
+                        </tr>
+
+                        <tr>
+                            <td>
+                                @if (IsCoverageValid())
+                                {
+                                    <RadzenDatePicker @bind-Value="ArDtl.DStart"
+                                                    Min="ArHdr.CovStart"
+                                                    Max="ArHdr.CovEnd"
+                                                    DateFormat="MM/dd/yyyy"
+                                                    Style="width:100%" />
+                                }
+                                else
+                                {
+                                    <RadzenDatePicker @bind-Value="ArDtl.DStart"
+                                                    DateFormat="MM/dd/yyyy"
+                                                    Style="width:100%"
+                                                    Disabled="true" />
+                                }
+                            </td>
+
+                            <td>
+                                @if (IsCoverageValid())
+                                {
+                                    <RadzenDatePicker @bind-Value="ArDtl.DEnd"
+                                                    Min="ArHdr.CovStart"
+                                                    Max="ArHdr.CovEnd"
+                                                    DateFormat="MM/dd/yyyy"
+                                                    Style="width:100%" />
+                                }
+                                else
+                                {
+                                    <RadzenDatePicker @bind-Value="ArDtl.DEnd"
+                                                    DateFormat="MM/dd/yyyy"
+                                                    Style="width:100%"
+                                                    Disabled="true" />
+                                }
+                        </td>
+
+                        
+                            <td>
+                                <RadzenNumeric @bind-Value="@ArDtl.TotHrs"
+                                    TValue="double?" Style="width:100%" Disabled 
+                                    ShowUpDown="false" />
+                            </td>
+                        
+                            <td>
+                                
+                            </td>
+                            
+                        </tr>
+                            
+                        </table>
+
+
+
+                </div>
+</div>
+
+
+
+
+@code {
+
+    AttreqhdrModel          ArHdr   = new(); 
+    AttreqdtlModel          ArDtl   = new(); 
+    List<AttreqtypeModel>   ArTypes = []; 
+
+
+    bool IsCoverageValid()
+    {
+        return ArHdr?.CovStart != null && ArHdr?.CovEnd != null && ArHdr.CovStart <= ArHdr.CovEnd;
+    }
+
+}

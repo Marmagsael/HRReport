@@ -1,0 +1,117 @@
+﻿@using HRApiLibrary.Models._20_PayGeneric
+
+
+
+<div class="p-3 ">
+    <div class="d-flex gap-2 p-1">
+        <div class="w-150p  "> TRN </div> 
+        <div class="text-primary"> @(GPaymainhdr?.Trn??"-")</div>
+    </div>
+    <div class="d-flex gap-2 p-1">
+        <div class="w-150p"> Payroll Group</div> 
+        <div class="text-primary">  @(GPaymainhdr?.ClName??"-") </div>
+    </div>
+    
+    <div class="d-flex gap-2 p-1">
+        <div class="w-150p"> Attendance Covered</div> 
+        <div class="text-success">  
+            @(GPaymainhdr.AttStart?.ToString("MMMM dd, yyyy") ?? "") - 
+            @(GPaymainhdr.AttEnd?.ToString("MMMM dd, yyyy") ?? "") 
+        </div>
+    </div>
+
+    <div class="card ">
+        <div class="card-header bg-lightgray d-flex  ">
+            <div class="w-50 bordered-right ">
+                <div class="p-2"><h6>Earnings</h6></div>
+                <div class="d-flex w-100 bordered-top p-2">
+                    <div class="w-50">Description</div>
+                    <div class="w-20  text-end">Duration</div>
+                    <div class="w-30  text-end">Amount</div>
+                </div>
+
+                                    
+
+            </div>
+
+            <div class="w-50 ">
+                <div class="p-2"><h6>Deductions</h6></div>
+                <div class="d-flex w-100 bordered-top p-2">
+                    <div class="w-70">Description</div>
+                    <div class="w-30 text-end">Amount</div>
+                </div>
+
+                
+            </div>
+            
+        </div>
+
+        @* --- Card Body -------------------- *@
+        <div class="card-body p-0 d-flex">
+            <div class="w-50 bordered-right p-2">
+                @* --- Earnings Details  *@
+                @{var earnings = GTbltrans?.Where(t=> t.AcctNumber.Substring(0,1) == "E").ToList()?? new List<GTbltranModel?>(); }
+                @foreach(var earn in earnings)
+                {
+                    <div class="d-flex w-100 bordered-bottom p-2 bg-white ">
+                        <div class="w-50">@(earn.AcctName??"-")</div>
+                        <div class="w-20 text-end">@earn.DayHrs @earn.Uom</div>
+                        <div class="w-30 text-end">@earn.Amount.ToString("N2")</div>
+                    </div>
+                }
+            </div>
+            <div class="w-50 p-2">
+                @* --- Deductions Details  *@
+                @{var deductions = GTbltrans?.Where(t=> t.AcctNumber.Substring(0,1) != "E").ToList()?? new List<GTbltranModel?>(); }
+                @foreach(var ded in deductions)
+                {
+                    <div class="d-flex w-100 bordered-bottom p-2 bg-white ">
+                        <div class="w-70">@(ded.AcctName??"-")</div>
+                        <div class="w-30 text-end">@ded.Amount.ToString("N2")</div>
+                    </div>
+                }
+            </div>
+        </div>
+        
+        @* --- Card Footer -------------------- *@
+        <div class="card-footer p-2 p-0 d-flex"> 
+            <div class="w-25 text-center bordered-right p-1">
+                @{  var totHrs = GTbltrandtls.FirstOrDefault(d => d.DtlCd.Trim() == "TH")?.NVal ?? 0; }
+                <div>Total Hours</div>
+                <div>@totHrs.ToString("N2")</div>
+                
+            </div>
+            <div class="w-25 text-center bordered-right p-1">
+                @{double totalEarnings = earnings.Sum(e=> e.Amount);}
+                <div>Gross Earnings</div>
+                <div>@totalEarnings.ToString("N2")</div>
+
+            </div>
+            <div class="w-25 text-center bordered-right p-1">
+                @{double totalDeductions = deductions.Sum(d=> d.Amount);}   
+                <div>Total Deductions</div>
+                <div>@totalDeductions.ToString("N2")</div>
+
+            </div>
+            <div class="w-25 text-center p-1">
+                <div>Net Pay</div>
+                <div>@((totalEarnings - totalDeductions).ToString("N2"))</div>
+            </div>
+            
+        </div>
+
+    </div>
+    
+
+</div>
+
+@code {
+    [Parameter] public List<GTbltranModel?>?     GTbltrans      { get; set; } = [];
+    [Parameter] public List<GTbltrandtlModel?>?  GTbltrandtls   { get; set; } = [];
+    [Parameter] public GPaymainhdrModel?         GPaymainhdr    { get; set; } = new();
+
+
+    private string payrollgrp = "";
+
+
+}

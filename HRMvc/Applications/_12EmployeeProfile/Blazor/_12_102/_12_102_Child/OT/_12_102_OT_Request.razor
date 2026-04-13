@@ -1,0 +1,42 @@
+@using HRMvc.Applications._00GeneralComponents
+@using Microsoft.AspNetCore.Mvc.RazorPages
+
+
+@* ===> Show Request <================================================================== *@
+@if(Ot.ShowMyReqquest) {
+    <_00Modal ModuleCaption="Overtime Request" ChildAction="()=>Ot.ShowMyReqquest=false" >
+        <Content>
+            <_12_102_OT_Request_dtl Uc="@Uc" Ot="@Ot" Ca="LoadTransaction" />
+        </Content>
+    </_00Modal>
+}
+@if(Ot.ShowSendForApproval) {
+    <_00Modal ModuleCaption="Submit For Approval" ChildAction="()=>Ot.ShowSendForApproval=false" >
+        <Content>
+            <_12_102_OT_Request_Approval Uc="@Uc" Ot="@Ot" Ca="@LoadTransactionNoParams"  />
+        </Content>
+    </_00Modal>
+}
+
+
+
+
+@code {
+    [Parameter] public  UserClaimsModel?         Uc                          { get; set; } = new();
+    [Parameter] public  V12_102OT                Ot                          { get; set; } = new(); 
+    [Parameter] public EventCallback<int>        Ca                          { get; set; } = new();
+    [Parameter] public EventCallback<V12_102OT>  Ca_LoadTransaction          { get; set; } = new();
+    [Parameter] public EventCallback             Ca_LoadTransactionNoParams  { get; set; } = new();
+
+    async Task LoadTransaction() {
+        Ot.ShowMyReqquest = false;
+        await Ca_LoadTransaction.InvokeAsync(Ot);
+    }
+    
+    async Task LoadTransactionNoParams() {
+        Ot.ShowSendForApproval = false;
+        await Ca_LoadTransactionNoParams.InvokeAsync();
+    }
+
+    
+}

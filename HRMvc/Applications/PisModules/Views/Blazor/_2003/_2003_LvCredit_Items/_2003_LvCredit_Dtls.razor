@@ -1,0 +1,63 @@
+@using HRApiLibrary.Models._10_Pis
+
+<div class="card p-0 ">
+    <div class="card-body p-0 ">
+
+        <div class="d-flex gap-1 border-bottom p-2 card-header fw-bold small ">
+            <div class="w-200p">Emp Name</div>
+            <div class="w-120p  ">Credit to Apply</div>
+            <div class="w-100p ">@V.LvCredit.Year Credit</div>
+            <div class="">Leave Group</div>
+            
+        </div>
+       @{int ctr = 0; }
+        @foreach (EmpmasgrpModel c in empmasLv)
+        {
+            ctr++; 
+            var css = ctr%2==0 ? "bg-secondary bg-opacity-10 " : ""; 
+            <div class="d-flex gap-1 p-1 @css ">
+                <div class="w-200p p-1 d-flex  justify-content-center align-items-center b-dgray text-center  ">
+                    @c.EmpmasName </div>
+
+                <div class="w-120p px-1 ">
+                        <RadzenNumeric TValue="double?" Value="c.ValLvCredit" ValueChanged="@(val => CreditChanged(val, c))"
+                                       TextAlign="TextAlign.Right" class="px-2" />
+                </div>
+                
+                    <div class="w-100p d-flex  justify-content-center align-items-center b-dgray small text-primary ">
+                        @(c.ValAssignedLvCredit == 0 ? "-" : @c.ValAssignedLvCredit.ToString("N2"))
+                    </div>
+                
+                <div class=" p-1 ">
+                    @c.LeavegrpName 
+                </div>
+
+            </div>
+        }
+
+
+
+
+
+    </div>
+</div>
+
+
+
+@code {
+    [CascadingParameter]    public UserClaimsModel?             Uc  { get; set; }
+    [Parameter]             public V2003_LvGrpAssignmentModel   V   { get; set; } = new();                      
+    [Parameter]             public EventCallback                CA  { get; set; }
+
+    List<EmpmasgrpModel> empmasLv => V.Empmasgrps??[];  
+
+    @* --- Functions -------------------------------------------------- *@
+    async Task CreditChanged(double? val, EmpmasgrpModel c)
+    {
+        c.ValLvCredit = val??0;
+        V.WithChanges = true; 
+        await CA.InvokeAsync();
+    }
+
+    
+}

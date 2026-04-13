@@ -361,7 +361,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     private async Task _00_001_Settings(string schema, string connName)
     {
-        string sql = @$"CREATE TABLE if not exists u1c2pay.settings (
+        string sql = @$"CREATE TABLE if not exists {schema}.settings (
                             Id                  int unsigned NOT NULL AUTO_INCREMENT,
                             Yeartodays          int unsigned DEFAULT '293',
                             Semiannualtodays    int unsigned DEFAULT '148',
@@ -1007,11 +1007,11 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             CountryCode     char(5)                 default 'PH', 
                             PeriodCode      char(2)                 default 'SM', 
                             Revision        CHAR(7)      NOT NULL   DEFAULT '2023-01',  
-                            TaxCode         varchar(5)   NOT NULL   default ' ',
+                            TaxCode         varchar(7)   NOT NULL   default ' ',
                             SAmt            double(10,4) NOT NULL   default 0,
                             EAmt            double(10,4) NOT NULL   default 0,
                             Fix             double(10,4) NOT NULL   default 0,
-                            Percentage      double(6,2)             default 0,
+                            Percentage      double(10,4)             default 0,
                             PRIMARY KEY (`Id`)
                       ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=latin1;";
             await _sql.ExecuteCmd(sql, new { }, connName);
@@ -1024,7 +1024,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
             {
                 if (schema == "MainPay")
                 {
-
+                    
                     sql = $@"Insert into {schema}.MatrixWtax 
                                   (From_,        To_,          CountryCode,  PeriodCode, TaxCode, SAmt,           EAmt,           Fix,            Percentage) values 
           
@@ -1055,8 +1055,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                 }
                 else
                 {
-                    sql = $@"Insert into {schema}.MatrixWtax (Id, From_,        To_,          CountryCode,  PeriodCode, Revision, TaxCode, SAmt,           EAmt,           Fix,            Percentage)
-                                SELECT * FROM mainpay.MatrixWtax";
+                    sql = $@"Insert into {schema}.MatrixWtax 
+                                (Id, From_, To_, CountryCode, PeriodCode, TaxCode, Revision, SAmt, EAmt, Fix, Percentage)
+                            SELECT 
+                                 Id, From_, To_, CountryCode, PeriodCode, TaxCode, Revision, SAmt, EAmt, Fix, Percentage FROM mainpay.MatrixWtax";
                 }
 
                 await _sql.ExecuteCmd(sql, new { }, connName);
