@@ -1,4 +1,5 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2104
 @using System.Globalization
@@ -35,7 +36,7 @@
 
 
 
-
+@inject ISettingsDataAccess     _settings;
 @inject IOPisReportDataAccess   _pisRep;
 @inject IOEmpstatDataAccess     _empstat;
 @inject IOClientDataAccess      _client;
@@ -84,12 +85,11 @@
 
     private async Task LoadCompanyInfo()
     {
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        if (!(res ?? []).Any()) return;
-
-        var r = res!.First();
-        rv.ReportParams["CoName"] = r.CoName ?? "";
-        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        var res = await  _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        if (res == null) return;
+        var r = res;
+        rv.ReportParams["CoName"] = r.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAddress ?? "";
     }
 
     private async Task LoadClients()
