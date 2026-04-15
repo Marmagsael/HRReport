@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3588138ae607ab46b0b6ae67145d47f6c7cf45f8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2254a5515fcc9b9a5c1fe327caf528ee2103471b")]
 [assembly: System.Reflection.AssemblyProductAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HRApi")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,0 +1,112 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRMvc.Applications.PisModules.Views.Blazor._2052
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="formx">
+            <_2052_Profile />
+            <_2052_Government />
+            <_2052_Education />
+            <_2052_Referral />
+            <_2052_EmploymentRecord />
+            <_2052_MilitaryRecord />
+            <_2052_PersonalData />
+            <_2052_Family />
+            <_2052_Skills />
+            <_2052_SeminarsAndTrainings />
+            <_2052_BackgroundDeclaration />
+            <_2052_References />
+            <_2052_EmergencyContact />
+        </div>
+
+    </Details>
+</_00BT_FullW>
+
+@inject ISettingsDataAccess _settings;
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitialiazeReport();
+        await LoadInitialData();
+    }
+
+
+    private void InitialiazeReport()
+    {
+        rv.RefreshToken = 22020000;
+        rv.MCaption = "Application Form";
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "Personal Data Sheet",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadInitialData()
+    {
+        await LoadCompanyInfo();
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _settings._02(1, Uc.SchemaUserPay, Uc.Conn);
+
+        if (res == null) return;
+        rv.ReportParams["CoName"] = res.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = res.CoAddress ?? "";
+    }
+}
+
+
+<style>
+    .formx .fields {
+        display: flex;
+        flex: 1;
+        gap: 15px;
+    }
+
+    .formx .field {
+        flex: 1;
+        align-items: center;
+    }
+
+    .formx .label {
+        min-width: auto;
+        padding-top: 8px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        padding-inline-end: 1rem;
+    }
+
+    .formx .sub-label {
+        font-size: 12px;
+        margin-top: 4px;
+        text-align: center;
+    }
+
+    .formx .line {
+        display: flex;
+        flex: 1;
+        border-bottom: 1px solid #bdbdbd;
+        height: 25px;
+    }
+
+
+    .formx .char-box {
+        width: 25px;
+        height: 30px;
+        border: 1px solid #bdbdbd;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
