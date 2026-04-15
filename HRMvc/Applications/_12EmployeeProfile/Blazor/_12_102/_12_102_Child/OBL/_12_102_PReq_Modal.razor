@@ -4,68 +4,69 @@
     <Content>
         <div class="card p-0">
 
-            <div class="d-flex gap-1 p-1 bordered-bottom ">
+            <div class="d-flex gap-1 p-1 bordered-bottom @denycss ">
                 <button class="btn btn-secondary">Approve Request</button>
                 <button class="btn btn-secondary">Partially Approve</button>
-                <button class="btn btn-danger">Deny Request</button>
+                <button @onclick="_=>isDenyRequest=true" class="btn btn-danger">Deny Request</button>
                 <div class="bordered-right "></div>
-                
             </div>
+
+            @if(isDenyRequest) { <_12_102_PReq_Modal_DenyRequest /> }
 
             <div class="p-2">
-                <div class="d-flex ">
+                <div class="@divHdrcss">
                     <div class="@lblcss  "> Control No </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.Id </div>
+                    <div class="p-2 "> @V.Attreqhdr.Id </div>
                 </div>
-                <div class="d-flex mt-1">
+                <div class="@divHdrcss">
                     <div class="bg mb-a-greenlight p-2 @lblcss "> Requestor Name </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.RequestorName </div>
+                    <div class="p-2 ">
+                        <h5>@V.Attreqhdr.RequestorName</h5>
+                    </div>
                 </div>
-                <div class="d-flex mt-1">
+                <div class="@divHdrcss">
                     <div class="bg mb-a-greenlight p-2 @lblcss "> Coverage </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.CovStart.ToShortDateString() - @V.Attreqhdr.CovEnd.ToShortDateString() </div>
+                    <div class="p-2 "> @V.Attreqhdr.CovStart.ToString("MMM dd, yyyy") -
+                        @V.Attreqhdr.CovEnd.ToString("MMM dd, yyyy") </div>
                 </div>
                 
-                <div class="d-flex mt-1">
+                <div class="@divHdrcss">
                     <div class="bg mb-a-greenlight p-2 @lblcss "> Remarks </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.Remarks </div>
+                    <div class="p-2 "> @V.Attreqhdr.Remarks </div>
                 </div>
 
             </div>
 
-
-
-            @* --- Header --------------------------------------- *@
-            <div class="d-flex gap-2 p-1 border-bottom  border-top small fw-bold mt-2 ">
-                <div class="w-220p p-1">Request Type</div>
-                <div class="w-190p p-1">Date Start</div>
-                <div class="w-190p p-1">Date End</div>
-                <div class="w-100p p-1 text-center">Hours </div>
-            </div>
-
-            @{int ctr = 0; }
-            @foreach(AttreqdtlModel? r in V.Attreqdtls) {
-                ctr++; 
-                string css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
-                <div class="d-flex gap-2 p-1 gap-1 @css ">
-                    <div class="w-220p mb-a-blue">
-                        @entryTypeName(r?.AttReqTypeId??0) 
-                    </div>
-                    <div class="w-190p txt mb-a-blue ">
-                        @r.DStart?.ToString("MM/dd/yyyy HH:mm")
-                    </div>
-                    <div class="w-190p txt mb-a-blue ">
-                        @r.DEnd?.ToString("MM/dd/yyyy HH:mm")
-                    </div>
-                    <div class="w-100p text-center ">
-                        @(ComputeHours(r) == 0 ? "-" : ComputeHours(r).ToString("N2"))
-                    </div>
-
+            <div class="@denycss"> 
+                @* --- Header --------------------------------------- *@
+                <div class="d-flex gap-2 p-1 border-bottom  border-top small fw-bold mt-2 ">
+                    <div class="w-220p p-1">Request Type</div>
+                    <div class="w-190p p-1">Date Start</div>
+                    <div class="w-190p p-1">Date End</div>
+                    <div class="w-100p p-1 text-center">Hours </div>
                 </div>
-            }
 
+                @{int ctr = 0; }
+                @foreach(AttreqdtlModel? r in V.Attreqdtls) {
+                    ctr++; 
+                    string css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
+                    <div class="d-flex gap-2 p-1 gap-1 @css ">
+                        <div class="w-220p mb-a-blue">
+                            @entryTypeName(r?.AttReqTypeId??0) 
+                        </div>
+                        <div class="w-190p txt mb-a-blue ">
+                            @r.DStart?.ToString("MM/dd/yyyy HH:mm")
+                        </div>
+                        <div class="w-190p txt mb-a-blue ">
+                            @r.DEnd?.ToString("MM/dd/yyyy HH:mm")
+                        </div>
+                        <div class="w-100p text-center ">
+                            @(ComputeHours(r) == 0 ? "-" : ComputeHours(r).ToString("N2"))
+                        </div>
 
-
+                    </div>
+                }
+            </div>
 
         </div>
     </Content>
@@ -75,7 +76,12 @@
 
     [Parameter] public EventCallback<bool>      Ec      { get; set; } 
     [Parameter] public V12_102Obligation        V       { get; set; } = new();
-    string lblcss => " w-150p bg mb-a-greenlight p-2 bordered ";
+    bool isDenyRequest = false; 
+
+
+    string denycss => isDenyRequest ?  " disabled-div-50 " : "" ;
+    string divHdrcss => " d-flex bordered-bottom ";
+    string lblcss => " w-150p bg mb-a-greenlight p-2  ";
 
     string entryTypeName(int etnId) => V.Attreqtypes.FirstOrDefault(a=>a.Id == etnId).Name??"-"; 
     double ComputeHours(AttreqdtlModel dtl)

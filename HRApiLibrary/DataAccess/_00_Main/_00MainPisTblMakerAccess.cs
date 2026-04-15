@@ -559,6 +559,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             CovEnd              DateTime, 
                             AttReqTypeId        INTEGER UNSIGNED NOT NULL,
                             Remarks             VARCHAR(120),
+                            ApprRemarks         VARCHAR(120),
                             Status              char(1),
                             EmpNumber_Approver  Char(5),
                             TotHrs              Double(6,2) default 0 , 
