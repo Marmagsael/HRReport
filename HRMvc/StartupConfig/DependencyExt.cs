@@ -20,37 +20,73 @@ namespace HRMvc.StartupConfig;
 
 public static class DependencyExt
 {
+    // public static void AddServices(this WebApplicationBuilder builder)
+    // {
+    //     builder.Services.AddControllersWithViews();
+    //     builder.Services.AddControllers();
+    //     builder.Services.AddEndpointsApiExplorer();
+    //     // ---- Blazor Components -----
+    //     builder.Services.AddRazorPages();
+    //     builder.Services.AddServerSideBlazor()
+    //     .AddCircuitOptions(options =>
+    //     {
+    //         options.DetailedErrors = false;
+
+    //         // keep circuit state para maka-reconnect ang user
+    //         options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(30);
+    //     })
+    //     .AddHubOptions(options =>
+    //     {
+    //         // 🔥 frequent heartbeat para hindi maputol
+    //         options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+
+    //         // allow some delay bago i-declare as disconnected
+    //         options.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
+    //     });
+    //     //builder.Services.AddSyncfusionBlazor();
+    //     builder.Services.AddRadzenComponents();
+
+    //     //--- Session ---------------------------
+    //     builder.Services.AddDistributedMemoryCache(); 
+    //     builder.Services.AddSession(opts => {
+    //         opts.IdleTimeout = TimeSpan.FromHours(12); 
+    //     }); 
+    // }
+
     public static void AddServices(this WebApplicationBuilder builder)
     {
         builder.Services.AddControllersWithViews();
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
+
         // ---- Blazor Components -----
         builder.Services.AddRazorPages();
+
         builder.Services.AddServerSideBlazor()
-        .AddCircuitOptions(options =>
-        {
-            options.DetailedErrors = false;
+            .AddCircuitOptions(options =>
+            {
+                options.DetailedErrors = false;
 
-            // keep circuit state para maka-reconnect ang user
-            options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(30);
-        })
-        .AddHubOptions(options =>
-        {
-            // 🔥 frequent heartbeat para hindi maputol
-            options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+                // ✔️ (1) Circuit retention (OK)
+                options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(20);
+            })
+            .AddHubOptions(options =>
+            {
+                // ✔️ (2) KEEP ALIVE (CRITICAL FIX)
+                options.KeepAliveInterval = TimeSpan.FromSeconds(10);
 
-            // allow some delay bago i-declare as disconnected
-            options.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
-        });
-        //builder.Services.AddSyncfusionBlazor();
+                // ✔️ (3) TIMEOUT (TUNED)
+                options.ClientTimeoutInterval = TimeSpan.FromMinutes(3);
+            });
+
         builder.Services.AddRadzenComponents();
 
-        //--- Session ---------------------------
-        builder.Services.AddDistributedMemoryCache(); 
-        builder.Services.AddSession(opts => {
-            opts.IdleTimeout = TimeSpan.FromHours(12); 
-        }); 
+        // --- Session ---
+        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSession(opts =>
+        {
+            opts.IdleTimeout = TimeSpan.FromHours(12);
+        });
     }
 
 
