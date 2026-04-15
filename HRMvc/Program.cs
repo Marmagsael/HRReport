@@ -1,5 +1,7 @@
 using Blazored.LocalStorage;
 using HRApiLibrary.Reporting.Providers.Payroll;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.Extensions;
 using HRMvc.StartupConfig;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +18,11 @@ builder.Services.AddHRMvcScope();
 // Api Injection
 builder.AddApiInjectionServices();
 builder.AddApiServices();
+
+// 🔥 (3) ADD THIS — DataProtection persistence
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))
+    .SetApplicationName("HRMvc");
 
 var app = builder.Build();
 
@@ -54,5 +61,7 @@ app.MapBlazorHub(options =>
     options.Transports =
         Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets;
 });
+
+
 
 app.Run();
