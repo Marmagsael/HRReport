@@ -366,7 +366,6 @@ public class AuthenticationController : Controller
         var uc = await _02UserCompany(user, schema, conn);
 
         // Create Schema and Tables  --------------------------------------------------------
-
         _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
 
         CreateClaims(user, uc);
@@ -587,7 +586,6 @@ public class AuthenticationController : Controller
     // -- 10.00.01 ---------------------------------------------------------------
     private async Task<UserCompanyModel?> _02UserCompany(UsersModel user, string schema, string conn)
     {
-
         UserCompanyModel? uc = new();
         string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
 
@@ -609,7 +607,6 @@ public class AuthenticationController : Controller
             {
                 // -- Fetch assign company to user --------------------------------
                 uc = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
-
             }
         }
 
