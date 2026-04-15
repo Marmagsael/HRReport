@@ -2,6 +2,7 @@ using Blazored.LocalStorage;
 using HRApiLibrary.Reporting.Providers.Payroll;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.DataProtection.Extensions;
+using System.Runtime.InteropServices;
 using HRMvc.StartupConfig;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,8 +21,13 @@ builder.AddApiInjectionServices();
 builder.AddApiServices();
 
 // 🔥 (3) ADD THIS — DataProtection persistence
+
+var keyPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+    ? @"C:\keys"
+    : "/keys";
+
 builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(@"C:\keys\"))
+    .PersistKeysToFileSystem(new DirectoryInfo(keyPath))
     .SetApplicationName("HRMvc");
 
 var app = builder.Build();
