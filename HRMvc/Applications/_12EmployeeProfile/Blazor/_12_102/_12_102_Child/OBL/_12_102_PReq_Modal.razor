@@ -1,17 +1,24 @@
 ﻿@using HRMvc.Applications._00GeneralComponents
 @using Org.BouncyCastle.Crypto.Prng.Drbg
+
+@inject DialogService _DialogService
+<RadzenDialog />
+
+
+
 <_00Modal ModuleCaption="Punch Request Details" ChildAction="CloseModal" ModalWidth=" w-100 ">
     <Content>
         <div class="card p-0">
 
             <div class="d-flex gap-1 p-1 bordered-bottom @denycss ">
-                <button class="btn btn-secondary">Approve Request</button>
-                <button class="btn btn-secondary">Partially Approve</button>
-                <button @onclick="_=>isDenyRequest=true" class="btn btn-danger">Deny Request</button>
+                <button @onclick="Approve" class="btn btn-secondary">Approve Request</button>
+                <button @onclick="PartiallyApprove" class="btn btn-secondary">Partially Approve</button>
+                <button @onclick="_=>isDenyRequest=true" class="btn btn-danger">Return Request</button>
                 <div class="bordered-right "></div>
             </div>
 
-            @if(isDenyRequest) { <_12_102_PReq_Modal_DenyRequest /> }
+            @if(isDenyRequest)      { <_12_102_PReq_Modal_DenyRequest       Ec="ReturnRequest" V="@V"  /> }
+            @if(isPartiallyApprove) { <_12_102_PReq_Modal_PartiallyApprove  Ec="ReturnRequest" V="@V"  /> }
 
             <div class="p-2">
                 <div class="@divHdrcss">
@@ -72,14 +79,19 @@
     </Content>
 </_00Modal>
 
+
+@inject IJSRuntime _js;
+@inject IAttreqhdrDataAccess _arhdr;
+
 @code {
+    [CascadingParameter]    public UserClaimsModel  Uc      { get; set;}
+    [Parameter] public EventCallback<bool>          Ec      { get; set; } 
+    [Parameter] public V12_102Obligation            V       { get; set; } = new();
+    bool isDenyRequest      = false; 
+    bool isPartiallyApprove = false; 
 
-    [Parameter] public EventCallback<bool>      Ec      { get; set; } 
-    [Parameter] public V12_102Obligation        V       { get; set; } = new();
-    bool isDenyRequest = false; 
 
-
-    string denycss => isDenyRequest ?  " disabled-div-50 " : "" ;
+    string denycss => (isDenyRequest || isPartiallyApprove) ?  " disabled-div-50 " : "" ;
     string divHdrcss => " d-flex bordered-bottom ";
     string lblcss => " w-150p bg mb-a-greenlight p-2  ";
 
@@ -92,6 +104,63 @@
     
 
     @* --- Functions----------------------------------------------------------------------------- *@
+    async Task ReturnRequest() {
+
+        @* --- Return Request ----------------------------------------- *@
+        if (V.Action == "Close")                RRClose(); 
+        if (V.Action == "ReturnRequest" || 
+            V.Action == "PartiallyApproved")    await ReturnRequestToSEnder();
+        
+        @* --- Partially Approve -------------------------------------- *@
+        if (V.Action == "ClosePA")              PAClose();
+
+
+        
+    } 
+
+    async Task Approve() {
+        const string title = "Approve Request?";
+        const string icon = "question";
+        var msg = $@"<div><span class='text-primary'> {V.Attreqhdr.RequestorName}  </span> </div> ";
+        
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (confirmed)
+        {
+            await _arhdr._03PartiallyApprove(V.Attreqhdr,Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn) ;
+            
+            V.Attreqhdrs = [];
+            await _arhdr._03Return(V.Attreqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+            var rAttreqhdrs = await _arhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+            if (rAttreqhdrs != null && rAttreqhdrs.Count > 0)
+            {
+                V.Attreqhdrs = rAttreqhdrs ?? [];
+                V.Attreqhdr = new();
+                StateHasChanged();
+            }
+
+            await Ec.InvokeAsync(false);
+        }
+    }
+
+    void PartiallyApprove() {
+        isPartiallyApprove = true;
+        V.Attreqhdr.ApproverName = string.Empty; 
+    }
+    async Task ReturnRequestToSEnder() {
+        await Ec.InvokeAsync(false);
+    }
+
+
+
+    void RRClose(){
+        isDenyRequest   = false; 
+        V.Action        = string.Empty;
+    }
+    void PAClose(){
+        isPartiallyApprove  = false; 
+        V.Action            = string.Empty;
+    }
+
     async Task CloseModal() {
         await  Ec.InvokeAsync(false); 
     }
