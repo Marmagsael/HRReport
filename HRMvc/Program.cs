@@ -24,7 +24,7 @@ builder.AddApiServices();
 
 var keyPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
     ? @"C:\keys"
-    : "/keys";
+    : "/var/www/HRMvc/keys";
 
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keyPath))
