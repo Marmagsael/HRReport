@@ -5,6 +5,7 @@ using Org.BouncyCastle.Asn1.X509;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
+
 public class OPisReportDataAccess : IOPisReportDataAccess
 {
     private readonly I_90_001_MySqlDataAccess _sql;
@@ -33,9 +34,8 @@ public class OPisReportDataAccess : IOPisReportDataAccess
 
     public async Task<List<OEmpmasModel>> _02ByClNumbersByStatus(List<string?>? clnumbers, List<string?>? statuses, string schema, string conn)
     {
-        if (clnumbers == null || clnumbers.Count == 0 ||  statuses == null || statuses.Count == 0) return [];
+        if (clnumbers == null || clnumbers.Count == 0 || statuses == null || statuses.Count == 0) return [];
         var flds = EmpmasFields();
-        
 
         string sql = $@"SELECT {flds}, s.Name AS EmpStatus, c.ClName, c.clNumber
                         FROM {schema}.Empmas e
@@ -44,7 +44,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         WHERE e.Empstat_ IN @Statuses 
                         AND COALESCE(NULLIF(TRIM(e.client_), ''), '-') IN @ClNumbers 
                         ORDER BY e.EmpLastNm, e.EmpFirstNm;";
-        var data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers=clnumbers, Statuses = statuses }, conn);
+        var data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers = clnumbers, Statuses = statuses }, conn);
         return data ?? [];
     }
 
@@ -63,24 +63,24 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         var data = await _sql.FetchData<OClientModel, dynamic>(sql, new { Status = status }, conn);
         return data ?? [];
     }
-    
+
     public async Task<List<OEmpstatModel>> _02Empstats(string schema, string conn)
     {
         string sql = $@"select  * from {schema}.Empstat order by Name ";
-        var data = await _sql.FetchData<OEmpstatModel, dynamic>(sql, new {  }, conn);
+        var data = await _sql.FetchData<OEmpstatModel, dynamic>(sql, new { }, conn);
         return data ?? [];
     }
 
     public async Task<List<OEmpmasModel>> _02Empmas_By_Clnumbers(string clnumber, string schema, string conn)
     {
-        
-        //await _03Empmas_Remove_0_Dates(schema, conn); 
-        var flds = EmpmasFields(); 
 
-        string              mclnumber   = clnumber; 
-        List<OEmpmasModel>  data        = []; 
-        
-        if(clnumber=="-")
+        //await _03Empmas_Remove_0_Dates(schema, conn); 
+        var flds = EmpmasFields();
+
+        string mclnumber = clnumber;
+        List<OEmpmasModel> data = [];
+
+        if (clnumber == "-")
         {
             string sql = $@"select  {flds}, s.Name EmpStatus, c.ClName  
                             from {schema}.Empmas e 
@@ -90,15 +90,16 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                                     (select code from {schema}.EmpStat where isResigned = 0 ) 
                             order by empLastNm, EmpFirstNm ";
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
-    
-        }  else
+
+        }
+        else
         {
             string sql = $@"select  {flds}, s.Name EmpStatus from {schema}.Empmas e 
                             left join {schema}.EmpStat s on s.Code = e.Empstat_  
                             where e.Client_ = @Clnumber 
                             order by empLastNm, EmpFirstNm ";
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
-        }  
+        }
         return data ?? [];
     }
    
@@ -214,9 +215,9 @@ public class OPisReportDataAccess : IOPisReportDataAccess
 
     public async Task<List<OEmpmasModel>> _02Empmas_ByInsurance_And_Status(int filterValue,  List<string?>? statuses,  DateTime? startDate, DateTime? endDate, string schema, string conn)
     {
-        var flds                = EmpmasFields();
+        var flds = EmpmasFields();
         List<OEmpmasModel> data = [];
-        string sql              = "";
+        string sql = "";
 
         if (filterValue == 1)
         {
@@ -235,7 +236,8 @@ public class OPisReportDataAccess : IOPisReportDataAccess
 
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, Statuses = statuses }, conn);
         }
-        else if (filterValue == 2) {
+        else if (filterValue == 2)
+        {
             sql = $@"SELECT {flds}, s.Name EmpStatus
                     FROM {schema}.empmas e
                     LEFT JOIN {schema}.empstat s on s.code = e.empstat_
@@ -244,7 +246,8 @@ public class OPisReportDataAccess : IOPisReportDataAccess
 
 
             data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses }, conn);
-        } else
+        }
+        else
         {
             sql = $@"SELECT {flds}, s.Name EmpStatus
                     FROM {schema}.empmas e
@@ -348,9 +351,9 @@ public class OPisReportDataAccess : IOPisReportDataAccess
     }
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string schema, string conn)
     {
-        string sql  = $@"select  * from {schema}.Coinfo ";
-        var data    = await _sql.FetchData<OCompanyInfoModel?, dynamic>(sql, new { }, conn);
-        return data??[];
+        string sql = $@"select  * from {schema}.Coinfo ";
+        var data = await _sql.FetchData<OCompanyInfoModel?, dynamic>(sql, new { }, conn);
+        return data ?? [];
     }
 
     // --- Private Functions ------------------------------------------------------------------------------------------------
@@ -510,11 +513,11 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             if(e.Expmed     < '1000-01-01', null, Expmed     )  as Expmed     ,                           
                             if(e.Regref     < '1000-01-01', null, Regref     )  as Regref     ,                           
                             if(e.Drv_Exp    < '1000-01-01', null, Drv_Exp    )  as Drv_Exp    ,                               
-                            if(e.Dpadate    < '1000-01-01', null, Dpadate    )  as Dpadate "; 
+                            if(e.Dpadate    < '1000-01-01', null, Dpadate    )  as Dpadate ";
 
     }
 
-    private async Task _03Empmas_Remove_0_Dates(string schema, string conn) 
+    private async Task _03Empmas_Remove_0_Dates(string schema, string conn)
     {
         var sql = $@"UPDATE {schema}.empmas SET
                         AEND        = IF(AEND       < '1800-01-01', '1900-01-01', AEND),
@@ -569,11 +572,12 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         OR MOVEND       < '1800-01-01'
                         OR regref       < '1800-01-01'
                         OR SEPARATE     < '1800-01-01'
-                        OR STATUSDATE   < '1800-01-01';"; 
-        await _sql.ExecuteCmd<dynamic>(sql, new{}, conn); 
+                        OR STATUSDATE   < '1800-01-01';";
+        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
     }
 
 }
+
 
 public interface IOPisReportDataAccess
 {

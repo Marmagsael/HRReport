@@ -8,4 +8,9 @@ public class LeavetypeModel
 	public DateTime     AnivStart   {get; set; } 
 	public DateTime     AnivEnd     {get; set; } 
 	public int          DefValue    {get; set; } 
+
+    // --- Other ------------------------------------------------------------------------------
+    public bool         Enabled     { get; set; } = false; 
+    public bool         IsEditable  { get; set; } = false; 
+
 }

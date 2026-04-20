@@ -1,0 +1,122 @@
+﻿@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRMvc.Applications.PisModules.Views.Blazor._2003._2003_LvCredit_Items
+<CascadingValue Value="Uc" IsFixed="true">
+    <div class="card vh-90min">
+        
+        <div class="card-header d-flex gap-2 p-2">
+            @* --- Leave Group ------------------------------------ *@
+            <div class="w-125p p-2">
+                Leave Group <span class="text-danger">*</span>
+            </div>
+            <div class="w-400p">
+                <RadzenDropDown 
+                    Data="@v.Leavegrps" TextProperty="Name" ValueProperty="Id" @bind-Value="selLvIds"
+                    Change="LvGrpChange" Multiple="true" Style="width:100%"
+                    PopupStyle="min-height:300px; max-height:600px; overflow-y:auto;">
+
+                    <HeaderTemplate>
+                        <div class="py-2 border-bottom">
+                            <input class="form-check-input" type="checkbox"
+                                   checked="@(selLvIds?.Count == v.Leavegrps.Count)"            @onclick="SelectMultiple" />
+                            <span class="ms-1">Select All</span>
+                        </div>
+                    </HeaderTemplate>
+
+                </RadzenDropDown>
+
+            </div>
+        </div>
+
+        <div class="@fillableCss">
+            <_2003_LvCredit_Fillable CA="CA_Catcher" V="@v" />
+        </div>
+
+        <_2003_LvCredit_Dtls CA="CA_Catcher" V="@v" />
+
+
+    </div>
+
+</CascadingValue>
+
+
+@inject ILeavegrpDataAccess     _lvGrp;
+@inject IEmpmasgrpDataAccess    _empmasgrp;
+@inject ILeavetypeDataAccess    _lvType; 
+
+@code {
+    [Parameter] public UserClaimsModel?     Uc          { get; set; }
+    V2003_LvGrpAssignmentModel              v                           = new();
+    
+    List<int> _selLvIds = new();
+
+    List<int> selLvIds
+    {
+        get => _selLvIds;
+        set
+        {
+            _selLvIds = value;
+            _ = LvGrpChange(); // auto trigger
+        }
+    }
+
+
+    string fillableCss => (_selLvIds ?? []).Any() ? "" : " disabled-div ";
+    @* --- Functions ----------------------- *@
+    protected async override Task OnInitializedAsync()
+    {
+        await LoadDatas();
+        await LoadLvTypes(); 
+        @* empmasAssigned.First().EmpmasId *@
+    }
+
+    async Task LoadDatas()
+    {
+        var res = await _lvGrp._02(Uc.SchemaUserPis, Uc.Conn);
+        if (res.Count > 0)  { v.Leavegrps = res!; } 
+    }
+    async Task LoadLvTypes() {
+        var res = await _lvType._02(Uc.SchemaUserPis, Uc.Conn); 
+        v.LvTypes = []; 
+        if(res.Count > 0 ) v.LvTypes = res!; 
+    }
+
+    async Task SelectMultiple()
+    {
+        
+        
+        if (selLvIds != null && selLvIds.Count == v.Leavegrps.Count)
+        {
+            selLvIds = new List<int>();
+            
+        }
+        else
+        {
+            selLvIds = v.Leavegrps.Select(x => x.Id).ToList();
+            
+            
+            var res = await _empmasgrp._02ByFldIds("LeavegrpId", selLvIds, Uc.SchemaUserPis, Uc.Conn);
+            v.Empmasgrps = [];
+            if(res.Count>0) v.Empmasgrps = res!;
+
+            
+            
+        }
+
+            
+    }
+    async Task LvGrpChange()
+    {
+
+        v.Empmasgrps = [];
+        var res = await _empmasgrp._02ByFldIds("LeavegrpId", selLvIds, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null) { v.Empmasgrps = res!; }
+        
+
+       }
+    
+    void CA_Catcher() {
+
+    }
+}

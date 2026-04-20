@@ -1,6 +1,7 @@
 ﻿using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis;
+using Org.BouncyCastle.Crypto;
 
 namespace HRApiLibrary.DataAccess._10_Pis;
 
@@ -35,6 +36,13 @@ public class LeavegrpDataAccess : ILeavegrpDataAccess
     {
         string sql  = $@"select  * from {schema}.Leavegrp order by Name";
         var data    = await _sql.FetchData<LeavegrpModel?, dynamic>(sql, new { }, conn);
+        return data;
+    }
+    
+    public async Task<List<LeavegrpModel?>?> _02ByIds(List<int> ids,  string schema, string conn)
+    {
+        string sql  = $@"select  * from {schema}.Leavegrp where Id in @Ids order by Name";
+        var data    = await _sql.FetchData<LeavegrpModel?, dynamic>(sql, new { Ids =ids }, conn);
         return data;
     }
 

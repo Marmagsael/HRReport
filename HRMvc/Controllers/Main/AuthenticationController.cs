@@ -366,25 +366,47 @@ public class AuthenticationController : Controller
         var uc = await _02UserCompany(user, schema, conn);
 
         // Create Schema and Tables  --------------------------------------------------------
+
         _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
 
         CreateClaims(user, uc);
-        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
-        if (isExclusive != "true") await CreateCompany(user, uc, conn);
-
-        // await CreateCompany(user, uc, conn);    
-        
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
         HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
+
+        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+
+
+        await CreateCompany(user, uc, conn);
+        if (isExclusive != "true") { 
+            await CreateCompany(user, uc, conn);
+        } else
+        {
+            await LoadDataFrom_OldPis(user, uc);
+        }
+
         
         if (uc.OldPis.Length <= 0) return Redirect("~/13");
         var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
         if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
-        
-        
-        
-        return Redirect("13");
+                
+        return Redirect("12/102");
+        // return Redirect("13");
 
+    }
+
+    private async Task LoadDataFrom_OldPis(UsersModel user, UserCompanyModel? uc)
+    {
+        var oldPis = HttpContext.Session.GetString("OldPis");
+        var oldPay = HttpContext.Session.GetString("OldPay");
+        var conn = _config.GetSection("Schema:DefConn").Value.ToString();
+
+        // --- Create marker in empmas --------------------------------------
+        await _oldEmpmas._00CreateEmpmasMigration_Marker(oldPis??"", conn??"");
+        var res = await _oldEmpmas._02Migrated(oldPis??"", conn??"");
+        if(res.FirstOrDefault()?.CntNotMigrated > 0) 
+        {
+            await _oldEmpmas._00MigrateData(uc.PisSchema??"", oldPis??"", conn??"");
+        }
 
     }
     
@@ -425,7 +447,10 @@ public class AuthenticationController : Controller
         //var usr = await _userAccess._02ById(userId); 
         var coId   = user.DefaultCoId;
         var userDb = "U"+userId.ToString().Trim();
+        
         await _mainPisTblMaker._01UserTable(userDb, conn);
+        // Console.WriteLine($"uc.PisSchema : {uc.PisSchema}");
+        await _mainPisTblMaker._01MainPisTableInternal(uc.PisSchema, conn);
 
 
         if (coId > 1)
@@ -437,7 +462,7 @@ public class AuthenticationController : Controller
             var acctgdb = prefix + "acctg";
             
             
-            await _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
+            // await _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
             
             await _payTblMaker._01(paydb);
             var x = await _userCompany._02(coId, "Main", conn!);
@@ -447,10 +472,6 @@ public class AuthenticationController : Controller
 
             
         }
-
-        
-        //await _mainPisTblMaker._01(uc.PisSchema, conn); 
-
 
     } 
     

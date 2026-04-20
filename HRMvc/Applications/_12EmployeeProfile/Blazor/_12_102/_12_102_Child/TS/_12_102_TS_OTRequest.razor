@@ -1,0 +1,438 @@
+@using Blazorise
+@using DocumentFormat.OpenXml.Drawing.Diagrams
+@using DocumentFormat.OpenXml.Office2010.Excel
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.OT
+@using MailKit
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
+@using Org.BouncyCastle.Crypto.Prng.Drbg
+@using System.Threading.Tasks
+
+
+<RadzenDialog />
+<RadzenNotification />
+<RadzenTooltip />
+<RadzenContextMenu />
+
+<div class="d-flex gap-1 p-1 border-bottom ">
+    <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
+    <div @onclick="Save" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSave) "> Save  </div>
+    <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSend ) "> Send For Approval </div>
+    <div @onclick="ShowCancel" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(CanCancel)"> Cancel </div>
+    <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+</div>
+
+<_12_102_OT_Request Ot="@Ot" Uc="@Uc" Ca_LoadTransaction="LoadTransaction" Ca_LoadTransactionNoParams="LoadTransactionNoParams"  />
+
+<div class="p-2 border-bottom">
+    <div class="p-0 d-flex justify-content-between ">
+        <div class="d-flex p-1">
+            <div class="w-120p p-2">Control No.</div>
+            <div class="w-175p border-bottom fw-bold text-center p-2 text-primary "> 
+                @(Ot.OTReqhdr.Id < 1 ? "-" : Ot.OTReqhdr.Id) 
+            </div>
+        </div>
+        
+        <div class="d-flex p-1">
+            <div class="w-75p p-2">Status</div>
+            <div class="w-175p   text-start p-2 text-primary "> 
+                @(Ot.OTReqhdr.Status switch {"N" => "New", "S" => "Saved", "F" => "For Approval", "A" => "Approved", _ => "Unknown" } )
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-a-blue d-flex ">
+        <div class="w-120p p-2">Date</div>
+        <RadzenDatePicker @bind-Value="Ot.OTReqhdr.DateRequested" 
+            @ref="dateRequestedPicker"
+            DateFormat="MM/dd/yyyy"
+            AllowInput="false"
+            class="mb-date-accent w-150p" />
+    </div>
+
+    <div class="mb-a-blue d-flex mt-1">
+        <div class="w-120p p-2">Coverage</div>
+        <div class=" @(Ot.OTReqdtls.Count>0?" disabled-div ":" ") ">
+            <RadzenDatePicker 
+                Change="()=>Ot.AttPunches1s=[]"
+                @bind-Value="Ot.OTReqhdr.CovStart" 
+                DateFormat="MM/dd/yyyy"
+                AllowInput="false"
+                class="mb-date-accent w-150p" />
+        </div>
+        <div class=" p-2"> - </div>
+        <div class=" @(Ot.OTReqdtls.Count>0?" disabled-div ":" ") " >
+            <RadzenDatePicker 
+                Change="()=>Ot.AttPunches1s=[]"
+                @bind-Value="Ot.OTReqhdr.CovEnd" 
+                DateFormat="MM/dd/yyyy"
+                AllowInput="false"
+                class="mb-date-accent w-150p" />
+        </div>    
+        <div class=" px-2 py-1 @(CanShowPunches)" >
+            <div @onclick="ShowPunches" class="mb-cbtn mb-cbtn-gray p-1 card w-125p ">
+                Show Punches
+            </div>
+        </div>    
+    </div>
+
+    <div class="d-flex ">
+        <div class="w-120p px-2"> Approver </div>
+        <div class="w-150p "> 
+            <RadzenTextBox 
+                @bind-Value="Ot.OTReqhdr.EmpNumber_Approver"
+                Change="FetchApprover"
+                MaxLength="5"
+                class="mb-input-accent"
+                Style="width: 100%;" />
+        </div>
+        <div class="mb-a-blue flex-grow-1 px-1 "> 
+            <RadzenTextBox 
+                @bind-Value="Ot.OTReqhdr.ApproverName"
+                Disabled
+                class="mb-input-accent"
+                Style="width: 100%;" />
+        </div>
+        
+        
+
+    </div>
+    
+    <div class="d-flex">
+        <div class="w-120p p-2"> Remarks </div>
+        <div class=" flex-grow-1 py-1 "> 
+            <RadzenTextArea 
+                @bind-Value="Ot.OTReqhdr.Remarks"
+                MaxLength="120"
+                Rows="3"
+                class="mb-input-accent"
+                Style="width:100%;" />
+        </div>
+    </div>
+    <div class="d-flex">
+        <div class="w-120p p-2"> Total Hours </div>
+        <div class=" p-2 text-primary fw-bold bordered-bottom-darkgreen w-150p  "> 
+            @(TotHoursAppied.Hour.ToString("00")) : @(TotHoursAppied.Minute.ToString("00"))
+        </div>
+    </div>
+
+</div>
+
+
+@* --- Details -------------------------------------------------------- *@
+<div class="card-header w-100 d-flex p-1 fw-bold small border-bottom align-items-center ">
+    <div class=" w-100p text-center ">Date IN</div>
+    <div class=" w-100p ">Time IN</div>
+    <div class=" w-75p ">Date OUT</div>
+    <div class=" w-100p ">Time Out</div>
+    <div class=" w-100p txt mb-a-maroon ">
+        Schedule OUT
+    </div>
+    <div class=" w-75p text-center txt mb-a-maroon ">
+        Duty Type
+    </div>
+    <div class=" w-150p ">
+        <div class=" w-100 text-center">OT Applied</div>
+        <div class=" d-flex w-100">
+            <div class="w-75p text-center">Hours</div>
+            <div class="w-75p text-center">Minutes</div>
+        </div>
+    </div>
+</div>
+
+@{int ctr = 0; }
+@foreach(var p in Ot.AttPunches1s) {
+    ctr++; 
+    int hour    = p.PunchT / 100;
+    int minute  = p.PunchT % 100;
+
+    var bgCss = (ctr % 2 == 0) ? "bg-light" : "bg-white";
+
+    <div class="w-100 d-flex p-1 small align-items-center @(bgCss) @(AlreadyAppiedCss(p.Remarks)) @(Get_Class_WithEntry(p)) ">
+        <div class=" w-100p mb-a-maroon txt text-center ">
+            @p.PunchInDate?.ToString("MMM dd")</div>
+        <div class=" w-100p ">@p.PunchInDate?.ToString("HH:ss tt")</div>
+        <div class=" w-75p mb-a-maroon txt ">
+            @p.PunchOutDate?.ToString("MMM dd")</div>
+        <div class=" w-100p ">@p.PunchOutDate?.ToString("HH:ss tt")</div>
+        <div class=" w-75p mb-a-maroon txt ">
+            @(GetDutyOut(p)) 
+        </div>
+        <div class=" w-100p text-center mb-a-maroon txt ">
+            @(GetDutyTypeName(p.DutyTypeId))
+        </div>
+        <div class=" w-160p d-flex gap-1  ">
+           <div class="">
+                @if(p.Hour>0 || p.Minute > 0)
+                    { <RadzenDropDown @bind-Value="p.Hour" class="w-75p text-center text-danger " Data="@Hours"/> } 
+                else 
+                    { <RadzenDropDown @bind-Value="p.Hour" class="w-75p text-center  " Data="@Hours"/> }  
+           </div>
+           <div class="">
+                @if(p.Hour>0 || p.Minute > 0)
+                    { <RadzenDropDown @bind-Value="p.Minute" class="w-75p text-center text-danger " Data="@Minutes"/> } 
+                else 
+                    { <RadzenDropDown @bind-Value="p.Minute" class="w-75p text-center  " Data="@Minutes"/> }
+           </div>            
+        </div>
+
+        <div class=" fw-normal flex-grow-1 text-danger " >
+                @p.Remarks 
+        </div>
+
+    </div>
+}
+
+
+
+@inject IOEmpmasDataAccess      _empmas; 
+@inject IAttpunches1DataAccess  _attpunches1; 
+@inject IAtttemplateDataAccess  _atttemplate; 
+@inject IAttdutytypeDataAccess  _attdutytype;
+@inject IOtreqhdrDataAccess     _otreqhdr;
+@inject IOtreqdtlDataAccess     _otreqdtl;
+
+@inject DialogService _DialogService
+@inject NotificationService _NotificationService;
+
+@code {
+    [Parameter] public UserClaimsModel?         Uc  { get; set; } = new();
+    V12_102OT   Ot = new(); 
+    RadzenDatePicker<DateTime?>? dateRequestedPicker;
+
+    async Task LoadTransaction(V12_102OT ot) {
+        await ShowPunches();
+        Ot.Action = string.Empty;
+    }
+    
+    async Task LoadTransactionNoParams() {
+        await ShowPunches();
+        Ot.Action = string.Empty;
+    }
+
+
+    bool IsCanSend =>   Ot?.OTReqhdr != null &&
+                        Ot?.OTReqdtls != null &&
+
+                        Ot.OTReqhdr.Status is "S"  &&
+                        Ot.OTReqhdr.DateRequested > DateTime.MinValue &&
+                        Ot.OTReqhdr.CovStart > DateTime.MinValue &&
+                        Ot.OTReqhdr.CovEnd > DateTime.MinValue &&
+                        Ot.OTReqhdr.CovStart <= Ot.OTReqhdr.CovEnd &&
+                        !string.IsNullOrWhiteSpace(Ot.OTReqhdr.ApproverName) &&
+                        TotHoursAppied > DateTime.MinValue;
+
+    bool IsCanShowPunches =>    hdr.CovEnd>=hdr.CovStart && 
+                                hdr.CovStart > DateTime.MinValue && 
+                                hdr.CovEnd > DateTime.MinValue && 
+                                !Ot.AttPunches1s.Any(); 
+
+    bool IsCanCancel    =>  Ot.OTReqhdr != null && 
+                            Ot.OTReqhdr.Status is "S";
+    bool IsCanSave      =>  Ot?.OTReqhdr != null &&
+                            Ot.OTReqhdr.Status is "N" or "S" &&
+                            Ot.OTReqhdr.DateRequested > DateTime.MinValue &&
+                            Ot.OTReqhdr.CovStart > DateTime.MinValue &&
+                            Ot.OTReqhdr.CovEnd > DateTime.MinValue &&
+                            Ot.OTReqhdr.CovStart <= Ot.OTReqhdr.CovEnd &&
+                            !string.IsNullOrWhiteSpace(Ot.OTReqhdr.ApproverName);
+
+    bool IsAlreadyApplied(string remarks) => remarks.Length > 0 ;                            
+   
+
+    string AlreadyAppiedCss(string remarks) => IsAlreadyApplied(remarks) ? " disabled-div " : "";
+    string  CanSave     =>  IsCanSave ? " " : " disabled-div " ; 
+    string  CanSend     =>  IsCanSend ? " " : " disabled-div " ;
+    string  CanCancel   =>  IsCanCancel ? " " : " disabled-div " ;
+    string  CanShowPunches    =>  IsCanShowPunches ? " " : " disabled-div " ;
+    
+
+
+    async Task New() {
+        Ot.OTReqhdr     = new OtreqhdrModel();
+        Ot.OTReqdtls    = [];
+        Ot.AttPunches1s   = [];
+        await dateRequestedPicker!.FocusAsync();
+    }
+
+    async Task Save() {
+        Ot.OTReqhdr.Status          = "S";
+        Ot.OTReqhdr.UserId          = Uc.UserId;
+        Ot.OTReqhdr.EmpNumber       = Uc.OempNumber;
+        Ot.OTReqhdr.AttReqTypeId    = 4; //-- OT Request
+        Ot.OTReqhdr.TotHrs          = TotHoursAppied.Hour + (TotHoursAppied.Minute / 60.0);
+
+        if(Ot.OTReqhdr.Id > 0) {
+            
+            var res = await _otreqhdr._03(Ot.OTReqhdr?.Id??0, Ot.OTReqhdr, Uc.SchemaUserPis, Uc.Conn);
+            Ot.OTReqhdr = res;
+            
+        }
+        else {
+            var res = await _otreqhdr._01(Ot.OTReqhdr, Uc.SchemaUserPis, Uc.Conn);
+            Ot.OTReqhdr = res;
+            
+        }
+        await FetchApprover();
+
+        @* --- Save Details ------------------------- *@
+        foreach(Attpunches1Model dtl in Ot.AttPunches1s ?? []) {
+
+            if (!string.IsNullOrWhiteSpace(dtl.Remarks)) continue; //-- Skip Already Applied 
+
+            double totalHrs = dtl.Hour + (dtl.Minute / 60.0);
+            
+
+            OtreqdtlModel otdtl = new() {
+               EmpmasId     = Uc.UserId,
+               OtReqHdrId   = Ot.OTReqhdr.Id??0,
+                PunchIn     = dtl.PunchInDate??DateTime.MinValue, 
+                TotHrs      = totalHrs,
+                DutyTypeId  = dtl.DutyTypeId
+            };
+
+            await _otreqdtl._01(otdtl, Uc.SchemaUserPis, Uc.Conn); 
+        }
+    }    
+
+
+    async Task ShowSendForApproval() {
+        await Save();
+        Ot.OTReqdtls = await _otreqdtl._02ByEmpmasId_RangeByPunchIn(Uc.UserId, Ot.OTReqhdr.CovStart??DateTime.MinValue, Ot.OTReqhdr.CovEnd??DateTime.MinValue, Uc.SchemaUserPis, Uc.Conn);
+
+        Ot.ShowSendForApproval = true;
+    }    
+    async Task ShowCancel() {
+        string message = "Are you sure you want to cancel this OT request?";
+        string title = "Confirm Cancel";
+        
+        var result = await _DialogService.Confirm(message,  title, new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" }); 
+        if (result == true)
+        {
+            await _otreqhdr._04(Ot.OTReqhdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
+            await _otreqdtl._04ByOtReqHdrId(hdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
+            _NotificationService.Notify(NotificationSeverity.Error, "Cancelled", "OT request has been cancelled.");
+            await New();    
+
+        }  
+    }    
+    async Task ShowMyRequest() {
+        Ot.OTReqhdrs = [];
+        List<string?> status = new List<string?>() {"N", "S", "F" };
+        var res = await _otreqhdr._02ByUserId(Uc.UserId, status??[], Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn);
+        if(res.Any()) Ot.OTReqhdrs = res!;
+
+        Ot.ShowMyReqquest = true;  
+    }    
+
+    async Task FetchApprover()
+    {
+        Ot.OTReqhdr.ApproverName = "";
+        if (string.IsNullOrWhiteSpace(Ot.OTReqhdr.EmpNumber_Approver)) return;
+        var res = await _empmas._02(Ot.OTReqhdr.EmpNumber_Approver,  Uc.OpisDb,  Uc.Conn);
+        var emp = res.FirstOrDefault();
+        if (emp != null) { Ot.OTReqhdr.ApproverName = emp.EmpName ?? ""; }
+    }
+
+    async Task ShowPunches() {
+
+        Ot.AttPunches1s     = []; 
+        Ot.Atttemplates     = []; 
+        Ot.OTReqdtls        = [];
+        int userId          = Uc.UserId;
+        //  --- OT Request Query --------------------------------------------------------------- 
+        var resOTDtls = await _otreqdtl._02ByEmpmasId_RangeByPunchIn(userId, hdr.CovStart??DateTime.MinValue, hdr.CovEnd??DateTime.MinValue, Uc.SchemaUserPis, Uc.Conn);
+
+        // --- Punches Query ------------------------------------------------------------------ 
+        var dstart  = DateOnly.FromDateTime(Ot.OTReqhdr?.CovStart??DateTime.MinValue); 
+        var dend    = DateOnly.FromDateTime(Ot.OTReqhdr?.CovEnd??DateTime.MinValue); 
+
+        var res = await _attpunches1._02ByIdByRange(Uc.UserId, dstart, dend, Uc.SchemaUserPis, Uc.Conn ); 
+        if(res.Any()) Ot.AttPunches1s    = res!; 
+
+        // --- Attendance Template ---------------------------- 
+        var ares = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn); 
+        if(ares.Any()) Ot.Atttemplates  = ares!;
+        
+        //--- Intergrate Duty Type to Punches ------------------------------------------------------
+        resOTDtls.ForEach(dtl => {
+            Ot.AttPunches1s.ForEach(p => {
+                if(p.PunchInDate == dtl.PunchIn) {
+                    int hr      = (int)dtl.TotHrs; 
+                    int min     = (int)((dtl.TotHrs - hr) * 60);
+                    p.Hour      = hr;
+                    p.Minute    = min;
+
+                    if(dtl.OtReqHdrId == Ot.OTReqhdr.Id) { p.Remarks = string.Empty; } else  { p.Remarks = "Already Applied"; }
+                }
+            });
+        });
+
+        
+    }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Ot.Attdutytypes = [];
+        var res = await _attdutytype._02s(Uc.SchemaUserPis, Uc.Conn); 
+        if(res.Any()) Ot.Attdutytypes = res!;
+
+    }
+
+    
+    OtreqhdrModel  hdr => Ot.OTReqhdr  ??= new OtreqhdrModel();
+    
+    
+    DateTime TotHoursAppied => DateTime.MinValue
+                                    .AddHours(Ot.AttPunches1s.Where(a=>a.Remarks == "").Sum(x=>x.Hour))
+                                    .AddMinutes(Ot.AttPunches1s.Where(a=>a.Remarks == "").Sum(x=>x.Minute));
+
+    string Get_Class_WithEntry(Attpunches1Model p) => (p.Hour > 0 || p.Minute > 0) ? " fw-bold " : "";
+    List<int> Hours     => [0,1,2,3,4,5,6,7,8,9,10,11,12];
+    List<int> Minutes   => [0,15,30,45];
+
+    string GetDutyTypeName(int dutytypeid) => Ot.Attdutytypes.FirstOrDefault(x=>x.Id==dutytypeid)?.Code ?? "";
+    string GetDutyOut(Attpunches1Model p) {
+        string dutyOut = "-";
+        if(p.DutyTypeId != 1)                                       return dutyOut; //-- not Regular Duty
+        if(p.PunchInDate == null || p.PunchOutDate == null )        return dutyOut; //-- invalid and out is null 
+        if(p.PunchInDate < new DateTime(1900,1,1))  return dutyOut; //-- invalid in date
+        if(p.PunchOutDate < new DateTime(1900,1,1)) return dutyOut; //-- invalid out date
+        if(p.PunchOutDate <= p.PunchInDate )                         return dutyOut; //-- out date is before or same as in date
+
+        var inHour    = p.PunchT / 100;
+        var inMinute  = p.PunchT % 100;
+        var DurationHour = p.SchedDuration / 100;
+        var DurationMinute = p.SchedDuration % 100;
+        var schedOut = p.PunchInDate?
+                                  .AddHours(inHour)
+                                  .AddMinutes(inMinute)
+                                  .AddHours(DurationHour)
+                                  .AddMinutes(DurationMinute);
+        dutyOut = schedOut?.ToShortTimeString() ?? "-";
+
+
+
+        @* var dt = Ot.Attdutytypes.FirstOrDefault(x=>x.Id==p.DutyTypeId);
+        if (dt == null) return "";
+        var outtime = p.PunchInDate.AddHours(dt.Hours).AddMinutes(dt.Minutes);
+        return outtime.ToShortTimeString(); *@
+
+        return dutyOut;
+    }
+
+    void ShowError(string message)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = "Validation Error",
+            Detail = message,
+            Duration = 4000
+        });
+    }
+    
+}

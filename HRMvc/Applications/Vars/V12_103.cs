@@ -1,3 +1,5 @@
+using System;
+using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._10_Pis.OPis;
 
 namespace HRMvc.Applications.Vars;
