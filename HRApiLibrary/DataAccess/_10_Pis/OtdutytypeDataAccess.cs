@@ -26,7 +26,7 @@ public class OtdutytypeDataAccess : IOtdutytypeDataAccess
 
     public async Task<List<OtdutytypeModel?>?> _02s(string schema, string conn)
     {
-        string sql = $@"select  Id, Code, Name from {schema}.Otdutytype where Id = @Id";
+        string sql = $@"select  Id, Code, Name from {schema}.Otdutytype ";
         var data = await _sql.FetchData<OtdutytypeModel?, dynamic>(sql, new { }, conn);
         return data;
     }

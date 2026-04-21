@@ -97,14 +97,35 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
         };
 
         sql = $@"Insert into {schema}.otreqhist 
-                    (AttReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
-                    (@AttReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
+                    (OtReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
+                    (@OtReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
+        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
+    }
+    
+    public async Task _03Approve(OtreqhdrModel oth, string empNumber, string schema, string conn)
+    {
+        string sql = $@"Update {schema}.Otreqhdr set Status  = 'A' where Id = @Id;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = oth.Id  }, conn);
+
+        OtreqhistModel h = new()
+        {   
+            OtReqHdrId          = oth.Id, 
+            DActionTaken        = DateTime.Now, 
+            SetStatusTo         = "F", 
+            Empnumber_Approver  = empNumber, 
+            Remarks             = "Aproved" 
+        };
+
+        sql = $@"Insert into {schema}.otreqhist 
+                    (OtReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
+                    (@OtReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
         await _sql.ExecuteCmd<dynamic>(sql, h, conn);
     }
 
+
     public async Task _03Return(OtreqhdrModel oth, string empNumber, string schema, string conn)
     {
-        string sql = $@"Update {schema}.Otreqhdr set ApprRemarks = @ApprRemarks, Status = 'R' where Id = @Id;";
+        string sql = $@"Update {schema}.Otreqhdr set ApprRemarks = @AppRemarks, Status = 'R' where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = oth.Id, AppRemarks = oth.ApprRemarks }, conn);
 
         OtreqhistModel  h       = new()
@@ -115,7 +136,7 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
             Remarks             = "Return Request" 
         };
 
-        sql = $@"Insert into {schema}.attreqhist 
+        sql = $@"Insert into {schema}.otreqhist 
                     (OtReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
                     (@OtReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
         await _sql.ExecuteCmd<dynamic>(sql, h, conn);
@@ -138,7 +159,8 @@ public interface IOtreqhdrDataAccess
     Task<List<OtreqhdrModel?>?> _02ForApproval_PerApprover(string approver_empnumber, string pisdb, string conn); 
     Task<OtreqhdrModel?> 	    _03(int id, OtreqhdrModel otreqhdr, string schema, string conn);
     Task                        _03SubmitForApproval(int id, string approver_empnumber,  string schema, string conn);
-    Task                        _03PartiallyApprove(OtreqhdrModel oth, string empNumber, string schema, string conn); 
+    Task                        _03PartiallyApprove(OtreqhdrModel oth, string empNumber, string schema, string conn);
+    Task                        _03Approve(OtreqhdrModel oth, string empNumber, string schema, string conn);
     Task                        _03Return(OtreqhdrModel oth, string empNumber, string schema, string conn); 
     Task 					    _04(int id, string schema, string conn);
 }

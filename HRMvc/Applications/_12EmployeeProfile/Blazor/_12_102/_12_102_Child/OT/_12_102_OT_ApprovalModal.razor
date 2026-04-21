@@ -11,8 +11,6 @@
 <_00Modal ModuleCaption="Punch Request Details" ChildAction="CloseModal" ModalWidth=" w-100 ">
     <Content>
 
-        <div>V.Attpunches1s.Count : @V.Attpunches1s.Count</div>
-
         <div class="card p-0">
 
             <div class="d-flex gap-1 p-1 bordered-bottom @denycss ">
@@ -50,6 +48,10 @@
                     <div class="bg mb-a-greenlight p-2 @lblcss "> Remarks </div>
                     <div class="p-2 "> @V.Otreqhdr.Remarks </div>
                 </div>                
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Total Hours </div>
+                    <div class="p-2 fw-bold "> @V.Otreqhdr.TotHrs?.ToString("N2") </div>
+                </div>                
             </div>
 
 
@@ -60,6 +62,7 @@
                     <div class="w-100p p-1">Time In</div>
                     <div class="w-100p p-1">Time Out</div>
                     <div class="w-100p p-1 text-center">Duty Type</div>
+                    <div class="w-100p p-1 text-center">Rendered</div>
                     <div class="w-100p p-1 text-center">OT Applied</div>
                 </div>
 
@@ -70,12 +73,23 @@
                 {
                     ctr++;
                     string css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
+                    var tstart = r?.PunchIn; 
+                    var tend = @attP1(r.PunchIn).PunchOutDate; 
+                    TimeSpan rendered = (tend ?? DateTime.MinValue) - (tstart ?? DateTime.MinValue);
+
+
+
                     <div class="d-flex gap-2 p-1 gap-1 @css ">
                         <div class="w-100p p-1">@r.PunchIn.ToString("MMM dd")</div>
                         <div class="w-100p p-1">@r.PunchIn.ToString("hh:mm tt")</div>
                         <div class="w-100p p-1">@attP1(r.PunchIn).PunchOutDate?.ToString("hh:mm tt")</div>
-                        <div class="w-100p p-1 text-center">Duty Type</div>
-                        <div class="w-100p p-1 text-center">@r.TotHrs.ToString("N2")</div>
+                        <div class="w-100p p-1 text-center">@dutyType(@r.DutyTypeId).Code</div>
+                        <div class="w-100p p-1 text-center">
+                            @(rendered.Days > 0 
+                                ? $"{rendered.Days}d {rendered.Hours:D2}h {rendered.Minutes:D2}m "
+                                : $"{rendered.Hours:D2}h {rendered.Minutes:D2}m")
+                        </div>
+                        <div class="w-100p p-1 text-center fw-bold small ">@r.TotHrs.ToString("N2")</div>
                     </div>
                 }
             </div>
@@ -88,6 +102,7 @@
 
 @inject IJSRuntime _js;
 @inject IOtreqhdrDataAccess _otreqh; 
+@inject IAttreqhdrDataAccess _arhdr;
 
 @code {
     [CascadingParameter] public UserClaimsModel Uc { get; set; }
@@ -101,7 +116,7 @@
     string lblcss => " w-150p bg mb-a-greenlight p-2  ";
 
     Attpunches1Model attP1(DateTime tin) => V.Attpunches1s.FirstOrDefault(a=>a.PunchInDate==tin)??new();  
-
+    OtdutytypeModel  dutyType(int dutyTypeId) => V.Otdutytypes.FirstOrDefault(dt => dt.Id == dutyTypeId)??new(); 
 
 
 
@@ -114,17 +129,16 @@
         var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
         if (confirmed)
         {
-            @* await _arhdr._03PartiallyApprove(V.Attreqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
-            
-            V.Attreqhdrs = [];
-            await _arhdr._03Return(V.Attreqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
-            var rAttreqhdrs = await _arhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
-            if (rAttreqhdrs != null && rAttreqhdrs.Count > 0)
+            await _otreqh._03Approve(V.Otreqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+            V.Otreqhdrs = []; 
+            var resh = await _otreqh._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+
+            if (resh != null && resh.Count > 0)
             {
-                V.Attreqhdrs = rAttreqhdrs ?? [];
-                V.Attreqhdr = new();
+                V.Otreqhdrs = resh!;
+                V.Otreqhdr = new();
                 StateHasChanged();
-            } *@
+            }
 
             await Ec.InvokeAsync(false);
         }
