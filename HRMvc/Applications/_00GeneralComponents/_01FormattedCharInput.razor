@@ -1,0 +1,66 @@
+﻿<div >
+    @for (int i = 0; i < Format.Length; i++)
+    {
+     
+
+        if (Format[i] == '#')
+        {
+            <input class="char-box text-center"
+                   maxlength="1"
+                   value="@GetChar(i)"
+                   disabled="@Disabled"
+                   @oninput="(e) => OnInput(e, i)" />
+        }
+        else
+        {
+            <span class="mx-1">@Format[i]</span>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string Format { get; set; } = "";
+    [Parameter] public string Value  { get; set; } = "";
+    [Parameter] public EventCallback<string> ChildAction { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private string GetChar(int index)
+    {
+        int count = 0;
+
+        for (int i = 0; i <= index; i++)
+        {
+            if (Format[i] == '#') count++;
+        }
+
+        return count - 1 < Value.Length ? Value[count - 1].ToString() : "";
+        
+    }
+
+    private async Task OnInput(ChangeEventArgs e, int index)
+    {
+        if (Disabled) return;
+
+        var input = e.Value?.ToString();
+
+        // numbers only
+        if (!string.IsNullOrEmpty(input) && !char.IsDigit(input[0]))
+            return;
+                                                                                         
+        var chars = Value.PadRight(Format.Count(f => f == '#')).ToCharArray(); 
+
+        int digitIndex = 0;
+        for (int i = 0; i < index; i++)
+        {
+            if (Format[i] == '#') digitIndex++;
+        }
+
+        if (digitIndex < chars.Length)
+        {
+            chars[digitIndex] = string.IsNullOrEmpty(input) ? ' ' : input[0];
+        }
+
+        Value = new string(chars).Trim();
+        await ChildAction.InvokeAsync(Value);
+    }
+}
