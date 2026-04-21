@@ -56,7 +56,6 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
         return data ?? [];
     }
 
-
     public async Task<AttreqhdrModel?> _03(int id,AttreqhdrModel attreqhdr, string schema, string conn)
 	{
 		string sql = $@"Update {schema}.Attreqhdr set 
@@ -72,6 +71,35 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 		var data = await _sql.FetchData<AttreqhdrModel?, dynamic>(sql, new { Id = id }, conn);
 		return data?.FirstOrDefault();
 	}
+    
+    public async Task _03Return(AttreqhdrModel arh, string empNumber, string schema, string conn)
+	{
+		string sql = $@"Update {schema}.Attreqhdr set ApprRemarks = @ApprRemarks, Status = 'R' where Id = @Id;"; 
+		await _sql.ExecuteCmd<dynamic>(sql, new { Id = arh.Id, AppRemarks=arh.ApprRemarks }, conn);
+
+        AttreqhistModel h = new()
+        { AttReqHdrId = arh.Id,  DActionTaken = DateTime.Now,  SetStatusTo="R",  Empnumber_Approver = empNumber,  Remarks = "Return Request" }; 
+        
+        sql = $@"Insert into {schema}.attreqhist 
+                    (AttReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
+                    (@AttReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
+        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
+    }
+    
+    public async Task _03PartiallyApprove(AttreqhdrModel arh, string empNumber, string schema, string conn)
+	{
+		string sql = $@"Update {schema}.Attreqhdr set EmpNumber_Approver  = @EmpNumber_Approver where Id = @Id;"; 
+		await _sql.ExecuteCmd<dynamic>(sql, new { Id = arh.Id, EmpNumber_Approver = empNumber }, conn);
+
+        AttreqhistModel h = new()
+        { AttReqHdrId = arh.Id,  DActionTaken = DateTime.Now,  SetStatusTo="F",  Empnumber_Approver = empNumber,  Remarks = "Partially Aprove" }; 
+        
+        sql = $@"Insert into {schema}.attreqhist 
+                    (AttReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
+                    (@AttReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
+        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
+    }
+
     
     public async Task<AttreqhdrModel?> _03SendForApproval(AttreqhdrModel attreqhdr, string schema, string conn)
 	{
@@ -100,7 +128,7 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 		return data?.FirstOrDefault();
         
 	}
-
+    
     public async Task<AttreqhdrModel?> _04(int id, string schema, string conn)
     {
         string sql = $@"Delete from {schema}.Attreqhdr where Id = @Id;";
@@ -114,11 +142,13 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 
 public interface IAttreqhdrDataAccess
 {
-    Task<AttreqhdrModel?> _01(AttreqhdrModel attreqhdr, string schema, string conn);
+    Task<AttreqhdrModel?>       _01(AttreqhdrModel attreqhdr, string schema, string conn);
     Task<List<AttreqhdrModel?>> _02s(int id, string schema, string conn);
     Task<List<AttreqhdrModel?>> _02ByUserId_ByTypeId_ByStatus(int userid, int typeId, List<string> status, string pisdb, string opisdb, string conn);
     Task<List<AttreqhdrModel?>> _02ForApproval_PerApprover(string approver_empnumber, string pisdb, string conn); 
-    Task<AttreqhdrModel?> _03(int id, AttreqhdrModel attreqhdr, string schema, string conn);
-    Task<AttreqhdrModel?> _03SendForApproval(AttreqhdrModel attreqhdr, string schema, string conn); 
-    Task<AttreqhdrModel?> _04(int id, string schema, string conn);
+    Task<AttreqhdrModel?>       _03(int id, AttreqhdrModel attreqhdr, string schema, string conn);
+    Task<AttreqhdrModel?>       _03SendForApproval(AttreqhdrModel attreqhdr, string schema, string conn);
+    Task                        _03Return(AttreqhdrModel arh, string empNumber, string schema, string conn);
+    Task                        _03PartiallyApprove(AttreqhdrModel arh, string empNumber, string schema, string conn); 
+    Task<AttreqhdrModel?>       _04(int id, string schema, string conn);
 }

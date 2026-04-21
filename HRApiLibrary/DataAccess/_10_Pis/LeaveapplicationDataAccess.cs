@@ -77,6 +77,22 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { LeaveTypeId = leaveTypeId }, conn);
         return data;
     }
+    public async Task<List<LeaveapplicationModel?>?> _02ForApproval_PerApprover(int approverId, string pisdb, string conn)
+    {
+        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName,
+                                CASE
+                                    WHEN Approver1Id=@ApproverId THEN 1
+                                    WHEN Approver2Id=@ApproverId THEN 2
+                                    ELSE 0
+                                END AS ApproverLevel,
+                                h.*
+                        from {pisdb}.Leaveapplication h
+                        left join {pisdb}.empmas e on e.Id = h.EmpmasId
+                        where ( h.Approver1Id = @ApproverId or h.Approver2Id = @ApproverId)  and Status in ('F', 'FA')";
+        var data = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql,
+                        new { ApproverId = approverId }, conn);
+        return data ?? [];
+    }
 
 
     public async Task<LeaveapplicationModel?> _03(int id, LeaveapplicationModel leaveapplication, string schema, string conn)

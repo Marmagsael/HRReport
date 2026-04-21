@@ -9,14 +9,17 @@ public class OtreqhdrModel
 	public DateTime?    CovStart            { get; set; } 
 	public DateTime?    CovEnd              { get; set; } 
 	public int?         AttReqTypeId        { get; set; } 
-	public string?      Remarks             { get; set; } 
-	public string?      Status              { get; set; } = "N"; 
-	public string?      EmpNumber_Approver  { get; set; } 
-	public double?      TotHrs              { get; set; } 
+	public string?      Remarks             { get; set; }
+    public string?      Status              { get; set; } = "N"; 
+	public string?      EmpNumber_Approver  { get; set; }
+    public string?      ApprRemarks         { get; set; }
+    public double?      TotHrs              { get; set; } 
 	public int?         PayYear             { get; set; } 
 	public string?      PayMo               { get; set; } 
 	public string?      PayPP               { get; set; } 
 
 	//-------------------------------------------------------------------
 	public string? 		ApproverName 		{ get; set; }
+	public string? 		RequestorName 		{ get; set; }
+	public bool         IsSelected          { get; set; } = false; 
 }

@@ -23,7 +23,10 @@ public class LeaveapplicationModel
     public string?      Status          { get; set; } = "N"; 
 
     //--------------------------------------------------------
-    public string? Empmasname           { get; set; } = string.Empty; 
-    public string? Leavetypename        { get; set; } = string.Empty; 
+    public string?      Empmasname           { get; set; } = string.Empty; 
+    public string?      Leavetypename        { get; set; } = string.Empty;
+    public string?      RequestorName       { get; set; }
+    public bool         IsSelected          { get; set; } = false;
+    public int          ApproverLevel       { get; set; } = 0;
 
 }
