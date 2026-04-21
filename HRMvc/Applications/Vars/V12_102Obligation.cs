@@ -14,5 +14,27 @@ public class V12_102Obligation
     public List<AttreqtypeModel>        Attreqtypes     { get; set; } = []; 
 
     public string                       Action          { get; set; } = string.Empty;
+
+
+    public bool                         ShowOTApproval              { get; set; } = false;
+    public OtreqhdrModel                Otreqhdr                    { get; set; } = new();
+    public List<OtreqhdrModel>          Otreqhdrs                   { get; set; } = [];
+    public List<OtreqdtlModel>          Otreqdtls                   { get; set; } = [];
+    public List<Attpunches1Model>       Attpunches1s                { get; set; } = [];
+    public List<OtdaytypeModel>         Otdaytypes                  { get; set; } = [];
+    public List<OtdutytypeModel>        Otdutytypes                 { get; set; } = [];
+
+    
+    public bool                         ShowAttTemplateApproval     { get; set; } = false;
+    public AtttemplatereqhdrModel       Atttemplatereqhdr           { get; set; } = new();
+    public List<AtttemplatereqhdrModel> Atttemplatereqhdrs          { get; set; } = [];
+
+    
+    public bool                         ShowLvApproval              { get; set; } = false;
+    public LeaveapplicationModel        LvApp                       { get; set; } = new();
+    public List<LeaveapplicationModel>  LvApps                      { get; set; } = [];
+
+
+
      
 }

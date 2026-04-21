@@ -22,13 +22,13 @@ builder.AddApiServices();
 
 // 🔥 (3) ADD THIS — DataProtection persistence
 
-var keyPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-    ? @"C:\keys"
-    : "/var/www/HRMvc/keys";
+// var keyPath = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+//     ? @"C:\keys"
+//     : "/var/www/HRMvc/keys";
 
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keyPath))
-    .SetApplicationName("HRMvc");
+// builder.Services.AddDataProtection()
+//     .PersistKeysToFileSystem(new DirectoryInfo(keyPath))
+//     .SetApplicationName("HRMvc");
 
 var app = builder.Build();
 
