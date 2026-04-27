@@ -10,9 +10,9 @@ public class V12_102Obligation
 
     public AttreqdtlModel               Attreqdtl       { get; set; } = new(); 
     public List<AttreqdtlModel?>?       Attreqdtls      { get; set; } = []; 
+    public AtttemplateModel             Atttemplate     { get; set; } = new();
     public List<AtttemplateModel?>?     Atttemplates    { get; set; } = [];
     public List<AttreqtypeModel>        Attreqtypes     { get; set; } = []; 
-
     public string                       Action          { get; set; } = string.Empty;
 
 
@@ -28,6 +28,8 @@ public class V12_102Obligation
     public bool                         ShowAttTemplateApproval     { get; set; } = false;
     public AtttemplatereqhdrModel       Atttemplatereqhdr           { get; set; } = new();
     public List<AtttemplatereqhdrModel> Atttemplatereqhdrs          { get; set; } = [];
+    public AtttemplatereqdtlModel       Atttemplatereqdtl           { get; set; } = new();
+    public List<AtttemplatereqdtlModel> Atttemplatereqdtls          { get; set; } = [];
 
     
     public bool                         ShowLvApproval              { get; set; } = false;

@@ -1,4 +1,8 @@
-﻿<div class="card b-maroon ">
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@if(ShowModal) { <div> <_12_102_CS_ApprovalModal V="@V" Ec="@EC_Catcher" />  </div> }
+
+<div class="card b-maroon ">
     <div class="card-header p-0 ">
         <div class="bordered-bottom py-2 small fw-bold text-white bg mb-a-maroon px-2  ">
             Change Schedule Request
@@ -52,22 +56,31 @@
 
 </div>
 
-@code {
-    [CascadingParameter] public UserClaimsModel Uc { get; set; } = new();
-    [Parameter] public V12_102Obligation V { get; set; } = new();
+@inject IAtttemplatereqhdrDataAccess    _attreqhdr;
+@inject IAtttemplatereqdtlDataAccess    _atttemplatereqdtl;
+@inject IAtttemplateDataAccess          _atttemplate;
 
+
+
+@code {
+    [CascadingParameter] public UserClaimsModel     Uc { get; set; } = new();
+    [Parameter]          public V12_102Obligation   V { get; set; } = new();
+    bool   ShowModal   = false; 
 
     async Task ShowDtl(AtttemplatereqhdrModel h)
     {
-        @* var res = await _attreqdtl._02ByAttReqHdrIds(h.Id, Uc.SchemaUserPis, Uc.Conn);
-        V.Attreqdtls = [];
-        if (res != null && res.Count > 0)
-        {
-            V.Attreqdtls = res!;
-            V.Attreqhdr = h;
-        }
 
-        ShowModal = true; *@
+        var rest = await _atttemplate._02(h.UserId??0, Uc.SchemaUserPis, Uc.Conn);
+        V.Atttemplate = rest ?? new();
+
+        List<AtttemplatereqdtlModel?>? res = await _atttemplatereqdtl._02ByAtttemplateReqHdrId(h.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+        V.Atttemplatereqdtl = res.FirstOrDefault()??new();
+
+        
+
+
+        V.Atttemplatereqhdr = h;
+        ShowModal = true; 
     }
 
     bool isMarkAll => (V.Atttemplatereqhdrs.Where(a => a.IsSelected == true).ToList().Count == V.Atttemplatereqhdrs.Count);
@@ -78,5 +91,16 @@
     string noSelectedCss => !isNoSelected ? " disabled-div " : " ";
     void MarkAll() { V.Atttemplatereqhdrs.ForEach(a => { a.IsSelected = true; }); }
     void UnmarkAll() { V.Atttemplatereqhdrs.ForEach(a => { a.IsSelected = false; }); }
+
+
+    void EC_Catcher(bool ans)
+    {
+        
+        
+        
+        
+        ShowModal = ans;
+        V.Action=string.Empty; 
+    }
 
 }
