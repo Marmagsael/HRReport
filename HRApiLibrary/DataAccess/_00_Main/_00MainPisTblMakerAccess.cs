@@ -624,6 +624,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             DateRequested       DATETIME,
                             Effectivity         DateTime, 
                             Remarks             VARCHAR(120),
+                            ApprRemarks         VARCHAR(120),
                             Status              char(1),
                             EmpNumber_Approver  Char(5),
                             PRIMARY KEY (`Id`) ) ENGINE = InnoDB;

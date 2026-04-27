@@ -71,7 +71,68 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, atttemplatereqhdr, conn);
         return data?.FirstOrDefault();
     }
-    
+
+    public async Task _03Approve(AtttemplatereqhdrModel atrh, string empNumber, string schema, string conn)
+    {
+        string sql = $@"Update {schema}.Atttemplatereqhdr set Status  = 'A' where Id = @Id;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = atrh.Id }, conn);
+
+        AtttemplatereqhistModel h = new()
+        {
+            AtttemplateReqHdrId     = atrh.Id,
+            DActionTaken            = DateTime.Now,
+            SetStatusTo             = "F",
+            Empnumber_Approver      = empNumber,
+            Remarks                 = "Aproved"
+        };
+
+        sql = $@"Insert into {schema}.atttemplatereqhist 
+                    (AtttemplateReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
+                    (@AtttemplateReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
+        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
+    }
+
+    public async Task _03PartiallyApprove(AtttemplatereqhdrModel atrh, string empNumber, string schema, string conn)
+    {
+        string sql = $@"Update {schema}.Atttemplatereqhdr set EmpNumber_Approver  = @EmpNumber_Approver where Id = @Id;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = atrh.Id, EmpNumber_Approver = empNumber }, conn);
+
+        AtttemplatereqhistModel h = new()
+        {
+            AtttemplateReqHdrId = atrh.Id,
+            DActionTaken = DateTime.Now,
+            SetStatusTo = "F",
+            Empnumber_Approver = atrh.EmpNumber_Approver??"",
+            Remarks = $"Partially Aprove [{empNumber??""}] "
+        };
+        
+
+        sql = $@"Insert into {schema}.atttemplatereqhist 
+                    (AtttemplateReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
+                    (@AtttemplateReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
+        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
+    }
+
+    public async Task _03Return(AtttemplatereqhdrModel treqhdr, string empNumber, string schema, string conn)
+    {
+        string sql = $@"Update {schema}.Atttemplatereqhdr set ApprRemarks = @AppRemarks, Status = 'R' where Id = @Id;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = treqhdr.Id, AppRemarks = treqhdr.ApprRemarks }, conn);
+
+        AtttemplatereqhistModel h = new()
+        {
+            AtttemplateReqHdrId = treqhdr.Id,
+            DActionTaken        = DateTime.Now,
+            SetStatusTo         = "R",
+            Empnumber_Approver  = empNumber,
+            Remarks             = "Return Request"
+        };
+
+        sql = $@"Insert into {schema}.atttemplatereqhist 
+                    (AtttemplateReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
+                    (@AtttemplateReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
+        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
+    }
+
     public async Task<AtttemplatereqhdrModel?> _03SendForApproval(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn)
     {
         string sql = $@"Update {schema}.Atttemplatereqhdr set 
@@ -116,6 +177,9 @@ public interface IAtttemplatereqhdrDataAccess
     Task<List<AtttemplatereqhdrModel?>?>    _02ByUserIds(int userId, string pisdb, string opisdb, string conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ForApproval_PerApprover(string approver_empnumber, string pisdb, string conn); 
     Task<AtttemplatereqhdrModel?>           _03(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
-    Task<AtttemplatereqhdrModel?>           _03SendForApproval(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn); 
+    Task                                    _03Approve(AtttemplatereqhdrModel atrh, string empNumber, string schema, string conn);
+    Task                                    _03PartiallyApprove(AtttemplatereqhdrModel atrh, string empNumber, string schema, string conn);
+    Task<AtttemplatereqhdrModel?>           _03SendForApproval(AtttemplatereqhdrModel atttemplatereqhdr, string schema, string conn);
+    Task                                    _03Return(AtttemplatereqhdrModel treqhdr, string empNumber, string schema, string conn);
     Task                                    _04(int id, string schema, string conn);
 }

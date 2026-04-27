@@ -92,8 +92,14 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 		await _sql.ExecuteCmd<dynamic>(sql, new { Id = arh.Id, EmpNumber_Approver = empNumber }, conn);
 
         AttreqhistModel h = new()
-        { AttReqHdrId = arh.Id,  DActionTaken = DateTime.Now,  SetStatusTo="F",  Empnumber_Approver = empNumber,  Remarks = "Partially Aprove" }; 
-        
+        { 
+            AttReqHdrId = arh.Id, 
+            DActionTaken = DateTime.Now, 
+            SetStatusTo = "F", 
+            Empnumber_Approver = arh.EmpNumber_Approver, 
+            Remarks = $"Partially Aprove [{empNumber??""}]" 
+        };
+
         sql = $@"Insert into {schema}.attreqhist 
                     (AttReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
                     (@AttReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";

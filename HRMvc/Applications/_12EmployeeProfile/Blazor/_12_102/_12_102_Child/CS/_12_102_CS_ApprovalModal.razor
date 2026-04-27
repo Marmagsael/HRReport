@@ -1,0 +1,192 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRMvc.Applications._00GeneralComponents
+
+@inject DialogService _DialogService
+<RadzenDialog />
+
+
+
+<_00Modal ModuleCaption="Change Schedule Request Details" ChildAction="CloseModal" ModalWidth=" w-100 ">
+    <Content>
+
+        <div class="card p-0">
+
+            <div class="d-flex gap-1 p-1 bordered-bottom @denycss ">
+                <button @onclick="Approve" class="btn btn-secondary">Approve Request</button>
+                <button @onclick="PartiallyApprove" class="btn btn-secondary">Partially Approve</button>
+                <button @onclick="Return" class="btn btn-danger">Return Request</button>
+                <div class="bordered-right "></div>
+            </div>
+
+            @if(isDenyRequest)      { <_12_102_CS_ApprovalModal_Return   Ec="Ec_Catcher" V="@V"  /> }
+            @if(isPartiallyApprove) { <_12_102_CS_ApprovalModal_PApprove Ec="Ec_Catcher" V="@V"  /> }
+
+            @* @if(isPartiallyApprove) { <_12_102_OT_ApprovalModal_PApprove Ec="ReturnRequest" V="@V"  /> } *@
+
+            @{ var hdr =  V.Atttemplatereqhdr; }
+            <div class="p-2">
+                <div class="@divHdrcss">
+                    <div class="@lblcss  "> Control No </div>
+                    <div class="p-2 "> @hdr.Id  </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Requestor Name </div>
+                    <div class="p-2 "><h5>@hdr.RequestorName</h5></div>
+                </div>
+                
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Date Requested </div>
+                    <div class="p-2 ">@hdr.DateRequested?.ToString("MMM dd, yyyy")</div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Effectivity </div>
+                    <div class="p-2 fw-bold small "> @hdr.Effectivity?.ToString("MMM dd, yyyy") </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Remarks </div>
+                    <div class="p-2 "> @hdr.Remarks </div>
+                </div>
+                
+            </div>
+
+
+            <div class="@denycss p-2">
+                <div class="border border-1 border-secondary ">
+                    <table class="w-100 table table-sm table-striped">
+                        <thead class="table-light border-0">
+                            <!-- Group headers -->
+                            <tr class="text-center">
+                                <th class="bordered-right "></th>
+                                <th colspan="3" class="bordered-right ">
+                                    Current Schedule
+                                </th>
+                                <th colspan="3" class="fw-semibold">
+                                    Requested Schedule
+                                </th>
+                            </tr>
+
+                            <!-- Column headers -->
+                            <tr class="text-center">
+                                <th class="fw-semibold bordered-right">Day</th>
+
+                                <th class="fw-semibold">Duty Type</th>
+                                <th class="fw-semibold">IN</th>
+                                <th class="fw-semibold bordered-right">Out</th>
+
+                                <th class="fw-semibold">Duty Type</th>
+                                <th class="fw-semibold">IN</th>
+                                <th class="fw-semibold">Out</th>
+                            </tr>
+                        </thead>
+
+                        <tbody class="text-center">
+                            @foreach (var d in Enumerable.Range(2, 7))
+                            {   
+                            <_12_102_CS_ApprovalModal_TR Dayno="d" T="V.Atttemplate" TD="V.Atttemplatereqdtl" /> }
+                            <_12_102_CS_ApprovalModal_TR Dayno="1" T="V.Atttemplate" TD="V.Atttemplatereqdtl" />
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </Content>
+</_00Modal>
+
+@inject IJSRuntime _js;
+@inject IAtttemplatereqhdrDataAccess    _attreqhdr;
+
+@code {
+    [CascadingParameter] public UserClaimsModel         Uc { get; set; }
+    [Parameter]          public EventCallback<bool>     Ec { get; set; }
+    [Parameter]          public V12_102Obligation       V  { get; set; } = new();
+    bool    isDenyRequest       = false;
+    bool    isPartiallyApprove  = false;
+
+    string  denycss     => (isDenyRequest || isPartiallyApprove) ? " disabled-div-50 " : "";
+    string  divHdrcss   => " d-flex bordered-bottom ";
+    string  lblcss      => " w-150p bg mb-a-greenlight p-2  ";
+
+
+    async Task Approve()
+    {
+        const string title = "Approve Request?";
+        const string icon = "question";
+        var msg = $@"<div><span class='text-primary'> {V.Atttemplatereqhdr.RequestorName}  </span> </div> ";
+        
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (confirmed)
+        {
+            await _attreqhdr._03Approve(V.Atttemplatereqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+            V.Atttemplatereqhdrs                = [];
+            List<AtttemplatereqhdrModel?>? resh = await _attreqhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+            if(resh != null && resh.Count > 0) 
+            { 
+                V.Atttemplatereqhdrs = resh!; 
+                V.Atttemplatereqhdr = new(); 
+                StateHasChanged(); 
+            }
+        
+            V.Action = "Approve";
+        
+            await Ec.InvokeAsync(false);
+        }
+        
+    }
+
+
+    void Return() {
+        isDenyRequest = true; 
+        V.Atttemplatereqhdr.ApprRemarks = string.Empty;
+    }
+
+    async Task CloseModal() { 
+        isDenyRequest = false;
+        V.Action = "";
+        await Ec.InvokeAsync(false); 
+    }
+    
+    async Task Ec_Catcher()
+    {
+        if (V.Action == "CloseRR")              await CloseReturn();
+        if (V.Action == "ReturnRequest")        await ReturnRequest();
+        if (V.Action == "ClosePA")              await CloseReturn();
+        if (V.Action == "PartiallyApproved")    await PartiallyApproved();
+        
+        
+    }
+
+    async Task PartiallyApproved()
+    {
+        isPartiallyApprove = true;
+        await Ec.InvokeAsync(false);
+    }
+    async Task ReturnRequest()
+    {
+        isDenyRequest = true;
+        await Ec.InvokeAsync(false);
+    }
+
+    async Task CloseReturn()
+    {
+        isDenyRequest       = false;
+        isPartiallyApprove  = false;
+        await Ec.InvokeAsync(true);
+    }
+
+
+    void PartiallyApprove()
+    {
+        isPartiallyApprove = true;
+    }
+
+}
+
+
+

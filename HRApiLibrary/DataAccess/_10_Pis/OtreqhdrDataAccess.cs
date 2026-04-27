@@ -92,8 +92,8 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
             OtReqHdrId = oth.Id, 
             DActionTaken = DateTime.Now, 
             SetStatusTo = "F", 
-            Empnumber_Approver = empNumber, 
-            Remarks = "Partially Aprove" 
+            Empnumber_Approver = oth.EmpNumber_Approver??"",
+            Remarks = $"Partially Aprove [{empNumber ?? ""}] "
         };
 
         sql = $@"Insert into {schema}.otreqhist 
