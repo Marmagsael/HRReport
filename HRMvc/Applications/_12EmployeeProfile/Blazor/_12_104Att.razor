@@ -1,57 +1,72 @@
 ﻿@using System.Globalization
 @using HRApiLibrary.DataAccess._10_Pis.Attendance
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._12EmployeeProfile.Blazor.Vars
 @using Radzen
 
 <div>
 
-    <div class="card-header fw-bold"> Attendance</div>
+    <div class="card-header fw-bold">Attendance</div>
 
     <div class="p-2">
         <div class="attendance-container">
 
-            <!-- FILTERS -->
-            <div class="filter-bar">
-                <div class="filter-item">
-                    <span>Month</span>
-                    <RadzenDropDown Data="@months"
-                                    TextProperty="Name"
-                                    ValueProperty="Value"
-                                    @bind-Value="selectedMonth"
-                                    Change="@(_ => GenerateCalendar())"
-                                    Style="width: 160px" />
+            <div class="d-flex justify-content-between">
+
+                     <!-- FILTERS -->
+                <div class="filter-bar d-flex gap-3">
+                    <div class="filter-item">
+                        <span>Month</span>
+                        <RadzenDropDown Data="@v.Months"
+                                        TextProperty="Name"
+                                        ValueProperty="Value"
+                                        @bind-Value="v.SelectedMonth"
+                                        Change="@(_ => GenerateCalendar())"
+                                        Style="width: 160px" />
+                    </div>
+
+                    <div class="filter-item">
+                        <span>Year</span>
+                        <RadzenDropDown Data="@v.Years"
+                                        @bind-Value="v.SelectedYear"
+                                        Change="@(_ => GenerateCalendar())"
+                                        Style="width: 120px" />
+                    </div>
                 </div>
 
-                <div class="filter-item">
-                    <span>Year</span>
-                    <RadzenDropDown Data="@years"
-                                    @bind-Value="selectedYear"
-                                    Change="@(_ => GenerateCalendar())"
-                                    Style="width: 120px" />
+
+                <!-- LEGEND -->
+                <div class="legend">
+                    <div><span class="dot present"></span> Present</div>
+                    <div><span class="dot late"></span> Late</div>
+                    <div><span class="dot late"></span> UnderTime</div>
+                    <div><span class="dot absent"></span> Absent</div>
+                    <div><span class="dot rd"></span> Rest Day</div>
                 </div>
             </div>
+           
 
             <!-- CALENDAR -->
             <div class="calendar">
 
                 <div class="weekdays">
-                    @foreach (var w in weeks)
+                    @foreach (var w in v.Weeks)
                     {
                         <div>@w</div>
                     }
                 </div>
 
-                @for (int i = 0; i < calendar.Count; i += 7)
+                @for (int i = 0; i < v.Calendar.Count; i += 7)
                 {
                     <div class="week-row">
 
-                        @for (int j = i; j < i + 7 && j < calendar.Count; j++)
+                        @for (int j = i; j < i + 7 && j < v.Calendar.Count; j++)
                         {
-                            var day = calendar[j];
+                            var day = v.Calendar[j];
 
                             <div class="day-card
-                                            @(day.Date == null ? "empty" : "")
-                                            @(day.IsToday ? "today" : "")"
-                                 @onclick="(() => OpenDay(day))">
+                                                        @(day.Date == null ? "empty" : "")
+                                                        @(day.IsToday ? "today" : "")">
 
                                 @if (day.Date != null)
                                 {
@@ -61,16 +76,20 @@
                                         </div>
                                     </div>
 
-                                    <div class="day-bottom">
-                                        @if (day.TimeIn != null)
-                                        {
-                                            <div class="time">IN @day.TimeIn</div>
-                                        }
-                                        @if (day.TimeOut != null)
-                                        {
-                                            <div class="time">OUT @day.TimeOut</div>
-                                        }
+                                    <div class="mt-5">
+                                        <div class="block expected rounded-bottom-0 rounded-top">
+                                            <div class="block-title">SCHEDULE</div>
+                                            <span class="time">  @day.ExpTimeIn?.ToString(@"hh\:mm") </span> -
+                                            <span class="time"> @day.ExpTimeOut?.ToString(@"hh\:mm")</span>
+                                        </div>
+
+                                        <div class="block actual rounded-top-0 rounded-bottom d-flex flex-column gap-2">
+                                            <div class="time"> <span class="d-inline-block w-100p" style="width:40px">IN</span>   @day.TimeIn?.ToString(@"hh\:mm")</div>
+                                            <div class="time"> <span class="d-inline-block w-100p" style="width:40px">OUT</span>  @day.TimeOut?.ToString(@"hh\:mm")</div>
+                                        </div>
                                     </div>
+
+                                   
                                 }
 
                             </div>
@@ -81,144 +100,145 @@
 
             </div>
 
-            <!-- LEGEND -->
-            <div class="legend d-flex justify-content-center w-100">
-                <div class="flex-grow-1"><span class="dot present"></span> Present</div>
-                <div class="flex-grow-1"><span class="dot late"></span> Late</div>
-                <div class="flex-grow-1"><span class="dot absent"></span> Absent</div>
-                <div class="flex-grow-1"><span class="dot rd"></span> Rest Day</div>
-            </div>
+         
 
         </div>
     </div>
-  
 
 </div>
 
+@inject IAttpunches1DataAccess _attPunches1;
+@inject IAtttemplateNDataAccess _attTemplate;
+@inject IAttdutytypeNDataAccess _attDutyType;
 
-@inject IAttpunches1DataAccess _attpunches1;
 @code {
-
-
     [Parameter] public UserClaimsModel? Uc { get; set; }
-
-    List<MonthItem> months = new();
-    List<int> years = new();
-    List<string> weeks = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-    int selectedMonth = DateTime.Today.Month;
-    int selectedYear = DateTime.Today.Year;
-
-    List<AttendanceDay> calendar = new();
-
-    class MonthItem
-    {
-        public int Value { get; set; }
-        public string Name { get; set; } = "";
-    }
-
-    class AttendanceDay
-    {
-        public DateTime? Date { get; set; }
-        public TimeSpan? TimeIn { get; set; }
-        public TimeSpan? TimeOut { get; set; }
-        public string Status { get; set; } = "";
-        public bool IsToday { get; set; }
-    }
+    V12104Model v = new();
 
     protected override async Task OnInitializedAsync()
     {
-        months = Enumerable.Range(1, 12)
+        v.Months = Enumerable.Range(1, 12)
             .Select(m => new MonthItem
             {
                 Value = m,
                 Name = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
             }).ToList();
 
-        years = Enumerable.Range(2000, DateTime.Now.Year - 1999).ToList();
+        v.Years = Enumerable.Range(2000, DateTime.Now.Year - 1999).ToList();
 
+        v.AttyDutyTypes = await _attDutyType._02(Uc.SchemaUserPis!, Uc.Conn!) ?? new List<AttdutytypeModel?>();
         await GenerateCalendar();
     }
 
-    async Task GenerateCalendar()
+    private async Task GenerateCalendar()
     {
-        calendar = new();
+        v.Calendar = new();
 
-        var firstDay = new DateTime(selectedYear, selectedMonth, 1);
-        int daysInMonth = DateTime.DaysInMonth(selectedYear, selectedMonth);
-        int startDay = (int)firstDay.DayOfWeek;
+        var firstDay    = new DateTime(v.SelectedYear, v.SelectedMonth, 1);
+        int daysInMonth = DateTime.DaysInMonth(v.SelectedYear, v.SelectedMonth);
+        int startDay    = (int)firstDay.DayOfWeek;
 
-        var res = await _attpunches1._02ByMonthAndYear( Uc.UserId,selectedMonth, selectedYear,Uc.SchemaUserPis!, Uc.Conn! );
+        var template    = await _attTemplate._02(Uc.UserId, Uc.SchemaUserPis!, Uc.Conn!) ?? new List<AtttemplateModel?>();
+        var attendance = await _attPunches1._02ByMonthAndYear(Uc.UserId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn! );
 
-        // leading empty slots
-        for (int i = 0; i < startDay; i++) calendar.Add(new AttendanceDay());
+        for (int i = 0; i < startDay; i++) v.Calendar.Add(new DailyAttendance());
 
         for (int d = 1; d <= daysInMonth; d++)
         {
-            var date = new DateTime(selectedYear, selectedMonth, d);
+            var date = new DateTime(v.SelectedYear, v.SelectedMonth, d);
 
-            var PIn = res?.FirstOrDefault(x => x.PunchInDate.Date == date.Date);
-            var POut = res?.LastOrDefault(x => x.PunchInDate.Date == date.Date);
+            var schedule = GetScheduleForTheDay((int)date.DayOfWeek, template);
+            var punchIn = attendance?.FirstOrDefault(p => p.PunchInDate.Date == date.Date);
+            var punchOut = attendance?.LastOrDefault(p => p.PunchInDate.Date == date.Date);
 
-            calendar.Add(new AttendanceDay
-            {
-                Date        = date,
-                TimeIn      = PIn?.PunchInDate.TimeOfDay,
-                TimeOut     = POut?.PunchOutDate.TimeOfDay,
-                Status      = GetStatus(POut.DutyTypeId, POut.SchedDuration, PIn?.PunchInDate.TimeOfDay, POut?.PunchOutDate.TimeOfDay, POut.SchedDuration),
-                IsToday = date.Date == DateTime.Today
-            });
+            v.Calendar.Add(new DailyAttendance
+                {
+                    Date = date,
+                    ExpTimeIn = schedule.ExpTimeIn,
+                    ExpTimeOut = schedule.ExpTimeOut,
+                    TimeIn = punchIn.PunchInDate.TimeOfDay,
+                    TimeOut = punchOut.PunchOutDate.TimeOfDay,
+                    IsToday = date.Date == DateTime.Today,
+                Status = GetStatus(punchIn.DutyType, ConvertToTime(punchIn.PunchT), punchIn.PunchInDate.TimeOfDay, ConvertToTime(punchIn.SchedDuration), punchOut.PunchOutDate.TimeOfDay)
+                });
         }
-        // trailing empty slots
-        while (calendar.Count % 7 != 0)  calendar.Add(new AttendanceDay());
+
+        while (v.Calendar.Count % 7 != 0) v.Calendar.Add(new DailyAttendance());
     }
 
-
-    async Task OpenDay(AttendanceDay day)
+    private TimeSpan ConvertToTime(int value)
     {
-        if (day.Date == null) return;
-
-
+        int h = value / 100;
+        int m = value % 100;
+        return new TimeSpan(h, m, 0);
     }
 
-    string GetStatus(int type, int expTIn, TimeSpan? tIn, TimeSpan? tOut, int duration)
+    private double ConvertToHours(int value)
     {
-       
+        int h = value / 100;
+        int m = value % 100;
+        return h + (m / 60.0);
+    }
+
+    private class AttTempRes
+    {
+        public TimeSpan ExpTimeIn { get; set; }
+        public TimeSpan ExpTimeOut { get; set; }
+        public string DutyType { get; set; } = "";
+    }
+
+    private AttTempRes GetScheduleForTheDay(int day, List<AtttemplateModel?>? data)
+    {
+        if (data == null || !data.Any()) return new AttTempRes();
+
+        var d = data.FirstOrDefault();
+        if (d == null || day < 0 || day > 6) return new AttTempRes();
+
+        var timeIns = new[]
+        {
+            d.D7_in, d.D1_in, d.D2_in, d.D3_in, d.D4_in, d.D5_in, d.D6_in
+        };
+
+        var dutyHrs = new[]
+        {
+            d.D7_hrslength, d.D1_hrslength, d.D2_hrslength, d.D3_hrslength, d.D4_hrslength, d.D5_hrslength, d.D6_hrslength
+        };
+
+        var dutyTypes = new[]
+        {
+            d.D7_dutytype, d.D1_dutytype, d.D2_dutytype, d.D3_dutytype, d.D4_dutytype, d.D5_dutytype, d.D6_dutytype
+        };
+
+        var start = ConvertToTime(timeIns[day]);
+        var hours = ConvertToHours(dutyHrs[day]);
+        var dutyType = dutyTypes[day];
+
+        return new AttTempRes
+        {
+            ExpTimeIn = start,
+            ExpTimeOut = start.Add(TimeSpan.FromHours(hours)),
+            DutyType = dutyType ?? string.Empty
+        };
+    }
+
+    private string GetStatus( string dutyType,   TimeSpan scheduledTime, TimeSpan actualTimeIn, TimeSpan scheduledDuration,  TimeSpan actualTimeOut)
+    {
 
         return "Present";
     }
-
-    private TimeSpan ConvertToTime(int expTimeIn)
-    {
-        int hours = expTimeIn / 100;
-        int minutes = expTimeIn % 100;
-
-        return new TimeSpan(hours, minutes, 0);
-    }
-
-   
 }
 
 <style>
-
-    /* HEADER */
-    .card-header {
-        align-self: flex-start;
-        margin-bottom: 10px;
-        font-size: 18px;
-    }
-
-    /* WHITE BOX */
+    /* MAIN WRAPPER - FIXED FULL WIDTH */
     .attendance-container {
-        background: #fff;
-        border-radius: 12px;
-        padding: 20px;
-        width: 100%;
-        max-width: 1000px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
         display: flex;
         flex-direction: column;
         gap: 16px;
+        width:100%;
     }
 
     /* FILTERS */
@@ -235,51 +255,65 @@
         color: #6b7280;
     }
 
-    /* CALENDAR */
+    /* REMOVE CENTER CONSTRAINT */
     .calendar {
         border: 1px solid #e5e7eb;
         border-radius: 12px;
-        overflow: visible;
+        overflow: hidden;
+        width: 80%;
     }
 
+    /* WEEK HEADER */
     .weekdays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         font-size: 11px;
+        font-weight: 600;
         color: #9ca3af;
         text-align: center;
-        padding: 8px 0;
+        padding: 10px 0;
+        background: #f9fafb;
     }
 
+    /* ROW */
     .week-row {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
     }
 
-    /* DAY CARD */
+    /* DAY CELL - FIX SIZE */
     .day-card {
-        aspect-ratio: 1 / 1;
+        min-height: 140px; /* IMPORTANT FIX (prevents squish) */
         border: 1px solid #f1f5f9;
-        position: relative;
         background: #fff;
-        transition: all 0.2s ease;
+        padding: 6px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: 0.2s;
     }
 
-    .day-card:hover {
-        background: #f9fafb;
-        z-index: 2;
-        cursor: pointer;
-    }
+        .day-card:hover {
+            background: #f9fafb;
+            cursor: pointer;
+        }
 
-    .day-card.empty {
-        background: #fafafa;
-    }
+        .day-card.empty {
+            background: #fafafa;
+        }
+
+        /* TODAY */
+        .day-card.today {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+        }
 
     /* DATE */
     .day-top {
         position: absolute;
         top: 6px;
-        left: 8px;
+        left: 6px;
     }
 
     .date-pill {
@@ -287,78 +321,75 @@
         height: 22px;
         border-radius: 999px;
         font-size: 11px;
-        font-weight: 600;
+        font-weight: 700;
+        background: #e5e7eb;
         display: flex;
         align-items: center;
         justify-content: center;
     }
 
-    .date-pill.present {
-        background: #dcfce7;
-        color: #16a34a;
+    /* CONTENT FIX */
+    .block {
+        /* margin-top: 28px; */
+        padding: 6px 8px;
+        font-size: 10px;
+        line-height: 1.2;
     }
 
-    .date-pill.absent {
-        background: #fee2e2;
-        color: #dc2626;
-    }
-
-    .date-pill.late {
-        background: #fef9c3;
-        color: #ca8a04;
-    }
-
-    .date-pill.rd {
-        background: #f3f4f6;
+    /* MAKE TEXT CLEANER */
+    .block-title {
+        font-size: 9px;
+        font-weight: 800;
+        margin-bottom: 4px;
         color: #6b7280;
     }
 
-    /* TIMES */
-    .day-bottom {
-        position: absolute;
-        bottom: 6px;
-        left: 8px;
-        right: 8px;
-        font-size: 10px;
-        color: #9ca3af;
+    /* EXPECTED */
+    .expected {
+        /* background: #f1f5f9; */
     }
 
-    /* TODAY */
-    .day-card.today {
-        background: #eff6ff;
-        border: 1px solid #3b82f6;
+    /* ACTUAL */
+    .actual {
+        /* background: #ecfdf5; */
+    }
+
+    /* TIME TEXT */
+    .time {
+        font-size: 10px;
+        color: #374151;
     }
 
     /* LEGEND */
     .legend {
         display: flex;
-        gap: 20px;
+        gap: 16px;
         font-size: 12px;
         color: #6b7280;
+        flex-wrap: wrap;
     }
 
-    .legend .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 6px;
-    }
+        .legend .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
 
-    .legend .present {
+    .present {
         background: #22c55e;
     }
 
-    .legend .late {
+    .late {
         background: #facc15;
     }
 
-    .legend .absent {
+    .absent {
         background: #ef4444;
     }
 
-    .legend .rd {
+    .rd {
         background: #9ca3af;
     }
-
 </style>

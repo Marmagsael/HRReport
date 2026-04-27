@@ -124,7 +124,10 @@ public static class ApiExt
         builder.Services.AddSingleton<IEmpmovementDataAccess, EmpmovementDataAccess>();
         builder.Services.AddSingleton<IMymovementDataAccess, MymovementDataAccess>();
         builder.Services.AddSingleton<IOempmasDataAccess, OempmasDataAccess>();
+
         builder.Services.AddSingleton<IAttpunches1DataAccess, Attpunches1DataAccess>();
+        builder.Services.AddSingleton<IAtttemplateNDataAccess, AtttemplateNDataAccess>();
+        builder.Services.AddSingleton<IAttdutytypeNDataAccess, AttdutytypeNDataAccess>();
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();

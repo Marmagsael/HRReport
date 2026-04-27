@@ -26,8 +26,9 @@ public class Attpunches1Model
 
     public string?      Status          { get; set; } = string.Empty;
 
+    //-----------------------------------------------------------
+    public string?      DutyType        { get; set; } = string.Empty;
 
 
-   
 
 }

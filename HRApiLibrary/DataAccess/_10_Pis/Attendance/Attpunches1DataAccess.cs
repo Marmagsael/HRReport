@@ -49,9 +49,9 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 
     public async Task<List<Attpunches1Model?>?> _02s(int empmasid, DateTime punchDate, string schema, string conn)
     {
-     
-
-        string sql = $@"select  * from {schema}.Attpunches where EmpmasId = @Empmasid and PunchDate = Date(@Punchdate) ";
+        string sql = $@"select  a.*, d.Code dutyType from {schema}.Attpunches a
+                    LEFT JOIN {schema}.attdutytype d on d.id =  d.dutytypeid  
+                    where EmpmasId = @Empmasid and PunchDate = Date(@Punchdate) ";
         var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { Empmasid = empmasid, PunchDate = punchDate }, conn);
         return data;
     }
