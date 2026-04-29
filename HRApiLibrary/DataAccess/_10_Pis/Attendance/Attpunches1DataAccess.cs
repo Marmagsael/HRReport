@@ -31,7 +31,7 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
                                     @PunchOutDate, @TimeZoneIdOut, @IpAddressOut, @MacAddressOut, @UserIdOut,
                                     @Status
                                 );
-                        SELECT * FROM {schema}.Attpunches WHERE EmpmasId = @Empmasid and PunchDate = @Punchdate;";
+                        SELECT * FROM {schema}.Attpunches1 WHERE EmpmasId = @Empmasid and PunchDate = @Punchdate;";
 
         var res = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, attpunches, conn);
 
@@ -42,15 +42,15 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 
     public async Task<Attpunches1Model?> _02(int empmasid, DateTime punchDate, string schema, string conn)
     {
-        string sql = $@"select  * from {schema}.Attpunches where EmpmasId = @Empmasid and PunchDate = Date(@Punchdate) ";
+        string sql = $@"select  * from {schema}.Attpunches1 where EmpmasId = @Empmasid and PunchDate = Date(@Punchdate) ";
         var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { Empmasid = empmasid, PunchDate = punchDate }, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task<List<Attpunches1Model?>?> _02s(int empmasid, DateTime punchDate, string schema, string conn)
     {
-        string sql = $@"select  a.*, d.Code dutyType from {schema}.Attpunches a
-                    LEFT JOIN {schema}.attdutytype d on d.id =  d.dutytypeid  
+        string sql = $@"select  a.*, d.Code DutyType from {schema}.Attpunches1 a
+                    LEFT JOIN {schema}.attdutytype d on d.id =  a.dutytypeid  
                     where EmpmasId = @Empmasid and PunchDate = Date(@Punchdate) ";
         var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { Empmasid = empmasid, PunchDate = punchDate }, conn);
         return data;
@@ -61,7 +61,9 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
         DateTime dStart = new DateTime(year, month, 1);
         DateTime dEnd = dStart.AddMonths(1);
 
-        string sql = $@" SELECT * FROM {schema}.Attpunches1 WHERE EmpmasId = @EmpmasId AND PunchInDate >= @DStart AND PunchInDate < @DEnd";
+        string sql = $@" SELECT a.*, d.Code DutyType from {schema}.Attpunches1 a
+                    LEFT JOIN {schema}.attdutytype d on d.id =  a.dutytypeid  
+                    WHERE EmpmasId = @EmpmasId AND PunchInDate >= @DStart AND PunchInDate < @DEnd";
 
         var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { EmpmasId = empmasid, DStart = dStart, DEnd = dEnd},conn);
         return data;
@@ -71,7 +73,7 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 
     public async Task<Attpunches1Model?> _03(Attpunches1Model attpunches, string schema, string conn)
     {
-        string sql = $@"Update {schema}.Attpunches set 
+        string sql = $@"Update {schema}.Attpunches1 set 
                             EmpmasId        = @EmpmasId,
                             DayNo           = @DayNo,
                             PunchInDate     = @PunchInDate,
@@ -98,7 +100,7 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 
     public async Task<Attpunches1Model?> _04(int empmasid, DateTime punchDate, string schema, string conn)
     {
-        string sql = $@"Delete from {schema}.Attpunches where Empmasid = @Empmasid and PunchDate = Date(@Punchdate); 
+        string sql = $@"Delete from {schema}.Attpunches1 where Empmasid = @Empmasid and PunchDate = Date(@Punchdate); 
                         select  * from {schema}.Attpunches where Empmasid = @Empmasid and PunchDate = Date(@Punchdate)";
         var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { Empmasid = empmasid, PunchDate = punchDate }, conn);
         return data?.FirstOrDefault();
