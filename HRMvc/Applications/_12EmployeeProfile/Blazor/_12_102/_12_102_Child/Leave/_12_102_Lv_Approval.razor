@@ -1,4 +1,11 @@
-﻿<div class="card b-black ">
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+
+
+@if(ShowModal) { <div> <_12_102_Lv_ApprovalModal V="@V" Ec="@EC_Catcher" />  </div> }
+
+
+<div class="card b-black ">
     <div class="card-header p-0 ">
         <div class="bordered-bottom py-2 small fw-bold text-white bg-black px-2  ">
             Leave Request
@@ -54,22 +61,37 @@
 </div>
 
 
+@inject ILeaveapplicationDataAccess     _lvapp;
+@inject ILeaveapplicationdtlDataAccess  _lvappdtl;
+
+
 @code {
     [CascadingParameter] public UserClaimsModel Uc { get; set; } = new();
     [Parameter] public V12_102Obligation V { get; set; } = new();
 
+    bool   ShowModal   = false; 
+
 
     async Task ShowDtl(LeaveapplicationModel h)
     {
-        @* var res = await _attreqdtl._02ByAttReqHdrIds(h.Id, Uc.SchemaUserPis, Uc.Conn);
-        V.Attreqdtls = [];
+        V.LvAppdtls = []; 
+        var res = await _lvappdtl._02ByLvApplicationId(h.Id, Uc.SchemaUserPis, Uc.Conn);
         if (res != null && res.Count > 0)
         {
-            V.Attreqdtls = res!;
-            V.Attreqhdr = h;
+            V.LvAppdtls = res!;
+            V.LvApp = h;
         }
+        ShowModal = true; 
+    }
 
-        ShowModal = true; *@
+    void EC_Catcher(bool ans)
+    {
+
+        
+        
+        
+        ShowModal = ans;
+        V.Action = string.Empty;
     }
 
     bool isMarkAll => (V.LvApps.Where(a => a.IsSelected == true).ToList().Count == V.LvApps.Count);
