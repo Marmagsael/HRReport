@@ -8,6 +8,7 @@ public class AttdailyDataAccess : IAttdailyDataAccess
     private readonly I_90_001_MySqlDataAccess _sql;
     public AttdailyDataAccess(I_90_001_MySqlDataAccess sql)
     { _sql = sql; }
+
     public async Task<AttdailyModel?> _01(AttdailyModel attdaily, string schema, string conn)
     {
         var sql = $@"Insert into {schema}.Attdaily 

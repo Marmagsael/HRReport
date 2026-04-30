@@ -1,0 +1,242 @@
+﻿@using HRMvc.Applications._12EmployeeProfile.Blazor.Vars
+ <!--  DETAILS PANEL IN LARGE SCREEN-->
+<div class="col-12 col-lg-3 d-none d-lg-block">
+    <div class="card shadow-sm border-0 p-3 h-100">
+
+        @{
+            string status = V.DayDetail.Status.Contains("present") ? "Present" : V.DayDetail.Status.Contains("absent") ? "Absent" : V.DayDetail.Status.Contains("rd") ? "Rest Day" : "";
+            string color = V.DayDetail.Status.Contains("present") ? "success" : V.DayDetail.Status.Contains("absent") ? "danger" : V.DayDetail.Status.Contains("rd") ? "light":"";
+            string tcolor = V.DayDetail.Status.Contains("rd") ? "dark" : "";
+        }
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-bold mb-0">@V.DayDetail.Date?.ToString("ddd, dd MMMM yyyy")</h6>
+            <span class="badge bg-@color text-@tcolor">
+               
+              @status
+             </span>
+        </div>
+
+        <hr />
+
+        <div class="text-muted small mb-3 d-flex flex-column gap-2">
+            <div class="d-flex">
+                <div style="width:120px">
+                    Attendance Type:
+                </div>
+                 <strong class="text-dark">@V.DayDetail.AttendanceType</strong>
+            </div>
+            <div class="d-flex">
+                <div style="width:120px">
+                    Duty Type:
+                </div>
+                <strong class="text-dark">@V.DayDetail.DutyTypeName</strong>
+            </div>
+           <div class="d-flex">
+                <div style="width:120px">
+                    Schedule:
+                </div>
+               
+                <strong class="text-dark">
+                    @V.DayDetail.ExpectedTimeIn.ToString(@"hh\:mm")
+                    →
+                    @V.DayDetail.ExpectedTimeOut.ToString(@"hh\:mm")
+                </strong>
+           </div>
+           
+            <div class="d-flex">
+                <div style="width:120px">
+                    Working Hours :
+                </div>
+                  <strong class="text-dark">@V.DayDetail.ExpectedTotalHours</strong>
+
+           </div>
+        </div>
+
+        <hr />
+
+        <!-- Work Summary -->
+        <h6 class="fw-bold mb-1">Work Summary</h6>
+
+        <div class="small mb-2 d-flex flex-column gap-2">
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Time In</span>
+                <strong>
+                    @V.DayDetail.TimeIn?.ToString("dd MMM yyyy • HH:mm:ss")
+                </strong>
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Time Out</span>
+                <strong>
+                    @V.DayDetail.TimeOut?.ToString("dd MMM yyyy • HH:mm:ss")
+                </strong>
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="small d-flex flex-column gap-2">
+            <div class="d-flex justify-content-between">
+                <span class="text-muted">Total Worked Hours</span>
+                <strong>@V.DayDetail.TotalHoursWorked</strong>
+            </div>
+
+            <div class="d-flex justify-content-between ">
+                <span class="text-muted">Late</span>
+                <strong class="text-warning">@(V.DayDetail.LateDuration ?? "--")</strong>
+            </div>
+
+            <div class="d-flex justify-content-between ">
+                <span class="text-muted">Undertime</span>
+                <strong class="text-purple">@(V.DayDetail.UnderTimeDuration ?? "--")</strong>
+            </div>
+        </div>
+
+        <hr />
+
+   
+        <!-- Expand button -->
+        <button class="btn btn-outline-primary btn-sm w-100"
+                data-bs-toggle="collapse"
+                data-bs-target="#punchDetails">
+            View Full Punch Details
+        </button>
+
+        <!-- Punch Details -->
+        <div class="collapse mt-3" id="punchDetails">
+
+            <div class="small">
+                @{int ctr = 1;}
+                @foreach(var l in V.DayDetail.Logs)
+                {
+                    <div class="border rounded p-2 mb-2">
+                        <div class=" text-muted"><strong>Log @ctr</strong></div>
+                        <div class="small mt-1 mb-2 d-flex flex-column gap-1">
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Time In</span>
+                                <strong>
+                                    @l.PunchInDate.ToString("dd MMMM yyyy : hh:mm:ss tt")
+                                </strong>
+                            </div>
+
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Time Out</span>
+                                <strong>
+                                    @l.PunchOutDate.ToString("dd MMMM yyyy : hh:mm:ss tt")
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                    ctr++;
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- DETAILS MODAL (SMALL SCREEN ONLY) -->
+<div class="d-lg-none">
+
+    <div class="modal fade" id="attendanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-bottom">
+
+            <div class="modal-content">
+
+                <!-- HEADER -->
+                <div class="modal-header">
+                    <div>
+                        <h6 class="fw-bold mb-0">April 30, 2026</h6>
+                        <small class="text-muted">Flexible • Regular</small>
+                    </div>
+
+                    <span class="badge bg-success">Present</span>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- BODY -->
+                <div class="modal-body">
+
+                    <!-- Schedule -->
+                    <div class="mb-3 fw-semibold">
+                        Schedule: 09:00 AM → 06:00 PM
+                    </div>
+
+                    <hr />
+
+                    <!-- SUMMARY -->
+                    <h6 class="fw-bold">Work Summary</h6>
+
+                    <div class="small">
+                        <div class="d-flex justify-content-between">
+                            <span>First In</span>
+                            <strong>08:58 AM</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <span>Last Out</span>
+                            <strong>06:10 PM</strong>
+                        </div>
+
+                        <br />
+
+                        <div class="d-flex justify-content-between">
+                            <span>Total</span>
+                            <strong>8h 06m</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between text-warning">
+                            <span>Late</span>
+                            <strong>0m</strong>
+                        </div>
+
+                        <div class="d-flex justify-content-between text-danger">
+                            <span>Undertime</span>
+                            <strong>0m</strong>
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <!-- PUNCH DETAILS TOGGLE -->
+                    <button class="btn btn-outline-primary w-100 mb-2"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#mobilePunchDetails">
+                        View Punch Details
+                    </button>
+
+                    <!-- PUNCH DETAILS -->
+                    <div class="collapse" id="mobilePunchDetails">
+
+                        <div class="border rounded p-2 mb-2">
+                            <strong>Session 1</strong><br />
+                            08:58 AM → 11:59 AM<br />
+                            <small class="text-muted">3h 01m</small>
+                        </div>
+
+                        <div class="border rounded p-2">
+                            <strong>Session 2</strong><br />
+                            01:05 PM → 06:10 PM<br />
+                            <small class="text-muted">5h 05m</small>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@code {
+    [Parameter] public V12104Model V { get; set; } = new();
+}

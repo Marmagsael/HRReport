@@ -7,9 +7,9 @@ using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._00_MainTrans;
 using HRApiLibrary.DataAccess._00_MainTrans.Interfaces;
 using HRApiLibrary.DataAccess._10_Pis;
+using HRApiLibrary.DataAccess._10_Pis.Attendance;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
-using HRApiLibrary.DataAccess._10_Pis.Attendance;
 using HRApiLibrary.DataAccess._20_Pay;
 using HRApiLibrary.DataAccess._20_Pay.DA0605;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
@@ -125,9 +125,8 @@ public static class ApiExt
         builder.Services.AddSingleton<IMymovementDataAccess, MymovementDataAccess>();
         builder.Services.AddSingleton<IOempmasDataAccess, OempmasDataAccess>();
 
-        builder.Services.AddSingleton<IAttpunches1DataAccess, Attpunches1DataAccess>();
-        builder.Services.AddSingleton<IAtttemplateNDataAccess, AtttemplateNDataAccess>();
-        builder.Services.AddSingleton<IAttdutytypeNDataAccess, AttdutytypeNDataAccess>();
+        builder.Services.AddSingleton<IAttendanceDataAccess, AttendanceDataAccess>();
+
 
         //-- Pay Transaction ------------------------------------------------------------
         builder.Services.AddSingleton<I_20_001_PayDataAccess, _20_001_PayDataAccess>();
