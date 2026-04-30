@@ -85,9 +85,16 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
                                     WHEN Approver2Id=@ApproverId THEN 2
                                     ELSE 0
                                 END AS ApproverLevel,
-                                h.*
+                                h.*, lt.LeaveName as Leavetypename, 
+                                CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName,
+                                    CONCAT_WS(' ', TRIM(e1.EmpFirstNm), trim(e1.EmpMidNm), TRIM(e1.EmpLastNm)) AS Approver1Name,
+                                    CONCAT_WS(' ', TRIM(e2.EmpFirstNm), trim(e2.EmpMidNm), TRIM(e2.EmpLastNm)) AS Approver2Name
                         from {pisdb}.Leaveapplication h
-                        left join {pisdb}.empmas e on e.Id = h.EmpmasId
+                        left join {pisdb}.empmas    e   on e.Id     = h.EmpmasId
+                        left join {pisdb}.leavetype lt  on lt.Id    = h.LeaveTypeId
+                        left join {pisdb}.empmas    e1   on e1.Id     = h.Approver1Id
+                        left join {pisdb}.empmas    e2   on e2.Id     = h.Approver2Id
+                        
                         where ( h.Approver1Id = @ApproverId or h.Approver2Id = @ApproverId)  and Status in ('F', 'FA')";
         var data = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql,
                         new { ApproverId = approverId }, conn);
