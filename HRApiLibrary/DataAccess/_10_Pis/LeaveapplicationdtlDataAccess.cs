@@ -32,7 +32,7 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
         var data = await _sql.FetchData<LeaveapplicationdtlModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-
+    
     public async Task<List<LeaveapplicationdtlModel?>?> _02ByLvApplicationId(int leaveApplicationId, string schema, string conn)
     {
         string sql = $@"select  Id, LeaveApplicationId, EmpmasId, EmpNumber, Start, DutyType, TimeStart, TimeDuration, End, CreditedHrs, IsPayable 

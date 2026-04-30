@@ -24,6 +24,8 @@ public class LeaveapplicationModel
 
     //--------------------------------------------------------
     public string?      Empmasname           { get; set; } = string.Empty; 
+    public string?      Approver1Name        { get; set; } = string.Empty; 
+    public string?      Approver2Name        { get; set; } = string.Empty; 
     public string?      Leavetypename        { get; set; } = string.Empty;
     public string?      RequestorName       { get; set; }
     public bool         IsSelected          { get; set; } = false;
