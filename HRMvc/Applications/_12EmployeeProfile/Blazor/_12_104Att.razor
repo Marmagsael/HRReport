@@ -90,7 +90,7 @@
 
         await LoadDutyType();
         await LoadCalendar();
-
+        if(v.Calendar.Any()) SelectDay(v.Calendar!.FirstOrDefault(d => d.Date == DateTime.Today) ?? new());
     }
 
     public async Task ChildAction()
@@ -161,18 +161,19 @@
 
         TimeSpan expTimeIn;
         TimeSpan expTimeOut;
-        string dutyType = string.Empty;
-        string dutyTypeName = string.Empty;
+        string dutyType         = string.Empty;
+        string dutyTypeName     = string.Empty;
         TimeSpan ttlHrsWorked;
         TimeSpan workDuration;
 
+        // Use actual punch data if available; otherwise use template values
         if (hasIn)
         {
             expTimeIn       = ConvertToTime(dayAttendance.PunchT);
             expTimeOut      = expTimeIn.Add(TimeSpan.FromHours(ConvertToHours(dayAttendance.SchedDuration)));
             dutyType        = dayAttendance.DutyTypeCode ?? string.Empty;
             dutyTypeName    = dayAttendance.DutyTypeName ?? string.Empty;
-            ttlHrsWorked    = ConvertToTime((int)dayAttendance.TotalHrsWorked);
+            ttlHrsWorked   = TimeSpan.FromMinutes(dayAttendance.TotalHrsWorked);
             workDuration    = ConvertToTime(dayAttendance.SchedDuration);
         }
         else
@@ -188,7 +189,7 @@
         DateTime? actIn = hasIn ? dayAttendance.PunchInDate : (DateTime?)null;
         DateTime? actOut = hasOut ? dayAttendance.PunchOutDate : (DateTime?)null;
 
-        var result = GetStatusLateUnderTimeHours( dayTemplate.AttendanceType,  dutyType, date,expTimeIn, actIn?.TimeOfDay,  expTimeOut, actOut?.TimeOfDay,   dayAttendance.SchedDuration, (int)dayAttendance.TotalHrsWorked );
+        var result = GetStatusLateUnderTimeHours( dayTemplate.AttendanceType,  dutyType, date,expTimeIn, actIn,  expTimeOut, actOut,   dayAttendance.SchedDuration, (int)dayAttendance.TotalHrsWorked );
 
         var status              = string.Join(", ", result.Select(x => x.Status));
         var lateduration        = result.FirstOrDefault(x => x.Status == "late").Time ?? "";
@@ -216,7 +217,7 @@
 
     }
 
-    private List<(string Status, string Time)> GetStatusLateUnderTimeHours(string atttype, string? dutyType, DateTime date, TimeSpan expIn, TimeSpan? actIn, TimeSpan expOut, TimeSpan? actOut, int expMinutes, int workedMinutes)
+    private List<(string Status, string Time)> GetStatusLateUnderTimeHours(string atttype, string? dutyType, DateTime date, TimeSpan expIn, DateTime? actDateTimeIn, TimeSpan expOut, DateTime? actDateTimeOut, int expMinutes, int workedMinutes)
     {
         var duty = (dutyType ?? "").Trim().ToUpper();
         var currDate = DateTime.Today;
@@ -224,9 +225,10 @@
 
         var attendanceType = atttype.Trim().Replace(" ", "").ToLower();
 
-        var res = new List<(string Status, string Time)>();
 
-     
+        var res = new List<(string Status, string Time)>();
+        TimeSpan? actIn = actDateTimeIn?.TimeOfDay;
+        TimeSpan? actOut = actDateTimeOut?.TimeOfDay;
 
         bool noLogs = !actIn.HasValue && !actOut.HasValue;
 
@@ -277,8 +279,9 @@
                 res.Add(("late", Format(actIn.Value - expIn)));
             }
 
+            Console.WriteLine($"{actDateTimeOut} || {actDateTimeIn}");
 
-            if (actOut.HasValue && actOut < expOut)
+            if ((actDateTimeOut.Value.Date == actDateTimeIn.Value.Date) && actOut.HasValue && actOut < expOut)
             {
                 res.Add(("present", ""));
                 res.Add(("undertime", Format(expOut - actOut.Value)));
@@ -341,16 +344,15 @@
 
     public Attpunches1Model GetPunchesForTheDay(DateTime date, List<Attpunches1Model?> attendance)
     {
-        var current = attendance.Where(a => a != null && a.PunchInDate.Date == date.Date).OrderBy(a => a.PunchInDate).ToList() ?? new();
+        var current = attendance .Where(a => a != null && a.PunchInDate.Date == date.Date) .OrderBy(a => a.PunchInDate).ToList();
 
-        if (!current.Any())  return new Attpunches1Model();
+        if (!current.Any()) return new Attpunches1Model();
 
         TimeSpan totalWorked = TimeSpan.Zero;
 
-
         foreach (var c in current)
         {
-            if (c.PunchInDate != default && c.PunchOutDate != default) totalWorked += (c.PunchOutDate - c.PunchInDate);
+            if (c.PunchOutDate > c.PunchInDate) totalWorked += (c.PunchOutDate - c.PunchInDate);
         }
 
         var first = current.First();
@@ -365,7 +367,7 @@
             PunchOutDate    = last.PunchOutDate,
             DutyTypeCode    = first.DutyTypeCode,
             DutyTypeName    = first.DutyTypeName,
-            TotalHrsWorked  = (int)totalWorked.TotalMinutes,
+            TotalHrsWorked = (int)totalWorked.TotalMinutes,
             Logs            = current!
 
         };
