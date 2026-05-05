@@ -1,13 +1,532 @@
-@namespace HRMvc.Applications._12EmployeeProfile.Blazor
+﻿@using HRApiLibrary.DataAccess._10_Pis.Attendance
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_104
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_104.AttCalendar
+@using System.Globalization
 
 
-<div> 12.104 * empNumber : @UserClaims.OempNumber </div>
+<div>
+    <_12_104_AttHeadder />
+
+    <div class="d-flex flex-column gap-3 p-2">
+        <_12_104_AttMonthOverview V="@v" />
+
+        <div class="row g-3">
+            <_12_104_AttCalendar V="@v" ChildAction="ChildAction"/>
+            <_12_104_AttDayOverview V="@v" />
+        </div>
+
+    </div>
+   
+</div>
 
 
 
+
+
+@inject IAttendanceDataAccess _att;
 
 @code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V12104Model v = new();
 
-    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        GetMonths();
+        GetYears();
+        await LoadDutyTypes();
+        await LoadCalendar();
+        if (v.Calendar.Any()) SelectDay(v.Calendar!.FirstOrDefault(d => d.Date == DateTime.Today) ?? new());
+    }
 
+
+    private void GetMonths()
+    {
+        v.Months = Enumerable.Range(1, 12)
+            .Select(m => new MonthItem
+            {
+                Value = m,
+                Name = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+            }).ToList();
+
+    }
+
+
+    private void GetYears()
+    {
+        v.Years = Enumerable.Range(2000, DateTime.Now.Year - 1999).ToList();
+    }
+
+
+
+    private void SelectDay(AttDayDetail day)
+    {
+        v.DayDetail         = new();
+        v.DayDetail.Logs    = new();
+        v.DayDetail         = v.Calendar?.FirstOrDefault(d => d.Date.HasValue && d.Date.Value.Date == day.Date) ?? new();
+    }
+
+
+    private async Task LoadDutyTypes()
+    {
+        var res = await _att._02DutyTypes(Uc.SchemaUserPis!, Uc.Conn!);
+        if (res.Any())
+        {
+            v.AttyDutyTypes = res!;
+        }
+    }
+
+
+
+
+
+    private async Task LoadCalendar()
+    {
+        v.Calendar = new();
+
+        if (Uc == null) return;
+        var userId = Uc.UserId;
+
+
+        var firstDay        = new DateTime(v.SelectedYear, v.SelectedMonth, 1);
+        int daysInMonth     = DateTime.DaysInMonth(v.SelectedYear, v.SelectedMonth);
+        int startDay        = (int)firstDay.DayOfWeek;
+
+
+        var template = await _att._02TemplateByUserIdAndEffectivityDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
+        var punches  = await _att._02PunchesByEmpmasIdAndPunchInDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
+        var leave    = await _att._02LeaveByEmpmasIdAndLeaveDuration(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
+
+
+
+        for (int i = 0; i < startDay; i++) v.Calendar.Add(new AttDayDetail());
+
+        for (int d = 1; d <= daysInMonth; d++)
+        {
+            var date = new DateTime(v.SelectedYear, v.SelectedMonth, d);
+
+            v.Calendar.Add(LoadDay(date, punches, template, leave));
+        }
+
+        while (v.Calendar.Count % 7 != 0) v.Calendar.Add(new AttDayDetail());
+
+        // Map Values for Stats Cards --------------------------------
+        v.PresentCount  = v.Calendar.Count(c => c.Status.Contains("PRESENT"));
+        v.LateCount     = v.Calendar.Count(c => c.Status.Contains("LATE"));
+        v.UnderTimeCount = v.Calendar.Count(c => c.Status.Contains("UNDERTIME"));
+        v.AbsentCount   = v.Calendar.Count(c => c.Status.Contains("ABSENT"));
+        v.RestDayCount  = v.Calendar.Count(c => c.Status.Contains("RD"));
+        v.DaysCount     = daysInMonth;
+    }
+
+
+
+
+
+
+
+
+    private AttDayDetail LoadDay(DateTime date, List<Attpunches1Model?> punches, List<AtttemplatereqdtlModel?> template, List<AttLeaveapplicationModel?> leave)
+    {
+
+        var resTemp     = LoadTemplate(date,template);
+        var resPunches  = LoadPunches(date, punches);
+        var resLeave    = LoadLeave(date, leave);
+
+
+        var hasIn         = resPunches.ActualTimeIn.HasValue;
+        var hasLeave      = !string.IsNullOrWhiteSpace(resLeave.LeaveCode);
+
+        TimeSpan? expTimeIn         = null;
+        TimeSpan? expTimeOut        = null;
+        string? dutyTypeCode        = string.Empty;
+        string? dutyTypeName        = string.Empty;
+        string? attType             = resTemp.AttendanceType ?? string.Empty;
+        DateTime? actualIn          = resPunches.ActualTimeIn;
+        DateTime? actualOut         = resPunches.ActualTimeOut;
+        int? duration               = 0;
+        int? ttlWorkedHrs           = 0;
+        List<Attpunches1Model?> logs;
+
+
+        if (hasIn)
+        {
+            expTimeIn       = resPunches.ExpTimeIn;
+            expTimeOut      = resPunches.ExpTimeOut;
+            dutyTypeCode    = resPunches.DutyTypeCode;
+            duration        = resPunches.Duration;
+            ttlWorkedHrs    = (int)resPunches.TotalWorkedHrs.TotalHours;
+            logs            = resPunches.Logs;
+        }
+        else
+        {
+            expTimeIn       = resTemp.ExpTimeIn;
+            expTimeOut      = resTemp.ExpTimeOut;
+            dutyTypeCode    = resTemp.DutyTypeCode;
+            duration        = resTemp.Duration;
+            logs            = new();
+        }
+
+
+        var resStatus = GetStatus(attType, dutyTypeCode, date, expTimeIn, expTimeOut, actualIn, actualOut, duration, resLeave, ttlWorkedHrs);
+        string status = string.Join(", ", resStatus.Select(x => x.Status));
+        var lateduration        = resStatus.FirstOrDefault(x => x.Status == "LATE").Time ?? "";
+        var undertimeduration   = resStatus.FirstOrDefault(x => x.Status == "UNDERTIME").Time ?? "";
+
+        var expWorkingHrs = ConvertToTime(duration);
+
+        return new AttDayDetail()
+        {
+            Date                = date,
+            ExpTimeIn           = expTimeIn,
+            ExpTimeOut          = expTimeOut,
+            ActualTimeIn        = actualIn,
+            ActualTimeOut       = actualOut,
+            DutyTypeCode        = dutyTypeCode,
+            DutyTypeName        = v.AttyDutyTypes.FirstOrDefault( d => d.Code == dutyTypeCode)?.Name ?? string.Empty,
+            AttendanceType      = attType,
+            Status              = status,
+            IsToday             = date.Date == DateTime.Today,
+            ExpWorkingHrs       = FormatTime(expWorkingHrs),
+            TtlWorkedHrs        = FormatTime(resPunches.TotalWorkedHrs??new()),
+            LateDuration        = lateduration,
+            UnderTimeDuration   = undertimeduration,
+            Logs                = logs
+        };
+    }
+
+
+
+
+
+
+
+    private AttTemplate LoadTemplate(DateTime date, List<AtttemplatereqdtlModel?> template)
+    {
+        var d = template?.Where(t => t != null && date >= t.Effectivity && date < t.EffectivityEnd).OrderByDescending(t => t.Effectivity).FirstOrDefault();
+        if (d == null) return new AttTemplate();
+
+        int day = (int)date.DayOfWeek;
+
+        var ins = new[] { d.D7_In, d.D1_In, d.D2_In, d.D3_In, d.D4_In, d.D5_In, d.D6_In };
+        var hrs = new[] { d.D7_HrsLength, d.D1_HrsLength, d.D2_HrsLength, d.D3_HrsLength, d.D4_HrsLength, d.D5_HrsLength, d.D6_HrsLength };
+        var duty = new[] { d.D7_DutyType, d.D1_DutyType, d.D2_DutyType, d.D3_DutyType, d.D4_DutyType, d.D5_DutyType, d.D6_DutyType };
+
+        var start = ins[day];
+        var hours = hrs[day];
+
+
+
+        return new AttTemplate
+        {
+            ExpTimeIn       = ConvertToTime(start),
+            ExpTimeOut      = GetTimeOut(start, hours),
+            DutyTypeCode    = duty[day] ?? string.Empty,
+            AttendanceType  = d.AttendanceType ?? string.Empty,
+            Duration        = hours ?? 0
+        };
+    }
+
+
+
+
+
+
+
+    private AttPunches LoadPunches(DateTime date, List<Attpunches1Model?> punches)
+    {
+        var res = punches.Where(a => a?.PunchInDate != null && a.PunchInDate?.Date == date.Date).OrderBy(a => a!.PunchInDate).ToList() ?? new();
+
+        if (res.Count == 0) return new AttPunches();
+
+        TimeSpan? totalWorked = TimeSpan.Zero;
+
+        foreach (var c in res)
+        {
+            if (c?.PunchOutDate != null && c.PunchInDate != null && c.PunchOutDate > c.PunchInDate)
+            {
+                totalWorked += c.PunchOutDate - c.PunchInDate.Value;
+            }
+        }
+
+        var first = res.First(); 
+        var last = res.LastOrDefault(x => x?.PunchOutDate != null);
+
+        var dutyType = v.AttyDutyTypes? .FirstOrDefault(d => d.Id == first.DutyTypeId) ?? new();
+
+
+        return new AttPunches
+        {
+            ExpTimeIn       = ConvertToTime(first!.PunchT),
+            ExpTimeOut      = GetTimeOut(first.PunchT, first.SchedDuration),
+            ActualTimeIn    = first.PunchInDate!.Value,
+            ActualTimeOut   = last?.PunchOutDate,
+            DutyTypeCode    = dutyType.Code ?? "",
+            Duration        = first.SchedDuration,
+            TotalWorkedHrs  = totalWorked,
+            Logs            = res
+        };
+    }
+
+
+
+
+
+
+    private AttLeaveapplicationModel? LoadLeave(DateTime date, List<AttLeaveapplicationModel?> leave)
+    {
+        var res = leave? .FirstOrDefault(l =>l != null && date.Date == l.Start.Date) ?? new();
+        if (res == null) return new AttLeaveapplicationModel();
+
+        return new AttLeaveapplicationModel()
+        {
+            LvStart         = res.LvStart,
+            LvEnd           = res.LvEnd,
+            Reason          = res.Reason,
+            Start           = res.Start,
+            End             = res.End,
+            DutyType        = res.DutyType,
+            LeaveName       = res.LeaveName,
+            LeaveCode       = res.LeaveCode,
+            TimeStart       = res.TimeStart,
+            TimeDuration    = res.TimeDuration,
+            CreditedHrs     = res.CreditedHrs,
+            ExpLeaveStart   = ConvertToTime(res.TimeStart),
+            ExpLeaveEnd     = GetTimeOut(res.TimeStart, res.TimeDuration)
+        };
+    }
+
+
+
+
+
+
+
+
+    private List<(string Status, string Time)> GetStatus(string attType, string dutyType, DateTime date, TimeSpan expTimeIn, TimeSpan expTimeOut, DateTime? actualDateTimeIn, DateTime? actualDateTimeOut, int expWorkDuration, AttLeaveapplicationModel? leave, int ttlWorkedHrs)
+    {
+
+        var res     = new List<(string Status, string Time)>();
+        var aType   = attType.Trim().Replace(" ", "").ToUpper();
+        var dType   = dutyType.Trim().Replace(" ", "").ToUpper();
+
+        DateTime dateNow = DateTime.Today;
+        TimeSpan timeNow = DateTime.Now.TimeOfDay;
+
+        TimeSpan actTimeIn  = actualDateTimeIn?.TimeOfDay ?? TimeSpan.Zero;
+        TimeSpan actTimeOut = actualDateTimeOut?.TimeOfDay ?? TimeSpan.Zero;
+
+        DateTime actDateIn  = actualDateTimeIn?.Date ?? DateTime.MinValue;
+        DateTime actDateOut = actualDateTimeOut?.Date ?? DateTime.MinValue;
+
+
+        // 1. Check if rest day ============================
+        if (dType == "RD")
+        {
+            res.Add((dType, ""));
+            return res;
+        }
+
+
+        var leaveCode = leave?.LeaveCode?.Trim().Replace(" ", "").ToUpper() ?? string.Empty;
+        var hasLeave  = !string.IsNullOrWhiteSpace(leaveCode);
+
+        var isPastDate = false;
+
+
+
+        // 2. Check if may leave ==========================
+        if (hasLeave)
+        {
+
+            var wholeDayLeave = leave.TimeDuration >= expWorkDuration;
+
+
+            if (wholeDayLeave)
+            {
+                res.Add((leaveCode, ""));
+                return res;
+            }
+            else
+            {
+                res.Add(($"1/2 {leaveCode}", ""));
+            }
+
+
+
+        }
+
+        var noLogs = !actualDateTimeIn.HasValue && !actualDateTimeOut.HasValue;
+        isPastDate = dateNow >= date;
+
+        if (aType == "FIXEDATTENDANCE")
+        {
+            if (noLogs)
+            {
+                if (isPastDate)
+                {
+                    res.Add(("ABSENT", ""));
+                    return res;
+                }
+
+            }
+            else
+            {
+                Console.WriteLine($"{date} late/udertime");
+
+                if (actTimeIn > expTimeIn)
+                {
+                    res.Add(("PRESENT", ""));
+                    res.Add(("LATE", FormatTime(actTimeIn - expTimeIn)));
+                }
+
+                if (actualDateTimeOut?.Date == actualDateTimeIn?.Date && actTimeOut < expTimeOut)
+                {
+                    res.Add(("PRESENT", ""));
+                    res.Add(("UNDERTIME", FormatTime(expTimeOut - actTimeOut)));
+                }
+
+                if (actTimeIn <= expTimeIn && actTimeOut >= expTimeOut)
+                {
+                    res.Add(("PRESENT", ""));
+                }
+
+            }
+        }
+
+
+
+
+        if (aType == "FLEXIBLEATTENDANCE")
+        {
+
+        }
+
+        return res;
+
+    }
+
+
+
+
+    public TimeSpan ConvertToTime(int? hhmm)
+    {
+        if (hhmm.HasValue && hhmm.Value > 0)
+        {
+            int hours = hhmm.Value / 100;
+            int minutes = hhmm.Value % 100;
+
+            return new TimeSpan(hours, minutes, 0);
+        }
+
+        return TimeSpan.Zero;
+    }
+
+
+
+
+
+
+    public TimeSpan GetTimeOut(int? d2In, int? d2HrsLength)
+    {
+        TimeSpan timeIn = ConvertToTime(d2In);
+        TimeSpan duration = ConvertToTime(d2HrsLength);
+        return timeIn + duration;
+    }
+
+
+
+
+
+    public  string FormatTime(TimeSpan duration)
+    {
+        int totalMinutes = (int)duration.TotalMinutes;
+
+        int hours = totalMinutes / 60;
+        int minutes = totalMinutes % 60;
+
+        return $"{hours} hr {minutes} min";
+    }
+
+    
+
+
+
+    public async Task ChildAction()
+    {
+        if (v.Action == "GenerateCalendar") await LoadCalendar();
+        v.Action = string.Empty;
+    }
 }
+
+
+<style>
+    .attendance-container {
+        background: #ffffff;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .calendar {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .week-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+    }
+
+    .day-card {
+        min-height: 140px;
+        border: 1px solid #f1f5f9;
+        background: #fff;
+        padding: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        transition: 0.2s;
+        position: relative;
+    }
+
+        .day-card:hover {
+            background: #f9fafb;
+            cursor: pointer;
+        }
+
+        .day-card.empty {
+            background: #fafafa;
+        }
+
+        .day-card.today {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+        }
+
+    .time-separator {
+        font-size: 9px;
+        font-weight: 800;
+        color: #6b7280;
+    }
+
+
+    .block {
+        padding: 2px;
+        font-size: 10px;
+        line-height: 1;
+    }
+
+
+    .block-title {
+        font-size: 9px;
+        font-weight: 800;
+        color: #6b7280;
+        width: 50px !important;
+    }
+</style>

@@ -7,6 +7,7 @@ using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._00_MainTrans;
 using HRApiLibrary.DataAccess._00_MainTrans.Interfaces;
 using HRApiLibrary.DataAccess._10_Pis;
+using HRApiLibrary.DataAccess._10_Pis.Attendance;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay;
@@ -195,6 +196,7 @@ public static class ApiExt
         builder.Services.AddScoped<IMatrixphicDataAccess, MatrixphicDataAccess>();
         builder.Services.AddScoped<IMatrixsssDataAccess, MatrixsssDataAccess>();
         builder.Services.AddScoped<IMatrixwtaxDataAccess, MatrixwtaxDataAccess>();
+        builder.Services.AddScoped<IAttendanceDataAccess, AttendanceDataAccess>();
         
         //-- Old Pis -----------------------------------------------------------------------
         builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
