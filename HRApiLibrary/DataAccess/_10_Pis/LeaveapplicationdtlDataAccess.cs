@@ -35,7 +35,7 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
     
     public async Task<List<LeaveapplicationdtlModel?>?> _02ByLvApplicationId(int leaveApplicationId, string schema, string conn)
     {
-        string sql = $@"select  Id, LeaveApplicationId, EmpmasId, EmpNumber, Start, DutyType, TimeStart, TimeDuration, End, CreditedHrs, IsPayable 
+        string sql = $@"select  *  
                         from {schema}.Leaveapplicationdtl 
                         where LeaveApplicationId = @LeaveApplicationId 
                         order by Start ";

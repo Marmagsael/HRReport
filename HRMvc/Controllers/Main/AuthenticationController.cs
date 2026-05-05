@@ -17,6 +17,7 @@ using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using MySqlX.XDevAPI;
+using HRApiLibrary.DataAccess._10_Pis;
 
 namespace HRMvc.Controllers.Main;
 
@@ -36,23 +37,25 @@ public class AuthenticationController : Controller
     private readonly I_00UserscompanyDataAccess     _userCompany;
     private readonly I_AcctgTableMaker              _acctg;
     private readonly IOEmpmasDataAccess             _oldEmpmas;
+    private readonly IAtttemplatereqhdrDataAccess    _atttemplatereqhdr;
     
             
 
 
 
-    public AuthenticationController(IConfiguration             config,
-                                    I_00UsersAccess            userAccess,
-                                    I_90_001_MySqlDataAccess   mysql,
-                                    I_00MainDA                 mainDA,
-                                    I_09_02_VarsGlobal         vars,
-                                    ClaimsAccess               claimsAccess,
-                                    I_00MainPisTblMakerAccess  mainPisTblMaker,
-                                    I_10_EmpmasDataAccess      empmas, 
-                                    I_20_002_PayTblMaker       payTblMaker, 
-                                    I_00UserscompanyDataAccess userCompany, 
-                                    I_AcctgTableMaker          acctg, 
-                                    IOEmpmasDataAccess         oldEmpmas )
+    public AuthenticationController(IConfiguration                  config,
+                                    I_00UsersAccess                 userAccess,
+                                    I_90_001_MySqlDataAccess        mysql,
+                                    I_00MainDA                      mainDA,
+                                    I_09_02_VarsGlobal              vars,
+                                    ClaimsAccess                    claimsAccess,
+                                    I_00MainPisTblMakerAccess       mainPisTblMaker,
+                                    I_10_EmpmasDataAccess           empmas, 
+                                    I_20_002_PayTblMaker            payTblMaker, 
+                                    I_00UserscompanyDataAccess      userCompany, 
+                                    I_AcctgTableMaker               acctg, 
+                                    IOEmpmasDataAccess              oldEmpmas,
+                                    IAtttemplatereqhdrDataAccess    atttemplatereqhdr )
     {
         _config             = config;
         _userAccess         = userAccess;
@@ -65,7 +68,8 @@ public class AuthenticationController : Controller
         _payTblMaker        = payTblMaker;
         _userCompany        = userCompany;
         _acctg              = acctg;
-        _oldEmpmas          = oldEmpmas;
+        _oldEmpmas          = oldEmpmas;    
+        _atttemplatereqhdr  = atttemplatereqhdr;
         
     }
 
@@ -354,7 +358,6 @@ public class AuthenticationController : Controller
         
         if (user == null)
         {
-            //return Ok("User is null");
             ViewData["ErrorMsg"] = "Invalid username / password.";
             return View("Login");
         }
@@ -387,12 +390,40 @@ public class AuthenticationController : Controller
         if (uc.OldPis.Length <= 0) return Redirect("~/13");
         var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
         if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
-                
+
+        await Create_AttTemplateReqhdr(user.Id, uc.PisSchema??"", conn??"");  //--- Template Creation for Punch In / Out. - [AttTemplateReqhdr and AttTemplateReqdtl]
+        await _atttemplatereqhdr._03AttTemplateReqhdr_to_AttTemplate(user.Id, uc.PisSchema ?? "", conn ?? "");  //-- Set Punch IN / Out Template based on approved AttTemplateReqhdr.
+
+
         return Redirect("12/102");
         // return Redirect("13");
 
     }
 
+    private async Task Create_AttTemplateReqhdr(int userId, string pisdb, string conn)
+    {
+        var res = await _atttemplatereqhdr._02ChkMayEntry(userId, pisdb, conn);
+        
+        if (res.Count == 0)
+        {
+            AtttemplatereqhdrModel athdr = new AtttemplatereqhdrModel
+            {
+                UserId = userId,
+                EmpNumber           = HttpContext.Session.GetString("EmpNumber") ?? "00000",
+                DateRequested       = DateTime.Now,
+                Effectivity         = DateTime.Now,
+                Remarks             = "System Generated",
+                End                 = new DateTime(9999, 12, 31, 23, 59, 59),
+                Status              = "A", 
+                EmpNumber_Approver  = "SYS00"
+            };
+
+            await _atttemplatereqhdr._01Initial(athdr, pisdb, conn);
+        }
+
+    }
+
+    
     private async Task LoadDataFrom_OldPis(UsersModel user, UserCompanyModel? uc)
     {
         var oldPis = HttpContext.Session.GetString("OldPis");

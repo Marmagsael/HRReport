@@ -31,18 +31,14 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
 
     public async Task<LeaveapplicationModel?> _02(int id, string schema, string conn)
     {
-        string sql  = $@"select  Id, Yr, EmpmasId, DateApplied, LeaveTypeId, LvBalance, DaysCnt, LvTime, DaysWithPay, 
-                                 Urgency, LvStart, LvEnd, Reason, Address, TelNo, Approver1Id, Approver2Id, Approver3Id, Status 
-                         from {schema}.Leaveapplication where Id = @Id";
+        string sql  = $@"select  * from {schema}.Leaveapplication where Id = @Id";
         var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     
     public async Task<List<LeaveapplicationModel?>?> _02ByRequest(int empmasId, string schema, string conn)
     {
-        string sql  = $@"select  Id, Yr, EmpmasId, DateApplied, LeaveTypeId, LvBalance, DaysCnt, LvTime, DaysWithPay, 
-                                 Urgency, LvStart, LvEnd, Reason, Address, TelNo, Approver1Id, Approver2Id, Approver3Id, Status 
-                         from {schema}.Leaveapplication where EmpmasId = @EmpmasId and Status in ('S','F') ";
+        string sql  = $@"select  * from {schema}.Leaveapplication where EmpmasId = @EmpmasId and Status in ('S','F') ";
         var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data;
 
@@ -51,7 +47,8 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
     public async Task<double> _02LvBalance(int lvTypeId, int empmasId, int yr, string schema, string conn)
     {
         double lvBal =0; 
-        string  q   = @$"select sum(Credit) Credit from {schema}.LvCredit where EmpmasId = @EmpmasId and LeaveTypeId = @LvTypeId and Year = @Year ";
+        string  q   = @$"select sum(Credit) Credit from {schema}.LvCredit 
+                            where EmpmasId = @EmpmasId and LeaveTypeId = @LvTypeId and Year = @Year ";
         var     r1  = await _sql.FetchData<LvcreditModel?, dynamic>(q, new { EmpmasId=empmasId, LvTypeId = lvTypeId, Year = yr }, conn);
         double lvTotal = r1.FirstOrDefault().Credit??0; 
 
@@ -65,9 +62,6 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         double  lvUsed = r2.FirstOrDefault().DaysWithPay ;
 
         lvBal = lvTotal - lvUsed;
-
-        // Console.WriteLine($" lvBal : {lvBal}");
-
         return lvBal;
     }
 
@@ -80,11 +74,7 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
     public async Task<List<LeaveapplicationModel?>?> _02ForApproval_PerApprover(int approverId, string pisdb, string conn)
     {
         string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName,
-                                CASE
-                                    WHEN Approver1Id=@ApproverId THEN 1
-                                    WHEN Approver2Id=@ApproverId THEN 2
-                                    ELSE 0
-                                END AS ApproverLevel,
+                                ApproverLevel,
                                 h.*, lt.LeaveName as Leavetypename, 
                                 CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName,
                                     CONCAT_WS(' ', TRIM(e1.EmpFirstNm), trim(e1.EmpMidNm), TRIM(e1.EmpLastNm)) AS Approver1Name,
@@ -93,9 +83,10 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
                         left join {pisdb}.empmas    e   on e.Id     = h.EmpmasId
                         left join {pisdb}.leavetype lt  on lt.Id    = h.LeaveTypeId
                         left join {pisdb}.empmas    e1   on e1.Id     = h.Approver1Id
-                        left join {pisdb}.empmas    e2   on e2.Id     = h.Approver2Id
-                        
-                        where ( h.Approver1Id = @ApproverId or h.Approver2Id = @ApproverId)  and Status in ('F', 'FA')";
+                        left join {pisdb}.empmas    e2   on e2.Id     = h.Approver2Id                        
+                        where ( (h.Approver1Id = @ApproverId and h.ApproverLevel = 1) or 
+                                (h.Approver2Id = @ApproverId and h.ApproverLevel = 2)     ) and 
+                              Status in ('F', 'FA')";
         var data = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql,
                         new { ApproverId = approverId }, conn);
         return data ?? [];
@@ -128,6 +119,44 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         var data = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
+
+
+    public async Task _03Return(LeaveapplicationModel lva, int approverId, string schema, string conn)
+    {
+        string sql = $@"Update {schema}.LeaveApplication set ApprRemarks = @AppRemarks, Status = 'R' where Id = @Id;
+                        
+                        Insert into {schema}.LeaveApplicationHist (LvaId, EmpasId,  Date,  Action) values  
+                                                                  (@Id,   @ApproverId, now(), @Action) ;  ";
+
+        int id = lva.Id;
+        string apprRemarks = lva.ApprRemarks??"";
+        string action = "Returned"  ;
+        
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = id, AppRemarks = apprRemarks, ApproverId = approverId, Action = action }, conn);
+    }
+
+    public async Task _03Approve(LeaveapplicationModel lva, int approverId, string schema, string conn)
+    {
+        string msql = @$"update {schema}.Leaveapplication set ApproverLevel = 2, DateApprove1 = now() where Id = @Id;
+                         Insert into {schema}.LeaveApplicationHist 
+                                (LvaId, EmpasId,  Date,  Action) values  
+                                (@Id,   @ApproverId, now(), @Action) ; ";
+
+        if(lva.ApproverLevel == 2)
+        {
+            msql    = @$"update {schema}.Leaveapplication set Status = 'A', DateApprove2 = now() where Id = @Id;
+                         Insert into {schema}.LeaveApplicationHist 
+                                (LvaId, EmpasId,  Date,  Action) values  
+                                (@Id,   @ApproverId, now(), @Action) ; ";
+
+        }
+
+        int id = lva.Id;
+        string action = "Approved - Level " + lva.ApproverLevel.ToString();
+        await _sql.ExecuteCmd<dynamic>(msql, new { Id = id, ApproverId = approverId, Action = action } , conn);
+
+    }
+
     
     public async Task<LeaveapplicationModel?> _03SendForApproval(LeaveapplicationModel lva, string schema, string conn)
     {

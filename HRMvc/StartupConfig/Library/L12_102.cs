@@ -42,6 +42,7 @@ public class L12_102
         var pisdb           = uc.SchemaUserPis; 
         var conn            = uc.Conn;
         var Atttemplates    = await _attTemplate._02s(empmasid, pisdb, conn);
+
         if(Atttemplates.Count < 1 )
         {
             var res = _attTemplate._02NoSchedule(empmasid);

@@ -1,4 +1,5 @@
 @using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRMvc.Applications._00GeneralComponents
 
 @inject DialogService _DialogService
@@ -17,7 +18,7 @@
                 <div class="bordered-right "></div>
             </div>
 
-            @if(isDenyRequest)      { <_12_102_CS_ApprovalModal_Return   Ec="Ec_Catcher" V="@V"  /> }
+            @if(isDenyRequest)      { <_12_102_Lv_ApprovalModal_Return   Ec="Ec_Catcher" V="@V"  /> }
 
             <_12_102_Lv_ApprovalModalHdr hdr="V.LvApp" />
 
@@ -73,7 +74,13 @@
 </_00Modal>
 
 @inject IJSRuntime _js;
-@inject IAtttemplatereqhdrDataAccess    _attreqhdr;
+@inject ILeaveapplicationDataAccess _lvapp;
+
+
+
+
+
+@inject  IAtttemplatereqhdrDataAccess    _attreqhdr;
 
 @code {
     [CascadingParameter] public UserClaimsModel         Uc { get; set; }
@@ -82,7 +89,65 @@
     bool    isDenyRequest       = false;
     bool    isPartiallyApprove  = false;
 
-    string  denycss     => (isDenyRequest || isPartiallyApprove) ? " disabled-div-50 " : "";
+
+    string denycss => (isDenyRequest || isPartiallyApprove) ? " disabled-div-50 " : "";
+
+
+
+
+    async Task CloseModal()
+    {
+        isDenyRequest = false;
+        V.Action = "";
+        await Ec.InvokeAsync(false);
+    }
+
+    async Task Approve()
+    {
+        const string title = "Approve Request?";
+        const string icon = "question";
+        var msg = $@"<div><span class='text-primary'> {V.LvApp.RequestorName}  </span> </div> ";
+        
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (confirmed)
+        {
+            await _lvapp._03Approve(V.LvApp, Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+            V.LvApps = [];
+
+            
+            List<LeaveapplicationModel?>? resh = await _lvapp._02ForApproval_PerApprover(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+            if (resh != null && resh.Count > 0)
+            {
+                V.LvApps = resh!;
+                V.LvApp = new LeaveapplicationModel();
+                StateHasChanged();
+            }
+
+            V.Action = "Approve";
+            await Ec.InvokeAsync(false);
+
+        }
+        
+    }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
     string  divHdrcss   => " d-flex bordered-bottom ";
     string  lblcss      => " w-150p bg mb-a-greenlight p-2  ";
 
@@ -102,31 +167,7 @@
     }
 
 
-    async Task Approve()
-    {
-        const string title = "Approve Request?";
-        const string icon = "question";
-        var msg = $@"<div><span class='text-primary'> {V.Atttemplatereqhdr.RequestorName}  </span> </div> ";
-        
-        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
-        if (confirmed)
-        {
-            await _attreqhdr._03Approve(V.Atttemplatereqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
-            V.Atttemplatereqhdrs                = [];
-            List<AtttemplatereqhdrModel?>? resh = await _attreqhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
-            if(resh != null && resh.Count > 0) 
-            { 
-                V.Atttemplatereqhdrs = resh!; 
-                V.Atttemplatereqhdr = new(); 
-                StateHasChanged(); 
-            }
-        
-            V.Action = "Approve";
-        
-            await Ec.InvokeAsync(false);
-        }
-        
-    }
+    
 
 
     void Return() {
@@ -134,27 +175,14 @@
         V.Atttemplatereqhdr.ApprRemarks = string.Empty;
     }
 
-    async Task CloseModal() { 
-        isDenyRequest = false;
-        V.Action = "";
-        await Ec.InvokeAsync(false); 
-    }
     
     async Task Ec_Catcher()
     {
-        if (V.Action == "CloseRR")              await CloseReturn();
-        if (V.Action == "ReturnRequest")        await ReturnRequest();
-        if (V.Action == "ClosePA")              await CloseReturn();
-        if (V.Action == "PartiallyApproved")    await PartiallyApproved();
-        
+        if (V.Action == "ReturnRequest")    await ReturnRequest();
+        if (V.Action == "CloseRR")          await CloseReturn();
         
     }
 
-    async Task PartiallyApproved()
-    {
-        isPartiallyApprove = true;
-        await Ec.InvokeAsync(false);
-    }
     async Task ReturnRequest()
     {
         isDenyRequest = true;
@@ -169,10 +197,7 @@
     }
 
 
-    void PartiallyApprove()
-    {
-        isPartiallyApprove = true;
-    }
+
 
 }
 

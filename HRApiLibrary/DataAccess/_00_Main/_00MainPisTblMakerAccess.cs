@@ -623,6 +623,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             EmpNumber           CHAR(5),
                             DateRequested       DATETIME,
                             Effectivity         DateTime, 
+                            End                 DateTime DEFAULT '9999-12-31 23:59:59', 
                             Remarks             VARCHAR(120),
                             ApprRemarks         VARCHAR(120),
                             Status              char(1),
@@ -2278,12 +2279,17 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                               LvStart       DATE,
                               LvEnd         DATE,
                               Reason        VARCHAR(150),
+                              ApprRemarks   VARCHAR(150),
                               Address       VARCHAR(150),
                               TelNo         VARCHAR(45),
                               Approver1Id   INTEGER         UNSIGNED    DEFAULT 0,
                               Approver2Id   INTEGER         UNSIGNED    DEFAULT 0,
                               Approver3Id   INTEGER         UNSIGNED    DEFAULT 0,
                               Status        VARCHAR(10)                 DEFAULT 'New',
+                              DateApprove1  DATETIME,
+                              DateApprove2  DATETIME,
+                              DateApprove3  DATETIME,
+                              ApproverLevel INTEGER         UNSIGNED    DEFAULT 1,
                         PRIMARY KEY(`Id`)) ENGINE = InnoDB; 
                     
                     CREATE TABLE if not exists  {schema}.LeaveApplicationHist (
