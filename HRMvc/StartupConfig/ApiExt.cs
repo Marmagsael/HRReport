@@ -188,7 +188,7 @@ public static class ApiExt
         builder.Services.AddScoped<IEmpratesdtlDataAccess, EmpratesdtlDataAccess>();
         builder.Services.AddScoped<IFixedearningsDataAccess, FixedearningsDataAccess>();
         builder.Services.AddScoped<IFixedearnings_grp_empDataAccess, Fixedearnings_grp_empDataAccess>();
-        builder.Services.AddScoped<IPaymainvisacctDataAccess, PaymainvisacctDataAccess>();
+        builder.Services.AddScoped<IPaymainvisacctDataAccess1, PaymainvisacctDataAccess>();
         builder.Services.AddScoped<IPaytranDataAccess, PaytranDataAccess>();
         builder.Services.AddScoped<IDa605DataAccess, Da605DataAccess>();
         builder.Services.AddScoped<IDutyrenderedDataAccess, DutyrenderedDataAccess>();

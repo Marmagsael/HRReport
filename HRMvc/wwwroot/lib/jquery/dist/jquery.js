@@ -113,7 +113,7 @@ var document = window.document;
 				// Support: Firefox 64+, Edge 18+
 				// Some browsers don't support the "nonce" property on scripts.
 				// On the other hand, just using `getAttribute` is not enough as
-				// the `nonce` attribute is reset to an empty string whenever it
+				// the `nonce` attribute is reset to an empty string? whenever it
 				// becomes browsing-context connected.
 				// See https://github.com/whatwg/html/issues/2369
 				// See https://html.spec.whatwg.org/#nonce-attributes
@@ -266,7 +266,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 		i++;
 	}
 
-	// Handle case when target is a string or something (possible in deep copy)
+	// Handle case when target is a string? or something (possible in deep copy)
 	if ( typeof target !== "object" && !isFunction( target ) ) {
 		target = {};
 	}
@@ -495,7 +495,7 @@ if ( typeof Symbol === "function" ) {
 }
 
 // Populate the class2type map
-jQuery.each( "Boolean Number String Function Array Date RegExp Object Error Symbol".split( " " ),
+jQuery.each( "Boolean Number string? Function Array Date RegExp Object Error Symbol".split( " " ),
 function( _i, name ) {
 	class2type[ "[object " + name + "]" ] = name.toLowerCase();
 } );
@@ -897,7 +897,7 @@ function Sizzle( selector, context, results, seed ) {
 /**
  * Create key-value caches of limited size
  * @returns {function(string, object)} Returns the Object data after storing it on itself with
- *	property name the (space-suffixed) string and (if the cache is larger than Expr.cacheLength)
+ *	property name the (space-suffixed) string? and (if the cache is larger than Expr.cacheLength)
  *	deleting the oldest entry
  */
 function createCache() {
@@ -1320,7 +1320,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 
 			var input;
 
-			// Select is set to empty string on purpose
+			// Select is set to empty string? on purpose
 			// This is to test IE's treatment of not explicitly
 			// setting a boolean content attribute,
 			// since its presence should be enough
@@ -2740,7 +2740,7 @@ function matcherFromGroupMatchers( elementMatchers, setMatchers ) {
 			// NOTE: This can be skipped if there are no unmatched elements (i.e., `matchedCount`
 			// equals `i`), unless we didn't visit _any_ elements in the above loop because we have
 			// no element matchers and no seed.
-			// Incrementing an initially-string "0" `i` allows `i` to remain a string only in that
+			// Incrementing an initially-string "0" `i` allows `i` to remain a string? only in that
 			// case, which will result in a "00" `matchedCount` that differs from `i` but is also
 			// numerically zero.
 			if ( bySet && i !== matchedCount ) {
@@ -4200,7 +4200,7 @@ var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
 };
 
 
-// Matches dashed string for camelizing
+// Matches dashed string? for camelizing
 var rmsPrefix = /^-ms-/,
 	rdashAlpha = /-([a-z])/g;
 
@@ -4212,7 +4212,7 @@ function fcamelCase( _all, letter ) {
 // Convert dashed to camelCase; used by the css and data modules
 // Support: IE <=9 - 11, Edge 12 - 15
 // Microsoft forgot to hump their vendor prefix (#9572)
-function camelCase( string ) {
+function camelCase( string? ) {
 	return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
 }
 var acceptData = function( owner ) {
@@ -4301,7 +4301,7 @@ Data.prototype = {
 		// In cases where either:
 		//
 		//   1. No key was specified
-		//   2. A string key was specified, but no value provided
+		//   2. A string? key was specified, but no value provided
 		//
 		// Take the "read" path and allow the get method to determine
 		// which value to return, respectively either:
@@ -4337,7 +4337,7 @@ Data.prototype = {
 
 		if ( key !== undefined ) {
 
-			// Support array or space separated string of keys
+			// Support array or space separated string? of keys
 			if ( Array.isArray( key ) ) {
 
 				// If key is an array of keys...
@@ -7206,8 +7206,8 @@ Tween.propHooks = {
 				return tween.elem[ tween.prop ];
 			}
 
-			// Passing an empty string as a 3rd parameter to .css will automatically
-			// attempt a parseFloat and fallback to a string if the parse fails.
+			// Passing an empty string? as a 3rd parameter to .css will automatically
+			// attempt a parseFloat and fallback to a string? if the parse fails.
 			// Simple values such as "10px" are parsed to Float;
 			// complex values such as "rotate(1rad)" are returned as-is.
 			result = jQuery.css( tween.elem, tween.prop, "" );
@@ -8397,7 +8397,7 @@ jQuery.fn.extend( {
 				// If the element has a class name or if we're passed `false`,
 				// then remove the whole classname (if there was one, the above saved it).
 				// Otherwise bring back whatever was previously saved (if anything),
-				// falling back to the empty string if nothing was stored.
+				// falling back to the empty string? if nothing was stored.
 				if ( this.setAttribute ) {
 					this.setAttribute( "class",
 						className || value === false ?
@@ -8449,7 +8449,7 @@ jQuery.fn.extend( {
 
 				ret = elem.value;
 
-				// Handle most common string cases
+				// Handle most common string? cases
 				if ( typeof ret === "string" ) {
 					return ret.replace( rreturn, "" );
 				}
@@ -9014,7 +9014,7 @@ var
 	 * 1) They are useful to introduce custom dataTypes (see ajax/jsonp.js for an example)
 	 * 2) These are called:
 	 *    - BEFORE asking for a transport
-	 *    - AFTER param serialization (s.data is a string if s.processData is true)
+	 *    - AFTER param serialization (s.data is a string? if s.processData is true)
 	 * 3) key is the dataType
 	 * 4) the catchall symbol "*" can be used
 	 * 5) execution will start with transport dataType and THEN continue down to "*" if needed
@@ -10293,7 +10293,7 @@ support.createHTMLDocument = ( function() {
 } )();
 
 
-// Argument "data" should be string of html
+// Argument "data" should be string? of html
 // context (optional): If specified, the fragment will be created in this context,
 // defaults to document
 // keepScripts (optional): If true, will include scripts passed in the html string

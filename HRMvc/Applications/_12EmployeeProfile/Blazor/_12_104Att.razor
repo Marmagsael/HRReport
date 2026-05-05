@@ -3,6 +3,7 @@
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_104
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_104.AttCalendar
 @using System.Globalization
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 
 
 <div>
@@ -88,9 +89,9 @@
         var userId = Uc.UserId;
 
 
-        var firstDay        = new DateTime(v.SelectedYear, v.SelectedMonth, 1);
-        int daysInMonth     = DateTime.DaysInMonth(v.SelectedYear, v.SelectedMonth);
-        int startDay        = (int)firstDay.DayOfWeek;
+        var firstDay        = new DateTime(v.SelectedYear??0, v.SelectedMonth??0, 1);
+        int? daysInMonth     = DateTime.DaysInMonth(v.SelectedYear??0, v.SelectedMonth??0);
+        int? startDay        = (int)firstDay.DayOfWeek;
 
 
         var template = await _att._02TemplateByUserIdAndEffectivityDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
@@ -99,11 +100,11 @@
 
 
 
-        for (int i = 0; i < startDay; i++) v.Calendar.Add(new AttDayDetail());
+        for (int? i = 0; i < startDay; i++) v.Calendar.Add(new AttDayDetail());
 
-        for (int d = 1; d <= daysInMonth; d++)
+        for (int? d = 1; d <= daysInMonth; d++)
         {
-            var date = new DateTime(v.SelectedYear, v.SelectedMonth, d);
+            var date = new DateTime(v.SelectedYear??0, v.SelectedMonth??0, d??0);
 
             v.Calendar.Add(LoadDay(date, punches, template, leave));
         }
@@ -155,7 +156,7 @@
             expTimeOut      = resPunches.ExpTimeOut;
             dutyTypeCode    = resPunches.DutyTypeCode;
             duration        = resPunches.Duration;
-            ttlWorkedHrs    = (int)resPunches.TotalWorkedHrs.TotalHours;
+            ttlWorkedHrs    = (int?)resPunches.TotalWorkedHrs?.TotalHours??0;
             logs            = resPunches.Logs;
         }
         else
@@ -169,7 +170,7 @@
 
 
         var resStatus = GetStatus(attType, dutyTypeCode, date, expTimeIn, expTimeOut, actualIn, actualOut, duration, resLeave, ttlWorkedHrs);
-        string status = string.Join(", ", resStatus.Select(x => x.Status));
+        string? status = string.Join(", ", resStatus.Select(x => x.Status));
         var lateduration        = resStatus.FirstOrDefault(x => x.Status == "LATE").Time ?? "";
         var undertimeduration   = resStatus.FirstOrDefault(x => x.Status == "UNDERTIME").Time ?? "";
 
@@ -187,8 +188,8 @@
             AttendanceType      = attType,
             Status              = status,
             IsToday             = date.Date == DateTime.Today,
-            ExpWorkingHrs       = FormatTime(expWorkingHrs),
-            TtlWorkedHrs        = FormatTime(resPunches.TotalWorkedHrs??new()),
+            ExpWorkingHrs       = FormatTime(expWorkingHrs??new TimeSpan()),
+            TtlWorkedHrs        = FormatTime(resPunches.TotalWorkedHrs??new TimeSpan()),
             LateDuration        = lateduration,
             UnderTimeDuration   = undertimeduration,
             Logs                = logs
@@ -206,14 +207,14 @@
         var d = template?.Where(t => t != null && date >= t.Effectivity && date < t.EffectivityEnd).OrderByDescending(t => t.Effectivity).FirstOrDefault();
         if (d == null) return new AttTemplate();
 
-        int day = (int)date.DayOfWeek;
+        int? day = (int)date.DayOfWeek;
 
         var ins = new[] { d.D7_In, d.D1_In, d.D2_In, d.D3_In, d.D4_In, d.D5_In, d.D6_In };
         var hrs = new[] { d.D7_HrsLength, d.D1_HrsLength, d.D2_HrsLength, d.D3_HrsLength, d.D4_HrsLength, d.D5_HrsLength, d.D6_HrsLength };
         var duty = new[] { d.D7_DutyType, d.D1_DutyType, d.D2_DutyType, d.D3_DutyType, d.D4_DutyType, d.D5_DutyType, d.D6_DutyType };
 
-        var start = ins[day];
-        var hours = hrs[day];
+        var start = ins[day??0];
+        var hours = hrs[day??0];
 
 
 
@@ -221,7 +222,7 @@
         {
             ExpTimeIn       = ConvertToTime(start),
             ExpTimeOut      = GetTimeOut(start, hours),
-            DutyTypeCode    = duty[day] ?? string.Empty,
+            DutyTypeCode    = duty[day??0] ?? string.Empty,
             AttendanceType  = d.AttendanceType ?? string.Empty,
             Duration        = hours ?? 0
         };
@@ -303,18 +304,18 @@
 
 
 
-    private List<(string Status, string Time)> GetStatus(string attType, string dutyType, DateTime date, TimeSpan expTimeIn, TimeSpan expTimeOut, DateTime? actualDateTimeIn, DateTime? actualDateTimeOut, int expWorkDuration, AttLeaveapplicationModel? leave, int ttlWorkedHrs)
+    private List<(string? Status, string? Time)> GetStatus(string? attType, string? dutyType, DateTime date, TimeSpan? expTimeIn, TimeSpan? expTimeOut, DateTime? actualDateTimeIn, DateTime? actualDateTimeOut, int? expWorkDuration, AttLeaveapplicationModel? leave, int? ttlWorkedHrs)
     {
 
-        var res     = new List<(string Status, string Time)>();
+        var res     = new List<(string? Status, string? Time)>();
         var aType   = attType.Trim().Replace(" ", "").ToUpper();
         var dType   = dutyType.Trim().Replace(" ", "").ToUpper();
 
         DateTime dateNow = DateTime.Today;
-        TimeSpan timeNow = DateTime.Now.TimeOfDay;
+        TimeSpan? timeNow = DateTime.Now.TimeOfDay;
 
-        TimeSpan actTimeIn  = actualDateTimeIn?.TimeOfDay ?? TimeSpan.Zero;
-        TimeSpan actTimeOut = actualDateTimeOut?.TimeOfDay ?? TimeSpan.Zero;
+        TimeSpan? actTimeIn  = actualDateTimeIn?.TimeOfDay ?? TimeSpan.Zero;
+        TimeSpan? actTimeOut = actualDateTimeOut?.TimeOfDay ?? TimeSpan.Zero;
 
         DateTime actDateIn  = actualDateTimeIn?.Date ?? DateTime.MinValue;
         DateTime actDateOut = actualDateTimeOut?.Date ?? DateTime.MinValue;
@@ -377,13 +378,13 @@
                 if (actTimeIn > expTimeIn)
                 {
                     res.Add(("PRESENT", ""));
-                    res.Add(("LATE", FormatTime(actTimeIn - expTimeIn)));
+                    res.Add(("LATE", FormatTime((actTimeIn - expTimeIn) ?? TimeSpan.Zero)));
                 }
 
                 if (actualDateTimeOut?.Date == actualDateTimeIn?.Date && actTimeOut < expTimeOut)
                 {
                     res.Add(("PRESENT", ""));
-                    res.Add(("UNDERTIME", FormatTime(expTimeOut - actTimeOut)));
+                    res.Add(("UNDERTIME", FormatTime((expTimeOut - actTimeOut) ?? TimeSpan.Zero)));
                 }
 
                 if (actTimeIn <= expTimeIn && actTimeOut >= expTimeOut)
@@ -409,14 +410,14 @@
 
 
 
-    public TimeSpan ConvertToTime(int? hhmm)
+    public TimeSpan? ConvertToTime(int? hhmm)
     {
         if (hhmm.HasValue && hhmm.Value > 0)
         {
-            int hours = hhmm.Value / 100;
-            int minutes = hhmm.Value % 100;
+            int? hours = hhmm.Value / 100;
+            int? minutes = hhmm.Value % 100;
 
-            return new TimeSpan(hours, minutes, 0);
+            return new TimeSpan(hours??0, minutes??0, 0);
         }
 
         return TimeSpan.Zero;
@@ -427,10 +428,10 @@
 
 
 
-    public TimeSpan GetTimeOut(int? d2In, int? d2HrsLength)
+    public TimeSpan? GetTimeOut(int? d2In, int? d2HrsLength)
     {
-        TimeSpan timeIn = ConvertToTime(d2In);
-        TimeSpan duration = ConvertToTime(d2HrsLength);
+        TimeSpan? timeIn = ConvertToTime(d2In);
+        TimeSpan? duration = ConvertToTime(d2HrsLength);
         return timeIn + duration;
     }
 
@@ -438,12 +439,12 @@
 
 
 
-    public  string FormatTime(TimeSpan duration)
+    public  string? FormatTime(TimeSpan duration)
     {
-        int totalMinutes = (int)duration.TotalMinutes;
+        int? totalMinutes = (int)duration.TotalMinutes;
 
-        int hours = totalMinutes / 60;
-        int minutes = totalMinutes % 60;
+        int? hours = totalMinutes / 60;
+        int? minutes = totalMinutes % 60;
 
         return $"{hours} hr {minutes} min";
     }

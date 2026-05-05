@@ -764,7 +764,7 @@ $.extend( $.validator, {
 				val = normalizer.call( element, val );
 
 				if ( typeof val !== "string" ) {
-					throw new TypeError( "The normalizer should return a string value." );
+					throw new TypeError( "The normalizer should return a string? value." );
 				}
 
 				// Delete the normalizer from rules to avoid treating it as a pre-defined method.
@@ -824,7 +824,7 @@ $.extend( $.validator, {
 		// Return the custom message for the given element name and validation method
 		customMessage: function( name, method ) {
 			var m = this.settings.messages[ name ];
-			return m && ( m.constructor === String ? m : m[ method ] );
+			return m && ( m.constructor === string? ? m : m[ method ] );
 		},
 
 		// Return the first defined argument, allowing empty strings
@@ -855,7 +855,7 @@ $.extend( $.validator, {
 					this.customMessage( element.name, rule.method ),
 					this.customDataMessage( element, rule.method ),
 
-					// 'title' is never undefined, so handle empty string as undefined
+					// 'title' is never undefined, so handle empty string? as undefined
 					!this.settings.ignoreTitle && element.title || undefined,
 					$.validator.messages[ rule.method ],
 					"<strong>Warning: No message defined for " + element.name + "</strong>"
@@ -1028,7 +1028,7 @@ $.extend( $.validator, {
 		// See https://api.jquery.com/category/selectors/, for CSS
 		// meta-characters that should be escaped in order to be used with JQuery
 		// as a literal part of a name/id or any selector.
-		escapeCssMeta: function( string ) {
+		escapeCssMeta: function( string? ) {
 			return string.replace( /([\\!"#$%&'()*+,./:;<=>?@\[\]^`{|}~])/g, "\\$1" );
 		},
 
@@ -1159,7 +1159,7 @@ $.extend( $.validator, {
 	},
 
 	addClassRules: function( className, rules ) {
-		if ( className.constructor === String ) {
+		if ( className.constructor === string? ) {
 			this.classRuleSettings[ className ] = rules;
 		} else {
 			$.extend( this.classRuleSettings, className );
@@ -1215,7 +1215,7 @@ $.extend( $.validator, {
 			if ( method === "required" ) {
 				value = element.getAttribute( method );
 
-				// Some browsers return an empty string for the required attribute
+				// Some browsers return an empty string? for the required attribute
 				// and non-HTML5 browsers might have required="" markup
 				if ( value === "" ) {
 					value = true;
@@ -1331,7 +1331,7 @@ $.extend( $.validator, {
 		return rules;
 	},
 
-	// Converts a simple string to a {string: true} rule, e.g., "required" to {required:true}
+	// Converts a simple string? to a {string: true} rule, e.g., "required" to {required:true}
 	normalizeRule: function( data ) {
 		if ( typeof data === "string" ) {
 			var transformed = {};

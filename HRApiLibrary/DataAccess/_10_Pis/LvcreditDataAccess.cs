@@ -9,9 +9,9 @@ public class LvcreditDataAccess : ILvcreditDataAccess
     public LvcreditDataAccess(I_90_001_MySqlDataAccess sql)
     {   _sql = sql; }
 
-    public async Task _01(LvcreditModel lvcredit, string schema, string conn)
+    public async Task _01(LvcreditModel lvcredit, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Lvcredit 
+        string? sql = $@"Insert into {schema}.Lvcredit 
                                 (Year,  EmpmasId,  LeaveTypeId,  CreditStart,  CreditEnd,  Credit) 
                         values  (@Year, @EmpmasId, @LeaveTypeId, @CreditStart, @CreditEnd, @Credit) 
                         on duplicate key update CreditEnd = @CreditEnd, Credit = @Credit ; ";
@@ -36,18 +36,18 @@ public class LvcreditDataAccess : ILvcreditDataAccess
     }
 
 
-    public async Task<List<LvcreditModel?>?> _02ByLvType_ByCreditStart(int LvTypeId, DateTime creditStart, string schema, string conn)
+    public async Task<List<LvcreditModel?>?> _02ByLvType_ByCreditStart(int? LvTypeId, DateTime creditStart, string? schema, string? conn)
     {
-        string sql = $@"select  Year, EmpmasId, LeaveTypeId, CreditStart, CreditEnd, Credit 
+        string? sql = $@"select  Year, EmpmasId, LeaveTypeId, CreditStart, CreditEnd, Credit 
                         from {schema}.Lvcredit 
                         where LeaveTypeId = @LeaveTypeId and CreditStart = @CreditStart ";
         var data = await _sql.FetchData<LvcreditModel?, dynamic>(sql, new { LeaveTypeId = LvTypeId, CreditStart = creditStart }, conn);
         return data;
     }
     
-    public async Task<List<LvcreditModel?>?> _02AssignPerYr(int LvTypeId, int yr, string schema, string conn)
+    public async Task<List<LvcreditModel?>?> _02AssignPerYr(int? LvTypeId, int? yr, string? schema, string? conn)
     {
-        string sql = $@"select EmpmasId, sum(Credit) Credit   
+        string? sql = $@"select EmpmasId, sum(Credit) Credit   
                         from {schema}.Lvcredit 
                         where LeaveTypeId = @LeaveTypeId and Year = @Year 
                         Group by EmpmasId  ";
@@ -57,9 +57,9 @@ public class LvcreditDataAccess : ILvcreditDataAccess
 
 
 
-    public async Task _03(LvcreditModel lvcredit, string schema, string conn)
+    public async Task _03(LvcreditModel lvcredit, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Lvcredit set 
+        string? sql = $@"Update {schema}.Lvcredit set 
                             Year = @Year, 
                             CreditStart = @CreditStart, 
                             CreditEnd = @CreditEnd, 
@@ -68,18 +68,18 @@ public class LvcreditDataAccess : ILvcreditDataAccess
         await _sql.ExecuteCmd<dynamic>(sql, lvcredit, conn);
     }
 
-    public async Task _04(int empmasId, string lvTypeId, DateTime creditStart, string schema, string conn)
+    public async Task _04(int? empmasId, string? lvTypeId, DateTime creditStart, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Lvcredit where EmpmasId = @EmpmasId and LeaveTypeId = @LeaveTypeId and CreditStart = @CreditStart;";
+        string? sql = $@"Delete from {schema}.Lvcredit where EmpmasId = @EmpmasId and LeaveTypeId = @LeaveTypeId and CreditStart = @CreditStart;";
         await _sql.ExecuteCmd<dynamic>(sql, new { EmpmasId = empmasId, LeaveTypeId = lvTypeId, CreditStart = creditStart }, conn);
     }
 }
 
 public interface ILvcreditDataAccess
 {
-    Task                        _01(LvcreditModel lvcredit, string schema, string conn);
-    Task<List<LvcreditModel?>?> _02ByLvType_ByCreditStart(int LvTypeId, DateTime creditStart, string schema, string conn);
-    Task<List<LvcreditModel?>?> _02AssignPerYr(int LvTypeId, int yr, string schema, string conn); 
-    Task                        _03(LvcreditModel lvcredit, string schema, string conn);
-    Task                        _04(int empmasId, string lvTypeId, DateTime creditStart, string schema, string conn);
+    Task                        _01(LvcreditModel lvcredit, string? schema, string? conn);
+    Task<List<LvcreditModel?>?> _02ByLvType_ByCreditStart(int? LvTypeId, DateTime creditStart, string? schema, string? conn);
+    Task<List<LvcreditModel?>?> _02AssignPerYr(int? LvTypeId, int? yr, string? schema, string? conn); 
+    Task                        _03(LvcreditModel lvcredit, string? schema, string? conn);
+    Task                        _04(int? empmasId, string? lvTypeId, DateTime creditStart, string? schema, string? conn);
 }

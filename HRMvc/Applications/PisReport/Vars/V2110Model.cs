@@ -2,7 +2,7 @@
 {
     public class V2110Model
     {
-        public string Action { get; set; } = "";
+        public string? Action { get; set; } = "";
         public bool IsGroupByClient { get; set; } = false;
         public List<R2110Model> RepDtls { get; set; } = [];
     }

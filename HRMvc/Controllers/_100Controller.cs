@@ -22,7 +22,7 @@ public class _100Controller : Controller
 
     // 🔥 Clean numeric route
     [HttpGet("{reportCode:int}")]
-    public IActionResult Report(int reportCode)
+    public IActionResult Report(int? reportCode)
     {
         var key = reportCode.ToString();
 

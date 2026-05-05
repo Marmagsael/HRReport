@@ -23,7 +23,7 @@
             DateTime    scheduledInTime = punch.PunchInDate?.Date ?? DateTime.MinValue;
             double      punchIn_Hour    = 0.00;
             double      punchIn_Min     = 0.00; 
-            int         tardiness       = 0;
+            int?         tardiness       = 0;
 
             if (punch?.PunchInDate != null && punch?.PunchT != null)
             {
@@ -41,7 +41,7 @@
             }
 
             @* --- Tardiness Out ----------------------- *@
-            int outTardiness       = 0;
+            int? outTardiness       = 0;
             if (punch?.DutyTypeId == 1 &&
                 punch?.PunchOutDate  != null && 
                 punch?.PunchInDate   != null &&
@@ -52,11 +52,11 @@
                 DateTime actualOut      = punch.PunchOutDate ?? DateTime.MinValue;
 
                 DateTime scheduleIn     = (punch.PunchInDate?.Date??DateTime.MinValue)
-                                          .AddHours(   punch.PunchT / 100 )
-                                          .AddMinutes( punch.PunchT % 100 );
+                                          .AddHours(   punch.PunchT??0 / 100 )
+                                          .AddMinutes( punch.PunchT??0 % 100 );
                 DateTime scheduleOut    = scheduleIn
-                                          .AddHours( punch.SchedDuration / 100 )
-                                          .AddMinutes( punch.SchedDuration % 100 );
+                                          .AddHours( punch.SchedDuration??0 / 100 )
+                                          .AddMinutes( punch.SchedDuration??0 % 100 );
 
                 if (actualOut < scheduleOut)
                 {

@@ -11,7 +11,7 @@ namespace HRMvc.Applications._02HR._02Library
         public string?                              Action                         { get; set; }  = string.Empty;
         public string?                              Mode                           { get; set; } = "DiA";
         public string?                              Key                            { get; set; } = "Disciplinary";
-        public int                                  ActiveTab                      { get; set; } = 0;
+        public int?                                  ActiveTab                      { get; set; } = 0;
         public string?                              Module                         { get; set; } = "Disciplinary";
 
 

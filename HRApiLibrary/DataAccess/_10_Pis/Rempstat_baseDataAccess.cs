@@ -15,10 +15,10 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         _sql = sql;
     }
 
-    public async Task<Rempstat_baseModel?> _01(string key, Rempstat_baseModel Rempstat_base, string schema, string conn)
+    public async Task<Rempstat_baseModel?> _01(string? key, Rempstat_baseModel Rempstat_base, string? schema, string? conn)
     {
 
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table = "rempstat_fordeployment";
@@ -28,7 +28,7 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         if (key == "investigate") table = "rempstat_forinvestigate";
         if (key == "reinstatement") table = "rempstat_forreinstatement";
 
-        string sql = $@"Insert into {schema}.{table} (RempstatId) values (@RempstatId); 
+        string? sql = $@"Insert into {schema}.{table} (RempstatId) values (@RempstatId); 
                         SELECT * FROM {schema}.{table};";
         var res = await _sql.FetchData<Rempstat_baseModel?, dynamic>(sql, Rempstat_base, conn);
 
@@ -36,9 +36,9 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
     }
 
 
-    public async Task<List<Rempstat_baseModel?>?> _01(string key, List<int> ids, string schema, string conn)
+    public async Task<List<Rempstat_baseModel?>?> _01(string? key, List<int> ids, string? schema, string? conn)
     {
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table = "rempstat_fordeployment";
@@ -54,15 +54,15 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         var valuePlaceholders = new List<string>();
         var parameters = new DynamicParameters();
 
-        for (int i = 0; i < ids.Count; i++)
+        for (int? i = 0; i < ids.Count; i++)
         {
-            string paramName = $"@Id{i}";
+            string? paramName = $"@Id{i}";
             valuePlaceholders.Add($"({paramName})");
-            parameters.Add(paramName, ids[i]);
+            parameters.Add(paramName, ids[i??0]);
         }
 
-        string valuesClause = string.Join(", ", valuePlaceholders);
-        string sql = $@"
+        string? valuesClause = string.Join(", ", valuePlaceholders);
+        string? sql = $@"
         INSERT INTO {schema}.{table} (RempstatId)
         VALUES {valuesClause};
         
@@ -75,9 +75,9 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
 
 
 
-    public async Task<Rempstat_baseModel?> _02(string key, int id, string schema, string conn)
+    public async Task<Rempstat_baseModel?> _02(string? key, int? id, string? schema, string? conn)
     {
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table = "rempstat_fordeployment";
@@ -87,14 +87,14 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         if (key == "investigate") table = "rempstat_forinvestigate";
         if (key == "reinstatement") table = "rempstat_forreinstatement";
 
-        string sql = $@"select  Id, RempstatId from {schema}.{table} where Id = @Id";
+        string? sql = $@"select  Id, RempstatId from {schema}.{table} where Id = @Id";
         var data = await _sql.FetchData<Rempstat_baseModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<Rempstat_baseModel?>?> _02(string key, string schema, string conn)
+    public async Task<List<Rempstat_baseModel?>?> _02(string? key, string? schema, string? conn)
     {
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table      = "rempstat_fordeployment";
@@ -104,16 +104,16 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         if (key == "investigate") table     = "rempstat_forinvestigate";
         if (key == "reinstatement") table   = "rempstat_forreinstatement";
 
-        string sql = $@"select  * from {schema}.{table} order by RempstatId";
+        string? sql = $@"select  * from {schema}.{table} order by RempstatId";
         var data = await _sql.FetchData<Rempstat_baseModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
 
 
-    public async Task<Rempstat_baseModel?> _03(string key, int id, Rempstat_baseModel Rempstat_base, string schema, string conn)
+    public async Task<Rempstat_baseModel?> _03(string? key, int? id, Rempstat_baseModel Rempstat_base, string? schema, string? conn)
     {
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table = "rempstat_fordeployment";
@@ -123,7 +123,7 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         if (key == "investigate") table = "rempstat_forinvestigate";
         if (key == "reinstatement") table = "rempstat_forreinstatement";
 
-        string sql = $@"Update {schema}.{table} set RempstatId = @RempstatId where Id = @Id;";
+        string? sql = $@"Update {schema}.{table} set RempstatId = @RempstatId where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, Rempstat_base, conn);
 
         sql = $@" select  * from {schema}.{table} x where x.Id = @Id ;";
@@ -131,10 +131,10 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<Rempstat_baseModel?> _04(string key, int id, string schema, string conn)
+    public async Task<Rempstat_baseModel?> _04(string? key, int? id, string? schema, string? conn)
     {
 
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table = "rempstat_fordeployment";
@@ -144,7 +144,7 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         if (key == "investigate") table = "rempstat_forinvestigate";
         if (key == "reinstatement") table = "rempstat_forreinstatement";
 
-        string sql = $@"Delete from {schema}.{table} where RempstatId = @Id;";
+        string? sql = $@"Delete from {schema}.{table} where RempstatId = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.{table} x where x.RempstatId = @Id ;";
@@ -152,11 +152,11 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<Rempstat_baseModel?>?> _04(string key, List<int> ids, string schema, string conn)
+    public async Task<List<Rempstat_baseModel?>?> _04(string? key, List<int> ids, string? schema, string? conn)
     {
 
 
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table = "rempstat_fordeployment";
@@ -166,19 +166,19 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         if (key == "investigate") table = "rempstat_forinvestigate";
         if (key == "reinstatement") table = "rempstat_forreinstatement";
 
-        string sqlDelete = $@"DELETE FROM {schema}.{table} WHERE RempstatId IN @Ids;";
+        string? sqlDelete = $@"DELETE FROM {schema}.{table} WHERE RempstatId IN @Ids;";
         await _sql.ExecuteCmd<dynamic>(sqlDelete, new { Ids = ids }, conn);
 
-        string sqlSelect = $@"SELECT * FROM {schema}.{table};";
+        string? sqlSelect = $@"SELECT * FROM {schema}.{table};";
         var data = await _sql.FetchData<Rempstat_baseModel?, dynamic>(sqlSelect, new { }, conn);
 
         return data;
     }
 
-    public async Task<List<Rempstat_baseModel?>?> _04(string key, string schema, string conn)
+    public async Task<List<Rempstat_baseModel?>?> _04(string? key, string? schema, string? conn)
     {
 
-        string table = string.Empty;
+        string? table = string.Empty;
 
         key = key.ToLower();
         if (key == "deployment") table = "rempstat_fordeployment";
@@ -188,10 +188,10 @@ public class Rempstat_baseDataAccess : IRempstat_baseDataAccess
         if (key == "investigate") table = "rempstat_forinvestigate";
         if (key == "reinstatement") table = "rempstat_forreinstatement";
 
-        string sqlDelete = $@"DELETE FROM {schema}.{table} ;";
+        string? sqlDelete = $@"DELETE FROM {schema}.{table} ;";
         await _sql.ExecuteCmd<dynamic>(sqlDelete, new { }, conn);
 
-        string sqlSelect = $@"SELECT * FROM {schema}.{table};";
+        string? sqlSelect = $@"SELECT * FROM {schema}.{table};";
         var data = await _sql.FetchData<Rempstat_baseModel?, dynamic>(sqlSelect, new { }, conn);
 
         return data;

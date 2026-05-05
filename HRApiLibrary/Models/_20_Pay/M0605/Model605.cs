@@ -7,7 +7,7 @@ public class Model605
     public string?                          Paydb                   { get; set; } = string.Empty;
     public string?                          Pisdb                   { get; set; } = string.Empty;
     public string?                          Conn                    { get; set; } = string.Empty;
-    public int                              UserId                  { get; set; } = 0; 
+    public int?                              UserId                  { get; set; } = 0; 
     
     public PaymainhdrModel?                 Paymainhdr              { get; set; } = new();
     public List<PaymainhdrModel?>?          Paymainhdrs             { get; set; } = [];
@@ -24,7 +24,7 @@ public class Model605
     public string?                          ProcStatus              { get; set; } = string.Empty;
                                                                     
     public string?                          Trn                     { get; set; } = string.Empty;
-    public int                              PayrollgrpId            { get; set; } = 0; 
+    public int?                              PayrollgrpId            { get; set; } = 0; 
     public PaymaindtlModel?                 Paymaindtl              { get; set; } = new();
     public List<PaymaindtlModel?>?          Paymaindtls             { get; set; } = [];
     public PaytranModel?                    Paytran                 { get; set; } = new();

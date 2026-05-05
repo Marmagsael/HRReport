@@ -14,9 +14,9 @@ public class LeavegrpapproverDataAccess : ILeavegrpapproverDataAccess
         _sql = sql;
     }
 
-    public async Task<LeavegrpapproverModel?> _01(LeavegrpapproverModel leavegrpapprover, string schema, string conn)
+    public async Task<LeavegrpapproverModel?> _01(LeavegrpapproverModel leavegrpapprover, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Leavegrpapprover 
+        string? sql = $@"Insert into {schema}.Leavegrpapprover 
                             (LeaveGrpId, ApproverId, ApproverLevel) values 
                             (@LeaveGrpId, @ApproverId, @ApproverLevel); 
                         SELECT * FROM {schema}.Leavegrpapprover WHERE ID = (SELECT @@IDENTITY);";
@@ -26,16 +26,16 @@ public class LeavegrpapproverDataAccess : ILeavegrpapproverDataAccess
     }
 
 
-    public async Task<LeavegrpapproverModel?> _02(int id, string schema, string conn)
+    public async Task<LeavegrpapproverModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, LeaveGrpId, ApproverId, ApproverLevel from {schema}.Leavegrpapprover where Id = @Id";
+        string? sql = $@"select  Id, LeaveGrpId, ApproverId, ApproverLevel from {schema}.Leavegrpapprover where Id = @Id";
         var data = await _sql.FetchData<LeavegrpapproverModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task<List<LeavegrpapproverModel?>?> _02s(string schema, string conn)
+    public async Task<List<LeavegrpapproverModel?>?> _02s(string? schema, string? conn)
     {
-        string sql = $@"select  l.Id, LeaveGrpId, ApproverId, ApproverLevel,  
+        string? sql = $@"select  l.Id, LeaveGrpId, ApproverId, ApproverLevel,  
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ',trim(e.EmpMidNm)) ApproverName 
                         from {schema}.Leavegrpapprover l 
                             left join {schema}.Empmas   e on e.Id = l.ApproverId 
@@ -45,9 +45,9 @@ public class LeavegrpapproverDataAccess : ILeavegrpapproverDataAccess
         return data;
     }
 
-    public async Task<List<LeavegrpapproverModel?>?> _02ByLeavegrpIdApproverLevel(int leavegrpid, int approverlevel, string schema, string conn)
+    public async Task<List<LeavegrpapproverModel?>?> _02ByLeavegrpIdApproverLevel(int? leavegrpid, int? approverlevel, string? schema, string? conn)
     {
-        string sql = $@"select  l.Id, LeaveGrpId, ApproverId, ApproverLevel,  
+        string? sql = $@"select  l.Id, LeaveGrpId, ApproverId, ApproverLevel,  
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ',trim(e.EmpMidNm)) ApproverName 
                         from {schema}.Leavegrpapprover l 
                             left join {schema}.Empmas   e on e.Id = l.ApproverId 
@@ -58,9 +58,9 @@ public class LeavegrpapproverDataAccess : ILeavegrpapproverDataAccess
         return data;
     }
     
-    public async Task<List<LeavegrpapproverModel?>?> _02ByEmpmasId(int empmasId, string schema, string conn)
+    public async Task<List<LeavegrpapproverModel?>?> _02ByEmpmasId(int? empmasId, string? schema, string? conn)
     {
-        string sql = $@"select  l.Id, LeaveGrpId, ApproverId, ApproverLevel,  
+        string? sql = $@"select  l.Id, LeaveGrpId, ApproverId, ApproverLevel,  
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ',trim(e.EmpMidNm)) ApproverName 
                         from {schema}.Leavegrpapprover l 
                             left join {schema}.Empmas   e on e.Id = l.ApproverId 
@@ -74,9 +74,9 @@ public class LeavegrpapproverDataAccess : ILeavegrpapproverDataAccess
     }
 
 
-    public async Task<LeavegrpapproverModel?> _03(int id, LeavegrpapproverModel leavegrpapprover, string schema, string conn)
+    public async Task<LeavegrpapproverModel?> _03(int? id, LeavegrpapproverModel leavegrpapprover, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Leavegrpapprover set 
+        string? sql = $@"Update {schema}.Leavegrpapprover set 
                                 LeaveGrpId      = @LeaveGrpId, 
                                 ApproverId      = @ApproverId,  
                                 ApproverLevel   = @ApproverLevel where Id = @Id;";
@@ -87,9 +87,9 @@ public class LeavegrpapproverDataAccess : ILeavegrpapproverDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<LeavegrpapproverModel?> _04(int id, string schema, string conn)
+    public async Task<LeavegrpapproverModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Leavegrpapprover where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Leavegrpapprover where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Leavegrpapprover x where x.Id = @Id ;";

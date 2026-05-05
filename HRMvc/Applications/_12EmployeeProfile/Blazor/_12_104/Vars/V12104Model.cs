@@ -4,32 +4,32 @@ namespace HRMvc.Applications._12EmployeeProfile.Blazor._12_104
 {
     public class V12104Model
     {
-        public string Action    = string.Empty;
+        public string? Action    = string.Empty;
 
         public List<int>        Years   = new();
         public List<MonthItem>  Months  = new();
         public List<string>     Weeks   = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-        public int SelectedMonth   = DateTime.Today.Month;
-        public int SelectedYear    = DateTime.Today.Year;
+        public int? SelectedMonth   = DateTime.Today.Month;
+        public int? SelectedYear    = DateTime.Today.Year;
 
         public List<AttDayDetail>           Calendar        = new();
         public AttDayDetail                 DayDetail       = new();
         public List<AttdutytypeModel>       AttyDutyTypes   = new();
 
 
-        public int PresentCount = 0;
-        public int LateCount = 0;
-        public int UnderTimeCount = 0;
-        public int AbsentCount = 0;
-        public int RestDayCount = 0;
-        public int DaysCount = 0;
+        public int? PresentCount = 0;
+        public int? LateCount = 0;
+        public int? UnderTimeCount = 0;
+        public int? AbsentCount = 0;
+        public int? RestDayCount = 0;
+        public int? DaysCount = 0;
     }
 
     public class MonthItem
     {
-        public int Value    { get; set; }
-        public string Name  { get; set; } = "";
+        public int? Value    { get; set; }
+        public string? Name  { get; set; } = "";
     }
 
 
@@ -72,7 +72,7 @@ namespace HRMvc.Applications._12EmployeeProfile.Blazor._12_104
 
         public DateTime?    ActualTimeIn       { get; set; } 
         public DateTime?    ActualTimeOut      { get; set; }
-        public string       DutyTypeCode       { get; set; } = string.Empty;
+        public string?       DutyTypeCode       { get; set; } = string.Empty;
         public int?          Duration           { get; set; } = 0;
         public TimeSpan?     TotalWorkedHrs     { get; set; } = TimeSpan.Zero;
         public List<Attpunches1Model?>   Logs         { get; set; } = new();

@@ -10,9 +10,9 @@ namespace HRMvc.Applications.Vars;
 public class V00_RepVars
 {
     public bool                         Isloaded                { get; set; } = false; 
-    public int                          RefreshToken            { get; set; } = 0;
-    public string                       SelectedFormat          { get; set; } = "PDF";
-    public string                       RelativePath            { get; set; } = "Reports/_03Payroll/mSample.trdp";
+    public int?                          RefreshToken            { get; set; } = 0;
+    public string?                       SelectedFormat          { get; set; } = "PDF";
+    public string?                       RelativePath            { get; set; } = "Reports/_03Payroll/mSample.trdp";
     public IEnumerable<object>          ReportData              { get; set; } = [];
 
     public Dictionary<string, object>   ReportParams            { get; set; } = new()
@@ -25,23 +25,23 @@ public class V00_RepVars
 
 
     //Newly Added ------------------------------------------------
-    public string                       Action                  { get; set; } = string.Empty;
-    public int                          SelectedFilter          { get; set; } = 0;
+    public string?                       Action                  { get; set; } = string.Empty;
+    public int?                          SelectedFilter          { get; set; } = 0;
     public List<DataFilterModel>        DataFilters             { get; set; } = [];
     public class DataFilterModel
     {
-        public int      Code { get; set; } = 0;
+        public int?      Code { get; set; } = 0;
         public string?  Name { get; set; } = "";
     }
 
-    public string SortFld { get; set; } = "";
-    public string SortOdr { get; set; } = "asc";
+    public string? SortFld { get; set; } = "";
+    public string? SortOdr { get; set; } = "asc";
     //-----------------------------------------------------------
 
     //--------------------------------------------------------------------------------------
-    public int                  Year            { get; set; } = DateTime.Now.Year;
-    public string               Month           { get; set; } = DateTime.Now.ToString("MM");
-    public string               Period          { get; set; } = DateTime.Now.Day <= 15 ? "01" : "02";
+    public int?                  Year            { get; set; } = DateTime.Now.Year;
+    public string?               Month           { get; set; } = DateTime.Now.ToString("MM");
+    public string?               Period          { get; set; } = DateTime.Now.Day <= 15 ? "01" : "02";
     public DateTime?            DStart          { get; set; } = DateTime.Now;
     public DateTime?            DEnd            { get; set; } = DateTime.Now;
 
@@ -53,16 +53,16 @@ public class V00_RepVars
     public List<PeriodModel>    Periods         { get; set; } = GetDefaultPeriods();
 
     //---------------------------------------------------------------------------------------
-    public string               ClNumber        { get; set; } = "";
+    public string?               ClNumber        { get; set; } = "";
     public List<OClientModel>   Clients         { get; set; } = [];
-    public string               Empstat_        { get; set; } = "";
+    public string?               Empstat_        { get; set; } = "";
     public List<OEmpstatModel?>  Empstats       { get; set; } = [];
 
 
     //--- Modal Details ----------------------------------------------
     public bool                 ShowModal       { get; set; } = false;  
     public bool                 ShowReport      { get; set; } = false;  
-    public string               MCaption        { get; set; } = "-";  
+    public string?               MCaption        { get; set; } = "-";  
 
     
 

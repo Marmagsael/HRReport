@@ -15,16 +15,16 @@ public class PissettingsDataAccess : IPissettingsDataAccess
     }
 
 
-    public async Task<PissettingsModel?> _02(string schema, string conn)
+    public async Task<PissettingsModel?> _02(string? schema, string? conn)
     {
-        string sql = $@"select  * from {schema}.Pissettings limit 1 ";
+        string? sql = $@"select  * from {schema}.Pissettings limit 1 ";
         var data = await _sql.FetchData<PissettingsModel?, dynamic>(sql, new { }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task<PissettingsModel?> _03(PissettingsModel pissettings, string schema, string conn)
+    public async Task<PissettingsModel?> _03(PissettingsModel pissettings, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Pissettingstrail (
+        string? sql = $@"Insert into {schema}.Pissettingstrail (
                                 LeaveYrImplementation, LeaveAnniversaryStart, LeaveAnniversaryEnd, UserId, Changed) 
                         select  LeaveYrImplementation, LeaveAnniversaryStart, LeaveAnniversaryEnd, @UserId, now() 
                             from {schema}.Pissettings ";

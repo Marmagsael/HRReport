@@ -15,7 +15,7 @@ public static class CoaReportProvider
     }
 
     // === USED BY TRDP ObjectDataSource ===
-    public static List<CoaModel> GetAll(string schema, string conn)
+    public static List<CoaModel> GetAll(string? schema, string? conn)
     {
         using var scope = _scopeFactory!.CreateScope();
         var da = scope.ServiceProvider.GetRequiredService<CoaDataAccess>();
@@ -28,7 +28,7 @@ public static class CoaReportProvider
             .ToList();
     }
 
-    public static List<CoaModel> GetByType(string acctType, string schema, string conn)
+    public static List<CoaModel> GetByType(string? acctType, string? schema, string? conn)
     {
         using var scope = _scopeFactory!.CreateScope();
         var da = scope.ServiceProvider.GetRequiredService<CoaDataAccess>();

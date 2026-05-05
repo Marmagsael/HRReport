@@ -14,33 +14,33 @@ public class EmploymenttypeDataAccess : IEmploymenttypeDataAccess
         _sql = sql;
     }
 
-    public async Task<EmploymenttypeModel?> _01(EmploymenttypeModel employmenttype, string schema, string conn)
+    public async Task<EmploymenttypeModel?> _01(EmploymenttypeModel employmenttype, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Employmenttype (Name, IsVisible, ShowDeploymentEnd, CanbeDeleted) values (@Name, @IsVisible, @ShowDeploymentEnd, @CanbeDeleted); 
+        string? sql = $@"Insert into {schema}.Employmenttype (Name, IsVisible, ShowDeploymentEnd, CanbeDeleted) values (@Name, @IsVisible, @ShowDeploymentEnd, @CanbeDeleted); 
                         SELECT * FROM {schema}.Employmenttype WHERE ID = (SELECT @@IDENTITY)";
         var res = await _sql.FetchData<EmploymenttypeModel?, dynamic>(sql, employmenttype, conn);
         return res.FirstOrDefault();
     }
 
 
-    public async Task<EmploymenttypeModel?> _02(int id, string schema, string conn)
+    public async Task<EmploymenttypeModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select Id, Name, IsVisible, ShowDeploymentEnd, CanbeDeleted from {schema}.Employmenttype where Id = @Id";
+        string? sql = $@"select Id, Name, IsVisible, ShowDeploymentEnd, CanbeDeleted from {schema}.Employmenttype where Id = @Id";
         var data = await _sql.FetchData<EmploymenttypeModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task<List<EmploymenttypeModel?>?> _02(string schema, string conn)
+    public async Task<List<EmploymenttypeModel?>?> _02(string? schema, string? conn)
     {
-        string sql = $@"select Id, Name, IsVisible, ShowDeploymentEnd, CanbeDeleted from {schema}.Employmenttype ";
+        string? sql = $@"select Id, Name, IsVisible, ShowDeploymentEnd, CanbeDeleted from {schema}.Employmenttype ";
         var data = await _sql.FetchData<EmploymenttypeModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
 
-    public async Task<EmploymenttypeModel?> _03(int id, EmploymenttypeModel employmenttype, string schema, string conn)
+    public async Task<EmploymenttypeModel?> _03(int? id, EmploymenttypeModel employmenttype, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Employmenttype set Name = @Name , IsVisible = @IsVisible, ShowDeploymentEnd = @ShowDeploymentEnd, CanbeDeleted = @CanbeDeleted where Id = @Id;";
+        string? sql = $@"Update {schema}.Employmenttype set Name = @Name , IsVisible = @IsVisible, ShowDeploymentEnd = @ShowDeploymentEnd, CanbeDeleted = @CanbeDeleted where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, employmenttype, conn);
 
         sql = $@" select  * from {schema}.Employmenttype x where x.Id = @Id ;";
@@ -48,9 +48,9 @@ public class EmploymenttypeDataAccess : IEmploymenttypeDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<EmploymenttypeModel?> _04(int id, string schema, string conn)
+    public async Task<EmploymenttypeModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Employmenttype where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Employmenttype where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Employmenttype x where x.Id = @Id ;";

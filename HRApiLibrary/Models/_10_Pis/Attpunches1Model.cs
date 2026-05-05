@@ -2,8 +2,8 @@
 
 public class Attpunches1Model
 {
-    public int?          Dayno               { get; set; } = 0;
-    public int?          Empmasid            { get; set; } = 0;
+    public int?          DayNo               { get; set; } = 0;
+    public int?          EmpmasId            { get; set; } = 0;
     public DateTime?     PunchInDate         { get; set; } 
     public int?          SchedDuration       { get; set; } = 0;
     public int?          PunchT              { get; set; } = 0;
@@ -25,6 +25,12 @@ public class Attpunches1Model
     public int?          UserIdOut           { get; set; } = 0;
 
     public string?      Status              { get; set; } = string.Empty;
+
+    //--- Extra Fields -----------------//
+	public int? 			TotalHrs      	 	{ get; set; } = 0;
+	public int? 			Hour      	 		{ get; set; } = 0;
+	public int? 			Minute      	 	{ get; set; } = 0;
+	public string? 		Remarks 	 		{ get; set; } = string.Empty;
 
     //-----------------------------------------------------------
     public string?      DutyTypeCode         { get; set; } = string.Empty;

@@ -8,14 +8,14 @@ namespace HRMvc.StartupConfig;
 // ✅ Minimal Resolver: Only loads TRDP file from /Reports folder
 public class CustomReportSourceResolver : IReportSourceResolver
 {
-    private readonly string _reportsPath;
+    private readonly string? _reportsPath;
 
-    public CustomReportSourceResolver(string reportsPath)
+    public CustomReportSourceResolver(string? reportsPath)
     {
         _reportsPath = reportsPath;
     }
 
-    public ReportSource Resolve(string reportId, OperationOrigin operationOrigin, IDictionary<string, object> currentParameters)
+    public ReportSource Resolve(string? reportId, OperationOrigin operationOrigin, IDictionary<string, object> currentParameters)
     {
         var reportFile = Path.Combine(_reportsPath, reportId);
 

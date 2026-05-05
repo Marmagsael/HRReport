@@ -2,7 +2,7 @@ namespace HRApiLibrary.Models._10_Pis;
 
 public class AtttemplateModel
 {
-    public int?             Empmasid                    { get; set; } = 0;
+    public int?             EmpmasId                    { get; set; } = 0;
     public int?             AttendancetypeId            { get; set; } = 1;
     public int?             D1_in                       { get; set; } = 0;
     public int?             D1_hrslength                { get; set; } = 0;

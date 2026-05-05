@@ -34,7 +34,7 @@ public class L12
         return tbltrans;
     }
     
-    public async Task<List<GTbltranModel?>?>  _02Trans_ByEmpnumber(string trn, string empnumber, UserClaimsModel uc)
+    public async Task<List<GTbltranModel?>?>  _02Trans_ByEmpnumber(string? trn, string? empnumber, UserClaimsModel uc)
     {
         var tbltrans = await _otbltran._02ByTrnAndEmpnumber(trn, empnumber, uc.OpayDb, uc.Conn);
         return tbltrans;

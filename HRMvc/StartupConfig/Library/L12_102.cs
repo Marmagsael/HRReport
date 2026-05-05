@@ -74,7 +74,7 @@ public class L12_102
             if(v12_102.Attpunches1_Current.Status == "L")   
             {
                 v12_102.Attpunches1_Current = new();
-                v12_102.Attpunches1_Current.Empmasid    = empmasid;
+                v12_102.Attpunches1_Current.EmpmasId    = empmasid;
                 v12_102.Attpunches1_Current.PunchInDate = DateTime.Now.Date;
                 v12_102.Attpunches1_Current.Status = "-";
             }

@@ -3,7 +3,7 @@
 public class DutyrenderedModel
 {
     public string?    AcctNumber       {get; set; } 
-    public int        IsLock           {get; set; } 
+    public int?        IsLock           {get; set; } 
     //-----------------------------------------------
     public string?    AcctName         {get; set; } 
 

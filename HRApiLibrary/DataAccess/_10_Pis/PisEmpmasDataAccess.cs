@@ -17,17 +17,17 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
     }
 
 
-    public async Task<PisEmpmasModel?> _02(int id, string schema, string conn)
+    public async Task<PisEmpmasModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  e.* from {schema}.Empmas e where Id = @Id";
+        string? sql = $@"select  e.* from {schema}.Empmas e where Id = @Id";
         var data = await _sql.FetchData<PisEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<List<PisEmpmasModel?>?> _02(string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02(string? schema, string? conn)
     {
-        string sql = $@"select  concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*,  s.Name EmpStat_,  
+        string? sql = $@"select  concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*,  s.Name EmpStat_,  
                                 d.IsOnDeviation, d.IdDeviation, d.IsOnDiciplinary, d.IsOnInvestigation
                         from {schema}.Empmas e
                         left join {schema}.Deprec          d      on d.EmpmasId    = e.Id
@@ -37,9 +37,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
         return data;
     }
 
-    public async Task<PisEmpmasModel?> _02ByEmpnumber(string empnumber, string schema, string conn)
+    public async Task<PisEmpmasModel?> _02ByEmpnumber(string? empnumber, string? schema, string? conn)
     {
-        string sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*, 
+        string? sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*, 
                         s.Name AS EmpStat_, s.Id AS EmpStatId,
                         d.IsOnDeviation, d.IdDeviation, d.IsOnDiciplinary, d.IsOnInvestigation, d.DepDate DeploymentDate,
                         rd.Name AS DeploymentName
@@ -53,9 +53,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
         return data.FirstOrDefault();
     }
 
-    public async Task<List<PisEmpmasModel?>?> _02EmpByStatus(List<int> empstatusId, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02EmpByStatus(List<int> empstatusId, string? schema, string? conn)
     {
-        string sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*    
+        string? sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*    
                         FROM {schema}.Empmas e    
                         LEFT JOIN {schema}.Deprec d ON d.EmpmasId = e.Id
                         WHERE d.EmpStatusId IN @Ids
@@ -65,9 +65,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
     }
     
     // Detailed 
-    public async Task<List<PisEmpmasModel?>?> _02ByStatus(List<int> empstatusId, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02ByStatus(List<int> empstatusId, string? schema, string? conn)
     {
-        string sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*, 
+        string? sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*, 
                         s.Name AS EmpStat_, s.Id AS EmpStatId,
                         d.IsOnDeviation, d.IdDeviation, d.IsOnDiciplinary, d.IsOnInvestigation, d.DepDate DeploymentDate,
                         rd.Name AS DeploymentName
@@ -82,9 +82,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
         return data;
     }
 
-    public async Task<PisEmpmasModel?> _02BySystemId(int systemId, string schema, string conn)
+    public async Task<PisEmpmasModel?> _02BySystemId(int? systemId, string? schema, string? conn)
     {
-        string sql = $@"select  concat(trim(e.EmpLastNm),', ' ,trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
+        string? sql = $@"select  concat(trim(e.EmpLastNm),', ' ,trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
                         from {schema}.Empmas e
                         where SystemId = @SystemId 
                         order by EmpLastNm, EmpFirstNm, EmpMidNm";
@@ -92,9 +92,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
         return data.FirstOrDefault();
     }
 
-    public async Task<List<PisEmpmasModel?>?> _02BySystemIds(int systemId, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02BySystemIds(int? systemId, string? schema, string? conn)
     {
-        string sql = $@"select  concat(trim(e.EmpLastNm),', ' ,trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
+        string? sql = $@"select  concat(trim(e.EmpLastNm),', ' ,trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
                         from {schema}.Empmas e
                         where SystemId = @SystemId 
                         order by EmpLastNm, EmpFirstNm, EmpMidNm";
@@ -103,9 +103,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
     }
     
 
-    public async Task<List<PisEmpmasModel?>?> _02BySystemIdLst(int systemId, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02BySystemIdLst(int? systemId, string? schema, string? conn)
     {
-        string sql = $@"select  concat(trim(e.EmpLastNm), ', ', trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
+        string? sql = $@"select  concat(trim(e.EmpLastNm), ', ', trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
                         from {schema}.Empmas e
                         where SystemId = @SystemId 
                         order by EmpLastNm, EmpFirstNm, EmpMidNm";
@@ -113,9 +113,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
         return data;
     }
     
-    public async Task<List<PisEmpmasModel?>?> _02ByEmpnumbers(string empnumber, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02ByEmpnumbers(string? empnumber, string? schema, string? conn)
     {
-        string sql = $@"select  concat(trim(e.EmpLastNm), ', ', trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
+        string? sql = $@"select  concat(trim(e.EmpLastNm), ', ', trim(e.EmpFirstNm),' ' , trim(e.EmpMidNm)) Fullname, e.*  
                         from {schema}.Empmas e
                         where Empnumber = @Empnumber 
                         order by EmpLastNm, EmpFirstNm, EmpMidNm";
@@ -124,9 +124,9 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
     }
 
 
-    public async Task<List<PisEmpmasModel?>?> _02ByEmpIds(List<int> ids, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02ByEmpIds(List<int> ids, string? schema, string? conn)
     {
-        string sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*, 
+        string? sql = $@"SELECT CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', TRIM(e.EmpMidNm)) AS Fullname, e.*, 
                         s.Name AS EmpStat_, s.Id AS EmpStatId,
                         d.IsOnDeviation, d.IdDeviation, d.IsOnDiciplinary, d.IsOnInvestigation, d.DepDate DeploymentDate,
                         rd.Name AS DeploymentName
@@ -140,10 +140,10 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
         return data;
     }
 
-    public async Task<List<PisEmpmasModel?>?> _02FilterByName(string name, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02FilterByName(string? name, string? schema, string? conn)
     {
-        string vname = "%" + name.Trim() + "%";
-        string sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, e.*  
+        string? vname = "%" + name.Trim() + "%";
+        string? sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, e.*  
                         from {schema}.Empmas e
                         where e.EmplastNm like @Vname or e.EmpfirstNm like @Vname or e.Empmidnm like @Vname
                         order by EmpLastNm, EmpFirstNm, EmpMidNm";
@@ -151,10 +151,10 @@ public class PisEmpmasDataAccess : IPisEmpmasDataAccess
         return data;
     }
 
-    public async Task<List<PisEmpmasModel?>?> _02FilterByName(string name, int approverlvl, string schema, string conn)
+    public async Task<List<PisEmpmasModel?>?> _02FilterByName(string? name, int? approverlvl, string? schema, string? conn)
     {
-        string vname = "%" + name.Trim() + "%";
-        string sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, e.*  
+        string? vname = "%" + name.Trim() + "%";
+        string? sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, e.*  
                         from {schema}.Empmas e
                         where (e.EmplastNm like @Vname or e.EmpfirstNm like @Vname) and 
                                 Id not in (select EmpmasId from {schema}.LeaveDefaultApprover where Lvl = @Lvl )

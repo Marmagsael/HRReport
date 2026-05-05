@@ -24,6 +24,6 @@ public class V12_102OT
     public List<AtttemplateModel>   Atttemplates        { get; set; } = []; 
     // public List<AttreqtypeModel>    Attreqtypes         { get; set; } = []; 
 
-    public string                   Action              { get; set; } = string.Empty;
+    public string?                   Action              { get; set; } = string.Empty;
 
 }
