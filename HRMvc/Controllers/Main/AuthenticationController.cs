@@ -411,7 +411,7 @@ public class AuthenticationController : Controller
                 UserId = userId,
                 EmpNumber           = HttpContext.Session.GetString("EmpNumber") ?? "00000",
                 DateRequested       = DateTime.Now,
-                Effectivity         = DateTime.Now,
+                Effectivity         = new DateTime(1901, 01, 01),
                 Remarks             = "System Generated",
                 End                 = new DateTime(9999, 12, 31, 23, 59, 59),
                 Status              = "A", 
