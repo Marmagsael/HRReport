@@ -7,6 +7,7 @@ public class AtttemplatereqhdrModel
 	public  string?         EmpNumber               { get; set; } = string.Empty; 
 	public  DateTime?       DateRequested           { get; set; } = DateTime.Now; 
 	public  DateTime?       Effectivity             { get; set; } 
+	public  DateTime?       End                     { get; set; } 
 	public  string?         Remarks                 { get; set; } = string.Empty; 
 	public  string?         ApprRemarks             { get; set; } = string.Empty; 
 	public  string?         Status                  { get; set; } = "N"; 

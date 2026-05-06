@@ -13,9 +13,9 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
         _sql = sql;
     }
 
-    public async Task _01(LeaveapplicationdtlModel leaveapplicationdtl, string schema, string conn)
+    public async Task _01(LeaveapplicationdtlModel leaveapplicationdtl, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Leaveapplicationdtl 
+        string? sql = $@"Insert into {schema}.Leaveapplicationdtl 
                             (LeaveApplicationId,  EmpmasId,  EmpNumber,  Start,  DutyType,  TimeStart,  TimeDuration,  End,  CreditedHrs,  IsPayable) values 
                             (@LeaveApplicationId, @EmpmasId, @EmpNumber, @Start, @DutyType, @TimeStart, @TimeDuration, @End, @CreditedHrs, @IsPayable) 
                             on duplicate key update 
@@ -25,17 +25,17 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
     }
 
 
-    public async Task<LeaveapplicationdtlModel?> _02(int id, string schema, string conn)
+    public async Task<LeaveapplicationdtlModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, LeaveApplicationId, EmpmasId, EmpNumber, Start, DutyType, TimeStart, TimeDuration, End, CreditedHrs, IsPayable 
+        string? sql = $@"select  Id, LeaveApplicationId, EmpmasId, EmpNumber, Start, DutyType, TimeStart, TimeDuration, End, CreditedHrs, IsPayable 
                                 from {schema}.Leaveapplicationdtl where Id = @Id";
         var data = await _sql.FetchData<LeaveapplicationdtlModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task<List<LeaveapplicationdtlModel?>?> _02ByLvApplicationId(int leaveApplicationId, string schema, string conn)
+    public async Task<List<LeaveapplicationdtlModel?>?> _02ByLvApplicationId(int? leaveApplicationId, string? schema, string? conn)
     {
-        string sql = $@"select  Id, LeaveApplicationId, EmpmasId, EmpNumber, Start, DutyType, TimeStart, TimeDuration, End, CreditedHrs, IsPayable 
+        string? sql = $@"select  *  
                         from {schema}.Leaveapplicationdtl 
                         where LeaveApplicationId = @LeaveApplicationId 
                         order by Start ";
@@ -45,9 +45,9 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
 
 
 
-    public async Task<LeaveapplicationdtlModel?> _03(int id, LeaveapplicationdtlModel leaveapplicationdtl, string schema, string conn)
+    public async Task<LeaveapplicationdtlModel?> _03(int? id, LeaveapplicationdtlModel leaveapplicationdtl, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Leaveapplicationdtl set 
+        string? sql = $@"Update {schema}.Leaveapplicationdtl set 
                             LeaveApplicationId  = @LeaveApplicationId, 
                             EmpmasId            = @EmpmasId, 
                             EmpNumber           = @EmpNumber, 
@@ -66,9 +66,9 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<LeaveapplicationdtlModel?> _04(int id, string schema, string conn)
+    public async Task<LeaveapplicationdtlModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Leaveapplicationdtl where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Leaveapplicationdtl where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Leaveapplicationdtl x where x.Id = @Id ;";
@@ -76,9 +76,9 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task _04OutRange(int lvaId, DateTime dstart, DateTime dEnd, string schema, string conn)
+    public async Task _04OutRange(int? lvaId, DateTime dstart, DateTime dEnd, string? schema, string? conn)
     {
-        string sql = $@"DELETE FROM {schema}.Leaveapplicationdtl
+        string? sql = $@"DELETE FROM {schema}.Leaveapplicationdtl
                         WHERE leaveApplicationId = @LvaId and  (Start < @Start
                               OR Start >= DATE_ADD(@End, INTERVAL 1 DAY));";
         await _sql.ExecuteCmd<dynamic>(sql, new { LvaId = lvaId, Start = dstart.Date, End = dEnd.Date }, conn);
@@ -91,10 +91,10 @@ public class LeaveapplicationdtlDataAccess : ILeaveapplicationdtlDataAccess
 
 public interface ILeaveapplicationdtlDataAccess
 {
-    Task                                    _01(LeaveapplicationdtlModel leaveapplicationdtl, string schema, string conn);
-    Task<LeaveapplicationdtlModel?>         _02(int id, string schema, string conn);
-    Task<List<LeaveapplicationdtlModel?>?>  _02ByLvApplicationId(int leaveApplicationId, string schema, string conn);
-    Task<LeaveapplicationdtlModel?>         _03(int id, LeaveapplicationdtlModel leaveapplicationdtl, string schema, string conn);
-    Task<LeaveapplicationdtlModel?>         _04(int id, string schema, string conn);
-    Task                                    _04OutRange(int lvaId, DateTime dstart, DateTime dEnd, string schema, string conn); 
+    Task                                    _01(LeaveapplicationdtlModel leaveapplicationdtl, string? schema, string? conn);
+    Task<LeaveapplicationdtlModel?>         _02(int? id, string? schema, string? conn);
+    Task<List<LeaveapplicationdtlModel?>?>  _02ByLvApplicationId(int? leaveApplicationId, string? schema, string? conn);
+    Task<LeaveapplicationdtlModel?>         _03(int? id, LeaveapplicationdtlModel leaveapplicationdtl, string? schema, string? conn);
+    Task<LeaveapplicationdtlModel?>         _04(int? id, string? schema, string? conn);
+    Task                                    _04OutRange(int? lvaId, DateTime dstart, DateTime dEnd, string? schema, string? conn); 
 }

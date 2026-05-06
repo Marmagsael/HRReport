@@ -65,7 +65,7 @@ namespace HRMvc.Controllers
 
         // 🔥 Clean numeric route
         [HttpGet("{reportCode:int}")]
-        public IActionResult Report(int reportCode)
+        public IActionResult Report(int? reportCode)
         {
             var key = reportCode.ToString();
 

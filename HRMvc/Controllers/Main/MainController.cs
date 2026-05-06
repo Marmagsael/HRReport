@@ -38,7 +38,7 @@ public class MainController : Controller
 
 
     [HttpGet("00home")]
-    public IActionResult _00(int action)
+    public IActionResult _00(int? action)
     {
         return View("~/Views/Main/_00Home/Index.cshtml");
     }
@@ -49,7 +49,7 @@ public class MainController : Controller
     //*****************************************
     [HttpGet("main/my-profile/my-201-records")]
     [HttpGet("main/my-profile/my-201-records/{action}")]
-    public IActionResult _111My201Records(int action)
+    public IActionResult _111My201Records(int? action)
     {
         return View("~/Views/Main/_01MyProfile/_111My201Records.cshtml");
     }
@@ -448,7 +448,7 @@ public class MainController : Controller
     // -- 05 Data Call ------------------------
 
     [HttpGet("mainpis/empmas/{id}")]
-    public async Task<EmpmasModel?> _02Empmas(int id)
+    public async Task<EmpmasModel?> _02Empmas(int? id)
     {
         IEnumerable<Claim?> claims = User.Claims;
         UserClaimsModel userClaim = _mainDA._02UserClaimsContent(claims); 
@@ -458,7 +458,7 @@ public class MainController : Controller
     }
 
     [HttpGet("mainpis/my201records/{id}")]
-    public async Task<EmpmasRecordModel?> _02my201records(int id)
+    public async Task<EmpmasRecordModel?> _02my201records(int? id)
     {
         EmpmasRecordModel empmasRecord = new(); 
         IEnumerable<Claim?> claims = User.Claims;

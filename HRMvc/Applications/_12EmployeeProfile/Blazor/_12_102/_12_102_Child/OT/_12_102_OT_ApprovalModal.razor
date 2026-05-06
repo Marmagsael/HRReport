@@ -67,15 +67,15 @@
                 </div>
 
                 @{
-                    int ctr = 0;
+                    int? ctr = 0;
                 }
                 @foreach (OtreqdtlModel r in V.Otreqdtls)
                 {
                     ctr++;
-                    string css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
+                    string? css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
                     var tstart = r?.PunchIn; 
                     var tend = @attP1(r.PunchIn).PunchOutDate; 
-                    TimeSpan rendered = (tend ?? DateTime.MinValue) - (tstart ?? DateTime.MinValue);
+                    TimeSpan? rendered = (tend ?? DateTime.MinValue) - (tstart ?? DateTime.MinValue);
 
 
 
@@ -85,9 +85,9 @@
                         <div class="w-100p p-1">@attP1(r.PunchIn).PunchOutDate?.ToString("hh:mm tt")</div>
                         <div class="w-100p p-1 text-center">@dutyType(@r.DutyTypeId).Code</div>
                         <div class="w-100p p-1 text-center">
-                            @(rendered.Days > 0 
-                                ? $"{rendered.Days}d {rendered.Hours:D2}h {rendered.Minutes:D2}m "
-                                : $"{rendered.Hours:D2}h {rendered.Minutes:D2}m")
+                            @(rendered?.Days > 0 
+                                ? $"{rendered?.Days}d {rendered?.Hours:D2}h {rendered?.Minutes:D2}m "
+                                : $"{rendered?.Hours:D2}h {rendered?.Minutes:D2}m")
                         </div>
                         <div class="w-100p p-1 text-center fw-bold small ">@r.TotHrs.ToString("N2")</div>
                     </div>
@@ -111,19 +111,19 @@
     bool isDenyRequest = false;
     bool isPartiallyApprove = false;
 
-    string denycss => (isDenyRequest || isPartiallyApprove) ? " disabled-div-50 " : "";
-    string divHdrcss => " d-flex bordered-bottom ";
-    string lblcss => " w-150p bg mb-a-greenlight p-2  ";
+    string? denycss => (isDenyRequest || isPartiallyApprove) ? " disabled-div-50 " : "";
+    string? divHdrcss => " d-flex bordered-bottom ";
+    string? lblcss => " w-150p bg mb-a-greenlight p-2  ";
 
     Attpunches1Model attP1(DateTime tin) => V.Attpunches1s.FirstOrDefault(a=>a.PunchInDate==tin)??new();  
-    OtdutytypeModel  dutyType(int dutyTypeId) => V.Otdutytypes.FirstOrDefault(dt => dt.Id == dutyTypeId)??new(); 
+    OtdutytypeModel  dutyType(int? dutyTypeId) => V.Otdutytypes.FirstOrDefault(dt => dt.Id == dutyTypeId)??new(); 
 
 
 
     async Task Approve()
     {
-        const string title = "Approve Request?";
-        const string icon = "question";
+        const string? title = "Approve Request?";
+        const string? icon = "question";
         var msg = $@"<div><span class='text-primary'> {V.Attreqhdr.RequestorName}  </span> </div> ";
         
         var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);

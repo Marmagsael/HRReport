@@ -13,14 +13,14 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
         _sql = sql;
     }
 
-    public async Task<List<GTbltrandtlModel>> _02ByTrnAndEmpnumber(string trn, string empnumber, string schema, string conn)
+    public async Task<List<GTbltrandtlModel>> _02ByTrnAndEmpnumber(string? trn, string? empnumber, string? schema, string? conn)
     {
-        string sql = $@"select * from {schema}.Tbltrandtl where left(Trn,6) = left(@Trn,6) and EmpNumber = @EmpNumber";
+        string? sql = $@"select * from {schema}.Tbltrandtl where left(Trn,6) = left(@Trn,6) and EmpNumber = @EmpNumber";
         var data = await _sql.FetchData<GTbltrandtlModel, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         return data ?? [];
     }
 
-    public async Task<EP_SSS12102Model> _02SSSRemittance(string empnumber, string acctnumber, string paydb, string conn)
+    public async Task<EP_SSS12102Model> _02SSSRemittance(string? empnumber, string? acctnumber, string? paydb, string? conn)
     {
         EP_SSS12102Model data = new()
         {
@@ -31,7 +31,7 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
         return data;
     }
     
-    public async Task<EP_Phic12102Model> _02PHICRemittance(string empnumber, string acctnumber, string paydb, string conn)
+    public async Task<EP_Phic12102Model> _02PHICRemittance(string? empnumber, string? acctnumber, string? paydb, string? conn)
     {
         EP_Phic12102Model data = new()
         {
@@ -42,7 +42,7 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
         return data;
     }
     
-    public async Task<EP_Pagibig12102Model> _02PAGIBIGRemittance(string empnumber, string acctnumber, string paydb, string conn)
+    public async Task<EP_Pagibig12102Model> _02PAGIBIGRemittance(string? empnumber, string? acctnumber, string? paydb, string? conn)
     {
         EP_Pagibig12102Model data = new()
         {
@@ -56,9 +56,9 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
     // ========================================================================
     // --- Private Functions --------------------------------------------------
     // ========================================================================
-    private async Task<List<GTbltranModel>> _02GTbltran_ByEmpNumber_ByAcctNumber(string empnumber, string acctnumber, string paydb, string conn)
+    private async Task<List<GTbltranModel>> _02GTbltran_ByEmpNumber_ByAcctNumber(string? empnumber, string? acctnumber, string? paydb, string? conn)
     {
-        string sql = $@" select t.Trn, t.AcctNumber, t.EmpNumber, t.Amount, 
+        string? sql = $@" select t.Trn, t.AcctNumber, t.EmpNumber, t.Amount, 
                                 IF(t.dTimeStamp IN ('0000-00-00','0000-00-00 00:00:00'), NULL, t.dTimeStamp) AS DTimeStamp,
                                 t.Source, t.Postedby, c.AcctName 
                          from {paydb}.Tbltran t 
@@ -69,9 +69,9 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
         return data ?? [];
     }
 
-    private async Task<List<T>> _02EP_ByEmpNumber_ByAcctNumber<T>(string empnumber, string tblName, string paydb, string conn)
+    private async Task<List<T>> _02EP_ByEmpNumber_ByAcctNumber<T>(string? empnumber, string? tblName, string? paydb, string? conn)
     {
-        string sql = $@" SELECT t.* FROM {paydb}.{tblName} t WHERE t.EmpNumber = @EmpNumber ORDER BY Trn";
+        string? sql = $@" SELECT t.* FROM {paydb}.{tblName} t WHERE t.EmpNumber = @EmpNumber ORDER BY Trn";
         var data = await _sql.FetchData<T, dynamic>(sql, new { EmpNumber = empnumber }, conn);
         return data ?? [];
     }
@@ -80,8 +80,8 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
 
 public interface IOEmpportalDataAccess
 {
-    Task<List<GTbltrandtlModel>>    _02ByTrnAndEmpnumber(string trn, string empnumber, string schema, string conn);
-    Task<EP_SSS12102Model>          _02SSSRemittance(string empnumber, string acctnumber, string paydb, string conn);
-    Task<EP_Phic12102Model>         _02PHICRemittance(string empnumber, string acctnumber, string paydb, string conn); 
-    Task<EP_Pagibig12102Model>      _02PAGIBIGRemittance(string empnumber, string acctnumber, string paydb, string conn); 
+    Task<List<GTbltrandtlModel>>    _02ByTrnAndEmpnumber(string? trn, string? empnumber, string? schema, string? conn);
+    Task<EP_SSS12102Model>          _02SSSRemittance(string? empnumber, string? acctnumber, string? paydb, string? conn);
+    Task<EP_Phic12102Model>         _02PHICRemittance(string? empnumber, string? acctnumber, string? paydb, string? conn); 
+    Task<EP_Pagibig12102Model>      _02PAGIBIGRemittance(string? empnumber, string? acctnumber, string? paydb, string? conn); 
 }

@@ -9,7 +9,7 @@ public class ReportDataAccess : IReportDataAccess
 
     public ReportDataAccess(I_90_001_MySqlDataAccess sql) {   _sql = sql; }
 
-    public async Task<List<R1254Model>> _02_R1254(string yr, string mo, string paydb, string pisdb, string conn)
+    public async Task<List<R1254Model>> _02_R1254(string? yr, string? mo, string? paydb, string? pisdb, string? conn)
     {
         var trn = yr[^2..] + mo.PadLeft(2,'0'); // YYMM
 
@@ -37,7 +37,7 @@ public class ReportDataAccess : IReportDataAccess
     }
 
 
-    public async Task<PayslipModel?> _02Payslip(string trn, string paydb, string pisdb, string conn)
+    public async Task<PayslipModel?> _02Payslip(string? trn, string? paydb, string? pisdb, string? conn)
     {
         var payslip = new PayslipModel(); 
         var sql = ""; 
@@ -75,7 +75,7 @@ public class ReportDataAccess : IReportDataAccess
                 var dCnt   = empDeductions?.Count ?? 0;  // <--- fixed
                 var maxCnt = Math.Max(eCnt, dCnt);       // clearer
 
-                for (int i = 0; i < maxCnt; i++)       // start at 0
+                for (int? i = 0; i < maxCnt; i++)       // start at 0
                 {
                     /* 1) ----- Initiliaze PayslipdtlQuery -------------------*/
                     PayslipdtlModel? pd = 
@@ -90,8 +90,8 @@ public class ReportDataAccess : IReportDataAccess
                         };
                     
                     // kunin ang item lang kung valid ang index; otherwise null
-                    var earning = (i < eCnt) ? empEarnings?[i] : null;
-                    var deduction = (i < dCnt) ? empDeductions?[i] : null;
+                    var earning = (i < eCnt) ? empEarnings?[i??0] : null;
+                    var deduction = (i < dCnt) ? empDeductions?[i??0] : null;
 
                     if (i < eCnt) //--- Earnings Account -----------------------
                     {
@@ -218,6 +218,6 @@ public class ReportDataAccess : IReportDataAccess
 
 public interface IReportDataAccess
 {
-    Task<PayslipModel?>     _02Payslip(string trn, string paySchema, string pisSchema, string conn); 
-    Task<List<R1254Model>>  _02_R1254(string yr, string mo, string paydb, string pisdb, string conn); 
+    Task<PayslipModel?>     _02Payslip(string? trn, string? paySchema, string? pisSchema, string? conn); 
+    Task<List<R1254Model>>  _02_R1254(string? yr, string? mo, string? paydb, string? pisdb, string? conn); 
 }

@@ -25,7 +25,7 @@
                 <div class="d-flex flx-column gap-2 card p-2 w-300p">
                     <div class="text-muted p-2 pe-4 border-bottom"><small>Employment Duration From Hiring Date</small></div>
 
-                    <RadzenRadioButtonList @bind-Value="v.SelectedMonthsAgo" TValue="int" class="w-100 py-2">
+                    <RadzenRadioButtonList @bind-Value="v.SelectedMonthsAgo" TValue="int?" class="w-100 py-2">
 
                         <Items>
                             <RadzenRadioButtonListItem Text="3 Months" Value="1" class="w-100 my-2" />
@@ -79,7 +79,7 @@
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
     V00_RepVars rv { get; set; } = new();
     V2106Model  v = new();
-    int customMonthsAgo = 0;
+    int? customMonthsAgo = 0;
 
 
     // Gets the latest selected employee statuses/clients every time it is called
@@ -190,7 +190,7 @@
         {
             rv.Isloaded = true;
 
-            var res = await _pisRep._02Empmas_ByDateHired(clients, statuses, rv.SelectedFilter, v.LnMonths, Uc.OpisDb!, Uc.Conn!);
+            var res = await _pisRep._02Empmas_ByDateHired(clients, statuses, rv.SelectedFilter??0, v.LnMonths, Uc.OpisDb!, Uc.Conn!);
             if ((res ?? []).Any())
             {
                 v.RepDtls = res!.Select(r => new R2106Model
@@ -325,7 +325,7 @@
         return true;
     }
 
-    private void Notify(NotificationSeverity severity, string summary, string detail)
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
     {
         _NotificationService.Notify(new NotificationMessage
         {

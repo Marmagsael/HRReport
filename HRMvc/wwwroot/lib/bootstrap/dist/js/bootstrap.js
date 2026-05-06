@@ -1850,7 +1850,7 @@
         ...Manipulator.getDataAttributes(this._element),
         ...config
       };
-      config.toggle = Boolean(config.toggle); // Coerce string values
+      config.toggle = Boolean(config.toggle); // Coerce string? values
 
       config.parent = getElement(config.parent);
       typeCheckConfig(NAME$a, config, DefaultType$9);

@@ -2,7 +2,7 @@ namespace HRMvc.Applications.PisReport.Vars;
 
 public class V2212Model
 {
-    public string Action { get; set; } = "";
+    public string? Action { get; set; } = "";
     public List<R2212Model> RepDtls { get; set; } = [];
 }
 

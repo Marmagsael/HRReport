@@ -1,0 +1,63 @@
+﻿@using HRMvc.Applications._12EmployeeProfile.Blazor._12_104.AttCalendar
+
+<div class="col-12 col-lg-9">
+    <div class="attendance-container card shadow-sm border-0">
+
+        <MonthYearFilter V="@V" ChildAction="ChildActionCatcher" />
+
+        <div class="calendar">
+
+            <Weeks V="@V" />
+
+            @for (int? i = 0; i < V.Calendar.Count; i += 7)
+            {
+                <div class="week-row">
+
+                    @for (int? j = i; j < i + 7 && j < V.Calendar.Count; j++)
+                    {
+
+                        var day = V.Calendar[j??0];
+
+                        <div class="day-card  @(day.Status) @(day.Date is null || day.Status == "RD" || day.Status == "WHOLEDAYLEAVE" ? "empty" : "") @(day.IsToday??false ? "today" : "")" @onclick="(() => SelectDay(day))">
+
+                            @if (day.Date is not null)
+                            {
+                                <Date D="@day"/>
+                                <Status D="@day" />
+                                <div class="d-flex flex-column  justify-content-start gap-0">
+                                    <Schedule D="@day" />
+                                    <Punches D="@day" />
+                                    <Late D="@day" />
+                                    <UnderTime D="@day" />
+                                </div>
+                            }
+
+                        </div>
+                    }
+
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public V12104Model V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    private async Task ChildActionCatcher()
+    {
+        await ChildAction.InvokeAsync(); ;
+    }
+
+    private async Task SelectDay(AttDayDetail rec)
+    {
+        V.DayDetail = new();
+
+        V.DayDetail = rec;
+        await ChildAction.InvokeAsync();
+    }
+}
+
+

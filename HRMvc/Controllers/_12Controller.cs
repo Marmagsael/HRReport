@@ -28,7 +28,7 @@ namespace HRMvc.Controllers
         };
 
         [HttpGet("{code}")]
-        public IActionResult Report(string code)
+        public IActionResult Report(string? code)
         {
             if (!ReportViews.TryGetValue(code, out var viewName))
                 return NotFound();

@@ -13,9 +13,9 @@ public class _00CompanyusertypeDataAccess : I_00CompanyusertypeDataAccess
         _sql = sql;
     }
 
-    public async Task<CompanyUserTypeModel?> _01(CompanyUserTypeModel companyusertype, string schema, string conn)
+    public async Task<CompanyUserTypeModel?> _01(CompanyUserTypeModel companyusertype, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Companyusertype (Name, IsVisible) values (@Name, @IsVisible)";
+        string? sql = $@"Insert into {schema}.Companyusertype (Name, IsVisible) values (@Name, @IsVisible)";
         await _sql.ExecuteCmd<dynamic>(sql, companyusertype, conn);
         sql = $@"SELECT * FROM {schema}.Companyusertype WHERE ID = (SELECT @@IDENTITY)";
 
@@ -24,17 +24,17 @@ public class _00CompanyusertypeDataAccess : I_00CompanyusertypeDataAccess
     }
 
 
-    public async Task<CompanyUserTypeModel?> _02(int id, string schema, string conn)
+    public async Task<CompanyUserTypeModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, Name, IsVisible from {schema}.Companyusertype where Id = @Id";
+        string? sql = $@"select  Id, Name, IsVisible from {schema}.Companyusertype where Id = @Id";
         var data = await _sql.FetchData<CompanyUserTypeModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<CompanyUserTypeModel?> _03(int id, CompanyUserTypeModel companyusertype, string schema, string conn)
+    public async Task<CompanyUserTypeModel?> _03(int? id, CompanyUserTypeModel companyusertype, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Companyusertype set Name = @Name, IsVisible = @IsVisible where Id = @Id;";
+        string? sql = $@"Update {schema}.Companyusertype set Name = @Name, IsVisible = @IsVisible where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, companyusertype, conn);
 
         sql = $@" select  * from {schema}.Companyusertype x where x.Id = @Id ;";
@@ -42,9 +42,9 @@ public class _00CompanyusertypeDataAccess : I_00CompanyusertypeDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<CompanyUserTypeModel?> _04(int id, string schema, string conn)
+    public async Task<CompanyUserTypeModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Companyusertype where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Companyusertype where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Companyusertype x where x.Id = @Id ;";

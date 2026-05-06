@@ -21,14 +21,14 @@ public class V222
     public string?  pisdb            { get; set; } = string.Empty;
     public string?  paydb            { get; set; } = string.Empty;
     public string?  conn             { get; set; } = string.Empty;
-    public int      defcoid          { get; set; } = 0;
-    public int      userid           { get; set; } = 0; 
+    public int?      defcoid          { get; set; } = 0;
+    public int?      userid           { get; set; } = 0; 
 
     public bool                             ShowDataEntry       { get; set; } = false;
-    public string                           Action              { get; set; } = string.Empty;
-    public string                           ActionRef           { get; set; } = string.Empty;
-    public int                              TabNo               { get; set; } = 1;
-    public int                              SelectedId          { get; set; } = 0;
+    public string?                           Action              { get; set; } = string.Empty;
+    public string?                           ActionRef           { get; set; } = string.Empty;
+    public int?                              TabNo               { get; set; } = 1;
+    public int?                              SelectedId          { get; set; } = 0;
 
     public List<Uc_accessreqModel?>?       UcAccessreq          { get; set; } = new();
     public PisEmpmasModel?                  Empmas              { get; set; } = new();  
@@ -134,7 +134,7 @@ public class V222
         {
             deprec = new()
             {
-                Empmasid                = source.Empmasid, 
+                EmpmasId                = source.EmpmasId, 
                 Divid                   = source.Divid, 
                 Depid                   = source.Depid, 
                 Secid                   = source.Secid, 
@@ -183,14 +183,14 @@ public class V222
         PropertyInfo[] propertiesDes    = typeDes.GetProperties();
 
 
-        for (int i = 0; i < propertiesScr.Count(); i++)
+        for (int? i = 0; i < propertiesScr.Count(); i++)
         {                
-            for (int j = 0; j < propertiesDes.Count(); j++)
+            for (int? j = 0; j < propertiesDes.Count(); j++)
             {
-                if(propertiesScr[i].Name.Equals(propertiesDes[j].Name) ) 
+                if(propertiesScr[i??0].Name.Equals(propertiesDes[j??0].Name) ) 
                 {
-                    var valScr = propertiesScr[i].GetValue(src,null);
-                    propertiesDes[j].SetValue(des, valScr, null);
+                    var valScr = propertiesScr[i??0].GetValue(src,null);
+                    propertiesDes[j??0].SetValue(des, valScr, null);
                 }
             }
         }

@@ -9,11 +9,11 @@ namespace HRMvc.Applications.Vars;
 
 public class V12_202
 {
-    public string                   TRN             { get; set; } = string.Empty;
-    public string                   SSS             { get; set; } = string.Empty;
-    public string                   TIN             { get; set; } = string.Empty;  
-    public string                   Payrollgrp      { get; set; } = string.Empty;  
-    public string                   AttCoverage     { get; set; } = string.Empty;  
+    public string?                   TRN             { get; set; } = string.Empty;
+    public string?                   SSS             { get; set; } = string.Empty;
+    public string?                   TIN             { get; set; } = string.Empty;  
+    public string?                   Payrollgrp      { get; set; } = string.Empty;  
+    public string?                   AttCoverage     { get; set; } = string.Empty;  
     public double                   Rate            { get; set; } = 0.0;  
     public UserClaimsModel          UserClaims      { get; set; } = new(); 
     public List<GTbltranModel?>?    Tbltrans        { get; set; } = [];
@@ -21,7 +21,7 @@ public class V12_202
     public GPaymainhdrModel?        Paymainhdr      { get; set; } = new();
     public List<GPaymainhdrModel?>? Paymainhdrs     { get; set; } = [];
     public List<OEmpmasModel?>?     OEmpmas         { get; set; } = [];   
-    public int                      Yr              { get; set; } = DateTime.Now.Year;
-    public int                      Mo              { get; set; } = DateTime.Now.Month;   
-    public int                      Prd             { get; set; } = 1;       
+    public int?                      Yr              { get; set; } = DateTime.Now.Year;
+    public int?                      Mo              { get; set; } = DateTime.Now.Month;   
+    public int?                      Prd             { get; set; } = 1;       
 }

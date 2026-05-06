@@ -2,7 +2,7 @@
 
 public class PayrollgrpratesModel
 {
-    public int      PayrollgrpId    { get; set; } = 0;
+    public int?      PayrollgrpId    { get; set; } = 0;
 
     public string?  coaAcctnumber   { get; set; } = string.Empty;
     

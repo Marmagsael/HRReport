@@ -1877,7 +1877,7 @@
 
 
     _configAfterMerge(config) {
-      config.toggle = Boolean(config.toggle); // Coerce string values
+      config.toggle = Boolean(config.toggle); // Coerce string? values
 
       config.parent = getElement(config.parent);
       return config;
@@ -2091,7 +2091,7 @@
       Object.keys(state.elements).forEach(function (name) {
         var element = state.elements[name];
         var attributes = state.attributes[name] || {};
-        var styleProperties = Object.keys(state.styles.hasOwnProperty(name) ? state.styles[name] : initialStyles[name]); // Set all values to an empty string to unset them
+        var styleProperties = Object.keys(state.styles.hasOwnProperty(name) ? state.styles[name] : initialStyles[name]); // Set all values to an empty string? to unset them
 
         var style = styleProperties.reduce(function (style, property) {
           style[property] = '';

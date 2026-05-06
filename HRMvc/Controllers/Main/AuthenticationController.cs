@@ -17,6 +17,7 @@ using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using MySqlX.XDevAPI;
+using HRApiLibrary.DataAccess._10_Pis;
 
 namespace HRMvc.Controllers.Main;
 
@@ -36,23 +37,25 @@ public class AuthenticationController : Controller
     private readonly I_00UserscompanyDataAccess     _userCompany;
     private readonly I_AcctgTableMaker              _acctg;
     private readonly IOEmpmasDataAccess             _oldEmpmas;
+    private readonly IAtttemplatereqhdrDataAccess    _atttemplatereqhdr;
     
             
 
 
 
-    public AuthenticationController(IConfiguration             config,
-                                    I_00UsersAccess            userAccess,
-                                    I_90_001_MySqlDataAccess   mysql,
-                                    I_00MainDA                 mainDA,
-                                    I_09_02_VarsGlobal         vars,
-                                    ClaimsAccess               claimsAccess,
-                                    I_00MainPisTblMakerAccess  mainPisTblMaker,
-                                    I_10_EmpmasDataAccess      empmas, 
-                                    I_20_002_PayTblMaker       payTblMaker, 
-                                    I_00UserscompanyDataAccess userCompany, 
-                                    I_AcctgTableMaker          acctg, 
-                                    IOEmpmasDataAccess         oldEmpmas )
+    public AuthenticationController(IConfiguration                  config,
+                                    I_00UsersAccess                 userAccess,
+                                    I_90_001_MySqlDataAccess        mysql,
+                                    I_00MainDA                      mainDA,
+                                    I_09_02_VarsGlobal              vars,
+                                    ClaimsAccess                    claimsAccess,
+                                    I_00MainPisTblMakerAccess       mainPisTblMaker,
+                                    I_10_EmpmasDataAccess           empmas, 
+                                    I_20_002_PayTblMaker            payTblMaker, 
+                                    I_00UserscompanyDataAccess      userCompany, 
+                                    I_AcctgTableMaker               acctg, 
+                                    IOEmpmasDataAccess              oldEmpmas,
+                                    IAtttemplatereqhdrDataAccess    atttemplatereqhdr )
     {
         _config             = config;
         _userAccess         = userAccess;
@@ -65,7 +68,8 @@ public class AuthenticationController : Controller
         _payTblMaker        = payTblMaker;
         _userCompany        = userCompany;
         _acctg              = acctg;
-        _oldEmpmas          = oldEmpmas;
+        _oldEmpmas          = oldEmpmas;    
+        _atttemplatereqhdr  = atttemplatereqhdr;
         
     }
 
@@ -160,8 +164,8 @@ public class AuthenticationController : Controller
     [HttpPost("signupCreateUserCompanySave")]
     public async Task<IActionResult> SignupCreateUserCompanySave(CreateUserCompanyUiModel model)
     {
-        string conn     = _config.GetSection("Schema:DefConn").Value.ToString();
-        string schema   = _config.GetSection("Schema:Main").Value.ToString();
+        string? conn     = _config.GetSection("Schema:DefConn").Value.ToString();
+        string? schema   = _config.GetSection("Schema:Main").Value.ToString();
         ViewData["ErrorMsg"] = string.Empty;
 
         // 1). Create User -------------------------------------------------------------------
@@ -222,9 +226,9 @@ public class AuthenticationController : Controller
 
     
     // -- 3.02.01 ----------------------------------------------------------------
-    private async Task<UsersModel?> _01User(CreateUserCompanyUiModel model, string schema, string conn)
+    private async Task<UsersModel?> _01User(CreateUserCompanyUiModel model, string? schema, string? conn)
     {
-        string domain = string.Empty;
+        string? domain = string.Empty;
         if (_config.GetSection("Schema:Domain").Value != null) domain = _config.GetSection("Schema:Domain").Value;
 
         UsersModel? user = new()
@@ -251,7 +255,7 @@ public class AuthenticationController : Controller
                 Suffix      = model.Suffix,
                 EmpAlias    = model.EmpAlias
             };
-            string mainPisSchema = _config.GetSection("Schema:MainPis").Value; 
+            string? mainPisSchema = _config.GetSection("Schema:MainPis").Value; 
             await _empmas._01Empmas(empmas, mainPisSchema, conn); 
 
         }
@@ -264,7 +268,7 @@ public class AuthenticationController : Controller
     }
 
     // -- 3.02.02 ----------------------------------------------------------------
-    private async Task<UserCompanyModel?> _01userCompany(CreateUserCompanyUiModel model, string schema, string conn)
+    private async Task<UserCompanyModel?> _01userCompany(CreateUserCompanyUiModel model, string? schema, string? conn)
     {
         UserCompanyModel userCompany = new UserCompanyModel
         {
@@ -299,7 +303,7 @@ public class AuthenticationController : Controller
     }
 
     // -- 3.02.03 ----------------------------------------------------------------
-    private async Task<CompanyUsersModel?> _01companyUser(UserCompanyModel userCompany, string schema, string conn)
+    private async Task<CompanyUsersModel?> _01companyUser(UserCompanyModel userCompany, string? schema, string? conn)
     {
         CompanyUsersModel cu = new CompanyUsersModel
         {
@@ -316,7 +320,7 @@ public class AuthenticationController : Controller
     }
 
     // -- 3.02.04 ----------------------------------------------------------------
-    private void _01SchemaAndTables(string? schema, string conn)
+    private void _01SchemaAndTables(string? schema, string? conn)
     {
         if (schema != null || schema != "Default")
         {
@@ -326,7 +330,7 @@ public class AuthenticationController : Controller
     }
 
     // -- 3.02.05 ----------------------------------------------------------------
-    private async void _01EmpmasInternal(EmpmasInternalModel? empmas, string? pisSchema, string conn)
+    private async void _01EmpmasInternal(EmpmasInternalModel? empmas, string? pisSchema, string? conn)
     {
         if (empmas != null)
         {
@@ -354,7 +358,6 @@ public class AuthenticationController : Controller
         
         if (user == null)
         {
-            //return Ok("User is null");
             ViewData["ErrorMsg"] = "Invalid username / password.";
             return View("Login");
         }
@@ -372,7 +375,7 @@ public class AuthenticationController : Controller
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
         HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
 
-        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+        string? isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
 
 
         await CreateCompany(user, uc, conn);
@@ -387,12 +390,40 @@ public class AuthenticationController : Controller
         if (uc.OldPis.Length <= 0) return Redirect("~/13");
         var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
         if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
-                
+
+        await Create_AttTemplateReqhdr(user.Id, uc.PisSchema??"", conn??"");  //--- Template Creation for Punch In / Out. - [AttTemplateReqhdr and AttTemplateReqdtl]
+        await _atttemplatereqhdr._03AttTemplateReqhdr_to_AttTemplate(user.Id, uc.PisSchema ?? "", conn ?? "");  //-- Set Punch IN / Out Template based on approved AttTemplateReqhdr.
+
+
         return Redirect("12/102");
         // return Redirect("13");
 
     }
 
+    private async Task Create_AttTemplateReqhdr(int? userId, string? pisdb, string? conn)
+    {
+        var res = await _atttemplatereqhdr._02ChkMayEntry(userId, pisdb, conn);
+        
+        if (res.Count == 0)
+        {
+            AtttemplatereqhdrModel athdr = new AtttemplatereqhdrModel
+            {
+                UserId = userId,
+                EmpNumber           = HttpContext.Session.GetString("EmpNumber") ?? "00000",
+                DateRequested       = DateTime.Now,
+                Effectivity         = DateTime.Now,
+                Remarks             = "System Generated",
+                End                 = new DateTime(9999, 12, 31, 23, 59, 59),
+                Status              = "A", 
+                EmpNumber_Approver  = "SYS00"
+            };
+
+            await _atttemplatereqhdr._01Initial(athdr, pisdb, conn);
+        }
+
+    }
+
+    
     private async Task LoadDataFrom_OldPis(UsersModel user, UserCompanyModel? uc)
     {
         var oldPis = HttpContext.Session.GetString("OldPis");
@@ -410,7 +441,7 @@ public class AuthenticationController : Controller
     }
     
     [HttpGet("changingclaims/{link}/{userid}")]
-    public async Task<IActionResult> ChangingClaims(string link, string userid)
+    public async Task<IActionResult> ChangingClaims(string? link, string? userid)
     {
         //ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
 
@@ -438,7 +469,7 @@ public class AuthenticationController : Controller
         
     }
 
-    private async Task CreateCompany(UsersModel user, UserCompanyModel? uc, string conn)
+    private async Task CreateCompany(UsersModel user, UserCompanyModel? uc, string? conn)
     {
 
         
@@ -480,7 +511,7 @@ public class AuthenticationController : Controller
     // -- Left Menu ------------------------------------------------------------------------------------
 
     // -- 20.00 ------------------------------------------------------------------------------------
-    public async Task<IActionResult> _200ChangeCompany(int userCompanyId)
+    public async Task<IActionResult> _200ChangeCompany(int? userCompanyId)
     {
 
         var conn    = _config.GetSection("Schema:DefConn").Value.ToString();
@@ -561,13 +592,13 @@ public class AuthenticationController : Controller
     // -- 3.01.02 ----------------------------------------------------------------
     private async Task<IActionResult> LoadCreateUserCompanyData()
     {
-        string conn         = _config.GetSection("Schema:DefConn").Value.ToString();
-        string schema       = _config.GetSection("Schema:Main").Value.ToString();
+        string? conn         = _config.GetSection("Schema:DefConn").Value.ToString();
+        string? schema       = _config.GetSection("Schema:Main").Value.ToString();
 
         ViewData["CoName"]  = _config.GetSection("CompanyInfo:CompanyName").Value;
 
         //-- Country -----------------------------------------------
-        string sql = $@"SELECT c.* FROM {schema}.Country c order by Name";
+        string? sql = $@"SELECT c.* FROM {schema}.Country c order by Name";
         IEnumerable<CountryUiModel> country = await _mysql.FetchData<CountryUiModel, dynamic>(sql, new { }, conn);
 
         //-- Currency -----------------------------------------------
@@ -584,15 +615,15 @@ public class AuthenticationController : Controller
     }
 
     // -- 10.00.01 ---------------------------------------------------------------
-    private async Task<UserCompanyModel?> _02UserCompany(UsersModel user, string schema, string conn)
+    private async Task<UserCompanyModel?> _02UserCompany(UsersModel user, string? schema, string? conn)
     {
         UserCompanyModel? uc = new();
-        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+        string? isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
 
         if (isExclusive == "true")
         {
             // -- Naka exclusive ang use sa server ng company -------------------------
-            string userCompanyId = _config.GetSection("CompanyInfo:DefaultCoId").Value;
+            string? userCompanyId = _config.GetSection("CompanyInfo:DefaultCoId").Value;
             uc = await _mainDA._02UserCompany(Int32.Parse(userCompanyId), schema, conn);
         }
         else
@@ -629,8 +660,8 @@ public class AuthenticationController : Controller
     [HttpGet("_02Country")]
     public async Task<List<CountryModel?>> _02Country()
     {
-        string conn     = _config.GetSection("Schema:DefConn").Value.ToString();
-        string schema   = _config.GetSection("Schema:Main").Value.ToString();
+        string? conn     = _config.GetSection("Schema:DefConn").Value.ToString();
+        string? schema   = _config.GetSection("Schema:Main").Value.ToString();
         List<CountryModel?> country = await _mainDA._02CountryList(schema, conn);
 
         return country;
@@ -640,10 +671,10 @@ public class AuthenticationController : Controller
     //-- 02.02 --- Region per country   
     [AllowAnonymous]
     [HttpGet("_02ProvinceStateByCountryId/{countryId}")]
-    public async Task<List<ProvinceStateModel?>> _02ProvinceStateByCountryId(int countryId)
+    public async Task<List<ProvinceStateModel?>> _02ProvinceStateByCountryId(int? countryId)
     {
-        string conn     = _config.GetSection("Schema:DefConn").Value.ToString();
-        string schema   = _config.GetSection("Schema:Main").Value.ToString();
+        string? conn     = _config.GetSection("Schema:DefConn").Value.ToString();
+        string? schema   = _config.GetSection("Schema:Main").Value.ToString();
         List<ProvinceStateModel?> region = await _mainDA._02ProvinceStatePerCountry(countryId, schema, conn);
 
         return region;
@@ -653,10 +684,10 @@ public class AuthenticationController : Controller
     //-- 02.03 --- City per region  
     [AllowAnonymous]
     [HttpGet("_02CityByRegionId/{regionId}")]
-    public async Task<List<CityModel?>> _02CityByRegionId(int regionId)
+    public async Task<List<CityModel?>> _02CityByRegionId(int? regionId)
     {
-        string conn     = _config.GetSection("Schema:DefConn").Value.ToString();
-        string schema   = _config.GetSection("Schema:Main").Value.ToString();
+        string? conn     = _config.GetSection("Schema:DefConn").Value.ToString();
+        string? schema   = _config.GetSection("Schema:Main").Value.ToString();
 
         List<CityModel?> city = await _mainDA._02CityPerRegion(regionId, schema, conn);
         return city;

@@ -17,5 +17,5 @@ public class V12_102CS
     public bool                             ShowLoadTransaction     { get; set; } = false; 
 
     
-    public string                   Action              { get; set; } = string.Empty;
+    public string?                   Action              { get; set; } = string.Empty;
 }

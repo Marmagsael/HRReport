@@ -2,7 +2,7 @@
 
 public class PayrollgrpModel
 {
-    public int      Id              { get; set; }
+    public int?      Id              { get; set; }
     public string?  ClNumber        { get; set; }
     public string?  Name            { get; set; }
     public double   RatePerHr       { get; set; }
@@ -11,13 +11,13 @@ public class PayrollgrpModel
     public double   RatePerYr       { get; set; }
     public double   MinMoRate       { get; set; }
     public string?  Status          { get; set; }
-    public int      PayRateId       { get; set; }
+    public int?      PayRateId       { get; set; }
 
     //---------------------------------------------------------
     public  bool     Show            { get; set;} = false;
     
     // --- Payroll Details -----------------------------------
-    public  int     EmpCount        { get; set; } = 0;
+    public  int?     EmpCount        { get; set; } = 0;
     public string?  PayStatus       { get; set; } = string.Empty;
     public string?  S1              { get; set; } = string.Empty;
 }

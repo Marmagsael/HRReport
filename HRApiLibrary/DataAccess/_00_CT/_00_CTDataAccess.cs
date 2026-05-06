@@ -19,28 +19,28 @@ public class _00_CTDataAccess : I_00_CTDataAccess
     }
 
 
-    public async Task<List<string?>?> _02Dbs(string conn)
+    public async Task<List<string?>?> _02Dbs(string? conn)
     {
 
-        string sql  = $@"show databases";
+        string? sql  = $@"show databases";
         var data    = await _sql.FetchData<string?, dynamic>(sql, new { }, conn);
         return data;
 
     }
     
-    public async Task<List<string?>?> _02Tbls(string schema, string conn)
+    public async Task<List<string?>?> _02Tbls(string? schema, string? conn)
     {
 
-        string sql  = $@"show tables from {schema}";
+        string? sql  = $@"show tables from {schema}";
         var data    = await _sql.FetchData<string?, dynamic>(sql, new { }, conn);
         return data;
 
     }
 
-    public async Task<List<TableFieldsModel?>?> _02TblFields(string tblName, string schema, string conn)
+    public async Task<List<TableFieldsModel?>?> _02TblFields(string? tblName, string? schema, string? conn)
     {
 
-        string sql  = $@"desc {schema}.{tblName}";
+        string? sql  = $@"desc {schema}.{tblName}";
         var data    = await _sql.FetchData<TableFieldsModel?, dynamic>(sql, new { }, conn);
         return data;
 

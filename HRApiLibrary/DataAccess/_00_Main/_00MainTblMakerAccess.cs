@@ -14,7 +14,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         _sql = sql;
     }
 
-    public async Task _01MainTable(string schema = "Main", string connName = "MySqlConn")
+    public async Task _01MainTable(string? schema = "Main", string? connName = "MySqlConn")
     {
         await _01MainSchema(schema, connName);
         await _01MainSchema("MainPay", connName);
@@ -46,27 +46,27 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
 
     //--- Schema Main ------------------------------------------------------
-    private async Task _01MainSchema(string schema, string connName)
+    private async Task _01MainSchema(string? schema, string? connName)
     {
-        string sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
     
     }
 
-    private async void _01UsersSchema(string userId, string companyId, string schemaPrefix)
+    private async void _01UsersSchema(string? userId, string? companyId, string? schemaPrefix)
     {
-        string schema = $"u{userId}c{companyId}_{schemaPrefix}";
-        string sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? schema = $"u{userId}c{companyId}_{schemaPrefix}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
         await _sql.ExecuteCmd(sql, new { });
     }
 
     //--- Tables ------------------------------------------------------
 
-    private void _01Users(string schema, string connName)
+    private void _01Users(string? schema, string? connName)
     {
         // UserType => 0 = Ordinary Users, 1 = System Users 
-        string sql = @$"CREATE TABLE if not exists {schema}.Users (
+        string? sql = @$"CREATE TABLE if not exists {schema}.Users (
                           Id            INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                           LoginName     VARCHAR(45),
                           Password      VARCHAR(150),
@@ -79,13 +79,13 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async void _01Menus(string menuName, string schema, string connName)
+    private async void _01Menus(string? menuName, string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists {schema}.{menuName}
+        string? sql = @$"CREATE TABLE if not exists {schema}.{menuName}
         (
             Id INTEGER UNSIGNED NOT NULL, 
-                            IdParent            INT             NULL, 
-                            Indent              INT             NULL, 
+                            IdParent            int             NULL, 
+                            Indent              int             NULL, 
                             Type                NCHAR(10)       NULL, 
                             Code                NCHAR(10)       NULL, 
                             Icon1               VARCHAR(80)     NULL, 
@@ -104,9 +104,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     }
     
 
-    private async void _01OtherAccess(string schema, string connName)
+    private async void _01OtherAccess(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists {schema}.OtherAccess
+        string? sql = @$"CREATE TABLE if not exists {schema}.OtherAccess
         (
             Id              INTEGER UNSIGNED NOT NULL, 
             Name            VARCHAR(80)     NULL, 
@@ -117,9 +117,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     }
     
 
-    private async void _01Country(string schema, string connName)
+    private async void _01Country(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists {schema}.Country ( 
+        string? sql = @$"CREATE TABLE if not exists {schema}.Country ( 
                             Id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Code        CHAR(10) NULL,
                             Name        CHAR(60) NULL,
@@ -139,9 +139,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         }
     }
 
-    private async void _01Currency(string schema, string connName)
+    private async void _01Currency(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists  {schema}.Currency
+        string? sql = @$"CREATE TABLE if not exists  {schema}.Currency
                         (
                             Id      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Code    NVARCHAR(5)          NULL,
@@ -162,14 +162,14 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         }
     }
 
-    private async void _01ProvinceState(string schema, string connName)
+    private async void _01ProvinceState(string? schema, string? connName)
     {
-        string sql = $@"CREATE TABLE if not exists  {schema}.ProvinceState
+        string? sql = $@"CREATE TABLE if not exists  {schema}.ProvinceState
             (
                 Id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                 Code      CHAR (10) NOT NULL,
                 Name      CHAR (60) NOT NULL,
-                CountryId INT       NOT NULL DEFAULT 0,
+                CountryId int       NOT NULL DEFAULT 0,
                 PRIMARY KEY (`Id`)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
@@ -222,14 +222,14 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
     }
 
-    private async void _01City(string schema, string connName)
+    private async void _01City(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists  {schema}.City
+        string? sql = @$"CREATE TABLE if not exists  {schema}.City
                 (
                     Id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,         
-                    CountryId       INT           NULL,
+                    CountryId       int           NULL,
                     CountryCode     CHAR(10)      NULL,
-                    RegionId        INT           NULL,
+                    RegionId        int           NULL,
                     CityName        VARCHAR (100) NULL,
                     PRIMARY KEY (`Id`)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -431,19 +431,19 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
     }
 
-    private async void _01UsersCompany(string schema, string connName)
+    private async void _01UsersCompany(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists {schema}.UsersCompany
+        string? sql = @$"CREATE TABLE if not exists {schema}.UsersCompany
                 (
                     Id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
-                    OwnerId         INT             NULL,
+                    OwnerId         int             NULL,
                     CompanySName    VARCHAR (15)    NULL,
                     CompanyName     VARCHAR (120)   NULL,
                     CountryId       int             NULL, 
                     RegionId        int             NULL,
                     CityId          int             NULL,
                     Zipcode         char(10)        NULL, 
-                    CurrencyId      INT             NULL,
+                    CurrencyId      int             NULL,
                     StorageId       VARCHAR (120)   NULL,
                     AMSSchema       VARCHAR (60)    NULL,
                     ApplicantSchema VARCHAR (60)    NULL,
@@ -455,9 +455,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     
-    private async void _01UC_AccessReq(string schema, string connName)
+    private async void _01UC_AccessReq(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists {schema}.`UC_AccessReq` (
+        string? sql = @$"CREATE TABLE if not exists {schema}.`UC_AccessReq` (
                             `Id`                BIGINT      UNSIGNED NOT NULL AUTO_INCREMENT,
                             `EmpmasId`          INTEGER     UNSIGNED,
                             `RequestedById`     INTEGER     UNSIGNED DEFAULT 0,
@@ -480,9 +480,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         
     }
 
-    private async void _01UsersCompanyAddress(string schema, string connName)
+    private async void _01UsersCompanyAddress(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists  {schema}.UserCompanyAdd (
+        string? sql = @$"CREATE TABLE if not exists  {schema}.UserCompanyAdd (
                             Id      INTEGER         UNSIGNED NOT NULL,
                             Address VARCHAR(200)             NOT NULL,
                             TelNos  VARCHAR(80)              NOT NULL,
@@ -491,9 +491,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async void _01CompanyUsers(string schema, string connName)
+    private async void _01CompanyUsers(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists  {schema}.CompanyUsers (
+        string? sql = @$"CREATE TABLE if not exists  {schema}.CompanyUsers (
                             UserId              int unsigned    NOT NULL,
                             CompanyId           int unsigned    NOT NULL,
                             Status              char(2)         NOT NULL     DEFAULT 'FA',
@@ -505,9 +505,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async void _01CompanyUserType(string schema, string connName)
+    private async void _01CompanyUserType(string? schema, string? connName)
     {
-        string sql = @$"CREATE TABLE if not exists  {schema}.CompanyUserType (
+        string? sql = @$"CREATE TABLE if not exists  {schema}.CompanyUserType (
                           Id        INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                           Name      VARCHAR(45),
                           IsVisible INTEGER UNSIGNED    DEFAULT 1 COMMENT '0 - false, 1- yes',
@@ -530,9 +530,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
 
 
-    public async Task<SchemaStructureModel?> _02_TableExists(string schema, string tableName, string connName)
+    public async Task<SchemaStructureModel?> _02_TableExists(string? schema, string? tableName, string? connName)
     {
-        string sql = @"SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES 
+        string? sql = @"SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES 
                         WHERE TABLE_SCHEMA = @Schema and TABLE_NAME = @TableName;";
         var data = await _sql.FetchData<SchemaStructureModel, dynamic>(sql, new { Schema = schema, TableName = tableName }, connName);
         return data.FirstOrDefault();

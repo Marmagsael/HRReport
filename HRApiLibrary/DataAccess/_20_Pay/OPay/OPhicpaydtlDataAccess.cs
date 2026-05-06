@@ -13,7 +13,7 @@ public class OPhicpaydtlDataAccess
 			_sql = sql;
 	}
 
-	public async Task _01(GPhicpaydtlModel phicpaydtl, string schema, string conn )
+	public async Task _01(GPhicpaydtlModel phicpaydtl, string? schema, string? conn )
 	{
 		string sql = $@"Insert into {schema}.Phicpaydtl 
 							(idPHICPayDtl,  orno,  empnumber,  trn,  EES,  ERS) values 
@@ -24,7 +24,7 @@ public class OPhicpaydtlDataAccess
 	}
 
 	
-	public async Task<GPhicpaydtlModel?> _02ByEmpNumber(string empnumber, string schema, string conn)
+	public async Task<GPhicpaydtlModel?> _02ByEmpNumber(string? empnumber, string? schema, string? conn)
 	{
 		string sql = $@"select  p.*
 						From {schema}.Phicpaydtl p
@@ -33,7 +33,7 @@ public class OPhicpaydtlDataAccess
 		return data?.FirstOrDefault();
 	}
 
-	// public async Task<GPhicpaydtlModel?> _03(int id,GPhicpaydtlModel phicpaydtl, string schema, string conn)
+	// public async Task<GPhicpaydtlModel?> _03(int? id,GPhicpaydtlModel phicpaydtl, string? schema, string? conn)
 	// {
 	// 	string sql = $@"Update {schema}.Phicpaydtl set idPHICPayDtl = @idPHICPayDtl, orno = @orno, empnumber = @empnumber, trn = @trn, EES = @EES, ERS = @ERS where Id = @Id;"; 
 	// 	await _sql.ExecuteCmd<dynamic>(sql, phicpaydtl, conn);
@@ -43,7 +43,7 @@ public class OPhicpaydtlDataAccess
 	// 	return data?.FirstOrDefault();
 	// }
 
-	// public async Task<GPhicpaydtlModel?> _04(int id, string schema, string conn)
+	// public async Task<GPhicpaydtlModel?> _04(int? id, string? schema, string? conn)
 	// {
 	// 	string sql = $@"Delete from {schema}.Phicpaydtl where Id = @Id;";
 	// 	await _sql.ExecuteCmd<dynamic>(sql, new {Id=id},conn);

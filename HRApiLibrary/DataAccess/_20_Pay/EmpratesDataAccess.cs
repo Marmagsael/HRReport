@@ -17,7 +17,7 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         _sql = sql;
     }
     
-    public async Task<EmpratesModel?> _01(EmpratesModel emprates, int userId, string paySchema, string pisSchema, string conn)
+    public async Task<EmpratesModel?> _01(EmpratesModel emprates, int? userId, string? paySchema, string? pisSchema, string? conn)
     {
 
         if(emprates.EmpmasId == 0 )
@@ -33,7 +33,7 @@ public class EmpratesDataAccess : IEmpratesDataAccess
                 Suffix      = emprates.Suffix
             };
             
-            string msql1 = $@"insert into {pisSchema}.empmas 
+            string? msql1 = $@"insert into {pisSchema}.empmas 
                                     (Id,  EmpNumber,  EmpLastNm,  EmpFirstNm,  EmpMidNm,  Suffix,  EmpAlias) values 
                                     (@Id, @EmpNumber, @EmpLastNm, @EmpFirstNm, @EmpMidNm, @Suffix, @EmpAlias); 
                             SELECT r.* FROM {pisSchema}.empmas r WHERE r.ID = (SELECT @@IDENTITY)";
@@ -82,9 +82,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return er;        
     }
 
-    public async Task<EmpratesModel?> _01(EmpratesModel emprates, string paySchema, string pisSchema, string conn)
+    public async Task<EmpratesModel?> _01(EmpratesModel emprates, string? paySchema, string? pisSchema, string? conn)
     {
-        string sql = $@"Insert into {paySchema}.Emprates 
+        string? sql = $@"Insert into {paySchema}.Emprates 
                             (EmpmasId,  EmpNumber,  EmpRate,  PayRateId,  PayrollgrpId,  UsePaygrpRates,  RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr) values 
                             (@EmpmasId, @EmpNumber, @EmpRate, @PayRateId, @PayrollgrpId, @UsePaygrpRates, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr); 
                         SELECT r.*, pr.RateName FROM {paySchema}.Emprates r 
@@ -98,9 +98,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return newER;
     }
 
-    public async Task<EmpratesModel?> _02(int empmasId, string paySchema, string pisSchema, string conn)
+    public async Task<EmpratesModel?> _02(int? empmasId, string? paySchema, string? pisSchema, string? conn)
     {
-        string sql = $@"select p.Name PayrollGrpName,   
+        string? sql = $@"select p.Name PayrollGrpName,   
                             e.SystemId, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, e.Suffix, e.EmpAlias, 
                             r.*, pr.RateName 
                         from {paySchema}.Emprates r 
@@ -112,9 +112,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<EmpratesEmpCntPerPGModel?>?> _02EmpCnt_Per_PG(string paySchema, string conn)
+    public async Task<List<EmpratesEmpCntPerPGModel?>?> _02EmpCnt_Per_PG(string? paySchema, string? conn)
     {
-        string sql = $@"select PayrollgrpId, Count(*) Count 
+        string? sql = $@"select PayrollgrpId, Count(*) Count 
                         from {paySchema}.Emprates r 
                         group by PayrollgrpId
                         order by PayrollgrpId";
@@ -122,9 +122,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data;
     }
     
-    public async Task<List<EmpratesEmpCntPerPGModel?>?> _02EmpCnt_Per_Tbltran(string trn, string paySchema, string conn)
+    public async Task<List<EmpratesEmpCntPerPGModel?>?> _02EmpCnt_Per_Tbltran(string? trn, string? paySchema, string? conn)
     {
-        string sql = $@"select right(trn,5) PayrollgrpId, Count(*) Count
+        string? sql = $@"select right(trn,5) PayrollgrpId, Count(*) Count
                         from {paySchema}.Tbltran t
                         where Left(Trn,6) = Left(@Trn,6)
                         group by PayrollgrpId
@@ -133,9 +133,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data;
     }
     
-    public async Task<List<EmpratesModel?>?> _02ByName(string name, string paySchema, string pisSchema, string conn)
+    public async Task<List<EmpratesModel?>?> _02ByName(string? name, string? paySchema, string? pisSchema, string? conn)
     {
-        string sql = $@"select p.Name PayrollGrpName,   
+        string? sql = $@"select p.Name PayrollGrpName,   
                             e.SystemId, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, e.Suffix, e.EmpAlias, 
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, 
                             r.*, pr.RateName 
@@ -148,9 +148,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data;
     }
     
-    public async Task<EmpratesModel?> _02ByEmpNumber(string empnumber , string paySchema, string pisSchema, string conn)
+    public async Task<EmpratesModel?> _02ByEmpNumber(string? empnumber , string? paySchema, string? pisSchema, string? conn)
     {
-        string sql = $@"select  e.SystemId, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, e.Suffix, e.EmpAlias, 
+        string? sql = $@"select  e.SystemId, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, e.Suffix, e.EmpAlias, 
                                 concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, 
                                 r.*, pr.RateName, p.Name PayrollGrpName
                         from {paySchema}.Emprates r 
@@ -162,9 +162,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data.FirstOrDefault();
     }
 
-    public async Task<List<EmpratesModel?>?> _02PerPG(int payrollgrpId, string paySchema, string pisSchema, string conn)
+    public async Task<List<EmpratesModel?>?> _02PerPG(int? payrollgrpId, string? paySchema, string? pisSchema, string? conn)
     {
-        string sql = $@"select  
+        string? sql = $@"select  
                             e.SystemId, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, e.Suffix, e.EmpAlias, 
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, 
                             r.*, pr.RateName, p.Name PayrollGrpName
@@ -178,9 +178,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         var data = await _sql.FetchData<EmpratesModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
         return data;
     }
-    public async Task<List<EmpratesModel?>?> _02Deployed(int payrollgrpId, string paySchema, string pisSchema, string conn)
+    public async Task<List<EmpratesModel?>?> _02Deployed(int? payrollgrpId, string? paySchema, string? pisSchema, string? conn)
     {
-        string sql = $@"select  
+        string? sql = $@"select  
                             e.Id EmpmasId, e.SystemId, ifnull(e.EmpNumber,'') EmpNumber, 
                             e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, e.Suffix, e.EmpAlias, 
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, 
@@ -198,9 +198,9 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data;
     }
     
-    public async Task<List<EmpratesModel?>?> _02NotInTmpTbltran(string trn, string paySchema, string pisSchema, string conn)
+    public async Task<List<EmpratesModel?>?> _02NotInTmpTbltran(string? trn, string? paySchema, string? pisSchema, string? conn)
     {
-        string sql = $@"select  concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', trim(e.EmpMidNm), ' [ ',trim(ifnull(g.Name,'No Payroll Group')) ,' ]') FullName,
+        string? sql = $@"select  concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', trim(e.EmpMidNm), ' [ ',trim(ifnull(g.Name,'No Payroll Group')) ,' ]') FullName,
                             e.SystemId, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, e.Suffix, e.EmpAlias, 
                             r.*, pr.RateName, g.Name PayrollGrpName
                         from {paySchema}.Emprates r
@@ -213,10 +213,10 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data;
     }
 
-    public async Task<EmpratesModel?> _03(EmpratesModel emprates, string schema, string conn)
+    public async Task<EmpratesModel?> _03(EmpratesModel emprates, string? schema, string? conn)
     {
         //int empmasId = emprates.EmpmasId;
-        string sql = $@"Update {schema}.Emprates set 
+        string? sql = $@"Update {schema}.Emprates set 
                             PayrollgrpId    = @PayrollgrpId,  
                             UsePaygrpRates  = @UsePaygrpRates,  
                             RatePerHr       = @RatePerHr,  
@@ -230,10 +230,10 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         var data = await _sql.FetchData<EmpratesModel?, dynamic>(sql, emprates, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<EmpratesModel?> _03Rates(EmpratesModel emprates, string schema, string conn)
+    public async Task<EmpratesModel?> _03Rates(EmpratesModel emprates, string? schema, string? conn)
     {
         //int empmasId = emprates.EmpmasId;
-        string sql = $@"Update {schema}.Emprates set 
+        string? sql = $@"Update {schema}.Emprates set 
                             RatePerHr       = @RatePerHr,  
                             RatePerDay      = @RatePerDay,  
                             RatePerMonth    = @RatePerMonth,  
@@ -246,17 +246,17 @@ public class EmpratesDataAccess : IEmpratesDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task<EmpratesModel?> _04(int empmasId, string schema, string conn)
+    public async Task<EmpratesModel?> _04(int? empmasId, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Emprates where EmpmasId = @EmpmasId;
+        string? sql = $@"Delete from {schema}.Emprates where EmpmasId = @EmpmasId;
                         select  * from {schema}.Emprates where EmpmasId = @EmpmasId;";
         var data = await _sql.FetchData<EmpratesModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task _04ByFK(int empmasId, int payrollgrpId, string schema, string conn)
+    public async Task _04ByFK(int? empmasId, int? payrollgrpId, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Emprates    where EmpmasId = @EmpmasId and PayrollgrpId = @PayrollgrpId;
+        string? sql = $@"Delete from {schema}.Emprates    where EmpmasId = @EmpmasId and PayrollgrpId = @PayrollgrpId;
                         Delete from {schema}.Empratesdtl where EmpmasId = @EmpmasId and PayrollgrpId = @PayrollgrpId;";
         await _sql.ExecuteCmd<dynamic>(sql, new { EmpmasId = empmasId, PayrollgrpId = payrollgrpId }, conn);
     }

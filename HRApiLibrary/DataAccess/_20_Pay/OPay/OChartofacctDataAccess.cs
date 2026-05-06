@@ -13,9 +13,9 @@ public class OChartofacctDataAccess : IOChartofacctDataAccess
         _sql = sql;
     }
 
-    public async Task _01(GChartofacctModel chartofacct, string schema, string conn)
+    public async Task _01(GChartofacctModel chartofacct, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Chartofacct 
+        string? sql = $@"Insert into {schema}.Chartofacct 
 							(AcctNumber, AcctName, AcctType, isTaxable, isYTDAcct, isTaxExcl, islock, ischargeable, 
 							 hasRateOverBasic, isOthers, isFixed, timedMode, shortDesc, show01, sort, special_, show02, 
 							 DedSort, isTH, Deferd, isOT, isMealAcct, formula, OTrate, withSSS, withPHIC, withPagibig, 
@@ -30,18 +30,18 @@ public class OChartofacctDataAccess : IOChartofacctDataAccess
     }
 
 
-    public async Task<List<GChartofacctModel?>?> _02s(string acctNumber, string schema, string conn)
+    public async Task<List<GChartofacctModel?>?> _02s(string? acctNumber, string? schema, string? conn)
     {
-        string sql = $@"select  
+        string? sql = $@"select  
 		 from {schema}.Chartofacct where AcctNumber = @AcctNumber";
         var data = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { AcctNumber = acctNumber }, conn);
         return data;
     }
 
 
-    public async Task<GChartofacctModel?> _03(GChartofacctModel chartofacct, string schema, string conn)
+    public async Task<GChartofacctModel?> _03(GChartofacctModel chartofacct, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Chartofacct set 
+        string? sql = $@"Update {schema}.Chartofacct set 
 							AcctName = @AcctName, 
 							AcctType = @AcctType, 
 							isTaxable = @isTaxable, 
@@ -84,9 +84,9 @@ public class OChartofacctDataAccess : IOChartofacctDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task _04(string acctnumber, string schema, string conn)
+    public async Task _04(string? acctnumber, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Chartofacct where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Chartofacct where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { AcctNumber = acctnumber }, conn);
 
     }
@@ -94,8 +94,8 @@ public class OChartofacctDataAccess : IOChartofacctDataAccess
 
 public interface IOChartofacctDataAccess
 {
-    Task _01(GChartofacctModel chartofacct, string schema, string conn);
-    Task<List<GChartofacctModel?>?> _02s(string acctNumber, string schema, string conn);
-    Task<GChartofacctModel?> _03(GChartofacctModel chartofacct, string schema, string conn);
-    Task _04(string acctnumber, string schema, string conn);
+    Task _01(GChartofacctModel chartofacct, string? schema, string? conn);
+    Task<List<GChartofacctModel?>?> _02s(string? acctNumber, string? schema, string? conn);
+    Task<GChartofacctModel?> _03(GChartofacctModel chartofacct, string? schema, string? conn);
+    Task _04(string? acctnumber, string? schema, string? conn);
 }

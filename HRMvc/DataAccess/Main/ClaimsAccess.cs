@@ -9,7 +9,7 @@ namespace HRMvc.DataAccess.Main;
 
 public class ClaimsAccess : Controller
 {
-    public async Task<ActionResult> CreateClaims(int empmasId, UserCompanyModel uc)
+    public async Task<ActionResult> CreateClaims(int? empmasId, UserCompanyModel uc)
     {
         var claims = new List<Claim>();
         claims.Add(new Claim("UserId", empmasId.ToString()));

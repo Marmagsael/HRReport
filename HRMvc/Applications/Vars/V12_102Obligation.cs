@@ -13,7 +13,7 @@ public class V12_102Obligation
     public AtttemplateModel             Atttemplate     { get; set; } = new();
     public List<AtttemplateModel?>?     Atttemplates    { get; set; } = [];
     public List<AttreqtypeModel>        Attreqtypes     { get; set; } = []; 
-    public string                       Action          { get; set; } = string.Empty;
+    public string?                       Action          { get; set; } = string.Empty;
 
 
     public bool                         ShowOTApproval              { get; set; } = false;
