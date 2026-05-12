@@ -32,10 +32,15 @@ public class V12_102Obligation
     public List<AtttemplatereqdtlModel> Atttemplatereqdtls          { get; set; } = [];
 
     
-    public bool                             ShowLvApproval            { get; set; } = false;
-    public LeaveapplicationModel            LvApp                     { get; set; } = new();
-    public List<LeaveapplicationModel>      LvApps                    { get; set; } = [];
-    public List<LeaveapplicationdtlModel>   LvAppdtls                 { get; set; } = [];
+    public bool                             ShowLvApproval              { get; set; } = false;
+    public LeaveapplicationModel            LvApp                       { get; set; } = new();
+    public List<LeaveapplicationModel>      LvApps                      { get; set; } = [];
+    public List<LeaveapplicationdtlModel>   LvAppdtls                   { get; set; } = [];
+
+
+    public bool                             ShowPartiallyApproved_CS    { get; set; } = false; 
+    public bool                             ShowPartiallyApproved_PR    { get; set; } = false; 
+
 
 
 

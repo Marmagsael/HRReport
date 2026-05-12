@@ -103,10 +103,21 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
     {
         string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*
                         from {pisdb}.Atttemplatereqhdr h 
-                        left join {opisdb}.Empmas e on e.empnumber = h.empnumber 
+                        left join {opisdb}.Empmas e on e.empnumber = h.empnumber_Approver 
                         where h.UserId = @UserId 
                         order by h.DateRequested ";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { UserId = userId }, conn);
+        return data;
+    }
+    
+    public async Task<List<AtttemplatereqhdrModel?>?> _02ByUserId_ByEffectivity(int? userId, DateTime effectivity, string? pisdb, string? conn)
+    {
+        string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*
+                        from {pisdb}.Atttemplatereqhdr h 
+                        left join {pisdb}.Empmas e on e.empnumber = h.empnumber 
+                        where h.UserId = @UserId and Date(h.Effectivity) = Date(@Effectivity)
+                        order by h.DateRequested ";
+        var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { UserId = userId, Effectivity = effectivity }, conn);
         return data;
     }
     
@@ -217,10 +228,10 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
     }
 
 
-    public async Task _03PartiallyApprove(AtttemplatereqhdrModel atrh, string? empNumber, string? schema, string? conn)
+    public async Task _03PartiallyApprove(AtttemplatereqhdrModel atrh, string? empNumber_Approver, string? schema, string? conn)
     {
         string? sql = $@"Update {schema}.Atttemplatereqhdr set EmpNumber_Approver  = @EmpNumber_Approver where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Id = atrh.Id, EmpNumber_Approver = empNumber }, conn);
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = atrh.Id, EmpNumber_Approver = empNumber_Approver }, conn);
 
         AtttemplatereqhistModel h = new()
         {
@@ -228,7 +239,7 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
             DActionTaken = DateTime.Now,
             SetStatusTo = "F",
             Empnumber_Approver = atrh.EmpNumber_Approver??"",
-            Remarks = $"Partially Aprove [{empNumber??""}] "
+            Remarks = $"Partially Aprove [{empNumber_Approver ?? ""}] "
         };
         
 
@@ -303,6 +314,7 @@ public interface IAtttemplatereqhdrDataAccess
     Task<List<AtttemplatereqhdrModel?>?>    _02ByUserIds(int? userId, string? pisdb, string? opisdb, string? conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ForApproval_PerApprover(string? approver_empnumber, string? pisdb, string? conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ChkMayEntry(int? userId, string? pisdb, string? conn);
+    Task<List<AtttemplatereqhdrModel?>?>    _02ByUserId_ByEffectivity(int? userId, DateTime effectivity, string? pisdb, string? conn); 
     Task<AtttemplatereqhdrModel?>           _03(AtttemplatereqhdrModel atttemplatereqhdr, string? schema, string? conn);
     Task                                    _03Approve(AtttemplatereqhdrModel atrh, string? empNumber, string? schema, string? conn);
     Task                                    _03PartiallyApprove(AtttemplatereqhdrModel atrh, string? empNumber, string? schema, string? conn);

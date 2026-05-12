@@ -1,6 +1,12 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
-@if(ShowModal) { <div> <_12_102_CS_ApprovalModal V="@V" Ec="@EC_Catcher" />  </div> }
+@using HRMvc.Applications._00GeneralComponents
+@inject DialogService _DialogService
+<RadzenDialog />
+
+
+@if(ShowModal) { <div> <_12_102_CS_ApprovalModal V="@V" Ec="EC_Catcher" />  </div> }
+@if (ShowProcessing) { <_00Loading Msg="Processing please wait..." /> }
 
 <div class="card b-maroon ">
     <div class="card-header p-0 ">
@@ -9,16 +15,15 @@
         </div>
 
         <div class="p-1 d-flex gap-2 small ">
-            <button @onclick="MarkAll" class="btn text-primary w-80p bordered-bottom p-1 @markAllCss ">Mark All
-            </button>
-            <button @onclick="UnmarkAll" class="btn text-primary w-90p bordered-bottom p-1 @unmarkAllCss ">Unmark All
-            </button>
+            <button @onclick="MarkAll" class="btn text-primary w-80p bordered-bottom p-1 @markAllCss ">Mark All</button>
+            <button @onclick="UnmarkAll" class="btn text-primary w-90p bordered-bottom p-1 @unmarkAllCss ">Unmark All</button>
             <div class="w-10p bordered-left">&nbsp; </div>
-            <button class="btn text-successw  w-130p bordered-bottom p-1 @noSelectedCss ">Approve Selected </button>
-            <button class="btn text-success w-130p bordered-bottom p-1 @noSelectedCss ">Partially Approve </button>
-            
+            <button @onclick="Approve_CS" class="btn text-successw  w-130p bordered-bottom p-1 @noSelectedCss ">Approve Selected </button>
+            <button @onclick="PartiallyApprove" class="btn text-success w-130p bordered-bottom p-1 @noSelectedCss ">Partially Approve </button> 
         </div>
     </div>
+
+    @if (V.ShowPartiallyApproved_CS && SelectedRec>0) { <_12_102_CS_Approval_PartiallyApproved V="@V" Ec="@EC_Catcher1" /> }
 
     <div class="card-body">
         
@@ -26,8 +31,7 @@
             <div class="w-200p">Requestor</div>
             <div class="w-50p">TRN</div>
             <div class="w-100p">Requested</div>
-            <div class="d-flex flex-grow-1 ">Remarks</div>
-            
+            <div class="d-flex flex-grow-1 ">Remarks</div>  
         </div>
 
         @foreach (var r in V.Atttemplatereqhdrs)
@@ -65,19 +69,56 @@
 @code {
     [CascadingParameter] public UserClaimsModel     Uc { get; set; } = new();
     [Parameter]          public V12_102Obligation   V { get; set; } = new();
+    
+    double ProgressValue = 0;
     bool   ShowModal   = false; 
+    bool ShowProcessing = false; 
+    int     SelectedRec => V.Atttemplatereqhdrs?.Count??0 ; 
+    
+    async Task Approve_CS() {
+        var result = await _DialogService.Confirm("Approve selected Change Schedule Request?", "Confirm", 
+                            new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" } );
+        if (result == true)
+        {
+            ShowProcessing = true; 
+            foreach(var h in V.Atttemplatereqhdrs.Where(hdr => hdr.IsSelected==true)) {
+                await _attreqhdr._03Approve(h, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+            }
+
+            V.Atttemplatereqhdrs = []; 
+            List<AtttemplatereqhdrModel?>? res = await _attreqhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+            if(res!=null && res.Count>0) V.Atttemplatereqhdrs =res!; 
+            StateHasChanged(); 
+
+            ShowProcessing = false;
+        }
+    }
+    
+    async Task EC_Catcher1() { 
+        if (V.Action == "ClosePA_CS")           ClosePA_CS(); 
+        if (V.Action == "CS_PartiallyApproved") await PartiallApprove_CS();
+        V.Action=string.Empty; 
+    }
+
+    async Task PartiallApprove_CS() {
+        V.Atttemplatereqhdrs = []; 
+        List<AtttemplatereqhdrModel?>? res = await _attreqhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+        if (res != null && res.Count > 0) V.Atttemplatereqhdrs =res!; 
+        StateHasChanged(); 
+    }
+
+    void ClosePA_CS() {
+        V.ShowPartiallyApproved_CS = false; 
+    }
+    void PartiallyApprove() { V.ShowPartiallyApproved_CS=true; }
 
     async Task ShowDtl(AtttemplatereqhdrModel h)
     {
-
         var rest = await _atttemplate._02(h.UserId??0, Uc.SchemaUserPis, Uc.Conn);
         V.Atttemplate = rest ?? new();
 
         List<AtttemplatereqdtlModel?>? res = await _atttemplatereqdtl._02ByAtttemplateReqHdrId(h.Id??0, Uc.SchemaUserPis, Uc.Conn); 
         V.Atttemplatereqdtl = res.FirstOrDefault()??new();
-
-        
-
 
         V.Atttemplatereqhdr = h;
         ShowModal = true; 
@@ -95,9 +136,6 @@
 
     void EC_Catcher(bool ans)
     {
-        
-        
-        
         
         ShowModal = ans;
         V.Action=string.Empty; 
