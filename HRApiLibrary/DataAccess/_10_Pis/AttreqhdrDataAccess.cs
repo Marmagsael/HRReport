@@ -145,28 +145,33 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
             {
                 EmpmasId        = userId, 
                 DayNo           = (int)(date?.DayOfWeek ?? DayOfWeek.Sunday),
-                
-                PunchInDate     = dtl.DStart, 
+
+                PunchInDate = dtl.DStart, 
                 TimeZoneIdIn    = MsdsDataAccess.Get_TimeZone_Id(id), 
                 IpAddressIn     = MsdsDataAccess.GetIPAddress(), 
                 MacAddressIn    = MsdsDataAccess.GetMacAddress(), 
                 UserIdIn        = approverId, 
 
                 PunchOutDate    = dtl.DEnd, 
-                Status          = "L"
+                TimeZoneIdOut   = MsdsDataAccess.Get_TimeZone_Id(id),
+                IpAddressOut    = MsdsDataAccess.GetIPAddress(),
+                MacAddressOut   = MsdsDataAccess.GetMacAddress(),
+                
+
+                Status = "L"
             };
 
 
-        (ap.PunchT, ap.SchedDuration) = ap.DayNo switch
+        (ap.PunchT, ap.SchedDuration, ap.DutyTypeCode) = ap.DayNo switch
         {
-            1 => (t.D7_In ?? 0, t.D7_HrsLength ?? 0),
-            2 => (t.D1_In ?? 0, t.D1_HrsLength ?? 0),
-            3 => (t.D2_In ?? 0, t.D2_HrsLength ?? 0),
-            4 => (t.D3_In ?? 0, t.D3_HrsLength ?? 0),
-            5 => (t.D4_In ?? 0, t.D4_HrsLength ?? 0),
-            6 => (t.D5_In ?? 0, t.D5_HrsLength ?? 0),
-            7 => (t.D6_In ?? 0, t.D6_HrsLength ?? 0),
-            _ => (0, 0)
+            1 => (t.D7_In ?? 0, t.D7_HrsLength ?? 0, t.D7_DutyType,"RN"),
+            2 => (t.D1_In ?? 0, t.D1_HrsLength ?? 0, t.D1_DutyType,"RN"),
+            3 => (t.D2_In ?? 0, t.D2_HrsLength ?? 0, t.D2_DutyType,"RN"),
+            4 => (t.D3_In ?? 0, t.D3_HrsLength ?? 0, t.D3_DutyType,"RN"),
+            5 => (t.D4_In ?? 0, t.D4_HrsLength ?? 0, t.D4_DutyType,"RN"),
+            6 => (t.D5_In ?? 0, t.D5_HrsLength ?? 0, t.D5_DutyType,"RN"),
+            7 => (t.D6_In ?? 0, t.D6_HrsLength ?? 0, t.D6_DutyType,"RN"),
+            _ => (0, 0, "RN")
         };
 
         sql=$@"insert into {schema}.attpunches1 
