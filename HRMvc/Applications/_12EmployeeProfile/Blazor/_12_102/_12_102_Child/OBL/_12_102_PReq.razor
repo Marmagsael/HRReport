@@ -1,4 +1,10 @@
-﻿@if(ShowModal) { <div> <_12_102_PReq_Modal V="@V" Ec="EC_Catcher" />  </div> }
+﻿@inject DialogService _DialogService
+<RadzenDialog />
+
+
+@* <div> V.Attreqhdrs?.Count : @V.Attreqhdrs?.Count ** V.ShowPartiallyApproved_PR : @V.ShowPartiallyApproved_PR</div> *@
+
+@if(ShowModal) { <div> <_12_102_PReq_Modal V="@V" Ec="EC_Catcher" />  </div> }
 
 
 <div class="card b-blue">
@@ -11,11 +17,13 @@
             <button @onclick="MarkAll" class="btn text-primary w-80p bordered-bottom p-1 @markAllCss ">Mark All </button>
             <button @onclick="UnmarkAll"  class="btn text-primary w-90p bordered-bottom p-1 @unmarkAllCss ">Unmark All </button>
             <div class="w-10p bordered-left">&nbsp; </div>
-            <button class="btn text-successw  w-130p bordered-bottom p-1 @noSelectedCss ">Approve Selected </button>
-            <button class="btn text-success w-130p bordered-bottom p-1 @noSelectedCss ">Partially Approve </button>
+            <button @onclick="Approve_PR" class="btn text-successw  w-130p bordered-bottom p-1 @noSelectedCss ">Approve Selected </button>
+            <button @onclick="PartiallyApprove" class="btn text-success w-130p bordered-bottom p-1 @noSelectedCss ">Partially Approve </button>
             
         </div>
     </div>
+
+    @if (V.ShowPartiallyApproved_PR && SelectedRec>0) { <_12_102_PReq_Modal_PartiallyApprove V="@V" Ec="@EC_Catcher1" /> }
 
     <div class="card-body">
         
@@ -51,12 +59,15 @@
 
 
 @inject IAttreqdtlDataAccess _attreqdtl; 
+@inject IAttreqhdrDataAccess _attreqhdr; 
+
 
 @code {
     [CascadingParameter]    public UserClaimsModel          Uc          { get; set; } = new(); 
     [Parameter]             public V12_102Obligation        V           { get; set; } = new();
 
-    bool                    ShowModal   = false; 
+    bool                    ShowModal       = false; 
+    bool                    ShowProcessing  = false;
 
 
     bool isMarkAll => (V.Attreqhdrs.Where(a=>a.IsSelected==true).ToList().Count == V.Attreqhdrs.Count ); 
@@ -67,8 +78,48 @@
     bool isNoSelected => (V.Attreqhdrs.Where(a=>a.IsSelected==true).ToList().Count > 0 ); 
     string? noSelectedCss => !isNoSelected ? " disabled-div " : " ";
 
+    int     SelectedRec => V.Attreqhdrs?.Count??0 ; 
+
 
     @* --- Functions --------------------------------------------------------------------------------- *@
+    void PartiallyApprove() { V.ShowPartiallyApproved_PR = true; }
+
+    async Task Approve_PR() {
+        var result = await _DialogService.Confirm("Approve selected punch IN/OUT Request?", "Confirm", 
+                            new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" } );
+        if (result == true)
+        {
+            ShowProcessing = true; 
+            foreach(var h in V.Attreqhdrs.Where(hdr => hdr.IsSelected==true)) {
+                await _attreqhdr._03Approve(h, Uc.OempNumber,Uc.UserId??0, Uc.SchemaUserPis, Uc.Conn); 
+            }
+
+            V.Attreqhdrs = []; 
+            var res = await _attreqhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+            if(res!=null && res.Count>0) V.Attreqhdrs =res!; 
+            StateHasChanged(); 
+
+            ShowProcessing = false;
+        }
+    }
+
+    async Task EC_Catcher1() { 
+        if (V.Action == "ClosePR")                  ClosePA_PR(); 
+        if (V.Action == "PR_PartiallyApproved")     await PartiallApprove_PR();
+        V.Action=string.Empty; 
+    }
+
+    async Task PartiallApprove_PR() {
+        
+        V.Attreqhdrs = [];        
+        List<AttreqhdrModel?>? res = await _attreqhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null && res.Count > 0) V.Attreqhdrs = res!;
+        StateHasChanged(); 
+
+    }
+
+    void ClosePA_PR() { V.ShowPartiallyApproved_PR = false;  }
+
     async Task ShowDtl(AttreqhdrModel h) {
         var res = await _attreqdtl._02ByAttReqHdrIds(h.Id, Uc.SchemaUserPis, Uc.Conn); 
         V.Attreqdtls = []; 

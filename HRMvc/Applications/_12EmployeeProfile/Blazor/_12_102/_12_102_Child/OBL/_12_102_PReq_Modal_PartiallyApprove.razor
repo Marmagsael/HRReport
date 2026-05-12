@@ -5,7 +5,7 @@
     
     <!-- Header -->
     <div class="d-flex justify-content-between bg-secondary p-1 bordered-bottom">
-        <div class="d-flex align-items-center px-2 text-white ">Message</div>
+        <div class="d-flex align-items-center px-2 text-white ">Partially Approve</div>
         <div><button @onclick="Close" class="btn text-white">X</button></div>
     </div>
 
@@ -13,21 +13,26 @@
     <div class="d-flex gap-2 bg-success bg-opacity-10 p-2">
         
         <!-- Label -->
-        <div class="d-flex align-items-center w-125p ">
-            Approver <span class="text-danger">*</span>
-        </div>
+        <div class="d-flex align-items-center w-125p "> Approver <span class="text-danger">*</span> </div>
 
         <!-- Input + Button -->
         <div class="d-flex flex-grow-1 gap-1 w-100" style="min-width: 0;">
     
             <div class="w-75 p-1 d-flex gap-1" style="min-width: 0;">
                 <div class="w-125p">
-                    <input @onblur="LocateApprover" type="text" @bind-value="apprverNumber" 
-                           placeholder="XXXXX" class="form-control" style="width: 100%; max-width: 100%;" />
+                    <input  @onblur="LocateApprover" 
+                            type="text" 
+                            @bind-value="approverNumber" 
+                           placeholder="XXXXX" 
+                           class="form-control" 
+                           style="width: 100%; max-width: 100%;" />
                 </div>
                 <div class="d-flex flex-grow-1 ">
-                    <input type="text" @bind-value="V.Attreqhdr.ApproverName"  disabled
-                           class="form-control" style="width: 100%; max-width: 100%;" />
+                    <input  type="text" 
+                            @bind-value="V.Attreqhdr.ApproverName"  
+                            disabled
+                           class="form-control" 
+                           style="width: 100%; max-width: 100%;" />
                 </div>
                 
             </div>
@@ -53,36 +58,31 @@
     string? submitCss => !string.IsNullOrWhiteSpace(V?.Attreqhdr?.ApproverName) ? "" : "disabled-div-50";
     // ✅ Optional: actual disabled state (recommended)
     bool IsDisabled => string.IsNullOrWhiteSpace(V?.Attreqhdr?.ApproverName);
-    string? apprverNumber = string.Empty; 
+    string? approverNumber = string.Empty; 
 
     async Task LocateApprover() {
         V.Attreqhdr.ApproverName = string.Empty; 
-        var res = await _empmas._02byEmpnumber(apprverNumber, Uc.SchemaUserPis, Uc.Conn); 
+        List<EmpmasInternalModel?>? res = await _empmas._02byEmpnumber(approverNumber, Uc.SchemaUserPis, Uc.Conn); 
         if(res!=null && res.Count>0) {
             V.Attreqhdr.ApproverName = res?.FirstOrDefault().Fullname??string.Empty; 
-        }
-
-        
-    }
-
-    async Task Submit() {
-        V.Action = "PartiallyApproved";
-        V.Attreqhdrs =[]; 
-
-        await _arhdr._03PartiallyApprove(V.Attreqhdr, apprverNumber, Uc.SchemaUserPis, Uc.Conn);
-        var rAttreqhdrs = await _arhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
-        if (rAttreqhdrs != null && rAttreqhdrs.Count > 0)
-        {
-            V.Attreqhdrs = rAttreqhdrs ?? [];
-            V.Attreqhdr = new();
-            StateHasChanged();
-        }
-        await Ec.InvokeAsync();
+        }        
     }
 
     async Task Close()
     {
-        V.Action = "ClosePA";
+        V.Action = "ClosePR";
         await Ec.InvokeAsync();
     }
+
+
+    async Task Submit() {
+        V.Action = "PR_PartiallyApproved";
+        foreach (var h in V.Attreqhdrs.Where(h => h.IsSelected??false))
+        {
+            await _arhdr._03PartiallyApprove(h, approverNumber, Uc.SchemaUserPis, Uc.Conn);
+        }
+        await Ec.InvokeAsync();
+    }
+
+
 }
