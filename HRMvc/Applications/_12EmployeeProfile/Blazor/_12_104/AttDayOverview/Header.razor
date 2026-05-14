@@ -1,19 +1,50 @@
 ﻿@{
-    string? status = V.DayDetail.Status.Contains("PRESENT") ? "PRESENT" : V.DayDetail.Status.Contains("ABSENT") ? "ABSENT" : V.DayDetail.Status.Contains("RD") ? "Rest Day" : "";
-    string? bgcolor = V.DayDetail.Status.Contains("PRESENT") ? "success" : V.DayDetail.Status.Contains("PRESENT") ? "danger" : V.DayDetail.Status.Contains("RD") ? "light" : "";
-    string? tcolor   = V.DayDetail.Status.Contains("RD") ? "dark" : "";
+    var statuses = V.DayDetail.Status?
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(s => s.Trim())
+        .Where(s => !string.IsNullOrWhiteSpace(s))
+        .ToList() ?? new();
+
+    // Dynamic leave detection — no hardcoded leave codes
+    bool hasLeave = !string.IsNullOrWhiteSpace(V.DayDetail.LeaveType);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-2">
     <h6 class="fw-bold mb-0">@V.DayDetail.Date?.ToString("ddd, dd MMMM yyyy")</h6>
-    <span class="badge bg-@bgcolor text-@tcolor">
-
-        @status
-    </span>
+    <div class="d-flex gap-1 flex-wrap justify-content-end">
+        @foreach (var s in statuses)
+        {
+            <span class="badge @GetBadgeClass(s, hasLeave)">
+                @(s.Trim().Contains("RD") ? "REST DAY" : s)
+            </span>
+        }
+    </div>
 </div>
-
 <hr />
+
+<style>
+    .bg-purple {
+        background: #6f42c1;
+    }
+</style>
 
 @code {
     [Parameter] public V12104Model V { get; set; } = new();
+
+    private string GetBadgeClass(string status, bool hasLeave) => status.ToUpper() switch
+    {
+        var s when s.Contains("1/2 PRESENT") => "bg-success text-white opacity-75",
+        var s when s.Contains("1/2 ABSENT") => "bg-danger text-white opacity-75",
+        var s when s.Contains("PRESENT") => "bg-success text-white",
+        var s when s.Contains("ABSENT") => "bg-danger text-white",
+        var s when s.Contains("LATE") => "bg-warning text-dark",
+        var s when s.Contains("UNDERTIME") => "bg-purple-dark text-white",
+        var s when s.Contains("RD")     => "bg-light text-dark border",
+        var s when s.Contains("R")      => "bg-light text-dark border",
+        var s when s.Contains("RN")     => "bg-light text-dark border",
+        var s when s.Contains("1/2")    => "bg-info text-dark",
+       
+        var s when hasLeave => "bg-info text-dark",
+        _ => "bg-secondary text-white"
+    };
 }

@@ -15,9 +15,9 @@ public class AttLeaveapplicationModel
     public string?      DutyType        { get; set; }
     public string?      LeaveName       { get; set; }
     public string?      LeaveCode       { get; set; }
-    public int?          TimeStart       { get; set; }
-    public int?          TimeDuration    { get; set; }
-    public int?          CreditedHrs     { get; set; }
+    public int?         TimeStart       { get; set; }
+    public int?         TimeDuration    { get; set; }
+    public int?         CreditedHrs     { get; set; }
     
     public TimeSpan?    ExpLeaveStart    { get; set; }
     public TimeSpan?    ExpLeaveEnd      { get; set; }
