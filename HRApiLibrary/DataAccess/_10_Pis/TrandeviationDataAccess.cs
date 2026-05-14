@@ -11,9 +11,9 @@ public class TrandeviationDataAccess : ITrandeviationDataAccess
         _sql = sql;
     }
 
-    public async Task<TrandeviationModel?> _01(TrandeviationModel Trandeviation, string schema, string conn)
+    public async Task<TrandeviationModel?> _01(TrandeviationModel Trandeviation, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Trandeviation (IdEmpmas, TranNumber, PrepDate, Mode, ReportDate, OccurDate, Allegation,  EmpStatusId, IdApprover, MarkApprove) values (@IdEmpmas, @TranNumber, @PrepDate, @Mode, @ReportDate, @OccurDate, @Allegation,  @EmpStatusId, @IdApprover, @MarkApprove);
+        string? sql = $@"Insert into {schema}.Trandeviation (IdEmpmas, TranNumber, PrepDate, Mode, ReportDate, OccurDate, Allegation,  EmpStatusId, IdApprover, MarkApprove) values (@IdEmpmas, @TranNumber, @PrepDate, @Mode, @ReportDate, @OccurDate, @Allegation,  @EmpStatusId, @IdApprover, @MarkApprove);
                         Update {schema}.Trandeviationother set Remarks = @Remarks, Link = @Link where TranNumber = @TranNumber";
                     
                 await _sql.ExecuteCmd<dynamic>(sql, Trandeviation, conn);
@@ -28,25 +28,25 @@ public class TrandeviationDataAccess : ITrandeviationDataAccess
     }
 
 
-    public async Task<TrandeviationModel?> _02(int id, string schema, string conn)
+    public async Task<TrandeviationModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  * from {schema}.Trandeviation where Id = @Id ";
+        string? sql = $@"select  * from {schema}.Trandeviation where Id = @Id ";
         var data = await _sql.FetchData<TrandeviationModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<TrandeviationModel?> _02ByEmpmasId(int empmasId, string schema, string conn)
+    public async Task<TrandeviationModel?> _02ByEmpmasId(int? empmasId, string? schema, string? conn)
     {
-        string sql = $@"SELECT t.* FROM {schema}.Trandeviation t
+        string? sql = $@"SELECT t.* FROM {schema}.Trandeviation t
                         WHERE t.IdEmpmas = @IdEmpmas AND t.PrepDate = (SELECT MAX(PrepDate) FROM {schema}.Trandeviation WHERE IdEmpmas = @IdEmpmas);";
 
         var data = await _sql.FetchData<TrandeviationModel?, dynamic>(sql, new { IdEmpmas = empmasId }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<TrandeviationModel?> _02ByTrn(string trn, string schema, string conn)
+    public async Task<TrandeviationModel?> _02ByTrn(string? trn, string? schema, string? conn)
     {
-        string sql = $@"SELECT t.*, tro.*, th.*, th.UserId PrepId, TRIM(CONCAT(
+        string? sql = $@"SELECT t.*, tro.*, th.*, th.UserId PrepId, TRIM(CONCAT(
                         TRIM(IFNULL(e.EmpLastNm, '')), ', ',
                         TRIM(IFNULL(e.EmpFirstNm, '')), ' ',
                         TRIM(IFNULL(e.EmpMidNm, ''))
@@ -61,9 +61,9 @@ public class TrandeviationDataAccess : ITrandeviationDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<TrandeviationModel?> _03(int id, TrandeviationModel trandeviation, string schema, string conn)
+    public async Task<TrandeviationModel?> _03(int? id, TrandeviationModel trandeviation, string? schema, string? conn)
     {
-        string sql = $@"UPDATE {schema}.Trandeviation SET IdEmpmas = @IdEmpmas,TranNumber = @TranNumber,
+        string? sql = $@"UPDATE {schema}.Trandeviation SET IdEmpmas = @IdEmpmas,TranNumber = @TranNumber,
                             PrepDate = @PrepDate, Mode = @Mode,ReportDate = @ReportDate, DateReported = @DateReported, Allegation = @Allegation,
                             OccurDate = @OccurDate, EmpStatusId = @EmpStatusId, IdApprover = @IdApprover, MarkApprove = @MarkApprove
                         WHERE Id = @Id;
@@ -77,9 +77,9 @@ public class TrandeviationDataAccess : ITrandeviationDataAccess
     }
 
 
-    public async Task<TrandeviationModel?> _04(int id, string schema, string conn)
+    public async Task<TrandeviationModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Trandeviation where Id = @Id;
+        string? sql = $@"Delete from {schema}.Trandeviation where Id = @Id;
                         Delete from  {schema}.trandeviationother where Id = @Id";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 

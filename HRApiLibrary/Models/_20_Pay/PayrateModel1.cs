@@ -2,7 +2,7 @@
 
 public class PayrateModel
 {
-    public int Id { get; set; }
+    public int? Id { get; set; }
     public string? RateName { get; set; }
     
     

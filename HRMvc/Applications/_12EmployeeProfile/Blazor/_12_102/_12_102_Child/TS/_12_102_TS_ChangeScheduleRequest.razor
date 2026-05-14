@@ -6,10 +6,17 @@
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
 @using SQLitePCL
+
+@using Radzen
+
+@inject DialogService _DialogService
+@inject NotificationService _NotificationService
+
 <RadzenDialog />
 <RadzenNotification />
 <RadzenTooltip />
-<RadzenContextMenu />>
+<RadzenContextMenu />
+
 
 <div class="d-flex gap-1 p-1 border-bottom ">
     <div @onclick="New"                 class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
@@ -18,6 +25,7 @@
     <div @onclick="ShowCancel"          class="p-1 mb-cbtn mb-cbtn-red card w-100p  @CanCancel "> Cancel </div>
     <div @onclick="ShowMyRequest"       class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
 </div>
+
 
 <_12_102_ChangeSchedule Cs="@Cs" Uc="@Uc" Ec="@EcCatcher" />
 
@@ -49,7 +57,7 @@
         </div>
 
         <div class="mb-a-blue d-flex mt-1">
-            <div class="w-120p p-2">Effectivity</div>
+            <div class="w-120p p-2">Effectivity * </div>
             <div class="  ">
                 <RadzenDatePicker 
                     @bind-Value="Hdr.Effectivity" 
@@ -119,8 +127,8 @@
             <tr>
                 <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D2_dutytype)  ">Monday</td>
                 <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D2_dutytype) ">@Dtl?.D2_dutytype</td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl.D2_dutytype=="R" ? Dtl.D2_in : "-")  </td>
-                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl.D2_dutytype=="R" ? ((Dtl?.D2_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl?.D2_dutytype=="R" ? Dtl.D2_in : "-")  </td>
+                <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl?.D2_dutytype=="R" ? ((Dtl?.D2_hrslength??0)/100.00).ToString("0.#")+" H" : "-") </td>
 
                 <td class="text-center">
                     <RadzenDropDown 
@@ -480,6 +488,7 @@
                 </td>
 
                 <td class="p-1 text-center align-middle">
+                    
                     @if(DtlReq.D1_DutyType=="R"){
                         <RadzenDropDown
                             Data="@timedurations"
@@ -511,8 +520,8 @@
         </tbody>
     </table>
 
-    <hr />
-    @* === Details ============================================================ *@
+    <_12_102_TS_ChangeScheduleRequest_Notes />
+
 
 
 
@@ -538,6 +547,8 @@
     [Parameter] public  UserClaimsModel?    Uc          { get; set; } = new();   
     [Parameter] public  EventCallback       Ec          { get; set; } 
     V12_102CS   Cs = new();
+    string saveRemarks = string.Empty; 
+    AtttemplatereqhdrModel attTempReqHdr = new(); 
     
     
     
@@ -570,7 +581,21 @@
     async Task Save() {
         if(Hdr==null || Uc==null ) return; 
 
+        DateTime effectivity = Hdr.Effectivity??DateTime.MinValue; 
+        List<AtttemplatereqhdrModel?>? res = await _attTemplateReqhdr._02ByUserId_ByEffectivity(Uc.UserId, effectivity, Uc.SchemaUserPis, Uc.Conn); 
+
+
         if(Hdr.Id == 0) {
+            
+            if (res != null && res.Count > 0)
+            {
+                saveRemarks = "Invalid Effectivity date."; 
+                await _DialogService.Alert("Unable to proceed. A saved request with the same effectivity date already exists.",
+                                            "Existing Request", new AlertOptions() { OkButtonText = "OK" });
+                return;
+            }
+
+
             @* --- Save header ------------------------- *@
             AtttemplatereqhdrModel? h = Cs.Atttemplatereqhdr; 
             h.UserId = Uc.UserId; 
@@ -589,9 +614,27 @@
             await _attTemplateReqdtl._01(DtlReq, Uc.SchemaUserPis, Uc.Conn); 
             List<AtttemplatereqdtlModel?>? resd = await _attTemplateReqdtl._02ByAtttemplateReqHdrId(reshdr?.Id??0, Uc.SchemaUserPis, Uc.Conn); 
             Cs.Atttemplatereqdtl = resd.FirstOrDefault()??new(); 
+
+
         }
 
         if(Hdr.Id > 0) {
+
+            var r =res.FirstOrDefault(); 
+            if (r?.Id is not null && r?.Id != Hdr.Id)
+            {
+                await _DialogService.Alert(
+                    "Unable to update. A saved request with the same effectivity date already exists.",
+                    "Existing Request",
+                    new AlertOptions() { OkButtonText = "OK" });
+
+                var res1 = await _attTemplateReqhdr._02s(Hdr.Id, Uc.SchemaUserPis, Uc.Conn); 
+
+                Cs.Atttemplatereqhdr = res1.FirstOrDefault() ?? new();
+                saveRemarks = "Invalid Effectivity date.";
+                return;
+            }
+
             @* --- Update Header ----------------------- *@
             await _attTemplateReqhdr._03(Hdr, Uc.SchemaUserPis, Uc.Conn); 
             List<AtttemplatereqhdrModel?>? resh = await _attTemplateReqhdr._02s(Hdr.Id??0, Uc.SchemaUserPis, Uc.Conn); 
@@ -604,6 +647,13 @@
             Cs.Atttemplatereqdtl = resd.FirstOrDefault()??new(); 
         }
 
+        saveRemarks = string.Empty;
+        await FetchApprover(); 
+        var obj = new MsdsDataAccess();
+        AtttemplatereqhdrModel x = (AtttemplatereqhdrModel)obj.ObjectMapper(Hdr, attTempReqHdr);  
+        attTempReqHdr = x; 
+
+        
 
     }
 
@@ -618,18 +668,30 @@
         if(d.D7_DutyType=="RD") { d.D7_In=0; d.D7_HrsLength=0; }
     }
 
-    void ShowSendForApproval() {
+    async Task ShowSendForApproval() {
+        if (Hdr.Effectivity == null || Hdr.Effectivity?.Date < DateTime.Now.Date) {
+            
+            await _DialogService.Alert("Effectivity date is not valid.","Invalid Date",
+            new AlertOptions() { OkButtonText = "OK" } );
+            return;
+        }
+
         Cs.ShowSendForApproval = true; 
+
     }
     void ShowCancel() {
         Cs.ShowCancel = true; 
 
     }
     async Task ShowMyRequest() {
-        Cs.ShowMyReqquest = true; 
         Cs.Atttemplatereqhdrs =  []; 
         var res = await _attTemplateReqhdr._02ByUserIds(Uc.UserId, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn)??[]; 
         if(res.Any()) Cs.Atttemplatereqhdrs= res!; 
+        
+        attTempReqHdr = new(); 
+        
+        Cs.ShowMyReqquest = true; 
+        
 
     }
     async Task FetchApprover()
@@ -646,26 +708,31 @@
                             Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue && 
                             Cs.Atttemplatereqhdr.Effectivity > DateTime.MinValue && 
                             Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
-    string  CanSave1     =>  IsCanSave ? " " : " disabled-div " ; 
+    string?  CanSave1     =>  IsCanSave ? " " : " disabled-div " ; 
 
     bool IsCanSend =>   Cs.Atttemplatereqhdr != null &&
                         Cs.Atttemplatereqhdr.Status is "S" && 
                         Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue && 
-                        Cs.Atttemplatereqhdr.Effectivity > DateTime.MinValue && 
+                        Cs.Atttemplatereqhdr.Effectivity?.Date >= DateTime.Now.Date && 
+                        saveRemarks == string.Empty && 
+                        Hdr.Id == attTempReqHdr.Id && 
+                        Hdr.Effectivity == attTempReqHdr.Effectivity && 
+                        Hdr.EmpNumber_Approver == attTempReqHdr.EmpNumber_Approver &&
+                        Hdr.Remarks == attTempReqHdr.Remarks &&
                         Cs.Atttemplatereqhdr.EmpNumber_Approver.Any() ;
-    string CanSend => IsCanSend ? " " : " disabled-div " ; 
+    string? CanSend => IsCanSend ? " " : " disabled-div " ; 
 
     bool IsCanCancel =>  Hdr.Status is "S" ;
-    string CanCancel => IsCanCancel ? " " : " disabled-div " ; 
+    string? CanCancel => IsCanCancel ? " " : " disabled-div " ; 
 
     AtttemplateModel                ctemp       => Cs.Atttemplate??new AtttemplateModel(); 
     AtttemplatereqhdrModel          Hdr         => Cs.Atttemplatereqhdr??new AtttemplatereqhdrModel();
     AtttemplatereqdtlModel          DtlReq      => Cs.Atttemplatereqdtl ?? new AtttemplatereqdtlModel();
     AtttemplateModel                Dtl         => Cs.Atttemplate ?? new AtttemplateModel();
     List<AtttemplatereqdtlModel>    Dtls        => Cs.Atttemplatereqdtls??[];
-    List<string>                    dutyTypes = new() {"R","RD"};  
+    List<string>                    dutyTypes = new() {"R","RD","RN"};  
 
-    bool IsShowRequest(string dutyType="R")    => dutyType=="R";  
+    bool IsShowRequest(string? dutyType="R")    => dutyType=="R";  
 
     bool IsRequest_Equal_To_Template =>   Dtl.D1_dutytype==DtlReq.D1_DutyType && 
                                         Dtl.D2_dutytype==DtlReq.D2_DutyType && 
@@ -697,25 +764,25 @@
                                     }).ToList();      
     List<TimeoptionModel> timeOptions =  MsdsDataAccess._02Hours();  
     List<TimedurationModel> timedurations = MsdsDataAccess._02HourDurations();      
-    string dutyTypeCss(string dt) => dt=="RD" ? " text-danger " : "" ;
+    string? dutyTypeCss(string? dt) => dt=="RD" ? " text-danger " : "" ;
     AtttemplatereqdtlModel template_To_Request => AttTemplateReq_To_AttTemplate( Cs.Atttemplate  ) ; 
     
 
     
-    string outRes(string dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
+    string? outRes(string? dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
 
-    string outSched(string dutyType, int? pin, int? duration)
+    string? outSched(string? dutyType, int? pin, int? duration)
     {
         if(dutyType==null)  return "-"; 
         if(pin==null)       return "-"; 
 
-        int punchin      = pin ?? 0;
+        int? punchin      = pin ?? 0;
         double duration1 = (duration ?? 0) / 100.0;
 
-        int hr  = punchin / 100;
-        int min = punchin % 100;
+        int? hr  = punchin / 100;
+        int? min = punchin % 100;
 
-        DateTime dt = new DateTime(2000, 1, 1, hr, min, 0);
+        DateTime dt = new DateTime(2000, 1, 1, hr??0, min??0, 0);
 
         dt = dt.AddHours(duration1);
 
@@ -729,7 +796,7 @@
         atreq.Id                    = 0;
         atreq.AtttemplateReqHdrId   = Hdr.Id;
 
-        atreq.EmpmasId              = at.Empmasid;
+        atreq.EmpmasId              = at.EmpmasId;
         atreq.AttendanceTypeId      = at.AttendancetypeId;
 
         atreq.D1_In = at.D1_in;

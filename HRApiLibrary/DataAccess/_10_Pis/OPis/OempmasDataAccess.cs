@@ -14,9 +14,9 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 			_sql = sql;
 	}
 
-    public async Task _00CreateEmpmasMigration_Marker(string oPisDb, string conn)
+    public async Task _00CreateEmpmasMigration_Marker(string? oPisDb, string? conn)
     {
-        string sql = $@"SELECT '1' Column_Name
+        string? sql = $@"SELECT '1' Column_Name
                             FROM INFORMATION_SCHEMA.COLUMNS
                             WHERE TABLE_NAME = 'empmas'
                             AND COLUMN_NAME = 'IsMigrated'
@@ -24,11 +24,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         var res = await _sql.FetchData<TableModel?, dynamic>(sql, new { }, conn);
         
         if (res == null || res.Count == 0) { 
-            string usql = $@"ALTER TABLE {oPisDb}.Empmas ADD COLUMN IsMigrated int Default 0;"; 
+            string? usql = $@"ALTER TABLE {oPisDb}.Empmas ADD COLUMN IsMigrated int? Default 0;"; 
             await _sql.ExecuteCmd<dynamic>(usql, new { }, conn);
         }
     }
-    public async Task _00MigrateData(string pisDb, string oPisDb, string conn)
+    public async Task _00MigrateData(string? pisDb, string? oPisDb, string? conn)
     {
         
         
@@ -67,7 +67,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         
     }
 
-    public async Task<OEmpmasModel?> _01(OEmpmasModel empmas, string schema, string conn )
+    public async Task<OEmpmasModel?> _01(OEmpmasModel empmas, string? schema, string? conn )
 	{
 		string sql = $@"Insert into {schema}.Empmas 
     					(EMPNUMBER, EMPLASTNM, EMPFIRSTNM, EMPMIDNM, suffix, EMPALIAS, CLIENT, CLIENT_, BASICRATE, PAYTYPE, ADMIN, CASHBOND, WORKDAYS, 
@@ -104,7 +104,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 	}
 
 
-    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNames(string name, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNames(string? name, string? schema, string? conn)
     {
         name = name.Trim();
         var flds = EmpmasFields(); 
@@ -119,7 +119,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;    
     }
     
-    public async Task<List<OEmpmasModel?>?> _02Migrated( string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02Migrated( string? schema, string? conn)
     {
         var sql = $@"select count(*) as CntNotMigrated from {schema}.Empmas e 
                      where  IsMigrated = 0 
@@ -131,7 +131,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     }
 
 
-    public async Task<List<OEmpmasModel?>?> _02(string empnumber, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? schema, string? conn)
     {
         var flds = EmpmasFields(); 
 
@@ -145,7 +145,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
     
-    public async Task<List<OEmpmasModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn)
     {
         var usql = $@"UPDATE {schema}.Empmas SET
                         MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
@@ -188,7 +188,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     }
 
 
-    public async Task<List<OEmpmasModel?>?> _02ByEmail(string email, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByEmail(string? email, string? schema, string? conn)
 	{
 
         var usql = $@"UPDATE {schema}.Empmas SET
@@ -233,7 +233,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 	
 
 	
-	public async Task<OEmpmasModel?> _03(int id,OEmpmasModel empmas, string schema, string conn)
+	public async Task<OEmpmasModel?> _03(int? id,OEmpmasModel empmas, string? schema, string? conn)
 	{
 		string sql = $@"Update {schema}.Empmas set 
                                EMPNUMBER = @EMPNUMBER, 
@@ -288,7 +288,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 		return data?.FirstOrDefault();
 	}
 
-	public async Task<OEmpmasModel?> _04(int id, string schema, string conn)
+	public async Task<OEmpmasModel?> _04(int? id, string? schema, string? conn)
 	{
 		string sql = $@"Delete from {schema}.Empmas where Id = @Id;";
 		// await _sql.ExecuteCmd<dynamic>(sql, new {Id=id},conn);
@@ -300,7 +300,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
         // --- Private Functions ------------------------------------------------------------------------------------------------
 
-    private string EmpmasFields()
+    private string? EmpmasFields()
     {
         return @"CONCAT_WS(' ', NULLIF(TRIM(e.EmpLastNm), ', '), NULLIF(TRIM(e.EmpFirstNm), ' '), NULLIF(TRIM(e.EmpMidNm), ' ') ) AS EmpName,
                             e.Empnumber, 
@@ -466,13 +466,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
 public interface IOEmpmasDataAccess
 {
-    Task                        _00CreateEmpmasMigration_Marker(string oPisDb, string conn);
-    Task                        _00MigrateData(string pisDb, string oPisDb, string conn);
-    Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string schema, string conn);
-	Task<List<OEmpmasModel?>?>  _02(string empnumber, string schema, string conn);
-    Task<List<OEmpmasModel?>?>  _02Migrated(string schema, string conn); 
-    Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string name, string schema, string conn);
-    Task<List<OEmpmasModel?>?>  _02ByClNumbers(string clnumber, string schema, string conn); 
-	Task<List<OEmpmasModel?>?>  _02ByEmail(string email, string schema, string conn); 
+    Task                        _00CreateEmpmasMigration_Marker(string? oPisDb, string? conn);
+    Task                        _00MigrateData(string? pisDb, string? oPisDb, string? conn);
+    Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string? schema, string? conn);
+	Task<List<OEmpmasModel?>?>  _02(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn); 
+    Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn); 
+	Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn); 
 	
 }

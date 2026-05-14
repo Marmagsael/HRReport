@@ -7,12 +7,12 @@ namespace HRMvc.Models.Pis
     {
         [Required]
         [Display(Name = "Id")]
-        public int Id { get; set; }
+        public int? Id { get; set; }
 
         [Required]
         [Display(Name = "EmpmasId")]
         [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-        public int EmpmasId { get; set; }
+        public int? EmpmasId { get; set; }
 
         [Required]
         [Display(Name = "Contact Person")]

@@ -2,7 +2,7 @@ namespace HRMvc.Applications.PisReport.Vars
 {
     public class V2108Model
     {
-        public string Action { get; set; } = "";
+        public string? Action { get; set; } = "";
         public bool IsGroupByClient { get; set; } = false;
         public List<R2108Model> RepDtls { get; set; } = [];
     }

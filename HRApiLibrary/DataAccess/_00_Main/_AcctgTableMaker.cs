@@ -20,7 +20,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
         _payTblMaker = payTblMaker;
     }
 
-    public async Task AccountingTableMaker(string db, string conn)
+    public async Task AccountingTableMaker(string? db, string? conn)
     {
         
         await _01SchemaMaker(db, conn);
@@ -76,16 +76,16 @@ public class _AcctgTableMaker : I_AcctgTableMaker
 
 
     //--- Schema Main ------------------------------------------------------
-    private async Task _01SchemaMaker(string schema, string conn)
+    private async Task _01SchemaMaker(string? schema, string? conn)
     {
-        string sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
     //--- Action ------------------------------------------------------
-    private async Task _01Action(string db, string conn)
+    private async Task _01Action(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Action` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Action` (
                           `Module`      char(15)    DEFAULT '-',
                           `Trans_id`    int(11)     DEFAULT 0,
                           `Action`      char(15)    DEFAULT '-',
@@ -98,9 +98,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Action ------------------------------------------------------
-    private async Task _01Bank(string db, string conn)
+    private async Task _01Bank(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Bank` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Bank` (
                               `Id`            int(10)        unsigned NOT NULL AUTO_INCREMENT,
                               `Bankname`      varchar(80)               DEFAULT '',
                               `Acctno`        char(25)                  DEFAULT '',
@@ -116,9 +116,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Billhdr ------------------------------------------------------
-    private async Task _01Billhdr(string db, string conn)
+    private async Task _01Billhdr(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Billhdr` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Billhdr` (
                               `Id`                  int(10)         unsigned NOT NULL AUTO_INCREMENT,
                               `Pono`                varchar(25)                         DEFAULT ' ',
                               `Vendorid`            int(10)         unsigned NOT NULL   DEFAULT 0,
@@ -140,9 +140,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Billdtl ------------------------------------------------------
-    private async Task _01Billdtl(string db, string conn)
+    private async Task _01Billdtl(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Billdtl` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Billdtl` (
                           `Id`                int(10)           unsigned NOT NULL AUTO_INCREMENT,
                           `Billhdrid`         int(10)           unsigned NOT NULL   DEFAULT 0,
                           `Itemid`            int(10)           unsigned NOT NULL   DEFAULT 0,
@@ -162,9 +162,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Billpayment ------------------------------------------------------
-    private async Task _01Billpayment(string db, string conn)
+    private async Task _01Billpayment(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Billpayment` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Billpayment` (
                           `Id`               int(10)            unsigned NOT NULL AUTO_INCREMENT,
                           `Billhdrid`        int(10)            unsigned        DEFAULT 0,
                           `Amount`           double(25, 4)                      DEFAULT 0.0000,
@@ -177,9 +177,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Billhdr ------------------------------------------------------
-    private async Task _01Billcostcenter(string db, string conn)
+    private async Task _01Billcostcenter(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Billcostcenter` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Billcostcenter` (
                             `Id`            int(10)         unsigned NOT NULL AUTO_INCREMENT,
                             `Name`          varchar(45)     DEFAULT ' ',
                             `Targetamt`     double(25,4)    DEFAULT 0.0000,
@@ -190,9 +190,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Coa ------------------------------------------------------
-    private async Task _01Coa(string db, string conn)
+    private async Task _01Coa(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Coa` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Coa` (
                           `Id`              int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `Account_code`    char(12)                            DEFAULT '',
                           `Account_name`    varchar(60)         NOT NULL        DEFAULT ' ',
@@ -344,9 +344,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Coasettings ------------------------------------------------------
-    private async Task _01Coasettings(string db, string conn)
+    private async Task _01Coasettings(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Coasettings` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Coasettings` (
                           `Id`                  int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `Showcoa`             smallint(5)         unsigned DEFAULT 1,
                           `Acctlength`          smallint(5)         unsigned DEFAULT 8,
@@ -381,9 +381,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Collectioncategory ------------------------------------------------------
-    private async Task _01Collectioncategory(string db, string conn)
+    private async Task _01Collectioncategory(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Collectioncategory` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Collectioncategory` (
                           `Id`                  int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Collectioncategory`  varchar(45)     DEFAULT ' ',
                           PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;";
@@ -403,9 +403,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
 
 
     //--- Collectiondtl ------------------------------------------------------
-    private async Task _01Collectiondtl(string db, string conn)
+    private async Task _01Collectiondtl(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Collectiondtl` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Collectiondtl` (
                           `Id`                  int(10) unsigned NOT NULL AUTO_INCREMENT,
                           `Collectionhdrid`     int(10) unsigned DEFAULT 0,
                           `Invoicehdrid`        int(10) unsigned DEFAULT 0,
@@ -416,9 +416,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Collectionhdr ------------------------------------------------------
-    private async Task _01Collectionhdr(string db, string conn)
+    private async Task _01Collectionhdr(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Collectionhdr` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Collectionhdr` (
                           `Id`                          int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `Status`                      varchar(10)                     DEFAULT 'A',
                           `Collectioincategoryid`       int(10)             unsigned    DEFAULT 0,
@@ -449,9 +449,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     //--- Collectiontrail ------------------------------------------------------
-    private async Task _01Collectiontrail(string db, string conn)
+    private async Task _01Collectiontrail(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Collectiontrail` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Collectiontrail` (
                           `Id`                  int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Collectionid`        int(10)         unsigned    DEFAULT 0,
                           `Created`             datetime                    DEFAULT NULL,      
@@ -463,9 +463,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
 
 
     //--- Collectiontype ------------------------------------------------------
-    private async Task _01Collectiontype(string db, string conn)
+    private async Task _01Collectiontype(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Collectiontype` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Collectiontype` (
                           `Id`                  int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Collectiontype`      varchar(45)                     DEFAULT ' ',
                           PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;";
@@ -484,9 +484,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Currency ------------------------------------------------------
-    private async Task _01Currency(string db, string conn)
+    private async Task _01Currency(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Currency` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Currency` (
                           `Id`              int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `Code`            varchar(5)          DEFAULT ' ',
                           `Name`            varchar(45)         DEFAULT ' ',
@@ -508,9 +508,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
 
 
     // --- Customer ------------------------------------------------------
-    private async Task _01Customer(string db, string conn)
+    private async Task _01Customer(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Customer` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Customer` (
                           `Id`                      int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Name`                    varchar(80)                 DEFAULT ' ',
                           `Taxidno`                 varchar(25)                 DEFAULT ' ',
@@ -536,9 +536,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Customeraddr ------------------------------------------------------
-    private async Task _01Customeraddr(string db, string conn)
+    private async Task _01Customeraddr(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Customeraddr` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Customeraddr` (
                           `Id`                      int(10)        unsigned NOT NULL,
                           `Billaddr1`               varchar(120)            DEFAULT ' ',
                           `Billaddr2`               varchar(120)            DEFAULT ' ',
@@ -559,9 +559,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Invoicedtl ------------------------------------------------------
-    private async Task _01Invoicedtl(string db, string conn)
+    private async Task _01Invoicedtl(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Invoicedtl` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Invoicedtl` (
                           `Id`                      int(10)                 unsigned NOT NULL AUTO_INCREMENT,
                           `Invoicehdrid`            int(10)                 unsigned    DEFAULT 0,
                           `Itemid`                  int(10)                 unsigned    DEFAULT 0,
@@ -580,9 +580,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Invoicedtlh ------------------------------------------------------
-    private async Task _01Invoicedtlh(string db, string conn)
+    private async Task _01Invoicedtlh(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Invoicedtlh` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Invoicedtlh` (
                           `id`                  int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `invoicehdrid`        int(10)             unsigned    DEFAULT 0,
                           `itemid`              int(10)             unsigned    DEFAULT 0,
@@ -603,9 +603,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Invoicehdr ------------------------------------------------------
-    private async Task _01Invoicehdr(string db, string conn)
+    private async Task _01Invoicehdr(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Invoicehdr` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Invoicehdr` (
                           `Id`                      int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Invoicetypeid`           int(10)         unsigned        DEFAULT 1,
                           `Invoiceno`               int(10)         unsigned        DEFAULT 0,
@@ -634,9 +634,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Invoicehdraddress ------------------------------------------------------
-    private async Task _01Invoicehdraddress(string db, string conn)
+    private async Task _01Invoicehdraddress(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Invoicehdraddress` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Invoicehdraddress` (
                           `Invoicehdrid`            int(10)         unsigned NOT NULL DEFAULT 0,
                           `Address1`                char(120)       DEFAULT '',
                           `Address2`                char(120)       DEFAULT '',
@@ -649,9 +649,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Invoicetype ------------------------------------------------------
-    private async Task _01Invoicetype(string db, string conn)
+    private async Task _01Invoicetype(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Invoicetype` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Invoicetype` (
                           `Id`              int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `Shortname`       varchar(10)         DEFAULT '',
                           `Name`            varchar(80)         NOT NULL,
@@ -674,9 +674,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Item ------------------------------------------------------
-    private async Task _01Item(string db, string conn)
+    private async Task _01Item(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Item` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Item` (
                           `Id`                  int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Code`                varchar(25)                         DEFAULT ' ',
                           `Name`                varchar(45)                         DEFAULT ' ',
@@ -702,9 +702,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Itemsales ------------------------------------------------------
-    private async Task _01Itemsales(string db, string conn)
+    private async Task _01Itemsales(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Itemsales` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Itemsales` (
                           `Id`                  int(10)            unsigned NOT NULL AUTO_INCREMENT,
                           `Code`                varchar(25)                             DEFAULT ' ',
                           `Name`                varchar(45)                             DEFAULT ' ',
@@ -728,9 +728,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Itemcategorysales ------------------------------------------------------
-    private async Task _01Itemcategorysales(string db, string conn)
+    private async Task _01Itemcategorysales(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Itemcategorysales` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Itemcategorysales` (
                           `Id`              int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Name`            varchar(45)     DEFAULT ' ',
                           PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
@@ -738,9 +738,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Je ------------------------------------------------------
-    private async Task _01Je(string db, string conn)
+    private async Task _01Je(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Je` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Je` (
                           `Id`              int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Source`          varchar(10)                 DEFAULT ' ',
                           `Transno`         varchar(15)                 DEFAULT ' ',
@@ -754,9 +754,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Jeh ------------------------------------------------------
-    private async Task _01Jeh(string db, string conn)
+    private async Task _01Jeh(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Jeh` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Jeh` (
                           `Id`              int(10)         unsigned NOT NULL DEFAULT 0,
                           `Source`          varchar(10)                 DEFAULT ' ',
                           `Transno`         varchar(15)                 DEFAULT NULL,
@@ -772,9 +772,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Paymentmethod ------------------------------------------------------
-    private async Task _01Paymentmethod(string db, string conn)
+    private async Task _01Paymentmethod(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Paymentmethod` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Paymentmethod` (
                           `Id`          int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Name`        varchar(45)     DEFAULT ' ',
                           PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;";
@@ -797,9 +797,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Paymentreftype ------------------------------------------------------
-    private async Task _01Paymentreftype(string db, string conn)
+    private async Task _01Paymentreftype(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Paymentreftype` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Paymentreftype` (
                           `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                           `name` varchar(45) DEFAULT ' ',
                         PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
@@ -807,9 +807,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Period ------------------------------------------------------
-    private async Task _01Period(string db, string conn)
+    private async Task _01Period(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Period` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Period` (
                           `Id`              int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Name`            varchar(45)                 DEFAULT ' ',
                           `Period`          varchar(10)                 DEFAULT ' ',
@@ -821,9 +821,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Vendor ------------------------------------------------------
-    private async Task _01Vendor(string db, string conn)
+    private async Task _01Vendor(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Vendor` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Vendor` (
                           `Id`                      int(10)       unsigned NOT NULL AUTO_INCREMENT,
                           `Vendorname`              char(100)     NOT NULL,
                           `Tin`                     varchar(20)   DEFAULT ' ',
@@ -837,9 +837,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Vendoraddress ------------------------------------------------------
-    private async Task _01Vendoraddress(string db, string conn)
+    private async Task _01Vendoraddress(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Vendoraddress` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Vendoraddress` (
                           `Id`              int(10)         unsigned NOT NULL,
                           `Address`         longtext        DEFAULT NULL,      
                           `Town`            char(35)        DEFAULT '',
@@ -856,9 +856,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Tax ------------------------------------------------------
-    private async Task _01Tax(string db, string conn)
+    private async Task _01Tax(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Tax` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Tax` (
                           `Id`                  int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `Account_code`        char(12)            DEFAULT '',
                           `Taxname`             varchar(60)         NOT NULL DEFAULT '',
@@ -885,9 +885,9 @@ public class _AcctgTableMaker : I_AcctgTableMaker
     }
 
     // --- Vendorcurrency ------------------------------------------------------
-    private async Task _01Vendorcurrency(string db, string conn)
+    private async Task _01Vendorcurrency(string? db, string? conn)
     {
-        string sql = $@"CREATE TABLE if not exists {db}.`Vendorcurrency` (
+        string? sql = $@"CREATE TABLE if not exists {db}.`Vendorcurrency` (
                           `Vendorid`        int(10) unsigned NOT NULL,
                           `Currencycode`    char(5)             DEFAULT '',
                           PRIMARY KEY (`vendorid`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";

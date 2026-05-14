@@ -10,17 +10,17 @@
 
 @code {
 
-    [Parameter] public int                      Dayno   { get; set; } = 0;
+    [Parameter] public int?                      Dayno   { get; set; } = 0;
     [Parameter] public AtttemplateModel?        T       { get; set; } = new();
     [Parameter] public AtttemplatereqdtlModel?  TD      { get; set; } = new();
     
-    string currCss(int dayNo) => T_DutyType(dayNo) switch
+    string? currCss(int? dayNo) => T_DutyType(dayNo) switch
     {
         "RD" => " text-danger bg-danger  bg-opacity-10 disabled-div-50 ",
         "RN" => " bg-success bg-opacity-10 txt mb-a-blue disabled-div-50 ",
         _ => " text-muted "
     };
-    string reqCss(int dayNo) => TD_DutyType(dayNo) switch
+    string? reqCss(int? dayNo) => TD_DutyType(dayNo) switch
     {
         "RD" => " text-danger bg-danger  bg-opacity-10 ",
         "RN" => " text-primary bg-success bg-opacity-10  ",
@@ -31,7 +31,7 @@
     @* ************************************************************ *@
     @* --- Requested Template --------------------------------------- *@
     @* ************************************************************ *@
-    string TD_DutyType(int dutyType) => dutyType switch
+    string? TD_DutyType(int? dutyType) => dutyType switch
     {
         1 => TD?.D1_DutyType ?? "",
         2 => TD?.D2_DutyType ?? "",
@@ -43,7 +43,7 @@
         _ => ""
     };
 
-    string TD_TimeIn(int dayNo)
+    string? TD_TimeIn(int? dayNo)
     {
         var dtype = TD_DutyType(dayNo);
         if (dtype == "RD") return "-";
@@ -51,20 +51,20 @@
         var hrs = TD_TimeInQuery(dayNo);
         if (hrs == 0) return "-";
         
-        string ampm = "am";
+        string? ampm = "am";
         if (hrs >= 1300)
         {
             hrs -= 1200;
             ampm = "pm";
         }
 
-        int hr = hrs / 100;
-        int min = hrs % 100;
+        int? hr = hrs / 100;
+        int? min = hrs % 100;
 
         return $"{hr}:{min:D2} {ampm}";
     }
 
-    int TD_TimeInQuery(int dayNo) => dayNo switch
+    int? TD_TimeInQuery(int? dayNo) => dayNo switch
     {
         1 => TD?.D1_In ?? 0,
         2 => TD?.D2_In ?? 0,
@@ -77,31 +77,31 @@
     };
 
 
-    string TD_Out(int dayno)
+    string? TD_Out(int? dayno)
     {
         string? dtype = TD_DutyType(dayno);
         if (dtype == "RD") return "-";
         
-        int dur = TD_DurationQuery(dayno);
-        int tin = TD_TimeInQuery(dayno);
-        int tothrs = tin + dur;
+        int? dur = TD_DurationQuery(dayno);
+        int? tin = TD_TimeInQuery(dayno);
+        int? tothrs = tin + dur;
 
         if (tothrs > 2400) tothrs -= 2400;
-        string ampm = "am";
+        string? ampm = "am";
         if (tothrs > 1259)
         {
             ampm = "pm";
             tothrs -= 1200;
         }
 
-        int hr = tothrs / 100;
-        int min = tothrs % 100;
+        int? hr = tothrs / 100;
+        int? min = tothrs % 100;
 
-        string hrs = $"{hr}:{min:D2} {ampm}";
+        string? hrs = $"{hr}:{min:D2} {ampm}";
 
         return hrs;
     }
-    int TD_DurationQuery(int dayNo) => dayNo switch
+    int? TD_DurationQuery(int? dayNo) => dayNo switch
     {
         1 => T?.D1_hrslength ?? 0,
         2 => T?.D2_hrslength ?? 0,
@@ -116,7 +116,7 @@
     @* ************************************************************ *@
     @* --- Current Template --------------------------------------- *@
     @* ************************************************************ *@
-    string T_DayName(int dayNo) => dayNo switch
+    string? T_DayName(int? dayNo) => dayNo switch
     {
         1 => "Sunday",
         2 => "Monday",
@@ -127,7 +127,7 @@
         7 => "Saturday",
         _ => "" };
 
-    string T_DutyType(int dutyType) => dutyType switch
+    string? T_DutyType(int? dutyType) => dutyType switch
     {
         1 => T?.D1_dutytype ?? "",
         2 => T?.D2_dutytype ?? "",
@@ -139,7 +139,7 @@
         _ => ""
     };
 
-    string T_TimeIn(int dayNo)
+    string? T_TimeIn(int? dayNo)
     {
         var dtype = T_DutyType(dayNo); 
         if (dtype == "RD") return "-";
@@ -147,20 +147,20 @@
         var hrs = T_TimeInQuery(dayNo);
         if (hrs == 0) return "-";
         
-        string ampm = "am";
+        string? ampm = "am";
         if(hrs >= 1300) { 
             hrs -= 1200;
             ampm = "pm";
         }
 
-        int hr = (hrs??0) / 100;
-        int min = (hrs??0) % 100;
+        int? hr = (hrs??0) / 100;
+        int? min = (hrs??0) % 100;
 
         @* Console.WriteLine($"Dayno: {dayNo} - TimeIn: {hrs} - hr: {hr} - min: {min} - ampm: {ampm}"); *@
         return $"{hr}:{min:D2} {ampm}";
     }
 
-    int? T_TimeInQuery(int dayNo) => dayNo switch
+    int? T_TimeInQuery(int? dayNo) => dayNo switch
         { 
             1 => T?.D1_in, 
             2 => T?.D2_in, 
@@ -171,28 +171,28 @@
             7 => T?.D7_in, 
             _ => 0 };
     
-    string T_Duration(int dayno) {
-       int dur      = T_DurationQuery(dayno);
-       int tin      = T_TimeInQuery(dayno) ?? 0;
-       int tothrs   = tin + dur;
+    string? T_Duration(int? dayno) {
+       int? dur      = T_DurationQuery(dayno);
+       int? tin      = T_TimeInQuery(dayno) ?? 0;
+       int? tothrs   = tin + dur;
 
        if (tothrs > 2400) tothrs -= 2400; 
-       string ampm = "am";
+       string? ampm = "am";
        if(tothrs > 1259) {
             ampm = "pm";
             tothrs -= 1200;
         }
 
-        int hr = tothrs / 100 ;
-        int min = tothrs % 100; 
+        int? hr = tothrs / 100 ;
+        int? min = tothrs % 100; 
 
-       string hrs = $"{hr}:{min:D2} {ampm}";  
+       string? hrs = $"{hr}:{min:D2} {ampm}";  
 
         string? dtype = T_DutyType(dayno);
         if (dtype == "RD") hrs = "-";
         return hrs;
     }
-    int T_DurationQuery(int dayNo) => dayNo switch
+    int? T_DurationQuery(int? dayNo) => dayNo switch
         { 
             1 => T?.D1_hrslength ?? 0, 
             2 => T?.D2_hrslength ?? 0, 

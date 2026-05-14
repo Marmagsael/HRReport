@@ -19,7 +19,7 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
         _config = config;
     }
 
-    public async Task _01MainDefaultDatas(string schema = "Main", string connName = "MySqlConn")
+    public async Task _01MainDefaultDatas(string? schema = "Main", string? connName = "MySqlConn")
     {
         await _01Menus10User(schema, connName);
         await _01Users_DefaulDatas(schema, connName);
@@ -28,17 +28,17 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
         //_01Currency_DefaultDatas(schema, connName);
     }
 
-    public async void _01UsersCompany_DefaultDatas(int userId, string companyCode, string companyName, int currencyId, string schema = "Main", string connName = "MySqlConn")
+    public async void _01UsersCompany_DefaultDatas(int? userId, string? companyCode, string? companyName, int? currencyId, string? schema = "Main", string? connName = "MySqlConn")
     {
-        string sql = $"select * from {schema}.UsersCompany where OwnerId = {userId} and companySName = '{companyCode}'";
+        string? sql = $"select * from {schema}.UsersCompany where OwnerId = {userId} and companySName = '{companyCode}'";
         var res = await _sql.FetchData<UserCompanyModel, dynamic>(sql, new { });
 
         if (res.Count == 0)
         {
-            string AmsSchema        = _config.GetSection("Schema:ams").Value;
-            string ApplicantSchema  = _config.GetSection("Schema:Applicant").Value;
-            string PisSchema        = _config.GetSection("Schema:Pis").Value;
-            string PaySchema        = _config.GetSection("Schema:Pay").Value;
+            string? AmsSchema        = _config.GetSection("Schema:ams").Value;
+            string? ApplicantSchema  = _config.GetSection("Schema:Applicant").Value;
+            string? PisSchema        = _config.GetSection("Schema:Pis").Value;
+            string? PaySchema        = _config.GetSection("Schema:Pay").Value;
 
 
             // --- StorageId not yet included -----------------------------------------
@@ -52,9 +52,9 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
 
 
     // *** Private Functions ----------------------------------------------------
-    private async Task _01Menus10User(string schema, string connName)
+    private async Task _01Menus10User(string? schema, string? connName)
     {
-        string sql = $"select * from {schema}.menus10User limit 1";
+        string? sql = $"select * from {schema}.menus10User limit 1";
         var menu = await _sql.FetchData<MenusModel, dynamic>(sql, new { });
         if (menu.Count == 0)
         {
@@ -194,9 +194,9 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
         }
     }
 
-    private async Task _01PayrollMenus(string schema, string connName)
+    private async Task _01PayrollMenus(string? schema, string? connName)
     {
-        string sql = $"select * from {schema}.menus50Pay limit 1";
+        string? sql = $"select * from {schema}.menus50Pay limit 1";
         var menu = await _sql.FetchData<MenusModel, dynamic>(sql, new { });
         if (menu.Count == 0)
         {
@@ -233,9 +233,9 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
         }
     }
 
-    private async Task _01Users_DefaulDatas(string schema, string connName)
+    private async Task _01Users_DefaulDatas(string? schema, string? connName)
     {
-        string sql = $"select * from {schema}.users limit 1";
+        string? sql = $"select * from {schema}.users limit 1";
         var user = await _sql.FetchData<UsersModel, dynamic>(sql, new { }, connName);
         if (user.Count == 0)
         {
@@ -248,9 +248,9 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
         }
     }
 
-    private async void _01Country_DefaultDatas(string schema, string connName)
+    private async void _01Country_DefaultDatas(string? schema, string? connName)
     {
-        string sql = $"select * from {schema}.Country limit 1";
+        string? sql = $"select * from {schema}.Country limit 1";
         var res = await _sql.FetchData<CountryModel, dynamic>(sql, new { }, connName);
         if (res.Count == 0)
         {
@@ -261,9 +261,9 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
-    private async void _01Currency_DefaultDatas(string schema, string connNam)
+    private async void _01Currency_DefaultDatas(string? schema, string? connNam)
     {
-        string sql = $"select * from {schema}.Currency limit 1";
+        string? sql = $"select * from {schema}.Currency limit 1";
         var res = await _sql.FetchData<CurrencyModel, dynamic>(sql, new { }, connNam);
         if (res.Count == 0)
         {

@@ -13,7 +13,7 @@ public class MainmenuDataAccess : IMainmenuDataAccess
         _sql = sql;
     }
 
-    public async Task<List<MainmenuModel?>?> _02(string schema, string conn)
+    public async Task<List<MainmenuModel?>?> _02(string? schema, string? conn)
     {
         var sql = $@"select  Id, Type, IdParent, Indent, Icon, DispText, Action, Odr from {schema}.Menu order by Odr, Id";
         var data = await _sql.FetchData<MainmenuModel?, dynamic>(sql, new { }, conn);
@@ -24,5 +24,5 @@ public class MainmenuDataAccess : IMainmenuDataAccess
 
 public interface IMainmenuDataAccess
 {
-    Task<List<MainmenuModel?>?> _02(string schema, string conn);
+    Task<List<MainmenuModel?>?> _02(string? schema, string? conn);
 }

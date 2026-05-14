@@ -14,9 +14,9 @@ public class LoanhdrDataAccess : ILoanhdrDataAccess
         _sql = sql;
     }
 
-    public async Task<LoanhdrModel?> _01(LoanhdrModel loanhdr, string schema, string conn)
+    public async Task<LoanhdrModel?> _01(LoanhdrModel loanhdr, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Loanhdr (id, orno, paydate, yr, mo, amount, remarks, acctcode) values (@id, @orno, @paydate, @yr, @mo, @amount, @remarks, @acctcode)";
+        string? sql = $@"Insert into {schema}.Loanhdr (id, orno, paydate, yr, mo, amount, remarks, acctcode) values (@id, @orno, @paydate, @yr, @mo, @amount, @remarks, @acctcode)";
         await _sql.ExecuteCmd<dynamic>(sql, loanhdr, conn);
 
         sql = $@"SELECT * FROM {schema}.Loanhdr WHERE ID = (SELECT @@IDENTITY)";
@@ -27,17 +27,17 @@ public class LoanhdrDataAccess : ILoanhdrDataAccess
     }
 
 
-    public async Task<LoanhdrModel?> _02(int id, string schema, string conn)
+    public async Task<LoanhdrModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  id, orno, paydate, yr, mo, amount, remarks, acctcode from {schema}.Loanhdr where Id = @Id";
+        string? sql = $@"select  id, orno, paydate, yr, mo, amount, remarks, acctcode from {schema}.Loanhdr where Id = @Id";
         var data = await _sql.FetchData<LoanhdrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<LoanhdrModel?> _03(int id, LoanhdrModel loanhdr, string schema, string conn)
+    public async Task<LoanhdrModel?> _03(int? id, LoanhdrModel loanhdr, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Loanhdr set id = @id, orno = @orno, paydate = @paydate, yr = @yr, mo = @mo, amount = @amount, remarks = @remarks, acctcode = @acctcode where Id = @Id;";
+        string? sql = $@"Update {schema}.Loanhdr set id = @id, orno = @orno, paydate = @paydate, yr = @yr, mo = @mo, amount = @amount, remarks = @remarks, acctcode = @acctcode where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, loanhdr, conn);
 
         sql = $@" select  * from {schema}.Loanhdr x where x.Id = @Id ;";
@@ -45,9 +45,9 @@ public class LoanhdrDataAccess : ILoanhdrDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<LoanhdrModel?> _04(int id, string schema, string conn)
+    public async Task<LoanhdrModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Loanhdr where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Loanhdr where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Loanhdr x where x.Id = @Id ;";

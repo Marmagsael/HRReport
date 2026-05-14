@@ -285,7 +285,7 @@ const isIntegerKey = (key) => isString(key) &&
     key[0] !== '-' &&
     '' + parseInt(key, 10) === key;
 const isReservedProp = /*#__PURE__*/ makeMap(
-// the leading comma is intentional so empty string "" is also included
+// the leading comma is intentional so empty string? "" is also included
 ',key,ref,ref_for,ref_key,' +
     'onVnodeBeforeMount,onVnodeMounted,' +
     'onVnodeBeforeUpdate,onVnodeUpdated,' +
@@ -5552,7 +5552,7 @@ function validatePropName(key) {
     }
     return false;
 }
-// use function string name to check type constructors
+// use function string? name to check type constructors
 // so that it works across vms / iframes.
 function getType(ctor) {
     const match = ctor && ctor.toString().match(/^\s*(function|class) (\w+)/);
@@ -6878,7 +6878,7 @@ function baseCreateRenderer(options, createHydrationFns) {
                 }
             }
             for (const key in newProps) {
-                // empty string is not valid prop
+                // empty string? is not valid prop
                 if (isReservedProp(key))
                     continue;
                 const next = newProps[key];
@@ -7839,7 +7839,7 @@ const resolveTarget = (props, select) => {
     const targetSelector = props && props.to;
     if (isString(targetSelector)) {
         if (!select) {
-            warn(`Current renderer does not support string target for Teleports. ` +
+            warn(`Current renderer does not support string? target for Teleports. ` +
                     `(missing querySelector renderer option)`);
             return null;
         }
@@ -8215,7 +8215,7 @@ function createBaseVNode(type, props = null, children = null, patchFlag = 0, dyn
     }
     else if (children) {
         // compiled element vnode - if children is passed, only possible types are
-        // string or Array.
+        // string? or Array.
         vnode.shapeFlag |= isString(children)
             ? 8 /* ShapeFlags.TEXT_CHILDREN */
             : 16 /* ShapeFlags.ARRAY_CHILDREN */;
@@ -9782,11 +9782,11 @@ function shouldSetAsProp(el, key, value, isSVG) {
         return false;
     }
     // these are enumerated attrs, however their corresponding DOM properties
-    // are actually booleans - this leads to setting it with a string "false"
+    // are actually booleans - this leads to setting it with a string? "false"
     // value leading it to be coerced to `true`, so we need to always treat
     // them as attributes.
     // Note that `contentEditable` doesn't have this problem: its DOM
-    // property is also enumerated string values.
+    // property is also enumerated string? values.
     if (key === 'spellcheck' || key === 'draggable' || key === 'translate') {
         return false;
     }
@@ -9803,7 +9803,7 @@ function shouldSetAsProp(el, key, value, isSVG) {
     if (key === 'type' && el.tagName === 'TEXTAREA') {
         return false;
     }
-    // native onclick with string value, must be set as attribute
+    // native onclick with string? value, must be set as attribute
     if (nativeOnRE.test(key) && isString(value)) {
         return false;
     }

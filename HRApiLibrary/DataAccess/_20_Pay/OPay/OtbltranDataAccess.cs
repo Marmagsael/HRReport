@@ -14,9 +14,9 @@ public class OtbltranDataAccess : IOtbltranDataAccess
         _sql = sql;
     }
 
-    public async Task<GTbltranModel?> _01(GTbltranModel tbltran, string schema, string conn)
+    public async Task<GTbltranModel?> _01(GTbltranModel tbltran, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Tbltran 
+        string? sql = $@"Insert into {schema}.Tbltran 
                         (TRN,  acctNumber,  empNumber,  amount,  dTimeStamp,  source,  postedby) values 
                         (@TRN, @acctNumber, @empNumber, @amount, @dTimeStamp, @source, @postedby)";
         await _sql.ExecuteCmd<dynamic>(sql, tbltran, conn);
@@ -27,9 +27,9 @@ public class OtbltranDataAccess : IOtbltranDataAccess
     }
 
 
-    public async Task<List<GTbltranModel?>?> _02ByTrnAndEmpnumber(string trn, string empnumber, string schema, string conn)
+    public async Task<List<GTbltranModel?>?> _02ByTrnAndEmpnumber(string? trn, string? empnumber, string? schema, string? conn)
     {
-        string sql = $@"select  t.TRN, t.AcctNumber, c.AcctName, t.EmpNumber, t.Amount, t.DTimeStamp, t.Source, t.PostedBy, 
+        string? sql = $@"select  t.TRN, t.AcctNumber, c.AcctName, t.EmpNumber, t.Amount, t.DTimeStamp, t.Source, t.PostedBy, 
                                 dt.nVal DayHrs, 
                                 CASE
                                     when dt.nVal is null or dt.nval < 1
@@ -53,9 +53,9 @@ public class OtbltranDataAccess : IOtbltranDataAccess
         return data;
     }
 
-    public async Task<List<GTbltranModel?>?> _02Trns_ByEmpnumber(string empnumber, string schema, string conn)
+    public async Task<List<GTbltranModel?>?> _02Trns_ByEmpnumber(string? empnumber, string? schema, string? conn)
     {
-        string sql = $@"select left(t.TRN,6) as TRN from {schema}.Tbltran t 
+        string? sql = $@"select left(t.TRN,6) as TRN from {schema}.Tbltran t 
                         where Empnumber = @Empnumber 
                         GROUP BY LEFT(TRN,6)
                         order by LEFT(t.TRN,6) desc
@@ -65,9 +65,9 @@ public class OtbltranDataAccess : IOtbltranDataAccess
     }
 
 
-    public async Task<GTbltranModel?> _03(GTbltranModel tbltran, string schema, string conn)
+    public async Task<GTbltranModel?> _03(GTbltranModel tbltran, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Tbltran set 
+        string? sql = $@"Update {schema}.Tbltran set 
                             Amount      = @Amount, 
                             DTimeStamp  = @DTimeStamp, 
                             Source      = @Source, 
@@ -80,9 +80,9 @@ public class OtbltranDataAccess : IOtbltranDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task _04(GTbltranModel tbltran, string schema, string conn)
+    public async Task _04(GTbltranModel tbltran, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Tbltran where  Trn = @Trn and AcctNumber and @AcctNumber and EmpNumber and @EmpNumber;";
+        string? sql = $@"Delete from {schema}.Tbltran where  Trn = @Trn and AcctNumber and @AcctNumber and EmpNumber and @EmpNumber;";
         await _sql.ExecuteCmd<dynamic>(sql, tbltran, conn);
 
     }
@@ -91,9 +91,9 @@ public class OtbltranDataAccess : IOtbltranDataAccess
 
 public interface IOtbltranDataAccess
 {
-    Task<GTbltranModel?> _01(GTbltranModel tbltran, string schema, string conn);
-    Task<List<GTbltranModel?>?> _02ByTrnAndEmpnumber(string trn, string empnumber, string schema, string conn);
-    Task<List<GTbltranModel?>?> _02Trns_ByEmpnumber(string empnumber, string schema, string conn);
-    Task<GTbltranModel?> _03(GTbltranModel tbltran, string schema, string conn);
-    Task _04(GTbltranModel tbltran, string schema, string conn);
+    Task<GTbltranModel?> _01(GTbltranModel tbltran, string? schema, string? conn);
+    Task<List<GTbltranModel?>?> _02ByTrnAndEmpnumber(string? trn, string? empnumber, string? schema, string? conn);
+    Task<List<GTbltranModel?>?> _02Trns_ByEmpnumber(string? empnumber, string? schema, string? conn);
+    Task<GTbltranModel?> _03(GTbltranModel tbltran, string? schema, string? conn);
+    Task _04(GTbltranModel tbltran, string? schema, string? conn);
 }

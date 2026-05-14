@@ -2,7 +2,7 @@ namespace HRApiLibrary.Models._20_Pay;
 
 public class LoansModel
 {
-	public int Id {get; set; } 
+	public int? Id {get; set; } 
 	public string?  	EmpNumber 		{get; set; } 
 	public DateTime 	Date 			{get; set; } 
 	public string?  	DedNCode 		{get; set; } 
@@ -23,15 +23,15 @@ public class LoansModel
 	public DateTime 	PayStart 		{get; set; } 
 	public DateTime 	PayRes 			{get; set; } 
 	public string?  	Cvno 			{get; set; } 
-	public int 			P1 				{get; set; } 
-	public int 			P2 				{get; set; } 
-	public int 			P3 				{get; set; } 
-	public int 			P4 				{get; set; } 
-	public int 			P5 				{get; set; } 
+	public int? 			P1 				{get; set; } 
+	public int? 			P2 				{get; set; } 
+	public int? 			P3 				{get; set; } 
+	public int? 			P4 				{get; set; } 
+	public int? 			P5 				{get; set; } 
 	public string?      TrnLastPosted   {get; set; } 
 	
 	//-----------------------------------------------------
-    public string LoanStatus
+    public string? LoanStatus
 	{
 		get => Status == "I" ? "Inactive" : "Active";
 		set => Status = value?.Equals("Inactive", StringComparison.OrdinalIgnoreCase) == true ? "I" : "A";

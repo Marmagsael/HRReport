@@ -15,9 +15,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
         _sql = sql;
     }
 
-    public async Task<Fixedearnings_grpModel?> _01(Fixedearnings_grpModel fixedearnings_grp, string schema, string conn)
+    public async Task<Fixedearnings_grpModel?> _01(Fixedearnings_grpModel fixedearnings_grp, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Fixedearnings_grp 
+        string? sql = $@"Insert into {schema}.Fixedearnings_grp 
                             (PayrollgrpId,  DStart,  DEnd,  AcctNumber,  Amount,  Status,  CreatedbyId,  TerminatedbyId,  DaysPara,  P1, P2, P3, P4, P5, PerdayEarnings, TRNPosted) values 
                             (@PayrollgrpId, @DStart, @DEnd, @AcctNumber, @Amount, @Status, @CreatedbyId, @TerminatedbyId, @DaysPara, @P1, @P2, @P3, @P4, @P5, @PerdayEarnings, @TRNPosted)";
         await _sql.ExecuteCmd<dynamic>(sql, fixedearnings_grp, conn);
@@ -31,9 +31,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
     }
 
 
-    public async Task<Fixedearnings_grpModel?> _02(int id, string schema, string conn)
+    public async Task<Fixedearnings_grpModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  c.AcctName, f.* 
+        string? sql = $@"select  c.AcctName, f.* 
                         from {schema}.Fixedearnings_grp f
                         left join {schema}.Coa c on c.AcctNumber = f.AcctNumber  
                         where Id = @Id";
@@ -41,9 +41,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task<List<Fixedearnings_grpModel?>?> _02_Active(string schema, string conn)
+    public async Task<List<Fixedearnings_grpModel?>?> _02_Active(string? schema, string? conn)
     {
-        string sql = $@"select  c.AcctName, f.* 
+        string? sql = $@"select  c.AcctName, f.* 
                         from {schema}.Fixedearnings_grp f
                         left join {schema}.Coa c on c.AcctNumber = f.AcctNumber  
                         where Status = 'A'";
@@ -51,9 +51,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
         return data;
     }
     
-    public async Task<List<Fixedearnings_grpModel?>?> _02_Active(string fld, string schema, string conn)
+    public async Task<List<Fixedearnings_grpModel?>?> _02_Active(string? fld, string? schema, string? conn)
     {
-        string sql = $@"select  c.AcctName, f.* 
+        string? sql = $@"select  c.AcctName, f.* 
                         from {schema}.Fixedearnings_grp f
                         left join {schema}.Coa c on c.AcctNumber = f.AcctNumber  
                         where Status = 'A'";
@@ -61,9 +61,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
         return data;
     }
     
-    public async Task<List<Fixedearnings_grpModel?>?> _02_ByPgrpId_Active(int pgrpId, string schema, string conn)
+    public async Task<List<Fixedearnings_grpModel?>?> _02_ByPgrpId_Active(int? pgrpId, string? schema, string? conn)
     {
-        string sql = $@"select  c.AcctName, f.* 
+        string? sql = $@"select  c.AcctName, f.* 
                             from {schema}.Fixedearnings_grp f
                             left join {schema}.Coa c on c.AcctNumber = f.AcctNumber  
                         where Status = 'A' and PayrollgrpId = @PayrollgrpId";
@@ -72,9 +72,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
     }
     
 
-    public async Task<Fixedearnings_grpModel?> _03(int id, Fixedearnings_grpModel fixedearnings_grp, string schema, string conn)
+    public async Task<Fixedearnings_grpModel?> _03(int? id, Fixedearnings_grpModel fixedearnings_grp, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Fixedearnings_grp set 
+        string? sql = $@"Update {schema}.Fixedearnings_grp set 
                               PayrollgrpId      = @PayrollgrpId, 
                               DStart            = @DStart, 
                               DEnd              = @DEnd, 
@@ -101,9 +101,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<Fixedearnings_grpModel?> _03_Terminate(int id, int terminatedbyId, string schema, string conn)
+    public async Task<Fixedearnings_grpModel?> _03_Terminate(int? id, int? terminatedbyId, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Fixedearnings_grp set 
+        string? sql = $@"Update {schema}.Fixedearnings_grp set 
                             DEnd              = now(), 
                             TerminatedbyId    = @TerminatedbyId,
                             Status            = 'T', 
@@ -119,9 +119,9 @@ public class Fixedearnings_grpDataAccess : IFixedearnings_grpDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<Fixedearnings_grpModel?> _04(int id, string schema, string conn)
+    public async Task<Fixedearnings_grpModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Fixedearnings_grp where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Fixedearnings_grp where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@"select  c.AcctName, f.* 

@@ -17,7 +17,7 @@ namespace HRMvc.Applications._02HR._02Library
         public bool     ShowStatusSettingModal      { get; set; } = false;
         public bool     IsLoading                   { get; set; } = false;
 
-        public string   Empnumber                   { get; set; } = string.Empty;
+        public string?   Empnumber                   { get; set; } = string.Empty;
         public bool     IsCheckedAll                { get; set; } = false;
 
         public bool     SaveDisabled                { get; set; } = false;

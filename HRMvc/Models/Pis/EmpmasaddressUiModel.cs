@@ -6,7 +6,7 @@ public class EmpmasaddressUiModel
 {
     [Display(Name = "Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int Id { get; set; }
+    public int? Id { get; set; }
 
     [Display(Name = "PresAddStreet")]
     [StringLength(45, ErrorMessage = "This field must not exceed 45 characters.")]
@@ -25,7 +25,7 @@ public class EmpmasaddressUiModel
     
     [Display(Name = "PresAddCityId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int PresAddCityId { get; set; }
+    public int? PresAddCityId { get; set; }
 
 
     [Display(Name = "City")]
@@ -35,7 +35,7 @@ public class EmpmasaddressUiModel
 
     [Display(Name = "PresAddProvId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int PresAddProvId { get; set; }
+    public int? PresAddProvId { get; set; }
 
     
     [Display(Name = "PresAddProv")]
@@ -45,7 +45,7 @@ public class EmpmasaddressUiModel
     
     [Display(Name = "PresAddStateId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int PresAddStateId { get; set; }
+    public int? PresAddStateId { get; set; }
 
     
     [Display(Name = "PresAddState")]
@@ -55,7 +55,7 @@ public class EmpmasaddressUiModel
     
     [Display(Name = "PresAddCountryId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int PresAddCountryId { get; set; }
+    public int? PresAddCountryId { get; set; }
 
     
     [Display(Name = "PresAddCountry")]
@@ -95,7 +95,7 @@ public class EmpmasaddressUiModel
     
     [Display(Name = "ProvAddCityId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int ProvAddCityId { get; set; }
+    public int? ProvAddCityId { get; set; }
 
     
     [Display(Name = "City")]
@@ -105,7 +105,7 @@ public class EmpmasaddressUiModel
     
     [Display(Name = "ProvAddProvId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int ProvAddProvId { get; set; }
+    public int? ProvAddProvId { get; set; }
 
     
     [Display(Name = "ProvAddProv")]
@@ -115,7 +115,7 @@ public class EmpmasaddressUiModel
     
     [Display(Name = "ProvAddStateId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int ProvAddStateId { get; set; }
+    public int? ProvAddStateId { get; set; }
 
     
     [Display(Name = "ProvAddState")]
@@ -125,7 +125,7 @@ public class EmpmasaddressUiModel
     
     [Display(Name = "ProvAddCountryId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int ProvAddCountryId { get; set; }
+    public int? ProvAddCountryId { get; set; }
 
     
     [Display(Name = "ProvAddCountry")]

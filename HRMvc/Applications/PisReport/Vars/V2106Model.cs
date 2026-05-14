@@ -3,7 +3,7 @@
 
     public class V2105Model
     {
-        public string Action { get; set; } = "";
+        public string? Action { get; set; } = "";
         public List<R2105Model> RepDtls { get; set; } = [];
     }
 

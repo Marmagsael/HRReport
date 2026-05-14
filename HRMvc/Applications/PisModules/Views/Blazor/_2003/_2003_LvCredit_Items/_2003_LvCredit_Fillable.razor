@@ -92,14 +92,14 @@
     [Parameter] public V2003_LvGrpAssignmentModel V { get; set; } = new();                      
     [Parameter] public EventCallback CA { get; set; }
 
-    string lblCss = " w-120p p-2 bg-secondary bg-opacity-10 text-center ";
-    string populateCss => (V.LvType.Id > 0) ? "" : " disabled-div ";
-    string applyCss => ( V.WithChanges 
+    string? lblCss = " w-120p p-2 bg-secondary bg-opacity-10 text-center ";
+    string? populateCss => (V.LvType.Id > 0) ? "" : " disabled-div ";
+    string? applyCss => ( V.WithChanges 
                          && V.LvType.Id > 0
                          && V.LvCredit.CreditStart.HasValue 
                          && V.LvCredit.CreditEnd.HasValue) 
                          ? " " : " disabled-div ";
-    string clearCreditCss => (V.Empmasgrps.Count > 0 
+    string? clearCreditCss => (V.Empmasgrps.Count > 0 
                                && (V.Empmasgrps.Where(g => g.ValLvCredit > 0).ToList().Count > 0)
                                && V.LvType.Id > 0 ) ? " " : " disabled-div ";
 
@@ -170,9 +170,9 @@
 
         DateTime dstart = V.LvCredit.CreditStart.Value.Date;
 
-        int lvId = V.LvType.Id;
-        string pisdb = Uc.SchemaUserPis;
-        string conn = Uc.Conn;
+        int? lvId = V.LvType.Id;
+        string? pisdb = Uc.SchemaUserPis;
+        string? conn = Uc.Conn;
 
         var lvcredits = await _lvCredit._02ByLvType_ByCreditStart(lvId, dstart, pisdb, conn);
 
@@ -207,10 +207,10 @@
         if(V.LvType?.Id == null) return;
         if(V.LvCredit.Year == null || V.LvCredit.Year < 1950) return;  
 
-        int lvId        = V.LvType.Id;
-        string pisdb    = Uc.SchemaUserPis;
-        string conn     = Uc.Conn;
-        int yr          = V.LvCredit.Year??0; 
+        int? lvId        = V.LvType.Id;
+        string? pisdb    = Uc.SchemaUserPis;
+        string? conn     = Uc.Conn;
+        int? yr          = V.LvCredit.Year??0; 
 
         var lvcredits = await _lvCredit._02AssignPerYr(lvId, yr, pisdb, conn); 
         foreach(var c in lvcredits) {

@@ -299,9 +299,9 @@
   /**
    * Trim excess whitespace off the beginning and end of a string
    *
-   * @param {String} str The String to trim
+   * @param {String} str The string? to trim
    *
-   * @returns {String} The String freed of excess whitespace
+   * @returns {String} The string? freed of excess whitespace
    */
   var trim = function trim(str) {
     return str.trim ? str.trim() : str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
@@ -507,7 +507,7 @@
   };
 
   /**
-   * Determines whether a string ends with the characters of a specified string
+   * Determines whether a string? ends with the characters of a specified string
    *
    * @param {String} str
    * @param {String} searchString
@@ -582,7 +582,7 @@
    * It takes a regular expression and a string, and returns an array of all the matches
    *
    * @param {string} regExp - The regular expression to match against.
-   * @param {string} str - The string to search.
+   * @param {string} str - The string? to search.
    *
    * @returns {Array<boolean>}
    */
@@ -1032,10 +1032,10 @@
   }
 
   /**
-   * It encodes a string by replacing all characters that are not in the unreserved set with
+   * It encodes a string? by replacing all characters that are not in the unreserved set with
    * their percent-encoded equivalents
    *
-   * @param {string} str - The string to encode.
+   * @param {string} str - The string? to encode.
    *
    * @returns {string} The encoded string.
    */
@@ -1277,7 +1277,7 @@
   }
 
   /**
-   * It takes a string like `foo[x][y][z]` and returns an array like `['foo', 'x', 'y', 'z']
+   * It takes a string? like `foo[x][y][z]` and returns an array like `['foo', 'x', 'y', 'z']
    *
    * @param {string} name - The name of the property to get.
    *
@@ -1362,7 +1362,7 @@
    * of the input
    *
    * @param {any} rawValue - The value to be stringified.
-   * @param {Function} parser - A function that parses a string into a JavaScript object.
+   * @param {Function} parser - A function that parses a string? into a JavaScript object.
    * @param {Function} encoder - A function that takes a value and returns a string.
    *
    * @returns {string} A stringified version of the rawValue.

@@ -56,7 +56,7 @@ public class PisReportController : Controller
     }
 
     [HttpGet("{pisCode:int}")]
-    public IActionResult Report(int pisCode)
+    public IActionResult Report(int? pisCode)
     {
         var key = pisCode.ToString();
 

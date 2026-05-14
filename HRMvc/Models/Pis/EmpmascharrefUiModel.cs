@@ -6,12 +6,12 @@ public class EmpmascharrefUiModel
 {
     [Display(Name = "Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int Id { get; set; }
+    public int? Id { get; set; }
 
     
     [Display(Name = "EmpmasId")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int EmpmasId { get; set; }
+    public int? EmpmasId { get; set; }
 
     
     [Display(Name = "Name")]

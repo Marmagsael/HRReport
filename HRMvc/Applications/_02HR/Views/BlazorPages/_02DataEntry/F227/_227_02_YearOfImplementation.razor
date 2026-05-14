@@ -13,7 +13,7 @@
     <div class="gap-2 p-2 d-flex">
         <div class="p-2 fw-bold">Leave Implementation Year</div>
         <div class="w-100p ">
-            <RadzenNumeric TValue="int" @bind-Value="pisSettings.LeaveYrImplementation" Format="0000"
+            <RadzenNumeric TValue="int?" @bind-Value="pisSettings.LeaveYrImplementation" Format="0000"
                 TextAlign="TextAlign.Right" Min="1900" Max="3000"                ShowUpDown="false" />
         </div>
         <div class="p-1">
@@ -36,7 +36,7 @@
     string? paydb = string.Empty;
     string? conn = string.Empty;
     
-    int yr = 0; 
+    int? yr = 0; 
 
     protected override async void OnParametersSet()
     {
@@ -60,7 +60,7 @@
         var res = await _pisSettings._02(pisdb!, conn!);
         if(res!=null) {
             res.LeaveYrImplementation   = pisSettings.LeaveYrImplementation; 
-            res.UserId                  = UserClaims.UserId; 
+            res.UserId                  = UserClaims.UserId??0; 
             await _pisSettings._03(res,pisdb!,conn!); 
 
             var severity    = NotificationSeverity.Info;

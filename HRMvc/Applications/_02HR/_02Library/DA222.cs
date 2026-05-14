@@ -14,9 +14,9 @@ public class DA222
         _empmas = empmas;
     }
 
-    //public async Task<DeprecModel> _02Deprecs(int id, string db, string conn) 
+    //public async Task<DeprecModel> _02Deprecs(int? id, string? db, string? conn) 
     //{
-    //    DeprecModel dr = new() { Empmasid = id};
+    //    DeprecModel dr = new() { EmpmasId = id};
 
     //    var res = await _empmas._02Deprecs(id, db, conn);
     //    if(res==null)   {   await _empmas._01Deprec(dr, db, conn); } 
@@ -30,7 +30,7 @@ public class DA222
     //    return dr; 
     //}
     
-    public async Task<EmpmasPIModel> _02EmpmasPI(int id, string db, string conn) 
+    public async Task<EmpmasPIModel> _02EmpmasPI(int? id, string? db, string? conn) 
     {
         EmpmasPIModel empmasPI = new() { Id = id};
 
@@ -45,9 +45,9 @@ public class DA222
         return empmasPI!; 
     }
 
-    public async Task<DeprecModel> _02Deprec(int id, string db, string conn) 
+    public async Task<DeprecModel> _02Deprec(int? id, string? db, string? conn) 
     {
-        DeprecModel dp  = new() { Empmasid = id , Empstatusid = 12 }; // 12 = For Deployment
+        DeprecModel dp  = new() { EmpmasId = id , Empstatusid = 12 }; // 12 = For Deployment
         var deprecs     = await _empmas._02Deprecs(id, db, conn);
         if(deprecs==null) { await _empmas._01Deprec(dp, db, conn); }
         else
@@ -59,7 +59,7 @@ public class DA222
         return dp; 
     }
 
-    public async Task<EmpmasAddressModel> _02EmpmasAddress(int id, string db, string conn)
+    public async Task<EmpmasAddressModel> _02EmpmasAddress(int? id, string? db, string? conn)
     {
         EmpmasAddressModel ea = new() { Id=id };
         var res = await _empmas._02EmpmasAddresss(id, db, conn); 

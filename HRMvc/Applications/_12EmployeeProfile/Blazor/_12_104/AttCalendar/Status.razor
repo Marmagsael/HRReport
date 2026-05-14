@@ -1,0 +1,39 @@
+﻿@{
+    var statuses = (D.Status ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(s => s.Trim())
+        .Where(s => !string.IsNullOrWhiteSpace(s)
+                 && !s.Contains("PRESENT")
+                 && !s.Contains("LATE")
+                 && !s.Contains("UNDERTIME"))
+        .ToList();
+
+    bool hasLeave = !string.IsNullOrWhiteSpace(D.LeaveType);
+}
+
+<div class="d-flex align-items-center justify-content-center h-100 w-100">
+    <div class="d-flex flex-column  flex-wrap justify-content-center">
+        @foreach (var s in statuses)
+        {
+            <span class="badge rounded-pill @GetBadgeClass(s, hasLeave)">
+                @s
+            </span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public AttDayDetail D { get; set; } = new();
+
+    private string GetBadgeClass(string status, bool hasLeave) => status.ToUpper() switch
+    {
+        var s when s.Contains("ABSENT") => "text-danger text-opacity-75",
+        var s when s.Contains("RD") => "text-dark text-opacity-50",
+        var s when s.Contains("RN") => "text-dark text-opacity-50",
+        var s when s.Contains("R") => "text-dark text-opacity-50",
+        var s when s.Contains("1/2") => "text-dark text-opacity-50",
+
+        var s when hasLeave => "text-dark text-opacity-50",
+        _ => "text-white"
+    };
+}
