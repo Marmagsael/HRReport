@@ -16,12 +16,12 @@ public class _20_001_PayDataAccess : I_20_001_PayDataAccess
 
     public async Task _01Payroll(PaymainhdrModel phdr, 
                                  List<TbltranModel?> tmptbltrans, 
-                                 string? schema, string? conn)
+                                 string schema, string conn)
     {
         if(phdr==null) return;
 
         var trn         = phdr.Trn;
-        string? sql      = $@" Select * {schema}.Paymainhdr where Trn = @Trn;";
+        string sql      = $@" Select * {schema}.Paymainhdr where Trn = @Trn;";
         var paymainhdr  = await _sql.FetchData<PaymainhdrModel, dynamic>(sql, new { Trn = trn }, conn);
         if (paymainhdr != null) return; 
 
@@ -44,11 +44,11 @@ public class _20_001_PayDataAccess : I_20_001_PayDataAccess
         }
     }
 
-    public async Task _01EmpmasAndEmpRates(EmpratesModel er, string? pisdb, string? paydb, string? conn) {
+    public async Task _01EmpmasAndEmpRates(EmpratesModel er, string pisdb, string paydb, string conn) {
         
         if(er==null) return;
         
-        string? sql;
+        string sql;
         var empNumber = er.EmpNumber;
         if (empNumber?.Length > 0)
         {
@@ -97,13 +97,13 @@ public class _20_001_PayDataAccess : I_20_001_PayDataAccess
         await _sql.ExecuteCmd<dynamic>(sql, er, conn);
     }
 
-    public async Task _01TmptbltranEmpList(string? trn, int? payrollgrpId, int? empmasId, string? paydb, string? conn)
+    public async Task _01TmptbltranEmpList(string trn, int payrollgrpId, int empmasId, string paydb, string conn)
     {
         double  emprate     = 0;
-        int?     payrateId   = 2;
+        int     payrateId   = 2;
         
         // --- Check if Employee has Basic Rates -------------------------------------------------------
-        string? sql = $@"Select * from {paydb}.Empratesdtl  
+        string sql = $@"Select * from {paydb}.Empratesdtl  
                             Where AcctNumber = 'E001' and EmpmasId=@EmpmasId and PayrollGrpId=@PayrollgrpId; ";
         var ress    = await _sql.FetchData<EmpratesdtlModel, dynamic>(sql, new {EmpmasId=empmasId,PayrollGrpId = payrollgrpId},conn);
         var res     = ress.FirstOrDefault();
@@ -129,17 +129,17 @@ public class _20_001_PayDataAccess : I_20_001_PayDataAccess
         // --- 
     }
 
-    public async Task _01TmptbltranCoaList(string? trn, string? acctNumber, string? paydb, string? conn)
+    public async Task _01TmptbltranCoaList(string trn, string acctNumber, string paydb, string conn)
     {
-        string? sql = $@" Insert into {paydb}.Tmptbltrancoalist 
+        string sql = $@" Insert into {paydb}.Tmptbltrancoalist 
                          (trn, AcctNumber) values  (@trn, @AcctNumber) 
                          on duplicate key update AcctNumber = @AcctNumber; ";
         await _sql.ExecuteCmd<dynamic>(sql, new {Trn=trn,AcctNumber = acctNumber}, conn);
     }
     
-    public async Task _01Empratesdtl_NewPayroll(int? payrollgrpId, int? empmasId, double rateHR, double rateDay, string? paydb, string? conn)
+    public async Task _01Empratesdtl_NewPayroll(int payrollgrpId, int empmasId, double rateHR, double rateDay, string paydb, string conn)
     {
-        string? sql  = $@" select * from {paydb}.Empratesdtl where PayrollgrpId = @PayrollgrpId and EmpmasId = @EmpmasId limit 1; ";
+        string sql  = $@" select * from {paydb}.Empratesdtl where PayrollgrpId = @PayrollgrpId and EmpmasId = @EmpmasId limit 1; ";
         var res     = await _sql.FetchData<EmpratesModel,dynamic>(sql, new { PayrollgrpId=payrollgrpId, EmpmasId=empmasId},conn);
         if(res.Count< 1) {
             sql = @$"INSERT INTO {paydb}.empratesdtl 
@@ -154,9 +154,9 @@ public class _20_001_PayDataAccess : I_20_001_PayDataAccess
     }
 
     
-    public async Task<List<TbltranModel?>?> _02Tmptbltran(string? trn, int? payrollgrpId, int? userId, string? paydb, string? pisdb, string? conn)
+    public async Task<List<TbltranModel?>?> _02Tmptbltran(string trn, int payrollgrpId, int userId, string paydb, string pisdb, string conn)
     {
-        string? sql  = $@" select * from {paydb}.TmpTbltran where Trn = @Trn ";
+        string sql  = $@" select * from {paydb}.TmpTbltran where Trn = @Trn ";
         var res     = await _sql.FetchData<TbltranModel, dynamic>(sql, new {Trn=trn}, conn);
         if(res.Count<1)
         {
@@ -180,23 +180,23 @@ public class _20_001_PayDataAccess : I_20_001_PayDataAccess
 
     }
 
-        public async Task<SettingsModel?> _02Settings(string? schema, string? conn)
+        public async Task<SettingsModel?> _02Settings(string schema, string conn)
     {
-        string? sql = $@" Select * from {schema}.Settings";
+        string sql = $@" Select * from {schema}.Settings";
         var res = await _sql.FetchData<SettingsModel, dynamic>(sql, new { }, conn);
         return res.FirstOrDefault(); 
     }
     
-    public async Task<PaymaindtlsetupModel?> _02PaymainSetup(string? schema, string? conn)
+    public async Task<PaymaindtlsetupModel?> _02PaymainSetup(string schema, string conn)
     {
-        string? sql = $@" Select * from {schema}.Paymaindtlsetup";
+        string sql = $@" Select * from {schema}.Paymaindtlsetup";
         var paymaindtlsetup = await _sql.FetchData<PaymaindtlsetupModel, dynamic>(sql, new { }, conn);
         return paymaindtlsetup.FirstOrDefault(); 
     }
 
-    public async Task _04ByTrn(string? trn, string? schema, string? conn)
+    public async Task _04ByTrn(string trn, string schema, string conn)
     {
-        string? sql      = $@" Select * from {schema}.Paymainhdr where Trn = @Trn;";
+        string sql      = $@" Select * from {schema}.Paymainhdr where Trn = @Trn;";
         var paymainhdr  = await _sql.FetchData<PaymainhdrModel, dynamic>(sql, new { Trn = trn }, conn);
 
         if (paymainhdr.FirstOrDefault()?.Status == null) return;

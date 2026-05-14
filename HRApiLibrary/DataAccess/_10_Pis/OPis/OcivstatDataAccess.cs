@@ -13,9 +13,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             _sql = sql;
         }
 
-        public async Task<OCivstatModel?> _01(OCivstatModel civstat, string? schema, string? conn)
+        public async Task<OCivstatModel?> _01(OCivstatModel civstat, string schema, string conn)
         {
-            string? sql = $@"Insert into {schema}.Civstat (CODE, NAME) values (@CODE, @NAME)";
+            string sql = $@"Insert into {schema}.Civstat (CODE, NAME) values (@CODE, @NAME)";
             await _sql.ExecuteCmd<dynamic>(sql, civstat, conn);
 
             sql = $@"SELECT * FROM {schema}.Civstat WHERE ID = (SELECT @@IDENTITY)";
@@ -26,17 +26,17 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         }
 
 
-        public async Task<List<OCivstatModel?>?> _02(string? schema, string? conn)
+        public async Task<List<OCivstatModel?>?> _02(string schema, string conn)
         {
-            string? sql = $@"select  CODE, NAME from {schema}.Civstat ";
+            string sql = $@"select  CODE, NAME from {schema}.Civstat ";
             var data = await _sql.FetchData<OCivstatModel?, dynamic>(sql, new { }, conn);
             return data;
         }
 
 
-        public async Task<OCivstatModel?> _03(int? id, OCivstatModel civstat, string? schema, string? conn)
+        public async Task<OCivstatModel?> _03(int id, OCivstatModel civstat, string schema, string conn)
         {
-            string? sql = $@"Update {schema}.Civstat set CODE = @CODE, NAME = @NAME where Id = @Id;";
+            string sql = $@"Update {schema}.Civstat set CODE = @CODE, NAME = @NAME where Id = @Id;";
             await _sql.ExecuteCmd<dynamic>(sql, civstat, conn);
 
             sql = $@" select  * from {schema}.Civstat x where x.Id = @Id ;";
@@ -44,9 +44,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
-        public async Task<OCivstatModel?> _04(int? id, string? schema, string? conn)
+        public async Task<OCivstatModel?> _04(int id, string schema, string conn)
         {
-            string? sql = $@"Delete from {schema}.Civstat where Id = @Id;";
+            string sql = $@"Delete from {schema}.Civstat where Id = @Id;";
             await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
             sql = $@" select  * from {schema}.Civstat x where x.Id = @Id ;";
@@ -58,8 +58,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
 public interface IOCivstatDataAccess
 {
-    Task<OCivstatModel?> _01(OCivstatModel civstat, string? schema, string? conn);
-    Task<List<OCivstatModel?>?> _02(string? schema, string? conn);
-    Task<OCivstatModel?> _03(int? id, OCivstatModel civstat, string? schema, string? conn);
-    Task<OCivstatModel?> _04(int? id, string? schema, string? conn);
+    Task<OCivstatModel?> _01(OCivstatModel civstat, string schema, string conn);
+    Task<List<OCivstatModel?>?> _02(string schema, string conn);
+    Task<OCivstatModel?> _03(int id, OCivstatModel civstat, string schema, string conn);
+    Task<OCivstatModel?> _04(int id, string schema, string conn);
 }

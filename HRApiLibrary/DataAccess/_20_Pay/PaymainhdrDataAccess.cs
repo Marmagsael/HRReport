@@ -14,7 +14,7 @@ public class PaymainhdrDataAccess : IPaymainhdrDataAccess
         _sql = sql;
     }
 
-    public async Task<PaymainhdrModel?> _01(PaymainhdrModel paymainhdr, string? schema, string? conn)
+    public async Task<PaymainhdrModel?> _01(PaymainhdrModel paymainhdr, string schema, string conn)
     {
         var query = @$"select * from {schema}.Paymainhdr where Trn = @Trn ";
         var output = await _sql.FetchData<PaymainhdrModel?, dynamic>(query, new{Trn=paymainhdr.Trn}, conn);
@@ -31,41 +31,41 @@ public class PaymainhdrDataAccess : IPaymainhdrDataAccess
     }
 
 
-    public async Task<PaymainhdrModel?> _02(int? id, string? schema, string? conn)
+    public async Task<PaymainhdrModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
+        string sql = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
 							from {schema}.Paymainhdr where Id = @Id";
         var data = await _sql.FetchData<PaymainhdrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<PaymainhdrModel?> _02ByTrn(string? trn, string? schema, string? conn)
+    public async Task<PaymainhdrModel?> _02ByTrn(string trn, string schema, string conn)
     {
-        string? sql = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
+        string sql = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
 							from {schema}.Paymainhdr where Trn = @trn";
         var data = await _sql.FetchData<PaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<List<PaymainhdrModel?>?> _02ByTrns(string? trn, string? schema, string? conn)
+    public async Task<List<PaymainhdrModel?>?> _02ByTrns(string trn, string schema, string conn)
     {
-        string? sql = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
+        string sql = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
 							from {schema}.Paymainhdr where Trn = @trn";
         var data = await _sql.FetchData<PaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
         return data;
     }
     
-    public async Task<List<PaymainhdrModel?>?> _02ByPeriodTrns(string? periodTrn, string? schema, string? conn)
+    public async Task<List<PaymainhdrModel?>?> _02ByPeriodTrns(string periodTrn, string schema, string conn)
     {
-        string? sql  = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
+        string sql  = $@"select  Trn, ClRate, MinRate, UserId, Status, DateCreated, DatePosted, AttStart, AttEnd 
 							from {schema}.Paymainhdr where left(Trn,6) = Left(@trn,6) ; ";
         var data    = await _sql.FetchData<PaymainhdrModel?, dynamic>(sql, new { Trn = periodTrn }, conn);
         return data;
     }
 
 
-    public async Task<PaymainhdrModel?> _03(int? id, PaymainhdrModel paymainhdr, string? schema, string? conn)
+    public async Task<PaymainhdrModel?> _03(int id, PaymainhdrModel paymainhdr, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Paymainhdr set 
+        string sql = $@"Update {schema}.Paymainhdr set 
 								Trn 	= @Trn, 
 								ClRate 	= @ClRate, 
 								MinRate = @MinRate, 
@@ -82,9 +82,9 @@ public class PaymainhdrDataAccess : IPaymainhdrDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<PaymainhdrModel?> _04(int? id, string? schema, string? conn)
+    public async Task<PaymainhdrModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Paymainhdr where Id = @Id;";
+        string sql = $@"Delete from {schema}.Paymainhdr where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Paymainhdr x where x.Id = @Id ;";

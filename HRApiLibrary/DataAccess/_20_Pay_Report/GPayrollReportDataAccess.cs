@@ -15,28 +15,28 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         _sql = sql;
     }
 
-    public async Task<List<GChartofacctModel?>?> _02s(string? schema, string? conn)
+    public async Task<List<GChartofacctModel?>?> _02s(string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Chartofacct order by Type Desc, AcctName ";
+        string sql = $@"select  * from {schema}.Chartofacct order by Type Desc, AcctName ";
         var data = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { }, conn);
         return data;
     }
-    public async Task<List<GChartofacctModel?>?> _02ByAcctTypes(string? acctType, string? schema, string? conn)
+    public async Task<List<GChartofacctModel?>?> _02ByAcctTypes(string acctType, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Chartofacct where AcctType = @AcctType order by AcctName ";
+        string sql = $@"select  * from {schema}.Chartofacct where AcctType = @AcctType order by AcctName ";
         var data = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { AcctType = acctType }, conn);
         return data;
     }
 
 
-    public async Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int? yyyy, string? mm, string? acctNumber, string? opaydb, string? opisdb, string? conn)
+    public async Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctNumber, string opaydb, string opisdb, string conn)
     {
 
 
 
 
-        string? prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
-        string? sql = $@" DROP TEMPORARY TABLE IF EXISTS tTbltran; 
+        string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
+        string sql = $@" DROP TEMPORARY TABLE IF EXISTS tTbltran; 
                         DROP TEMPORARY TABLE IF EXISTS tRefssstbl; 
                         DROP TEMPORARY TABLE IF EXISTS tEmplist;
 
@@ -76,10 +76,10 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         return data;
     }
 
-    public async Task<List<RPhicPremModel?>?> _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int? yyyy, string? mm, string? acctNumber, string? opaydb, string? opisdb, string? conn)
+    public async Task<List<RPhicPremModel?>?> _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctNumber, string opaydb, string opisdb, string conn)
     {
-        string? prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
-        string? sql = $@"DROP TEMPORARY TABLE IF EXISTS tTbltran; 
+        string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
+        string sql = $@"DROP TEMPORARY TABLE IF EXISTS tTbltran; 
                         DROP TEMPORARY TABLE IF EXISTS t2Tbltran;
                         DROP TEMPORARY TABLE IF EXISTS tEmplist;
 
@@ -121,10 +121,10 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         return data;
     }
 
-    public async Task<List<RPagIbigPremModel?>?> _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int? yyyy, string? mm, string? acctNumber, string? opaydb, string? opisdb, string? conn)
+    public async Task<List<RPagIbigPremModel?>?> _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctNumber, string opaydb, string opisdb, string conn)
     {
-        string? prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
-        string? sql = $@" DROP TEMPORARY TABLE IF EXISTS tTbltran; 
+        string prd = $"{yyyy.ToString().Trim().Substring(2, 2)}{mm}";
+        string sql = $@" DROP TEMPORARY TABLE IF EXISTS tTbltran; 
                         DROP TEMPORARY TABLE IF EXISTS tRefpagibigtbl; 
                         DROP TEMPORARY TABLE IF EXISTS tEmplist;
 
@@ -172,10 +172,10 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
 
 public interface IGPayrollReportDataAccess
 {
-    Task<List<GChartofacctModel?>?> _02ByAcctTypes(string? acctType, string? schema, string? conn);
-    Task<List<GChartofacctModel?>?> _02s(string? schema, string? conn);
-    Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int? yyyy, string? mm, string? acctType, string? opaydb, string? opisdb, string? conn);
-    Task<List<RPhicPremModel?>?> _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int? yyyy, string? mm, string? acctType, string? opaydb, string? opisdb, string? conn);
-    Task<List<RPagIbigPremModel?>?> _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int? yyyy, string? mm, string? acctType, string? opaydb, string? opisdb, string? conn);
+    Task<List<GChartofacctModel?>?> _02ByAcctTypes(string acctType, string schema, string conn);
+    Task<List<GChartofacctModel?>?> _02s(string schema, string conn);
+    Task<List<RSssPremModel?>?> _02SSSPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctType, string opaydb, string opisdb, string conn);
+    Task<List<RPhicPremModel?>?> _02PHICPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctType, string opaydb, string opisdb, string conn);
+    Task<List<RPagIbigPremModel?>?> _02PagIbigPrem_ByPGrps_ByYYMM(List<string> pgrps, int yyyy, string mm, string acctType, string opaydb, string opisdb, string conn);
 
 }

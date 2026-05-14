@@ -14,7 +14,7 @@ public class OEmpstatModel
 	public int?     IsDeviation     { get; set; } 
 
 	// --- Others -------------------------------------
-	public int? 			IsSelected 			{ get; set; } = 0; 
+	public int 			IsSelected 			{ get; set; } = 0; 
 	public bool     	IsSelectedB         { get => IsSelected == 1; set => IsSelected = value ? 1 : 0; }
 
 }

@@ -2,7 +2,7 @@
 
 public class RdeviationModel
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
 
     public string? Dev_No { get; set; }
 

@@ -14,11 +14,11 @@ public class PayrollprdDataAccess : IPayrollprdDataAccess
         _sql = sql;
     }
 
-    public async Task<PayrollprdModel?> _01(PayrollprdModel payrollprd, string? schema, string? conn)
+    public async Task<PayrollprdModel?> _01(PayrollprdModel payrollprd, string schema, string conn)
     {
         
         
-        string? sql = $@"Update {schema}.Payrollprd set Status = 'O' where Status = 'A'; 
+        string sql = $@"Update {schema}.Payrollprd set Status = 'O' where Status = 'A'; 
                         Insert into {schema}.Payrollprd 
                             (Yr,  Mo,  Prd,  Openby,  DateOpened,  Status) values 
                             (@Yr, @Mo, @Prd, @Openby, now(),       'A')";
@@ -33,22 +33,22 @@ public class PayrollprdDataAccess : IPayrollprdDataAccess
     }
 
 
-    public async Task<PayrollprdModel?> _02(int? id, string? schema, string? conn)
+    public async Task<PayrollprdModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, Yr, Mo, Prd, Openby, DateOpened, Closedby, DateClosed, Status 
+        string sql = $@"select  Id, Yr, Mo, Prd, Openby, DateOpened, Closedby, DateClosed, Status 
                         from {schema}.Payrollprd where Id = @Id";
         var data = await _sql.FetchData<PayrollprdModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<PayrollprdModel?> _02(string? schema, string? conn)
+    public async Task<PayrollprdModel?> _02(string schema, string conn)
     {
-        string? sql = $@"select  Id, Yr, Mo, Prd, Openby, DateOpened, Closedby, DateClosed, Status 
+        string sql = $@"select  Id, Yr, Mo, Prd, Openby, DateOpened, Closedby, DateClosed, Status 
                         from {schema}.Payrollprd order by Yr desc, Mo desc, Prd";
         var data = await _sql.FetchData<PayrollprdModel?, dynamic>(sql, new {  }, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<List<PayrollprdModel?>?> _02PerYr(int? yr, string? schema, string? conn)
+    public async Task<List<PayrollprdModel?>?> _02PerYr(int yr, string schema, string conn)
     {
         var sql = $@"select  Id, Yr, Mo, Prd, Openby, DateOpened, Closedby, DateClosed, Status 
                         from {schema}.Payrollprd
@@ -58,16 +58,16 @@ public class PayrollprdDataAccess : IPayrollprdDataAccess
         return data;
     }
     
-    public async Task<List<PayrollprdModel?>?> _02Open(string? schema, string? conn)
+    public async Task<List<PayrollprdModel?>?> _02Open(string schema, string conn)
     {
-        string? sql = $@"select distinct  Id, Yr, Mo, Prd, Openby, DateOpened, Closedby, DateClosed, Status 
+        string sql = $@"select distinct  Id, Yr, Mo, Prd, Openby, DateOpened, Closedby, DateClosed, Status 
                         from {schema}.Payrollprd 
                         where Status in ('O','A','P')
                         order by Yr desc, Mo desc, Prd ";
         var data = await _sql.FetchData<PayrollprdModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
-    public async Task<List<PayrollprdModel?>?> _02OpenPerMonth(string? schema, string? conn)
+    public async Task<List<PayrollprdModel?>?> _02OpenPerMonth(string schema, string conn)
     {
         var sql = $@"select  distinct Yr, Mo, Prd from {schema}.Payrollprd 
                         where Status in ('O','A') order by Yr desc, Mo desc, Prd ";
@@ -75,9 +75,9 @@ public class PayrollprdDataAccess : IPayrollprdDataAccess
         return data;
     }
     
-    public async Task<PayrollprdModel?> _03(int? id, PayrollprdModel payrollprd, string? schema, string? conn)
+    public async Task<PayrollprdModel?> _03(int id, PayrollprdModel payrollprd, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Payrollprd set 
+        string sql = $@"Update {schema}.Payrollprd set 
                                 Yr          = @Yr,  
                                 Mo          = @Mo,  
                                 Prd         = @Prd,  
@@ -93,14 +93,14 @@ public class PayrollprdDataAccess : IPayrollprdDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task _03SetActive(int? id, string? schema, string? conn)
+    public async Task _03SetActive(int id, string schema, string conn)
     {
         var sql = $@"Update {schema}.Payrollprd set Status = 'O' where Status   = 'A';
                         Update {schema}.Payrollprd set Status = 'A' where Id       = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new {Id = id }, conn);
     }
     
-    public async Task _03LockPeriod(int? payrollprdId, int? userId, string? schema, string? conn)
+    public async Task _03LockPeriod(int payrollprdId, int userId, string schema, string conn)
     {
         var sql = $"select * from {schema}.payrollprd where Id = @Id";
         var res = await _sql.FetchData<PayrollprdModel?, dynamic>(sql, new { Id = payrollprdId }, conn);
@@ -122,9 +122,9 @@ public class PayrollprdDataAccess : IPayrollprdDataAccess
         
     }
     
-    public async Task<PayrollprdModel?> _04(int? id, string? schema, string? conn)
+    public async Task<PayrollprdModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Payrollprd where Id = @Id;";
+        string sql = $@"Delete from {schema}.Payrollprd where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Payrollprd x where x.Id = @Id ;";

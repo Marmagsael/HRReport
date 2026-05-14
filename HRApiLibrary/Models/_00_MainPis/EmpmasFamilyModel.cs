@@ -2,9 +2,9 @@
 
 public class EmpmasFamilyModel
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
 
-    public int? EmpmasId { get; set; }
+    public int EmpmasId { get; set; }
 
     public string? Name { get; set; }
 

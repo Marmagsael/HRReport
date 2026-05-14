@@ -2,7 +2,7 @@
 
 public class EmpmasGovPhModel
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
 
     public string? Sss { get; set; }
 

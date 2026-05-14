@@ -14,9 +14,9 @@ public class DesignationDataAccess : IDesignationDataAccess
         _sql = sql;
     }
 
-    public async Task<DesignationModel?> _01(DesignationModel designation, string? schema, string? conn)
+    public async Task<DesignationModel?> _01(DesignationModel designation, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Designation (CODE, NAME, sort) values (@CODE, @NAME, @sort)";
+        string sql = $@"Insert into {schema}.Designation (CODE, NAME, sort) values (@CODE, @NAME, @sort)";
         await _sql.ExecuteCmd<dynamic>(sql, designation, conn);
 
         sql = $@"SELECT * FROM {schema}.Designation WHERE ID = (SELECT @@IDENTITY)";
@@ -27,25 +27,25 @@ public class DesignationDataAccess : IDesignationDataAccess
     }
 
 
-    public async Task<DesignationModel?> _02(int? id, string? schema, string? conn)
+    public async Task<DesignationModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, Code, Name, Sort from {schema}.Designation where Id = @Id";
+        string sql = $@"select  Id, Code, Name, Sort from {schema}.Designation where Id = @Id";
         var data = await _sql.FetchData<DesignationModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<DesignationModel?>?> _02( string? schema, string? conn)
+    public async Task<List<DesignationModel?>?> _02( string schema, string conn)
     {
-        string? sql = $@"select  Id, Code, Name, Sort from {schema}.Designation ";
+        string sql = $@"select  Id, Code, Name, Sort from {schema}.Designation ";
         var data = await _sql.FetchData<DesignationModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
 
 
 
-    public async Task<DesignationModel?> _03(int? id, DesignationModel designation, string? schema, string? conn)
+    public async Task<DesignationModel?> _03(int id, DesignationModel designation, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Designation set CODE = @CODE, NAME = @NAME, sort = @sort where Id = @Id;";
+        string sql = $@"Update {schema}.Designation set CODE = @CODE, NAME = @NAME, sort = @sort where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, designation, conn);
 
         sql = $@" select  * from {schema}.Designation x where x.Id = @Id ;";
@@ -53,9 +53,9 @@ public class DesignationDataAccess : IDesignationDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<DesignationModel?> _04(int? id, string? schema, string? conn)
+    public async Task<DesignationModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Designation where Id = @Id;";
+        string sql = $@"Delete from {schema}.Designation where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Designation x where x.Id = @Id ;";

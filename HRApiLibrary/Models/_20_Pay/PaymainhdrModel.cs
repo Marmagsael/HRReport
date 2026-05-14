@@ -5,7 +5,7 @@ public class PaymainhdrModel
 	public string? 			Trn 			{get; set; } 
 	public double 			ClRate 			{get; set; } 
 	public double 			MinRate 		{get; set; } 
-	public int?     			UserId 			{get; set; } 
+	public int     			UserId 			{get; set; } 
 	public string? 			Status 			{get; set; } 
 	public DateTime			DateCreated		{get; set; } 
 	public DateTime?		DatePosted 		{get; set; } 

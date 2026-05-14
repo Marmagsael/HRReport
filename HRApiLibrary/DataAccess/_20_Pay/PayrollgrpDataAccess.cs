@@ -13,7 +13,7 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         _sql = sql;
     }
 
-    public async Task<PayrollgrpModel?> _01(PayrollgrpModel payrollgrp, string? schema, string? conn)
+    public async Task<PayrollgrpModel?> _01(PayrollgrpModel payrollgrp, string schema, string conn)
     {
         var sql = $@"Insert into {schema}.Payrollgrp (ClNumber,  Name,  RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
                                                         (@ClNumber, @Name, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, 'A'); 
@@ -32,35 +32,35 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
     }
 
 
-    public async Task<PayrollgrpModel?> _02(int? id, string? schema, string? conn)
+    public async Task<PayrollgrpModel?> _02(int id, string schema, string conn)
     {
-        string?  sql     = $@"select  * from {schema}.Payrollgrp where Id = @Id";
+        string  sql     = $@"select  * from {schema}.Payrollgrp where Id = @Id";
         var     data    = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<PayrollgrpModel?>?> _02(string? schema, string? conn)
+    public async Task<List<PayrollgrpModel?>?> _02(string schema, string conn)
     {
-        string?  sql     = $@"select  * from {schema}.Payrollgrp order by Name";
+        string  sql     = $@"select  * from {schema}.Payrollgrp order by Name";
         var     data    = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
     
-    public async Task<List<PayrollgrpModel?>?> _02Dashboard(string? schema, string? conn)
+    public async Task<List<PayrollgrpModel?>?> _02Dashboard(string schema, string conn)
     {
-        string?  sql     = $@"select  *, 00000 EmpCount from {schema}.Payrollgrp 
+        string  sql     = $@"select  *, 00000 EmpCount from {schema}.Payrollgrp 
                              where Status = 'A'   
                              order by Name";
         var     data    = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
     
-    public async Task<List<PayrollgrpModel?>?> _02PayDashboard(string? paydb, string? pisdb, string? conn)
+    public async Task<List<PayrollgrpModel?>?> _02PayDashboard(string paydb, string pisdb, string conn)
     {
 
         
         
-        string?  sql     = $@"with 
+        string  sql     = $@"with 
                                 Pgrp    	AS ( SELECT * FROM {paydb}.payrollgrp pgrp  ),
 
                                 pprd    	AS ( SELECT TRIM(CONCAT(RIGHT(yr,2), Mo, Prd )) AS prd FROM {paydb}.`payrollprd` p WHERE STATUS = 'A' LIMIT 1 ),
@@ -91,29 +91,29 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         return data;
     }
     
-    public async Task<List<TbltranModel?>?> _02CheckToTblTran(string? clNumber, string? schema, string? conn)
+    public async Task<List<TbltranModel?>?> _02CheckToTblTran(string clNumber, string schema, string conn)
     {
-        string?  sql     = $@"select  * from {schema}.tbltran where right(trn,5) = @ClNumber limit 1 ";
+        string  sql     = $@"select  * from {schema}.tbltran where right(trn,5) = @ClNumber limit 1 ";
         var     data    = await _sql.FetchData<TbltranModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
         return data;
     }
     
-    public async Task<List<PayrollgrpModel?>?> _02Active(string? schema, string? conn)
+    public async Task<List<PayrollgrpModel?>?> _02Active(string schema, string conn)
     {
-        string? sql  = $@"select  * from {schema}.Payrollgrp where Left(Status,1) = 'A'  order by Name ";
+        string sql  = $@"select  * from {schema}.Payrollgrp where Left(Status,1) = 'A'  order by Name ";
         var data    = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
-    public async Task<List<PayrollgrpModel?>?> _02ByCode(string? code, string? schema, string? conn)
+    public async Task<List<PayrollgrpModel?>?> _02ByCode(string code, string schema, string conn)
     {
         var sql  = $@"select  * from {schema}.Payrollgrp where upper(ClNumber) = @ClNumber  order by Name ";
         var data    = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { ClNumber=code  }, conn);
         return data;
     }
     
-    public async Task<PayrollgrpModel?> _03(int? id, PayrollgrpModel payrollgrp, string? schema, string? conn)
+    public async Task<PayrollgrpModel?> _03(int id, PayrollgrpModel payrollgrp, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Payrollgrp set 
+        string sql = $@"Update {schema}.Payrollgrp set 
                             Name            = @Name, 
                             ClNumber        = @ClNumber,
                             RatePerHr       = @RatePerHr,  
@@ -132,9 +132,9 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
 
     
 
-    public async Task<PayrollgrpModel?> _04(int? id, string? schema, string? conn)
+    public async Task<PayrollgrpModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Payrollgrp where Id = @Id;";
+        string sql = $@"Delete from {schema}.Payrollgrp where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Payrollgrp x where x.Id = @Id ;";

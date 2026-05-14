@@ -21,7 +21,7 @@ public class HR_10_00_PisController : ControllerBase
     //****************************************************************************************
 
     [HttpPut("01Empas/{schema}/{conn}")]
-    public async Task<ActionResult<EmpmasModel?>> _01Empmas([FromBody] EmpmasModel empmas, string? schema = "MainPis", string? conn = "MySqlConn")
+    public async Task<ActionResult<EmpmasModel?>> _01Empmas([FromBody] EmpmasModel empmas, string schema = "MainPis", string conn = "MySqlConn")
     {
         var res = await _empmas._01Empmas(empmas, schema, conn);
         return Ok(res);
@@ -29,7 +29,7 @@ public class HR_10_00_PisController : ControllerBase
     }
 
     [HttpGet("02Empas/{id}/{schema}/{conn}")]
-    public async Task<ActionResult<EmpmasModel?>> _02Empmas(int? id, string? schema = "MainPis", string? conn = "MySqlConn")
+    public async Task<ActionResult<EmpmasModel?>> _02Empmas(int id, string schema = "MainPis", string conn = "MySqlConn")
     {
         try
         {
@@ -45,7 +45,7 @@ public class HR_10_00_PisController : ControllerBase
     }
 
     [HttpPost("03Empas/{id}/{schema}/{conn}")]
-    public async Task<ActionResult<EmpmasModel?>> _03Empmas(int? id, [FromBody] EmpmasModel empmas, string? schema = "MainPis", string? conn = "MySqlConn")
+    public async Task<ActionResult<EmpmasModel?>> _03Empmas(int id, [FromBody] EmpmasModel empmas, string schema = "MainPis", string conn = "MySqlConn")
     {
         var res = await _empmas._03Empmas(id, empmas, schema, conn);
         return Ok(res);
@@ -53,7 +53,7 @@ public class HR_10_00_PisController : ControllerBase
     }
 
     [HttpDelete("04Empas/{id}/{schema}/{conn}")]
-    public async Task<ActionResult<EmpmasModel?>> _04Empmas(int? id, string? schema = "MainPis", string? conn = "MySqlConn")
+    public async Task<ActionResult<EmpmasModel?>> _04Empmas(int id, string schema = "MainPis", string conn = "MySqlConn")
     {
         var res = await _empmas._04Empmas(id, schema, conn);
         return Ok(res);
@@ -69,26 +69,26 @@ public class HR_10_00_PisController : ControllerBase
 
     //// GET api/<HR_10_00_PisController>/5
     //[HttpGet("{id}")]
-    //public string? Get(int? id)
+    //public string Get(int id)
     //{
     //    return "value";
     //}
 
     //// POST api/<HR_10_00_PisController>
     //[HttpPost]
-    //public void Post([FromBody] string? value)
+    //public void Post([FromBody] string value)
     //{
     //}
 
     //// PUT api/<HR_10_00_PisController>/5
     //[HttpPut("{id}")]
-    //public void Put(int? id, [FromBody] string? value)
+    //public void Put(int id, [FromBody] string value)
     //{
     //}
 
     //// DELETE api/<HR_10_00_PisController>/5
     //[HttpDelete("{id}")]
-    //public void Delete(int? id)
+    //public void Delete(int id)
     //{
     //}
 }

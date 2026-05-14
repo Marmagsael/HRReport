@@ -20,14 +20,14 @@ namespace HRApiLibrary.Controllers._00_Main
 
 
         [HttpGet("02/{schema}/{conn}")]
-        public async Task<ActionResult<List<CountryModel>>> _02(string? schema = "Main", string? conn = "MySqlConn")
+        public async Task<ActionResult<List<CountryModel>>> _02(string schema = "Main", string conn = "MySqlConn")
         {
             var res = await  _country._02(schema, conn);
             return Ok(res); 
         }
 
         [HttpGet("02/{id}/{schema}/{conn}")]
-        public async Task<ActionResult<CountryModel>> _02(int? id, string? schema = "Main", string? conn = "MySqlConn")
+        public async Task<ActionResult<CountryModel>> _02(int id, string schema = "Main", string conn = "MySqlConn")
         {
             var res = await _country._02(id, schema, conn);
             return Ok(res);

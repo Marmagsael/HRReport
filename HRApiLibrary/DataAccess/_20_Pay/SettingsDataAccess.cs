@@ -14,7 +14,7 @@ public class SettingsDataAccess : ISettingsDataAccess
         _sql = sql;
     }
 
-    public async Task<SettingsModel?> _02(int? id, string? schema, string? conn)
+    public async Task<SettingsModel?> _02(int id, string schema, string conn)
     {
         /*string sql = $@"select  * from {schema}.Settings where Id = @Id";
         var data = await _sql.FetchData<SettingsModel?, dynamic>(sql, new { Id = id }, conn);
@@ -26,7 +26,7 @@ public class SettingsDataAccess : ISettingsDataAccess
     }
 
 
-    public async Task<SettingsModel?> _03(int? id, SettingsModel settings, string? schema, string? conn)
+    public async Task<SettingsModel?> _03(int id, SettingsModel settings, string schema, string conn)
     {
         var sql = $"""
                    Update {schema}.Settings set 
@@ -61,7 +61,7 @@ public class SettingsDataAccess : ISettingsDataAccess
 
     }
 
-    public async Task<SettingsModel?> _03(int? id, string? logoAddr, string? schema, string? conn)
+    public async Task<SettingsModel?> _03(int id, string logoAddr, string schema, string conn)
     {
         var sql = $"""
                    Update {schema}.Settings set 

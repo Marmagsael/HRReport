@@ -12,9 +12,9 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
         _sql = sql;
     }
 
-    public async Task<UserCompanyModel?> _01(UserCompanyModel userscompany, string? schema="Main", string? conn="MySqlConn")
+    public async Task<UserCompanyModel?> _01(UserCompanyModel userscompany, string schema="Main", string conn="MySqlConn")
     {
-        string? sql = $@"Insert into {schema}.Userscompany 
+        string sql = $@"Insert into {schema}.Userscompany 
                             (OwnerId,  CompanySName,  CompanyName,  CountryId,  RegionId,  CityId,  Zipcode,  CurrencyId) values 
                             (@OwnerId, @CompanySName, @CompanyName, @CountryId, @RegionId, @CityId, @Zipcode, @CurrencyId); 
                         update {schema}.Userscompany set  
@@ -32,12 +32,12 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
         if(res!=null)
         {
             var uco = res.FirstOrDefault();
-            string? schemaAms = uco!.AmsSchema!;
-            string? schemaApp = uco!.ApplicantSchema!;
-            string? schemaPis = uco!.PisSchema!;
-            string? schemaPay = uco!.PaySchema!;
+            string schemaAms = uco!.AmsSchema!;
+            string schemaApp = uco!.ApplicantSchema!;
+            string schemaPis = uco!.PisSchema!;
+            string schemaPay = uco!.PaySchema!;
 
-            string? sql1 = @$"create database if not exists {schemaAms};
+            string sql1 = @$"create database if not exists {schemaAms};
                              create database if not exists {schemaApp};
                              create database if not exists {schemaPis};
                              create database if not exists {schemaPay};";
@@ -49,9 +49,9 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
         return res?.FirstOrDefault();
     }
     
-    public async Task<UserCompanyModel?> _02(int? id, string? schema="Main", string? conn="MySqlConn")
+    public async Task<UserCompanyModel?> _02(int id, string schema="Main", string conn="MySqlConn")
     {
-        string? sql = $@"select  u.*, c.Name CountryName,  
+        string sql = $@"select  u.*, c.Name CountryName,  
                             concat(trim(ifnull(e.EmpLastNm,'')), ', ',trim(ifnull(e.EmpFirstNm,'')), ' ', trim(ifnull(e.EmpMidNm,'')) )  OwnerName 
                         from {schema}.Userscompany u 
                             left join Mainpis.Empmas e on e.Id = u.OwnerId 
@@ -60,7 +60,7 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<List<UserCompanyModel?>?> _02Lst(int? id, string? schema="Main", string? conn="MySqlConn")
+    public async Task<List<UserCompanyModel?>?> _02Lst(int id, string schema="Main", string conn="MySqlConn")
     {
         var sql = $@"select  u.*, c.Name CountryName,  
                             concat(trim(ifnull(e.EmpLastNm,'')), ', ',trim(ifnull(e.EmpFirstNm,'')), ' ', trim(ifnull(e.EmpMidNm,'')) )  OwnerName 
@@ -72,9 +72,9 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
         return data;
     }
 
-    public async Task<UserCompanyModel?> _02ByUserDefaultCoId(int? userId, string? schema = "Main", string? conn = "MySqlConn")
+    public async Task<UserCompanyModel?> _02ByUserDefaultCoId(int userId, string schema = "Main", string conn = "MySqlConn")
     {
-        string? sql = $@"select  u.*, c.Name CountryName,  
+        string sql = $@"select  u.*, c.Name CountryName,  
                             concat(trim(ifnull(e.EmpLastNm,'')), ', ',trim(ifnull(e.EmpFirstNm,'')), ' ', trim(ifnull(e.EmpMidNm,'')) )  OwnerName 
                         from {schema}.Userscompany u 
                             left join Mainpis.Empmas e on e.Id = u.OwnerId 
@@ -84,26 +84,26 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<UserCompanyModel?>?> _02ByUserId(int? userId, string? schema="Main", string? conn="MySqlConn")
+    public async Task<List<UserCompanyModel?>?> _02ByUserId(int userId, string schema="Main", string conn="MySqlConn")
     {
-        string? sql = $@"select  u.*, c.Name CountryName from {schema}.Userscompany u 
+        string sql = $@"select  u.*, c.Name CountryName from {schema}.Userscompany u 
                             left join {schema}.Country c on c.Id = u.CountryId
                         where OwnerId = @UserId";
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { UserId = userId }, conn);
         return data;
     }
 
-    public async Task<List<UserCompanyModel?>?> _02ByCompanySName(string? companySName, string? schema="Main", string? conn="MySqlConn")
+    public async Task<List<UserCompanyModel?>?> _02ByCompanySName(string companySName, string schema="Main", string conn="MySqlConn")
     {
-        string? sql = $@"select  * from {schema}.Userscompany where lower(CompanySName) = lower(@CompanySName)";
+        string sql = $@"select  * from {schema}.Userscompany where lower(CompanySName) = lower(@CompanySName)";
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { CompanySName = companySName }, conn);
         return data;
     }
     
 
-    public async Task<UserCompanyModel?> _03(int? id, UserCompanyModel userscompany, string? schema, string? conn)
+    public async Task<UserCompanyModel?> _03(int id, UserCompanyModel userscompany, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Userscompany set OwnerId = @OwnerId, CompanySName = @CompanySName, CompanyName = @CompanyName, CountryId = @CountryId, RegionId = @RegionId, CityId = @CityId, Zipcode = @Zipcode, CurrencyId = @CurrencyId, StorageId = @StorageId, AMSSchema = @AMSSchema, ApplicantSchema = @ApplicantSchema, PISSchema = @PISSchema, PaySchema = @PaySchema where Id = @Id;";
+        string sql = $@"Update {schema}.Userscompany set OwnerId = @OwnerId, CompanySName = @CompanySName, CompanyName = @CompanyName, CountryId = @CountryId, RegionId = @RegionId, CityId = @CityId, Zipcode = @Zipcode, CurrencyId = @CurrencyId, StorageId = @StorageId, AMSSchema = @AMSSchema, ApplicantSchema = @ApplicantSchema, PISSchema = @PISSchema, PaySchema = @PaySchema where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, userscompany, conn);
 
         sql = $@" select  * from {schema}.Userscompany x where x.Id = @Id ;";
@@ -111,9 +111,9 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<UserCompanyModel?> _04(int? id, string? schema, string? conn)
+    public async Task<UserCompanyModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Userscompany where Id = @Id;";
+        string sql = $@"Delete from {schema}.Userscompany where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Userscompany x where x.Id = @Id ;";

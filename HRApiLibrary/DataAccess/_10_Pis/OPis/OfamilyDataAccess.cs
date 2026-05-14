@@ -12,9 +12,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             _sql = sql;
         }
 
-        public async Task<OFamilyModel?> _01(OFamilyModel family, string? schema, string? conn)
+        public async Task<OFamilyModel?> _01(OFamilyModel family, string schema, string conn)
         {
-            string? sql = $@"Insert into {schema}.Family (EMPNUMBER, NAME, BIRTH, RELATION) values (@EMPNUMBER, @NAME, @BIRTH, @RELATION)";
+            string sql = $@"Insert into {schema}.Family (EMPNUMBER, NAME, BIRTH, RELATION) values (@EMPNUMBER, @NAME, @BIRTH, @RELATION)";
             await _sql.ExecuteCmd<dynamic>(sql, family, conn);
 
             sql = $@"SELECT * FROM {schema}.Family WHERE ID = (SELECT @@IDENTITY)";
@@ -25,17 +25,17 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         }
 
 
-        public async Task<List<OFamilyModel?>?> _02(string? empnumber, string? schema, string? conn)
+        public async Task<List<OFamilyModel?>?> _02(string empnumber, string schema, string conn)
         {
-            string? sql = $@"select  EMPNUMBER, NAME, BIRTH, RELATION from {schema}.Family where Empnumber = @Empnumber";
+            string sql = $@"select  EMPNUMBER, NAME, BIRTH, RELATION from {schema}.Family where Empnumber = @Empnumber";
             var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
 
 
-        public async Task<OFamilyModel?> _03(int? id, OFamilyModel family, string? schema, string? conn)
+        public async Task<OFamilyModel?> _03(int id, OFamilyModel family, string schema, string conn)
         {
-            string? sql = $@"Update {schema}.Family set EMPNUMBER = @EMPNUMBER, NAME = @NAME, BIRTH = @BIRTH, RELATION = @RELATION where Id = @Id;";
+            string sql = $@"Update {schema}.Family set EMPNUMBER = @EMPNUMBER, NAME = @NAME, BIRTH = @BIRTH, RELATION = @RELATION where Id = @Id;";
             await _sql.ExecuteCmd<dynamic>(sql, family, conn);
 
             sql = $@" select  * from {schema}.Family x where x.Id = @Id ;";
@@ -43,9 +43,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
-        public async Task<OFamilyModel?> _04(int? id, string? schema, string? conn)
+        public async Task<OFamilyModel?> _04(int id, string schema, string conn)
         {
-            string? sql = $@"Delete from {schema}.Family where Id = @Id;";
+            string sql = $@"Delete from {schema}.Family where Id = @Id;";
             await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
             sql = $@" select  * from {schema}.Family x where x.Id = @Id ;";
@@ -57,8 +57,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
 public interface IOFamilyDataAccess
 {
-    Task<OFamilyModel?> _01(OFamilyModel family, string? schema, string? conn);
-    Task<List<OFamilyModel?>?> _02(string? empnumber, string? schema, string? conn);
-    Task<OFamilyModel?> _03(int? id, OFamilyModel family, string? schema, string? conn);
-    Task<OFamilyModel?> _04(int? id, string? schema, string? conn);
+    Task<OFamilyModel?> _01(OFamilyModel family, string schema, string conn);
+    Task<List<OFamilyModel?>?> _02(string empnumber, string schema, string conn);
+    Task<OFamilyModel?> _03(int id, OFamilyModel family, string schema, string conn);
+    Task<OFamilyModel?> _04(int id, string schema, string conn);
 }

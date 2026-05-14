@@ -2,8 +2,8 @@
 
 public class EmpmasInternalModel
 {
-    public int?          Id              { get; set; }
-    public int?          SystemId        { get; set; }   = 0;
+    public int          Id              { get; set; }
+    public int          SystemId        { get; set; }   = 0;
     public string?      EmpNumber       { get; set; }   = string.Empty; 
     public string?      EmpLastNm       { get; set; }   = string.Empty;
     public string?      EmpFirstNm      { get; set; }   = string.Empty;
@@ -16,8 +16,8 @@ public class EmpmasInternalModel
     public string?      Fullname        { get; set; }   = string.Empty;
 
     public string?      Email           { get; set; }   = string.Empty;
-    public int?          UsersId         { get; set; }   = 0;
-    public int?          PayrollgrpId    { get; set; }   = 0;
+    public int          UsersId         { get; set; }   = 0;
+    public int          PayrollgrpId    { get; set; }   = 0;
     public string?      PayrollGrp      { get; set; }   = string.Empty;
     public string?      EmpStatus       { get; set; }   = string.Empty;
 

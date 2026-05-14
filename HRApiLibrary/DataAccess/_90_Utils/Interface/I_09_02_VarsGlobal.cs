@@ -2,8 +2,8 @@
 {
     public interface I_09_02_VarsGlobal
     {
-        string? DefConn();
-        string? SchemaMain();
-        string? SchemaMainPis();
+        string DefConn();
+        string SchemaMain();
+        string SchemaMainPis();
     }
 }

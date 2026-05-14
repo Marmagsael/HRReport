@@ -14,9 +14,9 @@ public class PositionDataAccess : IPositionDataAccess
         _sql = sql;
     }
 
-    public async Task<PositionModel?> _01(PositionModel position, string? schema, string? conn)
+    public async Task<PositionModel?> _01(PositionModel position, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Position (CODE, NAME, ISGUARD, sort) values (@CODE, @NAME, @ISGUARD, @sort)";
+        string sql = $@"Insert into {schema}.Position (CODE, NAME, ISGUARD, sort) values (@CODE, @NAME, @ISGUARD, @sort)";
         await _sql.ExecuteCmd<dynamic>(sql, position, conn);
 
         sql = $@"SELECT * FROM {schema}.Position WHERE ID = (SELECT @@IDENTITY)";
@@ -27,24 +27,24 @@ public class PositionDataAccess : IPositionDataAccess
     }
 
 
-    public async Task<PositionModel?> _02(int? id, string? schema, string? conn)
+    public async Task<PositionModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, CODE, NAME, ISGUARD, sort from {schema}.Position where Id = @Id";
+        string sql = $@"select  Id, CODE, NAME, ISGUARD, sort from {schema}.Position where Id = @Id";
         var data = await _sql.FetchData<PositionModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<PositionModel?>?> _02(string? schema, string? conn)
+    public async Task<List<PositionModel?>?> _02(string schema, string conn)
     {
-        string? sql = $@"select  Id, CODE, NAME, ISGUARD, sort from {schema}.Position order by Name";
+        string sql = $@"select  Id, CODE, NAME, ISGUARD, sort from {schema}.Position order by Name";
         var data = await _sql.FetchData<PositionModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
 
-    public async Task<PositionModel?> _03(int? id, PositionModel position, string? schema, string? conn)
+    public async Task<PositionModel?> _03(int id, PositionModel position, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Position set CODE = @CODE, NAME = @NAME, ISGUARD = @ISGUARD, sort = @sort where Id = @Id;";
+        string sql = $@"Update {schema}.Position set CODE = @CODE, NAME = @NAME, ISGUARD = @ISGUARD, sort = @sort where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, position, conn);
 
         sql = $@" select  * from {schema}.Position x where x.Id = @Id ;";
@@ -52,9 +52,9 @@ public class PositionDataAccess : IPositionDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<PositionModel?> _04(int? id, string? schema, string? conn)
+    public async Task<PositionModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Position where Id = @Id;";
+        string sql = $@"Delete from {schema}.Position where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Position x where x.Id = @Id ;";

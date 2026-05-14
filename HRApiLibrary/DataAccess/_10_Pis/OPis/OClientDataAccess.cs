@@ -11,9 +11,9 @@ public class OClientDataAccess : IOClientDataAccess
         _sql = sql;
     }
 
-    public async Task _01(OClientModel client, string? schema, string? conn)
+    public async Task _01(OClientModel client, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Client 
+        string sql = $@"Insert into {schema}.Client 
 							(CLNUMBER, CLNAME, ADDR1, ADDR2, AREACODE, TEL1, FAXNO, PARENT, RATE, 
 							 BILLRATE, ASSIST, STATUS, COLARATE, ND_RATE, RETIRATE, UNIFRATE, FDIRATE, 
 							 OTRATE, TIN, CONT, USED, CONTACT, POSTPERIOD, BATCHX, FSSSEE, FSSSER, FECC, FMEDEE, 
@@ -32,9 +32,9 @@ public class OClientDataAccess : IOClientDataAccess
     }
 
 
-    public async Task<List<OClientModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn)
+    public async Task<List<OClientModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
     {
-        string? sql  = $@"update {schema}.Client set 
+        string sql  = $@"update {schema}.Client set 
                             ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
                             ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
                             ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) 
@@ -45,9 +45,9 @@ public class OClientDataAccess : IOClientDataAccess
         return data;
     }
 
-    public async Task<List<OClientModel?>?> _02ByStatuss(string? status, string? schema, string? conn)
+    public async Task<List<OClientModel?>?> _02ByStatuss(string status, string schema, string conn)
     {
-        string? sql  = $@"update {schema}.Client set 
+        string sql  = $@"update {schema}.Client set 
                             ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
                             ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
                             ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) 
@@ -60,9 +60,9 @@ public class OClientDataAccess : IOClientDataAccess
     }
 
 
-    public async Task<List<OClientModel?>?> _02ByStatuses(List<string> statuses, string? schema, string? conn)
+    public async Task<List<OClientModel?>?> _02ByStatuses(List<string> statuses, string schema, string conn)
     {
-        string? sql = $@"update {schema}.Client set 
+        string sql = $@"update {schema}.Client set 
                             ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
                             ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
                             ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) 
@@ -75,9 +75,9 @@ public class OClientDataAccess : IOClientDataAccess
     }
 
 
-    public async Task<OClientModel?> _03(OClientModel client, string? schema, string? conn)
+    public async Task<OClientModel?> _03(OClientModel client, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Client set CLNUMBER = @CLNUMBER, CLNAME = @CLNAME, ADDR1 = @ADDR1, ADDR2 = @ADDR2, 
+        string sql = $@"Update {schema}.Client set CLNUMBER = @CLNUMBER, CLNAME = @CLNAME, ADDR1 = @ADDR1, ADDR2 = @ADDR2, 
 							AREACODE = @AREACODE, TEL1 = @TEL1, FAXNO = @FAXNO, PARENT = @PARENT, RATE = @RATE, 
 							BILLRATE = @BILLRATE, ASSIST = @ASSIST, STATUS = @STATUS, COLARATE = @COLARATE, 
 							ND_RATE = @ND_RATE, RETIRATE = @RETIRATE, UNIFRATE = @UNIFRATE, FDIRATE = @FDIRATE, 
@@ -95,9 +95,9 @@ public class OClientDataAccess : IOClientDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<OClientModel?> _04(string? clNumber, string? schema, string? conn)
+    public async Task<OClientModel?> _04(string clNumber, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Client where Id = @Id;";
+        string sql = $@"Delete from {schema}.Client where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { ClNumber = clNumber }, conn);
 
         sql = $@" select  * from {schema}.Client x where x.Id = @Id ;";
@@ -108,9 +108,9 @@ public class OClientDataAccess : IOClientDataAccess
 
 public interface IOClientDataAccess
 {
-    Task _01(OClientModel client, string? schema, string? conn);
-    Task<List<OClientModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn);
-    Task<List<OClientModel?>?> _02ByStatuss(string? status, string? schema, string? conn);
-    Task<OClientModel?> _03(OClientModel client, string? schema, string? conn);
-    Task<OClientModel?> _04(string? clNumber, string? schema, string? conn);
+    Task _01(OClientModel client, string schema, string conn);
+    Task<List<OClientModel?>?> _02ByClNumbers(string clnumber, string schema, string conn);
+    Task<List<OClientModel?>?> _02ByStatuss(string status, string schema, string conn);
+    Task<OClientModel?> _03(OClientModel client, string schema, string conn);
+    Task<OClientModel?> _04(string clNumber, string schema, string conn);
 }

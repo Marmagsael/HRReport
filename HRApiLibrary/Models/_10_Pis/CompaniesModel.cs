@@ -2,7 +2,7 @@
 
 public class CompaniesModel
 {
-    public      int?             Id          { get; set; }
+    public      int             Id          { get; set; }
 
     public      string?         Name        { get; set; }
 
@@ -16,7 +16,7 @@ public class CompaniesModel
 
     public      string?         FaxNo       { get; set; }
 
-    public      int?             ParentId    { get; set; }
+    public      int             ParentId    { get; set; }
 
     public      string?         Status      { get; set; }
 

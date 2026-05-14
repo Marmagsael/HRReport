@@ -5,21 +5,21 @@ namespace HRApiLibrary.Models._00_Main;
 
 public class Uc_accessreqModel
 {
-    public int?          Id                  { get; set; }
-    public int?          EmpmasId            { get; set; }
-    public int?          Requestedbyid       { get; set; }
-    public int?          Ucrequestingid      { get; set; }
+    public int          Id                  { get; set; }
+    public int          Empmasid            { get; set; }
+    public int          Requestedbyid       { get; set; }
+    public int          Ucrequestingid      { get; set; }
     public DateTime     Daterequested       { get; set; }
     public DateTime     DateApproved        { get; set; }
-    public int?          Allowed             { get; set; }
-    public int?          Ainfo               { get; set; }
-    public int?          ApersonalData       { get; set; }
-    public int?          Aaddress            { get; set; }
-    public int?          Aeducaion           { get; set; }
-    public int?          Afamily             { get; set; }
-    public int?          Areferences         { get; set; }
-    public int?          Aemployment         { get; set; }
-    public int?          Atrainings          { get; set; }
+    public int          Allowed             { get; set; }
+    public int          Ainfo               { get; set; }
+    public int          ApersonalData       { get; set; }
+    public int          Aaddress            { get; set; }
+    public int          Aeducaion           { get; set; }
+    public int          Afamily             { get; set; }
+    public int          Areferences         { get; set; }
+    public int          Aemployment         { get; set; }
+    public int          Atrainings          { get; set; }
     
     //------------------------------------------------------------------------
     public bool         Selected             { get; set; } = false; 

@@ -2,7 +2,7 @@
 
 public class EmpmasSecLicModel
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
 
     public string? SecLicense { get; set; }
 

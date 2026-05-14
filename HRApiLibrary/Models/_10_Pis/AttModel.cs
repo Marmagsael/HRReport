@@ -3,7 +3,7 @@
 public class AttModel
 {
     public string?      Punchtype       { get; set; } = "In";  //In or Out 
-    public int?          EmpmasId        { get; set; } = 0;
+    public int?          Empmasid        { get; set; } = 0;
     public string?      Empnumber       { get; set; } = string.Empty;
     public DateTime     Punchdate       { get; set; }
     public string?      Action          { get; set; } = string.Empty;

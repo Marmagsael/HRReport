@@ -14,9 +14,9 @@ public class RdepDataAccess : IRdepDataAccess
         _sql = sql;
     }
 
-    public async Task<RdepModel?> _01(RdepModel rdep, string? schema, string? conn)
+    public async Task<RdepModel?> _01(RdepModel rdep, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Rdep 
+        string sql = $@"Insert into {schema}.Rdep 
                             (Trndate,  MovStart,  MovEnd,  DepmodeId,  EmployTypeId,  DivId,  DepId,  SecId,  PosId,  PayrollgrpId,  ApprSystemId,  UserId,  Rstat,  Datecreated,  Dateapproved) values 
                             (@Trndate, @Movstart, @Movend, @Depmodeid, @Employtypeid, @Divid, @Depid, @Secid, @Posid, @Payrollgrpid, @Apprsystemid, @Userid, @Rstat, @Datecreated, @Dateapproved); 
                         SELECT * FROM {schema}.Rdep WHERE ID = (SELECT @@IDENTITY)";
@@ -26,24 +26,24 @@ public class RdepDataAccess : IRdepDataAccess
     }
 
 
-    public async Task<RdepModel?> _02(int? id, string? schema, string? conn)
+    public async Task<RdepModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Rdep where Id = @Id";
+        string sql = $@"select  * from {schema}.Rdep where Id = @Id";
         var data = await _sql.FetchData<RdepModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task<List<RdepModel?>?> _02(string? schema, string? conn)
+    public async Task<List<RdepModel?>?> _02(string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Rdep";
+        string sql = $@"select  * from {schema}.Rdep";
         var data = await _sql.FetchData<RdepModel?, dynamic>(sql, new { }, conn);
         return data;
     }
     
 
-    public async Task<RdepModel?> _03(int? id, RdepModel rdep, string? schema, string? conn)
+    public async Task<RdepModel?> _03(int id, RdepModel rdep, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Rdep set 
+        string sql = $@"Update {schema}.Rdep set 
                             Trndate         = @Trndate,  
                             MovStart        = @Movstart,  
                             MovEnd          = @Movend,  
@@ -66,9 +66,9 @@ public class RdepDataAccess : IRdepDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<RdepModel?> _04(int? id, string? schema, string? conn)
+    public async Task<RdepModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Rdep where Id = @Id;";
+        string sql = $@"Delete from {schema}.Rdep where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Rdep x where x.Id = @Id ;";

@@ -13,9 +13,9 @@ public class EmpmovementDataAccess : IEmpmovementDataAccess
         _sql = sql;
     }
 
-    public async Task<EmpmovementModel?> _01(EmpmovementModel empmovement, string? schema, string? conn)
+    public async Task<EmpmovementModel?> _01(EmpmovementModel empmovement, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Empmovement 
+        string sql = $@"Insert into {schema}.Empmovement 
                             (EmpmasId,  Date,  RefNo,  Mode,  Dtls,  UserId,  Created) values 
                             (@EmpmasId, @Date, @RefNo, @Mode, @Dtls, @UserId, @Created); 
                         SELECT * FROM {schema}.Empmovement WHERE ID = (SELECT @@IDENTITY)";
@@ -24,39 +24,39 @@ public class EmpmovementDataAccess : IEmpmovementDataAccess
     }
 
 
-    public async Task<EmpmovementModel?> _02(int? id, string? schema, string? conn)
+    public async Task<EmpmovementModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Empmovement where Id = @Id";
+        string sql = $@"select  * from {schema}.Empmovement where Id = @Id";
         var data = await _sql.FetchData<EmpmovementModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<EmpmovementModel?> _02ByEmpmasId(int? empmasId, string? schema, string? conn)
+    public async Task<EmpmovementModel?> _02ByEmpmasId(int empmasId, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Empmovement where EmpmasId = @EmpmasId";
+        string sql = $@"select  * from {schema}.Empmovement where EmpmasId = @EmpmasId";
         var data = await _sql.FetchData<EmpmovementModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<EmpmovementModel?> _02ByRefno(int? empmasId, string? schema, string? conn)
+    public async Task<EmpmovementModel?> _02ByRefno(int empmasId, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Empmovement where Refno = @EmpmasId";
+        string sql = $@"select  * from {schema}.Empmovement where Refno = @EmpmasId";
         var data = await _sql.FetchData<EmpmovementModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<EmpmovementModel?>?> _02ListByEmpmasId(int? empmasId, string? schema, string? conn)
+    public async Task<List<EmpmovementModel?>?> _02ListByEmpmasId(int empmasId, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Empmovement where EmpmasId = @EmpmasId";
+        string sql = $@"select  * from {schema}.Empmovement where EmpmasId = @EmpmasId";
         var data = await _sql.FetchData<EmpmovementModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data;
     }
 
 
 
-    public async Task<EmpmovementModel?> _03(int? id, EmpmovementModel empmovement, string? schema, string? conn)
+    public async Task<EmpmovementModel?> _03(int id, EmpmovementModel empmovement, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Empmovement set 
+        string sql = $@"Update {schema}.Empmovement set 
                             EmpmasId = @EmpmasId,  
                             Date    = @Date,  
                             RefNo   = @RefNo,  
@@ -71,9 +71,9 @@ public class EmpmovementDataAccess : IEmpmovementDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<EmpmovementModel?> _04(int? id, string? schema, string? conn)
+    public async Task<EmpmovementModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Empmovement where Id = @Id;";
+        string sql = $@"Delete from {schema}.Empmovement where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Empmovement x where x.Id = @Id ;";

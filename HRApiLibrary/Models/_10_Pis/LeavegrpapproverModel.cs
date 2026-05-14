@@ -2,10 +2,10 @@
 
 public class LeavegrpapproverModel
 {
-    public int?      Id                      { get; set; }
-    public int?      LeaveGrpId              { get; set; }
-    public int?      ApproverId              { get; set; }
-    public int?      ApproverLevel           { get; set; }
+    public int      Id                      { get; set; }
+    public int      LeaveGrpId              { get; set; }
+    public int      ApproverId              { get; set; }
+    public int      ApproverLevel           { get; set; }
 
     //---------------------------------------------
     public string?  LeavegrpName            { get; set; } = string.Empty;

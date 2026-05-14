@@ -3,7 +3,7 @@ namespace HRApiLibrary.Models._20_Pay.Report;
 public class R1254Model
 {
     public string?      EmpNumber       { get; set; } = string.Empty; 
-    public int?          No              { get; set; }
+    public int          No              { get; set; }
     public string?      Pin             { get; set; } = string.Empty; 
     public string?      EmpLastNm       { get; set; } = string.Empty; 
     public string?      EmpSuffixNm     { get; set; } = string.Empty; 

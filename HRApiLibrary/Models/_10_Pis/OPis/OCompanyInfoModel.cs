@@ -5,7 +5,7 @@ public class OCompanyInfoModel
     public string?  CoName          { get; set; } 
 	public string?  CoAdd           { get; set; } 
 	public string?  TelNo           { get; set; } 
-	public int?      RegPeriod       { get; set; } 
+	public int      RegPeriod       { get; set; } 
 	public double   CurrBasicRate   { get; set; } 
 	public double   Min             { get; set; } 
 	public string?  SDOSource       { get; set; } 

@@ -2,7 +2,7 @@ namespace HRApiLibrary.Models._20_Pay;
 
 public class LoandtlModel
 {
-	public int? Id {get; set; } 
+	public int Id {get; set; } 
 
 	public string? orno {get; set; } 
 

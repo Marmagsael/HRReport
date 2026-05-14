@@ -14,9 +14,9 @@ public class PayrollgrpratesDataAccess : IPayrollgrpratesDataAccess
         _sql = sql;
     }
 
-    public async Task<PayrollgrpratesModel?> _01(PayrollgrpratesModel payrollgrprates, string? schema, string? conn)
+    public async Task<PayrollgrpratesModel?> _01(PayrollgrpratesModel payrollgrprates, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Payrollgrprates 
+        string sql = $@"Insert into {schema}.Payrollgrprates 
                             (PayrollgrpId,  coaAcctnumber,  RateHr,  RateDay,  RateMonth,  RateYr) values 
                             (@PayrollgrpId, @coaAcctnumber, @RateHr, @RateDay, @RateMonth, @RateYr); 
                         SELECT * FROM {schema}.Payrollgrprates WHERE ID = (SELECT @@IDENTITY);";
@@ -26,9 +26,9 @@ public class PayrollgrpratesDataAccess : IPayrollgrpratesDataAccess
     }
 
 
-    public async Task<PayrollgrpratesModel?> _02(int? payrollgrpId, string? coaAcctnumber, string? schema, string? conn)
+    public async Task<PayrollgrpratesModel?> _02(int payrollgrpId, string coaAcctnumber, string schema, string conn)
     {
-        string? sql = $@"select  gr.PayrollgrpId, gr.coaAcctnumber, gr.RateHr, gr.RateDay, gr.RateMonth, gr.RateYr, c.AcctName CoaName
+        string sql = $@"select  gr.PayrollgrpId, gr.coaAcctnumber, gr.RateHr, gr.RateDay, gr.RateMonth, gr.RateYr, c.AcctName CoaName
                             from {schema}.Payrollgrprates gr 
                             left join {schema}.coa c on c.acctunmber = gr.acctNumber  
                         where PayrollgrpId=@PayrollgrpId and CoaAcctnumber=@CoaAcctnumber";
@@ -36,9 +36,9 @@ public class PayrollgrpratesDataAccess : IPayrollgrpratesDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<PayrollgrpratesModel?>?> _02Earnings(int? payrollgrpId, string? schema, string? conn)
+    public async Task<List<PayrollgrpratesModel?>?> _02Earnings(int payrollgrpId, string schema, string conn)
     {
-        string? sql = $@"select  gr.PayrollgrpId, gr.coaAcctnumber, gr.RateHr, gr.RateDay, gr.RateMonth, gr.RateYr 
+        string sql = $@"select  gr.PayrollgrpId, gr.coaAcctnumber, gr.RateHr, gr.RateDay, gr.RateMonth, gr.RateYr 
                             ,c.AcctName CoaName
                             from {schema}.Payrollgrprates gr 
                         left join {schema}.coa c on c.acctunmber = gr.acctNumber  
@@ -49,17 +49,17 @@ public class PayrollgrpratesDataAccess : IPayrollgrpratesDataAccess
     }
 
 
-    public async Task<List<PayrollgrpratesModel?>?> _02ByPayrollgrpId(int? payrollgrpId, string? schema, string? conn)
+    public async Task<List<PayrollgrpratesModel?>?> _02ByPayrollgrpId(int payrollgrpId, string schema, string conn)
     {
-        string? sql = $@"select  PayrollgrpId, coaAcctnumber, RateHr, RateDay, RateMonth, RateYr from {schema}.Payrollgrprates where Id = @Id";
+        string sql = $@"select  PayrollgrpId, coaAcctnumber, RateHr, RateDay, RateMonth, RateYr from {schema}.Payrollgrprates where Id = @Id";
         var data = await _sql.FetchData<PayrollgrpratesModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
         return data;
     }
 
 
-    public async Task<PayrollgrpratesModel?> _03(PayrollgrpratesModel payrollgrprates, string? schema, string? conn)
+    public async Task<PayrollgrpratesModel?> _03(PayrollgrpratesModel payrollgrprates, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Payrollgrprates set 
+        string sql = $@"Update {schema}.Payrollgrprates set 
                             RateHr      = @RateHr, 
                             RateDay     = @RateDay, 
                             RateMonth   = @RateMonth, 
@@ -70,9 +70,9 @@ public class PayrollgrpratesDataAccess : IPayrollgrpratesDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<PayrollgrpratesModel?> _04(int? payrollgrpId, string? coaAcctnumber, string? schema, string? conn)
+    public async Task<PayrollgrpratesModel?> _04(int payrollgrpId, string coaAcctnumber, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Payrollgrprates 
+        string sql = $@"Delete from {schema}.Payrollgrprates 
                             where PayrollgrpId = @PayrollgrpId and CoaAcctnumber = @coaAcctnumber;
                         select  * from {schema}.Payrollgrprates where PayrollgrpId = @PayrollgrpId and CoaAcctnumber = @coaAcctnumber;";
         var data = await _sql.FetchData<PayrollgrpratesModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId, CoaAcctnumber = coaAcctnumber }, conn);

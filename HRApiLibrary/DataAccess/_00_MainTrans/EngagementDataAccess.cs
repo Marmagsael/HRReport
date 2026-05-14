@@ -14,9 +14,9 @@ public class EngagementDataAccess : IEngagementDataAccess
         _sql = sql;
     }
 
-    public async Task<EngagementModel?> _01(EngagementModel engagement, string? schema, string? conn)
+    public async Task<EngagementModel?> _01(EngagementModel engagement, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Engagement 
+        string sql = $@"Insert into {schema}.Engagement 
 						(OwnerId,  CompanyId,  Module,  RoleId,  DateInvited,  DateApproved,  Status) values 
 						(@OwnerId, @CompanyId, @Module, @RoleId, @DateInvited, @DateApproved, @Status);
 						SELECT * FROM {schema}.Engagement WHERE ID = (SELECT @@IDENTITY); ";
@@ -24,12 +24,12 @@ public class EngagementDataAccess : IEngagementDataAccess
 
         return res.FirstOrDefault();
     }
-    public async Task<EngagementModel?> _01Invite(EngagementModel engagement, string? schema, string? conn)
+    public async Task<EngagementModel?> _01Invite(EngagementModel engagement, string schema, string conn)
     {
 	    // Console.WriteLine($"schema : {schema} * conn :{conn} * OwnerId : {engagement.OwnerId} " +
 	    //                   $" * CompanyId : {engagement.CompanyId} * Module:  {engagement.Module}");
 	    //
-        string? sql = $@"Insert into {schema}.Engagement
+        string sql = $@"Insert into {schema}.Engagement
 						(OwnerId,  CompanyId,  Module,  RoleId,  DateInvited,   Status) values 
 						(@OwnerId, @CompanyId, @Module, 0,       now(), 		'FA') 
 						on duplicate key update Module = Module;
@@ -39,18 +39,18 @@ public class EngagementDataAccess : IEngagementDataAccess
     }
 
 
-    public async Task<EngagementModel?> _02(int? id, string? schema, string? conn)
+    public async Task<EngagementModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  e.* from {schema}.Engagement e 
+        string sql = $@"select  e.* from {schema}.Engagement e 
 							where e.Id = @Id";
         var data = await _sql.FetchData<EngagementModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<EngagementModel?> _03(int? id, EngagementModel engagement, string? schema, string? conn)
+    public async Task<EngagementModel?> _03(int id, EngagementModel engagement, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Engagement set 
+        string sql = $@"Update {schema}.Engagement set 
 								OwnerId 		= @OwnerId, 
 								CompanyId 		= @CompanyId, 
 								Module 			= @Module, 
@@ -65,9 +65,9 @@ public class EngagementDataAccess : IEngagementDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<EngagementModel?> _04(int? id, string? schema, string? conn)
+    public async Task<EngagementModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Engagement where Id = @Id;";
+        string sql = $@"Delete from {schema}.Engagement where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Engagement x where x.Id = @Id ;";

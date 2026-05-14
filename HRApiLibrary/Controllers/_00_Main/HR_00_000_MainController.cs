@@ -37,7 +37,7 @@ public class HR_00_000_MainController : ControllerBase
     }
 
     [HttpHead("01MainSchema/{schema}/{conn}")]
-    public void CreateMainSchema(string? schema = "Main", string? conn = "MySqlConn")
+    public void CreateMainSchema(string schema = "Main", string conn = "MySqlConn")
     {
         _mainTblMaker._01MainTable(schema, conn);
         _mainDataMaker._01MainDefaultDatas(schema, conn);
@@ -45,7 +45,7 @@ public class HR_00_000_MainController : ControllerBase
     }
 
     [HttpHead("01MainPisSchemaInternal/{schema}/{conn}")]
-    public void CreateMainPisSchemaInternal(string? schema, string? conn = "MySqlConn")
+    public void CreateMainPisSchemaInternal(string schema, string conn = "MySqlConn")
     {
         _mainPisTblMaker._01MainPisTableInternal(schema, conn);
         _mainPisTblMaker._01MainPisTable(schema, conn);
@@ -53,7 +53,7 @@ public class HR_00_000_MainController : ControllerBase
     }
 
     [HttpHead("01MainPisSchema/{schema}/{conn}")]
-    public void CreateMainPisSchema(string? schema = "MainPis", string? conn = "MySqlConn")
+    public void CreateMainPisSchema(string schema = "MainPis", string conn = "MySqlConn")
     {
         _mainPisTblMaker._01MainPisTable(schema, conn);
         //return "Hello world"; 
@@ -61,19 +61,19 @@ public class HR_00_000_MainController : ControllerBase
 
 
     [HttpHead("01UsersCompany/{userId}/{companyCode}/{companyName}/{currencyId}/{schema}/{conn}")]
-    public void InsertDefaultCompany(int? userId = 1,
-                                     string? companyCode = "GSIA",
-                                     string? companyName = "GSIA Inc.",
-                                     int? currencyId = 1,
-                                     string? schema = "Main",
-                                     string? conn = "MySqlConn")
+    public void InsertDefaultCompany(int userId = 1,
+                                     string companyCode = "GSIA",
+                                     string companyName = "GSIA Inc.",
+                                     int currencyId = 1,
+                                     string schema = "Main",
+                                     string conn = "MySqlConn")
     {
         _mainDataMaker._01UsersCompany_DefaultDatas(userId, companyCode, companyName, currencyId, schema, conn);
     }
 
     // -------------------------------------------------------------------------
     [HttpGet("02UserCompany/{id}/{schema}/{conn}")]
-    public async Task<List<UserCompanyModel?>> _02UserCompany(int? id, string? schema = "Main", string? conn = "MySqlConn")
+    public async Task<List<UserCompanyModel?>> _02UserCompany(int id, string schema = "Main", string conn = "MySqlConn")
     {
 
         var uc = await _mainDa._02UserCompanyPerUser(id, schema, conn);
@@ -95,26 +95,26 @@ public class HR_00_000_MainController : ControllerBase
 
     //// GET api/<HR_00_000_MainController>/5
     //[HttpGet("{id}")]
-    //public string? Get(int? id)
+    //public string Get(int id)
     //{
     //    return "value";
     //}
 
     //// POST api/<HR_00_000_MainController>
     //[HttpPost]
-    //public void Post([FromBody] string? value)
+    //public void Post([FromBody] string value)
     //{
     //}
 
     //// PUT api/<HR_00_000_MainController>/5
     //[HttpPut("{id}")]
-    //public void Put(int? id, [FromBody] string? value)
+    //public void Put(int id, [FromBody] string value)
     //{
     //}
 
     //// DELETE api/<HR_00_000_MainController>/5
     //[HttpDelete("{id}")]
-    //public void Delete(int? id)
+    //public void Delete(int id)
     //{
     //}
 }

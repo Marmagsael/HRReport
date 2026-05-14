@@ -14,9 +14,9 @@ public class LeaveapproverDataAccess : ILeaveapproverDataAccess
         _sql = sql;
     }
 
-    public async Task<LeaveapproverModel?> _01(LeaveapproverModel leaveapprover, string? schema, string? conn)
+    public async Task<LeaveapproverModel?> _01(LeaveapproverModel leaveapprover, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Leaveapprover 
+        string sql = $@"Insert into {schema}.Leaveapprover 
                             (EmpmasId,  ApproverId,  ApproverLevel) values 
                             (@EmpmasId, @ApproverId, @ApproverLevel); 
                         SELECT * FROM {schema}.Leaveapprover WHERE ID = (SELECT @@IDENTITY); ";
@@ -26,15 +26,15 @@ public class LeaveapproverDataAccess : ILeaveapproverDataAccess
     }
 
 
-    public async Task<LeaveapproverModel?> _02(int? id, string? schema, string? conn)
+    public async Task<LeaveapproverModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, EmpmasId, ApproverId, ApproverLevel from {schema}.Leaveapprover where Id = @Id";
+        string sql = $@"select  Id, EmpmasId, ApproverId, ApproverLevel from {schema}.Leaveapprover where Id = @Id";
         var data = await _sql.FetchData<LeaveapproverModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<List<LeaveapproverModel?>?> _02ByLvl(int? lvl, string? schema, string? conn)
+    public async Task<List<LeaveapproverModel?>?> _02ByLvl(int lvl, string schema, string conn)
     {
-        string? sql = $@"select l.*,  
+        string sql = $@"select l.*,  
                             concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ',trim(e.EmpMidNm)) Fullname
                         from {schema}.Leavegrpapprover l 
                         left join {schema}.empmas e on e.Id = l.EmpmasId 
@@ -44,9 +44,9 @@ public class LeaveapproverDataAccess : ILeaveapproverDataAccess
         return data;
     }
     
-    public async Task<List<LeaveapproverModel?>?> _02Approver(int? empmasId, string? schema, string? conn)
+    public async Task<List<LeaveapproverModel?>?> _02Approver(int empmasId, string schema, string conn)
     {
-        string? sql = $@"select l.*,  
+        string sql = $@"select l.*,  
                              concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ',trim(e.EmpMidNm)) Fullname
                         from {schema}.LeaveGrpapprover l
                         left join {schema}.empmas e on e.Id = l.ApproverId
@@ -59,9 +59,9 @@ public class LeaveapproverDataAccess : ILeaveapproverDataAccess
 
 
 
-    public async Task<LeaveapproverModel?> _03(int? id, LeaveapproverModel leaveapprover, string? schema, string? conn)
+    public async Task<LeaveapproverModel?> _03(int id, LeaveapproverModel leaveapprover, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Leaveapprover set 
+        string sql = $@"Update {schema}.Leaveapprover set 
                             EmpmasId        = @EmpmasId, 
                             ApproverId      = @ApproverId, 
                             ApproverLevel   = @ApproverLevel where Id = @Id;";
@@ -72,9 +72,9 @@ public class LeaveapproverDataAccess : ILeaveapproverDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<LeaveapproverModel?> _04(int? id, string? schema, string? conn)
+    public async Task<LeaveapproverModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Leaveapprover where Id = @Id;";
+        string sql = $@"Delete from {schema}.Leaveapprover where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Leaveapprover x where x.Id = @Id ;";

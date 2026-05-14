@@ -15,9 +15,9 @@ public class Fixedearnings_grp_empDataAccess : IFixedearnings_grp_empDataAccess
         _sql = sql;
     }
 
-    public async Task<Fixedearnings_grp_empModel?> _01(Fixedearnings_grp_empModel fixedearnings_grp_emp, string? schema, string? conn)
+    public async Task<Fixedearnings_grp_empModel?> _01(Fixedearnings_grp_empModel fixedearnings_grp_emp, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Fixedearnings_grp_emp 
+        string sql = $@"Insert into {schema}.Fixedearnings_grp_emp 
                             (FixedEarnings_grpId, EmpmasId) values 
                             (@FixedEarnings_grpId, @EmpmasId) 
                         on duplicate key update EmpmasId = @EmpmasId";
@@ -31,18 +31,18 @@ public class Fixedearnings_grp_empDataAccess : IFixedearnings_grp_empDataAccess
     }
 
 
-    public async Task<List<Fixedearnings_grp_empModel?>?> _02(int? id, string? schema, string? conn)
+    public async Task<List<Fixedearnings_grp_empModel?>?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  FixedEarnings_grpId, EmpmasId from {schema}.Fixedearnings_grp_emp where FixedEarnings_grpId = @Id";
+        string sql = $@"select  FixedEarnings_grpId, EmpmasId from {schema}.Fixedearnings_grp_emp where FixedEarnings_grpId = @Id";
         var data = await _sql.FetchData<Fixedearnings_grp_empModel?, dynamic>(sql, new { Id = id }, conn);
         return data;
     }
 
 
 
-    public async Task<Fixedearnings_grp_empModel?> _04_ByFixedEarnings_grpId(int? id, string? schema, string? conn)
+    public async Task<Fixedearnings_grp_empModel?> _04_ByFixedEarnings_grpId(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Fixedearnings_grp_emp where FixedEarnings_grpId = @Id;";
+        string sql = $@"Delete from {schema}.Fixedearnings_grp_emp where FixedEarnings_grpId = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Fixedearnings_grp_emp x where x.Id = @Id ;";
@@ -50,9 +50,9 @@ public class Fixedearnings_grp_empDataAccess : IFixedearnings_grp_empDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task<Fixedearnings_grp_empModel?> _04_PerEmployee(int? fixedEarnings_grpId, int? empmasId, string? schema, string? conn)
+    public async Task<Fixedearnings_grp_empModel?> _04_PerEmployee(int fixedEarnings_grpId, int empmasId, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Fixedearnings_grp_emp where  FixedEarnings_grpId=@FixedEarnings_grpId and EmpmasId = @EmpmasId;";
+        string sql = $@"Delete from {schema}.Fixedearnings_grp_emp where  FixedEarnings_grpId=@FixedEarnings_grpId and EmpmasId = @EmpmasId;";
         await _sql.ExecuteCmd<dynamic>(sql, new { FixedEarnings_grpId= fixedEarnings_grpId, EmpmasId=empmasId }, conn);
 
         sql = $@" select  * from {schema}.Fixedearnings_grp_emp where FixedEarnings_grpId=@FixedEarnings_grpId and EmpmasId = @EmpmasId ;";

@@ -2,9 +2,9 @@
 
 public class EmpmasRelativesModel
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
 
-    public int? EmpmasId { get; set; }
+    public int EmpmasId { get; set; }
 
     public string? Name { get; set; }
 
@@ -15,6 +15,6 @@ public class EmpmasRelativesModel
     public string? RelativesRefCode { get; set; }
 
     //Added ------------
-    public string? Gender        { get; set; } = string.Empty;
-    public string? Relationship { get; set; } = string.Empty;
+    public string Gender        { get; set; } = string.Empty;
+    public string Relationship { get; set; } = string.Empty;
 }

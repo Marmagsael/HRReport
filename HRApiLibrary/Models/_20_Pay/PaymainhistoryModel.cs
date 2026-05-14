@@ -8,11 +8,11 @@ namespace HRApiLibrary.Models._20_Pay;
 
 public class PaymainhistoryModel
 {
-    public int?          Id      { get; set; }
+    public int          Id      { get; set; }
 
     public string?      Trn     { get; set; }
 
-    public int?          UserId  { get; set; }
+    public int          UserId  { get; set; }
 
     public DateTime     Posted  { get; set; }
 

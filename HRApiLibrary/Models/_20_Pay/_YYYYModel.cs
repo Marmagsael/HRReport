@@ -2,7 +2,7 @@
 
 public class _YYYYModel
 {
-    public string?   Code        { get; set;} = string.Empty;
+    public string   Code        { get; set;} = string.Empty;
     public string?  Year        { get; set;} = string.Empty;
 }
 

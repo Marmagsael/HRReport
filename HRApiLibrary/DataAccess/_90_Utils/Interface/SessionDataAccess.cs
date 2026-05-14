@@ -20,7 +20,7 @@ public class SessionDataAccess : ControllerBase, ISessionDataAccess
         _usercompany = usercompany;
     }
 
-    public async Task<SessionInfo> _01Session_Schema_ByUsercompanyId(int? id)
+    public async Task<SessionInfo> _01Session_Schema_ByUsercompanyId(int id)
     {
         SessionInfo sessionInfo    = new();
 

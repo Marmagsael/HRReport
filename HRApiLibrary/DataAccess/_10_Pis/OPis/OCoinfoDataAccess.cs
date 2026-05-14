@@ -14,9 +14,9 @@ public class OCoinfoDataAccess : IOCoinfoDataAccess
         _sql = sql;
     }
 
-    public async Task<OCompanyInfoModel?> _01(OCompanyInfoModel coinfo, string? schema, string? conn)
+    public async Task<OCompanyInfoModel?> _01(OCompanyInfoModel coinfo, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Coinfo (CoName, CoAdd, TelNo, RegPeriod, CurrBasicRate, min, SDOSource, SDOSaveTo, shortname, cologo, acctno, SSS, PHIC, TIN, PAGIBIG, sssMemType, sssdocno, sssLocCode, schemapis, schemapay, schemaequip, schemaams, schemalumpsum, schematruc, schemaipay, isHeadOffice) values (@CoName, @CoAdd, @TelNo, @RegPeriod, @CurrBasicRate, @min, @SDOSource, @SDOSaveTo, @shortname, @cologo, @acctno, @SSS, @PHIC, @TIN, @PAGIBIG, @sssMemType, @sssdocno, @sssLocCode, @schemapis, @schemapay, @schemaequip, @schemaams, @schemalumpsum, @schematruc, @schemaipay, @isHeadOffice)";
+        string sql = $@"Insert into {schema}.Coinfo (CoName, CoAdd, TelNo, RegPeriod, CurrBasicRate, min, SDOSource, SDOSaveTo, shortname, cologo, acctno, SSS, PHIC, TIN, PAGIBIG, sssMemType, sssdocno, sssLocCode, schemapis, schemapay, schemaequip, schemaams, schemalumpsum, schematruc, schemaipay, isHeadOffice) values (@CoName, @CoAdd, @TelNo, @RegPeriod, @CurrBasicRate, @min, @SDOSource, @SDOSaveTo, @shortname, @cologo, @acctno, @SSS, @PHIC, @TIN, @PAGIBIG, @sssMemType, @sssdocno, @sssLocCode, @schemapis, @schemapay, @schemaequip, @schemaams, @schemalumpsum, @schematruc, @schemaipay, @isHeadOffice)";
         //await _sql.ExecuteCmd<dynamic>(sql, coinfo, conn);
 
         sql = $@"SELECT * FROM {schema}.Coinfo WHERE ID = (SELECT @@IDENTITY)";
@@ -26,17 +26,17 @@ public class OCoinfoDataAccess : IOCoinfoDataAccess
     }
 
 
-    public async Task<OCompanyInfoModel?> _02(string? schema, string? conn)
+    public async Task<OCompanyInfoModel?> _02(string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Coinfo ";
+        string sql = $@"select  * from {schema}.Coinfo ";
         var data = await _sql.FetchData<OCompanyInfoModel?, dynamic>(sql, new { }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<OCompanyInfoModel?> _03(int? id, OCompanyInfoModel coinfo, string? schema, string? conn)
+    public async Task<OCompanyInfoModel?> _03(int id, OCompanyInfoModel coinfo, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Coinfo set CoName = @CoName, CoAdd = @CoAdd, TelNo = @TelNo, RegPeriod = @RegPeriod, CurrBasicRate = @CurrBasicRate, min = @min, SDOSource = @SDOSource, SDOSaveTo = @SDOSaveTo, shortname = @shortname, cologo = @cologo, acctno = @acctno, SSS = @SSS, PHIC = @PHIC, TIN = @TIN, PAGIBIG = @PAGIBIG, sssMemType = @sssMemType, sssdocno = @sssdocno, sssLocCode = @sssLocCode, schemapis = @schemapis, schemapay = @schemapay, schemaequip = @schemaequip, schemaams = @schemaams, schemalumpsum = @schemalumpsum, schematruc = @schematruc, schemaipay = @schemaipay, isHeadOffice = @isHeadOffice where Id = @Id;";
+        string sql = $@"Update {schema}.Coinfo set CoName = @CoName, CoAdd = @CoAdd, TelNo = @TelNo, RegPeriod = @RegPeriod, CurrBasicRate = @CurrBasicRate, min = @min, SDOSource = @SDOSource, SDOSaveTo = @SDOSaveTo, shortname = @shortname, cologo = @cologo, acctno = @acctno, SSS = @SSS, PHIC = @PHIC, TIN = @TIN, PAGIBIG = @PAGIBIG, sssMemType = @sssMemType, sssdocno = @sssdocno, sssLocCode = @sssLocCode, schemapis = @schemapis, schemapay = @schemapay, schemaequip = @schemaequip, schemaams = @schemaams, schemalumpsum = @schemalumpsum, schematruc = @schematruc, schemaipay = @schemaipay, isHeadOffice = @isHeadOffice where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, coinfo, conn);
 
         sql = $@" select  * from {schema}.Coinfo x where x.Id = @Id ;";
@@ -44,9 +44,9 @@ public class OCoinfoDataAccess : IOCoinfoDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<OCompanyInfoModel?> _04(int? id, string? schema, string? conn)
+    public async Task<OCompanyInfoModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Coinfo where Id = @Id;";
+        string sql = $@"Delete from {schema}.Coinfo where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Coinfo x where x.Id = @Id ;";
@@ -57,8 +57,8 @@ public class OCoinfoDataAccess : IOCoinfoDataAccess
 
 public interface IOCoinfoDataAccess
 {
-    Task<OCompanyInfoModel?> _01(OCompanyInfoModel coinfo, string? schema, string? conn);
-    Task<OCompanyInfoModel?> _02(string? schema, string? conn);
-    Task<OCompanyInfoModel?> _03(int? id, OCompanyInfoModel coinfo, string? schema, string? conn);
-    Task<OCompanyInfoModel?> _04(int? id, string? schema, string? conn);
+    Task<OCompanyInfoModel?> _01(OCompanyInfoModel coinfo, string schema, string conn);
+    Task<OCompanyInfoModel?> _02(string schema, string conn);
+    Task<OCompanyInfoModel?> _03(int id, OCompanyInfoModel coinfo, string schema, string conn);
+    Task<OCompanyInfoModel?> _04(int id, string schema, string conn);
 }

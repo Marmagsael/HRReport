@@ -14,9 +14,9 @@ public class _00CityDataAccess : I_00CityDataAccess
         _sql = sql;
     }
 
-    public async Task<CityModel?> _01(CityModel city, string? schema, string? conn)
+    public async Task<CityModel?> _01(CityModel city, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.City (CountryId, CountryCode, RegionId, CityName) values (@CountryId, @CountryCode, @RegionId, @CityName)";
+        string sql = $@"Insert into {schema}.City (CountryId, CountryCode, RegionId, CityName) values (@CountryId, @CountryCode, @RegionId, @CityName)";
         await _sql.ExecuteCmd<dynamic>(sql, city, conn);
 
         sql = $@"SELECT * FROM {schema}.City WHERE ID = (SELECT @@IDENTITY)";
@@ -27,16 +27,16 @@ public class _00CityDataAccess : I_00CityDataAccess
     }
 
 
-    public async Task<CityModel?> _02(int? id, string? schema, string? conn)
+    public async Task<CityModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, CountryId, CountryCode, RegionId, CityName from {schema}.City where Id = @Id";
+        string sql = $@"select  Id, CountryId, CountryCode, RegionId, CityName from {schema}.City where Id = @Id";
         var data = await _sql.FetchData<CityModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<CityModel?>?> _02ByRegionId(int? regionId, string? schema, string? conn)
+    public async Task<List<CityModel?>?> _02ByRegionId(int regionId, string schema, string conn)
     {
-        string? sql = $@"select  Id, CountryId, CountryCode, RegionId, CityName 
+        string sql = $@"select  Id, CountryId, CountryCode, RegionId, CityName 
                         from {schema}.City 
                         where RegionId = @RegionId 
                         order by CityName";
@@ -46,9 +46,9 @@ public class _00CityDataAccess : I_00CityDataAccess
     }
 
 
-    public async Task<CityModel?> _03(int? id, CityModel city, string? schema, string? conn)
+    public async Task<CityModel?> _03(int id, CityModel city, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.City set CountryId = @CountryId, CountryCode = @CountryCode, RegionId = @RegionId, CityName = @CityName where Id = @Id;";
+        string sql = $@"Update {schema}.City set CountryId = @CountryId, CountryCode = @CountryCode, RegionId = @RegionId, CityName = @CityName where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, city, conn);
 
         sql = $@" select  * from {schema}.City x where x.Id = @Id ;";
@@ -56,9 +56,9 @@ public class _00CityDataAccess : I_00CityDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<CityModel?> _04(int? id, string? schema, string? conn)
+    public async Task<CityModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.City where Id = @Id;";
+        string sql = $@"Delete from {schema}.City where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.City x where x.Id = @Id ;";

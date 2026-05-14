@@ -22,7 +22,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
 
 
-    public async Task _01(string? schema, string? country = "PH", string? connName = "MySqlConn")
+    public async Task _01(string schema, string country = "PH", string connName = "MySqlConn")
     {
 
         await _01_001_MainPay(connName);
@@ -90,7 +90,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
 
-    public async Task _01PH(string? schema, string? country = "PH", string? connName = "MySqlConn")
+    public async Task _01PH(string schema, string country = "PH", string connName = "MySqlConn")
     {
        if(schema != "MainPay") await _01_101_Coa_Insert_PHDatas(schema, connName);
 
@@ -111,10 +111,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     //********************************************************************
 
 
-    private async Task Entry_Correction(string? schema, string? connName, string? country = "PH")
+    private async Task Entry_Correction(string schema, string connName, string country = "PH")
     {
         //--- TmpTbltranEmplist.PayrollgrpId ---------------------------------------------------------------------
-        string? sql = $@"Select * from {schema}.Coa where AcctNumber ='E000' ";
+        string sql = $@"Select * from {schema}.Coa where AcctNumber ='E000' ";
         var res = await _sql.FetchData<CoaModel, dynamic>(sql, new { }, connName);
 
         if (res.Count == 0)
@@ -125,10 +125,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task Fld_Count_Correction(string? schema, string? connName, string? country = "PH")
+    private async Task Fld_Count_Correction(string schema, string connName, string country = "PH")
     {
         //--- TmpTbltranEmplist.PayrollgrpId ---------------------------------------------------------------------
-        string? sql = $@"Desc {schema}.TmpTbltranEmplist ";
+        string sql = $@"Desc {schema}.TmpTbltranEmplist ";
         var res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
 
         if (res.Count == 4)
@@ -252,7 +252,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
 
-    private async Task EmpNumberLengthCorrection(string? schema, string? connName, string? country = "PH")
+    private async Task EmpNumberLengthCorrection(string schema, string connName, string country = "PH")
     {
         await _01_101_01_FieldLengthQuery(schema, "Emprates", "EmpNumber", 5, 10, connName, country);
         await _01_101_01_FieldLengthQuery(schema, "EmpRateHist", "EmpNumber", 5, 10, connName, country);
@@ -261,8 +261,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _01_101_01_FieldLengthQuery(schema, "TmpTbltran", "EmpNumber", 5, 10, connName, country);
         await _01_101_01_FieldLengthQuery(schema, "Tbltran", "EmpNumber", 5, 10, connName, country);
     }
-    private async Task _01_101_01_FieldLengthQuery(string? schema, string? tblName, string? fldName,
-        int fldLenFrom, int fldLenTo, string? connName, string? country = "PH")
+    private async Task _01_101_01_FieldLengthQuery(string schema, string tblName, string fldName,
+        int fldLenFrom, int fldLenTo, string connName, string country = "PH")
     {
 
         var sql = $@"SELECT COLUMN_NAME, CHARACTER_MAXIMUM_LENGTH FROM INFORMATION_SCHEMA.COLUMNS
@@ -282,9 +282,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
 
     //--- Schema Main ------------------------------------------------------
-    private async Task _01_001_MainPay(string? connName, string? schema="MainPay")
+    private async Task _01_001_MainPay(string connName, string schema="MainPay")
     {
-        string? sql = $"CREATE DATABASE IF NOT EXISTS MainPay";
+        string sql = $"CREATE DATABASE IF NOT EXISTS MainPay";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@"CREATE TABLE if not exists  {schema}.VerUpdate (
@@ -303,7 +303,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         
     }
     
-    private async Task _01_001_CreateSP(string? connName, string? schema = "MainPay")
+    private async Task _01_001_CreateSP(string connName, string schema = "MainPay")
     {
         var sql = $"SELECT * FROM {schema}.VerUpdate LIMIT 1";
         var res = await _sql.FetchData<VerupdateModel, dynamic>(sql, new { }, connName);
@@ -316,7 +316,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         async Task Sp_02TmpTbltran()
         {
-            string? connName1 = _config.GetConnectionString("MySqlConn"); // resolves actual string
+            string connName1 = _config.GetConnectionString("MySqlConn"); // resolves actual string
             await using var conn = new MySqlConnection(connName1);
             Console.WriteLine(conn);
             
@@ -353,15 +353,15 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     
     
     //--- Schema Main ------------------------------------------------------
-    private async Task _01_001_Schema(string? schema, string? connName)
+    private async Task _01_001_Schema(string schema, string connName)
     {
-        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _00_001_Settings(string? schema, string? connName)
+    private async Task _00_001_Settings(string schema, string connName)
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.settings (
+        string sql = @$"CREATE TABLE if not exists {schema}.settings (
                             Id                  int unsigned NOT NULL AUTO_INCREMENT,
                             Yeartodays          int unsigned DEFAULT '293',
                             Semiannualtodays    int unsigned DEFAULT '148',
@@ -402,9 +402,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
-    private async Task _00_001_PayrollPrd(string? schema, string? connName)
+    private async Task _00_001_PayrollPrd(string schema, string connName)
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.`PayrollPrd` (
+        string sql = @$"CREATE TABLE if not exists {schema}.`PayrollPrd` (
                           `Id`              INTEGER     UNSIGNED NOT NULL AUTO_INCREMENT,
                           `Yr`              INTEGER     UNSIGNED                                COMMENT 'YYYY',
                           `Mo`              CHAR(2)                                             COMMENT '01-12',
@@ -431,10 +431,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
 
-    private async Task _00_001_SettingsRecreate(string? schema, string? connName)
+    private async Task _00_001_SettingsRecreate(string schema, string connName)
     {
 
-        string? sql = $@"Desc {schema}.settings ";
+        string sql = $@"Desc {schema}.settings ";
         var res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
 
         if (res.Count == 18)
@@ -453,7 +453,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    public async Task _00_002_SystemUser(string? schema, string? connName)
+    public async Task _00_002_SystemUser(string schema, string connName)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.SystemUser (
                           SystemId          INTEGER UNSIGNED NOT NULL,
@@ -465,7 +465,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    public async Task _00_003_SystemUserModuleAccess(string? schema, string? connName)
+    public async Task _00_003_SystemUserModuleAccess(string schema, string connName)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.`SystemUserModuleAccess` (
                           SystemId          INTEGER UNSIGNED NOT NULL,
@@ -474,7 +474,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    public async Task _00_004_SystemUserOtherAccess(string? schema, string? connName)
+    public async Task _00_004_SystemUserOtherAccess(string schema, string connName)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.SystemUserOtherAccess (
                           SystemId          INTEGER     UNSIGNED NOT NULL,
@@ -484,10 +484,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_001_Paytran(string? schema, string? connName)
+    private async Task _01_001_Paytran(string schema, string connName)
     {
 
-        string? sql = @$"CREATE TABLE if not exists {schema}.Paytran (
+        string sql = @$"CREATE TABLE if not exists {schema}.Paytran (
                             Trn             CHAR(12),
                             EmpmasId        INTEGER ,
                             PayrollgrpId    INTEGER ,
@@ -496,7 +496,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         for (int i = 0; i < 120; i++)
         {
-            string? sql1 = $" E{i:000}";
+            string sql1 = $" E{i:000}";
             sql += sql1 + "U   DOUBLE(12,4)        DEFAULT 0, ";
             sql += sql1 + "R   DOUBLE(12,4)        DEFAULT 0, ";
             sql += sql1 + "M   DOUBLE(12,4)        DEFAULT 0, ";
@@ -508,9 +508,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
     
-    private async Task _00_004_PremContSource(string? schema, string? connName)
+    private async Task _00_004_PremContSource(string schema, string connName)
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.PremContSource (
+        string sql = @$"CREATE TABLE if not exists {schema}.PremContSource (
                         Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         Source          CHAR(25)             Default ' ',
                         PRIMARY KEY(`Id`)) ENGINE = InnoDB;";
@@ -527,13 +527,13 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
 
-    private async Task _01_002_Menus(string? menuName, string? schema, string? connName)
+    private async Task _01_002_Menus(string menuName, string schema, string connName)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.{menuName}
         (
             Id INTEGER UNSIGNED NOT NULL, 
-                            IdParent     int NULL, 
-                            Indent       int NULL, 
+                            IdParent     INT NULL, 
+                            Indent       INT NULL, 
                             Type         NCHAR(10) NULL, 
                             Code         NCHAR(10) NULL, 
                             Icon1        VARCHAR(80) NULL, 
@@ -547,9 +547,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_004_PayrollGrp(string? schema, string? connName)
+    private async Task _01_004_PayrollGrp(string schema, string connName)
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.PayrollGrp (
+        string sql = @$"CREATE TABLE if not exists {schema}.PayrollGrp (
                         Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         ClNumber        CHAR(5)             Default ' ',
                         Name            VARCHAR(80),
@@ -574,9 +574,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_004_PayrollGrpRecreate(string? schema, string? connName, string? country = "PH")
+    private async Task _01_004_PayrollGrpRecreate(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"Desc {schema}.PayrollGrp ";
+        string sql = $@"Desc {schema}.PayrollGrp ";
         var res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
 
         if (res.Count < 10)
@@ -587,9 +587,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_004_01_PayRate(string? schema, string? connName)
+    private async Task _01_004_01_PayRate(string schema, string connName)
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.PayRate (
+        string sql = @$"CREATE TABLE if not exists {schema}.PayRate (
                         Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         RateName        VARCHAR(80)         Default '',
                         PRIMARY KEY(`Id`)) ENGINE = InnoDB;";
@@ -604,9 +604,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
-    private async Task _01_004_02_PayrollGrpRates(string? schema, string? connName)
+    private async Task _01_004_02_PayrollGrpRates(string schema, string connName)
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.payrollgrpRates (
+        string sql = @$"CREATE TABLE if not exists {schema}.payrollgrpRates (
                           PayrollgrpId      INTEGER UNSIGNED    NOT NULL,
                           coaAcctnumber     CHAR(5)             ,
                           RateHr            DOUBLE(12,4)        ,
@@ -618,10 +618,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_004_03_UserPayrollInProcess(string? schema, string? connName)
+    private async Task _01_004_03_UserPayrollInProcess(string schema, string connName)
     {
 
-        string? sql = @$"CREATE TABLE if not exists {schema}.UserPayInProcess (
+        string sql = @$"CREATE TABLE if not exists {schema}.UserPayInProcess (
                             UserId          INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Trn             CHAR(12),
                             PayrollgrpId    INTEGER UNSIGNED,
@@ -635,9 +635,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
 
-    private async Task _01_005_SalaryGrade(string? schema, string? connName)
+    private async Task _01_005_SalaryGrade(string schema, string connName)
     {
-        string? sql = $@"CREATE TABLE  if not exists {schema}.`SalGrade` (
+        string sql = $@"CREATE TABLE  if not exists {schema}.`SalGrade` (
                           `SgCode`          char(10)            NOT NULL,
                           `SGrade`          varchar(45)         NOT NULL,
                           `MonthlyRate`     double(12,4)        NOT NULL,
@@ -653,10 +653,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_006_EmpRates(string? schema, string? connName)
+    private async Task _01_006_EmpRates(string schema, string connName)
     {
 
-        string? sql = @$"CREATE TABLE  if not exists {schema}.EmpRates (
+        string sql = @$"CREATE TABLE  if not exists {schema}.EmpRates (
                           EmpmasId          INTEGER         UNSIGNED    NOT NULL DEFAULT 0,
                           EmpNumber         CHAR(10)                     DEFAULT ' ',
                           PayrollgrpId      INTEGER         UNSIGNED    DEFAULT 0,
@@ -691,7 +691,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
 
-    private async Task _01_006_DepRecSettings(string? schema, string? connName)
+    private async Task _01_006_DepRecSettings(string schema, string connName)
     {
 
         var sql = @$"CREATE TABLE if not exists  {schema}.`deprecSettings` (
@@ -712,10 +712,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
 
-    private async Task _01_007_EmpRatesDtl(string? schema, string? connName)
+    private async Task _01_007_EmpRatesDtl(string schema, string connName)
     {
 
-        string? sql = @$"CREATE TABLE if not exists {schema}.EmpratesDtl (
+        string sql = @$"CREATE TABLE if not exists {schema}.EmpratesDtl (
                           EmpmasId      INTEGER         UNSIGNED    NOT NULL AUTO_INCREMENT,
                           PayrollGrpId  INTEGER         UNSIGNED    NOT NULL,
                           AcctNumber    CHAR(5)                     NOT NULL,
@@ -726,7 +726,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_101_DutyRendered(string? schema, string? connName, string? country)
+    private async Task _01_101_DutyRendered(string schema, string connName, string country)
     {
         // UserType => 0 = Ordinary Users, 1 = System Users 
         var sql = @$"CREATE TABLE if not exists {schema}.DutyRendered (
@@ -759,10 +759,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
     // --- Reference Tables ------------------------------------------------
-    private async Task _01_101_Coa(string? schema, string? connName, string? country)
+    private async Task _01_101_Coa(string schema, string connName, string country)
     {
         // UserType => 0 = Ordinary Users, 1 = System Users 
-        string? sql = @$"CREATE TABLE if not exists {schema}.Coa (
+        string sql = @$"CREATE TABLE if not exists {schema}.Coa (
                             AcctNumber          char(5)                 NOT NULL,
                             AcctName            varchar(60)             NOT NULL DEFAULT ' ',
                             AcctType            Char(1)                 NOT NULL DEFAULT ' ',
@@ -861,25 +861,25 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_101_CoaTax(string? schema, string? connName, string? country)
+    private async Task _01_101_CoaTax(string schema, string connName, string country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaTax (AcctNumber char(5) NOT NULL,
                      PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
-    private async Task _01_101_CoaSSS(string? schema, string? connName, string? country)
+    private async Task _01_101_CoaSSS(string schema, string connName, string country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaSSS (AcctNumber char(5) NOT NULL,
                      PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
-    private async Task _01_101_CoaPHIC(string? schema, string? connName, string? country)
+    private async Task _01_101_CoaPHIC(string schema, string connName, string country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaPHIC (AcctNumber char(5) NOT NULL,
                      PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
-    private async Task _01_101_CoaPagibig(string? schema, string? connName, string? country)
+    private async Task _01_101_CoaPagibig(string schema, string connName, string country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaPagibig (AcctNumber char(5) NOT NULL,
                      PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
@@ -894,7 +894,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_101_Coa_Insert_PHDatas(string? schema, string? connName)
+    private async Task _01_101_Coa_Insert_PHDatas(string schema, string connName)
     {
         string? sql = $"select * from {schema}.Coa limit 1";
         var coa = await _sql.FetchData<CoaModel, dynamic>(sql, new { }, connName);
@@ -978,7 +978,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
 
-    private async Task Menus(string? schema, string? connName, string? country = "PH")
+    private async Task Menus(string schema, string connName, string country = "PH")
     {
         var sql = @$"CREATE TABLE if not exists {schema}.Menu (
                           Id            INTEGER         UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -994,13 +994,13 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
 
-    private async Task _01_102_MatrixWTax(string? schema, string? connName, string? country = "PH")
+    private async Task _01_102_MatrixWTax(string schema, string connName, string country = "PH")
     {
 
 
         if (country == "PH")
         {
-            string? sql = @$"CREATE TABLE if not exists {schema}.MatrixWTax (
+            string sql = @$"CREATE TABLE if not exists {schema}.MatrixWTax (
                             Id              int unsigned NOT NULL AUTO_INCREMENT,
                             From_           date, 
                             To_             date,
@@ -1068,9 +1068,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_103_MatrixSss(string? schema, string? connName, string? country = "PH")
+    private async Task _01_103_MatrixSss(string schema, string connName, string country = "PH")
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.MatrixSss (
+        string sql = @$"CREATE TABLE if not exists {schema}.MatrixSss (
                             Id              int unsigned NOT NULL AUTO_INCREMENT,
                             Revision        CHAR(7) NOT NULL DEFAULT '202501', 
                             DateStart       date,
@@ -1159,9 +1159,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         }
     }
-    private async Task _01_104_MatrixPhic(string? schema, string? connName, string? country = "PH")
+    private async Task _01_104_MatrixPhic(string schema, string connName, string country = "PH")
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.MatrixPhic (
+        string sql = @$"CREATE TABLE if not exists {schema}.MatrixPhic (
                             Id              int unsigned NOT NULL AUTO_INCREMENT,
                             Revision        CHAR(7) NOT NULL DEFAULT '202501',
                             DateStart       date,
@@ -1192,9 +1192,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         }
     }
-    private async Task _01_104_MatrixPagibig(string? schema, string? connName, string? country = "PH")
+    private async Task _01_104_MatrixPagibig(string schema, string connName, string country = "PH")
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.MatrixPagibig (
+        string sql = @$"CREATE TABLE if not exists {schema}.MatrixPagibig (
                             Id              int unsigned NOT NULL AUTO_INCREMENT,
                             Revision        CHAR(7) NOT NULL DEFAULT '201901',
                             DateStart       date,
@@ -1224,9 +1224,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
 
     // --- Earnings and Deductions ------------------------------------------
-    private async Task _01_201_FixedEarnings(string? schema, string? connName, string? country = "PH")
+    private async Task _01_201_FixedEarnings(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"CREATE TABLE if not exists  {schema}.FixedEarnings (
+        string sql = $@"CREATE TABLE if not exists  {schema}.FixedEarnings (
                         Id                      int(10)                 unsigned    NOT NULL AUTO_INCREMENT,
                         PayrollgrpId            int                     unsigned,
                         Empnumber               char(5)                             NOT NULL,
@@ -1250,9 +1250,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
 
-    private async Task _01_201_FixedEarningsRecreate(string? schema, string? connName, string? country = "PH")
+    private async Task _01_201_FixedEarningsRecreate(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"Desc {schema}.FixedEarnings ";
+        string sql = $@"Desc {schema}.FixedEarnings ";
         var res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
 
         if (res.Count < 19)
@@ -1284,7 +1284,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_202_FixedEarnings_Grp(string? schema, string? connName, string? country = "PH")
+    private async Task _01_202_FixedEarnings_Grp(string schema, string connName, string country = "PH")
     {
         var sql = $@"CREATE TABLE if not exists {schema}.`FixedEarnings_Grp` (
                       Id                int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -1309,7 +1309,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_203_FixedEarnings_Grp_Emp(string? schema, string? connName, string? country = "PH")
+    private async Task _01_203_FixedEarnings_Grp_Emp(string schema, string connName, string country = "PH")
     {
         var sql = $@"CREATE TABLE if not exists {schema}.FixedEarnings_Grp_Emp (
                           FixedEarnings_grpId   INTEGER UNSIGNED NOT NULL,
@@ -1319,9 +1319,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_251_Loans(string? schema, string? connName, string? country = "PH")
+    private async Task _01_251_Loans(string schema, string connName, string country = "PH")
     {
-        string? sql = @$"CREATE TABLE  if not exists {schema}.loans (
+        string sql = @$"CREATE TABLE  if not exists {schema}.loans (
                               Id                int(10)         unsigned NOT NULL AUTO_INCREMENT,
                               EMPNUMBER         char(5)                     DEFAULT NULL,
                               DATE              date                        DEFAULT NULL,
@@ -1382,9 +1382,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
 
-    private async Task _01_251_LoansRecreate(string? schema, string? connName, string? country = "PH")
+    private async Task _01_251_LoansRecreate(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"Desc {schema}.Loans ";
+        string sql = $@"Desc {schema}.Loans ";
         var res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
 
         if (res.Count < 28)
@@ -1394,9 +1394,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_252_DedMandatory(string? schema, string? connName, string? country = "PH")
+    private async Task _01_252_DedMandatory(string schema, string connName, string country = "PH")
     {
-        string? sql = @$"CREATE TABLE if not exists {schema}.Dedmandatory (
+        string sql = @$"CREATE TABLE if not exists {schema}.Dedmandatory (
                           Id                    int(10)             unsigned            NOT NULL AUTO_INCREMENT,
                           AcctNumber            varchar(45)                     DEFAULT NULL,
                           ContAmt               double(12, 4)                   DEFAULT NULL,
@@ -1411,8 +1411,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         PRIMARY KEY (`Id`) ) ENGINE=InnoDB AUTO_INCREMENT=1     DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
-    private async Task _01_252_DedMandatoryTran(string? schema, string? connName) {
-        string? sql = @$"CREATE TABLE if not exists {schema}.DedmandatoryTran (
+    private async Task _01_252_DedMandatoryTran(string schema, string connName) {
+        string sql = @$"CREATE TABLE if not exists {schema}.DedmandatoryTran (
                           EmpmasId              int(10)             unsigned    NOT NULL DEFAULT '0',
                           AcctNumber            varchar(45)                     NOT NULL DEFAULT '-',
                           Amount                double(12, 4)                   DEFAULT NULL,
@@ -1422,9 +1422,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     }
     
     // --- Transaction Tables ------------------------------------------------
-    private async Task _01_301_PayMainVisibleAcct(string? schema, string? connName, string? country = "PH")
+    private async Task _01_301_PayMainVisibleAcct(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"CREATE TABLE  if not exists {schema}.`PaymainVisAcct` (
+        string sql = $@"CREATE TABLE  if not exists {schema}.`PaymainVisAcct` (
                           Trn               char(12)          NOT NULL,
                           AcctNumber        char(10)          NOT NULL,
                           PRIMARY KEY (`trn`,`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -1435,9 +1435,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           ";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
-    private async Task _01_301_PayMainHdr(string? schema, string? connName, string? country = "PH")
+    private async Task _01_301_PayMainHdr(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"CREATE TABLE  if not exists {schema}.`paymainhdr` (
+        string sql = $@"CREATE TABLE  if not exists {schema}.`paymainhdr` (
                           Trn               char(12)          NOT NULL,
                           ClRate            double(12,4)      NOT NULL    DEFAULT 0.0000,
                           MinRate           double(12,4)      NOT NULL    DEFAULT 0.0000,
@@ -1450,11 +1450,11 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           PRIMARY KEY (`trn`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
-    private async Task _01_302_PayMainDtl(string? schema, string? connName, string? country = "PH")
+    private async Task _01_302_PayMainDtl(string schema, string connName, string country = "PH")
     {
         if (country == "PH")
         {
-            string? sql = $@"CREATE TABLE  if not exists {schema}.`Paymaindtl` (
+            string sql = $@"CREATE TABLE  if not exists {schema}.`Paymaindtl` (
                               Trn               char(15)        NOT NULL    DEFAULT '',
                               Empnumber         char(5)         NOT NULL    DEFAULT '',
                               EmpmasId          int,
@@ -1510,11 +1510,11 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_303_PaymaindtlsetupPH(string? schema, string? connName, string? country = "PH")
+    private async Task _01_303_PaymaindtlsetupPH(string schema, string connName, string country = "PH")
     {
         if (country == "PH")
         {
-            string? sql = $@"CREATE TABLE  if not exists {schema}.`paymaindtlsetup` (
+            string sql = $@"CREATE TABLE  if not exists {schema}.`paymaindtlsetup` (
                               Id                  int                 default 0,
                               daywrk              char(5)             DEFAULT '',
                               absent              char(5)             DEFAULT '',
@@ -1583,9 +1583,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         }
     }
 
-    private async Task _01_304_PayMainHistory(string? schema, string? connName, string? country)
+    private async Task _01_304_PayMainHistory(string schema, string connName, string country)
     {
-        string? sql = $@"CREATE TABLE  if not exists  {schema}.PaymainHistory (
+        string sql = $@"CREATE TABLE  if not exists  {schema}.PaymainHistory (
                           Id        INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                           Trn       CHAR(12) NOT NULL,
                           UserId    INTEGER UNSIGNED NOT NULL,
@@ -1596,10 +1596,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_305_PayRateType(string? schema, string? connName)
+    private async Task _01_305_PayRateType(string schema, string connName)
     {
 
-        string? sql = @$"CREATE TABLE if not exists {schema}.PayrateType (
+        string sql = @$"CREATE TABLE if not exists {schema}.PayrateType (
                             Id          INTEGER         UNSIGNED    NOT NULL AUTO_INCREMENT,
                             Code        CHAR(5)                     NOT NULL,
                             Name        VARCHAR(45)                 NOT NULL,
@@ -1649,15 +1649,15 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
 
-    private async Task _01_401_TmpManHr(string? schema, string? connName, string? country = "PH")
+    private async Task _01_401_TmpManHr(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"CREATE TABLE  if not exists {schema}.ManHr (
+        string sql = $@"CREATE TABLE  if not exists {schema}.ManHr (
                            Trn          varchar(12)     NOT NULL DEFAULT ' ',
                            EmpmasId     int             NOT NULL default 0,
                            EmpNumber    char(10)        NOT NULL default ' ',
                            AcctNumber   char(5)         NOT NULL default ' ',
                            Date         Date,
-                           DayTypeId    int             Not null Default 0, 
+                           DayTypeId    Int             Not null Default 0, 
                            Qty          double(10,4)    NOT NULL Default 0,
                            Rate         double(10,4)    NOT NULL Default 0,
                            RateTypeId   int             NOT NULL DEFAULT 0,      
@@ -1666,15 +1666,15 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_401_ManHr(string? schema, string? connName, string? country = "PH")
+    private async Task _01_401_ManHr(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"CREATE TABLE  if not exists {schema}.TmpManHr (
+        string sql = $@"CREATE TABLE  if not exists {schema}.TmpManHr (
                            Trn          varchar(12)     NOT NULL DEFAULT ' ',
                            EmpmasId     int             NOT NULL default 0,
                            EmpNumber    char(10)         NOT NULL default ' ',
                            AcctNumber   char(5)         NOT NULL default ' ',
                            Date         Date,
-                           DayTypeId    int             Not null Default 0, 
+                           DayTypeId    Int             Not null Default 0, 
                            Qty          double(10,4)    NOT NULL Default 0,
                            Rate         double(10,4)    NOT NULL Default 0,
                            RateTypeId   int             NOT NULL DEFAULT 0,      
@@ -1683,9 +1683,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async Task _01_402_TmpTbltran(string? schema, string? connName, string? country = "PH")
+    private async Task _01_402_TmpTbltran(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"CREATE TABLE  if not exists {schema}.TmpTbltran (
+        string sql = $@"CREATE TABLE  if not exists {schema}.TmpTbltran (
                             TRN             varchar(12)     NOT NULL    DEFAULT ' ',  
                             EmpmasId        int             NOT NULL    default 0,
                             empNumber       varchar(10)                  DEFAULT ' ',
@@ -1725,9 +1725,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
     }
 
-    private async Task _01_402_Tbltran(string? schema, string? connName, string? country = "PH")
+    private async Task _01_402_Tbltran(string schema, string connName, string country = "PH")
     {
-        string? sql = $@"CREATE TABLE  if not exists {schema}.tbltran (
+        string sql = $@"CREATE TABLE  if not exists {schema}.tbltran (
                             TRN             varchar(12)     NOT NULL    DEFAULT ' ',  
                             EmpmasId        int             NOT NULL    default 0,
                             empNumber       varchar(10)                  DEFAULT ' ',

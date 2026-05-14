@@ -55,7 +55,7 @@ public class OClientModel
 	public int? 		IsLumpsum     		{ get; set; } 
 
 	// --- Other -------------------------------------------------------
-	public int? 			IsSelected 			{ get; set; } = 0; 
+	public int 			IsSelected 			{ get; set; } = 0; 
 	public bool     	IsSelectedB         { get => IsSelected == 1; set => IsSelected = value ? 1 : 0; }
 
 }

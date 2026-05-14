@@ -14,9 +14,9 @@ public class RcivstatDataAccess : IRcivstatDataAccess
         _sql = sql;
     }
 
-    public async Task<RCivStatModel?> _01(RCivStatModel rcivstat, string? schema, string? conn)
+    public async Task<RCivStatModel?> _01(RCivStatModel rcivstat, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Rcivstat (Code, Name) values (@Code, @Name); 
+        string sql = $@"Insert into {schema}.Rcivstat (Code, Name) values (@Code, @Name); 
                         SELECT * FROM {schema}.Rcivstat WHERE ID = (SELECT @@IDENTITY)";
         var res = await _sql.FetchData<RCivStatModel?, dynamic>(sql, rcivstat, conn);
 
@@ -24,24 +24,24 @@ public class RcivstatDataAccess : IRcivstatDataAccess
     }
 
 
-    public async Task<RCivStatModel?> _02(int? id, string? schema, string? conn)
+    public async Task<RCivStatModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, Code, Name from {schema}.Rcivstat where Id = @Id";
+        string sql = $@"select  Id, Code, Name from {schema}.Rcivstat where Id = @Id";
         var data = await _sql.FetchData<RCivStatModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<RCivStatModel?>?> _02(string? schema, string? conn)
+    public async Task<List<RCivStatModel?>?> _02(string schema, string conn)
     {
-        string? sql  = $@"select  Id, Code, Name from {schema}.Rcivstat ";
+        string sql  = $@"select  Id, Code, Name from {schema}.Rcivstat ";
         var data    = await _sql.FetchData<RCivStatModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
 
-    public async Task<RCivStatModel?> _03(int? id, RCivStatModel rcivstat, string? schema, string? conn)
+    public async Task<RCivStatModel?> _03(int id, RCivStatModel rcivstat, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Rcivstat set Code = @Code, Name = @Name where Id = @Id;";
+        string sql = $@"Update {schema}.Rcivstat set Code = @Code, Name = @Name where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, rcivstat, conn);
 
         sql = $@" select  * from {schema}.Rcivstat x where x.Id = @Id ;";
@@ -49,9 +49,9 @@ public class RcivstatDataAccess : IRcivstatDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<RCivStatModel?> _04(int? id, string? schema, string? conn)
+    public async Task<RCivStatModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Rcivstat where Id = @Id;";
+        string sql = $@"Delete from {schema}.Rcivstat where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Rcivstat x where x.Id = @Id ;";

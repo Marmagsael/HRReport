@@ -6,12 +6,12 @@ public class TmptbltranemplistModel
 {
     public string?  Trn             { get; set; }
 
-    public int?      EmpmasId        { get; set; }
+    public int      EmpmasId        { get; set; }
 
     public double   Emprate         { get; set; }
 
-    public int?      PayrateId       { get; set; }
-    public int?      PayrollgrpId    { get; set; }
+    public int      PayrateId       { get; set; }
+    public int      PayrollgrpId    { get; set; }
 
     public double   TotEarnings     { get; set; } = 0; 
     public double   TotDeductions   { get; set; } = 0; 

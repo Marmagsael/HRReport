@@ -12,9 +12,9 @@ public class EmpmasgrpDataAccess : IEmpmasgrpDataAccess
         _sql = sql;
     }
 
-    public async Task<EmpmasgrpModel?> _01(EmpmasgrpModel empmasgrp, string? schema, string? conn)
+    public async Task<EmpmasgrpModel?> _01(EmpmasgrpModel empmasgrp, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Empmasgrp 
+        string sql = $@"Insert into {schema}.Empmasgrp 
             (EmpmasId,  SecId,  DepId,  DivId,  LeaveGrpId,  EmpstatId) values 
             (@EmpmasId, @SecId, @DepId, @DivId, @LeaveGrpId, @EmpstatId)";
         await _sql.ExecuteCmd<dynamic>(sql, empmasgrp, conn);
@@ -25,9 +25,9 @@ public class EmpmasgrpDataAccess : IEmpmasgrpDataAccess
 
     }
     
-    public async Task _01FromLvGrp(EmpmasgrpModel empmasgrp, string? schema, string? conn)
+    public async Task _01FromLvGrp(EmpmasgrpModel empmasgrp, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Empmasgrp 
+        string sql = $@"Insert into {schema}.Empmasgrp 
             (EmpmasId,  SecId,  DepId,  DivId,  LeaveGrpId  ) values 
             (@EmpmasId, 0,      0,      0,      @LeaveGrpId) 
             on duplicate key update LeaveGrpId = @LeaveGrpId";
@@ -36,16 +36,16 @@ public class EmpmasgrpDataAccess : IEmpmasgrpDataAccess
     }
 
 
-    public async Task<EmpmasgrpModel?> _02(int? id, string? schema, string? conn)
+    public async Task<EmpmasgrpModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  EmpmasId, SecId, DepId, DivId, LeaveGrpId, EmpstatId from {schema}.Empmasgrp where Id = @Id";
+        string sql = $@"select  EmpmasId, SecId, DepId, DivId, LeaveGrpId, EmpstatId from {schema}.Empmasgrp where Id = @Id";
         var data = await _sql.FetchData<EmpmasgrpModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<EmpmasgrpModel?>?> _02ByFldId(string? fldName, int? id, string? schema, string? conn)
+    public async Task<List<EmpmasgrpModel?>?> _02ByFldId(string fldName, int id, string schema, string conn)
     {
-        string? sql = $@"SELECT g.*, concat(e.EmpLastNm, ', ', e.EmpFirstNm) EmpmasName, 
+        string sql = $@"SELECT g.*, concat(e.EmpLastNm, ', ', e.EmpFirstNm) EmpmasName, 
                             s.name SecName, d.Name DepName, d.Name DivName, l.Name LeavegrpName
                         FROM {schema}.Empmasgrp g
                         left join  {schema}.Empmas      e  on e.Id = g.EmpmasId
@@ -58,9 +58,9 @@ public class EmpmasgrpDataAccess : IEmpmasgrpDataAccess
         return data;
     }
     
-    public async Task<List<EmpmasgrpModel?>?> _02ByFldIds(string? fldName, List<int> ids, string? schema, string? conn)
+    public async Task<List<EmpmasgrpModel?>?> _02ByFldIds(string fldName, List<int> ids, string schema, string conn)
     {
-        string? sql = $@"SELECT g.*, concat(e.EmpLastNm, ', ', e.EmpFirstNm) EmpmasName, 
+        string sql = $@"SELECT g.*, concat(e.EmpLastNm, ', ', e.EmpFirstNm) EmpmasName, 
                             s.name SecName, d.Name DepName, d.Name DivName, l.Name LeavegrpName
                         FROM {schema}.Empmasgrp g
                         left join  {schema}.Empmas      e  on e.Id = g.EmpmasId
@@ -76,9 +76,9 @@ public class EmpmasgrpDataAccess : IEmpmasgrpDataAccess
 
 
 
-    public async Task<EmpmasgrpModel?> _03(int? id, EmpmasgrpModel empmasgrp, string? schema, string? conn)
+    public async Task<EmpmasgrpModel?> _03(int id, EmpmasgrpModel empmasgrp, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Empmasgrp set EmpmasId = @EmpmasId, SecId = @SecId, DepId = @DepId, DivId = @DivId, LeaveGrpId = @LeaveGrpId, EmpstatId = @EmpstatId where Id = @Id;";
+        string sql = $@"Update {schema}.Empmasgrp set EmpmasId = @EmpmasId, SecId = @SecId, DepId = @DepId, DivId = @DivId, LeaveGrpId = @LeaveGrpId, EmpstatId = @EmpstatId where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, empmasgrp, conn);
 
         sql = $@" select  * from {schema}.Empmasgrp x where x.Id = @Id ;";
@@ -86,16 +86,16 @@ public class EmpmasgrpDataAccess : IEmpmasgrpDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task _03RemoveLvgrp(int? empmasId, string? schema, string? conn)
+    public async Task _03RemoveLvgrp(int empmasId, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Empmasgrp set LeaveGrpId = 0 where EmpmasId = @EmpmasId;";
+        string sql = $@"Update {schema}.Empmasgrp set LeaveGrpId = 0 where EmpmasId = @EmpmasId;";
         await _sql.ExecuteCmd<dynamic>(sql, new {EmpmasId = empmasId}, conn);
     }
 
 
-    public async Task<EmpmasgrpModel?> _04(int? id, string? schema, string? conn)
+    public async Task<EmpmasgrpModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Empmasgrp where Id = @Id;";
+        string sql = $@"Delete from {schema}.Empmasgrp where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Empmasgrp x where x.Id = @Id ;";
@@ -106,12 +106,12 @@ public class EmpmasgrpDataAccess : IEmpmasgrpDataAccess
 
 public interface IEmpmasgrpDataAccess
 {
-    Task<EmpmasgrpModel?>           _01(EmpmasgrpModel empmasgrp, string? schema, string? conn);
-    Task                            _01FromLvGrp(EmpmasgrpModel empmasgrp, string? schema, string? conn);
-    Task<EmpmasgrpModel?>           _02(int? id, string? schema, string? conn);
-    Task<List<EmpmasgrpModel?>?>    _02ByFldId(string? fldName, int? id, string? schema, string? conn);
-    Task<List<EmpmasgrpModel?>?>    _02ByFldIds(string? fldName, List<int> ids, string? schema, string? conn); 
-    Task<EmpmasgrpModel?>           _03(int? id, EmpmasgrpModel empmasgrp, string? schema, string? conn);
-    Task                            _03RemoveLvgrp(int? empmasId, string? schema, string? conn); 
-    Task<EmpmasgrpModel?>           _04(int? id, string? schema, string? conn);
+    Task<EmpmasgrpModel?>           _01(EmpmasgrpModel empmasgrp, string schema, string conn);
+    Task                            _01FromLvGrp(EmpmasgrpModel empmasgrp, string schema, string conn);
+    Task<EmpmasgrpModel?>           _02(int id, string schema, string conn);
+    Task<List<EmpmasgrpModel?>?>    _02ByFldId(string fldName, int id, string schema, string conn);
+    Task<List<EmpmasgrpModel?>?>    _02ByFldIds(string fldName, List<int> ids, string schema, string conn); 
+    Task<EmpmasgrpModel?>           _03(int id, EmpmasgrpModel empmasgrp, string schema, string conn);
+    Task                            _03RemoveLvgrp(int empmasId, string schema, string conn); 
+    Task<EmpmasgrpModel?>           _04(int id, string schema, string conn);
 }

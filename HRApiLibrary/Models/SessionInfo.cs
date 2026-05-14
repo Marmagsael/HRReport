@@ -2,10 +2,10 @@
 
 public class SessionField
 {
-    public const string? AMSSchema       = "AMSSchema";
-    public const string? ApplicantSchema = "ApplicantSchema";
-    public const string? PISSchema       = "PISSchema";
-    public const string? PaySchema       = "PaySchema";
+    public const string AMSSchema       = "AMSSchema";
+    public const string ApplicantSchema = "ApplicantSchema";
+    public const string PISSchema       = "PISSchema";
+    public const string PaySchema       = "PaySchema";
 }
 
 public class SessionInfo

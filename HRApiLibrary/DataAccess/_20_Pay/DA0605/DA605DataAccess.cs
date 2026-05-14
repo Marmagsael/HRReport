@@ -92,7 +92,7 @@ public class Da605DataAccess : IDa605DataAccess
         }
     }
 
-    public async Task<Model605> _01EmpByCurrPayrollgrp(string? trn, int? payrollgrpId, int? empmasId, string? empNumber, double rate, string? paydb, string? pisdb, string? conn, int? userId)
+    public async Task<Model605> _01EmpByCurrPayrollgrp(string? trn, int payrollgrpId, int empmasId, string? empNumber, double rate, string? paydb, string? pisdb, string? conn, int userId)
     {
         Model605 m605 = new();
         var sql = $"""
@@ -117,7 +117,7 @@ public class Da605DataAccess : IDa605DataAccess
         return m605;
     }
 
-    public async Task<Model605> _01EmpByPayrollgrpRate(string? trn, int? payrollgrpId, int? empmasId, string? empNumber, int? userId, string? paydb,
+    public async Task<Model605> _01EmpByPayrollgrpRate(string? trn, int payrollgrpId, int empmasId, string empNumber, int userId, string? paydb,
         string? pisdb, string? conn)
     {
         Model605 m605 = new();
@@ -147,7 +147,7 @@ public class Da605DataAccess : IDa605DataAccess
         return m605; 
     }
 
-    public async Task<Model605> _01EmpAssignedRates(string? trn, EmpratesModel empRates, int? userId, string? paydb, string? pisdb, string? conn)
+    public async Task<Model605> _01EmpAssignedRates(string? trn, EmpratesModel empRates, int userId, string? paydb, string? pisdb, string? conn)
     {
         Model605 m605 = new();
         
@@ -183,7 +183,7 @@ public class Da605DataAccess : IDa605DataAccess
     }
     
 
-    public async Task<Model605> _01Acct_per_Trn(string? trn, string? acctNumber, double defPaygrpRate,  string? paydb, string? pisdb,  string? conn)
+    public async Task<Model605> _01Acct_per_Trn(string trn, string acctNumber, double defPaygrpRate,  string? paydb, string pisdb,  string? conn)
     {
         Model605 m605 = new();
         if(trn.Trim().Length < 1 || paydb?.Trim().Length < 1 || conn?.Trim().Length < 1 ) return m605;
@@ -209,7 +209,7 @@ public class Da605DataAccess : IDa605DataAccess
         return m605;
     }
 
-    public async Task _01_FE_to_Tmptbltran(string? trn, string? fldName, string? paydb, string? pisdb, int? idUser, string? conn)
+    public async Task _01_FE_to_Tmptbltran(string trn, string fldName, string? paydb, string pisdb, int idUser, string? conn)
     {
         //--- Settings ---------------------------------------------------------------------------------
         var sql = $@"Select * from {paydb}.Settings";
@@ -299,7 +299,7 @@ public class Da605DataAccess : IDa605DataAccess
         
     }
 
-    public async Task _01_FEG_to_Tmptbltran(string? trn, string? fldName, int? payrollgrpId, string? paydb, string? pisdb, int? idUser,
+    public async Task _01_FEG_to_Tmptbltran(string trn, string fldName, int payrollgrpId, string? paydb, string pisdb, int idUser,
         SettingsModel s, string? conn)
     {
         //--- Test kung may Fixed Earnings Group na active  [ Exit pag wala ] ------------------------------------------
@@ -377,7 +377,7 @@ public class Da605DataAccess : IDa605DataAccess
         
     }
     
-    public async Task _01_FE_to_Tmptbltran_1(string? trn, string? fldName, string? paydb, string? pisdb, int? idUser, string? conn)
+    public async Task _01_FE_to_Tmptbltran_1(string trn, string fldName, string? paydb, string pisdb, int idUser, string? conn)
     {
         //--- Settings ---------------------------------------------------------------------------------
         var sql = $@"Select * from {paydb}.Settings";
@@ -451,7 +451,7 @@ public class Da605DataAccess : IDa605DataAccess
                     on duplicate key update Qty=1, Rate = r.Rate, Amount = r.Qty*r.Rate; ";
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn= trn, IdUser = idUser }, conn!); 
     }
-    public async Task _01_Account_to_Tmptbltran(string? trn, string? acctNumber, string? source, int? idUser, string? paydb, string? pisdb, string? conn)
+    public async Task _01_Account_to_Tmptbltran(string trn, string acctNumber, string source, int idUser, string? paydb, string pisdb, string? conn)
     {
         var sql = $@"select * from {paydb}.Tmptbltran where acctNumber = @AcctNumber and  trn = @Trn";
         var res = await _sql.FetchData<TbltranModel,dynamic>(sql, new { Trn = trn, AcctNumber = acctNumber }, conn!);
@@ -479,7 +479,7 @@ public class Da605DataAccess : IDa605DataAccess
         }
     }
 
-    private async Task _01_PremPHIC(string? trn, string? source, int? idUser, string? paydb, string? pisdb, string? conn)
+    private async Task _01_PremPHIC(string trn, string source, int idUser, string paydb, string pisdb, string conn)
     {
         var sql =
             $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
@@ -518,7 +518,7 @@ public class Da605DataAccess : IDa605DataAccess
     }
 
 
-    private async Task _01_PremSSS(string? trn, string? source, int? idUser,string paydb,string pisdb,string conn)
+    private async Task _01_PremSSS(string trn, string source, int idUser,string paydb,string pisdb,string conn)
     {
         var sql = $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
                      with
@@ -554,7 +554,7 @@ public class Da605DataAccess : IDa605DataAccess
                      select @Trn Trn, EmpmasId, EmpNumber, 'D002' AcctNumber, 1 Qty, ifnull(Cont,0) Rate, 0 RTI,      ifnull(Cont,0) Amt, now(),      @Iduser PB, 'SSS' from cmd;  ";
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn= trn, IdUser = idUser, Source = source }, conn!); 
     }
-    private async Task _01_PremPagibig(string? trn, string? source, int? idUser,string paydb,string pisdb,string conn)
+    private async Task _01_PremPagibig(string trn, string source, int idUser,string paydb,string pisdb,string conn)
     {
         var sql = $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
                      with 
@@ -586,7 +586,7 @@ public class Da605DataAccess : IDa605DataAccess
     }
     
     
-    private async Task _01_Tax(string? trn, string? source, int? idUser,string paydb,string pisdb,string conn)
+    private async Task _01_Tax(string trn, string source, int idUser,string paydb,string pisdb,string conn)
     {
         var sql = $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
                      with 
@@ -630,7 +630,7 @@ public class Da605DataAccess : IDa605DataAccess
         
     }
     
-    private async Task _01_Account_to_Tmptbltran_D001(string? trn, string? acctNumber, string? source, int? idUser, string? paydb, string? pisdb, string? conn)
+    private async Task _01_Account_to_Tmptbltran_D001(string trn, string acctNumber, string source, int idUser, string? paydb, string pisdb, string? conn)
     {
         var sql =  @$"insert into {paydb}.tmptbltran (TRN,      EmpmasId,   EmpNumber,    acctNumber,         Qty, Rate,       RateTypeId, Amount,      dTimeStamp, postedby,   Source)
                         select                   @Trn Trn, t.EmpmasId, t.EmpNumber,  @AcctNumber acctNo, 1,  t.TaxAmount, 0,          t.TaxAmount, now(),      @IdUser pb, @Source source 
@@ -659,7 +659,7 @@ public class Da605DataAccess : IDa605DataAccess
                  on duplicate key update AcctNumber = @AcctNumber; ";
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn= trn, IdUser = idUser, AcctNumber = acctNumber, Source = source }, conn!); 
     }
-    private async Task _01_Account_to_Tmptbltran_Premium(string? trn, string? acctNumber, string? source, int? idUser, string? paydb, string? pisdb, string? conn)
+    private async Task _01_Account_to_Tmptbltran_Premium(string trn, string acctNumber, string source, int idUser, string? paydb, string pisdb, string? conn)
     {
         var coaRefTbl = "coaSSS";       //--- Default for SSS COA Reference Table 
         var matrixTbl = "matrixSSS";    //--- Default for SSS Matrix Table
@@ -718,7 +718,7 @@ public class Da605DataAccess : IDa605DataAccess
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn= trn, IdUser = idUser, AcctNumber = acctNumber, Source = source }, conn!); 
     }
 
-    public async Task _01_Loans(string? trn, int? idUser, string? source, string? paydb, string? pisdb, string? conn)
+    public async Task _01_Loans(string trn, int idUser, string source, string? paydb, string pisdb, string? conn)
     {
         var prd = MsdsDataAccess.Extract_FieldPrd(trn);
 
@@ -785,7 +785,7 @@ public class Da605DataAccess : IDa605DataAccess
                         qty    = 1; 
                         amount = cloan.Amort;
                         rate   = cloan.Amount;
-                        refId  = cloan.Id??0;
+                        refId  = cloan.Id;
                         
                         sql = $@" INSERT INTO {paydb}.tmptbltran  
                              (Trn,  EmpmasId,  EmpNumber,  acctNumber,  Qty,  Rate,  RateTypeId,  Amount,  dTimeStamp,  postedby,  Source,  RefId) values 
@@ -815,7 +815,7 @@ public class Da605DataAccess : IDa605DataAccess
         
     }
 
-    public async Task _01_MandatoryDeduction(string? trn, int? idUser, string? paydb, string? conn, string? source="MDed" )
+    public async Task _01_MandatoryDeduction(string trn, int idUser, string? paydb, string? conn, string source="MDed" )
     {
         
         var sql = $@" INSERT INTO {paydb}.tmptbltran
@@ -845,7 +845,7 @@ public class Da605DataAccess : IDa605DataAccess
         
         
     }
-    public async Task _01_PostTrn(string? trn, int? idUser, string? paydb, string? conn)
+    public async Task _01_PostTrn(string trn, int idUser, string? paydb, string? conn)
     {
         await PostTmpTbltran(trn, idUser, paydb, conn);
         
@@ -865,7 +865,7 @@ public class Da605DataAccess : IDa605DataAccess
         return; 
 
         
-        async Task PostTmpTbltran(string? ptrn, int? pidUser, string? ppaydb, string? pconn)
+        async Task PostTmpTbltran(string? ptrn, int pidUser, string? ppaydb, string? pconn)
         {
             var psql = @$"update {ppaydb}.Tmptbltran set  
                                 dTimeStamp  = now(), 
@@ -1008,7 +1008,7 @@ public class Da605DataAccess : IDa605DataAccess
     
     
     
-    public async Task<List<EmpratesModel>> _02EmployeeToAdd(string? skey, string? trn, int? payrollgrpId, string? paydb, string? pisdb, string? conn)
+    public async Task<List<EmpratesModel>> _02EmployeeToAdd(string  skey, string? trn, int payrollgrpId, string? paydb, string? pisdb, string? conn)
     {
         var sql = $"""
                     Select concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, 
@@ -1031,7 +1031,7 @@ public class Da605DataAccess : IDa605DataAccess
         return emprates??[];
     }
     
-    public async Task<List<DeprecsettingsModel>> _02TaxableEmployees(string? trn, string? paydb, string? conn)
+    public async Task<List<DeprecsettingsModel>> _02TaxableEmployees(string trn, string? paydb, string? conn)
     {
         var sql = $@"select * from {paydb}.DeprecSettings where EmpmasId in 
                             (select EmpmasId from {paydb}.Tmptbltran where Trn = @Trn) and wtax = 1 ";
@@ -1039,7 +1039,7 @@ public class Da605DataAccess : IDa605DataAccess
         
         return res;
     }
-    public async Task<List<DeprecsettingsModel>> _02TaxableEmployees_per_Trn(string? trn, string? paydb, string? conn)
+    public async Task<List<DeprecsettingsModel>> _02TaxableEmployees_per_Trn(string trn, string? paydb, string? conn)
     {
         var sql = $@"select * from {paydb}.DepRecSettings 
                      where EmpmasId in (select EmpmasId from {paydb}.Tmptbltran where Trn = @Trn) and 
@@ -1048,7 +1048,7 @@ public class Da605DataAccess : IDa605DataAccess
         return res;
     }
     
-    public async Task<List<DeprecsettingsModel>> _02WithPremEmployees_per_Trn(string? trn, string? paydb, string? conn, string? premSw="wSSS")
+    public async Task<List<DeprecsettingsModel>> _02WithPremEmployees_per_Trn(string trn, string? paydb, string? conn, string premSw="wSSS")
     {
         var sql = $@"select * from {paydb}.DeprecSettings 
                      where EmpmasId in 
@@ -1059,7 +1059,7 @@ public class Da605DataAccess : IDa605DataAccess
         return res;
     }
     
-    public async Task<List<CoaModel?>?> _02PrdAccts_ByTrn(string? trn, string? paydb, string? conn)
+    public async Task<List<CoaModel?>?> _02PrdAccts_ByTrn(string trn, string? paydb, string? conn)
     {
         var sql = $"""
                    Select * from  {paydb}.Coa where AcctNumber in 
@@ -1094,7 +1094,7 @@ public class Da605DataAccess : IDa605DataAccess
     
     
     
-    public async Task<Model605> _04Tmp_Employee(string? trn, int? empmasId, string? paydb, string? pisdb, string? conn)
+    public async Task<Model605> _04Tmp_Employee(string trn, int empmasId, string? paydb, string pisdb, string? conn)
     {
         Model605 m605 = new();
         if(trn.Trim().Length < 1 || paydb?.Trim().Length < 1 || conn?.Trim().Length < 1 ) return m605;
@@ -1115,7 +1115,7 @@ public class Da605DataAccess : IDa605DataAccess
         
     }
 
-    public async Task _04PayrollDtlRecord(string? trn, int? empmasId, string? paydb, string? conn)
+    public async Task _04PayrollDtlRecord(string trn, int empmasId, string? paydb, string? conn)
     {
         if(trn.Trim().Length < 1 || paydb?.Trim().Length < 1 || conn?.Trim().Length < 1 ) return;
         
@@ -1131,7 +1131,7 @@ public class Da605DataAccess : IDa605DataAccess
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn = trn, EmpmasId = empmasId }, conn!); 
     }
 
-    public async Task _04UnlockedPayroll(string? trn, string? paydb, string? conn)
+    public async Task _04UnlockedPayroll(string trn, string? paydb, string? conn)
     {
         if(trn.Trim().Length < 1 || paydb?.Trim().Length < 1 || conn?.Trim().Length < 1 ) return;
         
@@ -1149,7 +1149,7 @@ public class Da605DataAccess : IDa605DataAccess
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn = trn}, conn!); 
     }
     
-    public async Task _04UEmployee(string? trn, int? empmasId, string? paydb, string? conn)
+    public async Task _04UEmployee(string trn, int empmasId, string? paydb, string? conn)
     {
         if(trn.Trim().Length < 1 || paydb?.Trim().Length < 1 || conn?.Trim().Length < 1 ) return;
         
@@ -1161,7 +1161,7 @@ public class Da605DataAccess : IDa605DataAccess
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn = trn, EmpmasId = empmasId}, conn!); 
     }
 
-    public async Task<Model605> _04Acct_per_Trn(string? trn, string? acctNumber, string? paydb, string? pisdb, string? conn)
+    public async Task<Model605> _04Acct_per_Trn(string trn, string acctNumber, string? paydb, string? pisdb, string? conn)
     {
         Model605 m605 = new();
         if(trn.Trim().Length < 1 || paydb?.Trim().Length < 1 || conn?.Trim().Length < 1 ) return m605;
@@ -1181,7 +1181,7 @@ public class Da605DataAccess : IDa605DataAccess
         return m605;
     }
 
-    public async Task _04Deductions_per_Trn(string? trn, string? paydb, string? conn)
+    public async Task _04Deductions_per_Trn(string trn, string? paydb, string? conn)
     {
         
         var sql = $"""
@@ -1195,7 +1195,7 @@ public class Da605DataAccess : IDa605DataAccess
 
     
     //---- Private Functions -------------------------------------------------------------------------------------------
-    private async Task<List<TbltranModel?>?> _02Tmptbltran_ByTrn(string? trn, string? paydb, string? pisdb, string? conn)
+    private async Task<List<TbltranModel?>?> _02Tmptbltran_ByTrn(string trn, string? paydb, string pisdb, string? conn)
     {
         var sql = $@"
                      with 
@@ -1224,7 +1224,7 @@ public class Da605DataAccess : IDa605DataAccess
         return res;
     }
     
-    private async Task<List<TmptbltranemplistModel?>?> _02TmptbltranEmpList_ByTrn(string? trn, string? paydb, string? pisdb, string? conn)
+    private async Task<List<TmptbltranemplistModel?>?> _02TmptbltranEmpList_ByTrn(string trn, string? paydb, string? pisdb, string? conn)
     {
         var sql = $"""
                    Select distinct 

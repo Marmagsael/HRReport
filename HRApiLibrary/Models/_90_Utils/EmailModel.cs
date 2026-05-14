@@ -17,12 +17,12 @@ public class EmailModel
 
 public class ModulesAccessModel
 {
-    public int? Info         { get; set; } = 0;
-    public int? PersonalData { get; set; } = 0;
-    public int? Address      { get; set; } = 0;
-    public int? Education    { get; set; } = 0;
-    public int? Family       { get; set; } = 0;
-    public int? References   { get; set; } = 0;
-    public int? Employment   { get; set; } = 0;
-    public int? Trainings    { get; set; } = 0;
+    public int Info         { get; set; } = 0;
+    public int PersonalData { get; set; } = 0;
+    public int Address      { get; set; } = 0;
+    public int Education    { get; set; } = 0;
+    public int Family       { get; set; } = 0;
+    public int References   { get; set; } = 0;
+    public int Employment   { get; set; } = 0;
+    public int Trainings    { get; set; } = 0;
 }

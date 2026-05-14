@@ -3,8 +3,8 @@
 public class PaytranModel
 {
     public string?  			Trn 			{get; set; } = string.Empty;
-    public int? 					EmpmasId 		{get; set; } = 0;
-    public int? 					PayrollgrpId 	{get; set; } = 0;
+    public int 					EmpmasId 		{get; set; } = 0;
+    public int 					PayrollgrpId 	{get; set; } = 0;
     public DateTime 			AttStart 		{get; set; } 
     public DateTime 			AttEnd 			{get; set; } 
     public double 				E000U 			{get; set; } = 0;

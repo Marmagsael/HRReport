@@ -11,7 +11,7 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
         _sql = sql;
     }
 
-    public async Task<AttreqhdrModel?> _01(AttreqhdrModel attreqhdr, string? schema, string? conn )
+    public async Task<AttreqhdrModel?> _01(AttreqhdrModel attreqhdr, string schema, string conn )
 	{
 		string sql = $@"Insert into {schema}.Attreqhdr 
                             (UserId,  EmpNumber,  DateRequested,  CovStart,  CovEnd,  AttReqTypeId,  Remarks,  Status,  EmpNumber_Approver,  TotHrs) values 
@@ -24,9 +24,9 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 	}
 
 
-    public async Task<List<AttreqhdrModel?>> _02s(int? id, string? schema, string? conn)
+    public async Task<List<AttreqhdrModel?>> _02s(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, UserId, EmpNumber, DateRequested, CovStart, CovEnd, 
+        string sql = $@"select  Id, UserId, EmpNumber, DateRequested, CovStart, CovEnd, 
                                 AttReqTypeId, Remarks, Status, EmpNumber_Approver, TotHrs 
                         from {schema}.Attreqhdr where Id = @Id";
         var data = await _sql.FetchData<AttreqhdrModel?, dynamic> (sql, new { Id = id }, conn);
@@ -34,9 +34,9 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
     }
     
     public async Task<List<AttreqhdrModel?>> _02ByUserId_ByTypeId_ByStatus
-    (int? userid, int? typeId, List<string> status, string? pisdb, string? opisdb, string? conn)
+    (int userid, int typeId, List<string> status, string pisdb, string opisdb, string conn)
     {
-        string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*
+        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*
                         from      {pisdb}.Attreqhdr h
                         left join {opisdb}.empmas e on e.Empnumber = h.EmpNumber_Approver    
                         where h.UserId = @UserId and h.AttReqTypeId = @TypeId and h.Status in @Status ";
@@ -45,9 +45,9 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
         return data ?? [];
     }
     
-    public async Task<List<AttreqhdrModel?>> _02ForApproval_PerApprover(string? approver_empnumber, string? pisdb, string? conn)
+    public async Task<List<AttreqhdrModel?>> _02ForApproval_PerApprover(string approver_empnumber, string pisdb, string conn)
     {
-        string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName, h.*
+        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName, h.*
                         from      {pisdb}.Attreqhdr h
                         left join {pisdb}.empmas e on e.Id = h.UserId    
                         where h.Empnumber_Approver = @EmpNumber_Approver and Status in ('F', 'FA') ";
@@ -56,7 +56,8 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
         return data ?? [];
     }
 
-    public async Task<AttreqhdrModel?> _03(int? id,AttreqhdrModel attreqhdr, string? schema, string? conn)
+
+    public async Task<AttreqhdrModel?> _03(int id,AttreqhdrModel attreqhdr, string schema, string conn)
 	{
 		string sql = $@"Update {schema}.Attreqhdr set 
                             DateRequested       = @DateRequested, 
@@ -72,44 +73,9 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 		return data?.FirstOrDefault();
 	}
     
-    public async Task _03Return(AttreqhdrModel arh, string? empNumber, string? schema, string? conn)
+    public async Task<AttreqhdrModel?> _03SendForApproval(AttreqhdrModel attreqhdr, string schema, string conn)
 	{
-		string sql = $@"Update {schema}.Attreqhdr set ApprRemarks = @ApprRemarks, Status = 'R' where Id = @Id;"; 
-		await _sql.ExecuteCmd<dynamic>(sql, new { Id = arh.Id, AppRemarks=arh.ApprRemarks }, conn);
-
-        AttreqhistModel h = new()
-        { AttReqHdrId = arh.Id,  DActionTaken = DateTime.Now,  SetStatusTo="R",  Empnumber_Approver = empNumber,  Remarks = "Return Request" }; 
-        
-        sql = $@"Insert into {schema}.attreqhist 
-                    (AttReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
-                    (@AttReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
-        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
-    }
-    
-    public async Task _03PartiallyApprove(AttreqhdrModel arh, string? empNumber, string? schema, string? conn)
-	{
-		string sql = $@"Update {schema}.Attreqhdr set EmpNumber_Approver  = @EmpNumber_Approver where Id = @Id;"; 
-		await _sql.ExecuteCmd<dynamic>(sql, new { Id = arh.Id, EmpNumber_Approver = empNumber }, conn);
-
-        AttreqhistModel h = new()
-        { 
-            AttReqHdrId = arh.Id, 
-            DActionTaken = DateTime.Now, 
-            SetStatusTo = "F", 
-            Empnumber_Approver = arh.EmpNumber_Approver, 
-            Remarks = $"Partially Aprove [{empNumber??""}]" 
-        };
-
-        sql = $@"Insert into {schema}.attreqhist 
-                    (AttReqHdrId,  DActionTaken,  SetStatusTo,  Empnumber_Approver,  Remarks) values 
-                    (@AttReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
-        await _sql.ExecuteCmd<dynamic>(sql, h, conn);
-    }
-
-    
-    public async Task<AttreqhdrModel?> _03SendForApproval(AttreqhdrModel attreqhdr, string? schema, string? conn)
-	{
-        string? sql = $@"Update {schema}.Attreqhdr set 
+        string sql = $@"Update {schema}.Attreqhdr set 
                             DateRequested       = @DateRequested, 
                             CovStart            = @CovStart, 
                             CovEnd              = @CovEnd, 
@@ -134,10 +100,10 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 		return data?.FirstOrDefault();
         
 	}
-    
-    public async Task<AttreqhdrModel?> _04(int? id, string? schema, string? conn)
+
+    public async Task<AttreqhdrModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Attreqhdr where Id = @Id;";
+        string sql = $@"Delete from {schema}.Attreqhdr where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Attreqhdr x where x.Id = @Id ;";
@@ -148,13 +114,11 @@ public class AttreqhdrDataAccess : IAttreqhdrDataAccess
 
 public interface IAttreqhdrDataAccess
 {
-    Task<AttreqhdrModel?>       _01(AttreqhdrModel attreqhdr, string? schema, string? conn);
-    Task<List<AttreqhdrModel?>> _02s(int? id, string? schema, string? conn);
-    Task<List<AttreqhdrModel?>> _02ByUserId_ByTypeId_ByStatus(int? userid, int? typeId, List<string> status, string? pisdb, string? opisdb, string? conn);
-    Task<List<AttreqhdrModel?>> _02ForApproval_PerApprover(string? approver_empnumber, string? pisdb, string? conn); 
-    Task<AttreqhdrModel?>       _03(int? id, AttreqhdrModel attreqhdr, string? schema, string? conn);
-    Task<AttreqhdrModel?>       _03SendForApproval(AttreqhdrModel attreqhdr, string? schema, string? conn);
-    Task                        _03Return(AttreqhdrModel arh, string? empNumber, string? schema, string? conn);
-    Task                        _03PartiallyApprove(AttreqhdrModel arh, string? empNumber, string? schema, string? conn); 
-    Task<AttreqhdrModel?>       _04(int? id, string? schema, string? conn);
+    Task<AttreqhdrModel?> _01(AttreqhdrModel attreqhdr, string schema, string conn);
+    Task<List<AttreqhdrModel?>> _02s(int id, string schema, string conn);
+    Task<List<AttreqhdrModel?>> _02ByUserId_ByTypeId_ByStatus(int userid, int typeId, List<string> status, string pisdb, string opisdb, string conn);
+    Task<List<AttreqhdrModel?>> _02ForApproval_PerApprover(string approver_empnumber, string pisdb, string conn); 
+    Task<AttreqhdrModel?> _03(int id, AttreqhdrModel attreqhdr, string schema, string conn);
+    Task<AttreqhdrModel?> _03SendForApproval(AttreqhdrModel attreqhdr, string schema, string conn); 
+    Task<AttreqhdrModel?> _04(int id, string schema, string conn);
 }

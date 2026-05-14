@@ -14,9 +14,9 @@ public class _00ProvincestateDataAccess : I_00ProvincestateDataAccess
         _sql = sql;
     }
 
-    public async Task<ProvinceStateModel?> _01(ProvinceStateModel provincestate, string? schema, string? conn)
+    public async Task<ProvinceStateModel?> _01(ProvinceStateModel provincestate, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Provincestate (Code, Name, CountryId) values (@Code, @Name, @CountryId)";
+        string sql = $@"Insert into {schema}.Provincestate (Code, Name, CountryId) values (@Code, @Name, @CountryId)";
         await _sql.ExecuteCmd<dynamic>(sql, provincestate, conn);
         sql = $@"SELECT * FROM {schema}.Provincestate WHERE ID = (SELECT @@IDENTITY)";
 
@@ -26,16 +26,16 @@ public class _00ProvincestateDataAccess : I_00ProvincestateDataAccess
     }
 
 
-    public async Task<ProvinceStateModel?> _02(int? id, string? schema, string? conn)
+    public async Task<ProvinceStateModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, Code, Name, CountryId from {schema}.Provincestate where Id = @Id";
+        string sql = $@"select  Id, Code, Name, CountryId from {schema}.Provincestate where Id = @Id";
         var data = await _sql.FetchData<ProvinceStateModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task<List<ProvinceStateModel?>?> _02ByCountryId(int? countryId, string? schema, string? conn)
+    public async Task<List<ProvinceStateModel?>?> _02ByCountryId(int countryId, string schema, string conn)
     {
-        string? sql = $@"select  Id, Code, Name, CountryId from {schema}.Provincestate 
+        string sql = $@"select  Id, Code, Name, CountryId from {schema}.Provincestate 
                             where CountryId = @CountryId
                             order by Name " ;
         var data = await _sql.FetchData<ProvinceStateModel?, dynamic>(sql, new { CountryId = countryId }, conn);
@@ -43,9 +43,9 @@ public class _00ProvincestateDataAccess : I_00ProvincestateDataAccess
     }
 
 
-    public async Task<ProvinceStateModel?> _03(int? id, ProvinceStateModel provincestate, string? schema, string? conn)
+    public async Task<ProvinceStateModel?> _03(int id, ProvinceStateModel provincestate, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Provincestate set Code = @Code, Name = @Name, CountryId = @CountryId where Id = @Id;";
+        string sql = $@"Update {schema}.Provincestate set Code = @Code, Name = @Name, CountryId = @CountryId where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, provincestate, conn);
 
         sql = $@" select  * from {schema}.Provincestate x where x.Id = @Id ;";
@@ -53,9 +53,9 @@ public class _00ProvincestateDataAccess : I_00ProvincestateDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<ProvinceStateModel?> _04(int? id, string? schema, string? conn)
+    public async Task<ProvinceStateModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Provincestate where Id = @Id;";
+        string sql = $@"Delete from {schema}.Provincestate where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Provincestate x where x.Id = @Id ;";

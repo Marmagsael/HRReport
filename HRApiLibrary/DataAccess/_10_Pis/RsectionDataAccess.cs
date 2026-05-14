@@ -14,9 +14,9 @@ public class RsectionDataAccess : IRsectionDataAccess
         _sql = sql;
     }
 
-    public async Task<RsectionModel?> _01(RsectionModel rsection, string? schema, string? conn)
+    public async Task<RsectionModel?> _01(RsectionModel rsection, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Rsection 
+        string sql = $@"Insert into {schema}.Rsection 
                             (Departmentid,  SName,  Name ) values 
                             (@Departmentid, @SName, @Name ); 
                         SELECT * FROM {schema}.Rsection WHERE ID = (SELECT @@IDENTITY) ";
@@ -25,30 +25,30 @@ public class RsectionDataAccess : IRsectionDataAccess
     }
 
 
-    public async Task<RsectionModel?> _02(int? id, string? schema, string? conn)
+    public async Task<RsectionModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Rsection where Id = @Id";
+        string sql = $@"select  * from {schema}.Rsection where Id = @Id";
         var data = await _sql.FetchData<RsectionModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<RsectionModel?>?> _02(string? schema, string? conn)
+    public async Task<List<RsectionModel?>?> _02(string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Rsection order by Name";
+        string sql = $@"select  * from {schema}.Rsection order by Name";
         var data = await _sql.FetchData<RsectionModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
-    public async Task<List<RsectionModel?>?> _02ByDepartmentId(int? departmentId, string? schema, string? conn)
+    public async Task<List<RsectionModel?>?> _02ByDepartmentId(int departmentId, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Rsection where DepartmentId = @DepartmentId order by Name";
+        string sql = $@"select  * from {schema}.Rsection where DepartmentId = @DepartmentId order by Name";
         var data = await _sql.FetchData<RsectionModel?, dynamic>(sql, new { DepartmentId = departmentId }, conn);
         return data;
     }
 
-    public async Task<RsectionModel?> _03(int? id, RsectionModel rsection, string? schema, string? conn)
+    public async Task<RsectionModel?> _03(int id, RsectionModel rsection, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Rsection set 
+        string sql = $@"Update {schema}.Rsection set 
                             Departmentid    = @Departmentid, 
                             SName           = @SName, 
                             Name            = @Name where Id = @Id;";
@@ -59,9 +59,9 @@ public class RsectionDataAccess : IRsectionDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<RsectionModel?> _04(int? id, string? schema, string? conn)
+    public async Task<RsectionModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Rsection where Id = @Id;";
+        string sql = $@"Delete from {schema}.Rsection where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Rsection x where x.Id = @Id ;";

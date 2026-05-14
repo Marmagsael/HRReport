@@ -14,9 +14,9 @@ public class _00UsercompanyaddDataAccess : I_00UsercompanyaddDataAccess
         _sql = sql;
     }
 
-    public async Task<UserCompanyModel?> _01(UserCompanyModel userscompany, string? schema, string? conn)
+    public async Task<UserCompanyModel?> _01(UserCompanyModel userscompany, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Userscompany 
+        string sql = $@"Insert into {schema}.Userscompany 
                             (OwnerId,  CompanySName,  CompanyName,  CountryId,  RegionId,  CityId,  Zipcode,  CurrencyId,  StorageId,  AMSSchema,  ApplicantSchema,  PISSchema,  PaySchema) values 
                             (@OwnerId, @CompanySName, @CompanyName, @CountryId, @RegionId, @CityId, @Zipcode, @CurrencyId, @StorageId, @AMSSchema, @ApplicantSchema, @PISSchema, @PaySchema); 
                         SELECT * FROM {schema}.Userscompany WHERE ID = (SELECT @@IDENTITY)";
@@ -25,18 +25,18 @@ public class _00UsercompanyaddDataAccess : I_00UsercompanyaddDataAccess
     }
 
 
-    public async Task<UserCompanyModel?> _02(int? id, string? schema, string? conn)
+    public async Task<UserCompanyModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  Id, OwnerId, CompanySName, CompanyName, CountryId, RegionId, CityId, Zipcode, CurrencyId, StorageId, AMSSchema, ApplicantSchema, PISSchema, PaySchema 
+        string sql = $@"select  Id, OwnerId, CompanySName, CompanyName, CountryId, RegionId, CityId, Zipcode, CurrencyId, StorageId, AMSSchema, ApplicantSchema, PISSchema, PaySchema 
                             from {schema}.Userscompany where Id = @Id";
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<UserCompanyModel?> _03(int? id, UserCompanyModel userscompany, string? schema, string? conn)
+    public async Task<UserCompanyModel?> _03(int id, UserCompanyModel userscompany, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Userscompany set 
+        string sql = $@"Update {schema}.Userscompany set 
                             OwnerId         = @OwnerId, 
                             CompanySName    = @CompanySName,  
                             CompanyName     = @CompanyName,  
@@ -57,9 +57,9 @@ public class _00UsercompanyaddDataAccess : I_00UsercompanyaddDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<UserCompanyModel?> _04(int? id, string? schema, string? conn)
+    public async Task<UserCompanyModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Userscompany where Id = @Id;
+        string sql = $@"Delete from {schema}.Userscompany where Id = @Id;
                         Select  * from {schema}.Userscompany x where x.Id = @Id ;";
         var data = await _sql.FetchData<UserCompanyModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();

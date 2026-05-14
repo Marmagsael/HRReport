@@ -13,9 +13,9 @@ public class TranreinstatementDataAccess : ITranreinstatementDataAccess
         _sql = sql;
     }
 
-    public async Task<TranreinstatementModel?> _01(TranreinstatementModel Tranreinstatement, string? schema, string? conn)
+    public async Task<TranreinstatementModel?> _01(TranreinstatementModel Tranreinstatement, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Tranreinstatement (TranNumber, IdEmpmas, PrepDate, DepStart, DepEnd, DateApproved,  Mode, IdEmploymentType, IdDivision, IdSection, IdDepartment, IdPosition, IdDesignation, IdPayrollGrp, IdDeployment, IdApprover, MarkApprove) values (@TranNumber, @IdEmpmas, @PrepDate, @DepStart, @DepEnd, @DateApproved,  @Mode, @IdEmploymentType, @IdDivision, @IdSection, @IdDepartment, @IdPosition, @IdDesignation, @IdPayrollGrp, @IdDeployment, @IdApprover, @MarkApprove)";
+        string sql = $@"Insert into {schema}.Tranreinstatement (TranNumber, IdEmpmas, PrepDate, DepStart, DepEnd, DateApproved,  Mode, IdEmploymentType, IdDivision, IdSection, IdDepartment, IdPosition, IdDesignation, IdPayrollGrp, IdDeployment, IdApprover, MarkApprove) values (@TranNumber, @IdEmpmas, @PrepDate, @DepStart, @DepEnd, @DateApproved,  @Mode, @IdEmploymentType, @IdDivision, @IdSection, @IdDepartment, @IdPosition, @IdDesignation, @IdPayrollGrp, @IdDeployment, @IdApprover, @MarkApprove)";
         await _sql.ExecuteCmd<dynamic>(sql, Tranreinstatement, conn);
         sql = $@"SELECT * FROM {schema}.Tranreinstatement WHERE ID = (SELECT @@IDENTITY)";
 
@@ -25,32 +25,32 @@ public class TranreinstatementDataAccess : ITranreinstatementDataAccess
     }
 
 
-    public async Task<TranreinstatementModel?> _02(int? id, string? schema, string? conn)
+    public async Task<TranreinstatementModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Tranreinstatement where Id = @Id";
+        string sql = $@"select  * from {schema}.Tranreinstatement where Id = @Id";
         var data = await _sql.FetchData<TranreinstatementModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<TranreinstatementModel?> _02ByEmpmasId(int? empmasId, string? schema, string? conn)
+    public async Task<TranreinstatementModel?> _02ByEmpmasId(int empmasId, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Tranreinstatement where IdEmpmas = @IdEmpmas;";
+        string sql = $@"select  * from {schema}.Tranreinstatement where IdEmpmas = @IdEmpmas;";
         var data = await _sql.FetchData<TranreinstatementModel?, dynamic>(sql, new { IdEmpmas = empmasId }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<TranreinstatementModel?> _02ByTrnNumber(string? trnNumber, string? schema, string? conn)
+    public async Task<TranreinstatementModel?> _02ByTrnNumber(string trnNumber, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Tranreinstatement where TranNumber = @TranNumber";
+        string sql = $@"select  * from {schema}.Tranreinstatement where TranNumber = @TranNumber";
         var data = await _sql.FetchData<TranreinstatementModel?, dynamic>(sql, new { TranNumber = trnNumber }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<TranreinstatementModel?> _03(int? id, TranreinstatementModel Tranreinstatement, string? schema, string? conn)
+    public async Task<TranreinstatementModel?> _03(int id, TranreinstatementModel Tranreinstatement, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Tranreinstatement set IdEmpmas = @IdEmpmas, TranNumber = @TranNumber, PrepDate = @PrepDate, DepStart = @DepStart, DepEnd = @DepEnd, DateApproved = @DateApproved,  Mode = @Mode, IdEmploymentType = @IdEmploymentType, IdDivision = @IdDivision, IdSection = @IdSection, IdDepartment = @IdDepartment, IdPosition = @IdPosition, IdDesignation = @IdDesignation, IdPayrollGrp = @IdPayrollGrp, IdDeployment = @IdDeployment, IdApprover = @IdApprover, MarkApprove = @MarkApprove where Id = @Id;";
+        string sql = $@"Update {schema}.Tranreinstatement set IdEmpmas = @IdEmpmas, TranNumber = @TranNumber, PrepDate = @PrepDate, DepStart = @DepStart, DepEnd = @DepEnd, DateApproved = @DateApproved,  Mode = @Mode, IdEmploymentType = @IdEmploymentType, IdDivision = @IdDivision, IdSection = @IdSection, IdDepartment = @IdDepartment, IdPosition = @IdPosition, IdDesignation = @IdDesignation, IdPayrollGrp = @IdPayrollGrp, IdDeployment = @IdDeployment, IdApprover = @IdApprover, MarkApprove = @MarkApprove where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, Tranreinstatement, conn);
 
         sql = $@" select  * from {schema}.Tranreinstatement x where x.Id = @Id ;";
@@ -58,9 +58,9 @@ public class TranreinstatementDataAccess : ITranreinstatementDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<TranreinstatementModel?> _04(int? id, string? schema, string? conn)
+    public async Task<TranreinstatementModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Tranreinstatement where Id = @Id;";
+        string sql = $@"Delete from {schema}.Tranreinstatement where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Tranreinstatement x where x.Id = @Id ;";

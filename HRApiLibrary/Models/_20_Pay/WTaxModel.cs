@@ -2,7 +2,7 @@
 
 public class WTaxModel
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
 
     public DateTime From_ { get; set; }
 

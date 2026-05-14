@@ -12,9 +12,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             _sql = sql;
         }
 
-        public async Task<OEmergencModel?> _01(OEmergencModel emergenc, string? schema, string? conn)
+        public async Task<OEmergencModel?> _01(OEmergencModel emergenc, string schema, string conn)
         {
-            string? sql = $@"Insert into {schema}.Emergenc (EMPNUMBER, NAME, ADDR, RELA, TEL) values (@EMPNUMBER, @NAME, @ADDR, @RELA, @TEL)";
+            string sql = $@"Insert into {schema}.Emergenc (EMPNUMBER, NAME, ADDR, RELA, TEL) values (@EMPNUMBER, @NAME, @ADDR, @RELA, @TEL)";
             await _sql.ExecuteCmd<dynamic>(sql, emergenc, conn);
 
             sql = $@"SELECT * FROM {schema}.Emergenc WHERE ID = (SELECT @@IDENTITY)";
@@ -25,17 +25,17 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         }
 
 
-        public async Task<List<OEmergencModel?>?> _02(string? empnumber, string? schema, string? conn)
+        public async Task<List<OEmergencModel?>?> _02(string empnumber, string schema, string conn)
         {
-            string? sql = $@"select  EMPNUMBER, NAME, ADDR, RELA, TEL from {schema}.Emergenc where Empnumber = @Empnumber";
+            string sql = $@"select  EMPNUMBER, NAME, ADDR, RELA, TEL from {schema}.Emergenc where Empnumber = @Empnumber";
             var data = await _sql.FetchData<OEmergencModel?, dynamic>(sql, new {Empnumber =  empnumber  }, conn);
             return data;
         }
 
 
-        public async Task<OEmergencModel?> _03(int? id, OEmergencModel emergenc, string? schema, string? conn)
+        public async Task<OEmergencModel?> _03(int id, OEmergencModel emergenc, string schema, string conn)
         {
-            string? sql = $@"Update {schema}.Emergenc set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, RELA = @RELA, TEL = @TEL where Id = @Id;";
+            string sql = $@"Update {schema}.Emergenc set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, RELA = @RELA, TEL = @TEL where Id = @Id;";
             await _sql.ExecuteCmd<dynamic>(sql, emergenc, conn);
 
             sql = $@" select  * from {schema}.Emergenc x where x.Id = @Id ;";
@@ -43,9 +43,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
-        public async Task<OEmergencModel?> _04(int? id, string? schema, string? conn)
+        public async Task<OEmergencModel?> _04(int id, string schema, string conn)
         {
-            string? sql = $@"Delete from {schema}.Emergenc where Id = @Id;";
+            string sql = $@"Delete from {schema}.Emergenc where Id = @Id;";
             await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
             sql = $@" select  * from {schema}.Emergenc x where x.Id = @Id ;";
@@ -58,8 +58,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
 public interface IOEmergencDataAccess
 {
-    Task<OEmergencModel?> _01(OEmergencModel emergenc, string? schema, string? conn);
-    Task<List<OEmergencModel?>?> _02(string? empnumber, string? schema, string? conn);
-    Task<OEmergencModel?> _03(int? id, OEmergencModel emergenc, string? schema, string? conn);
-    Task<OEmergencModel?> _04(int? id, string? schema, string? conn);
+    Task<OEmergencModel?> _01(OEmergencModel emergenc, string schema, string conn);
+    Task<List<OEmergencModel?>?> _02(string empnumber, string schema, string conn);
+    Task<OEmergencModel?> _03(int id, OEmergencModel emergenc, string schema, string conn);
+    Task<OEmergencModel?> _04(int id, string schema, string conn);
 }

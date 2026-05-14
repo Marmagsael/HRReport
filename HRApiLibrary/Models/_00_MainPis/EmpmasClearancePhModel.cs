@@ -2,7 +2,7 @@
 
 public class EmpmasClearancePhModel
 {
-    public int? Id { get; set; }
+    public int Id { get; set; }
 
     public DateTime Nbi_Taken { get; set; }
 

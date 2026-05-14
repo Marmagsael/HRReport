@@ -17,7 +17,7 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
 
 
 
-    public async Task _01FromCOA(EmpratesdtlModel empratesdtl, double ratePerHr, double ratePerDay, string? schema, string? conn)
+    public async Task _01FromCOA(EmpratesdtlModel empratesdtl, double ratePerHr, double ratePerDay, string schema, string conn)
     {
         if (ratePerHr < 1 || ratePerDay < 1) return;
 
@@ -26,7 +26,7 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
         if (res == null || res.Count < 1 )
         {
             //--- Create the Account -----------------------------------------
-            string? sql = $@"insert into {schema}.Empratesdtl 
+            string sql = $@"insert into {schema}.Empratesdtl 
                                     (EmpmasId,  PayrollGrpId,  AcctNumber,  Rate,        PayrateId) values 
                                     (@EmpmasId, @PayrollGrpId, 'E001',      @RatePerDay, 2) ; 
 
@@ -44,9 +44,9 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
         }
     }
 
-    public async Task _01(EmpratesdtlModel empratesdtl, string? schema, string? conn)
+    public async Task _01(EmpratesdtlModel empratesdtl, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Empratesdtl 
+        string sql = $@"Insert into {schema}.Empratesdtl 
                         (EmpmasId,  PayrollGrpId,  AcctNumber,  Rate,  PayrateId) values 
                         (@EmpmasId, @PayrollGrpId, @AcctNumber, @Rate, @PayrateId)";
         await _sql.ExecuteCmd<dynamic>(sql, empratesdtl, conn);
@@ -54,9 +54,9 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
     }
 
 
-    public async Task<List<EmpratesdtlModel?>?> _02ByEmpmasId(int? empmasId, string? schema, string? conn)
+    public async Task<List<EmpratesdtlModel?>?> _02ByEmpmasId(int empmasId, string schema, string conn)
     {
-        string? sql = $@"select  c.AcctName, c.RateOverBasic, ed.* 
+        string sql = $@"select  c.AcctName, c.RateOverBasic, ed.* 
                         from {schema}.Empratesdtl ed
                         left join {schema}.Coa c on c.AcctNumber = ed.AcctNumber 
                         where ed.EmpmasId = @EmpmasId";
@@ -64,9 +64,9 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
         return data;
     }
     
-    public async Task<List<EmpratesdtlModel?>?> _02ByEmpmasIdPayrollgrpId(int? empmasId, int? payrollgrpId, string? schema, string? conn)
+    public async Task<List<EmpratesdtlModel?>?> _02ByEmpmasIdPayrollgrpId(int empmasId, int payrollgrpId, string schema, string conn)
     {
-        string? sql = $@"select  c.AcctName, c.RateOverBasic, ed.* 
+        string sql = $@"select  c.AcctName, c.RateOverBasic, ed.* 
                         from {schema}.Empratesdtl ed
                         left join {schema}.Coa c on c.AcctNumber = ed.AcctNumber 
                         where ed.EmpmasId = @EmpmasId and  PayrollgrpId = @PayrollgrpId";
@@ -75,9 +75,9 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
         return data;
     }
     
-    public async Task<List<EmpratesdtlModel?>?> _02ByPayrollgrpId(int? payrollgrpId, string? schema, string? conn)
+    public async Task<List<EmpratesdtlModel?>?> _02ByPayrollgrpId(int payrollgrpId, string schema, string conn)
     {
-        string? sql = $@"select  c.AcctName, c.RateOverBasic, ed.* 
+        string sql = $@"select  c.AcctName, c.RateOverBasic, ed.* 
                         from {schema}.Empratesdtl ed
                         left join {schema}.Coa c on c.AcctNumber = ed.AcctNumber 
                         where ed.PayrollGrpId = @PayrollGrpId";
@@ -85,9 +85,9 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
         return data;
     }
     
-    public async Task<EmpratesdtlModel?> _02ByPK(int? empmasId, int? payrollgrpId, string? acctNumber, string? schema, string? conn)
+    public async Task<EmpratesdtlModel?> _02ByPK(int empmasId, int payrollgrpId, string acctNumber, string schema, string conn)
     {
-        string? sql = $@"select  c.AcctName, ed.* 
+        string sql = $@"select  c.AcctName, ed.* 
                         from {schema}.Empratesdtl ed
                         left join {schema}.Coa c on c.AcctNumber = ed.AcctNumber 
                         where ed.EmpmasId = @EmpmasId and ed.PayrollgrpId=@PayrollgrpId and ed.AcctNumber=@AcctNumber";
@@ -97,7 +97,7 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
     }
 
 
-    public async Task<EmpratesdtlModel?> _03(EmpratesdtlModel empratesdtl, string? schema, string? conn)
+    public async Task<EmpratesdtlModel?> _03(EmpratesdtlModel empratesdtl, string schema, string conn)
     {
         
         var sql = $@"Update {schema}.Empratesdtl set 
@@ -154,7 +154,7 @@ public class EmpratesdtlDataAccess : IEmpratesdtlDataAccess
         return data;
     }
 
-    public async Task<EmpratesdtlModel?> _04(EmpratesdtlModel empratesdtl, string? schema, string? conn)
+    public async Task<EmpratesdtlModel?> _04(EmpratesdtlModel empratesdtl, string schema, string conn)
     {
         var sql = $"""
                    Delete from {schema}.Empratesdtl 

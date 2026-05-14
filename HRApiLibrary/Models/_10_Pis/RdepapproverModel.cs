@@ -2,7 +2,7 @@
 
 public class RdepapproverModel
 {
-    public int?          Systemid    { get; set; } = 0;
+    public int          Systemid    { get; set; } = 0;
     public string?      Module      { get; set; }
     //---------------------------------------
     public string?      Emplastnm    { get; set; } = string.Empty;

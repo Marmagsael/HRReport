@@ -2,12 +2,12 @@
 
 public class EmpmasgrpModel
 {
-    public int?          EmpmasId            { get; set; } = 0;
-    public int?          SecId               { get; set; } = 0;
-    public int?          DepId               { get; set; } = 0;
-    public int?          DivId               { get; set; } = 0;
-    public int?          LeavegrpId          { get; set; } = 0;
-    public int?          PayrollgrpId        { get; set; } = 0;
+    public int          EmpmasId            { get; set; } = 0;
+    public int          SecId               { get; set; } = 0;
+    public int          DepId               { get; set; } = 0;
+    public int          DivId               { get; set; } = 0;
+    public int          LeavegrpId          { get; set; } = 0;
+    public int          PayrollgrpId        { get; set; } = 0;
 
     //---------------------------------------------------------------------------
     public string?      EmpmasName              { get; set; } = string.Empty;

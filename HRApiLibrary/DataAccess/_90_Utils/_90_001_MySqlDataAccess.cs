@@ -15,7 +15,7 @@ public class _90_001_MySqlDataAccess : I_90_001_MySqlDataAccess
         _config = config;
     }
 
-    public async Task<List<T>> FetchData<T, U>(string? sql, U parameters, string? connName = "MySqlConn")
+    public async Task<List<T>> FetchData<T, U>(string sql, U parameters, string connName = "MySqlConn")
     {
         var connString = _config.GetConnectionString(connName);
         using (IDbConnection conn = new MySqlConnection(connString))
@@ -25,7 +25,7 @@ public class _90_001_MySqlDataAccess : I_90_001_MySqlDataAccess
         }
     }
     
-    public async Task<List<T>> FetchData<T, U>(string? sql, U parameters, string? db, string? connName)
+    public async Task<List<T>> FetchData<T, U>(string sql, U parameters, string db, string connName)
     {
         var defConn = _config.GetConnectionString(connName);
         var connString = $"{defConn}; database={db}";
@@ -34,7 +34,7 @@ public class _90_001_MySqlDataAccess : I_90_001_MySqlDataAccess
         return list.ToList();
     }
     
-    public async Task ExecuteCmd<T>(string? sql, T parameters, string? connName = "MySqlConn")
+    public async Task ExecuteCmd<T>(string sql, T parameters, string connName = "MySqlConn")
     {
         var connString = _config.GetConnectionString(connName);
         using (IDbConnection conn = new MySqlConnection(connString))
@@ -42,7 +42,7 @@ public class _90_001_MySqlDataAccess : I_90_001_MySqlDataAccess
             await conn.ExecuteAsync(sql, parameters);
         }
     }
-    public async Task ExecuteCmd<T>(string? sql, T parameters, string? db, string? connName)
+    public async Task ExecuteCmd<T>(string sql, T parameters, string db, string connName)
     {
         var defConn = _config.GetConnectionString(connName);
         var connString = $"{defConn}; database={db}";
@@ -50,7 +50,7 @@ public class _90_001_MySqlDataAccess : I_90_001_MySqlDataAccess
         await conn.ExecuteAsync(sql, parameters);
     }
     
-    public IDbConnection GetConnString(string? connName = "MySqlConn")
+    public IDbConnection GetConnString(string connName = "MySqlConn")
     {
         var connString = _config.GetConnectionString(connName);
         return new MySqlConnection(connString);

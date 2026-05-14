@@ -13,9 +13,9 @@ public class _00CompanyusersDataAccess : I_00CompanyusersDataAccess
         _sql = sql;
     }
 
-    public async Task<CompanyUsersModel?> _01(CompanyUsersModel companyusers, string? schema, string? conn)
+    public async Task<CompanyUsersModel?> _01(CompanyUsersModel companyusers, string schema, string conn)
     {
-        string? sql = $@"Insert into {schema}.Companyusers 
+        string sql = $@"Insert into {schema}.Companyusers 
                         (UserId, CompanyId, Status, DateInvited, DateAccepted, CompanyUserTypeId, InvitedById) values 
                         (@UserId, @CompanyId, @Status, @DateInvited, @DateAccepted, @CompanyUserTypeId, @InvitedById) 
                         on duplicate key update Status = 'A', DateAccepted = @DateAccepted, CompanyUserTypeId = 3,  
@@ -27,16 +27,16 @@ public class _00CompanyusersDataAccess : I_00CompanyusersDataAccess
     }
 
 
-    public async Task<CompanyUsersModel?> _02(int? id, string? schema, string? conn)
+    public async Task<CompanyUsersModel?> _02(int id, string schema, string conn)
     {
-        string? sql = $@"select  * from {schema}.Companyusers where Id = @Id";
+        string sql = $@"select  * from {schema}.Companyusers where Id = @Id";
         var data = await _sql.FetchData<CompanyUsersModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<CompanyUsersModel?>?> _02ByUserId(int? userId, string? schema="Main", string? conn="MySqlConn")
+    public async Task<List<CompanyUsersModel?>?> _02ByUserId(int userId, string schema="Main", string conn="MySqlConn")
     {
-        string? sql = $@"select  c.*
+        string sql = $@"select  c.*
                           , uc.CompanySName, uc.CompanyName, c1.Name CountryName 
                   from {schema}.Companyusers c 
                   left join {schema}.UsersCompany uc on uc.Id = c.CompanyId 
@@ -45,9 +45,9 @@ public class _00CompanyusersDataAccess : I_00CompanyusersDataAccess
         var data = await _sql.FetchData<CompanyUsersModel?, dynamic>(sql, new { UserId = userId }, conn);
         return data;
     }
-    public async Task<List<CompanyUsersModel?>?> _02ByUseridCompanyid(int? userId, int? companyId, string? schema="Main", string? conn="MySqlConn")
+    public async Task<List<CompanyUsersModel?>?> _02ByUseridCompanyid(int userId, int companyId, string schema="Main", string conn="MySqlConn")
     {
-        string? sql = $@"select  c.*
+        string sql = $@"select  c.*
                                 , uc.CompanySName, uc.CompanyName, c1.Name CountryName 
                         from {schema}.Companyusers c 
                         left join {schema}.UsersCompany uc on uc.Id = c.CompanyId 
@@ -59,9 +59,9 @@ public class _00CompanyusersDataAccess : I_00CompanyusersDataAccess
     
 
 
-    public async Task<CompanyUsersModel?> _03(int? id, CompanyUsersModel companyusers, string? schema, string? conn)
+    public async Task<CompanyUsersModel?> _03(int id, CompanyUsersModel companyusers, string schema, string conn)
     {
-        string? sql = $@"Update {schema}.Companyusers set 
+        string sql = $@"Update {schema}.Companyusers set 
                             UserId          = @UserId,  
                             CompanyId       = @CompanyId,  
                             Status          = @Status,  
@@ -76,9 +76,9 @@ public class _00CompanyusersDataAccess : I_00CompanyusersDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<CompanyUsersModel?> _04(int? id, string? schema, string? conn)
+    public async Task<CompanyUsersModel?> _04(int id, string schema, string conn)
     {
-        string? sql = $@"Delete from {schema}.Companyusers where Id = @Id;";
+        string sql = $@"Delete from {schema}.Companyusers where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Companyusers x where x.Id = @Id ;";

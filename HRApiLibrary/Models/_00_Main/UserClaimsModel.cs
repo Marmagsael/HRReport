@@ -4,7 +4,7 @@ namespace HRApiLibrary.Models._00_Main;
 
 public class UserClaimsModel
 {
-    public int?                      UserId                  { get; set; } = -1;
+    public int                      UserId                  { get; set; } = -1;
     public string?                  UserName                { get; set; } = string.Empty;
     public string?                  DefCompanyId            { get; set; } = string.Empty;
     public string?                  SchemaMain              { get; set; } = string.Empty;

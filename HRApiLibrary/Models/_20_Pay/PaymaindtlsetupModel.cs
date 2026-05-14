@@ -2,7 +2,7 @@
 
 public class PaymaindtlsetupModel
 {
-    public int?          Id                      { get; set; }
+    public int          Id                      { get; set; }
     public string?      Daywrk                  { get; set; }
     public string?      Absent                  { get; set; }
     public string?      Late                    { get; set; }

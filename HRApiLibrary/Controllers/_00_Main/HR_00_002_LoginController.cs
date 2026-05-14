@@ -21,7 +21,7 @@ public class HR_00_002_LoginController : ControllerBase
     }
 
     [HttpGet("loginByLoginName/{loginname}/{password}/{schema}/{conn}")]
-    public async Task<ActionResult<UsersModel>> _02LoginByLoginName(string? loginname, string? password, string? schema = "Main", string? conn = "MySqlConn")
+    public async Task<ActionResult<UsersModel>> _02LoginByLoginName(string loginname, string password, string schema = "Main", string conn = "MySqlConn")
     {
         try
         {
@@ -35,7 +35,7 @@ public class HR_00_002_LoginController : ControllerBase
     }
 
     [HttpGet("loginByEmail/{email}/{password}/{schema}/{conn}")]
-    public async Task<ActionResult<UsersModel>> _02LoginByEmail(string? email, string? password, string? schema = "Main", string? conn = "MySqlConn")
+    public async Task<ActionResult<UsersModel>> _02LoginByEmail(string email, string password, string schema = "Main", string conn = "MySqlConn")
     {
         try
         {
@@ -49,7 +49,7 @@ public class HR_00_002_LoginController : ControllerBase
     }
 
     [HttpGet("Token/{id}/{userName}/{schema}")]
-    public async Task<ActionResult<string>> _02Token(int? id, string? userName, string? schema = "Main")
+    public async Task<ActionResult<string>> _02Token(int id, string userName, string schema = "Main")
     {
         return await _login.CreateToken(id, userName, schema);
     }
