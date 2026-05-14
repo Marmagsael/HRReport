@@ -389,7 +389,7 @@
                     @* ----- Contribution Basis  ----------*@
                     <div class="w-170p p-2 t-maroon ">Contribution Basis </div>
                     <div>
-                        <RadzenDropDown TValue="int"
+                        <RadzenDropDown TValue="int?"
                                         Data="@pcs"
                                         TextProperty="Source"
                                         ValueProperty="Id"
@@ -509,7 +509,6 @@
 
 
         Settings = await _settings._02(1, paydb!, conn!);
-
         imagePreviewUrl = Settings.LogoAddress ?? "";
         NotRerender = false;
         StateHasChanged();
@@ -518,9 +517,9 @@
     // ----- File Upload State -----
     private string? imagePreviewUrl = string.Empty;
     private byte[] buffer = Array.Empty<byte>();
-    private string folderPath = "";
-    private string filePath = "";
-    private string fileName = "";
+    private string? folderPath = "";
+    private string? filePath = "";
+    private string? fileName = "";
 
 
 
@@ -611,7 +610,7 @@
         }
 
         // Determine user folder
-        string uc = $"U{UserClaims.DefCompanyId}";
+        string? uc = $"U{UserClaims.DefCompanyId}";
 
         folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
 
@@ -620,17 +619,17 @@
             Directory.CreateDirectory(folderPath);
         }
 
-        string prefix = "complogo";
+        string? prefix = "complogo";
 
         // Remove old logo files
         DeleteFileIfExistsByPrefix(folderPath, prefix);
 
         // Build new filename with prefix
-        string newFileName = $"{prefix}_{fileName}";
+        string? newFileName = $"{prefix}_{fileName}";
         filePath = Path.Combine(folderPath, newFileName);
 
         // Relative path for DB
-        string relativePath = $"/images/{uc}/{newFileName}".Replace("\\", "/");
+        string? relativePath = $"/images/{uc}/{newFileName}".Replace("\\", "/");
 
         // Save new file
         await File.WriteAllBytesAsync(filePath, buffer);
@@ -648,7 +647,7 @@
         });
     }
 
-    void DeleteFileIfExistsByPrefix(string folderPath, string prefix)
+    void DeleteFileIfExistsByPrefix(string? folderPath, string? prefix)
     {
         if (!Directory.Exists(folderPath))
             return;
@@ -664,10 +663,10 @@
 
     private async Task RemoveImage()
     {
-        string uc   = $"U{UserClaims.DefCompanyId}";
+        string? uc   = $"U{UserClaims.DefCompanyId}";
        
         folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
-        string prefix = "complogo";
+        string? prefix = "complogo";
  
         // Delete existing logo file(s)
         DeleteFileIfExistsByPrefix(folderPath, prefix);

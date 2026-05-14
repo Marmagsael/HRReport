@@ -1,4 +1,5 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2106
 @using System.Globalization
@@ -24,7 +25,7 @@
                 <div class="d-flex flx-column gap-2 card p-2 w-300p">
                     <div class="text-muted p-2 pe-4 border-bottom"><small>Employment Duration From Hiring Date</small></div>
 
-                    <RadzenRadioButtonList @bind-Value="v.SelectedMonthsAgo" TValue="int" class="w-100 py-2">
+                    <RadzenRadioButtonList @bind-Value="v.SelectedMonthsAgo" TValue="int?" class="w-100 py-2">
 
                         <Items>
                             <RadzenRadioButtonListItem Text="3 Months" Value="1" class="w-100 my-2" />
@@ -69,7 +70,7 @@
 
 
 
-
+@inject ISettingsDataAccess _settings;
 @inject IOPisReportDataAccess _pisRep;
 @inject IOEmpstatDataAccess _empstat;
 @inject IOClientDataAccess _client;
@@ -78,7 +79,7 @@
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
     V00_RepVars rv { get; set; } = new();
     V2106Model  v = new();
-    int customMonthsAgo = 0;
+    int? customMonthsAgo = 0;
 
 
     // Gets the latest selected employee statuses/clients every time it is called
@@ -137,12 +138,11 @@
 
     private async Task LoadCompanyInfo()
     {
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        if (res?.Any() != true) return;
-
-        var r = res.First();
-        rv.ReportParams["CoName"] = r.CoName ?? "";
-        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        if (res == null) return;
+        var r = res;
+        rv.ReportParams["CoName"] = r.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAddress ?? "";
     }
 
     private async Task LoadEmployeeStatus()
@@ -190,7 +190,7 @@
         {
             rv.Isloaded = true;
 
-            var res = await _pisRep._02Empmas_ByDateHired(clients, statuses, rv.SelectedFilter, v.LnMonths, Uc.OpisDb!, Uc.Conn!);
+            var res = await _pisRep._02Empmas_ByDateHired(clients, statuses, rv.SelectedFilter??0, v.LnMonths, Uc.OpisDb!, Uc.Conn!);
             if ((res ?? []).Any())
             {
                 v.RepDtls = res!.Select(r => new R2106Model
@@ -325,7 +325,7 @@
         return true;
     }
 
-    private void Notify(NotificationSeverity severity, string summary, string detail)
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
     {
         _NotificationService.Notify(new NotificationMessage
         {

@@ -14,9 +14,9 @@ public class DeprecDataAccess : IDeprecDataAccess
         _sql = sql;
     }
 
-    public async Task<DeprecModel?> _01(DeprecModel deprec, string schema, string conn)
+    public async Task<DeprecModel?> _01(DeprecModel deprec, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Deprec 
+        string? sql = $@"Insert into {schema}.Deprec 
                         (EmpmasId,               DivId,               DepId,                SecId,              LeavegrpId,   PayrollgrpId, Positionid, EmploymentTypeId,  
                          EmpStatusId,            DHired,              DRegularization,      DTraineeStart,      DTraineeEnd,  
                          DContractualStart,      DContractualEnd,     DProbationaryStart,   DProbationaryEnd,  
@@ -37,9 +37,9 @@ public class DeprecDataAccess : IDeprecDataAccess
     }
 
 
-    public async Task<DeprecModel?> _02(int id, string schema, string conn)
+    public async Task<DeprecModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  d.*, p.Name Positionname, s.Name Empstatusname, 
+        string? sql = $@"select  d.*, p.Name Positionname, s.Name Empstatusname, 
                             d2.Name DivName, d1.Name DepName, sec.Name Secname, l.Name LeavegrpName , d3.Name DeploymentName
                         from {schema}.Deprec d 
                         left join {schema}.Position p       on p.Id     = d.Positionid 
@@ -54,9 +54,9 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<DeprecModel?> _02(int id, string schema, string payschema, string conn)
+    public async Task<DeprecModel?> _02(int? id, string? schema, string? payschema, string? conn)
     {
-        string sql = $@"select  d.*, p.Name Positionname, s.Name Empstatusname, 
+        string? sql = $@"select  d.*, p.Name Positionname, s.Name Empstatusname, 
                             d2.Name DivName,sec.Name SecName, d1.Name DepName, sec.Name Secname, l.Name LeavegrpName, d3.Name DeploymentName,
                             pgrp.Name Payrollgrpname 
                         from {schema}.Deprec d 
@@ -74,9 +74,9 @@ public class DeprecDataAccess : IDeprecDataAccess
     }
 
 
-    public async Task<DeprecModel?> _02ByEmpnumber(string empnumber, string schema, string conn)
+    public async Task<DeprecModel?> _02ByEmpnumber(string? empnumber, string? schema, string? conn)
     {
-        string sql = $@"select d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,   s.Name Empstatusname, 
+        string? sql = $@"select d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,   s.Name Empstatusname, 
                              d3.Name DeploymentName
                         from {schema}.Deprec d 
                         left join {schema}.Empmas e         on e.Id     = d.EmpmasId 
@@ -87,9 +87,9 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data.FirstOrDefault();
     }
 
-    public async Task<List<DeprecModel?>?> _02ByEmpmasIds(List<int> empmasId, string schema, string conn)
+    public async Task<List<DeprecModel?>?> _02ByEmpmasIds(List<int> empmasId, string? schema, string? conn)
     {
-        string sql = $@"select d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,   s.Name Empstatusname, 
+        string? sql = $@"select d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,   s.Name Empstatusname, 
                              d3.Name DeploymentName
                         from {schema}.Deprec d 
                         left join {schema}.Empmas e         on e.Id     = d.EmpmasId 
@@ -100,9 +100,9 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data;
     }
 
-    public async Task<List<DeprecModel?>?> _02ByStatusIds(List<int> statusIds, string schema, string conn)
+    public async Task<List<DeprecModel?>?> _02ByStatusIds(List<int> statusIds, string? schema, string? conn)
     {
-        string sql = $@"select  d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,  s.Name Empstatusname, 
+        string? sql = $@"select  d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,  s.Name Empstatusname, 
                              d3.Name DeploymentName
                         from {schema}.Deprec d 
                         left join {schema}.Empmas e         on e.Id     = d.EmpmasId 
@@ -113,7 +113,7 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data;
     }
 
-    public async Task<List<DeprecModel?>?> _02_ByPayrollgrpIds(int payrollgrpId, string schema, string conn)
+    public async Task<List<DeprecModel?>?> _02_ByPayrollgrpIds(int? payrollgrpId, string? schema, string? conn)
     {
         var sql = $@"select  concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, 
                             d.*, p.Name Positionname, s.Name Empstatusname, 
@@ -130,7 +130,7 @@ public class DeprecDataAccess : IDeprecDataAccess
         var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
         return data;
     }
-    public async Task<List<DeprecModel?>?> _02ByField(string fieldName, string schema, string conn)
+    public async Task<List<DeprecModel?>?> _02ByField(string? fieldName, string? schema, string? conn)
     {
         fieldName = fieldName.ToLower();
         var allowedFields = new HashSet<string>
@@ -143,7 +143,7 @@ public class DeprecDataAccess : IDeprecDataAccess
         if (!allowedFields.Contains(fieldName))
             throw new ArgumentException($"Invalid field name: {fieldName}");
 
-        string sql = $@"SELECT d.*, 
+        string? sql = $@"SELECT d.*, 
                     CONCAT(TRIM(e.EmpLastNm), ', ', TRIM(e.EmpFirstNm), ' ', e.EmpMidNm) AS Empname,
                     e.Empnumber,   
                     s.Name AS Empstatusname, 
@@ -158,9 +158,9 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data;
     }
 
-    public async Task<DeprecModel?> _02DeviationDtlsByEmpmasId(int empmasId , string schema, string conn)
+    public async Task<DeprecModel?> _02DeviationDtlsByEmpmasId(int? empmasId , string? schema, string? conn)
     {
-        string sql = $@"SELECT d.IdDeviation, d.IsOnDeviation , dv.Control_No TranNumber
+        string? sql = $@"SELECT d.IdDeviation, d.IsOnDeviation , dv.Control_No TranNumber
                 FROM {schema}.Deprec d 
                 LEFT JOIN {schema}.Deviation dv ON dv.Id = d.IdDeviation  
                 WHERE d.EmpmasId = @EmpmasId";
@@ -171,11 +171,11 @@ public class DeprecDataAccess : IDeprecDataAccess
 
 
 
-    public async Task<DeprecModel?> _03(DeprecModel deprec, string schema, string conn)
+    public async Task<DeprecModel?> _03(DeprecModel deprec, string? schema, string? conn)
     {
-        int empmasId = deprec.Empmasid;
+        int? empmasId = deprec.EmpmasId;
 
-        string sql = $@"Update {schema}.Deprec set 
+        string? sql = $@"Update {schema}.Deprec set 
                                 EmpmasId            = @EmpmasId, 
                                 DivId               = @DivId,  
                                 DepId               = @DepId,  
@@ -221,9 +221,9 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<DeprecModel?> _04(int empmasid, string schema, string conn)
+    public async Task<DeprecModel?> _04(int? empmasid, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Deprec where EmpmasId = @Empmasid;
+        string? sql = $@"Delete from {schema}.Deprec where EmpmasId = @EmpmasId;
                         Select  * from {schema}.Deprec x where x.EmpmasId = @EmpmasId;";
         var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { EmpmasId = empmasid }, conn);
         return data?.FirstOrDefault();

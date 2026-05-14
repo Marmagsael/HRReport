@@ -1873,7 +1873,7 @@ class Collapse extends BaseComponent {
 
 
   _configAfterMerge(config) {
-    config.toggle = Boolean(config.toggle); // Coerce string values
+    config.toggle = Boolean(config.toggle); // Coerce string? values
 
     config.parent = getElement(config.parent);
     return config;

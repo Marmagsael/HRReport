@@ -2,7 +2,7 @@
 
 public class RCoInfoModel
 {
-    public int Id { get; set; }
+    public int? Id { get; set; }
 
     public string? Add1 { get; set; }
 
@@ -12,7 +12,7 @@ public class RCoInfoModel
 
     public string? RegNo { get; set; }
 
-    public int RegPeriod { get; set; }
+    public int? RegPeriod { get; set; }
 
     public string? CoLogo { get; set; }
 
@@ -26,7 +26,7 @@ public class RCoInfoModel
 
     public string? PagibigNo { get; set; }
 
-    public int SssMemType { get; set; }
+    public int? SssMemType { get; set; }
 
     public string? SssDocNo { get; set; }
 

@@ -20,39 +20,73 @@ namespace HRMvc.StartupConfig;
 
 public static class DependencyExt
 {
+    // public static void AddServices(this WebApplicationBuilder builder)
+    // {
+    //     builder.Services.AddControllersWithViews();
+    //     builder.Services.AddControllers();
+    //     builder.Services.AddEndpointsApiExplorer();
+    //     // ---- Blazor Components -----
+    //     builder.Services.AddRazorPages();
+    //     builder.Services.AddServerSideBlazor()
+    //     .AddCircuitOptions(options =>
+    //     {
+    //         options.DetailedErrors = false;
+
+    //         // keep circuit state para maka-reconnect ang user
+    //         options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(30);
+    //     })
+    //     .AddHubOptions(options =>
+    //     {
+    //         // 🔥 frequent heartbeat para hindi maputol
+    //         options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+
+    //         // allow some delay bago i-declare as disconnected
+    //         options.ClientTimeoutInterval = TimeSpan.FromMinutes(2);
+    //     });
+    //     //builder.Services.AddSyncfusionBlazor();
+    //     builder.Services.AddRadzenComponents();
+
+    //     //--- Session ---------------------------
+    //     builder.Services.AddDistributedMemoryCache(); 
+    //     builder.Services.AddSession(opts => {
+    //         opts.IdleTimeout = TimeSpan.FromHours(12); 
+    //     }); 
+    // }
+
     public static void AddServices(this WebApplicationBuilder builder)
     {
         builder.Services.AddControllersWithViews();
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
+
         // ---- Blazor Components -----
         builder.Services.AddRazorPages();
-        builder.Services.AddServerSideBlazor();
-            
-            /*
+
+        builder.Services.AddServerSideBlazor()
             .AddCircuitOptions(options =>
             {
                 options.DetailedErrors = false;
 
-                // keep circuit state longer (less churn)
-                options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(60);
+                // ✔️ (1) Circuit retention (OK)
+                options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(20);
+            })
+            .AddHubOptions(options =>
+            {
+                // ✔️ (2) KEEP ALIVE (CRITICAL FIX)
+                options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+
+                // ✔️ (3) TIMEOUT (TUNED)
+                options.ClientTimeoutInterval = TimeSpan.FromMinutes(3);
             });
 
-        builder.Services.AddSignalR(options =>
-            {   // default is ~15 seconds
-                options.KeepAliveInterval = TimeSpan.FromMinutes(5);
-
-                // default is ~30 seconds
-                options.ClientTimeoutInterval = TimeSpan.FromMinutes(10);
-            });*/
-        //builder.Services.AddSyncfusionBlazor();
         builder.Services.AddRadzenComponents();
 
-        //--- Session ---------------------------
-        builder.Services.AddDistributedMemoryCache(); 
-        builder.Services.AddSession(opts => {
-            opts.IdleTimeout = TimeSpan.FromHours(12); 
-        }); 
+        // --- Session ---
+        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSession(opts =>
+        {
+            opts.IdleTimeout = TimeSpan.FromHours(12);
+        });
     }
 
 

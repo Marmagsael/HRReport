@@ -2,23 +2,23 @@ namespace HRApiLibrary.Models._20_Pay;
 
 public class Fixedearnings_grpModel
 {
-    public int          Id              { get; set; }
-    public int          PayrollgrpId    { get; set; } = 0;
+    public int?          Id              { get; set; }
+    public int?          PayrollgrpId    { get; set; } = 0;
     public DateTime     DStart          { get; set; }
     public DateTime     DEnd            { get; set; }
     public string?      AcctNumber      { get; set; }
     public double       Amount          { get; set; }
-    public int          CreatedbyId     { get; set; }
-    public int          TerminatedbyId  { get; set; }
+    public int?          CreatedbyId     { get; set; }
+    public int?          TerminatedbyId  { get; set; }
     public double       DaysPara        { get; set; }
-    public string       Status          { get; set; } = "A"; 
-    public int          P1              { get; set; }
-    public int          P2              { get; set; }
-    public int          P3              { get; set; }
-    public int          P4              { get; set; }
-    public int          P5              { get; set; }
+    public string?       Status          { get; set; } = "A"; 
+    public int?          P1              { get; set; }
+    public int?          P2              { get; set; }
+    public int?          P3              { get; set; }
+    public int?          P4              { get; set; }
+    public int?          P5              { get; set; }
 
-    public int          PerdayEarnings  { get; set; }
+    public int?          PerdayEarnings  { get; set; }
     public string?      TRNPosted       { get; set; }
     //-----------------------------------------------------
     
@@ -31,5 +31,5 @@ public class Fixedearnings_grpModel
     
     //-----------------------------------------------------------------
     public bool             Sel              { get; set; } = false;
-    public string           AcctName         { get; set; } = string.Empty;
+    public string?           AcctName         { get; set; } = string.Empty;
 }

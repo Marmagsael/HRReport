@@ -1,83 +1,103 @@
 ﻿@using HRMvc.Applications._00GeneralComponents
 @using Org.BouncyCastle.Crypto.Prng.Drbg
+
+@inject DialogService _DialogService
+<RadzenDialog />
+
+
+
 <_00Modal ModuleCaption="Punch Request Details" ChildAction="CloseModal" ModalWidth=" w-100 ">
     <Content>
         <div class="card p-0">
 
-            <div class="d-flex gap-1 p-1 bordered-bottom ">
-                <button class="btn btn-secondary">Approve Request</button>
-                <button class="btn btn-secondary">Partially Approve</button>
-                <button class="btn btn-danger">Deny Request</button>
+            <div class="d-flex gap-1 p-1 bordered-bottom @denycss ">
+                <button @onclick="Approve" class="btn btn-secondary">Approve Request</button>
+                <button @onclick="PartiallyApprove" class="btn btn-secondary">Partially Approve</button>
+                <button @onclick="_=>isDenyRequest=true" class="btn btn-danger">Return Request</button>
                 <div class="bordered-right "></div>
-                
             </div>
+
+            @if(isDenyRequest)      { <_12_102_PReq_Modal_DenyRequest       Ec="ReturnRequest" V="@V"  /> }
+            @if(isPartiallyApprove) { <_12_102_PReq_Modal_PartiallyApprove  Ec="ReturnRequest" V="@V"  /> }
 
             <div class="p-2">
-                <div class="d-flex ">
+                <div class="@divHdrcss">
                     <div class="@lblcss  "> Control No </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.Id </div>
+                    <div class="p-2 "> @V.Attreqhdr.Id </div>
                 </div>
-                <div class="d-flex mt-1">
+                <div class="@divHdrcss">
                     <div class="bg mb-a-greenlight p-2 @lblcss "> Requestor Name </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.RequestorName </div>
+                    <div class="p-2 ">
+                        <h5>@V.Attreqhdr.RequestorName</h5>
+                    </div>
                 </div>
-                <div class="d-flex mt-1">
+                <div class="@divHdrcss">
                     <div class="bg mb-a-greenlight p-2 @lblcss "> Coverage </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.CovStart.ToShortDateString() - @V.Attreqhdr.CovEnd.ToShortDateString() </div>
+                    <div class="p-2 "> 
+                        @V.Attreqhdr.CovStart.ToString("MMM dd, yyyy") -
+                        @V.Attreqhdr.CovEnd.ToString("MMM dd, yyyy") 
+                    </div>
                 </div>
                 
-                <div class="d-flex mt-1">
+                <div class="@divHdrcss">
                     <div class="bg mb-a-greenlight p-2 @lblcss "> Remarks </div>
-                    <div class="p-2 bordered"> @V.Attreqhdr.Remarks </div>
+                    <div class="p-2 "> @V.Attreqhdr.Remarks </div>
                 </div>
 
             </div>
 
-
-
-            @* --- Header --------------------------------------- *@
-            <div class="d-flex gap-2 p-1 border-bottom  border-top small fw-bold mt-2 ">
-                <div class="w-220p p-1">Request Type</div>
-                <div class="w-190p p-1">Date Start</div>
-                <div class="w-190p p-1">Date End</div>
-                <div class="w-100p p-1 text-center">Hours </div>
-            </div>
-
-            @{int ctr = 0; }
-            @foreach(AttreqdtlModel? r in V.Attreqdtls) {
-                ctr++; 
-                string css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
-                <div class="d-flex gap-2 p-1 gap-1 @css ">
-                    <div class="w-220p mb-a-blue">
-                        @entryTypeName(r?.AttReqTypeId??0) 
-                    </div>
-                    <div class="w-190p txt mb-a-blue ">
-                        @r.DStart?.ToString("MM/dd/yyyy HH:mm")
-                    </div>
-                    <div class="w-190p txt mb-a-blue ">
-                        @r.DEnd?.ToString("MM/dd/yyyy HH:mm")
-                    </div>
-                    <div class="w-100p text-center ">
-                        @(ComputeHours(r) == 0 ? "-" : ComputeHours(r).ToString("N2"))
-                    </div>
-
+            <div class="@denycss"> 
+                @* --- Header --------------------------------------- *@
+                <div class="d-flex gap-2 p-1 border-bottom  border-top small fw-bold mt-2 ">
+                    <div class="w-220p p-1">Request Type</div>
+                    <div class="w-190p p-1">Date Start</div>
+                    <div class="w-190p p-1">Date End</div>
+                    <div class="w-100p p-1 text-center">Hours </div>
                 </div>
-            }
 
+                @{int ctr = 0; }
+                @foreach(AttreqdtlModel? r in V.Attreqdtls) {
+                    ctr++; 
+                    string? css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
+                    <div class="d-flex gap-2 p-1 gap-1 @css ">
+                        <div class="w-220p mb-a-blue">
+                            @entryTypeName(r?.AttReqTypeId??0) 
+                        </div>
+                        <div class="w-190p txt mb-a-blue ">
+                            @r.DStart?.ToString("MM/dd/yyyy HH:mm")
+                        </div>
+                        <div class="w-190p txt mb-a-blue ">
+                            @r.DEnd?.ToString("MM/dd/yyyy HH:mm")
+                        </div>
+                        <div class="w-100p text-center ">
+                            @(ComputeHours(r) == 0 ? "-" : ComputeHours(r).ToString("N2"))
+                        </div>
 
-
+                    </div>
+                }
+            </div>
 
         </div>
     </Content>
 </_00Modal>
 
+
+@inject IJSRuntime _js;
+@inject IAttreqhdrDataAccess _arhdr;
+
 @code {
+    [CascadingParameter]    public UserClaimsModel  Uc      { get; set;}
+    [Parameter] public EventCallback<bool>          Ec      { get; set; } 
+    [Parameter] public V12_102Obligation            V       { get; set; } = new();
+    bool isDenyRequest      = false; 
+    bool isPartiallyApprove = false; 
 
-    [Parameter] public EventCallback<bool>      Ec      { get; set; } 
-    [Parameter] public V12_102Obligation        V       { get; set; } = new();
-    string lblcss => " w-150p bg mb-a-greenlight p-2 bordered ";
 
-    string entryTypeName(int etnId) => V.Attreqtypes.FirstOrDefault(a=>a.Id == etnId).Name??"-"; 
+    string? denycss => (isDenyRequest || isPartiallyApprove) ?  " disabled-div-50 " : "" ;
+    string? divHdrcss => " d-flex bordered-bottom ";
+    string? lblcss => " w-150p bg mb-a-greenlight p-2  ";
+
+    string? entryTypeName(int? etnId) => V.Attreqtypes.FirstOrDefault(a=>a.Id == etnId).Name??"-"; 
     double ComputeHours(AttreqdtlModel dtl)
     {
         if (dtl.DStart is null || dtl.DEnd is null || dtl.DEnd <= dtl.DStart || dtl.AttReqTypeId != 3) return 0;
@@ -86,6 +106,63 @@
     
 
     @* --- Functions----------------------------------------------------------------------------- *@
+    async Task ReturnRequest() {
+
+        @* --- Return Request ----------------------------------------- *@
+        if (V.Action == "Close")                RRClose(); 
+        if (V.Action == "ReturnRequest" || 
+            V.Action == "PartiallyApproved")    await ReturnRequestToSEnder();
+        
+        @* --- Partially Approve -------------------------------------- *@
+        if (V.Action == "ClosePA")              PAClose();
+
+
+        
+    } 
+
+    async Task Approve() {
+        const string? title = "Approve Request?";
+        const string? icon = "question";
+        var msg = $@"<div><span class='text-primary'> {V.Attreqhdr.RequestorName}  </span> </div> ";
+        
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (confirmed)
+        {
+            await _arhdr._03PartiallyApprove(V.Attreqhdr,Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn) ;
+            
+            V.Attreqhdrs = [];
+            await _arhdr._03Return(V.Attreqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+            var rAttreqhdrs = await _arhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+            if (rAttreqhdrs != null && rAttreqhdrs.Count > 0)
+            {
+                V.Attreqhdrs = rAttreqhdrs ?? [];
+                V.Attreqhdr = new();
+                StateHasChanged();
+            }
+
+            await Ec.InvokeAsync(false);
+        }
+    }
+
+    void PartiallyApprove() {
+        isPartiallyApprove = true;
+        V.Attreqhdr.ApproverName = string.Empty; 
+    }
+    async Task ReturnRequestToSEnder() {
+        await Ec.InvokeAsync(false);
+    }
+
+
+
+    void RRClose(){
+        isDenyRequest   = false; 
+        V.Action        = string.Empty;
+    }
+    void PAClose(){
+        isPartiallyApprove  = false; 
+        V.Action            = string.Empty;
+    }
+
     async Task CloseModal() {
         await  Ec.InvokeAsync(false); 
     }

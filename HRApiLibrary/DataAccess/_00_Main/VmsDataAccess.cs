@@ -12,7 +12,7 @@ public class VmsDataAccess
     }
 
 
-    public async void _01(string db, string conn)
+    public async void _01(string? db, string? conn)
     {
         await _01SchemaMaker(db, conn); 
 
@@ -21,16 +21,16 @@ public class VmsDataAccess
     //*********************************************************************************
     //--- Private Functions -----------------------------------------------------------
     //*********************************************************************************
-    private async Task _01SchemaMaker(string db, string conn)
+    private async Task _01SchemaMaker(string? db, string? conn)
     {
         var sql = $"CREATE DATABASE IF NOT EXISTS {db}";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01Visitors(string db, string conn)
+    private async Task _01Visitors(string? db, string? conn)
     {
         var sql = $@"CREATE TABLE if not exists {db}.Visitors (
-                        Id                  INT PRIMARY KEY AUTO_INCREMENT,
+                        Id                  int PRIMARY KEY AUTO_INCREMENT,
                         LastNm              VARCHAR(60),
                         FirstNm             VARCHAR(60),
                         MidNm               VARCHAR(60),
@@ -44,10 +44,10 @@ public class VmsDataAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
     
-    private async Task _01Tables(string db, string conn)
+    private async Task _01Tables(string? db, string? conn)
     {
         var sql = $@"CREATE TABLE if not exists {db}.Hosts (
-                    Id INT PRIMARY KEY AUTO_INCREMENT,
+                    Id int PRIMARY KEY AUTO_INCREMENT,
                     Name VARCHAR(100),
                     Department VARCHAR(100),
                     ContactInfo VARCHAR(150)
@@ -55,10 +55,10 @@ public class VmsDataAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01Visits(string db, string conn)
+    private async Task _01Visits(string? db, string? conn)
     {
         var sql = $@"CREATE TABLE if not exists {db}.Visits (
-                    VisitID INT PRIMARY KEY AUTO_INCREMENT,
+                    VisitID int PRIMARY KEY AUTO_INCREMENT,
                     VisitorID INT,
                     HostID INT,
                     VisitDate DATE,
@@ -70,12 +70,12 @@ public class VmsDataAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01Appointments(string db, string conn)
+    private async Task _01Appointments(string? db, string? conn)
     {
         var sql = $@"
 
                 CREATE TABLE if not exists {db}.Appointments (
-                    AppointmentID INT PRIMARY KEY AUTO_INCREMENT,
+                    AppointmentID int PRIMARY KEY AUTO_INCREMENT,
                     VisitorID INT,
                     HostID INT,
                     AppointmentDate DATE,
@@ -87,23 +87,23 @@ public class VmsDataAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01Departments(string db, string conn)
+    private async Task _01Departments(string? db, string? conn)
     {
         var sql = $@"
 
                 CREATE TABLE if not exists {db}.Departments (
-                    DepartmentID INT PRIMARY KEY AUTO_INCREMENT,
+                    DepartmentID int PRIMARY KEY AUTO_INCREMENT,
                     DepartmentName VARCHAR(100)
                 );";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01SecurityLogs(string db, string conn)
+    private async Task _01SecurityLogs(string? db, string? conn)
     {
         var sql = $@"
 
                 CREATE TABLE if not exists {db}.SecurityLogs (
-                    LogID INT PRIMARY KEY AUTO_INCREMENT,
+                    LogID int PRIMARY KEY AUTO_INCREMENT,
                     EventType VARCHAR(100),
                     Description TEXT,
                     EventTime DATETIME
@@ -111,12 +111,12 @@ public class VmsDataAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01Badges(string db, string conn)
+    private async Task _01Badges(string? db, string? conn)
     {
         var sql = $@"
 
                 CREATE TABLE if not exists {db}.Badges (
-                    BadgeID INT PRIMARY KEY AUTO_INCREMENT,
+                    BadgeID int PRIMARY KEY AUTO_INCREMENT,
                     VisitorID INT,
                     IssueDate DATE,
                     ExpiryDate DATE,
@@ -126,12 +126,12 @@ public class VmsDataAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01Notification(string db, string conn)
+    private async Task _01Notification(string? db, string? conn)
     {
         var sql = $@"
 
                 CREATE TABLE if not exists {db}.Notifications (
-                    NotificationID INT PRIMARY KEY AUTO_INCREMENT,
+                    NotificationID int PRIMARY KEY AUTO_INCREMENT,
                     RecipientID INT,
                     Message TEXT,
                     SentTime DATETIME,
@@ -140,11 +140,11 @@ public class VmsDataAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
-    private async Task _01Settings(string db, string conn)
+    private async Task _01Settings(string? db, string? conn)
     {
         var sql = $@"
                 CREATE TABLE if not exists {db}.Settings (
-                    SettingID INT PRIMARY KEY AUTO_INCREMENT,
+                    SettingID int PRIMARY KEY AUTO_INCREMENT,
                     SettingName VARCHAR(100),
                     SettingValue VARCHAR(255)
                 );";

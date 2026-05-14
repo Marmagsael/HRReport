@@ -1,11 +1,11 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2212
 @using System.Globalization
 
 @inject NotificationService _NotificationService
-@inject IOPisReportDataAccess _pisRep
-@inject IOEmpstatDataAccess _empstat
+
 
 <RadzenNotification />
 
@@ -65,6 +65,10 @@
     </Details>
 </_00BT_FullW>
 
+@inject ISettingsDataAccess _settings;
+@inject IOPisReportDataAccess _pisRep
+@inject IOEmpstatDataAccess _empstat
+
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
@@ -102,12 +106,11 @@
 
     private async Task LoadCompanyInfo()
     {
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        if (!(res ?? []).Any()) return;
-
-        var r = res!.First();
-        rv.ReportParams["CoName"] = r.CoName ?? "";
-        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        if (res == null) return;
+        var r = res;
+        rv.ReportParams["CoName"] = r.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAddress ?? "";
     }
 
 
@@ -215,11 +218,11 @@
 
         rv.RelativePath = "Reports/_02HR/K_2212_FE.trdp";
 
-        int monthNumber = Convert.ToInt32(rv.Month);
-        string monthName = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+        int? monthNumber = Convert.ToInt32(rv.Month);
+        string? monthName = new DateTime(1, monthNumber??0, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
-        string dstart = rv.DStart?.ToString("d, MMMM yyyy") ?? "-";
-        string dend = rv.DEnd?.ToString("d, MMMM yyyy") ?? "-";
+        string? dstart = rv.DStart?.ToString("d, MMMM yyyy") ?? "-";
+        string? dend = rv.DEnd?.ToString("d, MMMM yyyy") ?? "-";
 
         rv.ReportParams["DateRange"] = $"For the month covering {dstart} - {dend}";
         rv.ShowModal = true;
@@ -257,7 +260,7 @@
         return true;
     }
 
-    void Notify(NotificationSeverity severity, string summary, string detail)
+    void Notify(NotificationSeverity severity, string? summary, string? detail)
     {
         _NotificationService.Notify(new NotificationMessage
         {

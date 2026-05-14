@@ -3,11 +3,11 @@
 
     public class V2106Model
     {
-        public string           Action              { get; set; } = "";
+        public string?           Action              { get; set; } = "";
         public bool             IsGroupByClient     { get; set; } = false;
         public List<R2106Model> RepDtls             { get; set; } = [];
-        public int              SelectedMonthsAgo   { get; set; } = 0;
-        public int              LnMonths            { get; set; } = 0;
+        public int?              SelectedMonthsAgo   { get; set; } = 0;
+        public int?              LnMonths            { get; set; } = 0;
 
     }
 

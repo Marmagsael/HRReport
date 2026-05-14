@@ -15,9 +15,9 @@ public class PaytranDataAccess : IPaytranDataAccess
         _sql = sql;
     }
 
-    public async Task _01(PaytranModel paytran, string schema, string conn)
+    public async Task _01(PaytranModel paytran, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Paytran 
+        string? sql = $@"Insert into {schema}.Paytran 
                              (Trn, EmpmasId, PayrollgrpId, AttStart, AttEnd, E000U, E000R,  
                              E000M, E000A, E001U, E001R, E001M, E001A, E002U, E002R, E002M,  
                              E002A, E003U, E003R, E003M, E003A, E004U, E004R, E004M, E004A,  
@@ -111,14 +111,14 @@ public class PaytranDataAccess : IPaytranDataAccess
     }
 
     
-    public async Task _01New(PaytranModel paytran, string schema, string conn)
+    public async Task _01New(PaytranModel paytran, string? schema, string? conn)
     {
         var  sql = $@"Insert into {schema}.Paytran (Trn, EmpmasId, PayrollgrpId) values (@Trn, @EmpmasId, @PayrollgrpId) 
                             on duplicate key update E0000M=@E0000M";
         await _sql.ExecuteCmd<dynamic>(sql, paytran, conn);
     }
     
-    public async Task<List<PaytranModel?>?> _01New(string trn, List<PaytranModel?> paytrans, string paydb, string pisdb, string conn)
+    public async Task<List<PaytranModel?>?> _01New(string? trn, List<PaytranModel?> paytrans, string? paydb, string? pisdb, string? conn)
     {
         foreach (var paytran in paytrans)
         {
@@ -130,9 +130,9 @@ public class PaytranDataAccess : IPaytranDataAccess
         return res; 
     }
 
-    public async Task<List<PaytranModel?>?> _02ByTrn(string trn, string paydb, string pisdb, string conn)
+    public async Task<List<PaytranModel?>?> _02ByTrn(string? trn, string? paydb, string? pisdb, string? conn)
     {
-        string sql = $@"select  concat(trim(e.empLastnm), ', ', trim(e.empfirstNm), '', trim(e.empMidNm)) EmpName, p.* from {paydb}.Paytran p 
+        string? sql = $@"select  concat(trim(e.empLastnm), ', ', trim(e.empfirstNm), '', trim(e.empMidNm)) EmpName, p.* from {paydb}.Paytran p 
                         left join {pisdb}.Empmas e on e.Id = p.EmpmasId 
                         where Trn = @Trn";
         var data = await _sql.FetchData<PaytranModel?, dynamic>(sql, new { Trn = trn }, conn);
@@ -140,9 +140,9 @@ public class PaytranDataAccess : IPaytranDataAccess
     }
 
 
-    public async Task _03(PaytranModel paytran, string schema, string conn)
+    public async Task _03(PaytranModel paytran, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Paytran set E000U = @E000U, E000R = @E000R, E000M = @E000M, E000A = @E000A,  
+        string? sql = $@"Update {schema}.Paytran set E000U = @E000U, E000R = @E000R, E000M = @E000M, E000A = @E000A,  
                                                     E001U = @E001U, E001R = @E001R, E001M = @E001M, E001A = @E001A, 
                                                     E002U = @E002U, E002R = @E002R, E002M = @E002M, E002A = @E002A, 
                                                     E003U = @E003U, E003R = @E003R, E003M = @E003M, E003A = @E003A, 
@@ -266,21 +266,21 @@ public class PaytranDataAccess : IPaytranDataAccess
         await _sql.ExecuteCmd<dynamic>(sql, paytran, conn);
     }
 
-    public async Task _03AttDuration(string trn, DateTime attStart, DateTime attEnd, string schema, string conn)
+    public async Task _03AttDuration(string? trn, DateTime attStart, DateTime attEnd, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Paytran set AttStart = @AttStart, AttEnd = @AttEnd where Trn=@Trn;";
+        string? sql = $@"Update {schema}.Paytran set AttStart = @AttStart, AttEnd = @AttEnd where Trn=@Trn;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn = trn, AttStart = attStart, AttEnd = attEnd }, conn);
     }
 
-    public async Task _03PayrollgrpId(string trn, int payrollgrpId, string schema, string conn)
+    public async Task _03PayrollgrpId(string? trn, int? payrollgrpId, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Paytran set AttStart = @AttStart, AttEnd = @AttEnd where Trn=@Trn;";
+        string? sql = $@"Update {schema}.Paytran set AttStart = @AttStart, AttEnd = @AttEnd where Trn=@Trn;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn = trn, PayrollgrpId = payrollgrpId }, conn);
     }
 
-    public async Task _04ByTrn(string trn, string schema, string conn)
+    public async Task _04ByTrn(string? trn, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Paytran where Trn = @Trn;";
+        string? sql = $@"Delete from {schema}.Paytran where Trn = @Trn;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Trn = trn }, conn);
 
     }

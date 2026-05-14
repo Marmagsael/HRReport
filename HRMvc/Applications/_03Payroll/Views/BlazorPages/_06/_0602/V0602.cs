@@ -6,7 +6,7 @@ namespace HRMvc.Applications._03Payroll.Views.BlazorPages._06._0602;
 public class V0602
 {
     public string?                          ViewMode                    { get; set; } = "FixedEarnings"; // EmployeeEarnings, GroupEarnings 
-    public int                              EmpmasId                    { get; set; } = 0;
+    public int?                              EmpmasId                    { get; set; } = 0;
     
     public EmpmasInternalModel              EmpmasInternal              { get; set; } = new(); 
     public CoaModel?                        Coa                         { get; set; } = new(); 
@@ -18,7 +18,7 @@ public class V0602
     
     public PeriodTmpModel?                  PeriodTmp                   { get; set; } = new();
 
-    public string                           erorrMsgFe                  { get; set; } = string.Empty;
+    public string?                           erorrMsgFe                  { get; set; } = string.Empty;
 
     public List<PayrollgrpModel?>?          Payrollgrps                 { get; set; }
     public Fixedearnings_grpModel?          FEGrp                       { get; set; } = new();

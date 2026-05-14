@@ -1,0 +1,43 @@
+﻿
+<div class="d-flex gap-3">
+    <div class="filter-item">
+        <span>Month</span>
+        <RadzenDropDown Data="@V.Months"
+                        TextProperty="Name"
+                        ValueProperty="Value"
+                        @bind-Value="V.SelectedMonth"
+                        Change="@(_ => GenerateCalendar())"
+                        Style="width: 160px" />
+    </div>
+
+    <div class="filter-item">
+        <span>Year</span>
+        <RadzenDropDown Data="@V.Years"
+                        @bind-Value="V.SelectedYear"
+                        Change="@(_ => GenerateCalendar())"
+                        Style="width: 120px" />
+    </div>
+</div>
+@code {
+    [Parameter] public V12104Model V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    private async Task GenerateCalendar()
+    {
+        V.DayDetail = new();
+        V.Action = "GenerateCalendar";
+        await ChildAction.InvokeAsync();
+    }
+}
+
+
+<style>
+    .filter-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: #6b7280;
+    }
+</style>
+

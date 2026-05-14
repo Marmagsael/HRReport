@@ -12,6 +12,12 @@ public class PisReportController : Controller
         ["2003"] = "_2003_TimeOffSettings"
     };
 
+    // Transaction
+    private static readonly Dictionary<string, string> TransactionViews = new()
+    {
+        ["2052"] = "_2052_EmployeeEntry"
+    };
+
     // Reports 
     private static readonly Dictionary<string, string> ReportViews = new()
     {
@@ -40,7 +46,7 @@ public class PisReportController : Controller
         ["2214"] = "_2214_DetailedDeviationReport",
         ["2215"] = "_2215_SummarizedDeviationReport",
         ["2216"] = "_2216_LicenseVerification",
-        ["2217"] = "_2217_LicenseExpiration"
+        ["2217"] = "_2217_LicenseExpiration",
     };
 
     [HttpGet("")]
@@ -50,11 +56,13 @@ public class PisReportController : Controller
     }
 
     [HttpGet("{pisCode:int}")]
-    public IActionResult Report(int pisCode)
+    public IActionResult Report(int? pisCode)
     {
         var key = pisCode.ToString();
 
         if (ManagementViews.TryGetValue(key, out var mgmtView)) return View($"~/Applications/PisModules/Views/Pages/{mgmtView}.cshtml");
+
+        if (TransactionViews.TryGetValue(key, out var trntView)) return View($"~/Applications/PisModules/Views/Pages/{trntView}.cshtml");
                                                                              
         if (ReportViews.TryGetValue(key, out var reportView))   return View($"~/Applications/PisReport/Views/Pages/{reportView}.cshtml");
 

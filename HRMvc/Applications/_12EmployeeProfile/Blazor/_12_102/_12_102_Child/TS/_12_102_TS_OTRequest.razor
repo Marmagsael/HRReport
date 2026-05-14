@@ -143,10 +143,10 @@
 </div>
 
 @{int ctr = 0; }
-@foreach(var p in Ot.AttPunches1s) {
+@foreach(Attpunches1Model p in Ot.AttPunches1s) {
     ctr++; 
-    int hour    = p.PunchT / 100;
-    int minute  = p.PunchT % 100;
+    int? hour    = p.PunchT / 100;
+    int? minute  = p.PunchT % 100;
 
     var bgCss = (ctr % 2 == 0) ? "bg-light" : "bg-white";
 
@@ -239,14 +239,14 @@
                             Ot.OTReqhdr.CovStart <= Ot.OTReqhdr.CovEnd &&
                             !string.IsNullOrWhiteSpace(Ot.OTReqhdr.ApproverName);
 
-    bool IsAlreadyApplied(string remarks) => remarks.Length > 0 ;                            
+    bool IsAlreadyApplied(string? remarks) => remarks.Length > 0 ;                            
    
 
-    string AlreadyAppiedCss(string remarks) => IsAlreadyApplied(remarks) ? " disabled-div " : "";
-    string  CanSave     =>  IsCanSave ? " " : " disabled-div " ; 
-    string  CanSend     =>  IsCanSend ? " " : " disabled-div " ;
-    string  CanCancel   =>  IsCanCancel ? " " : " disabled-div " ;
-    string  CanShowPunches    =>  IsCanShowPunches ? " " : " disabled-div " ;
+    string? AlreadyAppiedCss(string? remarks) => IsAlreadyApplied(remarks) ? " disabled-div " : "";
+    string?  CanSave     =>  IsCanSave ? " " : " disabled-div " ; 
+    string?  CanSend     =>  IsCanSend ? " " : " disabled-div " ;
+    string?  CanCancel   =>  IsCanCancel ? " " : " disabled-div " ;
+    string?  CanShowPunches    =>  IsCanShowPunches ? " " : " disabled-div " ;
     
 
 
@@ -282,14 +282,14 @@
 
             if (!string.IsNullOrWhiteSpace(dtl.Remarks)) continue; //-- Skip Already Applied 
 
-            double totalHrs = dtl.Hour + (dtl.Minute / 60.0);
+            double? totalHrs = dtl.Hour + (dtl.Minute / 60.0);
             
 
             OtreqdtlModel otdtl = new() {
                EmpmasId     = Uc.UserId,
                OtReqHdrId   = Ot.OTReqhdr.Id??0,
                 PunchIn     = dtl.PunchInDate??DateTime.MinValue, 
-                TotHrs      = totalHrs,
+                TotHrs      = totalHrs??0,
                 DutyTypeId  = dtl.DutyTypeId
             };
 
@@ -300,13 +300,15 @@
 
     async Task ShowSendForApproval() {
         await Save();
-        Ot.OTReqdtls = await _otreqdtl._02ByEmpmasId_RangeByPunchIn(Uc.UserId, Ot.OTReqhdr.CovStart??DateTime.MinValue, Ot.OTReqhdr.CovEnd??DateTime.MinValue, Uc.SchemaUserPis, Uc.Conn);
+        var res = await _otreqdtl._02ByEmpmasId_RangeByPunchIn(Uc.UserId, Ot.OTReqhdr.CovStart??DateTime.MinValue, Ot.OTReqhdr.CovEnd??DateTime.MinValue, Uc.SchemaUserPis, Uc.Conn);
+        Ot.OTReqdtls = []; 
+        if (res != null && res.Count > 0) Ot.OTReqdtls = res!; 
 
         Ot.ShowSendForApproval = true;
     }    
     async Task ShowCancel() {
-        string message = "Are you sure you want to cancel this OT request?";
-        string title = "Confirm Cancel";
+        string? message = "Are you sure you want to cancel this OT request?";
+        string? title = "Confirm Cancel";
         
         var result = await _DialogService.Confirm(message,  title, new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" }); 
         if (result == true)
@@ -341,7 +343,7 @@
         Ot.AttPunches1s     = []; 
         Ot.Atttemplates     = []; 
         Ot.OTReqdtls        = [];
-        int userId          = Uc.UserId;
+        int? userId          = Uc.UserId;
         //  --- OT Request Query --------------------------------------------------------------- 
         var resOTDtls = await _otreqdtl._02ByEmpmasId_RangeByPunchIn(userId, hdr.CovStart??DateTime.MinValue, hdr.CovEnd??DateTime.MinValue, Uc.SchemaUserPis, Uc.Conn);
 
@@ -360,10 +362,10 @@
         resOTDtls.ForEach(dtl => {
             Ot.AttPunches1s.ForEach(p => {
                 if(p.PunchInDate == dtl.PunchIn) {
-                    int hr      = (int)dtl.TotHrs; 
-                    int min     = (int)((dtl.TotHrs - hr) * 60);
-                    p.Hour      = hr;
-                    p.Minute    = min;
+                    int? hr      = (int)dtl.TotHrs; 
+                    int? min     = (int)((dtl.TotHrs - hr) * 60);
+                    p.Hour      = hr??0;
+                    p.Minute    = min??0;
 
                     if(dtl.OtReqHdrId == Ot.OTReqhdr.Id) { p.Remarks = string.Empty; } else  { p.Remarks = "Already Applied"; }
                 }
@@ -387,31 +389,33 @@
     
     
     DateTime TotHoursAppied => DateTime.MinValue
-                                    .AddHours(Ot.AttPunches1s.Where(a=>a.Remarks == "").Sum(x=>x.Hour))
-                                    .AddMinutes(Ot.AttPunches1s.Where(a=>a.Remarks == "").Sum(x=>x.Minute));
+                                    .AddHours(Ot.AttPunches1s.Where(a=>a.Remarks == "")
+                                    .Sum(x=>Convert.ToDouble(x.Hour)))
+                                    .AddMinutes(Ot.AttPunches1s.Where(a=>a.Remarks == "")
+                                    .Sum(x=>Convert.ToDouble(x.Minute)));
 
-    string Get_Class_WithEntry(Attpunches1Model p) => (p.Hour > 0 || p.Minute > 0) ? " fw-bold " : "";
+    string? Get_Class_WithEntry(Attpunches1Model p) => (p.Hour > 0 || p.Minute > 0) ? " fw-bold " : "";
     List<int> Hours     => [0,1,2,3,4,5,6,7,8,9,10,11,12];
     List<int> Minutes   => [0,15,30,45];
 
-    string GetDutyTypeName(int dutytypeid) => Ot.Attdutytypes.FirstOrDefault(x=>x.Id==dutytypeid)?.Code ?? "";
-    string GetDutyOut(Attpunches1Model p) {
-        string dutyOut = "-";
+    string? GetDutyTypeName(int? dutytypeid) => Ot.Attdutytypes.FirstOrDefault(x=>x.Id==dutytypeid)?.Code ?? "";
+    string? GetDutyOut(Attpunches1Model p) {
+        string? dutyOut = "-";
         if(p.DutyTypeId != 1)                                       return dutyOut; //-- not Regular Duty
         if(p.PunchInDate == null || p.PunchOutDate == null )        return dutyOut; //-- invalid and out is null 
         if(p.PunchInDate < new DateTime(1900,1,1))  return dutyOut; //-- invalid in date
         if(p.PunchOutDate < new DateTime(1900,1,1)) return dutyOut; //-- invalid out date
         if(p.PunchOutDate <= p.PunchInDate )                         return dutyOut; //-- out date is before or same as in date
 
-        var inHour    = p.PunchT / 100;
-        var inMinute  = p.PunchT % 100;
-        var DurationHour = p.SchedDuration / 100;
-        var DurationMinute = p.SchedDuration % 100;
+        int? inHour    = p.PunchT / 100;
+        int? inMinute  = p.PunchT % 100;
+        int? DurationHour = p.SchedDuration / 100;
+        int? DurationMinute = p.SchedDuration % 100;
         var schedOut = p.PunchInDate?
-                                  .AddHours(inHour)
-                                  .AddMinutes(inMinute)
-                                  .AddHours(DurationHour)
-                                  .AddMinutes(DurationMinute);
+                                  .AddHours(inHour??0)
+                                  .AddMinutes(inMinute??0)
+                                  .AddHours(DurationHour??0)
+                                  .AddMinutes(DurationMinute??0);
         dutyOut = schedOut?.ToShortTimeString() ?? "-";
 
 
@@ -424,7 +428,7 @@
         return dutyOut;
     }
 
-    void ShowError(string message)
+    void ShowError(string? message)
     {
         _NotificationService.Notify(new NotificationMessage
         {

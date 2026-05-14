@@ -15,9 +15,9 @@ public class FixedearningsDataAccess : IFixedearningsDataAccess
         _sql = sql;
     }
 
-    public async Task<FixedearningsModel?> _01(FixedearningsModel fixedearnings, string schema, string conn)
+    public async Task<FixedearningsModel?> _01(FixedearningsModel fixedearnings, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Fixedearnings 
+        string? sql = $@"Insert into {schema}.Fixedearnings 
                                 (PayrollgrpId,   Empnumber,  DStart,  DEnd,  AcctNumber,  Amount,  CreatedBy, 
                                  PerdayEarnings, DaysPara,   P1,  P2,  P3,  P4,  P5) 
                         values  (@PayrollgrpId,   @Empnumber, @DStart, @DEnd, @AcctNumber, @Amount, @CreatedBy, 
@@ -32,18 +32,18 @@ public class FixedearningsDataAccess : IFixedearningsDataAccess
     }
 
 
-    public async Task<FixedearningsModel?> _02(int id, string schema, string conn)
+    public async Task<FixedearningsModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  f.*, c.AcctName 
+        string? sql = $@"select  f.*, c.AcctName 
                         from {schema}.Fixedearnings f
                         left join {schema}.Coa c on c.AcctNumber = f.AcctNumber   
                         where Id = @Id";
         var data = await _sql.FetchData<FixedearningsModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<List<FixedearningsModel?>?> _02ByEmpnumber(string empnumber, string paydb, string conn)
+    public async Task<List<FixedearningsModel?>?> _02ByEmpnumber(string? empnumber, string? paydb, string? conn)
     {
-        string sql = $@"select  f.*, c.AcctName, g.Name PayrollgrpName  
+        string? sql = $@"select  f.*, c.AcctName, g.Name PayrollgrpName  
                         from {paydb}.Fixedearnings    f
                         left join {paydb}.Coa         c on c.AcctNumber   = f.AcctNumber                  
                         left join {paydb}.Payrollgrp  g on g.Id       = f.PayrollgrpId                  
@@ -51,7 +51,7 @@ public class FixedearningsDataAccess : IFixedearningsDataAccess
         var data = await _sql.FetchData<FixedearningsModel?, dynamic>(sql, new { EmpNumber = empnumber }, conn);
         return data;
     }
-    public async Task<List<FixedearningsModel?>?> _02By_PayTrnPrd(string trn, string paydb, string conn)
+    public async Task<List<FixedearningsModel?>?> _02By_PayTrnPrd(string? trn, string? paydb, string? conn)
     {
         var fldPrd = trn.Substring(4, 2);
         var fld = fldPrd switch
@@ -76,9 +76,9 @@ public class FixedearningsDataAccess : IFixedearningsDataAccess
     }
     
 
-    public async Task<FixedearningsModel?> _03(int id, FixedearningsModel fixedearnings, string schema, string conn)
+    public async Task<FixedearningsModel?> _03(int? id, FixedearningsModel fixedearnings, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Fixedearnings set 
+        string? sql = $@"Update {schema}.Fixedearnings set 
                             PayrollgrpId        = @PayrollgrpId,  
                             Empnumber           = @Empnumber,  
                             DStart              = @DStart,  
@@ -103,9 +103,9 @@ public class FixedearningsDataAccess : IFixedearningsDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<FixedearningsModel?> _04(int id, string schema, string conn)
+    public async Task<FixedearningsModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete    from {schema}.Fixedearnings   where Id   = @Id;
+        string? sql = $@"Delete    from {schema}.Fixedearnings   where Id   = @Id;
                         select  * from {schema}.Fixedearnings x where x.Id = @Id ;";
         var data = await _sql.FetchData<FixedearningsModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();

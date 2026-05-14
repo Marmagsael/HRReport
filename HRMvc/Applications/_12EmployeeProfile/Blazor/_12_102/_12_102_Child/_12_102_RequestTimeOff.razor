@@ -65,7 +65,8 @@
                         
                     </td>
                     <td class="p-1"> 
-                        <RadzenDropDown Change="_02LeaveBalance"                   TValue="int"
+                        <RadzenDropDown Change="_02LeaveBalance"                   
+                            TValue="int?"
                             Data="@v.LeaveTypes"
                             TextProperty="LeaveName"
                             ValueProperty="Id"
@@ -83,7 +84,8 @@
                         
                     </td>
                     <td class="p-1"> 
-                        <RadzenDropDown Change="_02LeaveBalance"                TValue="int"
+                        <RadzenDropDown Change="_02LeaveBalance"                
+                            TValue="int?"
                             Data="@v.LvYrs"
                             @bind-Value="v.LeaveApplication.Yr"
                             Placeholder="Leave Year"
@@ -245,7 +247,7 @@
 
     @* --- Leave Details ----------------------------------------- *@
     <div>
-        <div class="card-header">Leave Details</div>
+        <div class="card-header bg mb-a-green fw-bold text-white ">Leave Details</div>
         <div class="card-body p-0">
 
             <div class="w-100 d-flex gap-1 py-2 border-bottom">
@@ -262,8 +264,8 @@
             </div>
 
             @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
-                string dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
-                string dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
+                string? dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
+                string? dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
 
                 <div class="w-100 d-flex p-0 mt-1 gap-1 @dTypeCss ">
                     <div class="w-130p text-center py-2 ">
@@ -350,7 +352,7 @@
     [Parameter] public UserClaimsModel Uc { get; set; }
     V12_102Lv   v = new();
     V00_RepVars rv = new(); 
-    int ctr = 0; 
+    int? ctr = 0; 
 
     @* =================================================== *@
     async Task ChildActionCatcher() {
@@ -511,10 +513,10 @@
     bool IsCanPrint     => lva != null
                             && (lva.Status is "S" or "FA" or "F"); 
 
-    string CanSaveCss =>    IsCanSave ? "" : " disabled-div ";
-    string CanSendCss =>    IsCanSend ? "" : " disabled-div ";
-    string CanCancelCss =>  IsCanCancel ? "" : " disabled-div ";
-    string CanPrintCss =>  IsCanPrint ? "" : " disabled-div ";
+    string? CanSaveCss =>    IsCanSave ? "" : " disabled-div ";
+    string? CanSendCss =>    IsCanSend ? "" : " disabled-div ";
+    string? CanCancelCss =>  IsCanCancel ? "" : " disabled-div ";
+    string? CanPrintCss =>  IsCanPrint ? "" : " disabled-div ";
 
     @* =================================================== *@
     async Task _02LeaveBalance() {
@@ -536,24 +538,24 @@
         for (DateTime date = leaveApp.LvStart; date < leaveApp.LvEnd.AddDays(1); date = date.AddDays(1))
         {
             @* Console.WriteLine($"{date}"); *@
-            string                      ddd     = date.ToString("ddd");
+            string?                      ddd     = date.ToString("ddd");
             LeaveapplicationdtlModel?   dtl     = _02LA(ddd);
             dtl.Start                           = date;
             if(dtl.DutyType=="RD") {dtl.TimeStart=0; dtl.TimeDuration=0;}
             else{
-                int hr              = (dtl.TimeStart / 100)??0; 
-                int min             = (dtl.TimeStart % 100)??0;  
+                int? hr              = (dtl.TimeStart / 100)??0; 
+                int? min             = (dtl.TimeStart % 100)??0;  
                 Double duration     = (dtl.TimeDuration / 100)??0; 
 
                 DateTime dStart = date; 
-                dtl.Start   = dStart.AddHours(hr).AddMinutes(min); 
-                dtl.End     = dStart.AddHours(hr).AddMinutes(min).AddHours(duration);
+                dtl.Start   = dStart.AddHours(hr??0).AddMinutes(min??0); 
+                dtl.End     = dStart.AddHours(hr??0).AddMinutes(min??0).AddHours(duration);
 
             }
             v.LeaveApplicationdtls.Add(dtl);            
         }
 
-        int lvaId = lva.Id; 
+        int? lvaId = lva.Id; 
         if(lvaId>0) {
             var res = await _lvaDtls._02ByLvApplicationId(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
             res.ForEach(fd => {
@@ -589,11 +591,11 @@
         if(ld.TimeStart==null) return; 
         if(ld.TimeDuration==null) return; 
 
-        int hr              = (ld.TimeStart / 100)??0; 
-        int min             = (ld.TimeStart % 100)??0;  
+        int? hr              = (ld.TimeStart / 100)??0; 
+        int? min             = (ld.TimeStart % 100)??0;  
         Double duration     = (ld.TimeDuration / 100)??0; 
         DateTime dstart     = ld.Start?.Date ?? DateTime.MinValue;
-        DateTime dEnd       = dstart.AddHours(hr).AddSeconds(min).AddHours(duration); 
+        DateTime dEnd       = dstart.AddHours(hr??0).AddSeconds(min??0).AddHours(duration); 
 
         ld.End = dEnd; 
 
@@ -654,7 +656,7 @@
         
     }
 
-    string _02DutyType(string ddd) => ddd switch {
+    string? _02DutyType(string? ddd) => ddd switch {
         "Mon" => v?.AttTemplate?.D2_dutytype??"",
         "Tue" => v?.AttTemplate?.D3_dutytype??"",
         "Wed" => v?.AttTemplate?.D4_dutytype??"",
@@ -665,14 +667,14 @@
         _ => "Unknown"
     };
 
-    string DTypeCss(string ddd) => _02DutyType(ddd) == "RD" ? " text-danger " : "";
+    string? DTypeCss(string? ddd) => _02DutyType(ddd) == "RD" ? " text-danger " : "";
     AtttemplateModel        at    =>  v.AttTemplate; 
     LeaveapplicationModel   lva   => v.LeaveApplication; 
     double lvWPay => v.LeaveApplicationdtls 
                         .Where(l => l.IsPayableB)
                         .Sum(l => l.CreditedHrs < 8 ? .5 : 1 ); 
 
-    LeaveapplicationdtlModel _02LA(string ddd) => ddd switch
+    LeaveapplicationdtlModel _02LA(string? ddd) => ddd switch
     {
         "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype, TimeStart = at.D2_in, TimeDuration = at.D2_hrslength },
         "Tue" => new LeaveapplicationdtlModel { DutyType = at.D3_dutytype, TimeStart = at.D3_in, TimeDuration = at.D3_hrslength },
@@ -684,8 +686,8 @@
         _ => new LeaveapplicationdtlModel()
     };
     
-    string _02LvTypeName(int lvTypeId)  => (v?.LeaveTypes.FirstOrDefault(l=>l.Id == lvTypeId).LeaveName)??"-";
-    string _02LvStatus(string code)     => code switch { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", "A" => "Approved", _ => "Unknown" };
+    string? _02LvTypeName(int? lvTypeId)  => (v?.LeaveTypes.FirstOrDefault(l=>l.Id == lvTypeId).LeaveName)??"-";
+    string? _02LvStatus(string? code)     => code switch { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", "A" => "Approved", _ => "Unknown" };
 
     
 }

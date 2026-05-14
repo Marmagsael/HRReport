@@ -7,7 +7,7 @@ namespace HRMvc.Models;
     {
         [Required]
         [Display(Name = "Id")]
-        public int Id { get; set; }
+        public int? Id { get; set; }
 
         [Required]
         [Display(Name = "Street")]

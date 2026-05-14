@@ -12,7 +12,7 @@
         <div class="d-flex gap-3">
             <div class="w-150p p-1 bordered-bottom text-center">Year</div>
             <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">
-                <RadzenDropDown TValue  ="int"
+                <RadzenDropDown TValue  ="int?"
                         @bind-Value     =@V.DtrYr
                         Change          ="FetchMyDTR"
                         Data            =@yrs
@@ -27,7 +27,7 @@
         <div class="d-flex gap-3">
             <div class="w-150p p-1 bordered-bottom text-center">Month</div>
             <div class="w-100 fw-semibold p-1 bordered-bottom  bg-secondary bg-opacity-10">
-                <RadzenDropDown TValue  ="int"
+                <RadzenDropDown TValue  ="int?"
                         @bind-Value     =@V.DtrMo
                         Change          ="FetchMyDTR"
                         Data            =@mos
@@ -99,15 +99,15 @@
             mdtr!.DutyType      = punchSched.DutyType; 
             if (punchSched.InTime > 0)
             {
-                mdtr.InTimeSchedule = mdtr.Date.AddHours(punchSched.InTime / 100);
+                mdtr.InTimeSchedule = mdtr.Date.AddHours(punchSched.InTime??0 / 100);
             }
             if (punchSched.HrsLenght > 0)
             {
                 if (punchSched.InTime > 0){
-                    mdtr.OutTimeSchedule = mdtr.Date.AddHours((punchSched.HrsLenght + punchSched.InTime) / 100); 
+                    mdtr.OutTimeSchedule = mdtr.Date.AddHours((punchSched.HrsLenght??0 + punchSched.InTime??0) / 100); 
                 } else
                 {
-                    mdtr.OutTimeSchedule = mdtr.Date.AddHours(punchSched.HrsLenght / 100);
+                    mdtr.OutTimeSchedule = mdtr.Date.AddHours(Convert.ToDouble(punchSched.HrsLenght??0) / 100);
                 }
 
             }
@@ -133,9 +133,9 @@
                     //try
                     //{
                         d.InTime            = r.Timein;
-                        d.InTimeSchedule    = r.Punchdate.AddHours(r.Timeint / 100);
+                        d.InTimeSchedule    = r.Punchdate.AddHours(r.Timeint??0 / 100);
                         d.OutTime           = r.Timeout;
-                        d.OutTimeSchedule   = r.Punchdate.AddHours(r.Timeoutt / 100);
+                        d.OutTimeSchedule   = r.Punchdate.AddHours(r.Timeoutt??0 / 100);
                     // }
                     // catch (Exception)
                     // {   throw; }
@@ -144,32 +144,32 @@
         }
     }
 
-    record PunchSchedule(int AttendanceTypeId, int InTime, int HrsLenght, string DutyType);
-    PunchSchedule _02PunchSchedule(int dayno, AtttemplateModel at)
+    record PunchSchedule(int?AttendanceTypeId, int?InTime, int?HrsLenght, string? DutyType);
+    PunchSchedule _02PunchSchedule(int? dayno, AtttemplateModel at)
     {
         var ps = new PunchSchedule(0, 0, 0, "RD");
         switch (dayno)
         {
             case 1:
-                ps = new PunchSchedule(at.AttendancetypeId, at.D1_in, at.D1_hrslength, at.D1_dutytype ?? "RD");
+                ps = new PunchSchedule(at.AttendancetypeId??0, at.D1_in??0, at.D1_hrslength??0, at.D1_dutytype ?? "RD");
                 return ps;
             case 2:
-                ps = new PunchSchedule(at.AttendancetypeId, at.D2_in, at.D2_hrslength, at.D2_dutytype ?? "RD");
+                ps = new PunchSchedule(at.AttendancetypeId??0, at.D2_in??0, at.D2_hrslength??0, at.D2_dutytype ?? "RD");
                 return ps;
             case 3:
-                ps = new PunchSchedule(at.AttendancetypeId, at.D3_in, at.D3_hrslength, at.D3_dutytype ?? "RD");
+                ps = new PunchSchedule(at.AttendancetypeId??0, at.D3_in??0, at.D3_hrslength??0, at.D3_dutytype ?? "RD");
                 return ps;
             case 4:
-                ps = new PunchSchedule(at.AttendancetypeId, at.D4_in, at.D4_hrslength, at.D4_dutytype ?? "RD");
+                ps = new PunchSchedule(at.AttendancetypeId??0, at.D4_in??0, at.D4_hrslength??0, at.D4_dutytype ?? "RD");
                 return ps;
             case 5:
-                ps = new PunchSchedule(at.AttendancetypeId, at.D5_in, at.D5_hrslength, at.D5_dutytype ?? "RD");
+                ps = new PunchSchedule(at.AttendancetypeId??0, at.D5_in??0, at.D5_hrslength??0, at.D5_dutytype ?? "RD");
                 return ps;
             case 6:
-                ps = new PunchSchedule(at.AttendancetypeId, at.D6_in, at.D6_hrslength, at.D6_dutytype ?? "RD");
+                ps = new PunchSchedule(at.AttendancetypeId??0, at.D6_in??0, at.D6_hrslength??0, at.D6_dutytype ?? "RD");
                 return ps;
             case 7:
-                ps = new PunchSchedule(at.AttendancetypeId, at.D7_in, at.D7_hrslength, at.D7_dutytype ?? "RD");
+                ps = new PunchSchedule(at.AttendancetypeId??0, at.D7_in??0, at.D7_hrslength??0, at.D7_dutytype ?? "RD");
                 return ps;
 
 

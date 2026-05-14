@@ -11,6 +11,6 @@ public class V02
     public PissettingsModel?    Pissettings     { get; set; } = new(); 
 
     public string?              Action          { get; set; } = string.Empty;
-    public int                  Selection       { get; set; } = 0;
+    public int?                  Selection       { get; set; } = 0;
     
 }

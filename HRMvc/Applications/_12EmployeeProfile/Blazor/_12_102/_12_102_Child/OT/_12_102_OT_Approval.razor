@@ -1,0 +1,117 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@if(ShowModal) { <div> <_12_102_OT_ApprovalModal V="V" Ec="EC_Catcher"  />  </div> }
+
+
+<div class="card b-green ">
+    <div class="card-header p-0 ">
+        <div class="bordered-bottom py-2 small fw-bold text-white bg-success px-2  ">
+            OT Request
+        </div>
+
+        <div class="p-1 d-flex gap-2 small ">
+            <button @onclick="MarkAll" class="btn text-primary w-80p bordered-bottom p-1 @markAllCss ">Mark All
+            </button>
+            <button @onclick="UnmarkAll" class="btn text-primary w-90p bordered-bottom p-1 @unmarkAllCss ">Unmark All
+            </button>
+            <div class="w-10p bordered-left">&nbsp; </div>
+            <button class="btn text-successw  w-130p bordered-bottom p-1 @noSelectedCss ">Approve Selected </button>
+            <button class="btn text-success w-130p bordered-bottom p-1 @noSelectedCss ">Partially Approve </button>
+            
+        </div>
+    </div>
+
+    <div class="card-body">
+        
+        <div class="d-flex gap-2 small fw-bold border-bottom  py-1">
+            <div class="w-200p ">Requestor</div>
+            <div class="w-50p ">TRN</div>
+            <div class="w-100p ">Requested</div>
+            <div class="w-120p ">Coverage</div>
+            <div class="w-90p text-center">Hours</div>
+            <div class="d-flex flex-grow-1">Action</div>
+            
+        </div>
+        @foreach (var r in V.Otreqhdrs)
+        {
+            <div class="w-100 bordered-bottom py-1 ">
+                <div class="d-flex gap-2 mt-1">
+                    <div class="w-200p py-1 d-flex gap-1 align-items-center">
+                        <div>
+                            <RadzenCheckBox @bind-Value=@r.IsSelected TValue="bool" />
+                        </div>
+                        <div>@r.RequestorName</div>
+                    </div>
+                    <div class="w-50p text-center py-1" >@r.Id</div>
+                    <div class="w-100p py-1">@r.DateRequested?.ToShortDateString()</div>
+                    <div class="w-120p d-flex align-items-center">
+                        @r.CovStart?.ToString("MMM dd") -@r.CovEnd?.ToString("MMM dd")
+                    </div>
+                    <div class="w-90p d-flex align-items-center justify-content-center fw-bold small ">
+                        @r.TotHrs?.ToString("N2")
+                    </div>
+                    <div class="d-flex flex-grow-1 justify-content-end ">
+                        <button @onclick="() => ShowDtl(r)" class="btn btn-outline-secondary px-1">Show Details</button>
+                    </div>
+
+                </div>
+
+                @if (r.Remarks != null && r.Remarks.Any())
+                {
+                    <div class="d-flex gap-2 ms-4 disabled-div-50 ">
+                        <div class="small fw-bold ">Remarks : </div>
+                        <div class="small">@r.Remarks</div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+@inject     IOtreqdtlDataAccess     _otreqdtl; 
+@inject     IAttpunches1DataAccess  _attp1; 
+
+@code {
+    [CascadingParameter]    public UserClaimsModel          Uc          { get; set; } = new(); 
+    [Parameter]             public V12_102Obligation        V           { get; set; } = new();
+    bool                    ShowModal   = false; 
+
+    async Task ShowDtl(OtreqhdrModel h)
+    {
+        V.Attpunches1s = []; 
+        DateOnly dStart = DateOnly.FromDateTime(h.CovStart??DateTime.MinValue);
+        DateOnly dEnd = DateOnly.FromDateTime(h.CovEnd??DateTime.MinValue); 
+        var resAttP1 = await _attp1._02ByIdByRange(h.UserId ?? 0, dStart, dEnd, Uc.SchemaUserPis, Uc.Conn);
+        if(resAttP1!=null && resAttP1.Count>0) { V.Attpunches1s= resAttP1!; }
+
+        V.Otreqdtls = []; 
+        var res = await _otreqdtl._02ByOtReqHdrId(h.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+        if (res != null && res.Count > 0)
+        {
+            V.Otreqdtls = res!;
+            V.Otreqhdr = h;
+        }
+
+        ShowModal = true; 
+    }
+
+    void EC_Catcher(bool ans)
+    {
+
+        
+        
+        
+        ShowModal = ans;
+    }
+
+    bool isMarkAll => (V.Otreqhdrs.Where(a => a.IsSelected == true).ToList().Count == V.Otreqhdrs.Count);
+    string? markAllCss => isMarkAll ? " disabled-div " : " ";
+    bool isUnmarkAll => (V.Otreqhdrs.Where(a => a.IsSelected == false).ToList().Count == V.Otreqhdrs.Count);
+    string? unmarkAllCss => isUnmarkAll ? " disabled-div " : " ";
+    bool isNoSelected => (V.Otreqhdrs.Where(a => a.IsSelected == true).ToList().Count > 0);
+    string? noSelectedCss => !isNoSelected ? " disabled-div " : " ";
+
+    void MarkAll() { V.Otreqhdrs.ForEach(a=> {a.IsSelected=true; });  }
+    void UnmarkAll() { V.Otreqhdrs.ForEach(a=> {a.IsSelected=false; });  }
+
+}

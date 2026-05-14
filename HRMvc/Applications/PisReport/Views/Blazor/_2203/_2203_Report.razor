@@ -55,8 +55,8 @@
 
             @if ((V.RepDtls ?? []).Any())
             {
-                int ctr = 0;
-                string stat = string.Empty;
+                int? ctr = 0;
+                string? stat = string.Empty;
 
                 @foreach (var v in V.RepDtls)
                 {
@@ -101,9 +101,9 @@
     [Parameter] public EventCallback<object>    ChildAction { get; set; }
 
     private static readonly DateTime PlaceholderDate = new DateTime(1901, 1, 1);
-    private string FormatDate(DateTime? date)=> date.HasValue && date.Value > PlaceholderDate ? date.Value.ToString("MM/dd/yyyy") : "";
+    private string? FormatDate(DateTime? date)=> date.HasValue && date.Value > PlaceholderDate ? date.Value.ToString("MM/dd/yyyy") : "";
 
-    private string GetCssClass(DateTime? date)
+    private string? GetCssClass(DateTime? date)
     {
         if (!date.HasValue || date.Value == PlaceholderDate) return "";
         if (DateTime.Today > date.Value) return "text-danger";
@@ -117,8 +117,8 @@
         Rv.ReportData = V.RepDtls;
         Rv.RelativePath = "Reports/_02HR/K_2203_EC.trdp";
 
-        int monthNumber     = Convert.ToInt32(Rv.Month);
-        string monthName    = new DateTime(1, monthNumber, 1).ToString("MMMM", CultureInfo.InvariantCulture);
+        int? monthNumber     = Convert.ToInt32(Rv.Month);
+        string? monthName    = new DateTime(1, monthNumber??0, 1).ToString("MMMM", CultureInfo.InvariantCulture);
 
         Rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {Rv.Year}";
         Rv.ShowReport = true;
@@ -146,7 +146,7 @@
     }
 
 
-    void Notify(NotificationSeverity severity, string summary, string detail)
+    void Notify(NotificationSeverity severity, string? summary, string? detail)
     {
         _NotificationService.Notify(new NotificationMessage
         {

@@ -2,7 +2,7 @@
 
 public class EmpmasInsuranceModel
 {
-    public int Id { get; set; }
+    public int? Id { get; set; }
 
     public string? INSURANCE { get; set; }
 

@@ -2,5 +2,5 @@
 
 public class Rempstat_baseModel
 {
-    public int REmpstatId { get; set; } = 0;
+    public int? REmpstatId { get; set; } = 0;
 }
