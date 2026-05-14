@@ -14,9 +14,9 @@ public class DedmandatoryDataAccess : IDedmandatoryDataAccess
         _sql = sql;
     }
 
-    public async Task<DedmandatoryModel?> _01(DedmandatoryModel dedmandatory, string schema, string conn)
+    public async Task<DedmandatoryModel?> _01(DedmandatoryModel dedmandatory, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Dedmandatory 
+        string? sql = $@"Insert into {schema}.Dedmandatory 
                             (AcctNumber,  ContAmt,  MaxAmt,  Remarks,  P1,  P2,  P3,  P4,  P5) values 
                             (@AcctNumber, @ContAmt, @MaxAmt, @Remarks, @P1, @P2, @P3, @P4, @P5) 
                         on duplicate key update ContAmt = @ContAmt, 
@@ -57,33 +57,33 @@ public class DedmandatoryDataAccess : IDedmandatoryDataAccess
     }
 
 
-    public async Task<DedmandatoryModel?> _02(int id, string schema, string conn)
+    public async Task<DedmandatoryModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"SELECT c.AcctName, d.* FROM {schema}.Dedmandatory d 
+        string? sql = $@"SELECT c.AcctName, d.* FROM {schema}.Dedmandatory d 
                             left join {schema}.coa c on c.acctNumber = d.acctNumber  
                         where d.Id = @Id";
         var data = await _sql.FetchData<DedmandatoryModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<List<DedmandatoryModel?>?> _02(string schema, string conn)
+    public async Task<List<DedmandatoryModel?>?> _02(string? schema, string? conn)
     {
-        string sql = $@"SELECT c.AcctName, d.* FROM {schema}.Dedmandatory d 
+        string? sql = $@"SELECT c.AcctName, d.* FROM {schema}.Dedmandatory d 
                             left join {schema}.coa c on c.acctNumber = d.acctNumber ";
         var data = await _sql.FetchData<DedmandatoryModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
-    public async Task<List<DedmandatoryModel?>?> _02ByStatus(string status, string schema, string conn)
+    public async Task<List<DedmandatoryModel?>?> _02ByStatus(string? status, string? schema, string? conn)
     {
-        string sql = $@"SELECT c.AcctName, d.* FROM {schema}.Dedmandatory d 
+        string? sql = $@"SELECT c.AcctName, d.* FROM {schema}.Dedmandatory d 
                             left join {schema}.coa c on c.acctNumber = d.acctNumber 
                             where Status = @Status ";
         var data = await _sql.FetchData<DedmandatoryModel?, dynamic>(sql, new { Status = status }, conn);
         return data;
     }
     
-    public async Task<DedmandatoryModel?> _03(int id, DedmandatoryModel dedmandatory, string schema, string conn)
+    public async Task<DedmandatoryModel?> _03(int? id, DedmandatoryModel dedmandatory, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Dedmandatory set 
+        string? sql = $@"Update {schema}.Dedmandatory set 
                             AcctNumber  = @AcctNumber, 
                             ContAmt     = @ContAmt,  
                             MaxAmt      = @MaxAmt,  
@@ -104,9 +104,9 @@ public class DedmandatoryDataAccess : IDedmandatoryDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task<DedmandatoryModel?> _03Stop(int id, string schema, string conn)
+    public async Task<DedmandatoryModel?> _03Stop(int? id, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Dedmandatory set Status      = 'S' where Id = @Id;";
+        string? sql = $@"Update {schema}.Dedmandatory set Status      = 'S' where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new {  Id = id }, conn);
 
         sql = $@" SELECT c.AcctName, d.* FROM {schema}.Dedmandatory d 
@@ -116,9 +116,9 @@ public class DedmandatoryDataAccess : IDedmandatoryDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<DedmandatoryModel?> _04(int id, string schema, string conn)
+    public async Task<DedmandatoryModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Dedmandatory where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Dedmandatory where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Dedmandatory x where x.Id = @Id ;";

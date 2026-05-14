@@ -12,9 +12,9 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
         _sql = sql;
     }
 
-    public async Task<AttreqhistModel?> _01(AttreqhistModel attreqhist, string schema, string conn)
+    public async Task<AttreqhistModel?> _01(AttreqhistModel attreqhist, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Attreqhist 
+        string? sql = $@"Insert into {schema}.Attreqhist 
                             (AttReqHdrId,  DActionTaken,  SetStatusTo,  Remarks,  Empnumber_Approver) values 
                             (@AttReqHdrId, @DActionTaken, @SetStatusTo, @Remarks, @Empnumber_Approver)";
         await _sql.ExecuteCmd<dynamic>(sql, attreqhist, conn);
@@ -27,9 +27,9 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
     }
 
 
-    public async Task<List<AttreqhistModel?>> _02s(int id, string pisdb, string opisdb, string conn)
+    public async Task<List<AttreqhistModel?>> _02s(int? id, string? pisdb, string? opisdb, string? conn)
     {
-        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*  
+        string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*  
                         from {pisdb}.Attreqhist h 
                         left join {opisdb}.empmas e on e.empnumber = h.empnumber_approver 
                         where Id = @Id";
@@ -37,9 +37,9 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
         return data ?? [];
     }
 
-    public async Task<List<AttreqhistModel?>> _02s(string pisdb, string opisdb, string conn)
+    public async Task<List<AttreqhistModel?>> _02s(string? pisdb, string? opisdb, string? conn)
     {
-        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*  
+        string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*  
                         from {pisdb}.Attreqhist h 
                         left join {opisdb}.empmas e on e.empnumber = h.empnumber_approver 
                         where Id = @Id";
@@ -47,9 +47,9 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
         return data ?? [];
     }
    
-    public async Task<List<AttreqhistModel?>> _02ByAttreqhdrId(int attreqhdrId, string pisdb, string opisdb, string conn)
+    public async Task<List<AttreqhistModel?>> _02ByAttreqhdrId(int? attreqhdrId, string? pisdb, string? opisdb, string? conn)
     {
-        string sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*  
+        string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*  
                         from {pisdb}.Attreqhist h 
                         left join {opisdb}.empmas e on e.empnumber = h.empnumber_approver 
                         where AttReqHdrId = @AttReqHdrId";
@@ -60,9 +60,9 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
 
 
 
-    public async Task<AttreqhistModel?> _03(int id, AttreqhistModel attreqhist, string schema, string conn)
+    public async Task<AttreqhistModel?> _03(int? id, AttreqhistModel attreqhist, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Attreqhist set 
+        string? sql = $@"Update {schema}.Attreqhist set 
                             AttReqHdrId         = @AttReqHdrId, 
                             DActionTaken        = @DActionTaken, 
                             SetStatusTo         = @SetStatusTo,
@@ -75,9 +75,9 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<AttreqhistModel?> _04(int id, string schema, string conn)
+    public async Task<AttreqhistModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Attreqhist where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Attreqhist where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Attreqhist x where x.Id = @Id ;";
@@ -89,10 +89,10 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
 
 public interface IAttreqhistDataAccess
 {
-    Task<AttreqhistModel?>          _01(AttreqhistModel attreqhist, string schema, string conn);
-    Task<List<AttreqhistModel?>>    _02s(int id, string pisdb, string opisdb, string conn);
-    Task<List<AttreqhistModel?>>    _02s(string pisdb, string opisdb, string conn);
-    Task<List<AttreqhistModel?>>    _02ByAttreqhdrId(int attreqhdrId, string pisdb, string opisdb, string conn); 
-    Task<AttreqhistModel?>          _03(int id, AttreqhistModel attreqhist, string schema, string conn);
-    Task<AttreqhistModel?>          _04(int id, string schema, string conn);
+    Task<AttreqhistModel?>          _01(AttreqhistModel attreqhist, string? schema, string? conn);
+    Task<List<AttreqhistModel?>>    _02s(int? id, string? pisdb, string? opisdb, string? conn);
+    Task<List<AttreqhistModel?>>    _02s(string? pisdb, string? opisdb, string? conn);
+    Task<List<AttreqhistModel?>>    _02ByAttreqhdrId(int? attreqhdrId, string? pisdb, string? opisdb, string? conn); 
+    Task<AttreqhistModel?>          _03(int? id, AttreqhistModel attreqhist, string? schema, string? conn);
+    Task<AttreqhistModel?>          _04(int? id, string? schema, string? conn);
 }

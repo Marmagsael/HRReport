@@ -2,6 +2,6 @@
 {
     public interface I_AcctgTableMaker
     {
-        Task AccountingTableMaker(string db, string conn);
+        Task AccountingTableMaker(string? db, string? conn);
     }
 }

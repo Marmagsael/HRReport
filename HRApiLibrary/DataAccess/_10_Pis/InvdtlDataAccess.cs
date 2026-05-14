@@ -14,9 +14,9 @@ public class InvdtlDataAccess : IInvdtlDataAccess
         _sql = sql;
     }
 
-    public async Task<InvdtlModel?> _01(InvdtlModel invdtl, string schema, string conn)
+    public async Task<InvdtlModel?> _01(InvdtlModel invdtl, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Invdtl (InvId, Descr_, Value_) values (@InvId, @Descr_, @Value_)";
+        string? sql = $@"Insert into {schema}.Invdtl (InvId, Descr_, Value_) values (@InvId, @Descr_, @Value_)";
         await _sql.ExecuteCmd<dynamic>(sql, invdtl, conn);
 
         sql = $@"SELECT * FROM {schema}.Invdtl WHERE ID = (SELECT @@IDENTITY)";
@@ -27,17 +27,17 @@ public class InvdtlDataAccess : IInvdtlDataAccess
     }
 
 
-    public async Task<InvdtlModel?> _02(int id, string schema, string conn)
+    public async Task<InvdtlModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, InvId, Descr_, Value_ from {schema}.Invdtl where Id = @Id";
+        string? sql = $@"select  Id, InvId, Descr_, Value_ from {schema}.Invdtl where Id = @Id";
         var data = await _sql.FetchData<InvdtlModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<InvdtlModel?> _03(int id, InvdtlModel invdtl, string schema, string conn)
+    public async Task<InvdtlModel?> _03(int? id, InvdtlModel invdtl, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Invdtl set InvId = @InvId, Descr_ = @Descr_, Value_ = @Value_ where Id = @Id;";
+        string? sql = $@"Update {schema}.Invdtl set InvId = @InvId, Descr_ = @Descr_, Value_ = @Value_ where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, invdtl, conn);
 
         sql = $@" select  * from {schema}.Invdtl x where x.Id = @Id ;";
@@ -45,9 +45,9 @@ public class InvdtlDataAccess : IInvdtlDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<InvdtlModel?> _04(int id, string schema, string conn)
+    public async Task<InvdtlModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Invdtl where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Invdtl where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Invdtl x where x.Id = @Id ;";

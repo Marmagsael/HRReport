@@ -2,6 +2,6 @@
 
 public class VerupdateModel
 {
-    public int         Id             { get; set; } = 0;
+    public int?         Id             { get; set; } = 0;
     public double      VerCtrl        { get; set; } = 0.00; 
 }

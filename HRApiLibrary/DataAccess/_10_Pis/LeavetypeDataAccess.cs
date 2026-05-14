@@ -19,9 +19,9 @@ public class LeavetypeDataAccess : ILeavetypeDataAccess
         _sql = sql;
     }
 
-    public async Task<LeavetypeModel?> _01(LeavetypeModel leavetype, string schema, string conn)
+    public async Task<LeavetypeModel?> _01(LeavetypeModel leavetype, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Leavetype 
+        string? sql = $@"Insert into {schema}.Leavetype 
                             (Code, LeaveName, AnivStart, AnivEnd, DefValue) values 
                             (@Code, @LeaveName, @AnivStart, @AnivEnd, @DefValue)";
         await _sql.ExecuteCmd<dynamic>(sql, leavetype, conn);
@@ -33,31 +33,31 @@ public class LeavetypeDataAccess : ILeavetypeDataAccess
     }
 
 
-    public async Task<List<LeavetypeModel?>?> _02(string schema, string conn)
+    public async Task<List<LeavetypeModel?>?> _02(string? schema, string? conn)
     {
-        string sql  = $@"select  * from {schema}.Leavetype";
+        string? sql  = $@"select  * from {schema}.Leavetype";
         var data    = await _sql.FetchData<LeavetypeModel?, dynamic>(sql, new { }, conn);
         return data;
     }
     
-    public async Task<List<LeavetypeModel?>?> _02ByCode_Or_ByName(string code, string lvName, string schema, string conn)
+    public async Task<List<LeavetypeModel?>?> _02ByCode_Or_ByName(string? code, string? lvName, string? schema, string? conn)
     {
-        string sql  = $@"select  * from {schema}.Leavetype where Code = @Code or LeaveName = @LeaveName";
+        string? sql  = $@"select  * from {schema}.Leavetype where Code = @Code or LeaveName = @LeaveName";
         var data    = await _sql.FetchData<LeavetypeModel?, dynamic>(sql, new { Code = code, LeaveName = lvName }, conn);
         return data;
     }
     
-    public async Task<List<LeavetypeModel?>?> _02ById(int id, string schema, string conn)
+    public async Task<List<LeavetypeModel?>?> _02ById(int? id, string? schema, string? conn)
     {
-        string sql  = $@"select  * from {schema}.Leavetype where Id = @Id";
+        string? sql  = $@"select  * from {schema}.Leavetype where Id = @Id";
         var data    = await _sql.FetchData<LeavetypeModel?, dynamic>(sql, new {Id = id }, conn);
         return data;
     }
 
 
-    public async Task<LeavetypeModel?> _02(int id, string schema, string conn)
+    public async Task<LeavetypeModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, Code, LeaveName, AnivStart, AnivEnd, DefValue 
+        string? sql = $@"select  Id, Code, LeaveName, AnivStart, AnivEnd, DefValue 
                             from {schema}.Leavetype where Id = @Id";
         var data = await _sql.FetchData<LeavetypeModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
@@ -65,9 +65,9 @@ public class LeavetypeDataAccess : ILeavetypeDataAccess
 
 
 
-    public async Task<LeavetypeModel?> _03(int id, LeavetypeModel leavetype, string schema, string conn)
+    public async Task<LeavetypeModel?> _03(int? id, LeavetypeModel leavetype, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Leavetype set 
+        string? sql = $@"Update {schema}.Leavetype set 
                             Code        = @Code, 
                             LeaveName   = @LeaveName, 
                             AnivStart   = @AnivStart, 
@@ -81,9 +81,9 @@ public class LeavetypeDataAccess : ILeavetypeDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<LeavetypeModel?> _04(int id, string schema, string conn)
+    public async Task<LeavetypeModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Leavetype where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Leavetype where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Leavetype x where x.Id = @Id ;";

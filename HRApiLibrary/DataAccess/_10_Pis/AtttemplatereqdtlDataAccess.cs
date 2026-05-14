@@ -12,9 +12,9 @@ public class AtttemplatereqdtlDataAccess : IAtttemplatereqdtlDataAccess
         _sql = sql;
     }
 
-    public async Task _01(AtttemplatereqdtlModel atttemplatereqdtl, string schema, string conn)
+    public async Task _01(AtttemplatereqdtlModel atttemplatereqdtl, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Atttemplatereqdtl 
+        string? sql = $@"Insert into {schema}.Atttemplatereqdtl 
 							(AtttemplateReqHdrId, EmpmasId, AttendanceTypeId, D1_In, D1_HrsLength, 
 							 D1_DutyType, D2_In, D2_HrsLength, D2_DutyType, D3_In, D3_HrsLength, D3_DutyType, 
 							 D4_In, D4_HrsLength, D4_DutyType, D5_In, D5_HrsLength, D5_DutyType, D6_In, D6_HrsLength, D6_DutyType, 
@@ -27,17 +27,17 @@ public class AtttemplatereqdtlDataAccess : IAtttemplatereqdtlDataAccess
     }
 
 
-    public async Task<List<AtttemplatereqdtlModel?>?> _02ByAtttemplateReqHdrId(int atttemplateReqHdrId, string schema, string conn)
+    public async Task<List<AtttemplatereqdtlModel?>?> _02ByAtttemplateReqHdrId(int? atttemplateReqHdrId, string? schema, string? conn)
     {
-        string sql = $@"select * from {schema}.Atttemplatereqdtl where AtttemplateReqHdrId = @AtttemplateReqHdrId";
+        string? sql = $@"select * from {schema}.Atttemplatereqdtl where AtttemplateReqHdrId = @AtttemplateReqHdrId";
         var data = await _sql.FetchData<AtttemplatereqdtlModel?, dynamic>(sql, new { AtttemplateReqHdrId = atttemplateReqHdrId }, conn);
         return data;
     }
 
 
-    public async Task<List<AtttemplatereqdtlModel?>?> _03ByAtttemplateReqHdrId(int atttemplateReqHdrId, AtttemplatereqdtlModel atttemplatereqdtl, string schema, string conn)
+    public async Task<List<AtttemplatereqdtlModel?>?> _03ByAtttemplateReqHdrId(int? atttemplateReqHdrId, AtttemplatereqdtlModel atttemplatereqdtl, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Atttemplatereqdtl set 
+        string? sql = $@"Update {schema}.Atttemplatereqdtl set 
 							AtttemplateReqHdrId = @AtttemplateReqHdrId, 
 							EmpmasId 			= @EmpmasId, 
 							AttendanceTypeId 	= @AttendanceTypeId, 
@@ -67,9 +67,9 @@ public class AtttemplatereqdtlDataAccess : IAtttemplatereqdtlDataAccess
         return data;
     }
 
-    public async Task _04(int atttemplateReqHdrId, string schema, string conn)
+    public async Task _04(int? atttemplateReqHdrId, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Atttemplatereqdtl where AtttemplateReqHdrId = @AtttemplateReqHdrId;";
+        string? sql = $@"Delete from {schema}.Atttemplatereqdtl where AtttemplateReqHdrId = @AtttemplateReqHdrId;";
         await _sql.ExecuteCmd<dynamic>(sql, new { AtttemplateReqHdrId = atttemplateReqHdrId }, conn);
 
     }
@@ -78,8 +78,8 @@ public class AtttemplatereqdtlDataAccess : IAtttemplatereqdtlDataAccess
 
 public interface IAtttemplatereqdtlDataAccess
 {
-    Task _01(AtttemplatereqdtlModel atttemplatereqdtl, string schema, string conn);
-    Task<List<AtttemplatereqdtlModel?>?> _02ByAtttemplateReqHdrId(int atttemplateReqHdrId, string schema, string conn);
-    Task<List<AtttemplatereqdtlModel?>?> _03ByAtttemplateReqHdrId(int atttemplateReqHdrId, AtttemplatereqdtlModel atttemplatereqdtl, string schema, string conn);
-    Task _04(int atttemplateReqHdrId, string schema, string conn);
+    Task _01(AtttemplatereqdtlModel atttemplatereqdtl, string? schema, string? conn);
+    Task<List<AtttemplatereqdtlModel?>?> _02ByAtttemplateReqHdrId(int? atttemplateReqHdrId, string? schema, string? conn);
+    Task<List<AtttemplatereqdtlModel?>?> _03ByAtttemplateReqHdrId(int? atttemplateReqHdrId, AtttemplatereqdtlModel atttemplatereqdtl, string? schema, string? conn);
+    Task _04(int? atttemplateReqHdrId, string? schema, string? conn);
 }

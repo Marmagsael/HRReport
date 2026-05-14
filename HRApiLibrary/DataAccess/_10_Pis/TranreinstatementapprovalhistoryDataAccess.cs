@@ -15,9 +15,9 @@ public class TranreinstatementapprovalhistoryDataAccess : ITranreinstatementappr
         _sql = sql;
     }
 
-    public async Task<TranreinstatementapprovalhistoryModel?> _01(TranreinstatementapprovalhistoryModel Tranreinstatementapprovalhistory, string schema, string conn)
+    public async Task<TranreinstatementapprovalhistoryModel?> _01(TranreinstatementapprovalhistoryModel Tranreinstatementapprovalhistory, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Tranreinstatementapprovalhistory (TranNumber, Date, UserId, Status, ApproverId, ApproverRemarks) values (@TranNumber, @Date, @UserId, @Status, @ApproverId, @ApproverRemarks)";
+        string? sql = $@"Insert into {schema}.Tranreinstatementapprovalhistory (TranNumber, Date, UserId, Status, ApproverId, ApproverRemarks) values (@TranNumber, @Date, @UserId, @Status, @ApproverId, @ApproverRemarks)";
         await _sql.ExecuteCmd<dynamic>(sql, Tranreinstatementapprovalhistory, conn);
 
         sql = $@"SELECT * FROM {schema}.Tranreinstatementapprovalhistory WHERE ID = (SELECT @@IDENTITY)";
@@ -28,26 +28,26 @@ public class TranreinstatementapprovalhistoryDataAccess : ITranreinstatementappr
     }
 
 
-    public async Task<TranreinstatementapprovalhistoryModel?> _02(int id, string schema, string conn)
+    public async Task<TranreinstatementapprovalhistoryModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, TranNumber, Date, UserId, Status, ApproverId, ApproverRemarks from {schema}.Tranreinstatementapprovalhistory where Id = @Id";
+        string? sql = $@"select  Id, TranNumber, Date, UserId, Status, ApproverId, ApproverRemarks from {schema}.Tranreinstatementapprovalhistory where Id = @Id";
         var data = await _sql.FetchData<TranreinstatementapprovalhistoryModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<TranreinstatementapprovalhistoryModel?> _02(string trannumber, string schema, string conn)
+    public async Task<TranreinstatementapprovalhistoryModel?> _02(string? trannumber, string? schema, string? conn)
     {
-        string sql = $@"select  Id, TranNumber, Date, UserId, Status, ApproverId, ApproverRemarks from {schema}.Tranreinstatementapprovalhistory where Trannumber = @Trannumber";
+        string? sql = $@"select  Id, TranNumber, Date, UserId, Status, ApproverId, ApproverRemarks from {schema}.Tranreinstatementapprovalhistory where Trannumber = @Trannumber";
         var data = await _sql.FetchData<TranreinstatementapprovalhistoryModel?, dynamic>(sql, new { Trannumber = trannumber }, conn);
         return data?.FirstOrDefault();
     }
 
 
 
-    public async Task<TranreinstatementapprovalhistoryModel?> _03(int id, TranreinstatementapprovalhistoryModel Tranreinstatementapprovalhistory, string schema, string conn)
+    public async Task<TranreinstatementapprovalhistoryModel?> _03(int? id, TranreinstatementapprovalhistoryModel Tranreinstatementapprovalhistory, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Tranreinstatementapprovalhistory set TranNumber = @TranNumber, Date = @Date, UserId = @UserId, Status = @Status, ApproverId = @ApproverId, ApproverRemarks = @ApproverRemarks where Id = @Id;";
+        string? sql = $@"Update {schema}.Tranreinstatementapprovalhistory set TranNumber = @TranNumber, Date = @Date, UserId = @UserId, Status = @Status, ApproverId = @ApproverId, ApproverRemarks = @ApproverRemarks where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, Tranreinstatementapprovalhistory, conn);
 
         sql = $@" select  * from {schema}.Tranreinstatementapprovalhistory x where x.Id = @Id ;";
@@ -57,9 +57,9 @@ public class TranreinstatementapprovalhistoryDataAccess : ITranreinstatementappr
 
 
 
-    public async Task<TranreinstatementapprovalhistoryModel?> _04(int id, string schema, string conn)
+    public async Task<TranreinstatementapprovalhistoryModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Tranreinstatementapprovalhistory where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Tranreinstatementapprovalhistory where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Tranreinstatementapprovalhistory x where x.Id = @Id ;";
