@@ -9,23 +9,23 @@
 
             <Weeks V="@V" />
 
-            @for (int? i = 0; i < V.Calendar.Count; i += 7)
+            @for (int i = 0; i < V.Calendar.Count; i += 7)
             {
                 <div class="week-row">
 
-                    @for (int? j = i; j < i + 7 && j < V.Calendar.Count; j++)
+                    @for (int j = i; j < i + 7 && j < V.Calendar.Count; j++)
                     {
 
-                        var day = V.Calendar[j??0];
+                        var day = V.Calendar[j];
 
-                        <div class="day-card  @(day.Status) @(day.Date is null || day.Status == "RD" || day.Status == "WHOLEDAYLEAVE" ? "empty" : "") @(day.IsToday??false ? "today" : "")" @onclick="(() => SelectDay(day))">
+                        <div class="day-card @(IsEmptyDay(day) ? "empty" : "") @(day.IsToday ?? false ? "today" : "")  @(day.IsSelected ?? false ? "selected-day" : "")" @onclick="(() => SelectDay(day))">
 
                             @if (day.Date is not null)
                             {
                                 <Date D="@day"/>
                                 <Status D="@day" />
                                 <div class="d-flex flex-column  justify-content-start gap-0">
-                                    <Schedule D="@day" />
+                                     <Schedule D="@day" />
                                     <Punches D="@day" />
                                     <Late D="@day" />
                                     <UnderTime D="@day" />
@@ -53,10 +53,36 @@
 
     private async Task SelectDay(AttDayDetail rec)
     {
-        V.DayDetail = new();
+        V.DayDetail.IsSelected = false;
+        V.DayDetail         = new();
+        V.DayDetail.Logs    = new();
 
         V.DayDetail = rec;
+        V.DayDetail.Logs = rec.Logs;
+
+        rec.IsSelected      = true;
         await ChildAction.InvokeAsync();
+    }
+
+    private bool IsEmptyDay(AttDayDetail day)
+    {
+        if (day.Date is null) return true;
+
+        var s = day.Status ?? "";
+
+        // Rest day — always empty
+        if (s.Contains("RD")) return true;
+
+        // Half day leave — NOT empty (working half needs to show)
+        if (s.Contains("1/2")) return false;
+
+        // Whole day leave — empty if no PRESENT or ABSENT
+        // Dynamic: uses LeaveType instead of hardcoded VL/SL/SIL/ML
+        if (!string.IsNullOrWhiteSpace(day.LeaveType)
+            && !s.Contains("PRESENT")
+            && !s.Contains("ABSENT")) return true;
+
+        return false;
     }
 }
 
