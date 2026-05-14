@@ -2325,7 +2325,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {schema}.LeavedayType limit 1 ";
-        var res = await _sql.FetchData<PissettingsModel, dynamic>(sql, new { }, conn);
+        var res = await _sql.FetchData<LeavedaytypeModel, dynamic>(sql, new { }, conn);
         if (res == null || res.Count == 0)
         {
             sql = $@"insert into {schema}.LeavedayType (Id, Name) values (1,'Whole day'), (2, 'First-Half'), (3,'Second-Half'); ";
