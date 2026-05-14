@@ -1,0 +1,159 @@
+@using HRApiLibrary.Models._20_Pay
+@using HRApiLibrary.Models._20_PayGeneric
+@using HRApiLibrary.Models._20_PayGeneric.EmpPortal
+@using HRMvc.Views.BlazorPages.Vars
+@using Microsoft.CodeAnalysis.CSharp
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.Math
+@namespace HRMvc.Applications._12EmployeeProfile.Blazor
+
+
+
+
+<div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper">
+    
+    <div class="card-header"><_12_102_PersonalInfo OEmpmass="OEmpmass" /> </div> 
+    <_12_102Shortcuts Ec="@Ec" /> 
+    
+    
+    <div class="card-body w-100">
+
+        @if(msg.Length > 0 ) { <div class="text-danger p-3 "> @msg </div> }
+
+        @if(lnk==2){ <div> <_12_102_RequestTimeOff Uc="@UserClaims" />  </div> }
+        @if(lnk==3){ <div> <_12_102_TimeSheet1 Uc="@UserClaims" /> </div> }
+        @if(lnk==4){ <div> <_12_102_Obligation Uc="@UserClaims" /> </div> }
+        @if(lnk==5){ <div> <_12_102_SSSRemittance EP_SSS12102="@sssPrem" /> </div> }
+        @if(lnk==6){ <div> <_12_102_PHICRemittance EP_Phic12102="@phicPrem" /> </div> }
+        @if(lnk==7){ <div> <_12_102_PagibigRemittance EP_Pagibig12102="@pagibigPrem" /> </div> }
+        @if(lnk==8){ <div> <_12_102_Loans Loans="@loans" /> </div> }
+        
+        
+        
+        
+        
+
+        @if(lnk==0) {
+        <div class="w-100">
+            <_12_102_Body_Clock  OEmpmass="@OEmpmass" > </_12_102_Body_Clock>    
+        </div>
+
+        <div class="d-flex gap-2 w-100 mt-3">
+            @*--- Left ---*@
+            <div class="w-50">
+                <div>
+                    
+                    <_12_102_Body_Punch 
+                        OEmpmass            = "@OEmpmass" 
+                        uc                  = "@UserClaims" 
+                        Attpunches1_Current = "@V12_102.Attpunches1_Current" 
+                        Atttemplate         = "@V12_102.Atttemplates.FirstOrDefault()" />
+                </div>
+                <div class="mt-2">
+                    
+                    <_12_102_AttTemplate AttTemplate="@V12_102.Atttemplates.FirstOrDefault()" />
+                </div>
+                
+                
+            </div>
+
+            @*--- Right ---*@
+            <div class="w-50">
+                <div>
+                    <_12_102_Body_Action V12_102="@V12_102" />
+                </div>
+                
+                <div class="mt-2">
+                    <_12_102_Body_Last_7_Punches V12_102="@V12_102" />
+                </div>
+            </div>            
+        </div>
+        }
+    </div>
+    
+
+</div>
+
+@inject IOLoansDataAccess       _loans; 
+@inject IOTbltrandtlDataAccess  _tbltran; 
+@inject IOEmpportalDataAccess   _empPortal; 
+
+@code {
+
+    [Parameter] public UserClaimsModel?         UserClaims  { get; set; }
+    [Parameter] public List<OEmpmasModel?>?     OEmpmass    { get; set; } = [];
+    [Parameter] public V12_102?                 V12_102     { get; set; } = new();
+
+
+    List<GLoansModel?>?     loans = [];
+    EP_SSS12102Model        sssPrem     = new(); 
+    EP_Phic12102Model       phicPrem    = new(); 
+    EP_Pagibig12102Model    pagibigPrem = new(); 
+    
+    string?                  msg         = string.Empty; 
+
+    
+    int? lnk = 0;  
+
+    async Task Ec(int val) {
+        
+        msg = string.Empty; 
+        lnk = val;
+
+        if(val == 5) await FetchSSS() ; 
+        if(val == 6) await FetchPHIC() ; 
+        if(val == 7) await FetchPagibig() ; 
+        if(val == 8) await FetchLoans() ; 
+        
+
+         
+         
+    }
+
+    async Task FetchSSS() {
+        msg = "Please wait, loading SSS data  ...."; 
+        StateHasChanged(); 
+
+        UserClaimsModel uc = UserClaims; 
+        sssPrem = await _empPortal._02SSSRemittance(uc.OempNumber, "D002", uc.OpayDb, uc.Conn); 
+
+        msg = string.Empty; 
+    }
+    
+    async Task FetchPHIC() {
+        msg = "Please wait, loading PHIC data  ...."; 
+        StateHasChanged(); 
+
+        UserClaimsModel uc = UserClaims; 
+        phicPrem = await _empPortal._02PHICRemittance(uc.OempNumber, "D003", uc.OpayDb, uc.Conn); 
+
+        msg = string.Empty; 
+    }
+    
+    async Task FetchPagibig() {
+        msg = "Please wait, loading PAGIBIG data  ...."; 
+        StateHasChanged(); 
+
+        UserClaimsModel uc = UserClaims; 
+        pagibigPrem = await _empPortal._02PAGIBIGRemittance(uc.OempNumber, "D004", uc.OpayDb, uc.Conn); 
+        @* phicPrem = await _empPortal._02PHICRemittance(uc.OempNumber, "D004", uc.OpayDb, uc.Conn);  *@
+
+
+
+        msg = string.Empty; 
+    }
+
+
+    async Task FetchLoans() {
+        msg = "Please wait, loading Loans data  ...."; 
+
+        UserClaimsModel uc          = UserClaims; 
+        loans = await _loans._02ByEmpNumbers(uc.OempNumber, uc.OpayDb, uc.Conn); 
+
+        msg = string.Empty; 
+    }
+
+
+
+
+
+}

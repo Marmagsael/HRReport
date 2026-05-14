@@ -2313,8 +2313,24 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                     End                 DATETIME,
                     CreditedHrs         INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
                     IsPayable           INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                    LeavedayTypeId      INTEGER     UNSIGNED    NOT NULL DEFAULT 1,
                     PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, conn);
+
+
+        sql = $@"CREATE TABLE if not exists {schema}.LeavedayType (
+                            Id       INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            Name     char(45),
+                        PRIMARY KEY(`Id`))ENGINE = InnoDB;";
+        await _sql.ExecuteCmd(sql, new { }, conn);
+
+        sql = @$"select * from {schema}.LeavedayType limit 1 ";
+        var res = await _sql.FetchData<PissettingsModel, dynamic>(sql, new { }, conn);
+        if (res == null || res.Count == 0)
+        {
+            sql = $@"insert into {schema}.LeavedayType (Id, Name) values (1,'Whole day'), (2, 'First-Half'), (3,'Second-Half'); ";
+            await _sql.ExecuteCmd(sql, new { }, conn);
+        }
     }
 
     private async Task _01PisSettings(string? schema, string? conn)
