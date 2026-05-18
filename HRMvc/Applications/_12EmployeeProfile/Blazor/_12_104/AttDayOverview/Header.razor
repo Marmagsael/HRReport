@@ -5,7 +5,6 @@
         .Where(s => !string.IsNullOrWhiteSpace(s))
         .ToList() ?? new();
 
-    // Dynamic leave detection — no hardcoded leave codes
     bool hasLeave = !string.IsNullOrWhiteSpace(V.DayDetail.LeaveType);
 }
 
@@ -15,7 +14,7 @@
         @foreach (var s in statuses)
         {
             <span class="badge @GetBadgeClass(s, hasLeave)">
-                @(s.Trim().Contains("RD") ? "REST DAY" : s)
+                @GetStatusName(s)
             </span>
         }
     </div>
@@ -47,4 +46,10 @@
         var s when hasLeave => "bg-info text-dark",
         _ => "bg-secondary text-white"
     };
+
+    private string GetStatusName(string status)
+    {
+        var found = V.AttyDutyTypes.FirstOrDefault(x => x.Code == status.Trim());
+        return found?.Name ?? status;
+    }
 }
