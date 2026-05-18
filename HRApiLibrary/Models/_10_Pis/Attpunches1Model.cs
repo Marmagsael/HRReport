@@ -14,22 +14,22 @@ public class Attpunches1Model
     public string?      IpAddressIn         { get; set; } = string.Empty; 
     public string?      MacAddressIn        { get; set; } = string.Empty;
 
-    public int?          UserIdIn            { get; set; } = 0;
+    public int?         UserIdIn            { get; set; } = 0;
 
-    public DateTime?     PunchOutDate        { get; set; }
+    public DateTime?    PunchOutDate        { get; set; }
     public int?         TimeZoneIdOut       { get; set; } = 0;
 
     public string?      IpAddressOut        { get; set; } = string.Empty;
     public string?      MacAddressOut       { get; set; } = string.Empty;
 
-    public int?          UserIdOut           { get; set; } = 0;
+    public int?         UserIdOut           { get; set; } = 0;
 
     public string?      Status              { get; set; } = string.Empty;
 
     //--- Extra Fields -----------------//
-	public int? 			TotalHrs      	 	{ get; set; } = 0;
-	public int? 			Hour      	 		{ get; set; } = 0;
-	public int? 			Minute      	 	{ get; set; } = 0;
+	public int? 		TotalHrs      	 	{ get; set; } = 0;
+	public int? 		Hour      	 		{ get; set; } = 0;
+	public int? 		Minute      	 	{ get; set; } = 0;
 	public string? 		Remarks 	 		{ get; set; } = string.Empty;
 
     //-----------------------------------------------------------

@@ -13,12 +13,11 @@
         <_12_104_AttMonthOverview V="@v" />
 
         <div class="row g-3">
-            <_12_104_AttCalendar V="@v" ChildAction="ChildAction"/>
+            <_12_104_AttCalendar V="@v" ChildAction="ChildAction" />
             <_12_104_AttDayOverview V="@v" />
         </div>
 
     </div>
-   
 </div>
 
 
@@ -91,25 +90,51 @@
         v.Calendar = new();
         if (Uc == null) return;
 
-        int? userId     = Uc.UserId;
-        var firstDay    = new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, 1);
-        int daysInMonth = DateTime.DaysInMonth(v.SelectedYear ?? 1, v.SelectedMonth ?? 1);
-        int startDay    = (int)firstDay.DayOfWeek;
+        int? userId         = Uc.UserId;
+        var firstDay        = new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, 1);
+        int daysInMonth     = DateTime.DaysInMonth(v.SelectedYear ?? 1, v.SelectedMonth ?? 1);
+        int startDay        = (int)firstDay.DayOfWeek;
 
-        var template    = await _att._02TemplateByUserIdAndEffectivityDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
-        var punches     = await _att._02PunchesByEmpmasIdAndPunchInDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
-        var leaves      = await _att._02LeaveByEmpmasIdAndLeaveDuration(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
+        var template        = await _att._02TemplateByUserIdAndEffectivityDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
+        var punches         = await _att._02PunchesByEmpmasIdAndPunchInDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
+        var leaves          = await _att._02LeaveByEmpmasIdAndLeaveDuration(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
 
-        // Leading boxes before the actual day start
+        // Get previous month's last date 
+        var prevMonth = new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, 1).AddMonths(-1);
+        int daysInPrevMonth = DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
+
+        // Leading boxes 
         for (int i = 0; i < startDay; i++)
-            v.Calendar.Add(new AttDayDetail());
+        {
+            int prevDay = daysInPrevMonth - (startDay - 1 - i);
+            var date = new DateTime(prevMonth.Year, prevMonth.Month, prevDay);
+            v.Calendar.Add(new AttDayDetail
+            {
+                Date = date,
+                IsOtherMonth = true  
+            });
+        }
 
+
+        // Actual days of current month
         for (int d = 1; d <= daysInMonth; d++)
             v.Calendar.Add(LoadDay(new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, d), punches, template, leaves));
 
-        // Trailing boxes to fill the calendar
+
+
+        // Trailing boxes
+        var nextMonth = new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, 1).AddMonths(1);
+        int nextDay = 1;
         while (v.Calendar.Count % 7 != 0)
-            v.Calendar.Add(new AttDayDetail());
+        {
+            var date = new DateTime(nextMonth.Year, nextMonth.Month, nextDay);
+            v.Calendar.Add(new AttDayDetail
+            {
+                Date = date,
+                IsOtherMonth = true  
+            });
+            nextDay++;
+        }
 
         ComputeSummary();
     }
@@ -118,16 +143,15 @@
     // ============================================================
     // SUMMARY COUNTER
     // ============================================================
-
     private void ComputeSummary()
     {
         decimal presentCount    = 0;
         decimal absentCount     = 0;
         decimal daysCount       = 0;
-        int lateCount           = 0;
-        int undertimeCount      = 0;
+        int     lateCount       = 0;
+        int     undertimeCount  = 0;
 
-        var workingDays = v.Calendar.Where(c => c.Date != default && !(c.Status ?? "").Contains("RD")) .ToList();
+        var workingDays = v.Calendar.Where(c => c.Date != default && !(c.Status ?? "").Contains("RD")).ToList();
 
         foreach (var day in workingDays)
         {
@@ -136,11 +160,9 @@
             bool hasLeave = !string.IsNullOrWhiteSpace(day.LeaveType);
             bool isHalfDay = s.Contains("1/2");
 
-            // Whole-day leave: 
-            bool isWholeDayLeave = hasLeave && !isHalfDay && !s.Contains("PRESENT") && !s.Contains("ABSENT");
+            bool isWholeDayLeave = hasLeave && !isHalfDay;
             if (isWholeDayLeave) continue;
 
-            // Half-day leave: 
             daysCount += isHalfDay && hasLeave ? 0.5m : 1m;
 
             if (s.Contains("1/2 PRESENT")) presentCount += 0.5m;
@@ -153,12 +175,12 @@
             if (s.Contains("UNDERTIME")) undertimeCount++;
         }
 
-        v.PresentCount      = presentCount;
-        v.AbsentCount       = absentCount;
-        v.LateCount         = lateCount;
-        v.UnderTimeCount    = undertimeCount;
-        v.RestDayCount      = v.Calendar.Count(c => (c.Status ?? "").Contains("RD"));
-        v.DaysCount         = daysCount;
+        v.PresentCount   = presentCount;
+        v.AbsentCount    = absentCount;
+        v.LateCount      = lateCount;
+        v.UnderTimeCount = undertimeCount;
+        v.RestDayCount   = v.Calendar.Count(c => (c.Status ?? "").Contains("RD"));
+        v.DaysCount      = daysCount;
     }
 
 
@@ -168,11 +190,10 @@
 
     private AttDayDetail LoadDay(DateTime date, List<Attpunches1Model?> punches, List<AtttemplatereqdtlModel?> template, List<AttLeaveapplicationModel?> leave)
     {
-        var resTemp         = LoadTemplate(date, template);
-        var resPunches      = LoadPunches(date, punches);
+        var resTemp     = LoadTemplate(date, template);
+        var resPunches  = LoadPunches(date, punches);
 
-        bool hasPunch = resPunches.ActualTimeIn.HasValue;
-
+        bool hasPunch   = resPunches.ActualTimeIn.HasValue;
 
         TimeSpan? expTimeIn;
         TimeSpan? expTimeOut;
@@ -190,7 +211,7 @@
             ttlWorkedHrs    = resPunches.TotalWorkedHrs;
             logs            = resPunches.Logs;
         }
-        else
+        else if (resTemp != null && resTemp.AttendanceTypeId != 0)
         {
             expTimeIn       = resTemp.ExpTimeIn;
             expTimeOut      = resTemp.ExpTimeOut;
@@ -199,40 +220,49 @@
             ttlWorkedHrs    = TimeSpan.Zero;
             logs            = new();
         }
+        else
+        {
+            expTimeIn       = TimeSpan.Zero;
+            expTimeOut      = TimeSpan.Zero;
+            dutyTypeCode    = string.Empty;
+            duration        = v.Settings.Daytohours;
+            ttlWorkedHrs    = TimeSpan.Zero;
+            logs            = new();
+        }
 
-        var resLeave = LoadLeave(date, leave, dutyTypeCode);
-        var resStatus = GetStatus(resTemp.AttendanceTypeId, dutyTypeCode, date, expTimeIn, expTimeOut, resPunches.ActualTimeIn, resPunches.ActualTimeOut, duration, resLeave, ttlWorkedHrs);
+        var resLeave    = LoadLeave(date, leave, dutyTypeCode);
+        var resStatus   = GetStatus(resTemp.AttendanceTypeId, dutyTypeCode, date, expTimeIn, expTimeOut,resPunches.ActualTimeIn, resPunches.ActualTimeOut, duration, resLeave, ttlWorkedHrs);
 
         string status               = string.Join(", ", resStatus.Select(x => x.Status));
         string lateDuration         = resStatus.FirstOrDefault(x => x.Status == "LATE").Time ?? "";
         string undertimeDuration    = resStatus.FirstOrDefault(x => x.Status == "UNDERTIME").Time ?? "";
         var leaveEntry              = resStatus.FirstOrDefault(x => x.lr != null && !string.IsNullOrWhiteSpace(x.lr.LeaveType));
 
-
-
         return new AttDayDetail
-            {
-                Date                = date,
-                ExpTimeIn           = expTimeIn,
-                ExpTimeOut          = expTimeOut,
-                ActualTimeIn        = resPunches.ActualTimeIn,
-                ActualTimeOut       = resPunches.ActualTimeOut,
-                DutyTypeCode        = dutyTypeCode,
-                DutyTypeName        = v.AttyDutyTypes.FirstOrDefault(d => d.Code == dutyTypeCode)?.Name ?? string.Empty,
-                AttendanceType      = resTemp.AttendanceType,
-                Status              = status,
-                IsToday             = date.Date == DateTime.Today,
-                ExpWorkingHrs       = FormatTime(ConvertToTime(duration)),
-                TtlWorkedHrs        = FormatTime(resPunches.TotalWorkedHrs),
-                LateDuration        = lateDuration,
-                UnderTimeDuration   = undertimeDuration,
-                Logs                = logs,
-                LeaveType           = leaveEntry.lr?.LeaveType,   
-                LeaveStart          = leaveEntry.lr?.LeaveStart,  
-                LeaveEnd            = leaveEntry.lr?.LeaveEnd,    
-                Reason              = leaveEntry.lr?.Reason,     
-            };
+        {
+            Date                = date,
+            ExpTimeIn           = expTimeIn,
+            ExpTimeOut          = expTimeOut,
+            ActualTimeIn        = resPunches.ActualTimeIn,
+            ActualTimeOut       = resPunches.ActualTimeOut,
+            DutyTypeCode        = dutyTypeCode,
+            DutyTypeName        = v.AttyDutyTypes.FirstOrDefault(d => d.Code == dutyTypeCode)?.Name ?? string.Empty,
+            AttendanceType      = resTemp.AttendanceType,
+            Status              = status,
+            IsToday             = date.Date == DateTime.Today,
+            ExpWorkingHrs       = FormatTime(ConvertToTime(duration)),
+            TtlWorkedHrs        = FormatTime(resPunches.TotalWorkedHrs),
+            LateDuration        = lateDuration,
+            UnderTimeDuration   = undertimeDuration,
+            Logs                = logs,
+            LeaveType           = leaveEntry.lr?.LeaveType,
+            LeaveDayType        = leaveEntry.lr?.LeaveDayType,
+            LeaveStart          = leaveEntry.lr?.LeaveStart,
+            LeaveEnd            = leaveEntry.lr?.LeaveEnd,
+            Reason              = leaveEntry.lr?.Reason,
+        };
     }
+
 
     // ============================================================
     // TEMPLATE LOADER
@@ -268,7 +298,6 @@
     // ============================================================
     // PUNCHES LOADER
     // ============================================================
-
     private AttPunches LoadPunches(DateTime date, List<Attpunches1Model?> punches)
     {
         var logs = punches.Where(p => p?.PunchInDate != null && p.PunchInDate.Value.Date == date.Date).OrderBy(p => p!.PunchInDate).ToList();
@@ -285,9 +314,8 @@
         var firstIn = logs.Min(p => p!.PunchInDate);
         var lastOut = logs.Max(p => p!.PunchOutDate);
 
-        var first   = logs.First();
-        var last    = logs.Last();
-
+        // Scheduled always taken from the first punch record.
+        var first = logs.First();
         var dutyType = v.AttyDutyTypes?.FirstOrDefault(d => d.Id == first.DutyTypeId) ?? new();
 
         return new AttPunches
@@ -312,7 +340,7 @@
     {
         var dType = NormalizeCode(dutyTypeCode);
 
-        // Leave only applies to Regular and Regular Normal duty types
+        // Leave only applies to Regular (R) and Regular Normal (RN) duty types
         if (dType != "R" && dType != "RN") return null;
 
         var res = leave?.FirstOrDefault(l => l != null && date.Date == l.Start.Date);
@@ -332,17 +360,18 @@
             TimeDuration    = res.TimeDuration,
             CreditedHrs     = res.CreditedHrs,
             ExpLeaveStart   = ConvertToTime(res.TimeStart),
-            ExpLeaveEnd     = GetTimeOut(res.TimeStart, res.TimeDuration)
+            ExpLeaveEnd     = GetTimeOut(res.TimeStart, res.TimeDuration),
+            LeaveDayTypeId  = res.LeaveDayTypeId,
+            LeaveDayType    = res.LeaveDayType,
         };
     }
 
 
     // ============================================================
-    // GET STATUS/MARK
-    // Flow: Leave -> Rest Day  → Regular Normal → Regular -> Attendance Type
+    // GET STATUS / MARK
+    // Flow: Leave → Rest Day → Regular Normal → Regular → Attendance Type
     // ============================================================
-
-    private List<(string Status, string Time, AttLeave lr)> GetStatus(    int? attType, string? dutyType, DateTime? date,TimeSpan? expTimeIn, TimeSpan? expTimeOut,   DateTime? actualDateTimeIn, DateTime? actualDateTimeOut,  int? expWorkDuration, AttLeaveapplicationModel? leave, TimeSpan? ttlWorkedHrs)
+    private List<(string Status, string Time, AttLeave lr)> GetStatus( int? attType, string? dutyType, DateTime? date,TimeSpan? expTimeIn, TimeSpan? expTimeOut, DateTime? actualDateTimeIn, DateTime? actualDateTimeOut,  int? expWorkDuration, AttLeaveapplicationModel? leave, TimeSpan? ttlWorkedHrs)
     {
         var result = new List<(string Status, string Time, AttLeave lr)>();
 
@@ -351,86 +380,82 @@
         var aType = attType;
         var dType = NormalizeCode(dutyType);
 
-
-        DateTime? actualIn  = actualDateTimeIn.HasValue ? StripSeconds(actualDateTimeIn.Value) : null;
+        DateTime? actualIn = actualDateTimeIn.HasValue ? StripSeconds(actualDateTimeIn.Value) : null;
         DateTime? actualOut = actualDateTimeOut.HasValue ? StripSeconds(actualDateTimeOut.Value) : null;
 
-        DateTime shiftStart = StripSeconds(date.Value.Date + expTimeIn!.Value);
-        DateTime shiftEnd   = expWorkDuration.HasValue ? StripSeconds(GetTimeOut(shiftStart, expWorkDuration)!.Value) : shiftStart;
+        if (expTimeIn == null || expTimeIn == TimeSpan.Zero)return result;
 
-        var (firstHalfEnd, secondHalfStart, halfDuration) = GetHalfBoundaries(shiftStart, shiftEnd);
+        DateTime shiftStart = StripSeconds(date.Value.Date + expTimeIn.Value);
+        DateTime shiftEnd   = expWorkDuration.HasValue  ? StripSeconds(GetTimeOut(shiftStart, expWorkDuration)!.Value): shiftStart;
 
-        DateTime today  = DateTime.Today;
-        DateTime now    = StripSeconds(DateTime.Now);
+        DateTime today      = DateTime.Today;
+        DateTime now        = StripSeconds(DateTime.Now);
 
-        bool hasApprovedLeave   = leave != null && !string.IsNullOrWhiteSpace(leave.LeaveCode);
-        bool hasPunch           = actualIn.HasValue;
+        bool hasApprovedLeave = leave != null && !string.IsNullOrWhiteSpace(leave.LeaveCode);
 
         foreach (var dty in v.AttyDutyTypes)
         {
             if (dType == dty.Code)
-            {
                 result.Add((dty.Code.ToUpper() ?? "", "", new()));
-            }
         }
-
 
         // == 1. WITH LEAVE =======================================
         if (hasApprovedLeave)
         {
-            result.AddRange(GetLeaveStatus(leave!, aType, dType, date.Value, shiftStart, shiftEnd, firstHalfEnd, secondHalfStart, actualIn, actualOut, halfDuration, expWorkDuration, ttlWorkedHrs, today, now));
+            GetLeaveStatus(result, leave!, aType, dType, date.Value, shiftStart, shiftEnd, actualIn, actualOut, expWorkDuration, ttlWorkedHrs, today, now);
             return result;
         }
 
         // == 2. REST DAY =========================================
         if (dType == "RD") return result;
 
-
         // == 3. REGULAR NORMAL ===================================
         if (dType == "RN")
         {
-            result.AddRange(GetRegularNormalStatus(date.Value, actualIn, today));
+            GetRegularNormalStatus(result, date.Value, actualIn, today);
             return result;
         }
 
-
         // == 4. REGULAR ==========================================
         if (dType == "R")
-        {
-            result.AddRange(GetRegularStatus(aType, date.Value, shiftStart, shiftEnd,  firstHalfEnd, secondHalfStart, actualIn, actualOut,  expWorkDuration, ttlWorkedHrs, today, now));
-        }
+            GetRegularStatus(result, aType, date.Value, shiftStart, shiftEnd, actualIn, actualOut, expWorkDuration, ttlWorkedHrs, today, now, false);
 
         return result;
     }
 
+
     // ============================================================
     // LEAVE STATUS
-    // Rule:
-    //   Whole day leave (any type)          [LeaveCode] only
-    //   Half day leave — RN                 [LeaveCode], PRESENT, no late/undertime/absent
-    //   Half day leave — FIXED/FLEXIBLE     1/2 [LeaveCode]  ,full late/undertime/absent checks
-    // ============================================================
+    // Rules:
+    //   Whole day leave (any duty type)      → [LeaveCode] only
+    //   Half day leave — RN or Exempt        → 1/2 [LeaveCode], PRESENT if punched in
+    //   Half day leave — Fixed / Flexible    → 1/2 [LeaveCode], full late/undertime/absent checks
 
-    private List<(string Status, string Time, AttLeave lr)> GetLeaveStatus(AttLeaveapplicationModel leave, int? aType, string dType, DateTime date, DateTime shiftStart, DateTime shiftEnd, DateTime firstHalfEnd, DateTime secondHalfStart, DateTime? actualIn, DateTime? actualOut, TimeSpan halfDurationTs, int? expWorkDuration, TimeSpan? ttlWorkedHrs, DateTime today, DateTime now)
+    private List<(string Status, string Time, AttLeave lr)> GetLeaveStatus(List<(string Status, string Time, AttLeave lr)> result,
+        AttLeaveapplicationModel leave, int? aType, string dType,
+        DateTime date, DateTime shiftStart, DateTime shiftEnd,
+        DateTime? actualIn, DateTime? actualOut,
+        int? expWorkDuration, TimeSpan? ttlWorkedHrs,
+        DateTime today, DateTime now)
     {
-        var result = new List<(string Status, string Time, AttLeave lr)>();
 
         DateTime leaveStart = StripSeconds(leave.Start.Date + leave.ExpLeaveStart!.Value);
-        DateTime leaveEnd = StripSeconds(GetTimeOut(leaveStart, leave.TimeDuration)!.Value);
+        DateTime leaveEnd   = StripSeconds(GetTimeOut(leaveStart, leave.TimeDuration)!.Value);
 
         var attLeave = new AttLeave
         {
-            LeaveType = leave.LeaveName,
-            LeaveStart = leaveStart,
-            LeaveEnd = leaveEnd,
-            Reason = leave.Reason
+            LeaveType       = leave.LeaveName,
+            LeaveStart      = leaveStart,
+            LeaveEnd        = leaveEnd,
+            Reason          = leave.Reason,
+            LeaveDayType    = leave.LeaveDayType,
         };
 
-        bool isWholeDay = expWorkDuration == leave.TimeDuration;
+        bool isWholeDay     = leave.LeaveDayTypeId == 1;
+        bool is1stHalfLeave = leave.LeaveDayTypeId == 2;
+        bool isExempt       = aType == 3;
 
-
-
-        // Whole-day leave  =============================
+        // Whole day
         if (isWholeDay)
         {
             result.Add((leave.LeaveCode ?? "", "", attLeave));
@@ -438,340 +463,224 @@
         }
 
 
+        // No "1/2"  FOR Regular Normal
+        string leaveCode = dType == "RN" ? leave.LeaveCode : $"1/2 {leave.LeaveCode}";
+        result.Add((leaveCode ?? "", "", attLeave));
+
+
 
         // Regular Normal =============================
-        if (dType == "RN")
+        if (dType == "RN" || isExempt)
         {
-            result.Add((leave.LeaveCode ?? "", "", attLeave));
-            if (date <= today)
+            if (date <= today && actualIn.HasValue)
             {
-                if (actualIn.HasValue)
-                {
-                    result.Add(("PRESENT" ?? "", "", attLeave));
-                }
+                result.Add(("PRESENT" ?? "", "", attLeave));
             }
-
             return result;
         }
 
-
-        // Half-day leave
-        bool leaveIsMorning = leaveStart < firstHalfEnd && leaveEnd > shiftStart;
-        bool leaveIsAfternoon = leaveStart < shiftEnd && leaveEnd > secondHalfStart;
-        int halfDuration = ConvertToHHMM(halfDurationTs);
-
-
-        result.Add(($"1/2 {leave.LeaveCode}", "", attLeave));
-
-        bool isExempt = aType == 3; // Exempt Attendance
-
-        // Exempt =============================
-        if (isExempt)
+        // Regular  =============================
+        if(dType == "R")
         {
-            if (date <= today)
+            DateTime expHalfShiftStart;
+            DateTime expHalfShiftEnd;
+
+            if (is1stHalfLeave)
             {
-                if (actualIn.HasValue)
-                {
-                    result.Add(("PRESENT" ?? "", "", attLeave));
-                }
+                //  employee works the 2nd half (last 4 hours)
+                expHalfShiftStart = shiftEnd.AddHours(-4);
+                expHalfShiftEnd = shiftEnd;
+            }
+            else
+            {
+                // employee works the 1st half (first 4 hours)
+                expHalfShiftStart = shiftStart;
+                expHalfShiftEnd = shiftStart.AddHours(4);
             }
 
-            return result;
+            GetRegularStatus(result, aType, date, expHalfShiftStart, expHalfShiftEnd, actualIn, actualOut, expWorkDuration, ttlWorkedHrs, today, now, true);
         }
 
-        // Regular ========================================
-        if (date.Date < today)
-            return GetHalfLeave_PastDate(result, aType, dType, leaveIsMorning, leaveIsAfternoon, actualIn, actualOut, shiftStart, shiftEnd, firstHalfEnd, secondHalfStart, halfDuration, ttlWorkedHrs);
-
-
-        if (date.Date == today)
-            return GetHalfLeave_Today(result, aType, dType, leaveIsMorning, leaveIsAfternoon, shiftStart, firstHalfEnd, secondHalfStart, halfDuration, ttlWorkedHrs, now);
-
-
-        // Future date: show leave tag only, no presence yet
-        return result;
-    }
-
-
-    // ==  Half Day Leave — Past Date =========================================
-    private List<(string Status, string Time, AttLeave lr)> GetHalfLeave_PastDate(List<(string Status, string Time, AttLeave lr)> result,
-        int? aType, string dType,
-        bool leaveIsMorning, bool leaveIsAfternoon,
-        DateTime? actualIn, DateTime? actualOut,
-        DateTime shiftStart, DateTime shiftEnd,
-        DateTime firstHalfEnd, DateTime secondHalfStart,
-        int? halfDuration, TimeSpan? ttlWorkedHrs)
-    {
-
-
-        // Regular
-        if (!actualIn.HasValue)
-        {
-            result.Add(("1/2 ABSENT", "", new()));
-            return result;
-        }
-
-        bool isFlexible = aType == 2; //FLEXIBLE ATTENDANCE
-
-        if (isFlexible)
-        {
-            // Flexible: undertime = half expected duration - total worked hours
-            if (halfDuration.HasValue && ttlWorkedHrs.HasValue)
-            {
-                TimeSpan expected = ConvertToTime(halfDuration);
-                TimeSpan worked = ttlWorkedHrs.Value;
-                if (worked < expected)
-                    result.Add(("UNDERTIME", FormatTime(expected - worked), new()));
-            }
-        }
-        else
-        {
-            // Fixed: late and undertime based on shift boundaries
-            if (leaveIsMorning)
-            {
-                // Working half = AFTERNOON
-                if (actualIn.Value > secondHalfStart)
-                    result.Add(("LATE", FormatTime(actualIn.Value - secondHalfStart), new()));
-
-                if (actualOut.HasValue && actualOut.Value < shiftEnd)
-                    result.Add(("UNDERTIME", FormatTime(shiftEnd - actualOut.Value), new()));
-            }
-            else if (leaveIsAfternoon)
-            {
-                // Working half = MORNING
-                if (actualIn.Value > shiftStart)
-                    result.Add(("LATE", FormatTime(actualIn.Value - shiftStart), new()));
-
-                if (actualOut.HasValue && actualOut.Value < firstHalfEnd)
-                    result.Add(("UNDERTIME", FormatTime(firstHalfEnd - actualOut.Value), new()));
-            }
-        }
-
-        result.Add(("1/2 PRESENT", "", new()));
-        return result;
-    }
-
-
-    // ── Half Day Leave — Today ───────────────────────────────────
-
-    private List<(string Status, string Time, AttLeave lr)> GetHalfLeave_Today(
-        List<(string Status, string Time, AttLeave lr)> result,
-        int? aType, string dType,
-        bool leaveIsMorning, bool leaveIsAfternoon,
-        DateTime shiftStart, DateTime firstHalfEnd,
-        DateTime secondHalfStart, int? halfDuration,
-        TimeSpan? ttlWorkedHrs, DateTime now)
-    {
-
-        bool isFlexible = aType == 2; //FLEXIBLEATTENDANCE
-
-        if (isFlexible)
-        {
-            // Flexible: check undertime only if punch already recorded
-            if (ttlWorkedHrs.HasValue && halfDuration.HasValue)
-            {
-                TimeSpan expected = ConvertToTime(halfDuration);
-                TimeSpan worked = ttlWorkedHrs.Value;
-                if (worked < expected)
-                    result.Add(("UNDERTIME", FormatTime(expected - worked), new()));
-
-                result.Add(("1/2 PRESENT", "", new()));
-            }
-        }
-        else
-        {
-            // Fixed: check late on the working half
-            if (leaveIsMorning)
-            {
-                // Working half = AFTERNOON
-                if (now > secondHalfStart)
-                    result.Add(("LATE", FormatTime(now - secondHalfStart), new()));
-                else
-                    result.Add(("1/2 ABSENT", "", new()));
-            }
-            else if (leaveIsAfternoon)
-            {
-                // Shift hasn't started yet
-                if (now < shiftStart) return result;
-
-                if (now > shiftStart && now <= firstHalfEnd)
-                    result.Add(("LATE", FormatTime(now - shiftStart), new()));
-                else
-                    result.Add(("1/2 ABSENT", "", new()));
-            }
-        }
 
         return result;
     }
-
-
 
 
     // ============================================================
     // REGULAR NORMAL STATUS (Duty Type = RN)
-    // ============================================================
     // Not mandatory. No absent/late computation.
-    // Punch in = Present. No half-day leave. Future = blank.
+    // Punch in = Present. Future dates = blank.
+    // ============================================================
 
-    private List<(string Status, string Time, AttLeave lr)> GetRegularNormalStatus(
+    private List<(string Status, string Time, AttLeave lr)> GetRegularNormalStatus(List<(string Status, string Time, AttLeave lr)> result,
         DateTime date, DateTime? actualIn, DateTime today)
     {
-        var result = new List<(string Status, string Time, AttLeave lr)>();
-
         if (date.Date <= today && actualIn.HasValue)
-            AddPresent(result);
+            result.Add(("PRESENT" ?? "", "", new()));
 
         return result;
     }
-
 
 
     // ============================================================
     // REGULAR DAY STATUS (Duty Type = R)
     // ============================================================
-
-    private List<(string Status, string Time, AttLeave lr)> GetRegularStatus( int? aType, DateTime date, DateTime shiftStart, DateTime shiftEnd,   DateTime firstHalfEnd, DateTime secondHalfStart, DateTime? actualIn, DateTime? actualOut,
+    private List<(string Status, string Time, AttLeave lr)> GetRegularStatus(List<(string Status, string Time, AttLeave lr)> result,
+        int? aType, DateTime date, DateTime shiftStart, DateTime shiftEnd,
+        DateTime? actualIn, DateTime? actualOut,
         int? expWorkDuration, TimeSpan? ttlWorkedHrs,
-        DateTime today, DateTime now)
+        DateTime today, DateTime now, bool isOnLeave)
     {
         return aType switch
         {
-            1 => GetFixedStatus(date, shiftStart, shiftEnd, firstHalfEnd, secondHalfStart, actualIn, actualOut, today, now),
-            2 => GetFlexibleStatus(date, actualIn, expWorkDuration, ttlWorkedHrs, today),
+            1 => GetFixedStatus(result, date, shiftStart, shiftEnd, actualIn, actualOut, expWorkDuration, today, now, isOnLeave),
+            2 => GetFlexibleStatus(result, date, actualIn, expWorkDuration, ttlWorkedHrs, today, isOnLeave),
             _ => new()
         };
     }
 
 
-
-    // == FIXED Attendance =========================================
-    // Late      = punch in vs shift start (lunch break excluded if duty hours is not compressed (8hrs))
+    // ============================================================
+    // FIXED ATTENDANCE
+    // Late      = punch in vs shift start (lunch break excluded if not compressed)
     // Undertime = punch out vs shift end
     // Absent    = no punch
-    private List<(string Status, string Time, AttLeave lr)> GetFixedStatus( DateTime date, DateTime shiftStart, DateTime shiftEnd, DateTime firstHalfEnd, DateTime secondHalfStart, DateTime? actualIn, DateTime? actualOut,  DateTime today, DateTime now)
+    // ============================================================
+
+    private List<(string Status, string Time, AttLeave lr)> GetFixedStatus(List<(string Status, string Time, AttLeave lr)> result, DateTime date, DateTime shiftStart, DateTime shiftEnd, DateTime? actualIn, DateTime? actualOut, int? expWorkDuration, DateTime today, DateTime now, bool isOnLeave)
     {
-        var result = new List<(string Status, string Time, AttLeave lr)>();
-        bool hasPunch = actualIn.HasValue;
+        bool hasPunch   = actualIn.HasValue;
 
-        // Past or Today 
-        if (date.Date <= today)
+        if (date.Date > today) return result;
+
+
+        if (hasPunch)
         {
-            if (hasPunch)
-            {
-                AddPresentWithComputationsOfLateAndUnderTime(result, actualIn!.Value, actualOut, shiftStart, shiftEnd);
-                return result;
-            }
-
-            // Past date — no punch
-            if (date.Date < today)
-            {
-                AddAbsent(result);
-                return result;
-            }
-
-            // Today — no punch yet
-            if (now < shiftStart) return result;
-            if (now >= shiftEnd) { AddAbsent(result); return result; }
-
-            // Shift started but no punch — running late
-            result.Add(("LATE", FormatTime(ComputeLate(now, shiftStart)), new()));
+            MarkPresentAndComputateLateAndUnderTime(result, actualIn!.Value, actualOut, shiftStart, shiftEnd, isOnLeave, expWorkDuration);
             return result;
         }
 
-        // Future date
+        // Past date — no punch
+        if (date.Date < today )
+        {
+            MarkAbsent(result, isOnLeave);
+            return result;
+        }
+
+        // Today — no punch yet
+        if (now < shiftStart) return result;
+        if (now >= shiftEnd) { MarkAbsent(result, isOnLeave); return result; }
+
+
+
+        // Shift has started but no punch — show running-late duration
+        result.Add(("LATE", FormatTime(ComputeLate(expWorkDuration, now, shiftStart )), new()));
         return result;
+
+
     }
 
-    // == FLEXIBLE Attendance ======================================
-    // Undertime = expected duration - total worked hours
-    // No late; absent = no punch
-    private List<(string Status, string Time, AttLeave lr)> GetFlexibleStatus(
+
+    // ============================================================
+    // FLEXIBLE ATTENDANCE
+    // Undertime = expected duration − total worked hours
+    // No late check; absent = no punch
+    // ============================================================
+
+    private List<(string Status, string Time, AttLeave lr)> GetFlexibleStatus(List<(string Status, string Time, AttLeave lr)> result,
         DateTime date, DateTime? actualIn,
         int? expWorkDuration, TimeSpan? ttlWorkedHrs,
-        DateTime today)
+        DateTime today, bool isOnLeave)
     {
-        var result = new List<(string Status, string Time, AttLeave lr)>();
+        bool hasPunch = actualIn.HasValue;
 
-        // Future date
         if (date.Date > today) return result;
 
-        // Past or Today
-        if (!actualIn.HasValue) { AddAbsent(result); return result; }
+        if (!hasPunch)
+        {
+            MarkAbsent(result, isOnLeave);
+            return result;
+        }
 
         if (expWorkDuration.HasValue && ttlWorkedHrs.HasValue)
         {
             TimeSpan expected = ConvertToTime(expWorkDuration);
             TimeSpan worked = ttlWorkedHrs.Value;
             if (worked < expected)
-                result.Add(("UNDERTIME", FormatTime(ComputeUnderTime(expected, worked)) , new()));
+                result.Add(("UNDERTIME", FormatTime(ComputeUnderTime(expWorkDuration, expected, worked)), new()));
         }
 
-        AddPresent(result);
+        MarkPresent(result, isOnLeave);
         return result;
     }
-
 
 
     // ============================================================
     // UTILITY HELPERS
     // ============================================================
 
+    private void MarkAbsent(List<(string Status, string Time, AttLeave lr)> result, bool isOnLeave)
+        => result.Add((isOnLeave ? "1/2 ABSENT" : "ABSENT", "", new()));
 
-    private void AddAbsent(List<(string Status, string Time, AttLeave lr)> result)
-        => result.Add(("ABSENT", "", new()));
 
-    private void AddPresent(List<(string Status, string Time, AttLeave lr)> result)
-        => result.Add(("PRESENT", "", new()));
 
-    private void AddPresentWithComputationsOfLateAndUnderTime( List<(string Status, string Time, AttLeave lr)> result, DateTime actualIn, DateTime? actualOut, DateTime shiftStart, DateTime shiftEnd)
+    private void MarkPresent(List<(string Status, string Time, AttLeave lr)> result, bool isOnLeave)
+        => result.Add((isOnLeave ? "1/2 PRESENT" : "PRESENT", "", new()));
+
+
+
+    private void MarkPresentAndComputateLateAndUnderTime(
+        List<(string Status, string Time, AttLeave lr)> result,
+        DateTime actualIn, DateTime? actualOut,
+        DateTime shiftStart, DateTime shiftEnd, bool isOnLeave, int? expWorkDuration)
     {
         if (actualIn > shiftStart)
-            result.Add(("LATE", FormatTime(ComputeLate(actualIn, shiftStart)), new()));
+            result.Add(("LATE", FormatTime(ComputeLate(expWorkDuration, actualIn, shiftStart)), new()));
 
         if (actualOut.HasValue && actualOut.Value < shiftEnd)
-            result.Add(("UNDERTIME", FormatTime(shiftEnd - actualOut.Value), new()));
+            result.Add(("UNDERTIME", FormatTime(ComputeUnderTime(expWorkDuration, shiftEnd, actualOut.Value)), new()));
 
-        AddPresent(result);
+        MarkPresent(result, isOnLeave);
     }
 
-    // Adjusts duration excluding lunch break for non-compressed work hours
-    private TimeSpan AdjustForLunchBreak(TimeSpan duration)
-    {
-        if (v.Settings.Daytohours > 8)
-        {
-            if (duration.TotalHours > 5)
-                return duration - new TimeSpan(1, 0, 0);
 
-            if (duration.TotalHours > 4)
-                return new TimeSpan(4, 0, 0);
+
+    // Adjusts duration by excluding the lunch break for non-compressed schedules
+    private TimeSpan AdjustForLunchBreak(int? expDuration, TimeSpan duration)
+    {
+        if (expDuration > 800)
+        {
+            if (duration.TotalHours > 5) return duration - new TimeSpan(1, 0, 0);
+            if (duration.TotalHours > 4) return new TimeSpan(4, 0, 0);
         }
         return duration;
     }
 
-    // Computes late duration excluding lunch break
-    private TimeSpan ComputeLate(DateTime punchIn, DateTime shiftStart)
+    // Computes late duration, excluding lunch break where applicable
+    private TimeSpan ComputeLate(int? expWorkDuration, DateTime punchIn, DateTime shiftStart)
     {
-        TimeSpan lateDuration = punchIn - shiftStart;
-        return AdjustForLunchBreak(lateDuration);
+        TimeSpan lateHrs = punchIn - shiftStart;
+        return AdjustForLunchBreak(expWorkDuration, lateHrs);
+
     }
 
-    // Computes Undertime duration excluding lunch break if duty hours is not compressed
-    private TimeSpan ComputeUnderTime(TimeSpan expectedHrsWrked, TimeSpan actualHrsWrked)
+
+    // For Fixed: Computes undertime duration, excluding lunch break where applicable
+    private TimeSpan ComputeUnderTime(int? expDuration, DateTime shiftEnd, DateTime actualOut)
     {
-        TimeSpan underTimeDuration = expectedHrsWrked - actualHrsWrked;
-        return AdjustForLunchBreak(underTimeDuration);
+        TimeSpan undertime = shiftEnd - actualOut;
+        return AdjustForLunchBreak(expDuration, undertime);
     }
 
-    // Splits shift into first half, lunch break, and second half
-    private (DateTime firstHalfEnd, DateTime secondHalfStart, TimeSpan halfDuration) GetHalfBoundaries(
-        DateTime shiftStart, DateTime shiftEnd)
+
+
+    // For Flexible: Computes undertime duration, excluding lunch break where applicable
+    private TimeSpan ComputeUnderTime(int? expDuration, TimeSpan expectedHrsWrked, TimeSpan actualHrsWrked)
     {
-        TimeSpan breakTime = TimeSpan.FromHours(1);
-        TimeSpan halfDuration = TimeSpan.FromTicks((shiftEnd - shiftStart - breakTime).Ticks / 2);
-        DateTime firstHalfEnd = StripSeconds(shiftStart + halfDuration);
-        DateTime secondHalfStart = StripSeconds(firstHalfEnd + breakTime);
-        return (firstHalfEnd, secondHalfStart, halfDuration);
+        TimeSpan undertime = expectedHrsWrked - actualHrsWrked;
+        return AdjustForLunchBreak(expDuration, undertime);
     }
+
 
     // Converts HHMM int to TimeSpan (e.g. 800 → 8:00, 1330 → 13:30)
     public static TimeSpan ConvertToTime(int? hhmm)
@@ -782,17 +691,15 @@
 
     // Converts TimeSpan to HHMM int format (e.g. 08:30 → 830, 13:45 → 1345)
     public static int ConvertToHHMM(TimeSpan time)
-    {
-        return (time.Hours * 100) + time.Minutes;
-    }
+        => (time.Hours * 100) + time.Minutes;
 
     // Computes shift end from start time + duration (both in HHMM)
-    public TimeSpan GetTimeOut(int? timeIn, int? duration) =>
-        ConvertToTime(timeIn) + ConvertToTime(duration);
+    public TimeSpan GetTimeOut(int? timeIn, int? duration)
+        => ConvertToTime(timeIn) + ConvertToTime(duration);
 
     // Computes end DateTime from start DateTime + duration (HHMM)
-    public DateTime? GetTimeOut(DateTime? date, int? duration) =>
-        date.HasValue && duration.HasValue ? date.Value + ConvertToTime(duration) : null;
+    public DateTime? GetTimeOut(DateTime? date, int? duration)
+        => date.HasValue && duration.HasValue ? date.Value + ConvertToTime(duration) : null;
 
     // Formats a TimeSpan as "0 hr 0 min"
     public static string FormatTime(TimeSpan? duration)
@@ -803,16 +710,16 @@
     }
 
     // Strips seconds from a TimeSpan
-    public TimeSpan StripSeconds(TimeSpan? time) =>
-        time.HasValue ? new TimeSpan(time.Value.Hours, time.Value.Minutes, 0) : TimeSpan.Zero;
+    public TimeSpan StripSeconds(TimeSpan? time)
+        => time.HasValue ? new TimeSpan(time.Value.Hours, time.Value.Minutes, 0) : TimeSpan.Zero;
 
     // Strips seconds from a DateTime
-    public DateTime StripSeconds(DateTime dt) =>
-        new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0);
+    public DateTime StripSeconds(DateTime dt)
+        => new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, 0);
 
     // Normalizes duty/attendance type codes for safe comparison
-    private static string NormalizeCode(string? code) =>
-        code?.Trim().Replace(" ", "").ToUpper() ?? "";
+    private static string NormalizeCode(string? code)
+        => code?.Trim().Replace(" ", "").ToUpper() ?? "";
 }
 
 <style>
@@ -871,10 +778,10 @@
             border-radius: 8px;
         }
 
-        .day-card.selected-day:hover {
-            border: 1px solid #198754 !important;
-            background-color: #e8f3ee;
-        }
+            .day-card.selected-day:hover {
+                border: 1px solid #198754 !important;
+                background-color: #e8f3ee;
+            }
 
     .time-separator {
         font-size: 9px;
@@ -882,13 +789,11 @@
         color: #6b7280;
     }
 
-
     .block {
         padding: 2px;
         font-size: 10px;
         line-height: 1;
     }
-
 
     .block-title {
         font-size: 9px;
@@ -898,7 +803,7 @@
     }
 
     .bg-purple {
-        background-color: rgba(111, 66, 193, 0.1) ;
+        background-color: rgba(111, 66, 193, 0.1);
     }
 
     .bg-purple-dark {
@@ -908,6 +813,4 @@
     .text-purple {
         color: #6f42c1;
     }
-
-
 </style>

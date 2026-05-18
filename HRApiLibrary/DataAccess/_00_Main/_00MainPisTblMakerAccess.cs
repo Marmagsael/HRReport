@@ -226,7 +226,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     }
 
     // --- Schema Equipment ------------------------------------------------------
-
+    
     private async Task _01Inv_MasterTbl(string? equipdb, string? connName)
     {
 
@@ -263,7 +263,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                    """;
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
-
+    
     private async Task _01Inv_MasterTblCreateData(string? equipdb, string? connName)
     {
 
@@ -325,7 +325,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
 
 
     }
-
+    
     private async Task _01Inv(string? equipdb, string? connName)
     {
 
@@ -545,11 +545,11 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                         PRIMARY KEY (EmpmasId, Month, year)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { });
     }
-
+    
     private async Task _01AttReq(string? schema, string? connName)
     {
 
-
+        
         string? sql = @$"CREATE TABLE if not exists  {schema}.AttReqHdr (
                             Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             UserId              INTEGER UNSIGNED,
@@ -612,11 +612,11 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
-
+    
     private async Task _01AttTemplateReq(string? schema, string? connName)
     {
 
-
+        
         string? sql = @$"CREATE TABLE if not exists  {schema}.AtttemplateReqHdr (
                             Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             UserId              INTEGER UNSIGNED,
@@ -673,7 +673,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     private async Task _01OTReq(string? schema, string? connName)
     {
 
-
+        
         string? sql = @$"CREATE TABLE if not exists  {schema}.OTReqHdr (
                             Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             UserId              INTEGER UNSIGNED,
@@ -1343,7 +1343,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     // ************************************************************************
 
     // --- Character References (Refer in SecPis) ----------------------------------------------------------
-    private async Task _01EmpmasCharRef(string? schema, string? conn)
+    private async Task  _01EmpmasCharRef(string? schema, string? conn)
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.EmpmasCharRef (
                             Id          INTEGER unsigned NOT NULL AUTO_INCREMENT,
@@ -2325,7 +2325,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {schema}.LeavedayType limit 1 ";
-        var res = await _sql.FetchData<PissettingsModel, dynamic>(sql, new { }, conn);
+        var res = await _sql.FetchData<LeavedaytypeModel, dynamic>(sql, new { }, conn);
         if (res == null || res.Count == 0)
         {
             sql = $@"insert into {schema}.LeavedayType (Id, Name) values (1,'Whole day'), (2, 'First-Half'), (3,'Second-Half'); ";
@@ -2502,14 +2502,14 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                 string? fieldDesc = "";
 
                 // Define the column description based on the column name
-                if (columnName == "IsOnDeviation") fieldDesc = "`IsOnDeviation`     smallint(5)    DEFAULT '0'";
-                if (columnName == "IdDeviation") fieldDesc = "`IdDeviation`       int(10)        DEFAULT '0'";
-                if (columnName == "IsOnDiciplinary") fieldDesc = "`IsOnDiciplinary`   smallint(5)    DEFAULT '0'";
-                if (columnName == "IsOnInvestigation") fieldDesc = "`IsOnInvestigation` smallint(5)    DEFAULT '0'";
-                if (columnName == "IdDeployment") fieldDesc = "`IdDeployment`      int            DEFAULT '0'     AFTER PayrollgrpId";
-                if (columnName == "DepDate") fieldDesc = "`DepDate`           DATE                           AFTER EmpStatusId";
-                if (columnName == "TranNumber") fieldDesc = "`TranNumber`        CHAR(12)       DEFAULT ''      AFTER EmpmasId";
-                if (columnName == "IdInvestigate") fieldDesc = "`IdInvestigate`     int(10)        DEFAULT '0'     AFTER IsOnInvestigation";
+                if (columnName == "IsOnDeviation")      fieldDesc = "`IsOnDeviation`     smallint(5)    DEFAULT '0'";
+                if (columnName == "IdDeviation")        fieldDesc = "`IdDeviation`       int(10)        DEFAULT '0'";
+                if (columnName == "IsOnDiciplinary")    fieldDesc = "`IsOnDiciplinary`   smallint(5)    DEFAULT '0'";
+                if (columnName == "IsOnInvestigation")  fieldDesc = "`IsOnInvestigation` smallint(5)    DEFAULT '0'";
+                if (columnName == "IdDeployment")       fieldDesc = "`IdDeployment`      int            DEFAULT '0'     AFTER PayrollgrpId";
+                if (columnName == "DepDate")            fieldDesc = "`DepDate`           DATE                           AFTER EmpStatusId";
+                if (columnName == "TranNumber")         fieldDesc = "`TranNumber`        CHAR(12)       DEFAULT ''      AFTER EmpmasId";
+                if (columnName == "IdInvestigate")      fieldDesc = "`IdInvestigate`     int(10)        DEFAULT '0'     AFTER IsOnInvestigation";
 
 
                 // Construct the SQL query
@@ -3004,7 +3004,6 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
-
 
 
     private async Task _01TranReinstatementAppr(string? schema, string? conn)

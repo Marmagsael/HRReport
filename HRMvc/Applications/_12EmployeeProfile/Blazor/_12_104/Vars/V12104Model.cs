@@ -54,11 +54,13 @@ namespace HRMvc.Applications._12EmployeeProfile.Blazor._12_104
         public string?          LateDuration        { get; set; } = "";
         public string?          UnderTimeDuration   { get; set; } = "";
         public string?          LeaveType           { get; set; } = "";
+        public string?          LeaveDayType        { get; set; } = ""; // Whole Day / 1st Half / 2nd Half
         public DateTime?        LeaveStart          { get; set; } 
         public DateTime?        LeaveEnd            { get; set; } 
         public string?          Reason              { get; set; } = "";
         public bool?            IsSelected           { get; set; } = false;
-        public List<Attpunches1Model?> Logs     { get; set; } = new();
+        public List<Attpunches1Model?> Logs         { get; set; } = new();
+        public bool IsOtherMonth                    { get; set; } = false;
 
     }
 
@@ -90,10 +92,11 @@ namespace HRMvc.Applications._12EmployeeProfile.Blazor._12_104
 
     public class AttLeave
     {
-        public string? LeaveType { get; set; } 
-        public DateTime? LeaveStart { get; set; } 
-        public DateTime? LeaveEnd { get; set; } 
-        public string? Reason { get; set; } 
+        public string? LeaveType        { get; set; } 
+        public string? LeaveDayType     { get; set; } // Whole Day/ 1st Half / 2nd Half
+        public DateTime? LeaveStart     { get; set; } 
+        public DateTime? LeaveEnd       { get; set; } 
+        public string? Reason           { get; set; } 
     }
 
     

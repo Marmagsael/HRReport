@@ -21,6 +21,8 @@ public class AttLeaveapplicationModel
     
     public TimeSpan?    ExpLeaveStart    { get; set; }
     public TimeSpan?    ExpLeaveEnd      { get; set; }
+    public int?         LeaveDayTypeId   { get; set; }
+    public string?      LeaveDayType     { get; set; }  // Whole Day/ 1st half/ 2nd half
 
 
 
