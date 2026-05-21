@@ -13,8 +13,7 @@ public class V12_102Lv
     public List<TimeoptionModel>?           Hrs                     { get; set; } = [];   
     public List<LeavegrpapproverModel>      LvFirstApprovers        { get; set; } = [];
     public List<LeavegrpapproverModel>      LvFinalApprovers        { get; set; } = [];
-
-       
+    public List<LeavedaytypeModel>          LvDayTypes              { get; set; } = [];     
     
     public List<int>?                       LvYrs                   { get; set; } = [];   
     public List<TimedurationModel>?         Durations               { get; set; } = [];   

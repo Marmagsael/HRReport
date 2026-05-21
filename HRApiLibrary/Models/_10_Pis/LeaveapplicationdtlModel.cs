@@ -13,6 +13,7 @@ public class LeaveapplicationdtlModel
     public DateTime?		End 			        { get; set; } = DateTime.Now.Date;
     public decimal?			CreditedHrs 	        { get; set; } = 0;
 	public int?				IsPayable 		        { get; set; } = 0; 
+	public int?				LeavedayTypeId 		    { get; set; } = 1; 
 	
 	//----------------------------------------------------
 	public bool     		IsPayableB              { get => IsPayable == 1; set => IsPayable = value ? 1 : 0; }

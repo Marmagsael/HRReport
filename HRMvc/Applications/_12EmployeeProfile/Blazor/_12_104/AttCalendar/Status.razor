@@ -1,44 +1,43 @@
-﻿
+﻿@{
+    var statuses = (D.Status ?? "")
+        .Split(',', StringSplitOptions.RemoveEmptyEntries)
+        .Select(s => s.Trim())
+        .Where(s => !string.IsNullOrWhiteSpace(s)
+                 && !s.Contains("PRESENT")
+                 && !s.Contains("LATE")
+                 && !s.Contains("UNDERTIME"))
+        .ToList();
 
-@{
-    string? rs = D.Status ?? "";
-
-    string? status;
-
-    if (rs.Contains("RD"))
-    {
-        status = "Rest Day";
-    }
-    else if (rs.Contains("PRESENT") || rs.Contains("LATE") || rs.Contains("UNDERTIME") )
-    {
-        status = "";
-    }
-    else
-    {
-        status = string.Join(", ", rs); 
-    }
 }
 
-
-<div class="d-flex align-items-center justify-content-center h-100 w-100">
-    <span class="status @(D.Status == "ABSENT" ? "text-danger" : "")">
-        @status
-    </span>
+<div class="d-flex align-items-center justify-content-center h-100 w-100 mt-2">
+    <div class="d-flex flex-column  flex-wrap justify-content-center">
+        @foreach (var s in statuses)
+        {
+            <span class="badge rounded-pill text-center px-0  @GetBadgeClass(s) " style="font-size:.72em">
+                @GetStatusName(s)
+            </span>
+        }
+    </div>
 </div>
 
 @code {
+    [Parameter] public V12104Model V { get; set; } = new();
     [Parameter] public AttDayDetail D { get; set; } = new();
-}
 
-<style>
-    .status {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 13px;
-        font-weight: 500;
-        text-align: center;
-        color: #616161;
+    private string GetBadgeClass(string status)
+    {
+        var s = status.ToUpper();
+        if (s.Contains("ABSENT")) return "text-danger text-opacity-75";
+        return "text-dark text-opacity-50";
     }
 
-</style>
+    private string GetStatusName(string status)
+    {
+        var hideTypes = new[] { "R", "RN" };
+        if (hideTypes.Contains(status.Trim().ToUpper())) return "";
+
+        var found = V.AttyDutyTypes.FirstOrDefault(x => x.Code == status.Trim());
+        return found?.Name ?? status;
+    }
+}

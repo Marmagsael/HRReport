@@ -15,7 +15,4 @@ public class AttdailyModel
     public int?          Timeoutt        { get; set; } = 0;
     public int?          Inbyid          { get; set; } = 0;
     public int?          Outbyid         { get; set; } = 0;
-
-
-    
 }
