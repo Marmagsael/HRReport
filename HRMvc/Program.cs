@@ -31,6 +31,8 @@ builder.AddApiServices();
 //     .SetApplicationName("HRMvc");
 
 var app = builder.Build();
+var pathBase = builder.Configuration["PathBase"];
+if (!string.IsNullOrWhiteSpace(pathBase)) { app.UsePathBase(pathBase); }
 
 
 // 🔴 (1) ORDER FIX — middleware order important

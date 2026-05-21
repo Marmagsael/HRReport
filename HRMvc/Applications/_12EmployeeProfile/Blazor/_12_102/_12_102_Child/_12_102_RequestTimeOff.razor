@@ -39,9 +39,7 @@
             <tbody>
                 <tr>
                     <td class="w-150p p-2  ">
-                        <div class="mt-1">
-                            TRN # <spa class="txt-red">*</spa>
-                        </div>
+                        <div class="mt-1"> TRN # <spa class="txt-red">*</spa> </div>
                     </td>
                     <td class="p-2 d-flex justify-content-between  ">
                         <div class="border-bottom w-100p text-center  p-1">
@@ -246,21 +244,22 @@
     </div>
 
     @* --- Leave Details ----------------------------------------- *@
-    <div>
+    <div class="mb-2 b-dgray br-5">
         <div class="card-header bg mb-a-green fw-bold text-white ">Leave Details</div>
         <div class="card-body p-0">
 
-            <div class="w-100 d-flex gap-1 py-2 border-bottom">
-                <div class="w-130p text-center ">Date</div>
-                <div class="w-75p text-center text-primary ">
+            <div class="w-100 d-flex gap-1 py-2 border-bottom ">
+                <div class="w-30 text-center ">Date</div>
+                <div class="w-15 text-center text-primary">
                     Day
                 </div>
-                <div class="w-75p text-center">Duty Type</div>
-                <div class="w-130p text-center">Time Start</div>
+                <div class="w-15 text-center">Duty Type</div>
+                <div class="w-20 text-center">Schedule</div>
+                @* <div class="w-100p text-center">Lv Duration</div>
                 <div class="w-130p text-center">Duration</div>
-                <div class="w-100p text-center">Time End</div>
-                <div class="w-100p text-center">Payable</div>
-                <div class="w-100p text-center">Credited Hrs. </div>
+                <div class="w-100p text-center">Time End</div> *@
+                <div class="w-15 text-center">Payable</div>
+                
             </div>
 
             @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
@@ -268,16 +267,42 @@
                 string? dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
 
                 <div class="w-100 d-flex p-0 mt-1 gap-1 @dTypeCss ">
-                    <div class="w-130p text-center py-2 ">
+                    <div class="w-30 text-center py-2 ">
                     @ld.Start?.ToString("MMM dd, yyyy").Trim() 
                     </div>
-                    <div class="w-75p text-center  py-2 ">
+                    <div class="w-15 text-center  py-2 ">
                         @ld.Start?.ToString("ddd")
                     </div>
-                    <div class="w-75p text-center py-2 ">
+                    <div class="w-15 text-center py-2 ">
                         @dtype
                     </div>
-                    <div class="w-130p">
+                    
+                    
+                    
+                    <div class="w-20 text-center ">
+                        @* <RadzenNumeric @bind-Value="ld.CreditedHrs"
+                            TValue="decimal?"
+                            Min="@(0m)"
+                            Max="@(23.5m)"
+                            Step="0.5"
+                            Format="0.00"
+                            Style="width:100px;"
+                            TextAlign="TextAlign.Center"/>   *@
+
+                        <RadzenDropDown
+                            Data            ="@v.LvDayTypes"
+                            TextProperty    ="Name"
+                            ValueProperty   ="Id"
+                            @bind-Value     ="@ld.LeavedayTypeId"
+                            Placeholder     ="--Schedule--"
+                            Style           ="width:100%" /> 
+                    </div>
+
+
+
+
+
+                    @* <div class="w-130p">
                         <RadzenDropDown
                             Change="@(() => ComputeEnd(ld))"
                             Data="@v.Hrs"
@@ -299,25 +324,16 @@
                     </div>
                     <div class="w-100p text-center py-2 ">
                         @ld.End?.ToString("hh:mm tt")
-                    </div>
+                    </div> *@
                     
-                    <div class="w-100p text-center py-2 ">
+                    <div class="w-15 text-center py-2 ">
                         <input 
                             class="form-check-input" 
                             type="checkbox"
                             checked="@ld!.IsPayableB"
                             @onchange="@((ChangeEventArgs e) => MarkPayable(e, ld))" />
                     </div>
-                    <div class="w-100p text-center @(ld?.IsPayableB??false ? "" : " disabled-div ") ">
-                        <RadzenNumeric @bind-Value="ld.CreditedHrs"
-                            TValue="decimal?"
-                            Min="@(0m)"
-                            Max="@(23.5m)"
-                            Step="0.5"
-                            Format="0.00"
-                            Style="width:100px;"
-                            TextAlign="TextAlign.Center"/>  
-                    </div>
+                    
 
                 </div>    
 
@@ -325,11 +341,11 @@
             }
 
         </div>
-
-        
-        
+        <div class="h-10p"> &nbsp; </div>
 
     </div>
+
+    <br />
 
 </CascadingValue>
 </CascadingValue>
@@ -344,15 +360,54 @@
 @inject ISettingsDataAccess             _settings; 
 @inject IEmpmasInternalDataAccess       _empmasInternal; 
 @inject I_10_EmpmasDataAccess           _empmas; 
+@inject ILeavedaytypeDataAccess         _lvdaytype; 
 
-
-@* @inject ILeaveapplicationdtlDataAccess  _lvApplicationdtl;  *@
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; }
     V12_102Lv   v = new();
     V00_RepVars rv = new(); 
-    int? ctr = 0; 
+    int? ctr = 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        
+        if (Uc == null) return;
+        await LoadDatas(); 
+        await _02LeaveBalance();
+        await Populatedtls(); 
+    }
+
+    async Task LoadDatas() {
+        
+        if(!v.LeaveTypes.Any())  {
+            var res  = await _lvtype._02(Uc.SchemaUserPis, Uc.Conn) ?? [];
+            if (res != null && res.Any()) v.LeaveTypes = res!; 
+
+            v.Hrs       = MsdsDataAccess._02Hours() ; 
+            v.Durations  = MsdsDataAccess._02HourDurations(); 
+            v.AttTemplate = await _attTemplate._02(Uc.UserId, Uc.SchemaUserPis, Uc.Conn); 
+
+            v.LvYrs = []; 
+            v.LvYrs.Add(DateTime.Now.Year); 
+            v.LvYrs.Add(DateTime.Now.Year-1); 
+        }
+
+        List<LeavegrpapproverModel?>? resApprovers = await _lvgrpApprover._02ByEmpmasId(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        var firstApprovers = (resApprovers.Where(a=> a.ApproverLevel==1).ToList()) ??[];
+        v.LvFirstApprovers = firstApprovers!;
+        v.LvFirstApprovers.Insert(0, new(){ApproverId=0, ApproverName="No Assigned Approver"});
+
+        
+        var finalApprovers = (resApprovers.Where(a=> a.ApproverLevel==2).ToList()) ??[];
+        v.LvFinalApprovers = finalApprovers!; 
+        v.LvFinalApprovers.Insert(0, new() { ApproverId = 0, ApproverName = "No Assigned Approver" });
+
+        @* ---- Leave day Types ------------------------------------- *@
+        v.LvDayTypes = (await _lvdaytype._02s(Uc.SchemaUserPis, Uc.Conn) ?? [])!; 
+       
+    }
+ 
 
     @* =================================================== *@
     async Task ChildActionCatcher() {
@@ -609,41 +664,6 @@
 
     }
     
-    protected override async Task OnParametersSetAsync()
-    {
-        
-        if (Uc == null) return;
-        await LoadDatas(); 
-        await _02LeaveBalance();
-        await Populatedtls(); 
-    }
-
-    async Task LoadDatas() {
-        
-        if(!v.LeaveTypes.Any())  {
-            var res  = await _lvtype._02(Uc.SchemaUserPis, Uc.Conn) ?? [];
-            if (res != null && res.Any()) v.LeaveTypes = res!; 
-
-            v.Hrs       = MsdsDataAccess._02Hours() ; 
-            v.Durations  = MsdsDataAccess._02HourDurations(); 
-            v.AttTemplate = await _attTemplate._02(Uc.UserId, Uc.SchemaUserPis, Uc.Conn); 
-
-            v.LvYrs = []; 
-            v.LvYrs.Add(DateTime.Now.Year); 
-            v.LvYrs.Add(DateTime.Now.Year-1); 
-        }
-
-        List<LeavegrpapproverModel?>? resApprovers = await _lvgrpApprover._02ByEmpmasId(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
-        var firstApprovers = (resApprovers.Where(a=> a.ApproverLevel==1).ToList()) ??[];
-        v.LvFirstApprovers = firstApprovers!;
-        v.LvFirstApprovers.Insert(0, new(){ApproverId=0, ApproverName="No Assigned Approver"});
-
-        
-        var finalApprovers = (resApprovers.Where(a=> a.ApproverLevel==2).ToList()) ??[];
-        v.LvFinalApprovers = finalApprovers!; 
-        v.LvFinalApprovers.Insert(0, new() { ApproverId = 0, ApproverName = "No Assigned Approver" });
-
-    }
 
     private async Task MarkPayable(ChangeEventArgs e, LeaveapplicationdtlModel l)
     {
