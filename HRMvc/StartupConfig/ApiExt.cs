@@ -7,6 +7,7 @@ using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._00_MainTrans;
 using HRApiLibrary.DataAccess._00_MainTrans.Interfaces;
 using HRApiLibrary.DataAccess._10_Pis;
+using HRApiLibrary.DataAccess._10_Pis.Attendance;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay;
@@ -59,11 +60,13 @@ public static class ApiExt
         builder.Services.AddScoped<IAttpunches1DataAccess, Attpunches1DataAccess>();
         builder.Services.AddScoped<IEmpmasInternalDataAccess, EmpmasInternalDataAccess>();
         builder.Services.AddScoped<IPissettingsDataAccess, PissettingsDataAccess>();
+        //builder.Services.AddScoped<ILeavedaytypeDataAccess, LeavedaytypeDataAccess>();
         builder.Services.AddScoped<ILeavetypeDataAccess, LeavetypeDataAccess>();
         builder.Services.AddScoped<ILeavegrpDataAccess, LeavegrpDataAccess>();
         builder.Services.AddScoped<ILeavedefaultapproverDataAccess, LeavedefaultapproverDataAccess>();
         builder.Services.AddScoped<ILeaveapproverDataAccess, LeaveapproverDataAccess>();
         builder.Services.AddScoped<ILeavegrpapproverDataAccess, LeavegrpapproverDataAccess>();
+        //builder.Services.AddScoped<ILvcreditDataAccess, LvcreditDataAccess>();
         builder.Services.AddScoped<IDeprecDataAccess, DeprecDataAccess>();
         builder.Services.AddScoped<IEmpblockpostDataAccess, EmpblockpostDataAccess>();
         builder.Services.AddScoped<IEmploymenttypeDataAccess, EmploymenttypeDataAccess>();
@@ -104,6 +107,24 @@ public static class ApiExt
         builder.Services.AddScoped<IParaDataAccess, ParaDataAccess>();
         builder.Services.AddScoped<IDesignationDataAccess, DesignationDataAccess>();
         builder.Services.AddScoped<IPenaltyDataAccess, RpenaltyDataAccess>();
+        //builder.Services.AddScoped<IAttreqtypeDataAccess, AttreqtypeDataAccess>();
+        //builder.Services.AddScoped<IAttreqhistDataAccess, AttreqhistDataAccess>();
+        //builder.Services.AddScoped<IAttreqhdrDataAccess, AttreqhdrDataAccess>();
+        //builder.Services.AddScoped<IAttreqdtlDataAccess, AttreqdtlDataAccess>();
+        //builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
+        builder.Services.AddScoped<ILeaveapplicationDataAccess, LeaveapplicationDataAccess>();
+        //builder.Services.AddScoped<ILeaveapplicationdtlDataAccess, LeaveapplicationdtlDataAccess>();
+        //builder.Services.AddScoped<IEmpmasgrpDataAccess, EmpmasgrpDataAccess>();
+
+        //builder.Services.AddScoped<IAtttemplatereqdtlDataAccess, AtttemplatereqdtlDataAccess>();
+        //builder.Services.AddScoped<IAtttemplatereqhdrDataAccess, AtttemplatereqhdrDataAccess>();
+        //builder.Services.AddScoped<IAtttemplatereqhistDataAccess, AtttemplatereqhistDataAccess>();
+        
+        //builder.Services.AddScoped<IOtdaytypeDataAccess, OtdaytypeDataAccess>();
+        //builder.Services.AddScoped<IOtdutytypeDataAccess, OtdutytypeDataAccess>();
+        //builder.Services.AddScoped<IOtreqdtlDataAccess, OtreqdtlDataAccess>();
+        //builder.Services.AddScoped<IOtreqhdrDataAccess, OtreqhdrDataAccess>();
+        //builder.Services.AddScoped<IOtreqhistDataAccess, OtreqhistDataAccess>();
 
         builder.Services.AddScoped<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
         builder.Services.AddScoped<DA222>();
@@ -168,7 +189,7 @@ public static class ApiExt
         builder.Services.AddScoped<IEmpratesdtlDataAccess, EmpratesdtlDataAccess>();
         builder.Services.AddScoped<IFixedearningsDataAccess, FixedearningsDataAccess>();
         builder.Services.AddScoped<IFixedearnings_grp_empDataAccess, Fixedearnings_grp_empDataAccess>();
-        builder.Services.AddScoped<IPaymainvisacctDataAccess, PaymainvisacctDataAccess>();
+        //builder.Services.AddScoped<IPaymainvisacctDataAccess1, PaymainvisacctDataAccess>();
         builder.Services.AddScoped<IPaytranDataAccess, PaytranDataAccess>();
         builder.Services.AddScoped<IDa605DataAccess, Da605DataAccess>();
         builder.Services.AddScoped<IDutyrenderedDataAccess, DutyrenderedDataAccess>();
@@ -176,6 +197,7 @@ public static class ApiExt
         builder.Services.AddScoped<IMatrixphicDataAccess, MatrixphicDataAccess>();
         builder.Services.AddScoped<IMatrixsssDataAccess, MatrixsssDataAccess>();
         builder.Services.AddScoped<IMatrixwtaxDataAccess, MatrixwtaxDataAccess>();
+        builder.Services.AddScoped<IAttendanceDataAccess, AttendanceDataAccess>();
         
         //-- Old Pis -----------------------------------------------------------------------
         builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
