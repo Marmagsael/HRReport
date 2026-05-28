@@ -27,8 +27,9 @@ public class AuthenticationController : Controller
     private readonly I_90_001_MySqlDataAccess       _mysql;
     private readonly I_00MainDA                     _mainDA;
                                                                         
-    
     private readonly I_10_EmpmasDataAccess          _empmas; 
+    private readonly IEmpmasInternalDataAccess      _empmasInternal; 
+    
     private readonly ClaimsAccess                   _claimsAccess;      
     private readonly I_09_02_VarsGlobal             _vars;
     private readonly I_00MainPisTblMakerAccess      _mainPisTblMaker;
@@ -49,6 +50,7 @@ public class AuthenticationController : Controller
                                     ClaimsAccess               claimsAccess,
                                     I_00MainPisTblMakerAccess  mainPisTblMaker,
                                     I_10_EmpmasDataAccess      empmas, 
+                                    IEmpmasInternalDataAccess  empmasInternal, 
                                     I_20_002_PayTblMaker       payTblMaker, 
                                     I_00UserscompanyDataAccess userCompany, 
                                     I_AcctgTableMaker          acctg, 
@@ -62,6 +64,7 @@ public class AuthenticationController : Controller
         _claimsAccess       = claimsAccess;
         _mainPisTblMaker    = mainPisTblMaker;
         _empmas             = empmas;
+        _empmasInternal     = empmasInternal;
         _payTblMaker        = payTblMaker;
         _userCompany        = userCompany;
         _acctg              = acctg;
@@ -192,7 +195,7 @@ public class AuthenticationController : Controller
 
         // 5). Create Cookies  --------------------------------------------------------
         UserCompanyModel? uc = await _02UserCompany(user, schema, conn);
-        CreateClaims(user, uc); //-- 02.04 
+        await CreateClaims(user, uc); //-- 02.04 
         await CreateCompany(user, uc, conn);
 
         // 6). Save User to Own PIS schema --------------------------------------------
@@ -368,7 +371,7 @@ public class AuthenticationController : Controller
         // Create Schema and Tables  --------------------------------------------------------
         _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
 
-        CreateClaims(user, uc);
+        await CreateClaims(user, uc);
         await CreateCompany(user, uc, conn);    
         
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
@@ -394,7 +397,7 @@ public class AuthenticationController : Controller
         var user    = await _mainDA._02UsersById(uid);
         var uc      = await _mainDA._02UserCompany(user?.DefaultCoId ?? 0);
 
-        CreateClaims(user ?? new UsersModel(){Id=0}, uc); 
+        await CreateClaims(user ?? new UsersModel(){Id=0}, uc); 
         HttpContext.Session.Clear();
         
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
@@ -419,9 +422,9 @@ public class AuthenticationController : Controller
 
         
         var userId = user.Id;
-        //var usr = await _userAccess._02ById(userId); 
         var coId   = user.DefaultCoId;
         var userDb = "U"+userId.ToString().Trim();
+
         await _mainPisTblMaker._01UserTable(userDb, conn);
 
 
@@ -478,7 +481,7 @@ public class AuthenticationController : Controller
         await _mainDA._03Users(userCompanyId, user, schema, conn);
 
         UserCompanyModel? uc = await _02UserCompany(user, schema, conn);
-        CreateClaims(user, uc);
+        await CreateClaims(user, uc);
 
         if (userCompanyId <= 0) 
             return  Redirect("~/main/my-profile/my-201-records");
@@ -641,9 +644,10 @@ public class AuthenticationController : Controller
         return city;
     }
 
-    public async void CreateClaims(UsersModel user, UserCompanyModel? uc)
+    public async Task CreateClaims(UsersModel user, UserCompanyModel? uc)
     {
-        var userId          = user.Id.ToString();;
+        var userId          = user.Id.ToString();
+        var empmasId        = string.Empty;
         var prefix          = "U" + userId.Trim() + "C1"; 
 
         var pisSchema       = prefix + "Pis";
@@ -653,7 +657,18 @@ public class AuthenticationController : Controller
         var amsSchema       = prefix + "Ams";
         var conn            = user.Domain;
         var coName          = uc?.CompanyName ?? "-";
-        var email = user.Email;
+        var email           = user.Email;
+        
+        var empnumber       = user.LoginName??"00000";
+        var oldPis           = uc?.OldPis ?? "";
+        var oldPay           = uc?.OldPay ?? "";
+
+        var res = await _empmasInternal._02BySystemIds(user.Id, uc?.PisSchema ?? "", conn??"");
+        if(res.Count > 0 ) 
+        {
+            empnumber = res.First().EmpNumber ?? "00000";    
+            empmasId = res.First().Id.ToString() ?? "0";
+        }
 
         if (!string.IsNullOrEmpty(user.DefaultCoId.ToString()) && user.DefaultCoId != 0)
         {
@@ -667,10 +682,7 @@ public class AuthenticationController : Controller
 
 
 
-        //return Content($"uc id : {uc.PisSchema}");
-        
         var loginName               = user.LoginName ?? "-1";
-        //var defCoId                 = uc?.Id.ToString() ?? "0";
         var defCoId                 = user.DefaultCoId.ToString() ?? "0";
         var isExclusiveCompany      = _config.GetSection("CompanyInfo:Exclusive").Value;
 
@@ -686,7 +698,13 @@ public class AuthenticationController : Controller
             new("ApplicantSchema",      appSchema ?? ""),
             new("AmsSchema",            amsSchema ?? ""),
             new("CoName",               coName ?? ""),
-            new("Conn",                 conn  ?? "MySql"),  
+            new("Conn",                 conn  ?? "MySql"),
+
+            new("EmpmasId",             empmasId  ?? "0"),
+            new("Empnumber",            empnumber  ?? "00000"),  
+            new("OldPis",               oldPis  ?? "secpis"),  
+            new("OldPay",               oldPay  ?? "pay"),  
+            
             new("IsExclusiveCompany",   isExclusiveCompany)
         }; 
 
@@ -712,7 +730,7 @@ public class AuthenticationController : Controller
     //-- 02.04 --- Claims 
 
     //-- 02.04 --- Claims 
-    public async void CreateClaims(UsersModel user)
+    public async Task CreateClaims(UsersModel user)
     {
         
         var userId = user.Id.ToString() ?? "0";;
