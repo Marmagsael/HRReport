@@ -29,8 +29,8 @@ public class OEmpmasModel
     public string? Allow4Fix                { get; set; }
     public string? MovementNumber           { get; set; }
     public string? MovementMode             { get; set; }
-    public string? MovementDate             { get; set; }
-    public string? MovementEnd              { get; set; }
+    public DateTime? MovDate                { get; set; }
+    public DateTime? MovEnd                 { get; set; }
     public string? DutyDate                 { get; set; }
     public string? Address1                 { get; set; }
     public string? Address2                 { get; set; }
@@ -44,11 +44,12 @@ public class OEmpmasModel
     public string? Citizen                  { get; set; }
     public int? Height                      { get; set; }
     public int? HeightInches                { get; set; }
-    public string? Weight                   { get; set; }
+    public double? Weight                   { get; set; }
     public string? Tin                      { get; set; }
     public string? Sss                      { get; set; }
     public string? PagIbigNo                { get; set; }
     public string? Phic                     { get; set; }
+    public string? Hdmf                     { get; set; }
     public string? Religion                 { get; set; }
     public string? Hair                     { get; set; }
     public string? Eyes                     { get; set; }
@@ -58,20 +59,20 @@ public class OEmpmasModel
     public string? Spouse                   { get; set; }
     public string? Occupation               { get; set; }
     public string? NumberOfChildren         { get; set; }
-    public string? NoChildren               { get; set; }
+    public int? NoChildren               { get; set; }
     public DateTime? DateHired              { get; set; }
     public DateTime? Separate               { get; set; }
     public string? Position_                { get; set; }
     public string? EmpStat_                 { get; set; }
-    public string? StatusDate               { get; set; }
+    public DateTime? StatusDate               { get; set; }
     public string? SecLicense               { get; set; }
     public DateTime? Licexpire              { get; set; }
     public string? TrainingAt               { get; set; }
     public string? TrainingDate             { get; set; }
     public string? Insurance                { get; set; }
-    public string? PolicyNumber             { get; set; }
-    public string? FaceValue                { get; set; }
-    public string? Premium                  { get; set; }
+    public string? PolicyNo                 { get; set; }
+    public double? FaceValue                { get; set; } = 0.00;
+    public double? Premium                  { get; set; } = 0.00;
     public DateTime? InsExpire              { get; set; }
     public string? EmergencyContactName     { get; set; }
     public string? EmergencyContactTel      { get; set; }
@@ -106,14 +107,17 @@ public class OEmpmasModel
     public DateTime? Exp_Drug               { get; set; }
     public DateTime? Exp_Court              { get; set; }
     public DateTime? ExpMed                 { get; set; }
+    public string? CountryCode              { get; set; }
+    public DateTime? DpaDate                { get; set; }
 
     //-------------------------------------------------------
-    public string? EmpName                  { get; set; } = string.Empty;
-    public string? PositionName             { get; set; } = string.Empty;
-    public string? EmpStatus                { get; set; } = string.Empty;
-    public string? ClName                   { get; set; } = string.Empty;
-    
-    public string? Addr1                    { get; set; }
-    public string? Addr2                    { get; set; }
-}
+    public string?  EmpName                 { get; set; } = string.Empty;
+    public string?  PositionName            { get; set; } = string.Empty;
+    public string?  EmpStatus               { get; set; } = string.Empty;
+    public string?  ClName                  { get; set; } = string.Empty;
+    public string?  Addr1                   { get; set; }
+    public string?  Addr2                   { get; set; }
+    public string?  Reason                  { get; set; }
+    public int?     CntNotMigrated          { get; set; } = 0;
 
+}

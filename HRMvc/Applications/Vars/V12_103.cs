@@ -6,6 +6,7 @@ namespace HRMvc.Applications.Vars;
 
 public class V12_103
 {
+    public List<OEmpmasModel?>?      OEmpmass            { get; set; } = [];
     public List<OCivstatModel?>?     OCivstats            { get; set; } = [];
     public List<OGenderModel?>?      OGenders             { get; set; } = [];
     public List<OFamilyModel?>?      OFamilys             { get; set; } = [];
