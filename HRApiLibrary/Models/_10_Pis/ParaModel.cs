@@ -8,6 +8,6 @@ public class ParaModel
 
     public string? Month { get; set; }
 
-    public int CtrName { get; set; }
+    public int? CtrName { get; set; }
 }
 
