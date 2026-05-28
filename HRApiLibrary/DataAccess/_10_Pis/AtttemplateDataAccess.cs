@@ -14,7 +14,7 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
 			_sql = sql;
 	}
 
-	public async Task<AtttemplateModel?> _01(AtttemplateModel atttemplate, string schema, string conn )
+	public async Task<AtttemplateModel?> _01(AtttemplateModel atttemplate, string? schema, string? conn )
 	{
 		string sql = $@"Insert into {schema}.Atttemplate 
                             (EmpmasId,  AttendanceTypeId,  D1_In,  D1_HrsLength,  D1_DutyType,  D2_In,  D2_HrsLength,  D2_DutyType,  D3_In,  D3_HrsLength,  D3_DutyType,  D4_In,  D4_HrsLength,  D4_DutyType,  D5_In,  D5_HrsLength,  D5_DutyType,  D6_In,  D6_HrsLength,  D6_DutyType,  D7_In,  D7_HrsLength,  D7_DutyType) values 
@@ -41,31 +41,31 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
                             D7_In                   = @D7_In,
                             D7_HrsLength            = @D7_HrsLength,
                             D7_DutyType             = @D7_DutyType; 
-                        SELECT * FROM {schema}.Atttemplate WHERE EmpmasID = @Empmasid;    " ; 
+                        SELECT * FROM {schema}.Atttemplate WHERE EmpmasID = @EmpmasId;    " ; 
 		var res = await _sql.FetchData<AtttemplateModel?,dynamic>(sql,atttemplate,conn);
 		return res.FirstOrDefault();
 	}
 
 	
-	public async Task<AtttemplateModel?> _02(int id, string schema, string conn)
+	public async Task<AtttemplateModel?> _02(int? id, string? schema, string? conn)
 	{
 		string sql = $@"select  * from {schema}.Atttemplate where EmpmasId = @Id" ; 
 		var data = await _sql.FetchData<AtttemplateModel?, dynamic>(sql, new { Id = id }, conn); 
 		return data?.FirstOrDefault();
 	}
     
-	public async Task<List<AtttemplateModel?>?> _02s(int id, string schema, string conn)
+	public async Task<List<AtttemplateModel?>?> _02s(int? id, string? schema, string? conn)
 	{
 		string sql = $@"select  * from {schema}.Atttemplate where EmpmasId = @Id" ; 
 		var data = await _sql.FetchData<AtttemplateModel?, dynamic>(sql, new { Id = id }, conn); 
 		return data;
 	}
-
-    public AtttemplateModel? _02NoSchedule(int empmasId)
+	
+    public AtttemplateModel? _02NoSchedule(int? empmasId)
     {
         AtttemplateModel at = new()
         {
-	        Empmasid = empmasId, 
+	        EmpmasId = empmasId, 
 	        
 	        AttendancetypeId = 1,
 	        
@@ -97,7 +97,7 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
         return at;
     }
 
-    public async Task<AtttemplateModel?> _03(int id,AtttemplateModel atttemplate, string schema, string conn)
+    public async Task<AtttemplateModel?> _03(int? id,AtttemplateModel atttemplate, string? schema, string? conn)
 	{
 		string sql = $@"Update {schema}.Atttemplate set 
                             EmpmasId                = @EmpmasId, 
@@ -130,7 +130,7 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
 
 	}
 
-	public async Task<AtttemplateModel?> _04(int id, string schema, string conn)
+	public async Task<AtttemplateModel?> _04(int? id, string? schema, string? conn)
 	{
 		string sql = $@"Delete    from {schema}.Atttemplate where EmpmasId = @Id;
                         select  * from {schema}.Atttemplate where EmpmasId = @Id;";

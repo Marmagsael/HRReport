@@ -1,9 +1,7 @@
-@using DocumentFormat.OpenXml.Office2010.Word
 @using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._90_Utils
 @using HRApiLibrary.Models._10_Pis
-@using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 
 @{ var ac = Attpunches1_Current; }
 
@@ -16,7 +14,7 @@
         <div class="p-2 text-primary "> @v.Msg </div>
         <div class="p-2  text-success"> 
             @v.MsgVal  - 
-            <span class="text-primary">@(Attpunches1_Current?.PunchInDate.ToString("dddd") ?? "-")</span>
+            <span class="text-primary">@(Attpunches1_Current?.PunchInDate?.ToString("dddd") ?? "-")</span>
         </div>
     </div>
     
@@ -76,7 +74,6 @@
 @inject IAttdailyDataAccess _attdaily 
 @inject IAttpunches1DataAccess _attpunches1  
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
 
 @code {
     
@@ -102,20 +99,22 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
 
     async Task CPunchIn()
     {
+        if (uc is null) return;
+
         string?         dayName     = DateTime.Now.DayOfWeek.ToString();
-        int             dayNo       = MsdsDataAccess.GetDayNo(dayName);
+        int?             dayNo       = MsdsDataAccess.GetDayNo(dayName);
         
         //--- Attendance Daily --------------
         var attDaily = new AttdailyModel()
         {
-            Empmasid    = uc?.UserId ?? 0,      
+            EmpmasId    = uc?.UserId ?? 0,      
             Empnumber   = uc?.OempNumber ?? "-", 
             Punchdate   = DateTime.Now.Date, 
             Dayno       = dayNo, 
             Timein      = DateTime.Now,
             Timeint     = pSchedule.HrsLenght, 
             Dutytypeid  = pSchedule.DutyType == "R" ? 1 : 2, 
-            Inbyid      = uc.UserId, 
+            Inbyid = uc?.UserId ?? 0,
             
         };
         var ad = await _attdaily._01PunchIn(attDaily, uc.SchemaUserPis, uc.Conn!);
@@ -146,24 +145,36 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
 
     async Task CPunchOut()
     {
-        if (Attpunches1_Current == null)
-            return;
+        if (uc is null) return;
+        if (Attpunches1_Current == null) return;
 
-        string? dayName     = Attpunches1_Current.PunchInDate.DayOfWeek.ToString();
-        int dayNo           = MsdsDataAccess.GetDayNo(dayName);
-        int hrs             = pSchedule.HrsLenght / 100;
-        int mins            = pSchedule.HrsLenght % 100;
+        string? dayName     = Attpunches1_Current.PunchInDate?.DayOfWeek.ToString();
+        int? dayNo           = MsdsDataAccess.GetDayNo(dayName);
+        int? hrs             = pSchedule.HrsLenght / 100;
+        int? mins            = pSchedule.HrsLenght % 100;
 
-        DateTime timeOutDT  = Attpunches1_Current.PunchInDate.AddHours(hrs).AddMinutes(mins);
-        int OutSchedule     = timeOutDT.Hour * 100 + timeOutDT.Minute;
+        int? schedHour = pSchedule.InTime / 100;
+        int? schedMin  = pSchedule.InTime % 100;
+
+        DateTime schedIn = Attpunches1_Current.PunchInDate?
+            .Date
+            .AddHours(schedHour??0)
+            .AddMinutes(schedMin??0) ?? DateTime.MinValue;
+
+        DateTime schedOut = schedIn
+            .AddHours(hrs??0)
+            .AddMinutes(mins??0);
+
+        int? OutSchedule = schedOut.Hour * 100 + schedOut.Minute;
+            
 
         AttdailyModel attDaily = new AttdailyModel()
         {
-            Empmasid    = uc?.UserId ?? 0,
+            EmpmasId    = uc?.UserId ?? 0,
             Empnumber   = uc?.OempNumber ?? "-",
             Punchdate   = DateTime.Now.Date,
             Dayno       = dayNo,
-            Timein      = Attpunches1_Current.PunchInDate,
+            Timein      = Attpunches1_Current?.PunchInDate??DateTime.Now,
             Timeint     = Attpunches1_Current.PunchT,
             Timeoutt    = OutSchedule, 
             Dutytypeid  = pSchedule.DutyType == "R" ? 1 : 2,
@@ -207,8 +218,8 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
     }
 
     
-    record PunchSchedule(int AttendanceTypeId, int InTime, int HrsLenght, string DutyType); 
-    PunchSchedule _02PunchSchedule(int dayno, AtttemplateModel at)
+    record PunchSchedule(int? AttendanceTypeId, int? InTime, int? HrsLenght, string? DutyType); 
+    PunchSchedule _02PunchSchedule(int? dayno, AtttemplateModel at)
     {
         return dayno switch
         {
@@ -255,16 +266,16 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
             v.CurrInDisabled  = true;
             v.CurrOutDisabled = false;
             
-            v.CurrIn = Attpunches1_Current.PunchInDate.ToString("hh:mm tt");
+            v.CurrIn = Attpunches1_Current.PunchInDate?.ToString("hh:mm tt");
             v.Msg    = "Punch Out for : ";
-            v.MsgVal = Attpunches1_Current.PunchInDate.ToString("yyyy-MM-dd hh:mm tt");
+            v.MsgVal = Attpunches1_Current.PunchInDate?.ToString("yyyy-MM-dd hh:mm tt");
             
         }
         
         string? dayName     = DateTime.Now.DayOfWeek.ToString();
         if (Attpunches1_Current?.PunchInDate != null) 
-                dayName     = Attpunches1_Current.PunchInDate.DayOfWeek.ToString();
-        int     dayNo       = MsdsDataAccess.GetDayNo(dayName);
+                dayName     = Attpunches1_Current.PunchInDate?.DayOfWeek.ToString();
+        int?     dayNo       = MsdsDataAccess.GetDayNo(dayName);
 
         pSchedule = _02PunchSchedule(dayNo, Atttemplate??new()); 
     }
