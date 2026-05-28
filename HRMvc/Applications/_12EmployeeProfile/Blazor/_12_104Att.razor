@@ -300,15 +300,15 @@
     // ============================================================
     private AttPunches LoadPunches(DateTime date, List<Attpunches1Model?> punches)
     {
-        var logs = punches.Where(p => p?.PunchInDate != null && p.PunchInDate.Date == date.Date).OrderBy(p => p!.PunchInDate).ToList();
+        var logs = punches.Where(p => p?.PunchInDate != null && p.PunchInDate.Value.Date == date.Date).OrderBy(p => p!.PunchInDate).ToList();
 
         if (logs.Count == 0) return new AttPunches();
 
         TimeSpan totalWorked = TimeSpan.Zero;
         foreach (var log in logs)
         {
-            if (log?.PunchInDate != null && log?.PunchOutDate != null && log.PunchOutDate > log.PunchInDate)
-                totalWorked += log.PunchOutDate - log.PunchInDate;
+            if (log?.PunchInDate != null && log.PunchOutDate != null && log.PunchOutDate > log.PunchInDate)
+                totalWorked += log.PunchOutDate.Value - log.PunchInDate.Value;
         }
 
         var firstIn = logs.Min(p => p!.PunchInDate);
