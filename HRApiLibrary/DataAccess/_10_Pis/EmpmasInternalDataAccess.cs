@@ -42,6 +42,13 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
         return data?.FirstOrDefault();
     }
     
+    public async Task<List<EmpmasInternalModel?>?> _02BySystemIds(int systemId, string schema, string conn)
+    {
+        string sql = $@"select  * from {schema}.Empmas where SystemId = @SystemId";
+        var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { SystemId = systemId }, conn);
+        return data;
+    }
+    
     public async Task<List<EmpmasInternalModel?>?> _02(string schema, string conn)
     {
         string sql = $@"select  e.concat(trim(EmpLastNm),', ' trim(EmpFirstNm),' ' , trim(EmpMidNm)) Fullname, e.*  
@@ -50,7 +57,8 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
-    
+
+      
     public async Task<List<EmpmasInternalModel?>?> _02byEmpnumber(string empnumber, string schema, string conn)
     {
         string sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, 
