@@ -66,7 +66,7 @@ public class AttdailyDataAccess : IAttdailyDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<AttdailyModel?>?> _02ByMonth(int empmasId, int yr, int month, string schema, string conn)
+    public async Task<List<AttdailyModel?>?> _02ByMonth(int empmasId, int? yr, int? month, string schema, string conn)
     {
         var sql = $@"select  * from {schema}.Attdaily 
                      where EmpmasId   = @EmpmasId and year(PunchDate) = @Myr and  month(PunchDate) = @Mmonth 

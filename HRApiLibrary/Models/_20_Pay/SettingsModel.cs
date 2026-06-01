@@ -3,18 +3,18 @@
 public class SettingsModel
 {
     
-    public int          Id                      {get; set; } = 0; 
-    public int          Yeartodays              {get; set; }  = 295;
-    public int          Semiannualtodays        {get; set; } = 148;
-    public int          Monthtodays             {get; set; } = 24;
-    public int          SemiMonthtodays         {get; set; } = 12; 
-    public int          DaysPerWeek             {get; set; } = 5; 
-    public int          Daytohours              {get; set; } = 8; 
-    public int          NdStart                 {get; set; } = 2200; 
-    public int          NdEnd                   {get; set; } = 0600; 
+    public int?          Id                      {get; set; } = 0; 
+    public int?          Yeartodays              {get; set; }  = 295;
+    public int?          Semiannualtodays        {get; set; } = 148;
+    public int?          Monthtodays             {get; set; } = 24;
+    public int?          SemiMonthtodays         {get; set; } = 12; 
+    public int?          DaysPerWeek             {get; set; } = 5; 
+    public int?          Daytohours              {get; set; } = 8; 
+    public int?          NdStart                 {get; set; } = 2200; 
+    public int?          NdEnd                   {get; set; } = 0600; 
     public string?      PayrollType             {get; set; } = "Bi-Monthly"; 
     public string?      TaxPeriodCode           {get; set; } = "SM"; 
-    public int          AllowedMoPrd            {get; set; } = 3; 
+    public int?          AllowedMoPrd            {get; set; } = 3; 
     public string?      CoShortName             {get; set; } = string.Empty; 
     public string?      CoFullName              {get; set; } = string.Empty; 
     public string?      CoAddress               {get; set; } = string.Empty; 
@@ -28,5 +28,6 @@ public class SettingsModel
     public string?      RevSss                  {get; set; } = string.Empty; 
     public string?      RevPhic                 {get; set; } = string.Empty; 
     public string?      RevPagibig              {get; set; } = string.Empty;
-    public int          PremContSourceId        { get; set; } = 1; 
+    public int?          PremContSourceId        { get; set; } = 1; 
+    public string?       LogoAddress             { get; set; } = ""; 
 }

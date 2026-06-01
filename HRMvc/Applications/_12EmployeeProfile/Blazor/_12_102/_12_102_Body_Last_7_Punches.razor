@@ -15,33 +15,33 @@
 
         @foreach (var punch in V12_102.Attpunches1_7days)
         {
-            var timein  = punch?.PunchInDate == null ?  "-" : @punch.PunchInDate.ToString("HH:mm:ss");
-            var timeout = punch?.PunchOutDate == null || punch.PunchOutDate <= DateTime.Now.AddYears(-100) ? "-" : @punch.PunchOutDate.ToString("HH:mm:ss");
+            var timein  = punch?.PunchInDate == null ?  "-" : @punch.PunchInDate?.ToString("HH:mm:ss");
+            var timeout = punch?.PunchOutDate == null || punch.PunchOutDate <= DateTime.Now.AddYears(-100) ? "-" : @punch.PunchOutDate?.ToString("HH:mm:ss");
             
             @* --- Tardiness IN ----------------------- *@
             double inTemplate      = 0.00;
-            DateTime    scheduledInTime = punch.PunchInDate.Date; 
+            DateTime    scheduledInTime = punch.PunchInDate?.Date ?? DateTime.MinValue;
             double      punchIn_Hour    = 0.00;
             double      punchIn_Min     = 0.00; 
-            int         tardiness       = 0;
+            int?         tardiness       = 0;
 
             if (punch?.PunchInDate != null && punch?.PunchT != null)
             {
                 inTemplate      = (double)punch.PunchT / 100.00; 
                 punchIn_Hour    = Math.Floor(inTemplate);
                 punchIn_Min     = (inTemplate - punchIn_Hour) * 100.00;
-                scheduledInTime = punch.PunchInDate.Date
+                scheduledInTime = (punch.PunchInDate??DateTime.MinValue).Date
                                         .AddHours(punchIn_Hour)
                                         .AddMinutes(punchIn_Min); 
 
                 if (punch.PunchInDate > scheduledInTime && punch?.DutyTypeId == 1)
                 {
-                    tardiness = (int)(punch.PunchInDate - scheduledInTime).TotalMinutes;
+                    tardiness = (int)((punch.PunchInDate ?? DateTime.MinValue) - scheduledInTime).TotalMinutes;
                 }
             }
 
             @* --- Tardiness Out ----------------------- *@
-            int outTardiness       = 0;
+            int? outTardiness       = 0;
             if (punch?.DutyTypeId == 1 &&
                 punch?.PunchOutDate  != null && 
                 punch?.PunchInDate   != null &&
@@ -49,14 +49,14 @@
                (punch?.PunchT        == null ? 0 : punch.PunchT) > 0 && 
                (punch?.SchedDuration == null ? 0 : punch.SchedDuration) > 0 ) 
             {
-                DateTime actualOut      = punch.PunchOutDate;
+                DateTime actualOut      = punch.PunchOutDate ?? DateTime.MinValue;
 
-                DateTime scheduleIn     = punch.PunchInDate.Date
-                                          .AddHours(   punch.PunchT / 100 )
-                                          .AddMinutes( punch.PunchT % 100 );
+                DateTime scheduleIn     = (punch.PunchInDate?.Date??DateTime.MinValue)
+                                          .AddHours(   punch.PunchT??0 / 100 )
+                                          .AddMinutes( punch.PunchT??0 % 100 );
                 DateTime scheduleOut    = scheduleIn
-                                          .AddHours( punch.SchedDuration / 100 )
-                                          .AddMinutes( punch.SchedDuration % 100 );
+                                          .AddHours( punch.SchedDuration??0 / 100 )
+                                          .AddMinutes( punch.SchedDuration??0 % 100 );
 
                 if (actualOut < scheduleOut)
                 {
@@ -74,17 +74,17 @@
             @* --- Total ---------------------------------- *@
             double totHrs = 0.00;
             if(punch?.PunchOutDate != null && punch?.PunchInDate != null && punch.PunchOutDate > punch.PunchInDate){
-                totHrs = (punch.PunchOutDate - punch.PunchInDate).TotalHours;
+                totHrs = ((punch.PunchOutDate ?? DateTime.MinValue) - (punch.PunchInDate ?? DateTime.MinValue)).TotalHours;
             }
 
             @* --- Tardiness Out ----------------------- *@
 
             <div class="d-flex border-top p-1 gap-1">
                 <div class="w-25 bordered-right text-center"> 
-                    @punch.PunchInDate.ToString("yyyy-MM-dd") 
+                    @punch.PunchInDate?.ToString("yyyy-MM-dd") 
                     <div class="@(punch?.DutyTypeId==1 ? "text-primary" : "text-danger")">
                         @(punch?.DutyTypeId == 1 ? "Reg" : "RD") - 
-                        @punch.PunchInDate.ToString("ddd") 
+                        @(punch.PunchInDate?.ToString("ddd") ?? "-")
                         
                     </div>
                 </div>
