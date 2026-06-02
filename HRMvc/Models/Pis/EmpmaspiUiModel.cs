@@ -6,7 +6,7 @@ public class EmpmaspiUiModel
 {
     [Display(Name = "Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int Id { get; set; }
+    public int?Id { get; set; }
 
     
     [Display(Name = "Date of Birth")]
@@ -40,11 +40,11 @@ public class EmpmaspiUiModel
 
     
     [Display(Name = "Height")]
-    public int Height { get; set; }
+    public int?Height { get; set; }
 
 
     [Display(Name = "Height Inch")]
-    public int HeightInch { get; set; }
+    public int?HeightInch { get; set; }
 
 
     [Display(Name = "Weight")]
@@ -88,5 +88,5 @@ public class EmpmaspiUiModel
     
     [Display(Name = "No. of Children")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int NoChildren { get; set; }
+    public int?NoChildren { get; set; }
 }

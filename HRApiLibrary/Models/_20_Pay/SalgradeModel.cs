@@ -12,15 +12,15 @@ public class SalgradeModel
 
 	public double HourlyRate {get; set; } 
 
-	public int WTax {get; set; } 
+	public int? WTax {get; set; } 
 
-	public int WSss {get; set; } 
+	public int? WSss {get; set; } 
 
-	public int WGsis {get; set; } 
+	public int? WGsis {get; set; } 
 
-	public int WPhic {get; set; } 
+	public int? WPhic {get; set; } 
 
-	public int WPagibig {get; set; } 
+	public int? WPagibig {get; set; } 
 
-	public int IsLock {get; set; } 
+	public int? IsLock {get; set; } 
 }

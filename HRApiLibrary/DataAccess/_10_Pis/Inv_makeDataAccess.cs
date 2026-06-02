@@ -13,9 +13,9 @@ public class Inv_makeDataAccess : IInv_makeDataAccess
         _sql = sql;
     }
 
-    public async Task<Inv_makeModel?> _01(Inv_makeModel inv_make, string schema, string conn)
+    public async Task<Inv_makeModel?> _01(Inv_makeModel inv_make, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Inv_make (Inv_CategoryId, Name) values (@Inv_CategoryId, @Name)";
+        string? sql = $@"Insert into {schema}.Inv_make (Inv_CategoryId, Name) values (@Inv_CategoryId, @Name)";
         await _sql.ExecuteCmd<dynamic>(sql, inv_make, conn);
 
         sql = $@"SELECT * FROM {schema}.Inv_make WHERE ID = (SELECT @@IDENTITY)";
@@ -26,17 +26,17 @@ public class Inv_makeDataAccess : IInv_makeDataAccess
     }
 
 
-    public async Task<Inv_makeModel?> _02(int id, string schema, string conn)
+    public async Task<Inv_makeModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, Inv_CategoryId, Name from {schema}.Inv_make where Id = @Id";
+        string? sql = $@"select  Id, Inv_CategoryId, Name from {schema}.Inv_make where Id = @Id";
         var data = await _sql.FetchData<Inv_makeModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<Inv_makeModel?> _03(int id, Inv_makeModel inv_make, string schema, string conn)
+    public async Task<Inv_makeModel?> _03(int? id, Inv_makeModel inv_make, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Inv_make set Inv_CategoryId = @Inv_CategoryId, Name = @Name where Id = @Id;";
+        string? sql = $@"Update {schema}.Inv_make set Inv_CategoryId = @Inv_CategoryId, Name = @Name where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, inv_make, conn);
 
         sql = $@" select  * from {schema}.Inv_make x where x.Id = @Id ;";
@@ -44,9 +44,9 @@ public class Inv_makeDataAccess : IInv_makeDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<Inv_makeModel?> _04(int id, string schema, string conn)
+    public async Task<Inv_makeModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Inv_make where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Inv_make where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Inv_make x where x.Id = @Id ;";

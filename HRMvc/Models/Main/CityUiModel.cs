@@ -8,7 +8,7 @@ public class CityUiModel
     [Required]
     [Display(Name = "Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int Id { get; set; }
+    public int?Id { get; set; }
 
     [Required]
     [Display(Name = "City")]
@@ -18,7 +18,7 @@ public class CityUiModel
     [Required]
     [Display(Name = "Country Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int CountryId { get; set; }
+    public int?CountryId { get; set; }
 
     
     [Required]
@@ -32,7 +32,7 @@ public class CityUiModel
     [Required]
     [Display(Name = "Region Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int RegionId { get; set; }
+    public int?RegionId { get; set; }
 
 
     [Display(Name = "Region")]

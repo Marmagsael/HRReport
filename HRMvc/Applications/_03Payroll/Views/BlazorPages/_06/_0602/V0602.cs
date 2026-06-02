@@ -6,7 +6,7 @@ namespace HRMvc.Applications._03Payroll.Views.BlazorPages._06._0602;
 public class V0602
 {
     public string?                          ViewMode                    { get; set; } = "FixedEarnings"; // EmployeeEarnings, GroupEarnings 
-    public int                              EmpmasId                    { get; set; } = 0;
+    public int?                             EmpmasId                    { get; set; } = 0;
     
     public EmpmasInternalModel              EmpmasInternal              { get; set; } = new(); 
     public CoaModel?                        Coa                         { get; set; } = new(); 

@@ -28,13 +28,13 @@ public class HR_20_000_PayController : ControllerBase
     }
 
     [HttpHead("01PayTbl/{schema}/{country}/{conn}")]
-    public void CreateMainSchema(string schema = "U1C1Pay", string country = "PH", string conn = "MySqlConn")
+    public void CreateMainSchema(string? schema = "U1C1Pay", string? country = "PH", string? conn = "MySqlConn")
     {
         _payTblMaker._01(schema, country, conn);
     }
 
     [HttpGet("0PaySession/{userId}")]
-    public async Task<IEnumerable<string>> GetPaySessionInfo(int userId) 
+    public async Task<IEnumerable<string>> GetPaySessionInfo(int? userId) 
     { 
         List<string> sessionInfo = new List<string>();
 

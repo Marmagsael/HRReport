@@ -13,9 +13,9 @@ public class RdivisionDataAccess
         _sql = sql;
     }
 
-    public async Task<RdivisionModel?> _01(RdivisionModel rdivision, string schema, string conn)
+    public async Task<RdivisionModel?> _01(RdivisionModel rdivision, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Rdivision (SName, Name, SupervisorId) values (@SName, @Name, @SupervisorId)";
+        string? sql = $@"Insert into {schema}.Rdivision (SName, Name, SupervisorId) values (@SName, @Name, @SupervisorId)";
         await _sql.ExecuteCmd<dynamic>(sql, rdivision, conn);
 
         sql = $@"SELECT * FROM {schema}.Rdivision WHERE ID = (SELECT @@IDENTITY)";
@@ -26,17 +26,17 @@ public class RdivisionDataAccess
     }
 
 
-    public async Task<RdivisionModel?> _02(int id, string schema, string conn)
+    public async Task<RdivisionModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  Id, SName, Name, SupervisorId from {schema}.Rdivision where Id = @Id";
+        string? sql = $@"select  Id, SName, Name, SupervisorId from {schema}.Rdivision where Id = @Id";
         var data = await _sql.FetchData<RdivisionModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
 
-    public async Task<RdivisionModel?> _03(int id, RdivisionModel rdivision, string schema, string conn)
+    public async Task<RdivisionModel?> _03(int? id, RdivisionModel rdivision, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Rdivision set SName = @SName, Name = @Name, SupervisorId = @SupervisorId where Id = @Id;";
+        string? sql = $@"Update {schema}.Rdivision set SName = @SName, Name = @Name, SupervisorId = @SupervisorId where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, rdivision, conn);
 
         sql = $@" select  * from {schema}.Rdivision x where x.Id = @Id ;";
@@ -44,9 +44,9 @@ public class RdivisionDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<RdivisionModel?> _04(int id, string schema, string conn)
+    public async Task<RdivisionModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Rdivision where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Rdivision where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Rdivision x where x.Id = @Id ;";

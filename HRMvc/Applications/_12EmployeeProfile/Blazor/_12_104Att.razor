@@ -92,8 +92,8 @@
 
         int? userId         = Uc.UserId;
         var firstDay        = new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, 1);
-        int daysInMonth     = DateTime.DaysInMonth(v.SelectedYear ?? 1, v.SelectedMonth ?? 1);
-        int startDay        = (int)firstDay.DayOfWeek;
+        int? daysInMonth     = DateTime.DaysInMonth(v.SelectedYear ?? 1, v.SelectedMonth ?? 1);
+        int? startDay        = (int)firstDay.DayOfWeek;
 
         var template        = await _att._02TemplateByUserIdAndEffectivityDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
         var punches         = await _att._02PunchesByEmpmasIdAndPunchInDate(userId, v.SelectedMonth, v.SelectedYear, Uc.SchemaUserPis!, Uc.Conn!);
@@ -101,13 +101,13 @@
 
         // Get previous month's last date 
         var prevMonth = new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, 1).AddMonths(-1);
-        int daysInPrevMonth = DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
+        int? daysInPrevMonth = DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
 
         // Leading boxes 
         for (int i = 0; i < startDay; i++)
         {
-            int prevDay = daysInPrevMonth - (startDay - 1 - i);
-            var date = new DateTime(prevMonth.Year, prevMonth.Month, prevDay);
+            int? prevDay = daysInPrevMonth - (startDay - 1 - i);
+            var date = new DateTime(prevMonth.Year, prevMonth.Month, prevDay??0);
             v.Calendar.Add(new AttDayDetail
             {
                 Date = date,
@@ -124,10 +124,10 @@
 
         // Trailing boxes
         var nextMonth = new DateTime(v.SelectedYear ?? 1, v.SelectedMonth ?? 1, 1).AddMonths(1);
-        int nextDay = 1;
+        int? nextDay = 1;
         while (v.Calendar.Count % 7 != 0)
         {
-            var date = new DateTime(nextMonth.Year, nextMonth.Month, nextDay);
+            var date = new DateTime(nextMonth.Year, nextMonth.Month, nextDay??0);
             v.Calendar.Add(new AttDayDetail
             {
                 Date = date,
@@ -148,8 +148,8 @@
         decimal presentCount    = 0;
         decimal absentCount     = 0;
         decimal daysCount       = 0;
-        int     lateCount       = 0;
-        int     undertimeCount  = 0;
+        int?     lateCount       = 0;
+        int?     undertimeCount  = 0;
 
         var workingDays = v.Calendar.Where(c => c.Date != default && !(c.Status ?? "").Contains("RD")).ToList();
 
@@ -274,7 +274,7 @@
 
         if (t == null) return new AttTemplate();
 
-        int day = (int)date.DayOfWeek;
+        int? day = (int)date.DayOfWeek;
 
         var timeIns     = new[] { t.D1_In, t.D2_In, t.D3_In, t.D4_In, t.D5_In, t.D6_In, t.D7_In };
         var durations   = new[] { t.D1_HrsLength, t.D2_HrsLength, t.D3_HrsLength, t.D4_HrsLength, t.D5_HrsLength, t.D6_HrsLength, t.D7_HrsLength };
@@ -682,15 +682,15 @@
     }
 
 
-    // Converts HHMM int to TimeSpan (e.g. 800 → 8:00, 1330 → 13:30)
+    // Converts HHMM int? to TimeSpan (e.g. 800 → 8:00, 1330 → 13:30)
     public static TimeSpan ConvertToTime(int? hhmm)
     {
         if (hhmm is null or <= 0) return TimeSpan.Zero;
         return new TimeSpan(hhmm.Value / 100, hhmm.Value % 100, 0);
     }
 
-    // Converts TimeSpan to HHMM int format (e.g. 08:30 → 830, 13:45 → 1345)
-    public static int ConvertToHHMM(TimeSpan time)
+    // Converts TimeSpan to HHMM int? format (e.g. 08:30 → 830, 13:45 → 1345)
+    public static int? ConvertToHHMM(TimeSpan time)
         => (time.Hours * 100) + time.Minutes;
 
     // Computes shift end from start time + duration (both in HHMM)
@@ -705,7 +705,7 @@
     public static string FormatTime(TimeSpan? duration)
     {
         if (duration is null) return string.Empty;
-        int total = (int)Math.Floor(duration.Value.TotalMinutes);
+        int? total = (int)Math.Floor(duration.Value.TotalMinutes);
         return $"{total / 60} hr {total % 60} min";
     }
 

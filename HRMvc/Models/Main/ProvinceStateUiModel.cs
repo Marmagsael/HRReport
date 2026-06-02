@@ -8,7 +8,7 @@ public class ProvinceStateUiModel
     [Required]
     [Display(Name = "Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int Id { get; set; }
+    public int?Id { get; set; }
 
     [Required]
     [Display(Name = "Code")]
@@ -21,7 +21,7 @@ public class ProvinceStateUiModel
     [Required]
     [Display(Name = "Country Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int CountryId { get; set; }
+    public int?CountryId { get; set; }
 
     [Required]
     [Display(Name = "Country")]

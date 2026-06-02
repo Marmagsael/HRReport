@@ -14,9 +14,9 @@ public class RempstatDataAccess : IRempstatDataAccess
         _sql = sql;
     }
 
-    public async Task<RempstatModel?> _01(RempstatModel rempstat, string schema, string conn)
+    public async Task<RempstatModel?> _01(RempstatModel rempstat, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Rempstat 
+        string? sql = $@"Insert into {schema}.Rempstat 
                             (Code,  Name,  IsResigned,  IsOnLeaved,  IsFloating,  IsSuspended) values 
                             (@Code, @Name, @IsResigned, @IsOnLeaved, @IsFloating, @IsSuspended); 
                         SELECT * FROM {schema}.Rempstat WHERE ID = (SELECT @@IDENTITY); ";
@@ -25,24 +25,24 @@ public class RempstatDataAccess : IRempstatDataAccess
     }
 
 
-    public async Task<RempstatModel?> _02(int id, string schema, string conn)
+    public async Task<RempstatModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  * from {schema}.Rempstat where Id = @Id";
+        string? sql = $@"select  * from {schema}.Rempstat where Id = @Id";
         var data = await _sql.FetchData<RempstatModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<RempstatModel?>?> _02(string schema, string conn)
+    public async Task<List<RempstatModel?>?> _02(string? schema, string? conn)
     {
-        string sql = $@"select  * from {schema}.Rempstat order by Name";
+        string? sql = $@"select  * from {schema}.Rempstat order by Name";
         var data = await _sql.FetchData<RempstatModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
 
-    public async Task<RempstatModel?> _03(int id, RempstatModel rempstat, string schema, string conn)
+    public async Task<RempstatModel?> _03(int? id, RempstatModel rempstat, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Rempstat set Code = @Code, Name = @Name, IsResigned = @IsResigned, IsOnLeaved = @IsOnLeaved, IsFloating = @IsFloating, IsSuspended = @IsSuspended where Id = @Id;";
+        string? sql = $@"Update {schema}.Rempstat set Code = @Code, Name = @Name, IsResigned = @IsResigned, IsOnLeaved = @IsOnLeaved, IsFloating = @IsFloating, IsSuspended = @IsSuspended where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, rempstat, conn);
 
         sql = $@" select  * from {schema}.Rempstat x where x.Id = @Id ;";
@@ -51,9 +51,9 @@ public class RempstatDataAccess : IRempstatDataAccess
     }
 
 
-    public async Task<List<RempstatModel>> _03(List<int> ids, string fieldName, int fieldVal, string schema, string conn)
+    public async Task<List<RempstatModel>> _03(List<int> ids, string? fieldName, int? fieldVal, string? schema, string? conn)
     {
-        string sql = $@"UPDATE {schema}.Rempstat SET {fieldName} = @FieldVal  WHERE Id IN @Ids;";
+        string? sql = $@"UPDATE {schema}.Rempstat SET {fieldName} = @FieldVal  WHERE Id IN @Ids;";
 
         await _sql.ExecuteCmd<dynamic>(sql, new { Ids = ids, FieldVal = fieldVal }, conn);
 
@@ -64,9 +64,9 @@ public class RempstatDataAccess : IRempstatDataAccess
     }
 
 
-    public async Task<RempstatModel?> _04(int id, string schema, string conn)
+    public async Task<RempstatModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Rempstat where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Rempstat where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Rempstat x where x.Id = @Id ;";

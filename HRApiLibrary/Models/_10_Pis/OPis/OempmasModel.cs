@@ -44,12 +44,11 @@ public class OEmpmasModel
     public string? Citizen                  { get; set; }
     public int? Height                      { get; set; }
     public int? HeightInches                { get; set; }
-    public double? Weight                   { get; set; }
+    public string? Weight                   { get; set; }
     public string? Tin                      { get; set; }
     public string? Sss                      { get; set; }
     public string? PagIbigNo                { get; set; }
     public string? Phic                     { get; set; }
-    public string? Hdmf                     { get; set; }
     public string? Religion                 { get; set; }
     public string? Hair                     { get; set; }
     public string? Eyes                     { get; set; }
@@ -59,7 +58,7 @@ public class OEmpmasModel
     public string? Spouse                   { get; set; }
     public string? Occupation               { get; set; }
     public string? NumberOfChildren         { get; set; }
-    public int? NoChildren               { get; set; }
+    public string? NoChildren               { get; set; }
     public DateTime? DateHired              { get; set; }
     public DateTime? Separate               { get; set; }
     public string? Position_                { get; set; }
@@ -107,8 +106,6 @@ public class OEmpmasModel
     public DateTime? Exp_Drug               { get; set; }
     public DateTime? Exp_Court              { get; set; }
     public DateTime? ExpMed                 { get; set; }
-    public string? CountryCode              { get; set; }
-    public DateTime? DpaDate                { get; set; }
 
     //-------------------------------------------------------
     public string?  EmpName                 { get; set; } = string.Empty;

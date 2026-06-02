@@ -76,8 +76,15 @@
                     @* ----- PresAddCountryId (varchar(10))----------*@
                     <div class="w-20 p-2">Country </div>
                     <div class="w-80">
-                        <RadzenDropDown Change="CountryChangedPresentAddress" TValue="int" @bind-Value=@V.Empmasaddress.PresAddCountryId Data=@V.Countrys TextProperty="Name" ValueProperty="Id"
-                                        Name="ddCountrys" Style="width: 100%; max-width: 400px;" />
+                        <RadzenDropDown 
+                            Change="CountryChangedPresentAddress" 
+                            TValue="int?" 
+                            @bind-Value=@V.Empmasaddress.PresAddCountryId 
+                            Data=@V.Countrys 
+                            TextProperty="Name" 
+                            ValueProperty="Id"
+                            Name="ddCountrys" 
+                            Style="width: 100%; max-width: 400px;" />
                     </div>
                 </div>
 
@@ -100,7 +107,8 @@
                     @* ----- PresAddCountryId (varchar(10))----------*@
                     <div class="w-20 p-2">Country </div>
                     <div class="w-80">
-                        <RadzenDropDown Change="CountryChangedProvincialAddress" TValue="int" @bind-Value=@V.Empmasaddress.ProvAddCountryId Data=@V.Countrys TextProperty="Name" ValueProperty="Id"
+                        <RadzenDropDown 
+                        Change="CountryChangedProvincialAddress" TValue="int?" @bind-Value=@V.Empmasaddress.ProvAddCountryId Data=@V.Countrys TextProperty="Name" ValueProperty="Id"
                                         Style="width: 100%; max-width: 400px;" Name="ddCountrys" />
                     </div>
                 </div>
@@ -122,7 +130,7 @@
 
 @code {
 
-    int empmasId            = 0; 
+    int? empmasId            = 0; 
 
     [Parameter]
     public V222             V               { get; set; } = new();
@@ -174,7 +182,7 @@
 
     async Task CountryChangedPresentAddress()
     {   
-        v2203.Provinces  = await CountryChanged(V.Empmasaddress.PresAddCountryId);
+        v2203.Provinces  = await CountryChanged(V.Empmasaddress?.PresAddCountryId ?? 0);
         if (V.Countrys?.Count > 0)
         {
             V.Empmasaddress.PresAddCountry = V.Countrys.Where(a => a.Id == V.Empmasaddress.PresAddCountryId).FirstOrDefault()?.Name ?? "";
@@ -185,7 +193,7 @@
 
     async Task CountryChangedProvincialAddress()
     {   
-        v2203.ProvincesProv  = await CountryChanged(V.Empmasaddress.ProvAddCountryId);
+        v2203.ProvincesProv  = await CountryChanged(V.Empmasaddress.ProvAddCountryId??0);
         if (V.Countrys?.Count > 0)
         {
             V.Empmasaddress.ProvAddCountry = V.Countrys.Where(a => a.Id == V.Empmasaddress.ProvAddCountryId).FirstOrDefault()?.Name ?? "";

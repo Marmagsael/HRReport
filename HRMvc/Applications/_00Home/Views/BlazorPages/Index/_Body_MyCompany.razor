@@ -41,7 +41,7 @@
                 </div>
                 <div class="w-30 d-flex gap-2 py-2">
                     <button class="btn btn-success">Edit</button>
-                    <button @onclick="@(()=>SelectCompany(uc!.Id))" class="btn btn-sm btn-secondary">Select</button>
+                    <button @onclick="@(()=>SelectCompany(uc!.Id??0))" class="btn btn-sm btn-secondary">Select</button>
                 </div>
             </div>
 
@@ -74,7 +74,7 @@
 
     protected async override void OnParametersSet()
     {
-        int userId      = UserClaims!.UserId; 
+        int? userId      = UserClaims!.UserId; 
         userCompanys    = await _usercompany._02ByUserId(userId);
         StateHasChanged(); 
 
@@ -90,7 +90,7 @@
     {
 
         VPay.Action     = "SelectCompany"; 
-        int userId      = UserClaims == null ? 0 : UserClaims.UserId;
+        int? userId      = UserClaims == null ? 0 : UserClaims.UserId;
         
         var user            = await _mainDa._02UsersById(userId);
         var uc    = await _mainDa._02UserCompanyPerOwnerId(userCompanyId);

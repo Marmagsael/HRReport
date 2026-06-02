@@ -4,7 +4,7 @@ namespace HRApiLibrary.Models._20_Pay;
 
 public class PhicMatrixModel
 {
-    public int Id { get; set; }
+    public int? Id { get; set; }
 
     public DateTime DateStart { get; set; }
 

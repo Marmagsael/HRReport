@@ -16,7 +16,7 @@ public class DA222
 
     //public async Task<DeprecModel> _02Deprecs(int id, string db, string conn) 
     //{
-    //    DeprecModel dr = new() { Empmasid = id};
+    //    DeprecModel dr = new() { EmpmasId = id};
 
     //    var res = await _empmas._02Deprecs(id, db, conn);
     //    if(res==null)   {   await _empmas._01Deprec(dr, db, conn); } 
@@ -47,7 +47,7 @@ public class DA222
 
     public async Task<DeprecModel> _02Deprec(int id, string db, string conn) 
     {
-        DeprecModel dp  = new() { Empmasid = id , Empstatusid = 12 }; // 12 = For Deployment
+        DeprecModel dp  = new() { EmpmasId = id , Empstatusid = 12 }; // 12 = For Deployment
         var deprecs     = await _empmas._02Deprecs(id, db, conn);
         if(deprecs==null) { await _empmas._01Deprec(dp, db, conn); }
         else

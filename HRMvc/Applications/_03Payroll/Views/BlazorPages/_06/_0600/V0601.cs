@@ -15,17 +15,17 @@ public class V0601
 
 public class PayrollgrpEntryPattern
 {
-    public int          PayrollgrpId        { get; set; } = 0;
+    public int?         PayrollgrpId        { get; set; } = 0;
     public DateTime     PIndate             { get; set; }
-    public int          PIn                 { get; set; }
+    public int?         PIn                 { get; set; }
     public DateTime     POutdate            { get; set; }
-    public int          POut                { get; set; }
+    public int?         POut                { get; set; }
     
 }
 
 public class T601EmpList
 {
-    public int           EmpmasId     { get; set; } = 0;
+    public int?          EmpmasId     { get; set; } = 0;
     public string?       EmpNumber    { get; set; } = string.Empty;
     public string?       EmpName      { get; set; } = string.Empty;
     

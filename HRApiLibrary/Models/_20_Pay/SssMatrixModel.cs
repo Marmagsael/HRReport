@@ -2,7 +2,7 @@
 
 public class SssMatrixModel
 {
-    public int          Id                 { get; set; }
+    public int?          Id                 { get; set; }
     public DateTime     DateStart          { get; set; }
     public DateTime     DateEnd            { get; set; }
     public string?      FStart             { get; set; }

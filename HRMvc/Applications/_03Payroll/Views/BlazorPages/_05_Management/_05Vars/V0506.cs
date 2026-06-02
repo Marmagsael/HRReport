@@ -14,7 +14,7 @@ public class V0506
     public string?                      Module                  { get; set; } = "Pay";
                                                                 
     public string?                      Action                  { get; set; } = string.Empty;
-    public int                          SelectedSystemId        { get; set; } = 0; 
+    public int?                         SelectedSystemId        { get; set; } = 0; 
     public string?                      SearchMsg               { get; set; } = string.Empty;
     public string?                      Email                   { get; set; } = string.Empty;
     public SystemuserModel?             LocalUser               { get; set; } = new();

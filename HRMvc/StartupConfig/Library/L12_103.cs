@@ -85,7 +85,7 @@ public class L12_103
         var parents = await _oparent._02(empno, schema, conn);
 
         if (empmass.Any()) empmass?.ForEach(p => { if (p != null) p.Age = ComputeAgeByDOB(p.EmpBirth).ToString(); });
-        if (parents.Any()) parents?.ForEach(p => { if (p != null) p.Age = ComputeAgeByDOB(p.DoB); });
+        if (parents.Any()) parents?.ForEach(p => { if (p != null) p.Age = ComputeAgeByDOB(p.DoB)??0; });
 
         v12_103.OEmpmass    = empmass;
         v12_103.OFamilys    = await _ofamily._02(empno, schema, conn);
@@ -102,7 +102,7 @@ public class L12_103
     }
 
    
-    private int ComputeAgeByDOB(DateTime? dob)
+    private int? ComputeAgeByDOB(DateTime? dob)
     {
         if (dob == null) return 0;
 

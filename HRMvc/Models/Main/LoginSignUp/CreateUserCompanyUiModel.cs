@@ -6,7 +6,7 @@ namespace HRMvc.Models.Main.LoginSignUp;
 public class CreateUserCompanyUiModel
 {
     // --- Login Information --------------------------------------------------------------
-    public int UserId { get; set; }
+    public int?UserId { get; set; }
     public string? LoginName { get; set; }
     public string? Password { get; set; }
     public string? Email { get; set; }
@@ -16,7 +16,7 @@ public class CreateUserCompanyUiModel
     [Required]
     [Display(Name = "Empmas Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int EmpmasId { get; set; }
+    public int?EmpmasId { get; set; }
 
     [Required(ErrorMessage = "Please enter your last name.")]
     [Display(Name = "Last Name")]
@@ -46,7 +46,7 @@ public class CreateUserCompanyUiModel
     [Required]
     [Display(Name = "User Company Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int UsersCompanyId { get; set; }
+    public int?UsersCompanyId { get; set; }
 
 
     [Required(ErrorMessage = "Please enter your company name.")]
@@ -62,7 +62,7 @@ public class CreateUserCompanyUiModel
     [Required(ErrorMessage = "Please select a country.")]
     [Display(Name = "Country")]
     [Range(0, int.MaxValue, ErrorMessage = "Please select a country.")]
-    public int CountryId { get; set; }
+    public int?CountryId { get; set; }
 
     [Required]
     [Display(Name = "Country")]
@@ -78,7 +78,7 @@ public class CreateUserCompanyUiModel
     [Required(ErrorMessage = "Please select a region.")]
     [Display(Name = "Region")]
     [Range(0, int.MaxValue, ErrorMessage = "Please select a region.")]
-    public int RegionId { get; set; }
+    public int?RegionId { get; set; }
 
 
     [Required]
@@ -90,7 +90,7 @@ public class CreateUserCompanyUiModel
     [Required(ErrorMessage = "Please select a city.")]
     [Display(Name = "City")]
     [Range(0, int.MaxValue, ErrorMessage = "Please select a city.")]
-    public int CityId { get; set; }
+    public int?CityId { get; set; }
 
     [Required]
     [Display(Name = "City Name")]
@@ -104,7 +104,7 @@ public class CreateUserCompanyUiModel
     [Required(ErrorMessage = "Please select a currency.")]
     [Display(Name = "Currency")]
     [Range(0, int.MaxValue, ErrorMessage = "Please select a currency.")]
-    public int CurrencyId { get; set; }
+    public int?CurrencyId { get; set; }
 
     [Required]
     [Display(Name = "Currency Name")]

@@ -13,9 +13,9 @@ public class OLoansDataAccess : IOLoansDataAccess
         _sql = sql;
     }
 
-    public async Task<GLoansModel?> _01(GLoansModel loans, string schema, string conn)
+    public async Task<GLoansModel?> _01(GLoansModel loans, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Loans 
+        string? sql = $@"Insert into {schema}.Loans 
 							( NUMBER, EMPNUMBER, DATE, DEDNCODE, DEDNDESC, AMOUNT, AMORT, Principal, MoToPay, InterestRate, InterestAmt, BALANCE, STATUS, ENCODEBY, ENCODEDT, CHANGEBY, CHANGEDT, POSTED, EMPLASTNM, POSTFLAG, 
 							  REMARKS, payMode, payStart, payRes, cvno, p1, p2, p3, p4, p5, TRNLastPosted) values 
 							( @NUMBER, @EMPNUMBER, @DATE, @DEDNCODE, @DEDNDESC, @AMOUNT, @AMORT, @Principal, @MoToPay, @InterestRate, @InterestAmt, @BALANCE, @STATUS, @ENCODEBY, @ENCODEDT, @CHANGEBY, @CHANGEDT, @POSTED, @EMPLASTNM, @POSTFLAG, 
@@ -25,9 +25,9 @@ public class OLoansDataAccess : IOLoansDataAccess
         return res.FirstOrDefault();
     }
 
-    public async Task<GLoansModel?> _02(int id, string schema, string conn)
+    public async Task<GLoansModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  NUMBER, EMPNUMBER, DATE, DEDNCODE, DEDNDESC, AMOUNT, AMORT, Principal, MoToPay, InterestRate, InterestAmt, BALANCE, STATUS, ENCODEBY, 
+        string? sql = $@"select  NUMBER, EMPNUMBER, DATE, DEDNCODE, DEDNDESC, AMOUNT, AMORT, Principal, MoToPay, InterestRate, InterestAmt, BALANCE, STATUS, ENCODEBY, 
 								ENCODEDT, CHANGEBY, CHANGEDT, POSTED, EMPLASTNM, POSTFLAG, REMARKS, payMode, payStart, payRes, cvno, p1, p2, p3, p4, p5, TRNLastPosted 
 						from {schema}.Loans where Number = @Number";
         var data = await _sql.FetchData<GLoansModel?, dynamic>(sql, new { Id = id }, conn);
@@ -35,9 +35,9 @@ public class OLoansDataAccess : IOLoansDataAccess
     }
 
 
-    public async Task<List<GLoansModel?>?> _02ByEmpNumbers(string empnumber, string schema, string conn)
+    public async Task<List<GLoansModel?>?> _02ByEmpNumbers(string? empnumber, string? schema, string? conn)
     {
-        string sql = $@"select  NUMBER, EMPNUMBER, 
+        string? sql = $@"select  NUMBER, EMPNUMBER, 
                                 IF(`DATE` IN ('0000-00-00','0000-00-00 00:00:00'), NULL, `DATE`) AS `date`,
                                 IF(payStart IN ('0000-00-00','0000-00-00 00:00:00'), NULL, payStart) AS payStart,
                                 IF(payRes   IN ('0000-00-00','0000-00-00 00:00:00'), NULL, payRes)   AS payRes,
@@ -54,9 +54,9 @@ public class OLoansDataAccess : IOLoansDataAccess
         return data;
     }
 
-    public async Task<GLoansModel?> _03(int id, GLoansModel loans, string schema, string conn)
+    public async Task<GLoansModel?> _03(int? id, GLoansModel loans, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Loans set 
+        string? sql = $@"Update {schema}.Loans set 
 							NUMBER 		= @NUMBER, 
 							EMPNUMBER 	= @EMPNUMBER, 
 							DATE 		= @DATE, 
@@ -90,9 +90,9 @@ public class OLoansDataAccess : IOLoansDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<GLoansModel?> _04(string number, string schema, string conn)
+    public async Task<GLoansModel?> _04(string? number, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Loans where Number = @Number;";
+        string? sql = $@"Delete from {schema}.Loans where Number = @Number;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Number = number }, conn);
 
         sql = $@" select  * from {schema}.Loans  where Number = @Number ;";
@@ -103,9 +103,9 @@ public class OLoansDataAccess : IOLoansDataAccess
 
 public interface IOLoansDataAccess
 {
-    Task<GLoansModel?> _01(GLoansModel loans, string schema, string conn);
-    Task<GLoansModel?> _02(int id, string schema, string conn);
-    Task<List<GLoansModel?>?> _02ByEmpNumbers(string empnumber, string schema, string conn);
-    Task<GLoansModel?> _03(int id, GLoansModel loans, string schema, string conn);
-    Task<GLoansModel?> _04(string number, string schema, string conn);
+    Task<GLoansModel?> _01(GLoansModel loans, string? schema, string? conn);
+    Task<GLoansModel?> _02(int? id, string? schema, string? conn);
+    Task<List<GLoansModel?>?> _02ByEmpNumbers(string? empnumber, string? schema, string? conn);
+    Task<GLoansModel?> _03(int? id, GLoansModel loans, string? schema, string? conn);
+    Task<GLoansModel?> _04(string? number, string? schema, string? conn);
 }

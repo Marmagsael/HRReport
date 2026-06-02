@@ -1,5 +1,7 @@
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._10_Pis.OPis;
+using HRApiLibrary.Models._90_Utils;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
@@ -12,7 +14,60 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 			_sql = sql;
 	}
 
-	public async Task<OEmpmasModel?> _01(OEmpmasModel empmas, string schema, string conn )
+    public async Task _00CreateEmpmasMigration_Marker(string? oPisDb, string? conn)
+    {
+        string? sql = $@"SELECT '1' Column_Name
+                            FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_NAME = 'empmas'
+                            AND COLUMN_NAME = 'IsMigrated'
+                            AND TABLE_SCHEMA = '{oPisDb}';"; 
+        var res = await _sql.FetchData<TableModel?, dynamic>(sql, new { }, conn);
+        
+        if (res == null || res.Count == 0) { 
+            string? usql = $@"ALTER TABLE {oPisDb}.Empmas ADD COLUMN IsMigrated int? Default 0;"; 
+            await _sql.ExecuteCmd<dynamic>(usql, new { }, conn);
+        }
+    }
+    public async Task _00MigrateData(string? pisDb, string? oPisDb, string? conn)
+    {
+        
+        
+        var sql = $@"  drop table if exists tmp_users;
+                       create temporary table tmp_users as select LoginName empnumber from main.Users; 
+                       insert into main.users (loginName, Password,             Email, Domain,             UserType, Status, DefaultCoId)  
+                       
+                       select                  empnumber, sha2(empnumber, 512), email, 'morpheusbox.info', 1,        empstat_, 2
+                     from {oPisDb}.Empmas e
+                     where  IsMigrated = 0 
+                            and empstat_ = 'A' 
+                            and email is not null 
+                            and email != '' 
+                            and empnumber not in (select empnumber from tmp_users) ;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+
+        sql = $@"drop table if exists tmp_empmas;
+
+                 create temporary table tmp_empmas as 
+                 select u.id SystemId, e.Empnumber, e.EmplastNm, e.EmpFirstnm, e.EmpMidNm, e.Suffix,e.EmpAlias 
+                 from main.users u
+                 left join {pisDb}.empmas e on e.empnumber = u.loginName;
+
+                insert into {pisDb}.empmas (SystemId,      EmpNumber,   EmpLastNm,   EmpFirstNm,   EmpMidNm,   Suffix,   EmpAlias)
+                select                      u.id SystemId, u.loginName, e.EmplastNm, e.EmpFirstnm, e.EmpMidNm, e.Suffix, e.EmpAlias
+                from main.users u
+                    left join {oPisDb}.empmas e on e.empnumber = u.loginName
+                    left join {pisDb}.empmas e1 on e1.systemId = u.Id
+                where e1.systemId is null; ";
+        var res = await _sql.FetchData<UsersModel?, dynamic>(sql, new { }, conn);
+        
+        sql = $@"update {oPisDb}.Empmas set IsMigrated = 1 
+                 where IsMigrated = 0 and empstat_ = 'A' and email is not null and email != '' ;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+
+        
+    }
+
+    public async Task<OEmpmasModel?> _01(OEmpmasModel empmas, string? schema, string? conn )
 	{
 		string sql = $@"Insert into {schema}.Empmas 
     					(EMPNUMBER, EMPLASTNM, EMPFIRSTNM, EMPMIDNM, suffix, EMPALIAS, CLIENT, CLIENT_, BASICRATE, PAYTYPE, ADMIN, CASHBOND, WORKDAYS, 
@@ -49,36 +104,38 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 	}
 
 
-    public async Task<List<OEmpmasModel?>?> _02(string empnumber, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNames(string? name, string? schema, string? conn)
     {
-        var sql = $@"select  s.name EmpStatus, p.name PositionName, c.ClName, 
-                        e.*,  
-                        IF(MovDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, MovDate) AS MovDate,   
-                        IF(MovEnd IN ('0000-00-00','0000-00-00 00:00:00'), NULL, MovEnd) AS MovEnd,   
-                        IF(DutyDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DutyDate) AS DutyDate,   
-                        IF(EmpBirth IN ('0000-00-00','0000-00-00 00:00:00'), NULL, EmpBirth) AS EmpBirth,   
-                        IF(DateHired IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DateHired) AS DateHired,   
-                        IF(Separate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Separate) AS Separate,   
-                        IF(StatusDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, StatusDate) AS StatusDate,   
-                        IF(LicExpire IN ('0000-00-00','0000-00-00 00:00:00'), NULL, LicExpire) AS LicExpire,   
-                        IF(DateTrain IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DateTrain) AS DateTrain,   
-                        IF(InsExpire IN ('0000-00-00','0000-00-00 00:00:00'), NULL, InsExpire) AS InsExpire,   
-                        IF(AStart IN ('0000-00-00','0000-00-00 00:00:00'), NULL, AStart) AS AStart,   
-                        IF(AEnd IN ('0000-00-00','0000-00-00 00:00:00'), NULL, AEnd) AS AEnd,   
-                        IF(DStart IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DStart) AS DStart,   
-                        IF(DEnd IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DEnd) AS DEnd,   
-                        IF(ComTaxDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, ComTaxDate) AS ComTaxDate,   
-                        IF(Exp_Nbi IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Nbi) AS Exp_Nbi,   
-                        IF(Exp_Police IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Police) AS Exp_Police,   
-                        IF(Exp_Pnp IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Pnp) AS Exp_Pnp,   
-                        IF(Exp_Brgy IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Brgy) AS Exp_Brgy,   
-                        IF(Exp_Court IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Court) AS Exp_Court,   
-                        IF(Exp_Neuro IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Neuro) AS Exp_Neuro,   
-                        IF(Exp_Drug IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Exp_Drug) AS Exp_Drug,   
-                        IF(ExpMed IN ('0000-00-00','0000-00-00 00:00:00'), NULL, ExpMed) AS ExpMed,   
-                        IF(RegRef IN ('0000-00-00','0000-00-00 00:00:00'), NULL, RegRef) AS RegRef,   
-                        IF(Drv_Exp IN ('0000-00-00','0000-00-00 00:00:00'), NULL, Drv_Exp) AS Drv_Exp,   
-                        IF(DpaDate IN ('0000-00-00','0000-00-00 00:00:00'), NULL, DpaDate) AS DpaDate   
+        name = name.Trim();
+        var flds = EmpmasFields(); 
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName 
+                        from {schema}.Empmas e
+                     left join {schema}.position    p on p.code = e.position_
+                     left join {schema}.empstat     s on s.code = e.empstat_                              
+                     left join {schema}.Client      c  on c.ClNumber = e.Client_                              
+                     where e.EmpLastNm like @Name or e.EmpFirstNm like @Name
+                     order by e.EmpLastNm, e.EmpFirstNm;";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
+        return data;    
+    }
+    
+    public async Task<List<OEmpmasModel?>?> _02Migrated( string? schema, string? conn)
+    {
+        var sql = $@"select count(*) as CntNotMigrated from {schema}.Empmas e 
+                     where  IsMigrated = 0 
+                            and empstat_ = 'A' 
+                            and email is not null 
+                            and email != '';";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { }, conn);
+        return data;    
+    }
+
+
+    public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? schema, string? conn)
+    {
+        var flds = EmpmasFields(); 
+
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName 
                         from {schema}.Empmas e
                      left join {schema}.position    p on p.code = e.position_
                      left join {schema}.empstat     s on s.code = e.empstat_                              
@@ -88,7 +145,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
     
-    public async Task<List<OEmpmasModel?>?> _02ByClNumbers(string clnumber, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn)
     {
         var usql = $@"UPDATE {schema}.Empmas SET
                         MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
@@ -131,38 +188,39 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     }
 
 
-    public async Task<List<OEmpmasModel?>?> _02ByEmail(string email, string schema, string conn)
+    public async Task<List<OEmpmasModel?>?> _02ByEmail(string? email, string? schema, string? conn)
 	{
+
         var usql = $@"UPDATE {schema}.Empmas SET
-                        MovDate    = IF(MovDate    < '1000-01-01', NULL, MovDate),
-                        MovEnd     = IF(MovEnd     < '1000-01-01', NULL, MovEnd),
-                        DutyDate   = IF(DutyDate   < '1000-01-01', NULL, DutyDate),
-                        EmpBirth   = IF(EmpBirth   < '1000-01-01', NULL, EmpBirth),
-                        DateHired  = IF(DateHired  < '1000-01-01', NULL, DateHired),
-                        Separate   = IF(Separate   < '1000-01-01', NULL, Separate),
-                        StatusDate = IF(StatusDate < '1000-01-01', NULL, StatusDate),
-                        LicExpire  = IF(LicExpire  < '1000-01-01', NULL, LicExpire),
-                        DateTrain  = IF(DateTrain  < '1000-01-01', NULL, DateTrain),
-                        InsExpire  = IF(InsExpire  < '1000-01-01', NULL, InsExpire),
-                        AStart     = IF(AStart     < '1000-01-01', NULL, AStart),
-                        AEnd       = IF(AEnd       < '1000-01-01', NULL, AEnd),
-                        DStart     = IF(DStart     < '1000-01-01', NULL, DStart),
-                        DEnd       = IF(DEnd       < '1000-01-01', NULL, DEnd),
-                        ComTaxDate = IF(ComTaxDate < '1000-01-01', NULL, ComTaxDate),
-                        Exp_Nbi    = IF(Exp_Nbi    < '1000-01-01', NULL, Exp_Nbi),
-                        Exp_Police = IF(Exp_Police < '1000-01-01', NULL, Exp_Police),
-                        Exp_Pnp    = IF(Exp_Pnp    < '1000-01-01', NULL, Exp_Pnp),
-                        Exp_Brgy   = IF(Exp_Brgy   < '1000-01-01', NULL, Exp_Brgy),
-                        Exp_Court  = IF(Exp_Court  < '1000-01-01', NULL, Exp_Court),
-                        Exp_Neuro  = IF(Exp_Neuro  < '1000-01-01', NULL, Exp_Neuro),
-                        Exp_Drug   = IF(Exp_Drug   < '1000-01-01', NULL, Exp_Drug),
-                        ExpMed     = IF(ExpMed     < '1000-01-01', NULL, ExpMed),
-                        RegRef     = IF(RegRef     < '1000-01-01', NULL, RegRef),
-                        Drv_Exp    = IF(Drv_Exp    < '1000-01-01', NULL, Drv_Exp),
-                        DpaDate    = IF(DpaDate    < '1000-01-01', NULL, DpaDate)
-                        WHERE Email = @Email;"; 
+                        MovDate    = IF(MovDate    < '0001-01-01', NULL, MovDate),
+                        MovEnd     = IF(MovEnd     < '0001-01-01', NULL, MovEnd),
+                        DUTYDATE   = IF(DUTYDATE   < '0001-01-01', NULL, DUTYDATE),
+                        EmpBirth   = IF(EmpBirth   < '0001-01-01', NULL, EmpBirth),
+                        DateHired  = IF(DateHired  < '0001-01-01', NULL, DateHired),
+                        Separate   = IF(Separate   < '0001-01-01', NULL, Separate),
+                        StatusDate = IF(StatusDate < '0001-01-01', NULL, StatusDate),
+                        LicExpire  = IF(LicExpire  < '0001-01-01', NULL, LicExpire),
+                        DateTrain  = IF(DateTrain  < '0001-01-01', NULL, DateTrain),
+                        InsExpire  = IF(InsExpire  < '0001-01-01', NULL, InsExpire),
+                        AStart     = IF(AStart     < '0001-01-01', NULL, AStart),
+                        AEnd       = IF(AEnd       < '0001-01-01', NULL, AEnd),
+                        DStart     = IF(DStart     < '0001-01-01', NULL, DStart),
+                        DEnd       = IF(DEnd       < '0001-01-01', NULL, DEnd),
+                        ComTaxDate = IF(ComTaxDate < '0001-01-01', NULL, ComTaxDate),
+                        Exp_Nbi    = IF(Exp_Nbi    < '0001-01-01', NULL, Exp_Nbi),
+                        Exp_Police = IF(Exp_Police < '0001-01-01', NULL, Exp_Police),
+                        Exp_Pnp    = IF(Exp_Pnp    < '0001-01-01', NULL, Exp_Pnp),
+                        Exp_Brgy   = IF(Exp_Brgy   < '0001-01-01', NULL, Exp_Brgy),
+                        Exp_Court  = IF(Exp_Court  < '0001-01-01', NULL, Exp_Court),
+                        Exp_Neuro  = IF(Exp_Neuro  < '0001-01-01', NULL, Exp_Neuro),
+                        Exp_Drug   = IF(Exp_Drug   < '0001-01-01', NULL, Exp_Drug),
+                        ExpMed     = IF(ExpMed     < '0001-01-01', NULL, ExpMed),
+                        RegRef     = IF(RegRef     < '0001-01-01', NULL, RegRef),
+                        Drv_Exp    = IF(Drv_Exp    < '0001-01-01', NULL, Drv_Exp),
+                        DpaDate    = IF(DpaDate    < '0001-01-01', NULL, DpaDate)
+                    WHERE Email = @Email;"; 
         await _sql.ExecuteCmd<dynamic>(usql, new { Email = email }, conn);
-        
+
         var sql = $@"SELECT s.name AS EmpStatus, p.name AS PositionName, c.ClName,
                         e.* from {schema}.Empmas e
                      left join   {schema}.position    p on p.code = e.position_
@@ -175,7 +233,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 	
 
 	
-	public async Task<OEmpmasModel?> _03(int id,OEmpmasModel empmas, string schema, string conn)
+	public async Task<OEmpmasModel?> _03(int? id,OEmpmasModel empmas, string? schema, string? conn)
 	{
 		string sql = $@"Update {schema}.Empmas set 
                                EMPNUMBER = @EMPNUMBER, 
@@ -230,7 +288,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 		return data?.FirstOrDefault();
 	}
 
-	public async Task<OEmpmasModel?> _04(int id, string schema, string conn)
+	public async Task<OEmpmasModel?> _04(int? id, string? schema, string? conn)
 	{
 		string sql = $@"Delete from {schema}.Empmas where Id = @Id;";
 		// await _sql.ExecuteCmd<dynamic>(sql, new {Id=id},conn);
@@ -239,6 +297,168 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
 		return data?.FirstOrDefault();
 	}
+
+        // --- Private Functions ------------------------------------------------------------------------------------------------
+
+    private string? EmpmasFields()
+    {
+        return @"CONCAT_WS(' ', NULLIF(TRIM(e.EmpLastNm), ', '), NULLIF(TRIM(e.EmpFirstNm), ' '), NULLIF(TRIM(e.EmpMidNm), ' ') ) AS EmpName,
+                            e.Empnumber, 
+                            e.Emplastnm, 
+                            e.Empfirstnm, 
+                            e.Empmidnm, 
+                            e.Suffix, 
+                            e.Empalias, 
+                            e.Client, 
+                            e.Client_, 
+                            e.Basicrate, 
+                            e.Paytype, 
+                            e.Admin, 
+                            e.Cashbond, 
+                            e.Workdays, 
+                            e.Allowrate, 
+                            e.Allowtype, 
+                            e.Allowfix, 
+                            e.Allow2Rate, 
+                            e.Allow2Type, 
+                            e.Allow2Fix, 
+                            e.Allow3Rate, 
+                            e.Allow3Type, 
+                            e.Allow3Fix, 
+                            e.Allow4Rate, 
+                            e.Allow4Type, 
+                            e.Allow4Fix, 
+                            e.Movnumber, 
+                            e.Movmode, 
+                            e.Addr1, 
+                            e.Mlacode_, 
+                            e.Tel1, 
+                            e.Addr2, 
+                            e.Procode_, 
+                            e.Tel2, 
+                            e.Birthplace, 
+                            e.Sex_, 
+                            e.Civstat_, 
+                            e.Citizen, 
+                            e.Height, 
+                            e.Weight, 
+                            e.Tin, 
+                            e.Sss, 
+                            e.Hdmf, 
+                            e.Religion, 
+                            e.Hair, 
+                            e.Eyes, 
+                            e.Spouse, 
+                            e.Occupation, 
+                            e.Nochildren, 
+                            e.Position_, 
+                            e.Empstat_, 
+                            e.Seclicense, 
+                            e.Trainat, 
+                            e.Insurance, 
+                            e.Policyno, 
+                            e.Facevalue, 
+                            e.Premium, 
+                            e.Exmilitary, 
+                            e.Csp, 
+                            e.Cpp, 
+                            e.Rotc, 
+                            e.Ellevel, 
+                            e.Hslevel, 
+                            e.College_, 
+                            e.Course, 
+                            e.Volevel, 
+                            e.Vocourse, 
+                            e.Language, 
+                            e.Skill1, 
+                            e.Skill2, 
+                            e.Skill3, 
+                            e.Skill4, 
+                            e.Taxcode, 
+                            e.Acctcode, 
+                            e.Awol, 
+                            e.Dismiss, 
+                            e.Adays, 
+                            e.Ddays, 
+                            e.Emrname, 
+                            e.Emrtel, 
+                            e.Emraddr, 
+                            e.Guardexp, 
+                            e.Comtaxno, 
+                            e.Comtax_At, 
+                            e.Bloodtype, 
+                            e.Marks, 
+                            e.Complexion, 
+                            e.W_Birthc, 
+                            e.W_Closingr, 
+                            e.W_Trncert, 
+                            e.W_Prelic, 
+                            e.W_Certemp, 
+                            e.W_Medexam, 
+                            e.Gkerate, 
+                            e.Clname, 
+                            e.Mlaname, 
+                            e.Age, 
+                            e.Mbranch, 
+                            e.Myear, 
+                            e.Mnature, 
+                            e.Remarks, 
+                            e.Badgeno, 
+                            e.Guardnoyrs, 
+                            e.Militarynoyr, 
+                            e.Pagibigno, 
+                            e.Phic, 
+                            e.Bank, 
+                            e.Empbasicrate, 
+                            e.Rateid, 
+                            e.Empecola, 
+                            e.Xmark, 
+                            e.Suretybondquota, 
+                            e.Drv_License, 
+                            e.Istaxable, 
+                            e.Isconfi, 
+                            e.Iswithsss, 
+                            e.Iswithgsis, 
+                            e.Iswithphic, 
+                            e.Iswithpagibig, 
+                            e.Ismaxsss, 
+                            e.Email, 
+                            e.Passwd, 
+                            e.Countrycode, 
+                            e.Sgcode, 
+                            e.Dpclient, 
+                            e.Desig_, 
+
+                            -- DATE NORMALIZATION
+                            if(e.Movdate    < '1000-01-01', null, Movdate    )  as Movdate    ,                               
+                            if(e.Movend     < '1000-01-01', null, Movend     )  as Movend     ,                           
+                            if(e.Dutydate   < '1000-01-01', null, Dutydate   )  as Dutydate   ,                               
+                            if(e.Empbirth   < '1000-01-01', null, Empbirth   )  as Empbirth   ,                               
+                            if(e.Datehired  < '1000-01-01', null, Datehired  )  as Datehired  ,                               
+                            if(e.Separate   < '1000-01-01', null, Separate   )  as Separate   ,                               
+                            if(e.Statusdate < '1000-01-01', null, Statusdate )  as Statusdate ,                               
+                            if(e.Licexpire  < '1000-01-01', null, Licexpire  )  as Licexpire  ,                               
+                            if(e.Datetrain  < '1000-01-01', null, Datetrain  )  as Datetrain  ,                               
+                            if(e.Insexpire  < '1000-01-01', null, Insexpire  )  as Insexpire  ,                               
+                            if(e.Astart     < '1000-01-01', null, Astart     )  as Astart     ,                           
+                            if(e.Aend       < '1000-01-01', null, Aend       )  as Aend       ,                           
+                            if(e.Dstart     < '1000-01-01', null, Dstart     )  as Dstart     ,                           
+                            if(e.Dend       < '1000-01-01', null, Dend       )  as Dend       ,                           
+                            if(e.Comtaxdate < '1000-01-01', null, Comtaxdate )  as Comtaxdate ,                               
+                            if(e.Exp_Nbi    < '1000-01-01', null, Exp_Nbi    )  as Exp_Nbi    ,                               
+                            if(e.Exp_Police < '1000-01-01', null, Exp_Police )  as Exp_Police ,                               
+                            if(e.Exp_Pnp    < '1000-01-01', null, Exp_Pnp    )  as Exp_Pnp    ,                               
+                            if(e.Exp_Brgy   < '1000-01-01', null, Exp_Brgy   )  as Exp_Brgy   ,                               
+                            if(e.Exp_Court  < '1000-01-01', null, Exp_Court  )  as Exp_Court  ,                               
+                            if(e.Exp_Neuro  < '1000-01-01', null, Exp_Neuro  )  as Exp_Neuro  ,                               
+                            if(e.Exp_Drug   < '1000-01-01', null, Exp_Drug   )  as Exp_Drug   ,                               
+                            if(e.Expmed     < '1000-01-01', null, Expmed     )  as Expmed     ,                           
+                            if(e.Regref     < '1000-01-01', null, Regref     )  as Regref     ,                           
+                            if(e.Drv_Exp    < '1000-01-01', null, Drv_Exp    )  as Drv_Exp    ,                               
+                            if(e.Dpadate    < '1000-01-01', null, Dpadate    )  as Dpadate " ; 
+
+    }
+
 	
 
 }
@@ -246,9 +466,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
 public interface IOEmpmasDataAccess
 {
-	Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string schema, string conn);
-	Task<List<OEmpmasModel?>?>  _02(string empnumber, string schema, string conn); 
-    Task<List<OEmpmasModel?>?>  _02ByClNumbers(string clnumber, string schema, string conn); 
-	Task<List<OEmpmasModel?>?>  _02ByEmail(string email, string schema, string conn); 
+    Task                        _00CreateEmpmasMigration_Marker(string? oPisDb, string? conn);
+    Task                        _00MigrateData(string? pisDb, string? oPisDb, string? conn);
+    Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string? schema, string? conn);
+	Task<List<OEmpmasModel?>?>  _02(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn); 
+    Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn); 
+	Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn); 
 	
 }

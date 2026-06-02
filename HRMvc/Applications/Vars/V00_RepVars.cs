@@ -8,7 +8,7 @@ namespace HRMvc.Applications.Vars;
 
 public class V00_RepVars
 {
-    public int                          RefreshToken    { get; set; } = 0;
+    public int?                         RefreshToken    { get; set; } = 0;
     public string                       SelectedFormat  { get; set; } = "PDF";
     public string                       RelativePath    { get; set; } = "Reports/_03Payroll/mSample.trdp";
     public IEnumerable<object>         ReportData       { get; set; } = [];
@@ -21,7 +21,7 @@ public class V00_RepVars
     };
 
     //--------------------------------------------------------------------------------------
-    public int    Year   { get; set; } = DateTime.Now.Year;
+    public int?   Year   { get; set; } = DateTime.Now.Year;
     public string Month  { get; set; } = DateTime.Now.ToString("MM");
     public string Period { get; set; } = DateTime.Now.Day <= 15 ? "01" : "02";
 

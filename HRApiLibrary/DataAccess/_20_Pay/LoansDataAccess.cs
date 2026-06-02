@@ -14,9 +14,9 @@ public class LoansDataAccess : ILoansDataAccess
         _sql = sql;
     }
 
-    public async Task<LoansModel?> _01(LoansModel loans, string schema, string conn)
+    public async Task<LoansModel?> _01(LoansModel loans, string? schema, string? conn)
     {
-        string sql = $@"Insert into {schema}.Loans (EMPNUMBER,  DATE,  DEDNCODE,  DEDNDESC,  Principal,  AMOUNT,  AMORT,  BALANCE,  STATUS,  ENCODEBY,   ENCODEDT,   POSTED,  POSTFLAG,  REMARKS,  payMode,   payStart,  payRes,  cvno,  P1,  P2,  P3,  P4,  P5) values 
+        string? sql = $@"Insert into {schema}.Loans (EMPNUMBER,  DATE,  DEDNCODE,  DEDNDESC,  Principal,  AMOUNT,  AMORT,  BALANCE,  STATUS,  ENCODEBY,   ENCODEDT,   POSTED,  POSTFLAG,  REMARKS,  payMode,   payStart,  payRes,  cvno,  P1,  P2,  P3,  P4,  P5) values 
                                                    (@EmpNumber, @Date, @DedNCode, @DedNDesc, @Principal, @Amount, @Amort, @Balance, 'A',     @EncodedBy, @EncodedT,  @Posted, @PostFlag, @Remarks, @PayMode,  @PayStart, @PayRes, @Cvno, @P1, @P2, @P3, @P4, @P5)
                         on duplicate key update DATE        = @Date,  
                                                 Principal   = @Principal,  
@@ -48,14 +48,14 @@ public class LoansDataAccess : ILoansDataAccess
     }
 
 
-    public async Task<LoansModel?> _02(int id, string schema, string conn)
+    public async Task<LoansModel?> _02(int? id, string? schema, string? conn)
     {
-        string sql = $@"select  * from {schema}.Loans where Id = @Id";
+        string? sql = $@"select  * from {schema}.Loans where Id = @Id";
         var data = await _sql.FetchData<LoansModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
     
-    public async Task<List<LoansModel?>?> _02ByEmpNumbers(string empNumber, string schema, string conn)
+    public async Task<List<LoansModel?>?> _02ByEmpNumbers(string? empNumber, string? schema, string? conn)
     {
         var sql = $@"select  c.AcctName DedNDesc, l.*  from {schema}.Loans l 
                         left join {schema}.coa c on c.acctNumber = l.DedNCode 
@@ -64,9 +64,9 @@ public class LoansDataAccess : ILoansDataAccess
         return data;
     }
     
-    public async Task<LoansModel?> _03(int id, LoansModel loans, string schema, string conn)
+    public async Task<LoansModel?> _03(int? id, LoansModel loans, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Loans set 
+        string? sql = $@"Update {schema}.Loans set 
                             DATE        = @Date,  
                             Principal   = @Principal,  
                             AMOUNT      = @Amount,  
@@ -93,9 +93,9 @@ public class LoansDataAccess : ILoansDataAccess
         return data?.FirstOrDefault();
     }
     
-    public async Task<LoansModel?> _03ChangeStatus(int id, LoansModel loans, string schema, string conn)
+    public async Task<LoansModel?> _03ChangeStatus(int? id, LoansModel loans, string? schema, string? conn)
     {
-        string sql = $@"Update {schema}.Loans set 
+        string? sql = $@"Update {schema}.Loans set 
                             CHANGEBY    = @ChangeBy,  
                             CHANGEDT    = @ChangedT,  
                             Status      = '{loans.Status}'  
@@ -111,9 +111,9 @@ public class LoansDataAccess : ILoansDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<LoansModel?> _04(int id, string schema, string conn)
+    public async Task<LoansModel?> _04(int? id, string? schema, string? conn)
     {
-        string sql = $@"Delete from {schema}.Loans where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Loans where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Loans x where x.Id = @Id ;";

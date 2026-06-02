@@ -5,7 +5,7 @@ namespace HRMvc.Models;
 public class EmpmasUiModel
 {
     [Display(Name = "Id")]
-    public int Id { get; set; }
+    public int?Id { get; set; }
 
     [Required]
     [Display(Name = "Last Name")]

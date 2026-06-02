@@ -21,14 +21,14 @@ public class V222
     public string?  pisdb            { get; set; } = string.Empty;
     public string?  paydb            { get; set; } = string.Empty;
     public string?  conn             { get; set; } = string.Empty;
-    public int      defcoid          { get; set; } = 0;
-    public int      userid           { get; set; } = 0; 
+    public int?     defcoid          { get; set; } = 0;
+    public int?     userid           { get; set; } = 0; 
 
     public bool                             ShowDataEntry       { get; set; } = false;
     public string                           Action              { get; set; } = string.Empty;
     public string                           ActionRef           { get; set; } = string.Empty;
-    public int                              TabNo               { get; set; } = 1;
-    public int                              SelectedId          { get; set; } = 0;
+    public int?                             TabNo               { get; set; } = 1;
+    public int?                             SelectedId          { get; set; } = 0;
 
     public List<Uc_accessreqModel?>?       UcAccessreq          { get; set; } = new();
     public PisEmpmasModel?                  Empmas              { get; set; } = new();  
@@ -134,7 +134,7 @@ public class V222
         {
             deprec = new()
             {
-                Empmasid                = source.Empmasid, 
+                EmpmasId                = source.EmpmasId, 
                 Divid                   = source.Divid, 
                 Depid                   = source.Depid, 
                 Secid                   = source.Secid, 

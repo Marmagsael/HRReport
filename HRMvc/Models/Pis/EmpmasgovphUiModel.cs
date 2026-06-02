@@ -8,7 +8,7 @@ public class EmpmasgovphUiModel
     
     [Display(Name = "Id")]
     [Range(0, int.MaxValue, ErrorMessage = "Invalid integer value")]
-    public int Id { get; set; }
+    public int?Id { get; set; }
 
     
     [Display(Name = "SSS No.")]
