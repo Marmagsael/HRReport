@@ -1,5 +1,107 @@
-﻿<h3>_12_102_Obligation</h3>
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.CS
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.Leave
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.OBL
+@using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.OT
+@using global::HRMvc.Applications.Vars
+
+<CascadingValue Value="Uc" IsFixed="true">
+    @* --- Attendance Request ----------------------- *@
+    <div class="mb-2 p-0 ">
+        @if (v?.Attreqhdrs!=null && v.Attreqhdrs.Count > 0)     { <_12_102_PReq V="@v" /> }
+        else { <_12_102_EmptyyRequest HdrCaption="Attendance Request Approval" BgCss="mb-a-blue" BrdCss="b-blue" /> }
+    </div>
+
+    @* --- OT Request Request ----------------------- *@
+    <div class="mb-2 p-0 ">
+        @if (v?.Otreqhdrs!=null && v.Otreqhdrs.Count > 0)     { <_12_102_OT_Approval V="@v" /> }
+        else { <_12_102_EmptyyRequest HdrCaption="OT Request Approval" BgCss="mb-a-green" BrdCss="b-green" /> }
+    </div>
+
+    @* --- Change Schedule Request ----------------------- *@
+    <div class="mb-2 p-0 ">
+        @if (v?.Atttemplatereqhdrs!=null && v.Atttemplatereqhdrs.Count > 0)     { <_12_102_CS_Approval V="@v" /> }
+        else { <_12_102_EmptyyRequest HdrCaption="Attendance Template Approval" BgCss="mb-a-maroon" BrdCss="b-maroon" /> }
+    </div>
+    
+    @* --- Leave Request ----------------------- *@
+    <div class="mb-2 p-0 ">
+        @if (v?.LvApps!=null && v.LvApps.Count > 0)     { <_12_102_Lv_Approval V="@v" /> }
+        else { <_12_102_EmptyyRequest HdrCaption="Leave Application Approval" BgCss="mb-a-black" BrdCss="b-black" /> }
+    </div>
+
+    
+
+</CascadingValue>
+
+
+@inject IAttreqhdrDataAccess            _attreqh; 
+@inject IAttreqtypeDataAccess           _attreqtype; 
+@inject IOtreqhdrDataAccess             _otreq; 
+@inject IAtttemplatereqhdrDataAccess    _attTemplateReqhdr; 
+@inject IOtdutytypeDataAccess           _OtdutyType; 
+@inject IOtdaytypeDataAccess            _OtdayType; 
+@inject ILeaveapplicationDataAccess     _lvapp; 
+
+
 
 @code {
+    [Parameter] public UserClaimsModel?         Uc  { get; set; } = new();
+    V12_102Obligation   v = new();
+
+    void EC_Catcher() {}
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadDatas(); 
+    }
+
+    
+    async Task LoadDatas() {
+        await _02AttReq(); 
+        await _02OTReq(); 
+        await _02AttTemlateReq(); 
+        await _02LvApp(); 
+
+        
+    }
+    async Task _02OTReq() {
+        v.Otreqhdrs = []; 
+        var res = await _otreq._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+        if(res!=null && res.Count>0) v.Otreqhdrs = res!;
+
+        v.Otdutytypes = []; 
+        var resDt = await _OtdutyType._02s(Uc.SchemaUserPis, Uc.Conn);
+        if (resDt != null && resDt.Count > 0) v.Otdutytypes = resDt!;
+        
+    }
+    
+    async Task _02AttReq() {
+        v.Attreqhdrs = []; 
+        var rAttreqhdrs = await _attreqh._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+        if (rAttreqhdrs.Count > 0) v.Attreqhdrs = rAttreqhdrs ?? [];
+
+        @* Attendance Type ---------------------- *@
+        v.Attreqtypes = [];
+        List<AttreqtypeModel?>? rAttTypes = await _attreqtype._02s(Uc.SchemaUserPis, Uc.Conn);
+        if (rAttTypes != null && rAttTypes.Count > 0) v.Attreqtypes = rAttTypes!;
+    }
+
+    async Task _02AttTemlateReq()
+    {
+        v.Atttemplatereqhdrs = [];
+        var res = await _attTemplateReqhdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null && res.Count > 0) v.Atttemplatereqhdrs = res!;
+    }
+    
+    async Task _02LvApp()
+    {
+        v.LvApps = [];
+        var res = await _lvapp._02ForApproval_PerApprover(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null && res.Count > 0) v.LvApps = res!;
+
+    }
 
 }

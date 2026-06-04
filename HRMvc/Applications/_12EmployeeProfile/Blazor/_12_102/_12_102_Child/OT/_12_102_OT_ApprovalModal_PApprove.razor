@@ -1,0 +1,94 @@
+@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+
+<div class="card m-1 b-dgray">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between bg-secondary p-1 bordered-bottom">
+        <div class="d-flex align-items-center px-2 text-white ">Message</div>
+        <div><button @onclick="Close" class="btn text-white">X</button></div>
+    </div>
+
+    <!-- Body -->
+    <div class="d-flex gap-2 bg-success bg-opacity-10 p-2">
+        
+        <!-- Label -->
+        <div class="d-flex align-items-center w-125p ">
+            Approver <span class="text-danger">*</span>
+        </div>
+
+        <!-- Input + Button -->
+        <div class="d-flex flex-grow-1 gap-1 w-100" style="min-width: 0;">
+    
+            <div class="w-75 p-1 d-flex gap-1" style="min-width: 0;">
+                <div class="w-125p">
+                    <input @onblur="LocateApprover" type="text" @bind-value="apprverNumber" placeholder="XXXXX"
+                           class="form-control" style="width: 100%; max-width: 100%;" />
+                </div>
+                <div class="d-flex flex-grow-1 ">
+                    <input type="text" @bind-value="V.Otreqhdr.ApproverName" disabled class="form-control"
+                           style="width: 100%; max-width: 100%;" />
+                </div>
+                
+            </div>
+
+            <div class="w-25 d-flex align-items-center">
+                <button @onclick="Submit" class="btn btn-secondary @submitCss">Submit</button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@inject IAttreqhdrDataAccess    _arhdr;
+@inject IOtreqhdrDataAccess     _othdr;
+@inject IEmpmasInternalDataAccess _empmas;
+
+@code {
+    [CascadingParameter] public UserClaimsModel Uc { get; set; }
+    [Parameter] public V12_102Obligation V { get; set; } = new();
+    [Parameter] public EventCallback Ec { get; set; }
+
+    // ✅ Safe computed property (no null errors)
+    string? submitCss => !string.IsNullOrWhiteSpace(V?.Otreqhdr?.ApproverName) ? "" : "disabled-div-50";
+    // ✅ Optional: actual disabled state (recommended)
+    bool IsDisabled => string.IsNullOrWhiteSpace(V?.Otreqhdr?.ApproverName);
+    string? apprverNumber = string.Empty;
+
+    async Task LocateApprover()
+    {
+        V.Otreqhdr.ApproverName = string.Empty;
+        var res = await _empmas._02byEmpnumber(apprverNumber, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null && res.Count > 0)
+        {
+            V.Otreqhdr.ApproverName = res?.FirstOrDefault().Fullname ?? string.Empty;
+        }
+
+        
+    }
+
+    async Task Submit()
+    {
+        V.Action = "PartiallyApproved";
+        await _othdr._03PartiallyApprove(V.Otreqhdr, apprverNumber, Uc.SchemaUserPis, Uc.Conn); 
+
+        V.Otreqhdrs = [];
+        var rOThdrs = await _othdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+
+        if (rOThdrs != null && rOThdrs.Count > 0)
+        {
+            V.Otreqhdrs = rOThdrs!;
+            V.Otreqhdr = new();
+            StateHasChanged();
+        }
+        await Ec.InvokeAsync();
+    }
+
+    async Task Close()
+    {
+        V.Action = "ClosePA";
+        await Ec.InvokeAsync();
+    }
+}

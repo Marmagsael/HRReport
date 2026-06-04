@@ -107,24 +107,24 @@ public static class ApiExt
         builder.Services.AddScoped<IParaDataAccess, ParaDataAccess>();
         builder.Services.AddScoped<IDesignationDataAccess, DesignationDataAccess>();
         builder.Services.AddScoped<IPenaltyDataAccess, RpenaltyDataAccess>();
-        //builder.Services.AddScoped<IAttreqtypeDataAccess, AttreqtypeDataAccess>();
-        //builder.Services.AddScoped<IAttreqhistDataAccess, AttreqhistDataAccess>();
-        //builder.Services.AddScoped<IAttreqhdrDataAccess, AttreqhdrDataAccess>();
-        //builder.Services.AddScoped<IAttreqdtlDataAccess, AttreqdtlDataAccess>();
-        //builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
+        builder.Services.AddScoped<IAttreqtypeDataAccess, AttreqtypeDataAccess>();
+        builder.Services.AddScoped<IAttreqhistDataAccess, AttreqhistDataAccess>();
+        builder.Services.AddScoped<IAttreqhdrDataAccess, AttreqhdrDataAccess>();
+        builder.Services.AddScoped<IAttreqdtlDataAccess, AttreqdtlDataAccess>();
+        builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
         builder.Services.AddScoped<ILeaveapplicationDataAccess, LeaveapplicationDataAccess>();
-        //builder.Services.AddScoped<ILeaveapplicationdtlDataAccess, LeaveapplicationdtlDataAccess>();
-        //builder.Services.AddScoped<IEmpmasgrpDataAccess, EmpmasgrpDataAccess>();
+        builder.Services.AddScoped<ILeaveapplicationdtlDataAccess, LeaveapplicationdtlDataAccess>();
+        builder.Services.AddScoped<IEmpmasgrpDataAccess, EmpmasgrpDataAccess>();
 
-        //builder.Services.AddScoped<IAtttemplatereqdtlDataAccess, AtttemplatereqdtlDataAccess>();
-        //builder.Services.AddScoped<IAtttemplatereqhdrDataAccess, AtttemplatereqhdrDataAccess>();
-        //builder.Services.AddScoped<IAtttemplatereqhistDataAccess, AtttemplatereqhistDataAccess>();
+        builder.Services.AddScoped<IAtttemplatereqdtlDataAccess, AtttemplatereqdtlDataAccess>();
+        builder.Services.AddScoped<IAtttemplatereqhdrDataAccess, AtttemplatereqhdrDataAccess>();
+        builder.Services.AddScoped<IAtttemplatereqhistDataAccess, AtttemplatereqhistDataAccess>();
         
-        //builder.Services.AddScoped<IOtdaytypeDataAccess, OtdaytypeDataAccess>();
-        //builder.Services.AddScoped<IOtdutytypeDataAccess, OtdutytypeDataAccess>();
-        //builder.Services.AddScoped<IOtreqdtlDataAccess, OtreqdtlDataAccess>();
-        //builder.Services.AddScoped<IOtreqhdrDataAccess, OtreqhdrDataAccess>();
-        //builder.Services.AddScoped<IOtreqhistDataAccess, OtreqhistDataAccess>();
+        builder.Services.AddScoped<IOtdaytypeDataAccess, OtdaytypeDataAccess>();
+        builder.Services.AddScoped<IOtdutytypeDataAccess, OtdutytypeDataAccess>();
+        builder.Services.AddScoped<IOtreqdtlDataAccess, OtreqdtlDataAccess>();
+        builder.Services.AddScoped<IOtreqhdrDataAccess, OtreqhdrDataAccess>();
+        builder.Services.AddScoped<IOtreqhistDataAccess, OtreqhistDataAccess>();
 
         builder.Services.AddScoped<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
         builder.Services.AddScoped<DA222>();

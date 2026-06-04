@@ -1,0 +1,439 @@
+@using DocumentFormat.OpenXml.Office.CustomUI
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._00GeneralComponents
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.Text
+@{
+    var hdr = ts.AttReqhdr??new(); 
+}
+
+<div class="d-flex gap-1 p-1 border-bottom ">
+    <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
+    <div @onclick="SaveHdr" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSave ? "" : "disabled-div") "> Save </div>
+    <div @onclick="ShowSendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSend ? "" : " disabled-div ") "> Send For Approval </div>
+    <div @onclick="ShowCancel" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(hdr.Status=="S" ? "" : " disabled-div ")"> Cancel </div>
+    <div @onclick="ShowMyPunches" class="p-1 mb-cbtn mb-cbtn-gray card w-140p @(CanShowMyPunches ? "" : " disabled-div ")"> Show My Punches </div>
+    <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+</div>
+
+
+@* === Show Punches ================================================================ *@
+@if(ts.ShowMyPunches) {
+    <_00Modal ModuleCaption="My Punches" ChildAction="CA_ShowMyPunches" > <Content> 
+        <_12_102_TS_MyPunches Ts="@ts" At="ts.Atttemplates.FirstOrDefault()??new()"  />
+    </Content></_00Modal>
+}
+
+@* === Show Request ================================================================ *@
+@if(ts.ShowMyReqquest) {
+    <_00Modal ModuleCaption="Punch Request" ChildAction="CA_ShowMyRequest" > <Content>
+        <_12_102_TS_MyPunchRequest Attreqhdrs="ts.AttReqhdrs" Uc="@Uc" EC_Attreqhdr="LoadAttreqhdr" />
+    </Content></_00Modal>
+}
+
+@* === Send For Approval ================================================================ *@
+@if(ts.ShowSendForApproval) {
+    <_00Modal ModuleCaption="Send For Approval" ChildAction="CA_ShowForApproval" > <Content>
+        <div @onclick="Send" class="w-100 border-bottom p-1 mb-1">
+            <div class="w-125p mb-cbtn mb-cbtn-blue p-1 card  ">Send Request</div>
+        </div>
+        <_12_102_TS_PunchRequestDisplay ts="@ts" />
+    </Content></_00Modal>
+}
+@* === Cancel Request ================================================================ *@
+@if(ts.ShowCancel) {
+    
+    <_00Modal ModuleCaption="Cancel Request" ChildAction="CA_ShowCancel" > 
+        <Content>
+            <div class="shatter @(IsCancelling ? "animate" : "")">
+
+                <div @onclick="Cancel" class="w-100 border-bottom p-1 mb-1">
+                    <div class="w-125p mb-cbtn mb-cbtn-red p-1 card  ">Cancel</div>
+                </div>
+            
+                <_12_102_TS_PunchRequestDisplay ts="@ts" />
+            </div>
+        </Content>
+    </_00Modal> 
+}
+
+
+  
+
+@* --- Header Content  *@
+<div class="p-2 border-bottom">
+    <div class="p-0 d-flex justify-content-between ">
+        <div class="d-flex p-1">
+            <div class="w-120p p-2">Control No.</div>
+            <div class="w-175p border-bottom fw-bold text-center p-2 text-primary "> 
+                @(ts.AttReqhdr.Id < 1 ? "-" : ts.AttReqhdr.Id) 
+            </div>
+        </div>
+        
+        <div class="d-flex p-1">
+            <div class="w-75p p-2">Status</div>
+            <div class="w-175p   text-start p-2 text-primary "> 
+                @(ts.AttReqhdr.Status switch {"N" => "New", "S" => "Saved", "F" => "For Approval", "A" => "Approved", _ => "Unknown" } )
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-a-blue d-flex p-1 ">
+        <div class="w-120p p-2">Date</div>
+        <RadzenDatePicker @bind-Value="ts.AttReqhdr.DateRequested" 
+            DateFormat="MM/dd/yyyy"
+            AllowInput="false"
+            class="mb-date-accent w-150p" />
+    </div>
+
+    <div class="mb-a-blue d-flex p-1">
+        <div class="w-120p p-2">Coverage</div>
+        <div class=" @(ts.AttReqdtls.Count>0?" disabled-div ":" ") ">
+            <RadzenDatePicker 
+                @bind-Value="ts.AttReqhdr.CovStart" 
+                DateFormat="MM/dd/yyyy"
+                AllowInput="false"
+                class="mb-date-accent w-150p" />
+        </div>
+        <div class=" p-2"> - </div>
+        <div class=" @(ts.AttReqdtls.Count>0?" disabled-div ":" ") " >
+            <RadzenDatePicker 
+                @bind-Value="ts.AttReqhdr.CovEnd" 
+                DateFormat="MM/dd/yyyy"
+                AllowInput="false"
+                class="mb-date-accent w-150p" />
+        </div>    
+    </div>
+
+    <div class="d-flex p-1">
+        <div class="w-120p p-2"> Approver </div>
+        <div class="mb-a-blue w-150p "> 
+            <RadzenTextBox 
+                @bind-Value="ts.AttReqhdr.EmpNumber_Approver"
+                Change="FetchApprover"
+                MaxLength="5"
+                class="mb-input-accent"
+                Style="width: 100%;" />
+        </div>
+        
+        <div class="mb-a-blue  flex-grow-1 ms-2 "> 
+            <RadzenTextBox 
+                @bind-Value="ts.AttReqhdr.ApproverName"
+                Disabled
+                class="mb-input-accent"
+                Style="width: 100%;" />
+        </div>
+
+    </div>
+    
+    <div class="d-flex">
+        <div class="w-120p p-2"> Remarks </div>
+        <div class=" flex-grow-1 p-1 "> 
+            <RadzenTextArea 
+                @bind-Value="ts.AttReqhdr.Remarks"
+                MaxLength="120"
+                Rows="3"
+                class="mb-input-accent"
+                Style="width:100%;" />
+        </div>
+    </div>
+
+</div>
+
+@* --- Detail Content  *@
+<div class=" w-100 @(CanEditDtls ? "" : " disabled-div ")">
+@* <div class=" w-100 "> *@
+    <div class="w-100 p-1 border-bottom">
+        <div @onclick="AddEntry" class="mb-cbtn mb-cbtn-blue p-1 card w-125p">
+            Add Entry
+        </div>
+    </div>
+    @* --- Header --------------------------------------- *@
+    <div class="d-flex gap-2 p-1 border-bottom">
+        <div class="w-220p p-1">Entry Type</div>
+        <div class="w-190p p-1">Date Start</div>
+        <div class="w-190p p-1">Date End</div>
+        <div class="w-100p p-1 text-center">Hours </div>
+    </div>
+    @foreach(var dtl in ts.AttReqdtls) {
+        <div class="d-flex gap-2 p-1">
+            <div class="w-220p p-1 mb-a-blue">
+                <RadzenDropDown 
+                    TValue="int?"
+                    @bind-Value="dtl.AttReqTypeId"
+                    Change="@(args => ChangeDtlType(dtl))"
+                    Data="@ts.Attreqtypes"
+                    TextProperty="Name"
+                    ValueProperty="Id"
+                    Placeholder="Select Status"
+                    Style="width: 100%;" />
+            </div>
+
+            <div class="w-190p p-1 mb-a-blue ">
+                @if(ShowDtlDateStart(dtl.AttReqTypeId)){
+                    <RadzenDatePicker @bind-Value="dtl.DStart" 
+                        DateFormat="MM/dd/yyyy HH:mm"
+                        Min="@CovStartMin"
+                        Max="@CovEndMax"
+                        ShowTime 
+                        AllowInput="false"
+                        class="mb-date-accent w-100" />
+                } else { <div class="w-100 border p-2 text-center text-primary "> - </div>}
+                
+            </div>
+            <div class="w-190p p-1 mb-a-blue ">
+                @if(ShowDtlDateEnd(dtl.AttReqTypeId)) {
+                    <RadzenDatePicker @bind-Value="dtl.DEnd" 
+                        Min="@CovStartMin"
+                        Max="@CovEndMax"
+                        DateFormat="MM/dd/yyyy HH:mm"
+                        ShowTime 
+                        AllowInput="false"
+                        class="mb-date-accent w-100" />
+                } else { <div class="w-100 bordered p-2 text-center text-primary "> - </div>}
+            </div>
+            <div class="w-100p p-2 text-center ">
+                @ComputeHours(dtl).ToString("N2")
+            </div>
+            
+            <div class="w-100p p-2 ">
+                <div class="w-100p mb-cbtn mb-cbtn-red p-1 card" @onclick="() => DeleteEntry(dtl)">
+                    Remove
+                </div>
+            </div>
+
+        </div>
+    }
+
+
+
+    <div class="d-flex gap-2 p-1">
+        <div class="w-220p p-1 mb-a-blue ">&nbsp; </div>
+        <div class="w-190p p-1 mb-a-blue ">&nbsp; </div>
+        <div class="w-190p p-1 mb-a-blue ">&nbsp; </div>
+        <div class="w-100p p-2 text-center border-top border-bottom-double ">
+            @(ts.AttReqdtls.Sum(x => ComputeHours(x)).ToString("N2"))
+        </div>
+        
+        <div class="w-100p p-2 "> </div>
+
+    </div>
+
+    
+
+</div>
+
+
+
+
+
+@inject IOEmpmasDataAccess      _empmas; 
+@inject IAttreqhdrDataAccess    _attreqhdr; 
+@inject IAttreqdtlDataAccess    _attreqdtl; 
+@inject IAttpunches1DataAccess  _attpunches1; 
+@inject IAtttemplateDataAccess  _atttemplate; 
+@inject IAttreqtypeDataAccess   _attreqtype; 
+
+
+
+@code {
+    [Parameter] public UserClaimsModel?         Uc  { get; set; } = new();
+    V12_102TS   ts           = new();
+    bool        IsCancelling = false;
+    
+
+    protected override async Task OnInitializedAsync()
+    {
+        ts.Attreqtypes              = []; 
+        List<AttreqtypeModel?>? res =  await _attreqtype._02s(Uc.SchemaUserPis, Uc.Conn); 
+        ts.Attreqtypes              = res?.Where(r => r != null && r.Id >= 1 && r.Id <= 3)
+                                          .Select(r => r!).ToList() ?? new();
+
+    }
+
+    void New() { ts.AttReqhdr=new(); ts.AttReqdtls = []; }
+    async Task SaveHdr()
+    { 
+        ts.AttReqhdr.Status = "S"; 
+        if(ts.AttReqhdr.Id > 0) {
+            var res = await _attreqhdr._03(ts.AttReqhdr.Id, ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+            ts.AttReqhdr = res; 
+        } else {
+            ts.AttReqhdr.UserId         = Uc.UserId??0; 
+            ts.AttReqhdr.AttReqTypeId   = 3; 
+            ts.AttReqhdr.EmpNumber      = Uc.OempNumber; 
+            var res     = await _attreqhdr._01(ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+            ts.AttReqhdr                = res; 
+        }  
+        await FetchApprover(); 
+
+        await SaveDtl(); 
+
+    }
+
+    async Task SaveDtl() {
+        foreach(var d in ts.AttReqdtls) {
+            if(d.AttReqTypeId==1) d.DEnd     = null; 
+            if(d.AttReqTypeId==2) d.DStart   = null; 
+            
+            if(d.Id==0) { await _attreqdtl._01(d, Uc.SchemaUserPis, Uc.Conn);       } 
+            else        { await _attreqdtl._03(d.Id, d, Uc.SchemaUserPis, Uc.Conn); }
+        }
+        var res = await _attreqdtl._02s(1, Uc.SchemaUserPis, Uc.Conn); 
+    }
+
+    void ChangeDtlType(AttreqdtlModel dtl)
+    {
+        if(dtl.AttReqHdrId is 1) dtl.DEnd    = null; 
+        if(dtl.AttReqHdrId is 2) dtl.DStart  = null; 
+        
+    }
+
+    void AddEntry()
+    {
+        ts.AttReqdtls.Add(new(){
+            AttReqHdrId =ts.AttReqhdr.Id, 
+            AttReqTypeId=ts.AttReqhdr.AttReqTypeId, 
+            DStart      = hdr.CovStart, 
+            DEnd        = hdr.CovStart.AddTicks(5) }); 
+    }
+    async Task DeleteEntry(AttreqdtlModel item) { 
+        
+        if(item.Id > 0) { await _attreqdtl._04(item.Id, Uc.SchemaUserPis, Uc.Conn); } 
+        ts.AttReqdtls.Remove(item); 
+
+    }
+
+    async Task FetchApprover()
+    {
+        ts.AttReqhdr.ApproverName = "";
+        if (string.IsNullOrWhiteSpace(ts.AttReqhdr.EmpNumber_Approver)) return;
+        var res = await _empmas._02(ts.AttReqhdr.EmpNumber_Approver,  Uc.OpisDb,  Uc.Conn);
+        var emp = res.FirstOrDefault();
+        if (emp != null) { ts.AttReqhdr.ApproverName = emp.EmpName ?? ""; }
+    }
+    
+    async Task LoadAttreqhdr(AttreqhdrModel arh) {
+        ts.ShowMyReqquest   = false; 
+        ts.AttReqhdr        = arh; 
+        
+        ts.AttReqdtls = []; 
+        var res = await _attreqdtl._02ByAttReqHdrIds(arh.Id, Uc.SchemaUserPis, Uc.Conn); 
+        if(res.Any()) ts.AttReqdtls = res!;  
+
+
+    }
+
+
+
+
+
+    
+    double ComputeHours(AttreqdtlModel dtl)
+    {
+        if (dtl.DStart is null    || dtl.DEnd is null    || dtl.DEnd <= dtl.DStart || dtl.AttReqTypeId != 3 ) return 0;
+        return (dtl.DEnd.Value - dtl.DStart.Value).TotalHours;
+    }
+    async Task ShowSendForApproval() { 
+        await SaveHdr(); 
+        ts.ShowSendForApproval = true; 
+    }
+    async Task Send()
+    {
+        var res = await _attreqhdr._03SendForApproval(ts.AttReqhdr, Uc.SchemaUserPis, Uc.Conn); 
+         ts.AttReqhdr           = res; 
+        await FetchApprover(); 
+        ts.ShowSendForApproval = false; 
+    }
+    
+    async Task Cancel()
+    {
+        IsCancelling = true;
+        StateHasChanged();
+
+        await Task.Delay(500); // match CSS animation time
+
+        await _attreqhdr._04(ts.AttReqhdr.Id, Uc.SchemaUserPis, Uc.Conn);
+        await _attreqdtl._04ByAttReqHdrId(ts.AttReqhdr.Id, Uc.SchemaUserPis, Uc.Conn);
+
+        ts.AttReqhdr  = new();
+        ts.AttReqdtls = [];
+
+        IsCancelling = false;   // reset animation flag
+        ts.ShowCancel = false;  // close AFTER animation
+
+        StateHasChanged();
+    }
+
+    async Task ShowCancel() { 
+        ts.ShowCancel = true; 
+    }
+    async Task ShowMyPunches() { 
+        
+        ts.AttPunches1s = []; 
+        ts.Atttemplates = []; 
+
+        var dstart  = DateOnly.FromDateTime(ts.AttReqhdr.CovStart); 
+        var dend    = DateOnly.FromDateTime(ts.AttReqhdr.CovEnd); 
+
+        var res = await _attpunches1._02ByIdByRange(Uc.UserId, dstart, dend, Uc.SchemaUserPis, Uc.Conn ); 
+        if(res.Any()) ts.AttPunches1s = res!; 
+
+        @* --- Attendance Template ---------------------------- *@
+        var ares = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn); 
+        if(ares.Any()) ts.Atttemplates = ares!; 
+
+        ts.ShowMyPunches = true; 
+    }
+    void CA_ShowMyPunches(bool action) { ts.ShowMyPunches = action; ts.AttPunches1s = [];  }
+    async Task ShowMyRequest() { 
+        ts.AttReqhdrs = []; 
+        List<string> statuses = ["S","F"]; 
+        var res = await _attreqhdr._02ByUserId_ByTypeId_ByStatus(Uc.UserId, 3, statuses, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn); 
+        if(res.Any()) ts.AttReqhdrs = res!; 
+        ts.ShowMyReqquest = true; 
+
+    }
+    void CA_ShowMyRequest(bool action)      { ts.ShowMyReqquest = action;  }
+    void CA_ShowForApproval(bool action)    { ts.ShowSendForApproval = action;  }
+    void CA_ShowCancel(bool action)         { ts.ShowCancel = action;  }
+
+    AttreqhdrModel hdr => ts.AttReqhdr ??= new AttreqhdrModel();
+    DateTime CovStartMin => hdr.CovStart == default ? DateTime.MinValue : hdr.CovStart.Date;
+    DateTime CovEndMax   => hdr.CovEnd == default ? 
+                            DateTime.MaxValue : hdr.CovEnd.Date.AddDays(1).AddTicks(-1);
+
+    bool CanSave => hdr.Status is "S" or "N" && 
+                    !string.IsNullOrWhiteSpace(hdr.ApproverName) && 
+                    hdr.DateRequested   != default && 
+                    hdr.CovStart        != default && 
+                    hdr.CovEnd          != default;
+
+    bool CanSend => hdr.Status is "S" && 
+                    !string.IsNullOrWhiteSpace(hdr.ApproverName) && 
+                    hdr.DateRequested   != default && 
+                    hdr.CovStart        != default && 
+                    hdr.CovEnd          != default && 
+                    ts.AttReqdtls.Any()  ;
+    bool CanShowMyPunches =>
+                    hdr.CovStart        != default && 
+                    hdr.CovEnd          != default &&
+                    hdr.CovEnd          >= hdr.CovStart;
+
+    bool CanEditDtls => hdr.Status is "S" && 
+                    !string.IsNullOrWhiteSpace(hdr.ApproverName) && 
+                    hdr.DateRequested   != default && 
+                    hdr.CovStart        != default && 
+                    hdr.CovEnd          != default  ; 
+    
+    bool ShowDtlDateStart(int?  typeId) => typeId is 1 or 3;  
+    bool ShowDtlDateEnd(int?    typeId) => typeId is 2 or 3;
+
+
+    
+
+
+}

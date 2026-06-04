@@ -1,0 +1,185 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._00GeneralComponents
+@using Org.BouncyCastle.Crypto.Prng.Drbg
+
+@inject DialogService _DialogService
+<RadzenDialog />
+
+
+
+<_00Modal ModuleCaption="Punch Request Details" ChildAction="CloseModal" ModalWidth=" w-100 ">
+    <Content>
+
+        <div class="card p-0">
+
+            <div class="d-flex gap-1 p-1 bordered-bottom @denycss ">
+                <button @onclick="Approve" class="btn btn-secondary">Approve Request</button>
+                <button @onclick="PartiallyApprove" class="btn btn-secondary">Partially Approve</button>
+                <button @onclick="_=>isDenyRequest=true" class="btn btn-danger">Return Request</button>
+                <div class="bordered-right "></div>
+            </div>
+
+            @if(isDenyRequest)      { <_12_102_OT_ApprovalModal_Return   Ec="ReturnRequest" V="@V"  /> }
+            @if(isPartiallyApprove) { <_12_102_OT_ApprovalModal_PApprove Ec="ReturnRequest" V="@V"  /> }
+
+            <div class="p-2">
+                <div class="@divHdrcss">
+                    <div class="@lblcss  "> Control No </div>
+                    <div class="p-2 "> @V.Otreqhdr.Id </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Requestor Name </div>
+                    <div class="p-2 ">
+                        <h5>@V.Otreqhdr.RequestorName</h5>
+                    </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Coverage </div>
+                    <div class="p-2 "> 
+                        @V.Otreqhdr.CovStart?.ToString("MMM dd, yyyy") -
+                        @V.Otreqhdr.CovEnd?.ToString("MMM dd, yyyy")
+                    </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Remarks </div>
+                    <div class="p-2 "> @V.Otreqhdr.Remarks </div>
+                </div>                
+                <div class="@divHdrcss">
+                    <div class="bg mb-a-greenlight p-2 @lblcss "> Total Hours </div>
+                    <div class="p-2 fw-bold "> @V.Otreqhdr.TotHrs?.ToString("N2") </div>
+                </div>                
+            </div>
+
+
+            <div class="@denycss">
+                @* --- Header --------------------------------------- *@
+                <div class="d-flex gap-2 p-1 border-bottom  border-top small fw-bold mt-2 ">
+                    <div class="w-100p p-1">Date</div>
+                    <div class="w-100p p-1">Time In</div>
+                    <div class="w-100p p-1">Time Out</div>
+                    <div class="w-100p p-1 text-center">Duty Type</div>
+                    <div class="w-100p p-1 text-center">Rendered</div>
+                    <div class="w-100p p-1 text-center">OT Applied</div>
+                </div>
+
+                @{
+                    int? ctr = 0;
+                }
+                @foreach (OtreqdtlModel r in V.Otreqdtls)
+                {
+                    ctr++;
+                    string? css = ctr % 2 == 0 ? " bg mb-a-graylight " : "";
+                    var tstart = r?.PunchIn; 
+                    var tend = @attP1(r.PunchIn).PunchOutDate; 
+                    TimeSpan? rendered = (tend ?? DateTime.MinValue) - (tstart ?? DateTime.MinValue);
+
+
+
+                    <div class="d-flex gap-2 p-1 gap-1 @css ">
+                        <div class="w-100p p-1">@r.PunchIn.ToString("MMM dd")</div>
+                        <div class="w-100p p-1">@r.PunchIn.ToString("hh:mm tt")</div>
+                        <div class="w-100p p-1">@attP1(r.PunchIn).PunchOutDate?.ToString("hh:mm tt")</div>
+                        <div class="w-100p p-1 text-center">@dutyType(@r.DutyTypeId).Code</div>
+                        <div class="w-100p p-1 text-center">
+                            @(rendered?.Days > 0 
+                                ? $"{rendered?.Days}d {rendered?.Hours:D2}h {rendered?.Minutes:D2}m "
+                                : $"{rendered?.Hours:D2}h {rendered?.Minutes:D2}m")
+                        </div>
+                        <div class="w-100p p-1 text-center fw-bold small ">@r.TotHrs.ToString("N2")</div>
+                    </div>
+                }
+            </div>
+
+        </div>
+
+    </Content>
+</_00Modal>
+
+
+@inject IJSRuntime _js;
+@inject IOtreqhdrDataAccess _otreqh; 
+@inject IAttreqhdrDataAccess _arhdr;
+
+@code {
+    [CascadingParameter] public UserClaimsModel Uc { get; set; }
+    [Parameter] public EventCallback<bool> Ec { get; set; }
+    [Parameter] public V12_102Obligation V { get; set; } = new();
+    bool isDenyRequest = false;
+    bool isPartiallyApprove = false;
+
+    string? denycss => (isDenyRequest || isPartiallyApprove) ? " disabled-div-50 " : "";
+    string? divHdrcss => " d-flex bordered-bottom ";
+    string? lblcss => " w-150p bg mb-a-greenlight p-2  ";
+
+    Attpunches1Model attP1(DateTime tin) => V.Attpunches1s.FirstOrDefault(a=>a.PunchInDate==tin)??new();  
+    OtdutytypeModel  dutyType(int? dutyTypeId) => V.Otdutytypes.FirstOrDefault(dt => dt.Id == dutyTypeId)??new(); 
+
+
+
+    async Task Approve()
+    {
+        const string? title = "Approve Request?";
+        const string? icon = "question";
+        var msg = $@"<div><span class='text-primary'> {V.Attreqhdr.RequestorName}  </span> </div> ";
+        
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (confirmed)
+        {
+            await _otreqh._03Approve(V.Otreqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+            V.Otreqhdrs = []; 
+            var resh = await _otreqh._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn); 
+
+            if (resh != null && resh.Count > 0)
+            {
+                V.Otreqhdrs = resh!;
+                V.Otreqhdr = new();
+                StateHasChanged();
+            }
+
+            await Ec.InvokeAsync(false);
+        }
+    }
+
+    async Task ReturnRequest()
+    {
+
+        @* --- Return Request ----------------------------------------- *@
+        if (V.Action == "Close") RRClose();
+        if (V.Action == "ReturnRequest" ||
+            V.Action == "PartiallyApproved") await ReturnRequestToSEnder();
+        
+        @* --- Partially Approve -------------------------------------- *@
+        if (V.Action == "ClosePA") PAClose();
+
+
+        
+    }
+
+    void RRClose()
+    {
+        isDenyRequest = false;
+        V.Action = string.Empty;
+    }
+    async Task ReturnRequestToSEnder()  { await Ec.InvokeAsync(false); }
+    void PAClose()
+    {
+        isPartiallyApprove = false;
+        V.Action = string.Empty;
+    }
+
+    void PartiallyApprove()
+    {
+        isPartiallyApprove = true;
+        V.Attreqhdr.ApproverName = string.Empty;
+    }
+
+    async Task CloseModal()
+    {
+        await Ec.InvokeAsync(false);
+    }
+}

@@ -1,0 +1,74 @@
+@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis
+
+<div class="card m-1 b-red">
+    <div>*****************</div>
+    <!-- Header -->
+    <div class="d-flex justify-content-between bg-secondary p-1 bordered-bottom">       
+        <div class="d-flex align-items-center px-2 text-white ">Message</div>
+        <div><button @onclick="Close" class="btn text-white">X</button></div>
+        
+    </div>
+
+    <!-- Body -->
+    <div class="d-flex gap-2 bg-danger bg-opacity-10 p-2">
+        
+        <!-- Label -->
+        <div class="d-flex align-items-center w-150p ">
+            Reason of Return <span class="text-danger">*</span>
+        </div>
+
+        <!-- Input + Button -->
+        <div class="d-flex flex-grow-1 gap-1 w-100" style="min-width: 0;">
+    
+            <div class="w-75 p-1 d-flex" style="min-width: 0;">
+                <input type="text" @bind-value="V.Otreqhdr.ApprRemarks" @bind-value:event="oninput" maxlength="120"
+                       placeholder="Remarks" class="form-control" style="width: 100%; max-width: 100%;" />
+            </div>
+
+            <div class="w-25 d-flex align-items-center">
+                <button @onclick="Return" class="btn btn-secondary @submitCss">Submit</button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+@inject IOtreqhdrDataAccess _othdr;
+
+@code {
+    [CascadingParameter] public UserClaimsModel     Uc { get; set; }
+    [Parameter] public V12_102Obligation            V { get; set; } = new();
+    [Parameter] public EventCallback                Ec { get; set; }
+
+    // ✅ Safe computed property (no null errors)
+    string? submitCss => !string.IsNullOrWhiteSpace(V?.Otreqhdr?.ApprRemarks) ? "" : "disabled-div-50";
+    // ✅ Optional: actual disabled state (recommended)
+    bool IsDisabled => string.IsNullOrWhiteSpace(V?.Otreqhdr?.ApprRemarks);
+
+    async Task Return()
+    {
+        
+        V.Action = "ReturnRequest";
+        V.Otreqhdrs = [];
+
+        await _othdr._03Return(V.Otreqhdr, Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+        var reshdrs = await _othdr._02ForApproval_PerApprover(Uc.OempNumber, Uc.SchemaUserPis, Uc.Conn);
+        if (reshdrs!=null && reshdrs.Count>0) {
+            V.Otreqhdrs=reshdrs!;
+            V.Otreqhdr=new();  
+        }
+
+        await Ec.InvokeAsync();
+
+    }
+
+    void OnInputChange(string? value) { V.Otreqhdr.ApprRemarks = value; }
+
+    async Task Close()
+    {
+        V.Action = "Close";
+        await Ec.InvokeAsync();
+    }
+}

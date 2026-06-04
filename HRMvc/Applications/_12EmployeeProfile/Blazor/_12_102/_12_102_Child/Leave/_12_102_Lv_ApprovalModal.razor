@@ -1,0 +1,207 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._00GeneralComponents
+@using global::HRMvc.Applications.Vars
+
+@inject DialogService _DialogService
+<RadzenDialog />
+
+
+
+<_00Modal ModuleCaption="Leave Request" ChildAction="CloseModal" ModalWidth=" w-100 ">
+    <Content>
+
+        <div class="card p-0">
+
+            <div class="d-flex gap-1 p-1 bordered-bottom @denycss ">
+                <button @onclick="Approve" class="btn btn-secondary">Approve Request</button>
+                <button @onclick="Return" class="btn btn-danger">Return Request</button>
+                <div class="bordered-right "></div>
+            </div>
+
+            @if(isDenyRequest)      { <_12_102_Lv_ApprovalModal_Return   Ec="Ec_Catcher" V="@V"  /> }
+
+            <_12_102_Lv_ApprovalModalHdr hdr="V.LvApp" />
+
+
+            <div class="@denycss p-2">
+                <div class="border border-1 border-secondary ">
+                    <table class="w-100 table table-sm table-striped">
+                        <thead class="table-light border-0">
+                            <!-- Group headers -->
+                            <tr class="">
+                                <th class=" "> Date </th>
+                                <th class=" "> Day </th>
+                                <th class=" "> Duty Type </th>
+                                <th class=" "> Time Start </th>
+                                <th class=" "> Time End </th>
+                                <th class=" "> Duration </th>
+                                <th class=" "> With Pay </th>
+
+                            </tr>
+
+
+                        </thead>
+
+                        <tbody class="">
+                            @foreach(var d in V.LvAppdtls)
+                            {
+                                <tr>
+                                    <td> @d.Start?.ToString("MMMM dd, yyyy") </td>
+                                    <td> @d.Start?.DayOfWeek </td>
+                                    <td> @d.DutyType  </td>
+                                    <td> @DutyTime(d.Start) </td>
+                                    <td> @DutyTime(d.End) </td>
+                                    <td> @TimeDuration(d.TimeDuration) </td>
+                                    <td> 
+                                        @if(d.IsPayableB == true) { <i class="fa fa-check text-success"></i> } 
+                                        else { <i class="fa fa-xmark text-danger"></i> }
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        
+
+    </Content>
+</_00Modal>
+
+@inject IJSRuntime _js;
+@inject ILeaveapplicationDataAccess _lvapp;
+
+
+
+
+
+@inject  IAtttemplatereqhdrDataAccess    _attreqhdr;
+
+@code {
+    [CascadingParameter] public UserClaimsModel         Uc { get; set; }
+    [Parameter]          public EventCallback<bool>     Ec { get; set; }
+    [Parameter]          public V12_102Obligation       V  { get; set; } = new();
+    bool    isDenyRequest       = false;
+    bool    isPartiallyApprove  = false;
+
+
+    string? denycss => (isDenyRequest || isPartiallyApprove) ? " disabled-div-50 " : "";
+
+
+
+
+    async Task CloseModal()
+    {
+        isDenyRequest = false;
+        V.Action = "";
+        await Ec.InvokeAsync(false);
+    }
+
+    async Task Approve()
+    {
+        const string? title = "Approve Request?";
+        const string? icon = "question";
+        var msg = $@"<div><span class='text-primary'> {V.LvApp.RequestorName}  </span> </div> ";
+        
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (confirmed)
+        {
+            await _lvapp._03Approve(V.LvApp, Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+            V.LvApps = [];
+
+            
+            List<LeaveapplicationModel?>? resh = await _lvapp._02ForApproval_PerApprover(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+            if (resh != null && resh.Count > 0)
+            {
+                V.LvApps = resh!;
+                V.LvApp = new LeaveapplicationModel();
+                StateHasChanged();
+            }
+
+            V.Action = "Approve";
+            await Ec.InvokeAsync(false);
+
+        }
+        
+    }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    string?  divHdrcss   => " d-flex bordered-bottom ";
+    string?  lblcss      => " w-150p bg mb-a-greenlight p-2  ";
+
+
+    string? DutyTime(DateTime? dt) 
+    {
+        string? time = dt?.ToString("hh\\:mm") ?? string.Empty;
+        if (time == "12:00") time = "-";
+        return time;
+    }
+    string? TimeDuration(int? td) 
+    {
+        if (td == null || td==0) return "-";
+        int? hours = td.Value / 100;
+        int? minutes = td.Value % 100;
+        return $"{hours}.{minutes} Hrs";
+    }
+
+
+    
+
+
+    void Return() {
+        isDenyRequest = true; 
+        V.Atttemplatereqhdr.ApprRemarks = string.Empty;
+    }
+
+    
+    async Task Ec_Catcher()
+    {
+        if (V.Action == "ReturnRequest")    await ReturnRequest();
+        if (V.Action == "CloseRR")          await CloseReturn();
+        
+    }
+
+    async Task ReturnRequest()
+    {
+        isDenyRequest = true;
+        await Ec.InvokeAsync(false);
+    }
+
+    async Task CloseReturn()
+    {
+        isDenyRequest       = false;
+        isPartiallyApprove  = false;
+        await Ec.InvokeAsync(true);
+    }
+
+
+
+
+}
+
+
+

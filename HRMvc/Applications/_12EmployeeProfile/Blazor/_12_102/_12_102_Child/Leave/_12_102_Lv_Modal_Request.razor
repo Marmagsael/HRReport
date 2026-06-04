@@ -1,0 +1,68 @@
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._10_Pis
+<div class="card p-0 small ">
+    <div class="d-flex card-header px-1 gap-1 fw-bold ">
+        <div class="w-100p text-center">TRN </div>
+        <div class="w-100p  ">Leave Type </div>
+        <div class="w-75p   ">Period </div>
+        <div class="w-100p text-start">Date Covered </div>
+        <div class="w-100p text-center">With Pay</div>
+        <div class="w-120p text-center">Status</div>
+        <div class="">Reason </div>
+    </div>
+    @if(V.LeaveApplications.Count==0) {
+        <div class="card-body p-1 text-center w-100 bg-secondary bg-opacity-10 text-primary "> Leave Request is empty. </div>
+    }
+
+    @{int i=0; }
+    @foreach(LeaveapplicationModel d in V.LeaveApplications) {
+        
+        i++; 
+        string? css = i % 2 == 0 ? " bg mb-a-graylight " : " ";
+
+        <div @onclick="() => SelectRecord(d)" class="d-flex card-body p-1 gap-1 cur-pointer @css  ">
+            <div class="w-100p text-center"> @d.Id </div>
+            <div class="w-100p ">    @( _02leaveType(d.LeaveTypeId)) </div>
+            <div class="w-75p ">     @d.Yr </div>
+            <div class="w-100p d-flex "> @d.LvStart.ToString("MMM dd").Trim() - @d.LvEnd.Date.ToString("MMM dd").Trim() </div>
+            <div class="w-100p text-center ">   @( d.DaysWithPay==0 ? "-" :  d.DaysWithPay.ToString("N2")) </div>
+            <div class="w-120p text-center"> @(_02LvStatus(@d.Status)) </div>
+            <div class=""> @d.Reason </div>
+        </div>
+    }
+
+
+</div>
+
+
+
+
+
+@code {
+    [CascadingParameter]    public UserClaimsModel      Uc              { get; set; }
+    [CascadingParameter]    public V12_102Lv            V               { get; set; } = new();
+    [Parameter]             public EventCallback        ChildAction     { get; set; } 
+
+
+    string? _02leaveType(int? lvType) => V.LeaveTypes.FirstOrDefault(t => t.Id==lvType).LeaveName??"-";
+
+    @* --- Functions -------------------------------------------------- *@
+
+    async Task SelectRecord(LeaveapplicationModel lva) {
+        MsdsDataAccess msds = new(); 
+        V.LeaveApplication  = (LeaveapplicationModel)msds.ObjectMapper(lva, V.LeaveApplication);
+        V.ShowMyReqquest    = false; 
+        V.Action            = "LoadLvApplication"; 
+        await ChildAction.InvokeAsync(); 
+    }
+
+    string? _02LvStatus(string? code) => code switch
+    {
+        "N" => "New",
+        "S" => "Save",
+        "F" => "For Approval",
+        "C" => "Cancelled",
+        "A" => "Approved",
+        _ => "Unknown"
+    };
+}

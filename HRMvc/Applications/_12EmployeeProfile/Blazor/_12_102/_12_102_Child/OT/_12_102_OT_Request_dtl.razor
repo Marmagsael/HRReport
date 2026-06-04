@@ -1,0 +1,146 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._10_Pis
+@using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
+
+<div class="card text-start ">
+    <div class="card-header p-0 ">
+        <div class=" px-1 py-2 w-100 d-flex border-bottom-darkgreen small fw-bold ">
+            <div class="w-100p text-center "> TRN </div>
+            <div class="w-100p"> Requested </div>
+            <div class="w-100p"> Cov. Start </div>
+            <div class="w-100p"> Cov. End </div>
+            <div class="w-175p"> Approver </div>
+            <div class="w-120p text-center "> Status </div>
+            <div class="w-100p"> Remarks </div>
+        </div>
+    </div>
+    
+    <div class=" card-body p-0 ">
+        @{ int? ctr = 1; }
+        @foreach(var hdr in Ot.OTReqhdrs) 
+        {
+            ctr++; 
+            string? rowCss = ctr % 2 == 1 ? "bg-light" : " ";
+            <div class=" p-0" style="text-align: left !important;">
+
+            
+            <div @onclick="()=>FetchDtl(hdr)" class=" px-1 py-2 d-flex @rowCss cur-pointer mb-lbtn mb-lbtn-blue  "  > 
+                <div class="w-100p text-center "> @hdr.Id </div>
+                <div class="w-100p"> @hdr.DateRequested?.ToString("MMM dd") </div>
+                <div class="w-100p"> @hdr.CovStart?.ToString("MMM dd") </div>
+                <div class="w-100p"> @hdr.CovEnd?.ToString("MMM dd") </div>
+                <div class="w-175p"> @hdr.ApproverName </div>
+                <div class="w-120p @GetStatusTextCSS(hdr.Status)  text-center "> @GetStatusText(hdr.Status) </div>
+                <div class="w-100p">  @hdr.Remarks </div>
+            </div>
+            </div>
+
+
+        }
+    </div>
+</div>
+
+@* @if(Ot.ShowLoadTransaction) {
+    <div class="w-100 d-flex justify-content-center mt-3">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+} *@
+
+@if(showLoadBtn) {
+    <div class="mt-3 w-100 p-1 bordered-bottom mb-2">
+        <div class=" p-1 mb-cbtn mb-cbtn-gray w-150p card " @onclick="LoadTransaction" >
+            Load Transaction 
+        </div>
+    </div>
+}
+
+@* --- Details ----------------------------------- *@
+@if(OtReqdtls.Any()) {
+    <div class="card ">
+
+        <div class="card-header p-0 ">
+            <div class="w-100 d-flex p-1 bg-secondary text-white small fw-bold ">
+                <div class="w-250p"> Date and Time </div>
+                <div class="w-100p text-center "> OT Applied </div>
+                <div class="w-100p text-center "> Duty Type </div>
+            </div>
+        </div>
+
+        <div class="card-body p-0 ">
+            @foreach(var dtl in OtReqdtls) 
+            {
+                <div class="w-100 d-flex p-1 py-2" >
+                    <div class="w-250p d-flex"> 
+                        <span class="px-2">@dtl.PunchIn.ToString("MMM dd")</span>
+                        <span class="px-2 text-secondary">@dtl.PunchIn.ToString("HH:ss tt")</span>
+
+                    </div>
+                    <div class="w-100p text-center "> @dtl.TotHrs.ToString("N2") </div>
+                    <div class="w-100p text-center "> @dtl.DutyTypeId </div>
+                    
+                </div>
+            }
+        </div>
+    </div>
+}
+
+
+
+
+
+
+@inject IOtreqdtlDataAccess _otreqdtl; 
+
+@code {
+
+    [Parameter] public  UserClaimsModel?        Uc  { get; set; } = new();
+    [Parameter] public  V12_102OT               Ot  { get; set; } = new(); 
+    [Parameter] public EventCallback<int>       Ca  { get; set; } = new();
+
+    List<OtreqdtlModel> OtReqdtls = [];
+    bool showLoadBtn = false;
+    OtreqhdrModel otReqhdr = new();
+
+
+    async Task FetchDtl(OtreqhdrModel hdr) {
+        showLoadBtn = true;
+        otReqhdr    = hdr;
+        OtReqdtls   = [];
+        var res = await _otreqdtl._02ByOtReqHdrId(hdr.Id??0, Uc.SchemaUserPis, Uc.Conn);
+        if(res.Any()) { 
+            OtReqdtls   = res!;
+            Ot.OTReqdtls = res!;  }   
+    }
+    
+    async Task LoadTransaction() {
+        Ot.OTReqhdr= otReqhdr;
+        Ot.OTReqdtls.ForEach(dtl => {
+            Ot.AttPunches1s.ForEach(p => {
+                if(p.PunchInDate == dtl.PunchIn) {
+                    int? hr      = (int)dtl.TotHrs; 
+                    int? min     = (int)((dtl.TotHrs - hr) * 60);
+                    p.Hour      = hr??0;
+                    p.Minute    = min??0;
+                }
+            });
+        });
+
+        await Ca.InvokeAsync(otReqhdr.Id??0);
+    }
+
+
+    OtreqhdrModel OtHdr => Ot.OTReqhdr;
+    string? GetStatusText(string? status) => 
+            status?.ToUpper() switch  { "N" => "New", "S" => "Save", "F" => "For Approval", "C" => "Cancelled", _   => "Unknown" };
+    string? GetStatusTextCSS(string? status) => 
+        status?.ToUpper() switch
+        {
+            "N" => " text-secondary",
+            "S" => " text-info",
+            "F" => " text-primary",
+            "A" => " text-success",
+            _   => " text-dark"
+        };
+}
