@@ -41,7 +41,14 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { EmpNumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
-    
+
+    public async Task<List<EmpmasInternalModel?>?> _02BySystemIds(int systemId, string schema, string conn)
+    {
+        string sql = $@"select  * from {schema}.Empmas where SystemId = @SystemId";
+        var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { SystemId = systemId }, conn);
+        return data;
+    }
+
     public async Task<List<EmpmasInternalModel?>?> _02(string? schema, string? conn)
     {
         string? sql = $@"select  concat(trim(EmpLastNm),', ', trim(EmpFirstNm),' ' , trim(EmpMidNm)) Fullname, e.*  
@@ -61,19 +68,6 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
                         where e.EmpNumber = @Empnumber 
                         order by EmpLastNm, EmpFirstNm, EmpMidNm";
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { EmpNumber = empnumber }, conn);
-        return data;
-    }
-    
-    public async Task<List<EmpmasInternalModel?>?> _02BySystemIds(int? systemId, string? schema, string? conn)
-    {
-        string? sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, 
-                            e.*, s.Name EmpStatus  
-                        from {schema}.Empmas e
-                            left join {schema}.deprec    d on d.EmpmasId = e.Id
-                            left join {schema}.rempstat  s on s.id       = d.empstatusId
-                        where e.SystemId = @SystemId 
-                        order by EmpLastNm, EmpFirstNm, EmpMidNm";
-        var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { SystemId = systemId }, conn);
         return data;
     }
 

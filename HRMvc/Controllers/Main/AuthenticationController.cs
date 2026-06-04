@@ -663,7 +663,8 @@ public class AuthenticationController : Controller
         var oldPis           = uc?.OldPis ?? "";
         var oldPay           = uc?.OldPay ?? "";
 
-        var res = await _empmasInternal._02BySystemIds(user.Id, uc?.PisSchema ?? "", conn??"");
+        var res = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
+        
         if(res.Count > 0 ) 
         {
             empnumber = res.First().EmpNumber ?? "00000";    
