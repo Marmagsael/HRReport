@@ -48,9 +48,9 @@ public class _00MainDA : I_00MainDA
 
         if (claims?.Count() > 0)
         {
-            var val = claims.Where(c => c?.Type == "UserId").FirstOrDefault()?.Value;
+            var val = claims.Where(c => c?.Type == "UserId")?.FirstOrDefault()?.Value;
             if (val != null) uc.UserId = int.Parse(val);
-            uc.DefCompanyId = claims.Where(c => c?.Type == "DefCompayId").FirstOrDefault()?.Value;
+            uc.DefCompanyId = claims.Where(c => c?.Type == "DefCompayId")?.FirstOrDefault()?.Value;
             uc.Email        = claims.FirstOrDefault(c => c?.Type == "Email")?.Value;
 
             var userId = uc.UserId.ToString();
@@ -67,13 +67,19 @@ public class _00MainDA : I_00MainDA
             }
             else
             {
-                uc.SchemaUserPis    = claims.Where(c => c?.Type == "PisSchema").FirstOrDefault()?.Value;
-                uc.SchemaUserPay    = claims.Where(c => c?.Type == "PaySchema").FirstOrDefault()?.Value;
-                uc.SchemaUserAcctg  = claims.Where(c => c?.Type == "AcctgSchema").FirstOrDefault()?.Value;
-                uc.SchemaUserApp    = claims.Where(c => c?.Type == "ApplicantSchema").FirstOrDefault()?.Value;
-                uc.SchemaUserAms    = claims.Where(c => c?.Type == "AmsSchema").FirstOrDefault()?.Value;
-                uc.CoName           = claims.Where(c => c?.Type == "CoName").FirstOrDefault()?.Value;
+                uc.SchemaUserPis    = claims.Where(c => c?.Type == "PisSchema")?.FirstOrDefault()?.Value;
+                uc.SchemaUserPay    = claims.Where(c => c?.Type == "PaySchema")?.FirstOrDefault()?.Value;
+                uc.SchemaUserAcctg  = claims.Where(c => c?.Type == "AcctgSchema")?.FirstOrDefault()?.Value;
+                uc.SchemaUserApp    = claims.Where(c => c?.Type == "ApplicantSchema")?.FirstOrDefault()?.Value;
+                uc.SchemaUserAms    = claims.Where(c => c?.Type == "AmsSchema")?.FirstOrDefault()?.Value;
+                uc.CoName           = claims.Where(c => c?.Type == "CoName")?.FirstOrDefault()?.Value;
             }
+
+            uc.IsExclusiveCompany   = claims.FirstOrDefault(c => c?.Type == "IsExclusiveCompany")?.Value;
+            uc.OempNumber           = claims.FirstOrDefault(c => c?.Type == "Empnumber")?.Value;
+            uc.OpayDb               = claims.FirstOrDefault(c => c?.Type == "OldPay")?.Value;
+            uc.OpisDb               = claims.FirstOrDefault(c => c?.Type == "OldPis")?.Value;
+            
             //var baseConn = _config.GetConnectionString(uc.Conn);
             //uc.ConnPay      = uc.ConnNoDb;   
             //uc.ConnPis      = $"{baseConn}; database={uc.SchemaUserPis}";
