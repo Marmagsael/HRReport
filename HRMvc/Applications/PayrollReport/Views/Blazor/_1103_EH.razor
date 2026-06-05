@@ -1,54 +1,149 @@
-@using HRApiLibrary.DataAccess._20_Pay_Report
+﻿
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.Models._00_Main
-
-@using HRApiLibrary.Models._20_PayGeneric
-@using HRMvc.Applications.PayrollReport.Views.Blazor.Components; 
-<_DtlHdrPay caption="EARNINGS SUMMARY" />
-
-@using HRMvc.Applications.PayrollReport.Views.Blazor._1102;
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
 @using System.Threading.Tasks
 
-@* <div>Accounts Count : @v1102.ChartOfAccts.Count </div>
-<div>Conn   : @conn </div>
-<div>Paydb  : @paydb </div> *@
-
-<div class="p-3 bordered br-6 mt-2"> 
-    <_1102_button   UserClaims="@UserClaims"></_1102_button>
-    <_1102_Coverage UserClaims="@UserClaims"></_1102_Coverage>
-    <_1102_Grid V1102="@v1102"></_1102_Grid>
+<div>
+    <button class="btn btn-success" @onclick="Create" >Generate Report </button>
 </div>
 
 
 
-@inject IGPayrollReportDataAccess _pr; 
+<IframeReportRenderer
+    DataSource          ="report"
+    ReportRelativePath  ="@relativePath"
+    OutputFormat        ="@selectedFormat"
+    Parameters          ="reportParams"
+    AutoGenerate="@(report?.Any() == true)"
+    RefreshToken        ="@refreshToken" />
+
+@inject IPayrollgrpDataAccess _pg; 
+
 
 @code {
 
-    [Parameter] public UserClaimsModel?             UserClaims   { get; set; }
-    [Parameter] public List<GChartofacctModel?>?    ChartOfAccts { get; set; } = [];
-
-    bool showModal = false; 
-
-    public  V1102?      v1102 { get; set; } = new V1102();
-    private string      conn                = string.Empty;
-    private string      paydb               = string.Empty;
-
-    protected override async Task OnParametersSetAsync()
+    private class ReportModel
     {
-        if (v1102.ChartOfAccts.Count > 0 ) return;
-        await LoadData();
+        public int?      Year    { get; set; }
+        public string?  Month   { get; set; }
+        public string?  Period { get; set; }
+        public string?  Desc    { get; set; }
+        public double  Amount { get; set; } = 0.00;
+        public string?  Trn     { get; set; }
+        public string?  EmployeeName { get; set; }
+
+        public string? DateCoverage { get; set; }
 
     }
 
 
-    async Task LoadData()
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    List<PayrollgrpModel?>? payrollgrps = []; 
+    List<PayrollgrpModel?>? pg          = [];
+    List<ReportModel?>?     report      = [];
+
+    private int? refreshToken        = 1103000;
+
+    private string?                      selectedFormat  = "PDF";                                // PDF | XLSX
+    private string?                      relativePath    = "Reports/_03Payroll/_1103_EH.trdp"; //"{path}{filename}"
+    private Dictionary<string, object>  reportParams    = new() {   ["CompanyName"]    = "Morpheusbox Inc. 1",
+                                                                    ["CompanyAddress"] = "B6 L29 Tierra Vista Barangay Langkaan I, Dasmariñas City, Cavite 4114",
+                                                                    ["CompanyLogo"] = "https://i.imgur.com/xpniWoS.png",
+                                                                    ["PrintedBy"]      = "SYSTEM",
+                                                                    ["ReportTitle"] = "Earnings History",
+        
+                                                                    ["pPrintDate"]      = DateTime.Now
+                                                                };
+
+    private async Task Create()
     {
-        conn                = UserClaims?.Conn            ?? string.Empty;
-        paydb               = "Pay";
-        v1102.ChartOfAccts  = ChartOfAccts;
+        report = [];
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "01", Desc = "Reg. OT", Amount = 1973.67, Trn = "220902-00666", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025" });
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "02", Desc = "Reg. OT", Amount = 1985.20, Trn = "220902-00667", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025" });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "03", Desc = "Night Diff", Amount = 845.50, Trn = "220902-00668", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025" });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "04", Desc = "Holiday Pay", Amount = 1120.75, Trn = "220902-00669", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025" });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "05", Desc = "Reg. OT", Amount = 1550.00, Trn = "220902-00670", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025" });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "06", Desc = "Allowance", Amount = 980.00, Trn = "220902-00671", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025" });
+        report.Add(new ReportModel { Year = 2026, Month = "April", Period = "07", Desc = "Reg. OT", Amount = 2100.30, Trn = "220902-00672", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "April", Period = "08", Desc = "Holiday Pay", Amount = 1300.00, Trn = "220902-00673", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "May", Period = "09", Desc = "Incentive", Amount = 2500.00, Trn = "220902-00674", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "May", Period = "10", Desc = "Reg. OT", Amount = 1895.45, Trn = "220902-00675", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+
+        report.Add(new ReportModel { Year = 2026, Month = "June", Period = "11", Desc = "Night Diff", Amount = 820.60, Trn = "220902-00676", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "June", Period = "12", Desc = "Allowance", Amount = 1050.00, Trn = "220902-00677", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "July", Period = "13", Desc = "Reg. OT", Amount = 1765.90, Trn = "220902-00678", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "July", Period = "14", Desc = "Holiday Pay", Amount = 1400.75, Trn = "220902-00679", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "August", Period = "15", Desc = "Night Diff", Amount = 890.40, Trn = "220902-00680", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "August", Period = "16", Desc = "Reg. OT", Amount = 1999.99, Trn = "220902-00681", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "September", Period = "17", Desc = "Allowance", Amount = 1100.00, Trn = "220902-00682", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "September", Period = "18", Desc = "Incentive", Amount = 2750.00, Trn = "220902-00683", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "October", Period = "19", Desc = "Reg. OT", Amount = 1850.35, Trn = "220902-00684", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "October", Period = "20", Desc = "Night Diff", Amount = 910.25, Trn = "220902-00685", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+
+        report.Add(new ReportModel { Year = 2026, Month = "November", Period = "21", Desc = "Holiday Pay", Amount = 1500.00, Trn = "220902-00686", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "November", Period = "22", Desc = "Reg. OT", Amount = 2025.80, Trn = "220902-00687", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "December", Period = "23", Desc = "Incentive", Amount = 3000.00, Trn = "220902-00688", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "December", Period = "24", Desc = "Allowance", Amount = 1250.00, Trn = "220902-00689", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "25", Desc = "Adjustment", Amount = 250.00, Trn = "220902-00690", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "26", Desc = "Adjustment", Amount = 180.00, Trn = "220902-00691", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "27", Desc = "Bonus", Amount = 3500.00, Trn = "220902-00692", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "28", Desc = "Bonus", Amount = 2800.00, Trn = "220902-00693", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "29", Desc = "Bonus", Amount = 3200.00, Trn = "220902-00694", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "30", Desc = "Year-End Bonus", Amount = 5000.00, Trn = "220902-00695", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "31", Desc = "Reg. OT", Amount = 1973.67, Trn = "220902-00666", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "32", Desc = "Reg. OT", Amount = 1985.20, Trn = "220902-00667", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "33", Desc = "Night Diff", Amount = 845.50, Trn = "220902-00668", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "34", Desc = "Holiday Pay", Amount = 1120.75, Trn = "220902-00669", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "35", Desc = "Reg. OT", Amount = 1550.00, Trn = "220902-00670", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "36", Desc = "Allowance", Amount = 980.00, Trn = "220902-00671", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "April", Period = "37", Desc = "Reg. OT", Amount = 2100.30, Trn = "220902-00672", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "April", Period = "38", Desc = "Holiday Pay", Amount = 1300.00, Trn = "220902-00673", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "May", Period = "39", Desc = "Incentive", Amount = 2500.00, Trn = "220902-00674", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "May", Period = "4", Desc = "Reg. OT", Amount = 1895.45, Trn = "220902-00675", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+
+        report.Add(new ReportModel { Year = 2026, Month = "June", Period = "41", Desc = "Night Diff", Amount = 820.60, Trn = "220902-00676", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "June", Period = "42", Desc = "Allowance", Amount = 1050.00, Trn = "220902-00677", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "July", Period = "43", Desc = "Reg. OT", Amount = 1765.90, Trn = "220902-00678", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "July", Period = "44", Desc = "Holiday Pay", Amount = 1400.75, Trn = "220902-00679", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "August", Period = "45", Desc = "Night Diff", Amount = 890.40, Trn = "220902-00680", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "August", Period = "46", Desc = "Reg. OT", Amount = 1999.99, Trn = "220902-00681", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "September", Period = "47", Desc = "Allowance", Amount = 1100.00, Trn = "220902-00682", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "September", Period = "48", Desc = "Incentive", Amount = 2750.00, Trn = "220902-00683", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "October", Period = "49", Desc = "Reg. OT", Amount = 1850.35, Trn = "220902-00684", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "October", Period = "50", Desc = "Night Diff", Amount = 910.25, Trn = "220902-00685", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+
+        report.Add(new ReportModel { Year = 2026, Month = "November", Period = "51", Desc = "Holiday Pay", Amount = 1500.00, Trn = "220902-00686", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "November", Period = "52", Desc = "Reg. OT", Amount = 2025.80, Trn = "220902-00687", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "December", Period = "53", Desc = "Incentive", Amount = 3000.00, Trn = "220902-00688", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "December", Period = "54", Desc = "Allowance", Amount = 1250.00, Trn = "220902-00689", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "55", Desc = "Adjustment", Amount = 250.00, Trn = "220902-00690", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "January", Period = "56", Desc = "Adjustment", Amount = 180.00, Trn = "220902-00691", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "57", Desc = "Bonus", Amount = 3500.00, Trn = "220902-00692", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "February", Period = "58", Desc = "Bonus", Amount = 2800.00, Trn = "220902-00693", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "59", Desc = "Bonus", Amount = 3200.00, Trn = "220902-00694", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        report.Add(new ReportModel { Year = 2026, Month = "March", Period = "60", Desc = "Year-End Bonus", Amount = 5000.00, Trn = "220902-00695", EmployeeName = "Echon, Marjorie A.", DateCoverage = "January 01, 1999 – December 26, 2025"  });
+        
+
+        
+        
+        refreshToken++;
+        
+        return;
+        string? conn = UserClaims?.Conn??"";
+        string? paydb = UserClaims?.SchemaUserPay??"";
+
+
+        pg = await _pg._02(paydb!, conn!);
+        if (pg.Count > 0) payrollgrps = pg; 
+
+        refreshToken++;
+        StateHasChanged(); 
+        
     }
-
-    void ShowHideModal(bool ans) { showModal = ans;  }
-
-    
 }
+

@@ -10,7 +10,7 @@
                 <div class="d-flex ">
                     <_01DDClient Clients="@Rv.Clients" ChildAction="ClientChanged" />
                     <span @onclick="FetchData"> <div class="p-2 ms-2 card mb-cbtn mb-cbtn-gray"> Fetch Data </div> </span> 
-                    @if(v2104.Count > 0) 
+                    @if(v2104.RepDtls.Count > 0) 
                         { <span @onclick="CreateReport"> <div class="p-2 ms-1 card mb-cbtn mb-cbtn-blue"> Create Report </div> </span>}
                      
                 </div>
@@ -18,14 +18,8 @@
         </div>
 
         <div>
-            <_2104_Dtl V2104="@v2104" /> 
+            <_2104_Dtl V2104="@v2104.RepDtls" /> 
         </div>
-
-
-
-
-
-
 
     </Details>
 </_00BT>
@@ -39,7 +33,7 @@
     [Parameter] public UserClaimsModel  Uc      {get; set; } = new(); 
     [Parameter] public V00_RepVars      Rv      {get; set; } = new(); 
 
-    List<V2104Model> v2104 = [];
+    V2104Model v2104 = new();
     bool _loaded = false;
 
 
@@ -68,21 +62,21 @@
         Rv.MCaption     = "Employee Age Report"; 
     }
 
-    void ClientChanged(string clno) {
+    void ClientChanged(string? clno) {
         Rv.ClNumber = clno; 
-        v2104 = []; 
+        v2104.RepDtls = [] ; 
     }
 
     int? ctr = 0; 
     private async Task FetchData()
     {
         var res = await _pisRep._02Empmas_By_Clnumbers(Rv.ClNumber, Uc.OpisDb!, Uc.Conn!); 
-        v2104 = []; 
+        v2104.RepDtls = []; 
 
         if(res.Count > 0) {
             var today = DateTime.Today; // compute once
             foreach(var r in res){
-                V2104Model v = new() { EmpNumber=r.EmpNumber, EmpBirth=r.EmpBirth, EmpName = r.EmpName, EmpStatus=r.EmpStatus }; 
+                R2104Model v = new() { EmpNumber=r.EmpNumber, EmpBirth=r.EmpBirth, EmpName = r.EmpName, EmpStatus=r.EmpStatus }; 
                 
                 if (v.EmpBirth != null)
                 {
@@ -96,7 +90,7 @@
                     v.Age = years + (months / 12.0);
                 } else { v.Age = null; }
 
-                v2104.Add(v); 
+                v2104.RepDtls.Add(v); 
             }   
         }
     }
@@ -104,7 +98,7 @@
     private void CreateReport()
     {
         ctr++;        
-        Rv.ReportData   = v2104; 
+        Rv.ReportData   = v2104.RepDtls; 
         Rv.ReportParams = []; 
         
         Rv.ReportParams["CoName"] = "123"; 

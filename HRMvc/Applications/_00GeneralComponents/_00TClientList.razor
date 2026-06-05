@@ -1,0 +1,70 @@
+﻿@using Blazorise
+@using HRApiLibrary.Models._10_Pis.OPis
+
+@{
+    var cp = ClassParams;
+}
+
+<div class="bg-lightgray ms-1 p-2 bordered-bottom bordered-left  bordered-right mt-1">
+    <div class="d-flex p-0 fw-bold ">
+        <div class=" w-65p text-center bordered-right ">
+            <div class="d-flex gap-1  p-1">
+                <div class="w-25p h-35p card p-1 mb-cbtn" @onclick="@(() => Mark(true))">
+                    <i class="fa-solid fa-check-double"></i>
+                </div>
+                <div class=" w-25p h-35p card p-1 mb-cbtn text-danger " @onclick="@(() => Mark(false))">
+                    <i class="fa-solid fa-xmark"></i>
+                </div>
+            </div>
+
+        </div>
+        <div class="p-2 flex-fill">Deployment Name </div>
+    </div>
+</div>
+
+
+
+
+<div class="vh-max @cp.GetValueOrDefault("VH") ms-1 p-2 bordered-bottom bordered-left bordered-right ">
+    @{
+        int? ctr = 0;
+    }
+    @foreach (var c in Clients)
+    {
+        ctr++;
+        <div class="d-flex p-0 @(ctr % 2 == 0 ? " bg-lightgray " : "")">
+            <div class="p-2 w-65p text-center bordered-right ">
+                <InputCheckbox Value="c.IsSelectedB" ValueChanged="(bool value) => OnItemChanged(c, value)"
+                               ValueExpression="() => c.IsSelectedB" />
+            </div>
+            <div class="p-2 flex-fill">@c.ClName </div>
+        </div>
+    }
+</div>
+
+
+@code {
+    [Parameter] public List<OClientModel> Clients { get; set; } = [];
+    [Parameter] public EventCallback<object> ChildAction { get; set; }
+    [Parameter]
+    public Dictionary<string, object> ClassParams { get; set; } = new()
+    {
+        ["VH"] = "vh75",
+    };
+
+    async Task Mark(bool val)
+    {
+        foreach (var c in Clients)
+        {
+            c.IsSelectedB = val;
+        }
+        await ChildAction.InvokeAsync();
+    }
+
+    async Task OnItemChanged(OClientModel client, bool value)
+    {
+        client.IsSelectedB = value;
+        await ChildAction.InvokeAsync();
+    }
+
+}

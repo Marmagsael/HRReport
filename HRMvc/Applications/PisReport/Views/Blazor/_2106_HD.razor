@@ -1,0 +1,338 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2106
+@using System.Globalization
+
+@inject NotificationService _NotificationService
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        @if ((v.RepDtls ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------*@
+             <_2106_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
+        }
+
+        @*--- Filter and Button ------------------------------------------------*@
+        <div class="p-0">
+            <div class="card-header d-flex gap-3">
+                
+                <div class="d-flex flx-column gap-2 card p-2 w-300p">
+                    <div class="text-muted p-2 pe-4 border-bottom"><small>Employment Duration From Hiring Date</small></div>
+
+                    <RadzenRadioButtonList @bind-Value="v.SelectedMonthsAgo" TValue="int?" class="w-100 py-2">
+
+                        <Items>
+                            <RadzenRadioButtonListItem Text="3 Months" Value="1" class="w-100 my-2" />
+                            <RadzenRadioButtonListItem Text="5 Months" Value="2" class="w-100 my-2" />
+                            <RadzenRadioButtonListItem Value="3" class="w-100 my-2">
+                                <Template>
+                                    <div class="d-flex align-items-center gap-2 w-100">
+
+                                        <RadzenNumeric @bind-Value="customMonthsAgo"
+                                                       Min="0"
+                                                       Style="width: 100px"
+                                                       Disabled="@(v.SelectedMonthsAgo < 3)" />
+
+                                        <span>Month/s</span>
+                                    </div>
+                                </Template>
+                            </RadzenRadioButtonListItem>
+                        </Items>
+                    </RadzenRadioButtonList>
+                </div>
+
+                <div class="d-flex gap-2 card p-2 w-250p">
+                    <div class="text-muted p-2 pe-4 border-bottom"> <small>Date Filter</small> </div>
+                    <_01ReportFilter Rv="@rv" ChildAction="ChildActionCatcher" />
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">
+                        Fetch Data
+                    </div>
+                </div>
+             
+            </div>
+         </div>
+
+        @*--- Client and Status List ------------------------------------------------*@
+        <div class="w-100 d-flex">
+            <div class="w-50"> <_00TClientList Clients="@rv.Clients"    ClassParams="@clientClass" ChildAction="ChildActionCatcher" /> </div>
+            <div class="w-50"> <_00TStatusList Empstats="@rv.Empstats"  ClassParams="@statusClass" ChildAction="ChildActionCatcher" /> </div>
+        </div>
+
+
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject ISettingsDataAccess _settings;
+@inject IOPisReportDataAccess _pisRep;
+@inject IOEmpstatDataAccess _empstat;
+@inject IOClientDataAccess _client;
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv { get; set; } = new();
+    V2106Model  v = new();
+    int? customMonthsAgo = 0;
+
+
+    // Gets the latest selected employee statuses/clients every time it is called
+    List<string?>? statuses => rv.Empstats.Where(c => c.IsSelectedB).Select(c => c.Code).ToList() ?? [];
+    List<string?>? clients => rv.Clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber).ToList() ?? [];
+
+
+    public Dictionary<string, object> statusClass = new()
+    {
+        ["VH"] = "vh60",
+    };
+
+    public Dictionary<string, object> clientClass = new()
+    {
+        ["VH"] = "vh60",
+    };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        InitializeReport();
+        await LoadInitialData();
+    }
+
+    private void InitializeReport()
+    {
+
+        rv.RefreshToken = 210600000;
+        rv.MCaption = "Hired Date Report - (Per Month)";
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["RunDate"] = DateTime.Now
+        };
+
+
+        rv.DataFilters = new List<V00_RepVars.DataFilterModel>
+        {
+            new(){Code = 1, Name="Within the Month",    },
+            new(){Code = 2, Name="Exact Date",          },
+        };
+    }
+
+    private async Task LoadInitialData()
+    {
+        rv.SelectedFilter = 1;
+        v.SelectedMonthsAgo = 1;
+
+        await LoadCompanyInfo();
+        await LoadEmployeeStatus();
+        await LoadClients();
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        if (res == null) return;
+        var r = res;
+        rv.ReportParams["CoName"] = r.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAddress ?? "";
+    }
+
+    private async Task LoadEmployeeStatus()
+    {
+        var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() != true) return;
+
+        rv.Empstats = res;
+        rv.Empstats.ForEach(x =>
+        {
+            if (x.IsResigned == "0") x.IsSelectedB = true;
+        });
+    }
+
+    private async Task LoadClients()
+    {
+        var res = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+
+        if (res?.Any() == true) rv.Clients = res!;
+        rv.Clients.Insert(0, new(){ClNumber = "-", ClName = "Undeployed"});
+    }
+
+
+
+    private void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
+    }
+
+
+
+    private async Task FetchData()
+    {
+        ResetVars();
+
+        if (!HasConnection() || !ValidateFilters()) return;
+
+        if (v.SelectedMonthsAgo == 1)       v.LnMonths = 3;
+        else if(v.SelectedMonthsAgo == 2)   v.LnMonths = 5;
+        else                                v.LnMonths = customMonthsAgo;
+
+
+        try
+        {
+            rv.Isloaded = true;
+
+            var res = await _pisRep._02Empmas_ByDateHired(clients, statuses, rv.SelectedFilter??0, v.LnMonths, Uc.OpisDb!, Uc.Conn!);
+            if ((res ?? []).Any())
+            {
+                v.RepDtls = res!.Select(r => new R2106Model
+                {
+                    EmpNumber   = r.EmpNumber,
+                    EmpName     = r.EmpName,
+                    EmpLastNm   = r.EmpLastNm,
+                    EmpFirstNm  = r.EmpFirstNm,
+                    DateHired   = r.DateHired,
+                    EmpStatus   = r.EmpStatus,
+                    Client_     = r.Client_,
+                    ClName      = string.IsNullOrWhiteSpace(r.ClName) ? "-" : r.ClName,
+                }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (v.RepDtls?.Any() != true)
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+            return;
+        }
+
+
+        rv.ShowModal = true;
+
+    }
+
+    private bool ValidateFilters()
+    {
+        if (!(clients ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one deployment to proceed.");
+            return false;
+        }
+
+        if (!(statuses ?? []).Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status to proceed.");
+            return false;
+        }
+
+        if (rv.SelectedFilter == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one date filter to proceed.");
+            return false;
+        }
+
+        if (v.SelectedMonthsAgo == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter the duration to proceed.");
+            return false;
+        }
+
+        if (customMonthsAgo < 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please enter the correct duration to proceed.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void SortBy()
+    {
+        IOrderedEnumerable<R2106Model> sorted = v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+
+
+        if (v.IsGroupByClient)
+        {
+            // Always keep Client ascending
+            sorted = v.RepDtls.OrderBy(x => x.ClName);
+
+            // Then sort by EmpName or DateHired
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : sorted.ThenByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else if (rv.SortFld == "DateHired")
+            {
+                sorted = rv.SortOdr == "asc" ? sorted.ThenBy(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : sorted.ThenByDescending(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+            }
+        }
+        else
+        {
+            // If no grouping is applied, sort by Empname or DateHired
+            if (rv.SortFld == "EmpName")
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+            }
+            else
+            {
+                sorted = rv.SortOdr == "asc" ? v.RepDtls.OrderBy(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                                        : v.RepDtls.OrderByDescending(x => x.DateHired).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+            }
+
+        }
+       
+        v.RepDtls = sorted.ToList();
+    }
+
+    private void ResetVars()
+    {
+        v.RepDtls = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        v.IsGroupByClient = false;
+
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+}
