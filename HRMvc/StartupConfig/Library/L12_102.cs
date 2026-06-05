@@ -25,9 +25,9 @@ public class L12_102
 
     public async Task<List<OEmpmasModel?>?> _02OEmpmass(UserClaimsModel uc)
     {
-        var empnumber = uc.OempNumber; 
-        var pisdb = uc.OpisDb; 
-        var conn = uc.Conn;
+        var empnumber   = uc.OempNumber; 
+        var pisdb       = uc.OpisDb; 
+        var conn        = uc.Conn;
         
         var empass = await _OEmpmas._02(empnumber??"",pisdb??"", conn??"");
         return empass; 
