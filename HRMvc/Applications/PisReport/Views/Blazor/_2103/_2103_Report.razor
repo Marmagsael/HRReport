@@ -1,0 +1,94 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+
+
+<_02BTModal MCaption="Data Report" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
+    <Details>
+
+        @if(Rv.ShowReport) {
+            <IframeReportRenderer DataSource    ="@Rv.ReportData"
+                          ReportRelativePath    ="@Rv.RelativePath"
+                          OutputFormat          ="@Rv.SelectedFormat"
+                          Parameters            ="@Rv.ReportParams"
+                          AutoGenerate          ="@(Rv.ReportData?.Any() == true)"
+                          RefreshToken          ="@Rv.RefreshToken" />
+        } else {
+
+
+        <div class="p-2">
+            <div class="sticky-top bg-white ">
+            <div class="p-2 border-bottom"> 
+                <div @onclick="ShowReport" class="mb-cbtn mb-cbtn-blue w-150p card p-1 "> Show Report  </div>
+            </div>
+
+            <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
+                <div class=" w-75p text-center">No</div>
+                <div class=" w-100p">Emp. No.</div>
+                <div class=" w-250p">Name</div>
+                <div class=" w-350p">Deployment</div>
+            </div>
+            </div>
+
+            @{int ctr = 0; string? stat = string.Empty;  }
+            @foreach(var rec in V2103.Empmass){
+                ctr++; 
+                if(stat != rec.EmpStatus) {
+
+                    stat = rec?.EmpStatus??""; 
+                    <div class=" w-100 fw-bold bordered  px-4 py-2 mt-1 "> @rec.EmpStatus  </div>
+
+                }
+
+                <div class="d-flex gap-2 border-bottom py-1 ">
+                    <div class=" w-75p text-center ">@ctr.</div>
+                    <div class=" w-100p">@rec.EmpNumber </div>
+                    <div class=" w-250p">@rec.EmpName   </div>
+                    <div class=" w-350p">@rec.ClName    </div>
+                </div>
+                
+            } 
+        </div>
+
+        }
+
+    </Details>
+</_02BTModal>
+
+
+
+
+
+@inject IOCoinfoDataAccess  _coinfo; 
+
+
+
+@code {
+    [Parameter] public V00_RepVars          Rv              { get; set; } = new(); 
+    [Parameter] public V2103Model           V2103           { get; set; } = new(); 
+    [Parameter] public EventCallback<bool>  ChildAction     { get; set; } 
+    
+    
+    void ShowReport() {
+        V2103.RepDtls=[]; 
+        V2103.Empmass.ForEach(e => {
+            V2103.RepDtls.Add(new(){
+                EmpNumber   = e.EmpNumber??"" ,
+                ClName      = e.ClName??""    ,
+                EmpName     = e.EmpName??""   , 
+                EmpStat     = e.EmpStatus??""
+            });
+        }); 
+
+
+        Rv.ReportData = V2103.RepDtls; 
+        Rv.ShowReport = true; 
+
+    }
+
+    async Task CloseReportModal(bool ans) {
+        Rv.ShowModal = ans; 
+        await ChildAction.InvokeAsync(ans); 
+
+    }
+}

@@ -1,0 +1,61 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using System.Globalization
+@inject NotificationService _NotificationService;
+
+
+<div class="card mx-3 my-2 d-flex flex-column" style="height:81vh;">
+
+    <!-- HEADER -->
+    <div class="sticky-header bg-white">
+        <div class="d-flex gap-2 p-2 border-bottom fw-bold bg-lightgray">
+            <div class="w-60p text-end pe-2">No.</div>
+            <div class="w-150p">Emp. No.</div>
+            <div class="w-250p">Emp. Name</div>
+            <div class="w-150p">Status</div>
+            <div class="w-250p">License No.</div>
+            <div class="w-250p">License Exp</div>
+            <div class="w-350p">Deployment</div>
+        </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="flex-grow-1 overflow-auto">
+        @{
+            int? ctr = 0; int? row = 0; string? stat = string.Empty;
+        }
+        @if (V.RepDtls.Count() > 0)
+        {
+            @foreach (var v in V.RepDtls)
+            {
+                ctr++;
+                row++;
+
+                <div class="d-flex gap-2 border-bottom px-2 py-1  @(row % 2 == 0 ? "bg-light" : "") ">
+                    <div class="w-60p text-end pe-2">    @ctr.</div>
+                    <div class="w-150p">        @v.EmpNumber </div>
+                    <div class="w-250p">        @v.EmpName </div>
+                    <div class="w-150p">        @v.EmpStatus </div>
+                    <div class="w-250p">        @v.SecLicense </div>
+                    <div class="w-250p">        @(v.LicExpire?.ToString("MM/dd/yyyy") ?? "") </div>
+                    <div class="w-350p">        @v.ClName </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="d-flex justify-content-center align-items-center h-100">
+                <div class="text-muted text-center">
+                    No data to display.
+                </div>
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+@code {
+    [Parameter] public V2217Model         V   { get; set; } = new();
+}

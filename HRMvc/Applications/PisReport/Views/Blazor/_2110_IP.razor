@@ -1,0 +1,275 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2110
+@using System.Globalization
+
+@inject NotificationService _NotificationService
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        @if ((v.RepDtls ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------*@
+            <_2110_Report Rv="rv" V="@v" ChildAction="ChildActionCatcher" /> 
+        }
+
+        @*--- Filter and Button ------------------------------------------------*@
+        <div class="p-0">
+            <div class="card-header d-flex gap-3">
+                <div class="d-flex gap-2 card p-2 w-240p">
+                    <div class="text-muted p-2 pe-4 border-bottom"> <small>Filter By</small> </div>
+                    <_01ReportFilter Rv="@rv" ChildAction="ChildActionCatcher" />
+                </div>
+
+                <div class="d-flex gap-2 card p-2">
+                    <div class="text-muted p-2 pe-4 border-bottom"> <small>Date Covered</small> </div>
+                    @*--- Period ------------------------------------------------*@
+                    <_01MMDDYYYY Rv="rv" ClassParams="@periodClass" ChildAction="ChildActionCatcher" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+
+        @*---  Status List ------------------------------------------------*@
+        <div class="w-100"> <_00TStatusList Empstats="@rv.Empstats" ChildAction="ChildActionCatcher" ClassParams="statusClass" /> </div>
+
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject ISettingsDataAccess _settings;
+@inject IOPisReportDataAccess _pisRep;
+@inject IOEmpstatDataAccess _empstat;
+@inject IOClientDataAccess _client;
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv { get; set; } = new();
+    V2110Model  v = new();
+
+
+    private List<string?> statuses => rv.Empstats?.Where(x => x.IsSelectedB).Select(x => x.Code).ToList() ?? new();
+
+    public Dictionary<string, object> periodClass  = new()
+    {
+        ["FlexDirection"] = "flex-column",
+    };
+
+    public Dictionary<string, object> statusClass  = new()
+    {
+        ["VH"] = "vh60",
+    };
+
+    public Dictionary<string, object> clientClass = new()
+    {
+        ["VH"] = "vh60",
+    };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        InitializeReport();
+        await LoadInitialData();
+    }
+
+    private void InitializeReport()
+    {
+
+        rv.RefreshToken = 21100000;
+        rv.MCaption = "Insurance Policy";
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "Insurance Report",
+            ["RunDate"] = DateTime.Now
+        };
+
+        rv.DataFilters = new List<V00_RepVars.DataFilterModel>
+        {
+            new(){Code = 1, Name="Expiration Date"},
+            new(){Code = 2, Name="Without Insurance"},
+            new(){Code = 3, Name="With Insurance"}
+        };
+    }
+
+    private async Task LoadInitialData()
+    {
+        await LoadCompanyInfo();
+        await LoadEmployeeStatus();
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        if (res == null) return;
+        var r = res;
+        rv.ReportParams["CoName"] = r.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAddress ?? "";
+    }
+
+    private async Task LoadEmployeeStatus()
+    {
+        var res = await _empstat._02s(Uc.OpisDb!, Uc.Conn!);
+        if (res?.Any() != true) return;
+
+        rv.Empstats = res;
+        rv.Empstats.ForEach(x =>
+        {
+            if (x.IsResigned == "0") x.IsSelectedB = true;
+        });
+    }
+
+
+    private void ChildActionCatcher()
+    {
+        if (v.Action == "SortBy") SortBy();
+        v.Action = string.Empty;
+    }
+
+
+
+    private async Task FetchData()
+    {
+        ResetVars();
+
+        if (!HasConnection() || !ValidateFilters()) return;
+
+        try
+        {
+            rv.Isloaded = true;
+
+            var res = await _pisRep._02Empmas_ByInsurance_And_Status(rv.SelectedFilter, statuses, rv.DStart, rv.DEnd, Uc.OpisDb!, Uc.Conn!);
+            v.RepDtls = res.Select(r => new R2110Model
+            {
+                EmpNumber   = r.EmpNumber,
+                EmpName     = r.EmpName,
+                EmpLastNm   = r.EmpLastNm,
+                EmpFirstNm  = r.EmpFirstNm,
+                EmpMidNm    = r.EmpMidNm,
+                Insurance   = r.Insurance,
+                PolicyNo    = r.PolicyNo,
+                EmpStatus   = r.EmpStatus,
+                FaceValue   = r.FaceValue,
+                Premium     = r.Premium,
+                InsExpire   = r.InsExpire,
+                EmpBirth    = r.EmpBirth,
+                DateHired   = r.DateHired,
+            }).ToList();
+
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (v.RepDtls?.Any() != true)
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+            return;
+        }
+
+
+        rv.ShowModal = true;
+
+    }
+
+    private bool ValidateFilters()
+    {
+        if (rv.SelectedFilter == 0)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one option in the 'Filter By' section to proceed.");
+            return false;
+        }
+
+        if (rv.DStart == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a start date to proceed.");
+            return false;
+        }
+
+        if (rv.DEnd == null)
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select a end date to proceed.");
+            return false;
+        }
+
+
+        if (!statuses.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select at least one employee status to proceed.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void SortBy()
+    {
+        IOrderedEnumerable<R2110Model> sorted;
+
+
+        if (rv.SortFld == "EmpName")
+        {
+            sorted = rv.SortOdr == "asc"
+                ? v.RepDtls.OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm)
+                : v.RepDtls.OrderByDescending(x => x.EmpLastNm).ThenByDescending(x => x.EmpFirstNm);
+        }
+        else
+        {
+            sorted = rv.SortOdr == "asc"
+               ? v.RepDtls.OrderBy(x => x.InsExpire).ThenBy(x => x.EmpFirstNm)
+               : v.RepDtls.OrderByDescending(x => x.InsExpire).ThenBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm);
+        }
+
+        v.RepDtls = sorted.ToList();
+    }
+
+    private void ResetVars()
+    {
+        v.RepDtls = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        v.IsGroupByClient = false;
+
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+}
