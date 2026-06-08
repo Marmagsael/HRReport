@@ -1,0 +1,99 @@
+@using Blazorise
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+
+
+
+<div class="card p-0 mb-1 bordered">
+    
+    <div class="card-header d-flex gap-1 justify-content-between align-items-center "> 
+        <div class="fw-bold ">Leave Type Enrty</div>
+         <button @onclick="CloseDataEntry" class="btn btn-sm txt mb-a-green ">Close</button>
+    </div>
+    <div class="card-header bg-white d-flex gap-1 p-1 "> 
+        <div @onclick="SaveDataEntry" class="card mb-cbtn mb-cbtn-green px-3 py-1">
+            Save
+        </div>
+    </div>
+    
+
+    <div class="card-body p-2 ">
+        @* ---- Code *@
+        <div class="d-flex gap-1 ">
+            <div class="p-2 @lblWd ">Code </div>
+            <div class="w-125p">
+                <RadzenTextBox Placeholder="Code" class="w-100" MaxLength="5" @bind-Value=@V.LvType.Code />
+            </div>
+        </div>
+    
+        @* ---- Description *@
+        <div class="d-flex gap-1 mt-1 ">
+            <div class="p-2 @lblWd ">Description </div>
+            <div class="w-300p">
+                <RadzenTextBox Placeholder="Description" class="w-100" MaxLength="45" @bind-Value=@V.LvType.LeaveName />
+            </div>
+        </div>
+        
+        @* ---- Description *@
+        <div class="d-flex gap-1 mt-1 ">
+            <div class="p-2 @lblWd ">Credit </div>
+            <div class="w-150p">
+                <RadzenNumeric Placeholder="Credit" class="w-100 px-2" @bind-Value=@V.LvType.DefValue Format="0.00" TextAlign="TextAlign.Right" />
+            </div>
+        </div>
+
+        @* ---- Error Message *@
+        @if (!string.IsNullOrEmpty(errorMsg))
+        {
+            <div class="alert alert-danger  mt-2 " role="alert">
+                @errorMsg
+            </div>
+        }
+
+    </div>
+
+</div>
+
+
+@inject ILeavetypeDataAccess _lvTypes;
+
+@code {
+    [Parameter] public UserClaimsModel      Uc      { get; set; } = new(); 
+    [Parameter] public V2003_LvTypesModel   V       { get; set; } = new();
+    [Parameter] public EventCallback        CA      { get; set; } = new();
+
+    string? lblWd = "w-100p";
+    string? errorMsg = string.Empty; 
+
+    async Task SaveDataEntry() {
+        
+        errorMsg = string.Empty; 
+
+        if(string.IsNullOrEmpty(V.LvType.Code)) {
+            errorMsg = "Code is required.";
+            return;
+        }
+
+        if(string.IsNullOrEmpty(V.LvType.LeaveName)) {
+            errorMsg = "Description is required.";
+            return;
+        }
+
+        List<LeavetypeModel?>? res = await _lvTypes._02ByCode_Or_ByName(V.LvType.Code, V.LvType.LeaveName,  Uc.SchemaUserPis, Uc.Conn);
+
+        if(res.Count > 0 ) {
+            errorMsg = "Leave type already exists.";
+            return;
+        }
+
+        await _lvTypes._01(V.LvType, Uc.SchemaUserPis, Uc.Conn);
+        V.LvTypes = (await _lvTypes._02(Uc.SchemaUserPis, Uc.Conn))!;
+        V.LvType = new();
+        await CA.InvokeAsync();
+    }
+
+    void CloseDataEntry() {
+        V.ShowDE = false;
+        CA.InvokeAsync();   
+    }
+}

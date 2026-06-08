@@ -1,0 +1,100 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using OfficeOpenXml.Drawing.Chart
+
+<div class="bordered-top ">
+    <div class="card-body p-0 ">
+        
+        @if (V.ShowAddMember)
+        {
+            <div class="d-flex gap-2 w-100 bordered-bottom mb-1 py-1 ">
+
+                <div class="w-500p">
+                    <input @bind-value="searchName" @bind-value:event="oninput" type="text" class="form-control form-control-sm" placeholder="Search employee..." />
+                </div>
+
+                <div class="d-flex gap-2 ">
+                    <button @onclick="SearchEmployee" class="btn btn-sm btn-primary w-100" disabled="@IsSearchDisabled">
+                        Search
+                    </button>
+                    <button @onclick="Close" class="btn btn-sm btn-danger w-100" >
+                        X
+                    </button>
+
+                </div>
+
+            </div>
+        }
+
+        <div class="bg-secondary p-2 bg-opacity-10 small br-6">
+            @foreach (var emp in sEmpmasOutput)
+            {
+                <div class="d-flex w-100 p-1 ">
+                    <div class="w-100 text-end">@emp?.Fullname</div>
+                    <div @onclick="() => AddEmployee(emp)" class="txt mb-a-green px-2 cur-pointer ">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+
+@inject IEmpmasInternalDataAccess   _empmasInternal;
+@inject IEmpmasgrpDataAccess        _empmasgrp;
+
+@code {
+
+    [CascadingParameter]    public  UserClaimsModel?            Uc  { get; set; }
+    [Parameter]             public  V2003_LvGrpAssignmentModel  V   { get; set; } = new();
+    [Parameter]            public  EventCallback                CA  { get; set; }
+
+
+    List<EmpmasInternalModel?> sEmpmas = new();
+    List<EmpmasInternalModel?> sEmpmasOutput => sEmpmas.Where(se => se != null && 
+                                !V.Empmasgrps.Any(eg => eg.EmpmasId == se?.Id)).ToList();
+
+    string? _searchName = "";
+
+    string? searchName   { get => _searchName; set { _searchName = value;  sEmpmas = [];}     }
+    bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Length < 3;
+
+
+
+
+    // --- existing method --------------------------------------------------------------
+    async Task SearchEmployee()
+    {
+        if (Uc is null) return;
+        sEmpmas = await _empmasInternal._02FilterByName(searchName, Uc.SchemaUserPis, Uc.Conn );
+    }
+
+    async Task Close()
+    {
+        V.ShowAddMember = false;
+        searchName = "";
+        sEmpmas = [];
+        await CA.InvokeAsync();
+        
+    }
+
+    async Task AddEmployee(EmpmasInternalModel? emp)
+    {
+        
+        if (emp is null || Uc is null) return;
+
+        var newEmpmasgrp = new EmpmasgrpModel
+        {   EmpmasId = emp.Id, LeavegrpId = V.Leavegrp.Id };
+
+        await _empmasgrp._01FromLvGrp(newEmpmasgrp, Uc.SchemaUserPis, Uc.Conn);
+        
+        int? lvGrpId = V.Leavegrp.Id;
+        var res = await _empmasgrp._02ByFldId("LeavegrpId", lvGrpId, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null) V.Empmasgrps = res!;
+        await CA.InvokeAsync();
+
+    }
+}
