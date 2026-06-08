@@ -4,7 +4,8 @@ public class EmpmasInternalModel
 {
     public int?          Id              { get; set; }
     public int?          SystemId        { get; set; }   = 0;
-    public string?      EmpNumber       { get; set; }   = string.Empty; 
+    public string?      EmpNumber       { get; set; }   = string.Empty;
+    
     public string?      EmpLastNm       { get; set; }   = string.Empty;
     public string?      EmpFirstNm      { get; set; }   = string.Empty;
     public string?      EmpMidNm        { get; set; }   = string.Empty;
@@ -16,10 +17,17 @@ public class EmpmasInternalModel
     public string?      Fullname        { get; set; }   = string.Empty;
 
     public string?      Email           { get; set; }   = string.Empty;
-    public int?          UsersId         { get; set; }   = 0;
-    public int?          PayrollgrpId    { get; set; }   = 0;
+    public int?         UsersId         { get; set; }   = 0;
+    public int?         PayrollgrpId    { get; set; }   = 0;
     public string?      PayrollGrp      { get; set; }   = string.Empty;
     public string?      EmpStatus       { get; set; }   = string.Empty;
+
+
+    //------------------------------------------------------------------
+    public string?      PositionName    { get; set; } = string.Empty;
+    public DateTime?    DateHired       { get; set; }   
+    public DateTime?    Regref          { get; set; }   
+    public DateTime?    Separate        { get; set; }   
 
     
 

@@ -47,6 +47,7 @@ public class OEmpmasModel
     public string? Weight                   { get; set; }
     public string? Tin                      { get; set; }
     public string? Sss                      { get; set; }
+    public string? Hdmf                     { get; set; }
     public string? PagIbigNo                { get; set; }
     public string? Phic                     { get; set; }
     public string? Religion                 { get; set; }
