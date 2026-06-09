@@ -429,7 +429,10 @@
     { 
         v.ShowMyReqquest = true; 
 
+        v.IsLoading = true;
         var res = await _lvApplication._02ByRequest(Uc.UserId,Uc.SchemaUserPis, Uc.Conn); 
+        v.IsLoading = false;
+        
         if(res!=null) v.LeaveApplications = res!; 
 
 
@@ -490,6 +493,7 @@
                && !string.IsNullOrWhiteSpace(lva.Address)
                && !string.IsNullOrWhiteSpace(lva.Reason)
                && !string.IsNullOrWhiteSpace(lva.TelNo) ;
+
     bool IsCanSend  =>  lva != null
                         && lva.Status is "S"
                         && (lva.LeaveTypeId) > 0
@@ -498,8 +502,10 @@
                         && !string.IsNullOrWhiteSpace(lva.Reason)
                         && !string.IsNullOrWhiteSpace(lva.TelNo) 
                         && lva.Approver2Id > 0;
+
     bool IsCanCancel    => lva != null
                         && lva.Status is "S"; 
+
     bool IsCanPrint     => lva != null
                             && (lva.Status is "S" or "FA" or "F"); 
 
