@@ -1,7 +1,4 @@
-﻿@using Blazorise.Extensions
-@using FastReport.Utils
-@using Google.Protobuf.Reflection
-@using HRApiLibrary.DataAccess._10_Pis
+﻿@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.DataAccess._90_Utils
@@ -51,7 +48,7 @@
                         <div class="w-175p d-flex p-1 ">
                             <div class=""> Status : </div>
                             <div class="ms-2 bordered-bottom text-center text-primary"> 
-                                @(_02LvStatus(@v.LeaveApplication.Status)) 
+                                @* @(_02LvStatus(@v.LeaveApplication.Status))  *@
                             </div>
                         </div>
 
@@ -234,7 +231,7 @@
                             @* --- Leave with Pay *@
                             <div class="text-primary">With Pay : </div>
                             <div class="text-center">
-                                @lvWPay.ToString("N2") 
+                                @* @lvWPay.ToString("N2")  *@
                             </div>
 
 
@@ -248,23 +245,38 @@
 
     @* --- Leave Details ----------------------------------------- *@
     <div>
-        <div class="card-header bg mb-a-green fw-bold text-white ">Leave Details</div>
+        <div class="card-header bg mb-a-green fw-bold  ">Leave Details</div>
         <div class="card-body p-0">
 
-            <div class="w-100 d-flex gap-1 py-2 border-bottom">
-                <div class="w-130p text-center ">Date</div>
-                <div class="w-75p text-center text-primary ">
-                    Day
+                <div class="w-100 d-flex gap-1 py-2 border-bottom">
+                    <div class="w-130p text-center ">Date</div>
+                    <div class="w-75p text-center text-primary "> Day </div>
+                    <div class="w-125p text-center">Credited Hrs.</div>
+                    <div class="w-100p text-center">Payable</div>
                 </div>
-                <div class="w-75p text-center">Duty Type</div>
-                <div class="w-130p text-center">Time Start</div>
-                <div class="w-130p text-center">Duration</div>
-                <div class="w-100p text-center">Time End</div>
-                <div class="w-100p text-center">Payable</div>
-                <div class="w-100p text-center">Credited Hrs. </div>
-            </div>
 
-            @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
+                @foreach (LeaveapplicationdtlModel lvd in v.LeaveApplicationdtls)
+                {
+                    <div class="w-100 d-flex p-0 mt-1 gap-1 ">
+                        <div class="w-130p text-center ">@lvd.Date?.ToString("MMM dd, yyyy")</div>
+                        <div class="w-75p text-center text-primary "> Day </div>
+                        <div class="w-125p text-center">
+                            <RadzenDropDown 
+                                Data="@v.LeaveDayTypes" 
+                                TValue="int?"
+                                TextProperty="Name"
+                                ValueProperty="Id" @bind-Value="@lvd.LeaveDateTypeId"
+                                Placeholder="Schedule"
+                            Style="width:125px" />
+                        </div>
+                        <div class="w-100p text-center">Payable</div>
+                    </div>
+                }
+        
+
+
+
+            @* @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
                 string? dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
                 string? dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
 
@@ -323,7 +335,7 @@
                 </div>    
 
 
-            }
+            } *@
 
         </div>
 
@@ -347,7 +359,7 @@
 @inject I_10_EmpmasDataAccess           _empmas; 
 
 
-@* @inject ILeaveapplicationdtlDataAccess  _lvApplicationdtl;  *@
+@inject ILeaveapplicationdtlDataAccess  _lvApplicationdtl; 
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; }
@@ -362,7 +374,6 @@
     }
 
     async Task LoadLvApplication() {
-
         v.LeaveApplicationdtl = new();
         v.LeaveApplicationdtls = [];
 
@@ -386,31 +397,7 @@
 
     async Task Save()
     {
-        v.LeaveApplication.Status       = "S";
-        v.LeaveApplication.EmpmasId     = Uc.UserId; 
-        v.LeaveApplication.DaysWithPay  = lvWPay; 
-
-        if (lva.Id == 0 ) {
-            LeaveapplicationModel? res = await _lvApplication._01(lva, Uc.SchemaUserPis, Uc.Conn);
-            v.LeaveApplication.Id = res.Id; 
-        } else {
-            await _lvApplication._03(lva.Id, lva, Uc.SchemaUserPis, Uc.Conn); 
-        }
-
-        await _lvaDtls._04OutRange(lva.Id,lva.LvStart.Date, lva.LvEnd.Date, Uc.SchemaUserPis, Uc.Conn); 
-
-        foreach(var d in v.LeaveApplicationdtls) {
-            d.LeaveApplicationId = lva.Id; 
-            d.EmpmasId  = Uc.UserId; 
-            d.EmpNumber = Uc.OempNumber??"";
-
-            if(d.Id == 0)   { await _lvaDtls._01(d, Uc.SchemaUserPis, Uc.Conn);  } 
-            else            { await _lvaDtls._03(d.Id??0, d, Uc.SchemaUserPis, Uc.Conn); }; 
-
-        }
-
-        var resd = await _lvaDtls._02ByLvApplicationId(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
-        if(resd!=null) v.LeaveApplicationdtls = resd!; 
+        
 
     }
 
@@ -434,7 +421,7 @@
                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
         if (option == true)
         {
-            await _lvApplication._04(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
+            @* await _lvApplication._04(lva.Id, Uc.SchemaUserPis, Uc.Conn);  *@
             await New(); 
         }
     }
@@ -471,7 +458,7 @@
         rv.ReportParams["ReportTitle"] = "Leave Application";
         rv.ReportParams["CoAddress"] = res?.CoAddress ?? "-";
 
-        rv.ReportParams["TRN"] = lva.Id;
+        @* rv.ReportParams["TRN"] = lva.Id;
         rv.ReportParams["TypeOfLeave"] = _02LvTypeName(lva.LeaveTypeId);
         rv.ReportParams["DateCovered"] = $"{lva.LvStart:MMM dd, yyyy} - {lva.LvEnd:MMM dd, yyyy}";
         rv.ReportParams["DateFiled"] = lva.DateApplied.ToString("MMM dd, yyyy");
@@ -480,7 +467,7 @@
         rv.ReportParams["EmpName"] = resEmpmas.Fullname ?? "-";
         rv.ReportParams["Position"] = resEmpmas1?.FirstOrDefault()?.Positionname ?? "-";
         rv.ReportParams["AddressWhileOnLeave"] = lva.Address ?? "-";
-        rv.ReportParams["TelNos"] = lva.TelNo ?? "-"; 
+        rv.ReportParams["TelNos"] = lva.TelNo ?? "-";  *@
 
         StateHasChanged(); 
         // 🔥 IMPORTANT: force refresh
@@ -493,6 +480,8 @@
         
     }
 
+    AtttemplateModel at => v.AttTemplate;
+    LeaveapplicationModel lva => v.LeaveApplication;
 
     bool IsCanSave => lva != null
                && lva.Status is "N" or "S"
@@ -536,77 +525,13 @@
         if (v.LeaveApplication.LvStart.Date > v.LeaveApplication.LvEnd.Date) return;
 
         var leaveApp = v.LeaveApplication;
-        for (DateTime date = leaveApp.LvStart; date < leaveApp.LvEnd.AddDays(1); date = date.AddDays(1))
-        {
-            @* Console.WriteLine($"{date}"); *@
-            string?                      ddd     = date.ToString("ddd");
-            LeaveapplicationdtlModel?   dtl     = _02LA(ddd);
-            dtl.Start                           = date;
-            if(dtl.DutyType=="RD") {dtl.TimeStart=0; dtl.TimeDuration=0;}
-            else{
-                int? hr              = (dtl.TimeStart / 100)??0; 
-                int? min             = (dtl.TimeStart % 100)??0;  
-                Double duration     = (dtl.TimeDuration / 100)??0; 
-
-                DateTime dStart = date; 
-                dtl.Start   = dStart.AddHours(hr??0).AddMinutes(min??0); 
-                dtl.End     = dStart.AddHours(hr??0).AddMinutes(min??0).AddHours(duration);
-
-            }
-            v.LeaveApplicationdtls.Add(dtl);            
-        }
-
-        int? lvaId = lva.Id; 
-        if(lvaId>0) {
-            var res = await _lvaDtls._02ByLvApplicationId(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
-            res.ForEach(fd => {
-                v.LeaveApplicationdtls.ForEach(d => {
-                    if(d.Start?.Date == fd.Start?.Date) 
-                    {
-                        d.Id                    = fd.Id; 
-                        d.LeaveApplicationId    = fd.LeaveApplicationId; 
-                        d.EmpmasId              = fd.EmpmasId; 
-                        d.EmpNumber             = fd.EmpNumber; 
-                        d.Start                 = fd.Start; 
-                        d.DutyType              = fd.DutyType; 
-                        d.TimeStart             = fd.TimeStart; 
-                        d.TimeDuration          = fd.TimeDuration; 
-                        d.End                   = fd.End; 
-                        d.CreditedHrs           = fd.CreditedHrs; 
-                        d.IsPayable             = fd.IsPayable; 
-                    }
-                }); 
-            }); 
-        }
-
-        @* --- Days Count -------------------------------- *@
-        if(lva.LvEnd.Date < lva.LvStart.Date) { v.LeaveApplication.DaysCnt = 0; }
-        else { v.LeaveApplication.DaysCnt = (lva.LvEnd - lva.LvStart).TotalDays + 1;  }
+       
 
 
     }
 
     void ComputeEnd(LeaveapplicationdtlModel ld) {
-        if(ld==null) return; 
-        if(ld.Start==null) return; 
-        if(ld.TimeStart==null) return; 
-        if(ld.TimeDuration==null) return; 
-
-        int? hr              = (ld.TimeStart / 100)??0; 
-        int? min             = (ld.TimeStart % 100)??0;  
-        Double duration     = (ld.TimeDuration / 100)??0; 
-        DateTime dstart     = ld.Start?.Date ?? DateTime.MinValue;
-        DateTime dEnd       = dstart.AddHours(hr??0).AddSeconds(min??0).AddHours(duration); 
-
-        ld.End = dEnd; 
-
-        if(ld.IsPayableB) {
-            decimal? cHrs = (decimal?)((decimal?)(ld.TimeDuration)/100); 
-
-
-            if(ld.IsPayableB) { ld.CreditedHrs = (cHrs>=5 ? cHrs -1 : cHrs)??0 ; }
-            else ld.CreditedHrs = 0; 
-        }
+        
 
     }
     
@@ -617,6 +542,7 @@
         await LoadDatas(); 
         await _02LeaveBalance();
         await Populatedtls(); 
+        
     }
 
     async Task LoadDatas() {
@@ -634,7 +560,7 @@
             v.LvYrs.Add(DateTime.Now.Year-1); 
         }
 
-        List<LeavegrpapproverModel?>? resApprovers = await _lvgrpApprover._02ByEmpmasId(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        var resApprovers = await _lvgrpApprover._02ByEmpmasId(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
         var firstApprovers = (resApprovers.Where(a=> a.ApproverLevel==1).ToList()) ??[];
         v.LvFirstApprovers = firstApprovers!;
         v.LvFirstApprovers.Insert(0, new(){ApproverId=0, ApproverName="No Assigned Approver"});
@@ -644,6 +570,13 @@
         v.LvFinalApprovers = finalApprovers!; 
         v.LvFinalApprovers.Insert(0, new() { ApproverId = 0, ApproverName = "No Assigned Approver" });
 
+        @* --- Leaveapplicationdtl Inital Value *@
+        v.LeaveApplicationdtls = new List<LeaveapplicationdtlModel>() 
+        {  
+            new LeaveapplicationdtlModel() { Id=0, LeaveApplicationId = 0, Date = DateTime.Now.Date, LeaveDateTypeId = 1 } 
+        };
+
+
     }
 
     private async Task MarkPayable(ChangeEventArgs e, LeaveapplicationdtlModel l)
@@ -651,9 +584,9 @@
         var val = (bool)(e.Value??false); 
         l.IsPayableB = val;
 
-        var cHrs = (decimal?)((decimal?)(l.TimeDuration)/100); 
+        @* var cHrs = (decimal?)((decimal?)(l.TimeDuration)/100); 
         if(val) { l.CreditedHrs = (cHrs>=5 ? cHrs -1 : cHrs)??0 ; }
-        else l.CreditedHrs = 0; 
+        else l.CreditedHrs = 0;  *@
         
     }
 
@@ -669,22 +602,21 @@
     };
 
     string? DTypeCss(string? ddd) => _02DutyType(ddd) == "RD" ? " text-danger " : "";
-    AtttemplateModel        at    =>  v.AttTemplate; 
-    LeaveapplicationModel   lva   => v.LeaveApplication; 
+
     double lvWPay => v.LeaveApplicationdtls 
                         .Where(l => l.IsPayableB)
-                        .Sum(l => l.CreditedHrs < 8 ? .5 : 1 ); 
+                        .Sum(l => l.LeaveDateTypeId == 1  ? 1 : .5 ); 
 
     LeaveapplicationdtlModel _02LA(string? ddd) => ddd switch
     {
-        "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype, TimeStart = at.D2_in, TimeDuration = at.D2_hrslength },
+        @* "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype, TimeStart = at.D2_in, TimeDuration = at.D2_hrslength },
         "Tue" => new LeaveapplicationdtlModel { DutyType = at.D3_dutytype, TimeStart = at.D3_in, TimeDuration = at.D3_hrslength },
         "Wed" => new LeaveapplicationdtlModel { DutyType = at.D4_dutytype, TimeStart = at.D4_in, TimeDuration = at.D4_hrslength },
         "Thu" => new LeaveapplicationdtlModel { DutyType = at.D5_dutytype, TimeStart = at.D5_in, TimeDuration = at.D5_hrslength },
         "Fri" => new LeaveapplicationdtlModel { DutyType = at.D6_dutytype, TimeStart = at.D6_in, TimeDuration = at.D6_hrslength },
         "Sat" => new LeaveapplicationdtlModel { DutyType = at.D7_dutytype, TimeStart = at.D7_in, TimeDuration = at.D7_hrslength },
         "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype, TimeStart = at.D1_in, TimeDuration = at.D1_hrslength },
-        _ => new LeaveapplicationdtlModel()
+        _ => new LeaveapplicationdtlModel() *@
     };
     
     string? _02LvTypeName(int? lvTypeId)  => (v?.LeaveTypes.FirstOrDefault(l=>l.Id == lvTypeId).LeaveName)??"-";

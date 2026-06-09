@@ -10,6 +10,7 @@ public class V12_102Lv
     public LeaveapplicationdtlModel         LeaveApplicationdtl     { get; set; } = new();  
     public List<LeaveapplicationdtlModel>   LeaveApplicationdtls    { get; set; } = [];  
     public List<LeavetypeModel>             LeaveTypes              { get; set; } = [];    
+    public List<LeavedaytypeModel>          LeaveDayTypes              { get; set; } = [];    
     public List<TimeoptionModel>?           Hrs                     { get; set; } = [];   
     public List<LeavegrpapproverModel>      LvFirstApprovers        { get; set; } = [];
     public List<LeavegrpapproverModel>      LvFinalApprovers        { get; set; } = [];

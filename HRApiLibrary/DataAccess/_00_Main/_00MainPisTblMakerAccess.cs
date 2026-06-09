@@ -2306,12 +2306,8 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                     LeaveApplicationId  Integer     UNSIGNED    NOT NULL DEFAULT 0,
                     EmpmasId            INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
                     EmpNumber           CHAR(5)                 NOT NULL DEFAULT '',
-                    Start               DATETIME,
+                    Date               DATETIME,
                     DutyType            CHAR(2)                 NOT NULL DEFAULT 'R',
-                    TimeStart           INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
-                    TimeDuration        INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
-                    End                 DATETIME,
-                    CreditedHrs         INTEGER     UNSIGNED    NOT NULL DEFAULT 0 ,
                     IsPayable           INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
                     LeavedayTypeId      INTEGER     UNSIGNED    NOT NULL DEFAULT 1,
                     PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
