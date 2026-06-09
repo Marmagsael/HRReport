@@ -1,0 +1,230 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._10_Pis
+
+@inject NotificationService _NotificationService;
+<RadzenNotification />
+
+
+
+<div class="card ">
+    <div class="card-body ">
+        @* --- Year ------------------------------------------------------------------------------- *@
+        <div class="d-flex gap-1 ">
+            <div class=" @lblCss ">
+                Leave Type <span class="text-danger">*</span>
+            </div>
+            <div class="w-300p ">
+                <RadzenDropDown 
+                    Data="@V.LvTypes" 
+                    TextProperty="LeaveName" 
+                    ValueProperty="Id" @bind-Value="V.LvType.Id"
+                    Change="LvTypeChanged"
+                    Style="width:100%"
+                    PopupStyle="min-height:150px; max-height:600px; overflow-y:auto;" />
+            </div>
+        </div>
+        @* --- Year ------------------------------------------------------------------------------- *@
+        <div class="d-flex gap-1 mt-1 ">
+            <div class=" @lblCss ">
+                Year <span class="text-danger">*</span>
+            </div>
+            <div class="w-100p ">
+                <RadzenNumeric 
+                    TValue="int?" @bind-Value="V.LvCredit.Year" 
+                    Change="_02_AssignedCredit"
+                    Format="0000"
+                    TextAlign="TextAlign.Right" 
+                    Min="1900" 
+                    Max="3000" 
+                    ShowUpDown="false" />
+            </div>
+        </div>
+        
+        @* --- Credit Start --------------------------------------------------------------------- *@
+        <div class="d-flex gap-1 mt-1 ">
+            <div class=" @lblCss ">
+                Credit Start <span class="text-danger">*</span>
+            </div>
+            <div class="w-175p">
+                <RadzenDatePicker Change="_02_LvCredit" @bind-Value="V.LvCredit.CreditStart" DateFormat="MM/dd/yyyy" />
+            </div>
+        </div>
+        
+        @* --- Credit Expire --------------------------------------------------------------------- *@
+        <div class="d-flex gap-1 mt-1 ">
+            <div class=" @lblCss ">
+                Credit Expire <span class="text-danger">*</span>
+            </div>
+            <div class="w-175p">
+                <RadzenDatePicker @bind-Value="V.LvCredit.CreditEnd" DateFormat="MM/dd/yyyy" />
+            </div>
+        </div>
+
+        
+        @* --- Credit Expire --------------------------------------------------------------------- *@
+        <div class="d-flex gap-1 mt-1 ">
+            <div class=" @lblCss ">
+                Def. Credit <span class="text-danger">*</span>
+            </div>
+            <div class=" w-120p  bordered-bottom ">
+                <RadzenNumeric Placeholder="0" Step="1" @bind-Value="@V.LvCredit.Credit" TextAlign="TextAlign.Right" class="px-2"
+                               InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "enter value" }})" />
+            </div>
+            <div class="p-1 b-dgray">
+                <button @onclick="PopulateCredit" class="btn btn-primary @populateCss ">Set</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="p-2">
+    <div class="d-flex gap-1 ">
+        <button @onclick="ApplyChanges" class="btn btn-primary @applyCss">Apply Changes</button>
+        <button @onclick="ClearCredits" class="btn btn-danger  @clearCreditCss">Clear Credit</button>
+    </div>
+</div>
+
+
+@inject ILvcreditDataAccess     _lvCredit; 
+
+@code {
+    [CascadingParameter] public UserClaimsModel? Uc { get; set; }
+    [Parameter] public V2003_LvGrpAssignmentModel V { get; set; } = new();                      
+    [Parameter] public EventCallback CA { get; set; }
+
+    string? lblCss = " w-120p p-2 bg-secondary bg-opacity-10 text-center ";
+    string? populateCss => (V.LvType.Id > 0) ? "" : " disabled-div ";
+    string? applyCss => ( V.WithChanges 
+                         && V.LvType.Id > 0
+                         && V.LvCredit.CreditStart.HasValue 
+                         && V.LvCredit.CreditEnd.HasValue) 
+                         ? " " : " disabled-div ";
+    string? clearCreditCss => (V.Empmasgrps.Count > 0 
+                               && (V.Empmasgrps.Where(g => g.ValLvCredit > 0).ToList().Count > 0)
+                               && V.LvType.Id > 0 ) ? " " : " disabled-div ";
+
+    @* --- Functions ---------------------------------------------------------------- *@
+    async Task LvTypeChanged() {
+        var res = V.LvTypes.First(t=> t.Id == V.LvType.Id); 
+        V.LvType.DefValue       = res.DefValue; 
+        V.LvCredit.Credit       = res.DefValue; 
+        V.LvCredit.LeaveTypeId  = res.Id;
+
+        await _02_AssignedCredit(); 
+        await _02_LvCredit();
+        await CA.InvokeAsync(); 
+
+    }
+
+    async Task ApplyChanges() {
+        V.WithChanges = false; 
+        foreach (EmpmasgrpModel eg in V.Empmasgrps) {
+            LvcreditModel lvc   = new() {
+                LeaveTypeId     = V.LvType.Id, 
+                Year            = V.LvCredit.Year,
+                EmpmasId        = eg.EmpmasId,
+                CreditStart     = V.LvCredit.CreditStart?.Date, 
+                CreditEnd       = V.LvCredit.CreditEnd,
+                Credit          = eg.ValLvCredit 
+            };
+
+            await _lvCredit._01(lvc, Uc.SchemaUserPis, Uc.Conn); 
+
+        }
+
+        await _02_AssignedCredit(); 
+
+        var severity = NotificationSeverity.Info;
+        var summary = "Saved";
+        var detail = "Leave credit has been updated successfully.";
+
+
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 3000
+        });
+
+    }
+
+    async Task PopulateCredit() {
+        V.Empmasgrps.ForEach(g => {g.ValLvCredit = V.LvCredit.Credit??0; });
+        V.WithChanges = true; 
+        await CA.InvokeAsync(); 
+    }
+
+    async Task ClearCredits() {
+        V.Empmasgrps.ForEach(g => {g.ValLvCredit = 0; }); 
+        V.WithChanges = true; 
+        await CA.InvokeAsync();
+    }
+
+    async Task _02_LvCredit()
+    {
+        V.Empmasgrps.ForEach(g=>{g.ValLvCredit=0; }); 
+
+        if (V.LvType?.Id is not int id || id < 1) return;
+        if (!V.LvCredit.CreditStart.HasValue) return;
+
+        DateTime dstart = V.LvCredit.CreditStart.Value.Date;
+
+        int? lvId = V.LvType.Id;
+        string? pisdb = Uc.SchemaUserPis;
+        string? conn = Uc.Conn;
+
+        var lvcredits = await _lvCredit._02ByLvType_ByCreditStart(lvId, dstart, pisdb, conn);
+
+        if (lvcredits != null && lvcredits.Count > 0)
+        {
+            var first = lvcredits.First();
+
+            V.LvCredit.Year = first?.Year;
+            V.LvCredit.CreditEnd = first?.CreditEnd;
+            V.LvCredit.Credit = first?.Credit;
+
+            foreach (var lc in lvcredits)
+            {
+                if (lc == null) continue;
+
+                foreach (var g in V.Empmasgrps)
+                {
+                    if (g.EmpmasId == lc.EmpmasId)
+                    {
+                        g.ValLvCredit = lc.Credit ?? 0;
+                    }
+                }
+            }
+        }
+
+        await CA.InvokeAsync(); 
+    }
+
+    async Task _02_AssignedCredit(){
+        V.Empmasgrps.ForEach(g => { g.ValAssignedLvCredit = 0; });
+
+        if(V.LvType?.Id == null) return;
+        if(V.LvCredit.Year == null || V.LvCredit.Year < 1950) return;  
+
+        int? lvId        = V.LvType.Id;
+        string? pisdb    = Uc.SchemaUserPis;
+        string? conn     = Uc.Conn;
+        int? yr          = V.LvCredit.Year??0; 
+
+        var lvcredits = await _lvCredit._02AssignPerYr(lvId, yr, pisdb, conn); 
+        foreach(var c in lvcredits) {
+            if(c==null) continue; 
+            foreach (var g in V.Empmasgrps)
+            {
+                if (g.EmpmasId == c.EmpmasId)
+                {
+                    g.ValAssignedLvCredit = c.Credit ?? 0;
+                }
+            }
+        }
+
+        await CA.InvokeAsync();
+
+    }
+}

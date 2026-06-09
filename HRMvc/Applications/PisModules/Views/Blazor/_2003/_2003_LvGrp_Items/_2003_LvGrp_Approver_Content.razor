@@ -1,0 +1,153 @@
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis
+@using Org.BouncyCastle.Crypto.Prng.Drbg
+
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between ">
+        <div>@Caption</div>
+        <div>
+            <btn @onclick="() => showAddApprover = true" class="card txt mb-a-green cur-pointer px-2 fw-bold">+</btn>
+        </div>
+    </div>
+
+    @if (showAddApprover)
+    {
+        <div class="card-body p-0 ">
+            <div class="w-100 d-flex gap-1 bordered-bottom p-1 ">
+                <div class="p-0 w-100">
+                    <RadzenTextBox Placeholder="Approver's Name" class="w-100" MaxLength="45" @oninput="OnInput" />
+                </div>
+
+                <div class="p-2 @showApproverEntryCss ">
+                    <btn @onclick="SearchApprover" class="txt mb-a-green p-1 cur-pointer "><i class="fa fa-search"></i>
+                    </btn>
+                </div>
+        
+                <div class="p-2">
+                    <btn @onclick="CloseSearchApprover" class="txt mb-a-red p-1 cur-pointer "><i
+                        class="fa-solid fa-xmark"></i></btn>
+                    </div>
+                </div>
+            </div>
+        
+            @* --- Searched Approver Listing -------------------------------- *@
+            <div>
+                @{
+                    int? ctr = 0;
+                }
+                @foreach (EmpmasInternalModel? emp in sApprovers)
+                {
+                    ctr++;
+                    var css = ctr % 2 == 0 ? "bg-light" : "bg-white";
+                    <div class="d-flex w-100 p-1 @css ">
+                        <div class=" w-100 text-end ">@(emp.EmpLastNm.Trim()), @emp.EmpFirstNm </div>
+                        <div @onclick="() => AddApprover(emp)" class="txt mb-a-blue px-2 cur-pointer ">
+                            +
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (sApproverEmpmass.Count > 0)
+        {   <div class="card-header bordered-top py-1">Approver's List</div> }
+
+        @* --- Approvers List *@
+
+        <div>
+            @foreach (var a in grpApprovers)
+            {
+                if (a == null) continue;
+                <div class="d-flex w-100 py-1 px-2  ">
+                    <div class=" w-90 ">@a.ApproverName </div>
+                    <div @onclick="() => RemoveGrpApprover(a)" class="txt mb-a-red px-2 cur-pointer w-10 text-end "> X </div>
+                </div>
+            }
+        </div>
+
+        @if (grpApprovers.Count == 0 || grpApprovers == null)
+        {
+            <div class="d-flex w-100 p-1 ">
+                <div class=" w-100 text-center text-muted ">No approver assigned yet.</div>
+            </div>
+        }
+
+
+
+    </div>
+
+@inject IOEmpmasDataAccess          _oempmas;
+@inject IEmpmasInternalDataAccess   _empmasInternal;
+@inject ILeavegrpapproverDataAccess _lvGrpApprover;
+
+
+@code {
+    [Parameter] public UserClaimsModel      Uc              { get; set; } = new();
+    [Parameter] public V2003_LvGrpModel     V               { get; set; } = new();
+    [Parameter] public EventCallback        CA              { get; set; } = new();
+    [Parameter] public int?                  LeaveGrpId      { get; set; } = new();
+    [Parameter] public int?                  ApproverLevel   { get; set; } = new();
+    [Parameter] public string?               Caption         { get; set; } = "First Approver";
+
+    string? sApprover = string.Empty;
+    List<EmpmasInternalModel?> sApproverEmpmass = new();
+    bool showAddApprover = false;
+
+    string? showApproverEntryCss => sApprover.Length > 2 ? " " : " disabled-div-50 "; 
+    List<LeavegrpapproverModel> grpApprovers => (V.Leavegrpapprovers
+                                                .Where(l => l.ApproverLevel == ApproverLevel)
+                                                .Where(l => l.LeaveGrpId == LeaveGrpId)
+                                                .ToList())??[];
+
+    List<EmpmasInternalModel?>? sApprovers => sApproverEmpmass
+                                                .Where(e => !grpApprovers.Any(a => a.ApproverId == e.Id))
+                                                .ToList();
+
+    @* --- Function ----------------------------------------------------------- *@
+    void OnInput(ChangeEventArgs e) { sApprover = e.Value?.ToString(); sApproverEmpmass = []; }
+    void CloseSearchApprover() { showAddApprover = false; sApprover = string.Empty; sApproverEmpmass = []; }
+    async Task SearchApprover()
+    {
+        sApproverEmpmass = [];
+        if (sApprover.Length < 2) return;
+        
+        @* var res = await _oempmas._02ByLNameAndFNames(sApprover, Uc.SchemaUserPis, Uc.Conn); *@
+        List<EmpmasInternalModel?>? res = await _empmasInternal._02FilterByName(sApprover,Uc.SchemaUserPis, Uc.Conn); 
+        if (res.Count > 0)
+        {
+            sApproverEmpmass = res!;
+        }
+    }
+
+    async Task AddApprover(EmpmasInternalModel emp)
+    {
+        LeavegrpapproverModel newLvGrpApprover = new() {
+            LeaveGrpId = LeaveGrpId,
+            ApproverId = emp.Id,
+            ApproverLevel = ApproverLevel
+        };
+
+        await _lvGrpApprover._01(newLvGrpApprover, Uc.SchemaUserPis, Uc.Conn);
+        V.Leavegrpapprovers = [];
+
+        await LoadGrpApprovers();
+        await CA.InvokeAsync();
+    }
+
+    async Task RemoveGrpApprover(LeavegrpapproverModel approver)
+    {
+        await _lvGrpApprover._04(approver.Id, Uc.SchemaUserPis, Uc.Conn);
+        await LoadGrpApprovers();
+        await CA.InvokeAsync();
+
+    }
+
+    async Task LoadGrpApprovers() {
+        var res = await _lvGrpApprover._02s(Uc.SchemaUserPis, Uc.Conn);
+        if (res.Count > 0) { V.Leavegrpapprovers = res!; }
+    }
+
+
+}
