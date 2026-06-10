@@ -45,11 +45,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.Attendance
             var startDate = new DateTime(year ?? 0001, month ?? 1, 1);
             var endDate = startDate.AddMonths(1);
 
-            string sql = $@"SELECT t.Code LeaveCode,  t.leavename, l.lvStart, l.lvEnd, l.Reason, d.dutyType, d.Start, d.End, d.TimeStart, d.TimeDuration,  d.CreditedHrs, d.LeaveDayTypeId, ld.Name LeaveDayType FROM {schema}.leaveapplication l
-                            LEFT JOIN {schema}.leaveapplicationdtl d on d.leaveapplicationId = l.Id
-                            LEFT JOIN {schema}.leavetype t on t.Id = leavetypeId
-                            LEFT JOIN {schema}.leavedaytype ld on ld.Id = d.leavedaytypeId
-                            WHERE l.empmasId =  @EmpmasId and l.Status = 'A' and lvStart >= @startDate and lvEnd <  @endDate;";
+            string sql = $@"SELECT t.Code LeaveCode,  t.leavename, l.lvStart, l.lvEnd, l.Reason, 
+                                d.*, ld.Name LeaveDayType 
+                            FROM {schema}.leaveapplication l
+                            LEFT JOIN {schema}.leaveapplicationdtl  d  on d.leaveapplicationId = l.Id
+                            LEFT JOIN {schema}.leavetype            t  on t.Id  = leavetypeId
+                            LEFT JOIN {schema}.leavedaytype         ld on ld.Id = d.leavedaytypeId
+                            WHERE l.empmasId =  @EmpmasId and l.Status = 'A' and LvStart >= @startDate and LvEnd <  @endDate;";
             var data = await _sql.FetchData<AttLeaveapplicationModel?, dynamic>(sql, new { EmpmasId = empmasId, StartDate = startDate, EndDate = endDate }, conn);
             return data;
         }
