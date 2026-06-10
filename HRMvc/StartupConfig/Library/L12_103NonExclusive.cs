@@ -44,7 +44,7 @@ public class L12_103NonExlusive
         v12_103.OGenders            = await _ogender._02(oldschema, conn);
 
 
-        v12_103.Empmass             = await _empmas._02BySystemId(userId, schema, conn);
+        v12_103.Empmass             = await _empmas._02BySystemIdList(userId, schema, conn);
         var empmasFirst             = v12_103.Empmass.FirstOrDefault() ?? new EmpmasInternalModel();
 
         v12_103.Addresses           = await _empmas._02EmpmasAddresss(empmasFirst.Id, schema, conn);

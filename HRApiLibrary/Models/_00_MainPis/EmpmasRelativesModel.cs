@@ -2,7 +2,7 @@
 
 public class EmpmasRelativesModel
 {
-    public int? Id { get; set; }
+    public int? Id { get; set; } = 0;
 
     public int? EmpmasId { get; set; }
 

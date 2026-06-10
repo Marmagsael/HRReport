@@ -71,7 +71,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<EmpmasInternalModel?>?> _02BySystemId(int? systemId, string? pisdb,  string? conn)
+    public async Task<List<EmpmasInternalModel?>?> _02BySystemIdList(int? systemId, string? pisdb,  string? conn)
     {
         string? sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, 
                             e.*, s.Name EmpStatus, d.DHired DateHired, d.DRegularization Regref, d.DSeparated Separate, p.Name PositionName
@@ -84,6 +84,17 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { SystemId = systemId }, conn);
         return data;
     }
+
+    public async Task<EmpmasModel?> _02BySystemId(int? systemId, string? pisdb, string? conn)
+    {
+        string? sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname,  e.*
+                        from {pisdb}.Empmas e
+                        where e.SystemId = @SystemId 
+                        order by EmpLastNm, EmpFirstNm, EmpMidNm";
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { SystemId = systemId }, conn);
+        return data.FirstOrDefault();
+    }
+
 
     public async Task<List<EmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
     {
@@ -548,8 +559,18 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     }
     public async Task<List<EmpmasEducateModel?>> _02EmpmasEducateList(int? empmasId, string? schema, string? conn)
     {
-        string? sql = $@"select  e.*, er.Name LEVELNAME from {schema}.Empmaseducate e
-                        LEFT JOIN {schema}.empmaseducateref er on er.Code = e.CODE where EmpmasId = @EmpmasId";
+        string? sql = $@"  SELECT  e.Id, e.EmpmasId,
+                                                e.Code,
+                                                e.School,
+                                                e.FROM_,
+                                                e.TO_,
+                                                e.COURSE,
+                                                e.LEVEL,
+                                                er.Name  AS LEVELNAME        
+                                        FROM {schema}.Empmaseducate e
+                                        LEFT JOIN {schema}.empmaseducateref er 
+                                               ON er.Code = e.CODE
+                                        WHERE e.EmpmasId = @EmpmasId";
         var data = await _sql.FetchData<EmpmasEducateModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data;
     }
@@ -1063,6 +1084,14 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasRelativesRefModel?, dynamic>(sql, new { Code = code }, conn);
         return data?.FirstOrDefault();
     }
+
+    public async Task<List<EmpmasRelativesRefModel?>?> _02EmpmasRelativesRefList(string? schema, string? conn)
+    {
+        string? sql = $@"select  Code, Name from {schema}.Empmasrelativesref";
+        var data = await _sql.FetchData<EmpmasRelativesRefModel?, dynamic>(sql, new { }, conn);
+        return data;
+    }
+
 
 
     public async Task<EmpmasRelativesRefModel?> _03EmpmasRelativesRef(string? code, string? name, string? schema, string? conn)

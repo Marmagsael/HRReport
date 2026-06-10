@@ -3,6 +3,7 @@
 @using HRApiLibrary.DataAccess._90_Utils
 @inject IMainmenuDataAccess _menu
 
+
 @{
     // Load menu list ONCE
     var menus    = await _menu._02("Main",      Model.Conn ?? "") ?? [];
@@ -13,93 +14,200 @@
     const string? childCshtmlMain            = "~/Views/Shared/Main/ReportLayout/_ReportLeftMenuMain.cshtml";
     const string? childCshtmlMainDtl         = "~/Views/Shared/Main/ReportLayout/_ReportLeftMenuMainDtl.cshtml";
     const string? childCshtml                = "~/Views/Shared/Main/ReportLayout/_ReportLeftMenuDtl1.cshtml";
+
+    var IsExclusiveCompany = User.Claims.Where(c => c.Type == "IsExclusiveCompany").FirstOrDefault();
 }
 
 <!-- Custom CSS -->
 <link rel="stylesheet" href="~/css/ReportLayout/report-left-menu.css" />
 
-@* =======================================================================================*@
-@* --- Employee Portal Menus -------------------------------------------------------------*@
-@* =======================================================================================*@
-@* <div class=" bg-secondary text-white p-2"> Employee Portal </div> *@
-<div class="report-left-menu">
-    <ul>
-        @await Html.PartialAsync(childCshtmlMainParentDtl,      (menus, 1001))
-        @await Html.PartialAsync(childCshtmlMain,               (menus, 1101))
-        @* @await Html.PartialAsync(childCshtmlMainDtl, (menus, 1201))  *@
-        @* @await Html.PartialAsync(childCshtmlMainDtl,            (menus, 1301))  *@
-        
-    </ul>
-</div>
 
+@if (IsExclusiveCompany.Value == "true")
+{
 
-
-@* =======================================================================================*@
-@* --- PIS Report ------------------------------------------------------------------------*@
-@* =======================================================================================*@
-<div class=" bg-secondary text-white p-2">PIS System</div>
-
-<div class="report-left-menu w-100p">
-    <ul>
-        <li class="menu-item">
-        <a href="#"  onclick="event.preventDefault();">
-            <div class="d-flex gap-2"> <i class="fa-solid fa-file-lines fs-5"></i> <span>Management</span> </div> <i class="fa fa-chevron-right arrow"></i>
-        </a>
-        <ul class="submenu">
-            @await Html.PartialAsync(childCshtml, (menuspis, 2001))
-            @await Html.PartialAsync(childCshtml, (menuspis, 2051))
+    @* =======================================================================================*@
+    @* --- Employee Portal Menus -------------------------------------------------------------*@
+    @* =======================================================================================*@
+    @* <div class=" bg-secondary text-white p-2"> Employee Portal </div> *@
+    <div class="report-left-menu">
+        <ul>
+            @await Html.PartialAsync(childCshtmlMainParentDtl, (menus, 1001))
+            @await Html.PartialAsync(childCshtmlMain, (menus, 1101))
         </ul>
-        
-    </ul>
-</div>
+    </div>
 
 
-<div class="report-left-menu w-100p">
-    <ul>
-        <li class="menu-item">
-        <a href="#"  onclick="event.preventDefault();">
-            <div class="d-flex gap-2">
-                <i class="fa-solid fa-file-lines fs-5"></i>
-                <span>Report Module</span>
-            </div>
-            <i class="fa fa-chevron-right arrow"></i>
-        </a>
-        <ul class="submenu">
-            @await Html.PartialAsync(childCshtml, (menuspis, 2101))
-            @await Html.PartialAsync(childCshtml, (menuspis, 2201))
+
+
+    @* =======================================================================================*@
+    @* --- PIS Report ------------------------------------------------------------------------*@
+    @* =======================================================================================*@
+
+
+    <div class=" bg-secondary text-white p-2">PIS System</div>
+
+    @*-------------  MANAGEMENT -------------------*@
+    <div class="report-left-menu w-100p">
+        <ul>
+            <li class="menu-item">
+                <a href="#" onclick="event.preventDefault();">
+                    <div class="d-flex gap-2">
+                        <i class="fa-solid fa-file-lines fs-5"></i>
+                        <span>Management</span>
+                    </div>
+                    <i class="fa fa-chevron-right arrow"></i>
+                </a>
+                <ul class="submenu">
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2001))
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2051))
+                </ul>
+
         </ul>
-        
-    </ul>
-</div>
-
-@* =======================================================================================*@
-@* --- Payroll Report --------------------------------------------------------------------*@
-@* =======================================================================================*@
-<div class=" bg-secondary text-white p-2">Payroll System</div>
-<div class="report-left-menu">
-    <ul>
-        <li class="menu-item">
-            <a href="#"  onclick="event.preventDefault();">
-                <div class="d-flex gap-2 align-items-center">
-                    <i class="fa-solid fa-file-lines fs-5"></i>
-                    <span>Report Module</span>
-                </div>
-                <i class="fa fa-chevron-right arrow"></i>
-            </a>
-            
-            
-            <ul class="submenu">
-                @await Html.PartialAsync(childCshtml, (menuspay, 1101))
-                @await Html.PartialAsync(childCshtml, (menuspay, 1151))
-                @await Html.PartialAsync(childCshtml, (menuspay, 1201))
-                @await Html.PartialAsync(childCshtml, (menuspay, 1251))
-                @await Html.PartialAsync(childCshtml, (menuspay, 1301))
-            </ul>
-        </li>
-    </ul>
-</div>
+    </div>
 
 
+    @* ---------- REPORT ------------ *@
+    <div class="report-left-menu w-100p">
+        <ul>
+            <li class="menu-item">
+                <a href="#" onclick="event.preventDefault();">
+                    <div class="d-flex gap-2">
+                        <i class="fa-solid fa-file-lines fs-5"></i>
+                        <span>Report Module</span>
+                    </div>
+                    <i class="fa fa-chevron-right arrow"></i>
+                </a>
+                <ul class="submenu">
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2101))
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2201))
+                </ul>
+
+        </ul>
+    </div>
+
+    @* =======================================================================================*@
+    @* --- Payroll Report --------------------------------------------------------------------*@
+    @* =======================================================================================*@
+    <div class=" bg-secondary text-white p-2">Payroll System</div>
+    <div class="report-left-menu">
+        <ul>
+            <li class="menu-item">
+                <a href="#" onclick="event.preventDefault();">
+                    <div class="d-flex gap-2 align-items-center">
+                        <i class="fa-solid fa-file-lines fs-5"></i>
+                        <span>Report Module</span>
+                    </div>
+                    <i class="fa fa-chevron-right arrow"></i>
+                </a>
+
+
+                <ul class="submenu">
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1101))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1151))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1201))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1251))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1301))
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+}
 
 
 
+
+
+    @if (IsExclusiveCompany.Value == "false")
+{
+    
+    @* =======================================================================================*@
+    @* --- Employee Portal Menus -------------------------------------------------------------*@
+    @* =======================================================================================*@
+    @* <div class=" bg-secondary text-white p-2"> Employee Portal </div> *@
+    <div class="report-left-menu">
+        <ul>
+            @await Html.PartialAsync(childCshtmlMainParentDtl, (menus, 1001))
+            @await Html.PartialAsync(childCshtmlMain, (menus, 1101))
+        </ul>
+    </div>
+
+
+
+
+    @* =======================================================================================*@
+    @* --- PIS Report ------------------------------------------------------------------------*@
+    @* =======================================================================================*@
+
+
+    <div class=" bg-secondary text-white p-2">PIS System</div>
+
+    @*-------------  MANAGEMENT -------------------*@
+    <div class="report-left-menu w-100p">
+        <ul>
+            <li class="menu-item">
+                <a href="#" onclick="event.preventDefault();">
+                    <div class="d-flex gap-2">
+                        <i class="fa-solid fa-file-lines fs-5"></i>
+                        <span>Management</span>
+                    </div>
+                    <i class="fa fa-chevron-right arrow"></i>
+                </a>
+                <ul class="submenu">
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2001))
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2051))
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2301))
+                </ul>
+
+        </ul>
+    </div>
+
+
+    @* ---------- REPORT ------------ *@
+    <div class="report-left-menu w-100p">
+        <ul>
+            <li class="menu-item">
+                <a href="#" onclick="event.preventDefault();">
+                    <div class="d-flex gap-2">
+                        <i class="fa-solid fa-file-lines fs-5"></i>
+                        <span>Report Module</span>
+                    </div>
+                    <i class="fa fa-chevron-right arrow"></i>
+                </a>
+                <ul class="submenu">
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2101))
+                    @await Html.PartialAsync(childCshtml, (menuspis, 2201))
+                </ul>
+
+        </ul>
+    </div>
+
+    @* =======================================================================================*@
+    @* --- Payroll Report --------------------------------------------------------------------*@
+    @* =======================================================================================*@
+    <div class=" bg-secondary text-white p-2">Payroll System</div>
+    <div class="report-left-menu">
+        <ul>
+            <li class="menu-item">
+                <a href="#" onclick="event.preventDefault();">
+                    <div class="d-flex gap-2 align-items-center">
+                        <i class="fa-solid fa-file-lines fs-5"></i>
+                        <span>Report Module</span>
+                    </div>
+                    <i class="fa fa-chevron-right arrow"></i>
+                </a>
+
+
+                <ul class="submenu">
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1101))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1151))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1201))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1251))
+                    @await Html.PartialAsync(childCshtml, (menuspay, 1301))
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+
+}

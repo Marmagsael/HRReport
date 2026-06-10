@@ -24,7 +24,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasSecLicModel?> _01EmpmasSecLic(int? id, EmpmasSecLicModel empmasseclic, string? schema, string? conn);
         Task<EmpmasTrainingModel?> _01EmpmasTraining(EmpmasTrainingModel empmastraining, string? schema, string? conn);
         Task<EmpmasModel?> _02Empmas(int? id, string? schema, string? conn);
-        Task<List<EmpmasInternalModel?>?> _02BySystemId(int? systemId, string? pisdb, string? conn);
+        Task<EmpmasModel?> _02BySystemId(int? systemId, string? pisdb, string? conn);
+        Task<List<EmpmasInternalModel?>?> _02BySystemIdList(int? systemId, string? pisdb, string? conn);
         Task<EmpmasAddressModel?> _02EmpmasAddress(int? id, string? schema, string? conn);
         Task<EmpmasCharRefModel?> _02EmpmasCharRef(int? id, string? schema, string? conn);
         Task<List<EmpmasCharRefModel?>> _02EmpmasCharRefList(int? empmasId, string? schema, string? conn);
@@ -45,6 +46,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasRelativesModel?> _02EmpmasRelatives(int? id, string? schema, string? conn);
         Task<List<EmpmasRelativesModel?>> _02EmpmasRelativesList(int? empmasId, string? schema, string? conn);
         Task<EmpmasRelativesRefModel?> _02EmpmasRelativesRef(string? code, string? schema, string? conn);
+        Task<List<EmpmasRelativesRefModel?>?> _02EmpmasRelativesRefList(string? schema, string? conn);
         Task<EmpmasSecLicModel?> _02EmpmasSecLic(int? id, string? schema, string? conn);
         Task<List<EmpmasSecLicModel?>?> _02EmpmasSecLicList(int? id, string? schema, string? conn);
         Task<EmpmasTrainingModel?> _02EmpmasTraining(int? id, string? schema, string? conn);

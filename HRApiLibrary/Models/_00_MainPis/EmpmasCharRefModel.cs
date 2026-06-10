@@ -2,7 +2,7 @@
 
 public class EmpmasCharRefModel
 {
-    public int?                  Id              { get; set; }
+    public int?                  Id              { get; set; } = 0;
     public int?                  EmpmasId        { get; set; }
     public string?              Name            { get; set; }
     public string?              Addr            { get; set; }
