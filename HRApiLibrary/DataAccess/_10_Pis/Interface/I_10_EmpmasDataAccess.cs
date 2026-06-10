@@ -15,6 +15,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasEmploymentModel?> _01EmpmasEmployment(EmpmasEmploymentModel empmasemployment, string? schema, string? conn);
         Task<EmpmasFamilyModel?> _01EmpmasFamily(EmpmasFamilyModel empmasfamily, string? schema, string? conn);
         Task<EmpmasFamilyRefModel?> _01EmpmasFamilyRef(string? code, string? name, string? schema, string? conn);
+        Task<List<EmpmasEmergencyContactModel?>?> _02EmpmasEmergencyContactList(int? empmasId, string? schema, string? conn);
         Task<EmpmasGovPhModel?> _01EmpmasGovPh(int? id, EmpmasGovPhModel empmasgovph, string? schema, string? conn);
         Task<EmpmasInsuranceModel?> _01EmpmasInsurance(int? id, EmpmasInsuranceModel empmasinsurance, string? schema, string? conn);
         Task<EmpmasPIModel?> _01EmpmasPI(int? id, EmpmasPIModel empmaspi, string? schema, string? conn);
@@ -23,6 +24,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasSecLicModel?> _01EmpmasSecLic(int? id, EmpmasSecLicModel empmasseclic, string? schema, string? conn);
         Task<EmpmasTrainingModel?> _01EmpmasTraining(EmpmasTrainingModel empmastraining, string? schema, string? conn);
         Task<EmpmasModel?> _02Empmas(int? id, string? schema, string? conn);
+        Task<EmpmasModel?> _02BySystemId(int? systemId, string? pisdb, string? conn);
+        Task<List<EmpmasInternalModel?>?> _02BySystemIdList(int? systemId, string? pisdb, string? conn);
         Task<EmpmasAddressModel?> _02EmpmasAddress(int? id, string? schema, string? conn);
         Task<EmpmasCharRefModel?> _02EmpmasCharRef(int? id, string? schema, string? conn);
         Task<List<EmpmasCharRefModel?>> _02EmpmasCharRefList(int? empmasId, string? schema, string? conn);
@@ -43,9 +46,15 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasRelativesModel?> _02EmpmasRelatives(int? id, string? schema, string? conn);
         Task<List<EmpmasRelativesModel?>> _02EmpmasRelativesList(int? empmasId, string? schema, string? conn);
         Task<EmpmasRelativesRefModel?> _02EmpmasRelativesRef(string? code, string? schema, string? conn);
+        Task<List<EmpmasRelativesRefModel?>?> _02EmpmasRelativesRefList(string? schema, string? conn);
         Task<EmpmasSecLicModel?> _02EmpmasSecLic(int? id, string? schema, string? conn);
+        Task<List<EmpmasSecLicModel?>?> _02EmpmasSecLicList(int? id, string? schema, string? conn);
         Task<EmpmasTrainingModel?> _02EmpmasTraining(int? id, string? schema, string? conn);
         Task<List<EmpmasTrainingModel?>> _02EmpmasTrainingList(int? empmasId, string? schema, string? conn);
+        Task<List<EmpmasGovPhModel?>?> _02EmpmasGovPhList(int? id, string? schema, string? conn);
+        Task<List<EmpmasInsuranceModel?>?> _02EmpmasInsuranceList(int? id, string? schema, string? conn);
+        Task<List<EmpmasInsuranceModel?>?> _02EmpmasInsuranceListByEmpmasId(int? empmasid, string? schema, string? conn);
+        Task<List<EmpmasClearancePhModel?>?> _02EmpmasClearancePhList(int? id, string? schema, string? conn);
         Task<EmpmasFamilyRefModel?> _03EmpmasFamilyRef(string? code, string? name, string? schema, string? conn);
         Task<EmpmasModel?> _03Empmas(int? id, EmpmasModel empmas, string? schema, string? conn);
         Task<EmpmasAddressModel?> _03EmpmasAddress(int? id, EmpmasAddressModel empmasaddress, string? schema, string? conn);

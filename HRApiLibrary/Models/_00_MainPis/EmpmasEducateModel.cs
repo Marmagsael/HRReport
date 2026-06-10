@@ -4,7 +4,7 @@ namespace HRApiLibrary.Models._00_MainPis;
 
 public class EmpmasEducateModel
 {
-    public int? Id { get; set; }
+    public int? Id { get; set; } = 0;
 
     public int? EmpmasId { get; set; }
 

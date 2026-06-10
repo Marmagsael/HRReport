@@ -21,4 +21,15 @@ public class EmpmasSecLicModel
     public DateTime Revalidated { get; set; }
 
     public string? ValStatus { get; set; }
+
+
+    ///=========================================
+    public string? PositionName     { get; set; }
+    public string? GuardNoYrs       { get; set; }
+    public string? EmpStatus        { get; set; }
+    public DateTime? DateHired        { get; set; }
+    public DateTime? RegRef           { get; set; }
+    public DateTime? Separate         { get; set; }
+    public string? MilitaryNoYr     { get; set; }
+
 }
