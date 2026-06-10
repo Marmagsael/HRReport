@@ -12,11 +12,24 @@ public class PisReportController : Controller
         ["2003"] = "_2003_TimeOffSettings"
     };
 
-    // Transaction
-    private static readonly Dictionary<string, string> TransactionViews = new()
+    // Data Entry
+    private static readonly Dictionary<string, string> DataEntryViews = new()
     {
         ["2052"] = "_2052_EmployeeEntry"
     };
+
+    // Transaction Views 
+    private static readonly Dictionary<string, string> TransactionViews = new()
+    {
+        ["2302"] = "_2302_StatusMgt",
+        ["2303"] = "_2303_Deployment",
+        ["2304"] = "_2304_Deviation",
+        ["2305"] = "_2305_DisciplinaryAction",
+        ["2306"] = "_2306_Reinstatement",
+        ["2307"] = "_2307_ChangeDeployment",
+        ["2308"] = "_2308_GroupRecall",
+    };
+
 
     // Reports 
     private static readonly Dictionary<string, string> ReportViews = new()
@@ -62,6 +75,8 @@ public class PisReportController : Controller
 
         if (ManagementViews.TryGetValue(key, out var mgmtView)) return View($"~/Applications/PisModules/Views/Pages/{mgmtView}.cshtml");
 
+        if (DataEntryViews.TryGetValue(key, out var deView)) return View($"~/Applications/PisModules/Views/Pages/{deView}.cshtml");
+        
         if (TransactionViews.TryGetValue(key, out var trntView)) return View($"~/Applications/PisModules/Views/Pages/{trntView}.cshtml");
                                                                              
         if (ReportViews.TryGetValue(key, out var reportView))   return View($"~/Applications/PisReport/Views/Pages/{reportView}.cshtml");

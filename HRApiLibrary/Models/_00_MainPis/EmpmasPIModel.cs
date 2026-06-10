@@ -19,5 +19,9 @@ public class EmpmasPIModel
     public string?      BloodType      { get; set; }
     public string?      Spouse         { get; set; }
     public string?      Occupation     { get; set; }
-    public int?          NoChildren     { get; set; }
+    public int?         NoChildren     { get; set; }
+
+    //===============================================
+    public int?          Age            { get; set; }
+
 }
