@@ -1,5 +1,6 @@
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._00_MainPis;
 using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._90_Utils;
 
@@ -118,7 +119,31 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
         return data;    
     }
-    
+
+    public async Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
+    {
+
+        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+                        from {schema}.Empmas e 
+                        where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter
+                        order by e.EmplastNm, e.EmpFirstNm";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter }, conn);
+        return data;
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02SearchName(string? skey, string? schema = "MainPis", string? conn = "MySqlConn")
+    {
+        string? searchKey = $"{skey}%";
+        string? sql = $@"select  e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+                        from {schema}.Empmas e 
+                        where e.EmpLastNm like @SearchKey or e.EmpFirstNm like @SearchKey
+                        order by e.EmplastNm, e.EmpFirstNm";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { SearchKey = searchKey }, conn);
+        return data;
+    }
+
+
     public async Task<List<OEmpmasModel?>?> _02Migrated( string? schema, string? conn)
     {
         var sql = $@"select count(*) as CntNotMigrated from {schema}.Empmas e 
@@ -144,7 +169,24 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }
-    
+
+
+    public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? newdb, string? conn)
+    {
+        var flds = EmpmasFields();
+
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, ne.Id SystemId
+                        from {olddb}.Empmas e
+                     left join {olddb}.position    p on p.code = e.position_
+                     left join {olddb}.empstat     s on s.code = e.empstat_                              
+                     left join {olddb}.Client      c  on c.ClNumber = e.Client_                              
+                     left join {newdb}.empmas      ne  on ne.empnumber = e.empnumber                              
+                     where e.Empnumber = @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data;
+    }
+
+
     public async Task<List<OEmpmasModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn)
     {
         var usql = $@"UPDATE {schema}.Empmas SET
@@ -470,8 +512,11 @@ public interface IOEmpmasDataAccess
     Task                        _00MigrateData(string? pisDb, string? oPisDb, string? conn);
     Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string? schema, string? conn);
 	Task<List<OEmpmasModel?>?>  _02(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? newdb, string? conn);
     Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn); 
     Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02SearchName(string? skey, string? schema , string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn); 
 	Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn); 
 	

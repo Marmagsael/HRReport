@@ -9,6 +9,7 @@ using OfficeOpenXml.FormulaParsing.Utilities;
 using System;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._10_Pis.OPis;
 
 namespace HRMvc.Applications.PisModules.Vars;
 
@@ -20,6 +21,7 @@ public class V2052
 
 
     public string?  pisdb            { get; set; } = string.Empty;
+    public string?  newpisdb         { get; set; } = string.Empty;
     public string?  paydb            { get; set; } = string.Empty;
     public string?  conn             { get; set; } = string.Empty;
     public int?      defcoid          { get; set; } = 0;
@@ -30,9 +32,10 @@ public class V2052
     public string?                           ActionRef           { get; set; } = string.Empty;
     public int?                              TabNo               { get; set; } = 1;
     public int?                              SelectedId          { get; set; } = 0;
+    public string?                           SelectedEmpnumber   { get; set; } = string.Empty;
 
     public List<Uc_accessreqModel?>?       UcAccessreq          { get; set; } = new();
-    public PisEmpmasModel?                  Empmas              { get; set; } = new();  
+    public OEmpmasModel?                    Empmas              { get; set; } = new();  
     public EmpmasAddressModel               Empmasaddress       { get; set; } = new();
     public DeprecModel?                     Deprec              { get; set; } = new();
     public EmpmasEmploymentModel?           Employment          { get; set; } = new();
@@ -62,7 +65,7 @@ public class V2052
     
     public EmpmasgrpModel                   Empmasgrp           { get; set; } = new();
     
-    public PisEmpmasModel?                  EmpmasToEdit        { get; set; } = new();
+    public OEmpmasModel?                    EmpmasToEdit        { get; set; } = new();
     public DeprecModel?                     DeprecToEdit        { get; set; } = new();
     public EmpmasAddressModel               EmpmasaddressToEdit { get; set; } = new();
     public EmpmasPIModel?                   EmpmasPIToEdit      { get; set; } = new(); 
@@ -70,7 +73,7 @@ public class V2052
     public List<PisEmpmasModel?>?           Empmass             { get; set; } = new();
     public List<RempstatModel?>?            Rempstats           { get; set; } = new();
 
-    public List<EmpmasModel?>?              EmpmasList          { get; set; } = new();
+    public List<OEmpmasModel?>?             EmpmasList          { get; set; } = new();
     public List<RdivisionModel?>?           Rdivisions          { get; set; } = new();
     public List<RdepartmentModel?>?         Rdepartments        { get; set; } = new();
     public List<RsectionModel?>?            Rsections           { get; set; } = new();
@@ -98,7 +101,7 @@ public class V2052
     public RadzenDataGrid<EmpmasInsuranceModel?>?           InsuranceGrid           = new();
 
 
-    public PisEmpmasModel   EmpmasToEditMapper(PisEmpmasModel source, PisEmpmasModel destination)
+    public OEmpmasModel EmpmasToEditMapper(OEmpmasModel source, OEmpmasModel destination)
     {
         var d = destination;
         var e = source; 
@@ -106,7 +109,7 @@ public class V2052
         {
             d = new()
                 {
-                    Id              = e.Id,
+                    //Id              = e.Id,
                     SystemId        = e.SystemId,
                     EmpNumber       = e.EmpNumber,
                     EmpLastNm       = e.EmpLastNm,
@@ -116,22 +119,22 @@ public class V2052
                     EmpAlias        = e.EmpAlias,
 
                     Fullname        = e.Fullname,
-                    Empmasname      = e.Empmasname,
+                    //Empmasname      = e.Empmasname,
                     Email           = e.Email,
-                    UsersId         = e.UsersId,
+                    //UsersId         = e.UsersId,
 
-                    Divid           = e.Divid,
-                    Depid           = e.Depid,
-                    Secid           = e.Secid,
-                    Leavegrpid      = e.Leavegrpid,
-                    Payrollgrpid    = e.Payrollgrpid,
+                    //Divid           = e.Divid,
+                    //Depid           = e.Depid,
+                    //Secid           = e.Secid,
+                    //Leavegrpid      = e.Leavegrpid,
+                    //Payrollgrpid    = e.Payrollgrpid,
 
-                    Dept_           = e.Dept_,
-                    Position_       = e.Position_,
-                    Deployment_     = e.Deployment_,
-                    PayrollGrp_     = e.PayrollGrp_,
-                    EmpStat_        = e.EmpStat_,
-                    SalaryGrade_    = e.SalaryGrade_
+                    //Dept_           = e.Dept_,
+                    //Position_       = e.Position_,
+                    //Deployment_     = e.Deployment_,
+                    //PayrollGrp_     = e.PayrollGrp_,
+                    //EmpStat_        = e.EmpStat_,
+                    //SalaryGrade_    = e.SalaryGrade_
                 };
         }
 

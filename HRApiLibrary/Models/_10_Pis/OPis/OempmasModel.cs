@@ -44,7 +44,7 @@ public class OEmpmasModel
     public string? Citizen                  { get; set; }
     public int? Height                      { get; set; }
     public int? HeightInches                { get; set; }
-    public string? Weight                   { get; set; }
+    public double? Weight                   { get; set; }
     public string? Tin                      { get; set; }
     public string? Sss                      { get; set; }
     public string? Hdmf                     { get; set; }
@@ -109,7 +109,9 @@ public class OEmpmasModel
     public DateTime? ExpMed                 { get; set; }
 
     //-------------------------------------------------------
+    public int?     SystemId                { get; set; } = 0;
     public string?  EmpName                 { get; set; } = string.Empty;
+    public string?  Fullname                { get; set; } = string.Empty;
     public string?  PositionName            { get; set; } = string.Empty;
     public string?  EmpStatus               { get; set; } = string.Empty;
     public string?  ClName                  { get; set; } = string.Empty;

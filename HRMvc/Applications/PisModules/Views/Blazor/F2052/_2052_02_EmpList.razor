@@ -1,5 +1,6 @@
 ﻿@using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.Models._10_Pis
 
 
@@ -54,14 +55,14 @@
     <div class="" style="border:1px solid lightgrey; min-height:70vh; max-height:80vh; overflow:auto ">
 
 
-        @if (@V.EmpmasList?.Count > 0)
+        @if (V.EmpmasList?.Count > 0)
         {
             <table class="table table-sm  table-hover ">
                 <tbody>
                     @foreach (var e in V.EmpmasList!)
                     {
                         @* if (e!.Id == selectedId) *@
-                        if (e!.Id == V.SelectedId)
+                        if (e!.EmpNumber == V.SelectedEmpnumber)
                         {
                             <tr class="fw-bold bg-primary text-white" style="cursor:pointer;">
                                 <td>@e?.EmpLastNm, @e?.EmpFirstNm @e?.EmpMidNm - [@e?.EmpNumber]</td>
@@ -94,8 +95,8 @@
 </div>
 
 
-@inject I_10_EmpmasDataAccess   _empmas;
-@inject DA2052                _da; 
+@inject IOEmpmasDataAccess      _empmas
+@inject DA2052                  _da; 
 @inject I_00MainDA              _main;
 @inject IEmpmovementDataAccess _empMovement;
 
@@ -176,27 +177,21 @@
 
     }
 
-    async void SelectEmpmas(EmpmasModel e)
+    async void SelectEmpmas(OEmpmasModel e)
     {
-        //selectedId = e.Id; 
-        V.SelectedId = e.Id; 
+        V.SelectedEmpnumber = e.EmpNumber; 
 
         if(V.Empmas==null) return; 
 
-        V.Empmas = new(); 
-        V.Empmas = (PisEmpmasModel)V.ObjectMapper(e, V.Empmas);
-
-        var res = await _empmas._02EmpmasAddress(e.Id, V.pisdb!, V.conn!); 
-        //await _main._02Uc_Access_NotAddressed()
+        V.Empmas = new();
+        var res = await _empmas._02(V.SelectedEmpnumber, V.pisdb, V.newpisdb,  V.conn);
+        Console.WriteLine($"res {res.FirstOrDefault().SystemId}");
         if(res!=null)
         {
-            V.Empmasaddress         = res;
-            V.EmpmasaddressToEdit   = res; 
-            V.Empmas.Email          = res.EmailAdd; 
+            V.Empmas         = res.FirstOrDefault();
         }
 
         await FetchOtherData();
-        V.EmpmovementList = await _empMovement._02ListByEmpmasId(V.Empmas.Id, V.pisdb!, V.conn!) ?? null;
 
         StateHasChanged(); 
         await ChildAction.InvokeAsync(); 
@@ -205,15 +200,15 @@
     async Task FetchOtherData()
     {
         // --- Empmas ----------------
-        EmpmasPIModel x = new(); 
-        V.EmpmasPI = await _da._02EmpmasPI(V.SelectedId, V.pisdb!, V.conn!);
-        V.EmpmasPIToEdit    = new();
-        V.EmpmasPIToEdit    = (EmpmasPIModel)V.ObjectMapper(V.EmpmasPI!, V.EmpmasPIToEdit!);
+       //  EmpmasPIModel x = new(); 
+       //  V.EmpmasPI = await _da._02EmpmasPI(V.SelectedId, V.pisdb!, V.conn!);
+       //  V.EmpmasPIToEdit    = new();
+       //  V.EmpmasPIToEdit    = (EmpmasPIModel)V.ObjectMapper(V.EmpmasPI!, V.EmpmasPIToEdit!);
 
        // --- Deprec (Deployment Record) ----------------
-        V.Deprec = await _da._02Deprec(V.SelectedId, V.pisdb!, V.conn!);
-        V.DeprecToEdit = new();
-        V.DeprecToEdit = (DeprecModel)V.ObjectMapper(V.Deprec!, V.DeprecToEdit);
+       //  V.Deprec = await _da._02Deprec(V.SelectedId, V.pisdb!, V.conn!);
+       //  V.DeprecToEdit = new();
+       //  V.DeprecToEdit = (DeprecModel)V.ObjectMapper(V.Deprec!, V.DeprecToEdit);
         
         switch (V.TabNo)
         {
@@ -224,9 +219,9 @@
 
             //--- Address --------------------
             case 2:
-                V.Empmasaddress         = await _da._02EmpmasAddress(V.SelectedId, V.pisdb!, V.conn!); 
-                V.EmpmasaddressToEdit   = new(); 
-                V.EmpmasaddressToEdit   = (EmpmasAddressModel)V.ObjectMapper(V.Empmasaddress, V.EmpmasaddressToEdit); 
+                // V.Empmasaddress         = await _da._02EmpmasAddress(V.SelectedId, V.pisdb!, V.conn!); 
+                // V.EmpmasaddressToEdit   = new(); 
+                // V.EmpmasaddressToEdit   = (EmpmasAddressModel)V.ObjectMapper(V.Empmasaddress, V.EmpmasaddressToEdit); 
                 break;
 
             //--- Deployment  --------------------
@@ -295,7 +290,7 @@
     void FillPositionAndStatus() {
        
         if(V.Empmas == null) return; 
-        if (V.Empmas.Id < 1 ) return;
+        if (string.IsNullOrWhiteSpace(V.Empmas.EmpNumber) ) return;
 
 
     }

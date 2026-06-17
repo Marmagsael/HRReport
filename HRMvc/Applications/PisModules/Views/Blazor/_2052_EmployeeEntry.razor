@@ -1,5 +1,6 @@
 @using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_00_Modal
@@ -34,19 +35,8 @@
 
 
 
-
-@inject I_10_EmpmasDataAccess _empmas;
-@inject IRdivisionDataAccess _rdivision;
-@inject IRdepartmentDataAccess _rdepartment;
-@inject IRsectionDataAccess _rsection;
-
-@inject IEmploymenttypeDataAccess _employmentType;
-@inject ILeavegrpDataAccess _leavegrp;
-@inject IPayrollgrpDataAccess _payrollgrp;
-@inject IPositionDataAccess _position;
-@inject IRempstatDataAccess _rempstat;
-@inject IRcivstatDataAccess _rcivstat;
-@inject I_00CountryDataAccess _country;
+@* @inject I_10_EmpmasDataAccess _empmas; *@
+ @inject IOEmpmasDataAccess _empmas 
 
 @code {
 
@@ -61,11 +51,12 @@
     protected override async void OnParametersSet()
     {
         if (Uc == null) return;
-        v.pisdb = Uc.SchemaUserPis;
-        v.paydb = Uc.SchemaUserPay;
-        v.conn = Uc.Conn;
-        v.userid = Uc.UserId;
-        v.defcoid = int.Parse(Uc.DefCompanyId ?? "0");
+        v.pisdb         = Uc.OpisDb;
+        v.newpisdb      = Uc.SchemaUserPis;
+        v.paydb         = Uc.OpayDb;
+        v.conn          = Uc.Conn;
+        v.userid        = Uc.UserId;
+        v.defcoid       = int.Parse(Uc.DefCompanyId ?? "0");
 
         if (v.conn == null) return;
         if (v.pisdb == null) return;
@@ -73,17 +64,7 @@
 
 
         v.EmpmasList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
-        v.Rdivisions = await _rdivision._02(v.pisdb, v.conn);
-        v.Rdepartments = await _rdepartment._02(v.pisdb, v.conn);
-        v.Rsections = await _rsection._02(v.pisdb, v.conn);
-        v.Employmenttypes = await _employmentType._02(v.pisdb, v.conn);
-        v.Leavegrps = await _leavegrp._02(v.pisdb, v.conn);
-        v.Payrollgprs = await _payrollgrp._02(v.paydb, v.conn);
-        v.Rempstats = await _rempstat._02(v.pisdb, v.conn);
-        v.Positions = await _position._02(v.pisdb, v.conn);
-        v.RCivStats = await _rcivstat._02(v.pisdb, v.conn);
-        v.Countrys = await _country._02("Main", v.conn);
-        //v.PrintProperties(Uc);
+        
 
         StateHasChanged();
 

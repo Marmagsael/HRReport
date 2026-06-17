@@ -68,58 +68,57 @@
 
 
     
-        EmpmasModel empmas  = PisempmasToEmpmas(V.Empmas);
+        OEmpmasModel empmas  = PisempmasToEmpmas(V.Empmas);
         
         var validEmpnumber    = await IsValidEmpnumber(empmas); 
         if(!validEmpnumber) return; 
         
-        var validEmail = await IsValidEmail(empmas); 
-        if (!validEmail) return;
+        // var validEmail = await IsValidEmail(empmas); 
+        // if (!validEmail) return;
         
     
-        if(empmas.Id==0)
-        {
-            V.Action        = "Save Empmas";
-            var res         = await _empmas._01EmpmasV1(empmas, V.pisdb!, V.conn!);     
-            V.Empmas.Id     = res!.Id; 
-            V.SelectedId    = res!.Id; 
+        // if(empmas.EmpNumber==0)
+        // {
+        //     V.Action        = "Save Empmas";
+        //     var res         = await _empmas._01EmpmasV1(empmas, V.pisdb!, V.conn!);     
+        //     V.Empmas.Id     = res!.Id; 
+        //     V.SelectedId    = res!.Id; 
 
-            V.EmpmasList!.Insert(0,res);
+        //     V.EmpmasList!.Insert(0,res);
             
-            await _empmas._01EmpmasAddress_EmailOnly(V.Empmas.Id, V.Empmas.Email, V.pisdb!, V.conn!);
-            StateHasChanged(); 
+        //     await _empmas._01EmpmasAddress_EmailOnly(V.Empmas.Id, V.Empmas.Email, V.pisdb!, V.conn!);
+        //     StateHasChanged(); 
         
-        } else
-        {
+        // } else
+        // {
 
-            V.Action = "Update Empmas";
-            var newEmpmas   = await _empmas._03Empmas(empmas.Id, empmas, V.pisdb!, V.conn!);
-            ReflectUpdateToEmpmasList(newEmpmas!); 
+        //     V.Action = "Update Empmas";
+        //     var newEmpmas   = await _empmas._03Empmas(empmas.Id, empmas, V.pisdb!, V.conn!);
+        //     ReflectUpdateToEmpmasList(newEmpmas!); 
 
-            EmpmasAddressModel empmasAddress = new()
-            {
-                Id          = empmas.Id, 
-                EmailAdd    = V.Empmas.Email 
-            };
+        //     EmpmasAddressModel empmasAddress = new()
+        //     {
+        //         Id          = empmas.Id, 
+        //         EmailAdd    = V.Empmas.Email 
+        //     };
 
-            var res = await _empmas._02EmpmasAddress(empmas.Id, V.pisdb!, V.conn!); 
-            if(res==null)   {   res = await _empmas._01EmpmasAddress(empmas.Id, empmasAddress, V.pisdb!, V.conn!);  } 
-            else            {   res = await _empmas._03EmpmasAddress(empmas.Id, empmasAddress, V.pisdb!, V.conn!); }
+        //     var res = await _empmas._02EmpmasAddress(empmas.Id, V.pisdb!, V.conn!); 
+        //     if(res==null)   {   res = await _empmas._01EmpmasAddress(empmas.Id, empmasAddress, V.pisdb!, V.conn!);  } 
+        //     else            {   res = await _empmas._03EmpmasAddress(empmas.Id, empmasAddress, V.pisdb!, V.conn!); }
 
-            //V.Empmas.Email  = res!.EmailAdd; 
-            V.Empmasaddress = res! ; 
-        }
+        //     V.Empmasaddress = res! ; 
+        // }
 
         V.ShowDataEntry = false;
         await ChildAction.InvokeAsync(); 
 
     }
 
-    EmpmasModel PisempmasToEmpmas(PisEmpmasModel pe )
+    OEmpmasModel PisempmasToEmpmas(OEmpmasModel pe)
     {
-        EmpmasModel e = new()
+        OEmpmasModel e = new()
                             {
-                                Id          = pe.Id,
+                                // Id          = pe.Id,
                                 SystemId    = pe.SystemId,
                                 EmpNumber   = pe.EmpNumber,
                                 EmpLastNm   = pe.EmpLastNm,
@@ -131,20 +130,20 @@
         return e;
     }
 
-    async Task<bool> IsValidEmpnumber(EmpmasModel empmas)
+    async Task<bool> IsValidEmpnumber(OEmpmasModel empmas)
     {
         if (empmas.EmpNumber==null)         return true;
         if (empmas.EmpNumber.Length < 1)    return true; 
 
-        var res = await _empmas._02Empmas_EmpnumberOwnedByOthers(empmas.Id, empmas.EmpNumber, V.pisdb!, V.conn!);    
+        // var res = await _empmas._02Empmas_EmpnumberOwnedByOthers(empmas.Id, empmas.EmpNumber, V.pisdb!, V.conn!);    
         
-        if (res==null) return true;
-        if(res.Count > 0)
-        {
-            var msg = "Employee number already in used. ";
-            await _DialogService.Alert(msg, "Update Failed", new AlertOptions() { OkButtonText = "Exit" });
-            return false; 
-        }
+        // if (res==null) return true;
+        // if(res.Count > 0)
+        // {
+        //     var msg = "Employee number already in used. ";
+        //     await _DialogService.Alert(msg, "Update Failed", new AlertOptions() { OkButtonText = "Exit" });
+        //     return false; 
+        // }
         return true; 
     }
     async Task<bool> IsValidEmail(EmpmasModel empmas)
@@ -168,11 +167,11 @@
 
     void ReflectUpdateToEmpmasList(EmpmasModel source)
     {
-        var e = V.EmpmasList?.Find(e=>e?.Id==source.Id); 
+        var e = V.EmpmasList?.Find(e=>e?.EmpNumber == source.EmpNumber); 
         var s = source; 
         if(e==null) return;
         
-        e.Id          = s.Id;
+        // e.Id          = s.Id;
         e.SystemId    = s.SystemId;
         e.EmpNumber   = s.EmpNumber;
         e.EmpLastNm   = s.EmpLastNm;
