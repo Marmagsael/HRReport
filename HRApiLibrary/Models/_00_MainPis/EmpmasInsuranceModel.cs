@@ -3,6 +3,7 @@
 public class EmpmasInsuranceModel
 {
     public int? Id { get; set; }
+    public int? EmpmasId { get; set; }
 
     public string? INSURANCE { get; set; }
 

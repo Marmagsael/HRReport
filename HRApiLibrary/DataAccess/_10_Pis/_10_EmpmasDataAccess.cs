@@ -881,14 +881,14 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     // *********************************************************************************************
     // --- EmpmasInsurance *************************************************************************
     //**********************************************************************************************
-    public async Task<EmpmasInsuranceModel?> _01EmpmasInsurance(int? id, EmpmasInsuranceModel empmasinsurance, string? schema, string? conn)
+    public async Task<EmpmasInsuranceModel?> _01EmpmasInsurance( EmpmasInsuranceModel empmasinsurance, string? schema, string? conn)
     {
-        string? sql = $@"Insert into {schema}.Empmasinsurance (Id,  INSURANCE,  PolicyNo,  FaceValue,  Premium,  InsExpire) values 
-                                                             (@Id, @INSURANCE, @PolicyNo, @FaceValue, @Premium, @InsExpire)";
+        string? sql = $@"Insert into {schema}.Empmasinsurance (  INSURANCE,  PolicyNo,  FaceValue,  Premium,  InsExpire) values 
+                                                             ( @INSURANCE, @PolicyNo, @FaceValue, @Premium, @InsExpire)";
         await _sql.ExecuteCmd<dynamic>(sql, empmasinsurance, conn);
 
-        sql = $@"SELECT * FROM {schema}.Empmasinsurance WHERE Id = @Id";
-        var res = await _sql.FetchData<EmpmasInsuranceModel?, dynamic>(sql, new { Id = id }, conn);
+        sql = $@"SELECT * FROM {schema}.Empmasinsurance WHERE Id = (SELECT @@IDENTITY);";
+        var res = await _sql.FetchData<EmpmasInsuranceModel?, dynamic>(sql, new {  }, conn);
         return res.FirstOrDefault();
     }
 

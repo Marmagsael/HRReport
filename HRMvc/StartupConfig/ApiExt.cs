@@ -19,6 +19,7 @@ using HRApiLibrary.DataAccess._20_Pay_Report;
 using HRApiLibrary.DataAccess._90_Utils;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRMvc.Applications._02HR._02Library;
+using HRMvc.Applications.PisModules.Vars.NonExclusive;
 
 namespace HRMvc.StartupConfig;
 
@@ -127,7 +128,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOtreqhistDataAccess, OtreqhistDataAccess>();
 
         builder.Services.AddScoped<IRempstat_baseDataAccess, Rempstat_baseDataAccess>();
-        builder.Services.AddScoped<DA222>();
+        builder.Services.AddScoped<NEDA2052>();
         /*builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<SessionService>();*/
         

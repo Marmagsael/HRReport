@@ -1,0 +1,513 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRMvc.Applications.PisModules.Vars.NonExclusive
+@using HRMvc.Applications._02HR._02Library
+
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+
+<div class="p-2">
+    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Training and Seminar" />
+    <div class="h-10p"></div>
+    @if (V.Empmas?.Id > 0)
+    {
+        <div class="p-2 bordered mb-2 w-100">
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" />
+        </div>
+    }
+
+
+    <div class="custom-grid mt-2">
+        <RadzenDataGrid Data="@V.Trainings"
+                        TItem="EmpmasTrainingModel"
+                        @ref="V.TrainingGrid"
+                        EditMode="DataGridEditMode.Single"
+                        AllowSorting="true"
+                        AllowPaging="true"
+                        PageSize="10"
+                        PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                        ColumnWidth="200px"
+                        IsLoading="isLoading">
+            <Columns>
+                <RadzenDataGridColumn TItem="EmpmasTrainingModel"
+                                      Context="EmpmasTrainingModel"
+                                      Filterable="false"
+                                      Sortable="false"
+                                      Width="100%">
+                    <HeaderTemplate>
+                        <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
+                            <RadzenColumn Size="5" class="custom-grid-sm">Details</RadzenColumn>
+                            <RadzenColumn Size="6" class="custom-grid-md">Program Name</RadzenColumn>
+                            <RadzenColumn Size="6" class="custom-grid-md">Institution</RadzenColumn>
+                        </RadzenRow>
+                    </HeaderTemplate>
+
+
+                    <Template Context="rec">
+
+                        @* ======= Small Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-sm">
+                            @*-- Name --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="ProgramName" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.ProgramName" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Institution --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="School" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.School" Disabled="true"  />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Trainor --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Trainor" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Trainor" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Start --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Date Start"  />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDatePicker @bind-Value="rec.DateStart" ShowButton="false" Disabled="true" DateFormat="MM dd yyyy" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- End --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Date End"  />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDatePicker @bind-Value="rec.DateEnd" ShowButton="false" Disabled="true" DateFormat="MM dd yyyy" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                        
+                            @*-- Hrs --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Total Hrs"  />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenNumeric @bind-Value="rec.TotalHrs"  Disabled="true"  />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </RadzenStack>
+
+                        @* ======= Large Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-md">
+                            <RadzenRow>
+                                @*--  ProgramName / Start/ End / Hrs  --*@
+                                <RadzenColumn Size="6">
+                                    <div class="fw-bold">@rec.ProgramName</div>
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="6">
+                                                 Start: <span class="text-muted text-decoration-underline"> @rec.DateStart.ToString("MMM dd, yyyy")</span>
+                                            </RadzenColumn>
+
+                                            <RadzenColumn Size="6">
+                                                End: <span class="text-muted text-decoration-underline "> @rec.DateEnd.ToString("MMM dd, yyyy")</span>
+                                            </RadzenColumn>
+
+                                            <RadzenColumn Size="6">
+                                                Total Hrs: <span class="text-muted text-decoration-underline"> @rec.TotalHrs</span>
+                                            </RadzenColumn>
+
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                                @*-- School / Trainer --*@
+                                <RadzenColumn Size="6">
+                                    <div>@rec.School</div>
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12">
+                                                Trainor: <span class="text-muted text-decoration-underline"> @rec.Trainor</span>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+
+                            </RadzenRow>
+                        </RadzenStack>
+                    </Template>
+
+                    <EditTemplate Context="rec">
+                        @* ======= Small Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-sm">
+                            @*-- Name --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Program Name" Component="NameSm" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.ProgramName" Change="@(args => rec.ProgramName = args.ToString().Trim())" class="w-100" Name="NameSm" MaxLength="60" />
+                                        <RadzenRequiredValidator Component="NameSm" Text="Program Name is required" Popup="true" Style="position: absolute; " />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Institution --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="School" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.School" Change="@(args => rec.School = args.ToString().Trim())" class="w-100" Name="SchoolSm" MaxLength="50" />
+                                        <RadzenRequiredValidator Component="SchoolSm" Text="Institution is required" Popup="true" Style="position: absolute; " />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Trainor --*@
+                            <RadzenRow AlignItems="AlignItems.Center" class="row">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Trainor" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Trainor"  class="w-100"  MaxLength="30" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Start Date --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Date Start" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDatePicker @bind-Value="rec.DateStart" class="w-100" DateFormat="MM dd yyyy" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- End Date --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Date End" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDatePicker @bind-Value="rec.DateEnd" class="w-100" DateFormat="MM dd yyyy" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Total Hrs --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Total Hrs" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenNumeric @bind-Value="rec.TotalHrs" class="w-100"  />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </RadzenStack>
+
+                        @* ======= Large Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-md">
+                            <RadzenRow Gap=".3rem">
+
+                                @*--  Program Name / Gender  --*@
+                                <RadzenColumn Size="6">
+                                    <RadzenTextBox @bind-Value="rec.ProgramName" Change="@(args => rec.ProgramName = args.ToString().Trim())" class="w-100" Name="NameLg" MaxLength="60" Style=" display: block" />
+                                    <RadzenRequiredValidator Component="NameLg" Text="Program Name is required" Popup="true" Style="position: absolute; " />
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="6">
+                                                <RadzenFormField Text="Date Start" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                    <RadzenDatePicker @bind-Value="rec.DateStart" DateFormat="MM dd yyyy" />
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+
+                                            <RadzenColumn Size="6">
+                                                <RadzenFormField Text="Date End" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                    <RadzenDatePicker @bind-Value="rec.DateEnd" DateFormat="MM dd yyyy" />
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+
+                                            <RadzenColumn Size="6">
+                                                <RadzenFormField AllowFloatingLabel="false" Text="Total Hrs" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                    <RadzenNumeric @bind-Value="rec.TotalHrs" />
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                                @*-- Institution / Trainer --*@
+                                <RadzenColumn Size="6">
+                                    <RadzenTextBox @bind-Value="rec.School" Change="@(args => rec.School = args.ToString().Trim())" class="w-100" Name="SchoolLg" MaxLength="50" Style=" display: block" />
+                                    <RadzenRequiredValidator Component="SchoolLg" Text="Instituion is required" Popup="true" Style="position: absolute; " />
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12">
+                                                <RadzenFormField AllowFloatingLabel="false" Text="Trainor" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                   <RadzenTextBox @bind-Value="rec.Trainor" MaxLength="30"/>
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+
+                            </RadzenRow>
+                        </RadzenStack>
+                    </EditTemplate>
+
+                </RadzenDataGridColumn>
+
+                @* Actions Column *@
+                <RadzenDataGridColumn TItem="EmpmasTrainingModel" Context="EmpmasTrainingModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
+                    <Template Context="rec">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true"></RadzenButton>
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true"></RadzenButton>
+                    </Template>
+                    <EditTemplate Context="rec">
+                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@((args) => SaveRow(rec))"></RadzenButton>
+                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@((args) => CancelEdit(rec))" Size="ButtonSize.Small" class="my-1 ms-1"></RadzenButton>
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1"></RadzenButton>
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+
+
+
+</div>
+
+
+
+
+@inject I_10_EmpmasDataAccess _empmas;
+
+
+@code {
+
+    int? empmasId = 0;
+
+    [Parameter]
+    public NEV2052 V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    List<EmpmasTrainingModel?>? trainingToInsert = new();
+    List<EmpmasTrainingModel?>? trainingToUpdate = new();
+    string? errorMsg = string.Empty;
+    bool isLoading = true;
+    bool editMode = false;
+    private int screenWidth;
+
+
+
+
+    protected override async void OnParametersSet()
+    {
+        if (empmasId != V.SelectedId)
+        {
+            empmasId = V.SelectedId;
+
+            await Task.Delay(250);
+
+            V.Trainings = await _empmas._02EmpmasTrainingList(empmasId, V.pisdb!, V.conn!);
+        }
+        isLoading = false;
+        StateHasChanged();
+
+        
+    }
+
+    //-- InsertRow ----------------
+    private async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new EmpmasTrainingModel();
+        trainingToInsert!.Add(rec);
+        await V.TrainingGrid!.InsertRow(rec);
+        editMode = true;
+    }
+    //-- Reset ----------------
+    private void Reset()
+    {
+        trainingToInsert!.Clear();
+        trainingToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    private void Reset(EmpmasTrainingModel rec)
+    {
+        trainingToInsert!.Remove(rec);
+        trainingToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    private async Task EditRow(EmpmasTrainingModel rec)
+    {
+        editMode = true;
+
+        if (V.TrainingGrid != null)
+        {
+            Reset();
+            trainingToUpdate?.Add(rec);
+            await V.TrainingGrid.EditRow(rec);
+        }
+    }
+    //-- Delete Row ----------------
+    private async Task DeleteRow(EmpmasTrainingModel rec)
+    {
+        if (V.Trainings == null) return;
+        if (V.TrainingGrid == null) return;
+
+        Reset(rec);
+
+        if (V.Trainings.Contains(rec))
+        {
+            if (rec != null)
+            {
+                var option = await _DialogService.Confirm("Delete " + rec.ProgramName + "  record?", "Confirm Delete",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
+                {
+                    await _empmas._04EmpmasTraining(rec!.Id, V.pisdb!, V.conn!);
+                    V.Trainings.Remove(rec);
+                    ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully deleted a record.", Detail = "Record has been deleted from the list.", Duration = 4000 });
+                }
+            }
+        }
+        else
+        {
+            V.TrainingGrid.CancelEditRow(rec);
+        }
+        await V.TrainingGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+    //-- Cancel Edit ----------------
+    private async void CancelEdit(EmpmasTrainingModel rec)
+    {
+        errorMsg = string.Empty;
+        if (V.TrainingGrid == null) return;
+
+        Reset(rec);
+        editMode = false;
+
+        V.TrainingGrid.CancelEditRow(rec);
+        if (rec.Id < 1) return;
+
+        int? id = rec.Id;
+        // var res = await _mainPis._02EmpmasEmployment(rec.Id, mydb!, conn!);
+        // if (res == null) return;
+        // Remap_Flds(rec, res);
+        await V.TrainingGrid.Reload();
+    }
+    //-- Remap ----------------
+    private void Remap_Flds(EmpmasTrainingModel destination, EmpmasTrainingModel source)
+    {
+
+    }
+    //-- Save Row ----------------
+    private async Task SaveRow(EmpmasTrainingModel rec)
+    {
+        if (V.TrainingGrid == null) return;
+
+     
+        if (!SafeToSave(rec))
+        {
+            await V.TrainingGrid.UpdateRow(rec);
+            return;
+        }
+
+
+
+        if (rec.Id == 0)
+        {
+            rec.EmpmasId = empmasId;
+            var res = await _empmas._01EmpmasTraining(rec, V.pisdb!, V.conn!);
+            if (res != null)
+            {
+                rec.Id = res.Id;
+                V.Trainings!.Add(rec);
+                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully added a record.", Detail = "Record has been added to the list.", Duration = 4000 });
+            }
+        }
+        else
+        {
+            await _empmas._03EmpmasTraining(rec.Id, rec, V.pisdb!, V.conn!);
+            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully updated a record.", Detail = "Record has been updated from the list.", Duration = 4000 });
+        }
+        await V.TrainingGrid.UpdateRow(rec);
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+    // -- Safe to Save ----------------
+    private bool SafeToSave(EmpmasTrainingModel rec)
+    {
+        if (rec.ProgramName?.Length == 0 || rec.ProgramName == null)
+        {
+            return false;
+        }
+
+        if (rec.School?.Length == 0 || rec.School == null)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    private void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
+    }
+
+
+
+
+}
+
+
+
+

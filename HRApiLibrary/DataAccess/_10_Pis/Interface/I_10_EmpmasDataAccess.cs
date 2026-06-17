@@ -17,7 +17,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasFamilyRefModel?> _01EmpmasFamilyRef(string? code, string? name, string? schema, string? conn);
         Task<List<EmpmasEmergencyContactModel?>?> _02EmpmasEmergencyContactList(int? empmasId, string? schema, string? conn);
         Task<EmpmasGovPhModel?> _01EmpmasGovPh(int? id, EmpmasGovPhModel empmasgovph, string? schema, string? conn);
-        Task<EmpmasInsuranceModel?> _01EmpmasInsurance(int? id, EmpmasInsuranceModel empmasinsurance, string? schema, string? conn);
+        Task<EmpmasInsuranceModel?> _01EmpmasInsurance( EmpmasInsuranceModel empmasinsurance, string? schema, string? conn);
         Task<EmpmasPIModel?> _01EmpmasPI(int? id, EmpmasPIModel empmaspi, string? schema, string? conn);
         Task<EmpmasRelativesModel?> _01EmpmasRelatives(EmpmasRelativesModel empmasrelatives, string? schema, string? conn);
         Task<EmpmasRelativesRefModel?> _01EmpmasRelativesRef(string? code, string? name, string? schema, string? conn);
