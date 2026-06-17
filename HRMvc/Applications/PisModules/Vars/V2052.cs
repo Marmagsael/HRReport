@@ -27,8 +27,9 @@ public class V2052
     public int?      defcoid          { get; set; } = 0;
     public int?      userid           { get; set; } = 0; 
 
-    public bool                             ShowDataEntry       { get; set; } = false;
+    public bool                             ShowDataEntry        { get; set; } = false;
     public string?                           Action              { get; set; } = string.Empty;
+    public bool?                             IsNewEntry           { get; set; } = false;
     public string?                           ActionRef           { get; set; } = string.Empty;
     public int?                              TabNo               { get; set; } = 1;
     public int?                              SelectedId          { get; set; } = 0;

@@ -170,12 +170,29 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
+    public async Task<List<OEmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn)
+    {
+        var flds = EmpmasFields();
+
+        var sql = $@"select  e.empnumber from {schema}.Empmas e  where e.Empnumber = @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data;
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02EmpmasAddress_ByEmailNotTheOwner(string? empnumber, string? email, string? schema, string? conn)
+    {
+        string? sql = $@"select  * from {schema}.Empmas where Email = @Email  and Empnumber != @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber, Email = email }, conn);
+        return data;
+    }
+
+
 
     public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? newdb, string? conn)
     {
         var flds = EmpmasFields();
 
-        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, ne.Id SystemId
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, ne.SystemId
                         from {olddb}.Empmas e
                      left join {olddb}.position    p on p.code = e.position_
                      left join {olddb}.empstat     s on s.code = e.empstat_                              
@@ -275,7 +292,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 	
 
 	
-	public async Task<OEmpmasModel?> _03(int? id,OEmpmasModel empmas, string? schema, string? conn)
+	public async Task<OEmpmasModel?> _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn)
 	{
 		string sql = $@"Update {schema}.Empmas set 
                                EMPNUMBER = @EMPNUMBER, 
@@ -325,8 +342,8 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                                sgcode = @sgcode, dpadate = @dpadate, dpclient = @dpclient where Id = @Id;"; 
 		await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
 		
-		sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
-		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+		sql = $@" select  * from {schema}.Empmas x where x.Empnumber = @Empnumber ;";
+		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
 		return data?.FirstOrDefault();
 	}
 
@@ -518,6 +535,8 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
     Task<List<OEmpmasModel?>?> _02SearchName(string? skey, string? schema , string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn); 
-	Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn); 
-	
+	Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02EmpmasAddress_ByEmailNotTheOwner(string? empnumber, string? email, string? schema, string? conn);
+    Task<OEmpmasModel?> _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn);
 }
