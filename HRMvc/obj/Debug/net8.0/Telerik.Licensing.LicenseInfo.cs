@@ -9,7 +9,7 @@
 
 // This file contains provisioning of Telerik products runtime usage.
 
-[assembly: Telerik.Licensing.LicenseUsedDateAttribute("2026-06-10")]
+[assembly: Telerik.Licensing.LicenseUsedDateAttribute("2026-06-18")]
 [assembly: Telerik.Licensing.EvidenceAttribute("eyJhbGciOiJSUzI1NiIsInR5cCI6IlRlbGVyaWsgTGljZW5zZSBFdmlkZW5jZSJ9.eyJjb2RlIjoiUkVQT1JUSU5HIiwidHlwZSI6InBlcnBldHVhbCIsImV4cGlyYXRpb24iOjE3OTM3NTgzMTcsInVzZXJJZCI6Ijk3MTgyZmJiLTYxNTEtNDg1NC04MjYxLWIxMWE1ZWJmYTk3ZiIsImxpY2Vuc2VJZCI6IjQzNTUxZDEzLTJkMDItNDFjNi1iYjljLWZjNGM3M2MxZTM5YSJ9.AuuKCvT2CvtDhfUSZk_R1hyczDjiQFowXxPcfxbQZ-2B5ksRgZH-OgxmFK6jA1DYwoVFmJcEruK4itjMyNJ4Rd6I-HwYP-t8I9gyjYj3hPoGQEUt3G1U155y4UYvsKLlaHmoPyEw6Y7QYgC7tHW01KbySUdks4uvbY4Wvlig4IZKA0b39iPr4sXNZY0uo0SL1EKtngZqTyELFdMeLF_YXV3wLGVfFFAXHtuuRw31LhkZimd10M_9WfWbORxTuWUropMyZ3y6KX0IThILthlKuQsj0BBdSeJ_Ju6yJVmahnffCnbfOxck9lgEGKBP28mm7imVIzk9y0ShaW_Y40-S8A")]
 
 [assembly: Telerik.Licensing.ProductReferenceAttribute("REPORTING", "2025-11-19", "", "Telerik Reporting", "19.3.25.1119")]
