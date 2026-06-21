@@ -5,14 +5,16 @@
 
 @inject NotificationService _NotificationService;
 @inject DialogService _DialogService;
+@inject IOEmpmasDataAccess _empmas
 
 <div class="msds-modal">
     <div class="msds-modal-content" style="max-width: 980px;">
         <div class="modal-content  bg-opacity-75">
 
-
             <div class="modal-header  bg-opacity-75">
-                <h1 class="modal-title fs-5">Add New Employee</h1>
+                <h1 class="modal-title fs-5">
+                    @(V.IsNewEntry == true ? "Add New Employee" : "Update Employee")
+                </h1>
                 <button type="button" class="btn-close" @onclick="@(() => ShowHideModal(false))" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
@@ -24,7 +26,6 @@
                     </RadzenAlert>
                 }
                 <_2052_01_DataEntry V="@V" ChildAction="ChildActionCatcher" />
-
             </div>
 
         </div>
@@ -32,11 +33,7 @@
 </div>
 
 
-@inject IOEmpmasDataAccess _empmas
-
-
 @code {
-
 
     [Parameter]
     public V2052 V { get; set; } = new();
@@ -45,144 +42,146 @@
     public EventCallback ChildAction { get; set; }
 
     string errormsg = string.Empty;
-    async void ShowHideModal(bool action)
+
+    async Task ShowHideModal(bool action)
     {
 
-        if (action == false)
+        if(action == false)
         {
-            V.Empmas = V.EmpmasToEditMapper(V.EmpmasToEdit!, V.Empmas!);
             V.ShowDataEntry = false;
-
+            V.IsNewEntry    = false;
+            V.EmpmasToEdit  = new OEmpmasModel();
+            await ChildAction.InvokeAsync();
         }
-        await ChildAction.InvokeAsync();
+
     }
 
-
-    void ChildActionCatcher()
+    async Task ChildActionCatcher()
     {
         if (V == null) return;
-        if (V.Action == "SaveEmpmas") SaveUpdate();
-        if (V.Action == "HideDataEntry") ShowHideModal(false);
+
+        if (V.Action == "SaveEmpmas") await SaveUpdate();
+        if (V.Action == "HideDataEntry") await ShowHideModal(false);
+        if (V.Action == "SelectEmpmas") await SelectEmpmas();
 
         V.Action = "";
         V.ActionRef = string.Empty;
     }
 
-    async void SaveUpdate()
+    async Task SelectEmpmas()
     {
-        errormsg = string.Empty;
+        await ChildAction.InvokeAsync();
+    }
 
-        OEmpmasModel empmas = PisempmasToEmpmas(V.Empmas);
-        if (V.IsNewEntry == true)
+    async Task SaveUpdate()
+    {
+        if (!await ValidateEmail()) return;
+
+
+        try
         {
-            var validEmpnumber = await IsValidEmpnumber(empmas);
-            if (!validEmpnumber) return;
+            if (V.IsNewEntry == true)
+            {
+                var res = await _empmas._01(V.EmpmasToEdit, V.pisdb, V.conn);
+                V.Empmas = res;
+
+                ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Succesfully saved",
+                    Detail = "Record has been succefully saved.",
+                    Duration = 5000
+                });
+            }
+            else
+            {
+                var res = await _empmas._03_EmployeeName(V.SelectedEmpnumber, V.EmpmasToEdit, V.pisdb, V.conn);
+
+                V.Empmas.EmpLastNm  = res.EmpLastNm;
+                V.Empmas.EmpFirstNm = res.EmpFirstNm;
+                V.Empmas.EmpMidNm   = res.EmpMidNm;
+                V.Empmas.EmpAlias   = res.EmpAlias;
+                V.Empmas.Suffix     = res.Suffix;
+                V.Empmas.Email      = res.Email;
+
+                ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Succesfully updated",
+                    Detail = "Record has been succefully updated.",
+                    Duration = 5000
+                });
+            }
         }
-
-
-        var validEmail = await IsValidEmail(empmas);
-        if (!validEmail) return;
-
-
-        if(V.IsNewEntry == true)
+        catch (Exception ex)
         {
-            Console.WriteLine($" email {empmas.Email}");
-            var res                 = await _empmas._01(empmas, V.pisdb!, V.conn!);
-            V.SelectedEmpnumber     = res!.EmpNumber;
-
-            V.EmpmasList!.Insert(0,res);
-
-            StateHasChanged();
-
-        } else
-        {
-            var newEmpmas   = await _empmas._03(empmas.EmpNumber, empmas, V.pisdb!, V.conn!);
-            ReflectUpdateToEmpmasList(newEmpmas!);
+            Console.WriteLine(ex);
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to save",
+                Detail = "Something went wrong while saving. Please try again.",
+                Duration = 6000
+            });
+            return;
         }
+       
 
         V.ShowDataEntry = false;
         await ChildAction.InvokeAsync();
-
     }
 
-    OEmpmasModel PisempmasToEmpmas(OEmpmasModel pe)
+    async Task<bool> ValidateEmail()
     {
-        OEmpmasModel e = new()
+
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email))
+            return true;
+
+        try
         {
-            // Id          = pe.Id,
-            SystemId    = pe.SystemId,
-            EmpNumber   = pe.EmpNumber,
-            EmpLastNm   = pe.EmpLastNm,
-            EmpFirstNm  = pe.EmpFirstNm,
-            EmpMidNm    = pe.EmpMidNm,
-            EmpAlias    = pe.EmpAlias,
-            Email       = pe.Email,
-            Suffix      = pe.Suffix
-        };
-        return e;
-    }
+            var existing = await _empmas._02EmpmasAddress_ByEmailNotTheOwner( V.SelectedEmpnumber, V.EmpmasToEdit.Email, V.pisdb, V.conn);
 
-    async Task<bool> IsValidEmpnumber(OEmpmasModel empmas)
-    {
-        if (empmas.EmpNumber == null) return true;
-        if (empmas.EmpNumber.Length < 1) return true;
+            if (existing.Count() > 0)
+            {
+                ShowNotification(new NotificationMessage
+                {
+                    Severity    = NotificationSeverity.Error,
+                    Summary     = "Duplicate email",
+                    Detail      = "This email address is already used by another employee.",
+                    Duration    = 5000
+                });
+                return false;
 
-        var res = await _empmas._02Empmas_EmpnumberOwnedByOthers(empmas.EmpNumber, V.pisdb!, V.conn!);
+            }
+            else
+            {
+                _NotificationService.Messages.Clear();
+            }
 
-        if (res == null) return true;
-        if (res.Count > 0)
+            
+        }
+        catch (Exception)
         {
-            errormsg = "Employee number already in used.";
-            StateHasChanged();
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to validate email",
+                Detail = "Something went wrong while checking the email address. Please try again.",
+                Duration = 6000
+            });
             return false;
         }
-        return true;
-    }
-    async Task<bool> IsValidEmail(OEmpmasModel empmas)
-    {
 
-        if (V.Empmas?.Email == null) return true;
-        if (V.Empmas.Email.Length < 1) return true;
-
-        List<OEmpmasModel?>? res = new List<OEmpmasModel?>();
-
-        if (V.IsNewEntry == true)
-        {
-            res = await _empmas._02EmpmasAddress_ByEmailNotTheOwner(string.Empty, V.Empmas.Email, V.pisdb!, V.conn!);
-        }
-        else
-        {
-            res = await _empmas._02EmpmasAddress_ByEmailNotTheOwner(empmas.EmpNumber, V.Empmas.Email, V.pisdb!, V.conn!);
-        }
-
-
-        if (res == null) return true;
-
-        if (res.Count > 0)
-        {
-            errormsg = "Email already in used.";
-            StateHasChanged();
-            return false;
-        }
         return true;
     }
 
 
-    void ReflectUpdateToEmpmasList(OEmpmasModel source)
+   
+
+   
+
+    private void ShowNotification(NotificationMessage message)
     {
-        var e = V.EmpmasList?.Find(e => e?.EmpNumber == source.EmpNumber);
-        var s = source;
-        if (e == null) return;
-
-        // e.Id          = s.Id;
-        e.SystemId      = s.SystemId;
-        e.EmpNumber     = s.EmpNumber;
-        e.EmpLastNm     = s.EmpLastNm;
-        e.EmpFirstNm    = s.EmpFirstNm;
-        e.EmpMidNm      = s.EmpMidNm;
-        e.Suffix        = s.Suffix;
-        e.EmpAlias      = s.EmpAlias;
-
+        _NotificationService.Notify(message);
     }
-
 }

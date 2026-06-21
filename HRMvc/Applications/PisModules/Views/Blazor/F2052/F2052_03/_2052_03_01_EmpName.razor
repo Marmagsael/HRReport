@@ -115,13 +115,13 @@
                 @* --- Current Status -------------------------- *@
                 <div class="p-1 d-flex">
                     <div class="s22203a-lbl w-25">&nbsp;</div>
-                    @* @if (V.Empmas.Id > 0)
-                    {
-                        <div class="bordered-bottom p-2 d-flex w-75">
-                            <div>| <span class="msds-link" @onclick="EditEmpmas">Edit</span> &nbsp; </div>
-                            <div> | <span class="msds-link">Upload Image</span> |</div>
-                        </div>
-                    } *@
+                     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+                        {
+                            <div class="bordered-bottom p-2 d-flex w-75">
+                                <div>| <span class="msds-link" @onclick="EditEmpmas">Edit</span> &nbsp; </div>
+                                <div> | <span class="msds-link">Upload Image</span> |</div>
+                            </div>
+                        } 
                 </div>
             </div>
         </div>
@@ -170,19 +170,15 @@
     public EventCallback ChildAction { get; set; }
 
     List<UsersModel?>? users = new();
-    // int? userid = 0;
     string? errorEmail = "";
 
-    // protected async override void OnParametersSet()
-    // {
-    // StateHasChanged();
-    // }
+  
 
     async void EditEmpmas()
     {
-        errorEmail = string.Empty;
-        V.Action = "EditEmpmas";
-        V.EmpmasToEdit = V.EmpmasToEditMapper(V.Empmas!, V.EmpmasToEdit!);
+        errorEmail      = string.Empty;
+        V.Action        = "EditEmpmas";
+        V.EmpmasToEdit  = V.EmpmasToEditMapper(V.Empmas!, V.EmpmasToEdit!);
         V.ShowDataEntry = true;
         await ChildAction.InvokeAsync();
     }

@@ -8,7 +8,8 @@
 
 <RadzenDialog />
 <RadzenNotification />
-@using HRMvc.Applications.PisModules.Views.Blazor.NonExclusive.NEF2052.NEF2052_00_Modal
+
+
 
 <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02PageHdr pageTitle="Employee Entry" />
 
@@ -32,14 +33,10 @@
 </div>
 
 
-
-
-
-@* @inject I_10_EmpmasDataAccess _empmas; *@
  @inject IOEmpmasDataAccess _empmas 
 
 @code {
-
+    private readonly NotificationService _NotificationService;
 
 
     V2052 v { get; set; } = new();
@@ -64,26 +61,72 @@
 
 
         v.EmpmasList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
-        
+
 
         StateHasChanged();
 
     }
 
 
-    void ChildAction()
+    async Task ChildAction()
     {
         if (v == null) return;
-        if (v.Action == "SearchEmployee") SearchEmployee();
+        if (v.Action == "SelectEmpmas") await SelectEmpmas();
 
         v.Action = "";
         v.ActionRef = string.Empty;
     }
 
-
-
-    void SearchEmployee()
+    async Task SelectEmpmas()
     {
-        StateHasChanged();
+        if (string.IsNullOrWhiteSpace(v.SelectedEmpnumber)) return;
+        try
+        {
+            var res = await _empmas._02(v.SelectedEmpnumber, v.pisdb, v.newpisdb, v.conn);
+            var emp = res?.FirstOrDefault();
+
+            if (emp != null)
+            {
+                v.IsNewEntry    = false;
+                v.Empmas        = emp;
+                v.EmpmasToEdit  = emp;
+            }
+            else
+            {
+                v.IsNewEntry    = true;
+                v.Empmas        = new OEmpmasModel();
+                ClearFields();
+
+            }
+        }
+        catch (Exception)
+        {
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to load data",
+                Detail = "Something went wrong while loading employee information. Please check your details and try again, or contact your system administrator if the problem continues.",
+                Duration = 6000
+            });
+            throw;
+        }
+    }
+
+
+    void ClearFields()
+    {
+        v.EmpmasToEdit.SystemId     = 0;
+        v.EmpmasToEdit.EmpLastNm    = string.Empty;
+        v.EmpmasToEdit.EmpFirstNm   = string.Empty;
+        v.EmpmasToEdit.EmpMidNm     = string.Empty;
+        v.EmpmasToEdit.EmpAlias     = string.Empty;
+        v.EmpmasToEdit.Suffix       = string.Empty;
+        v.EmpmasToEdit.Email        = string.Empty;
+
+    }
+
+    private void ShowNotification(NotificationMessage message)
+    {
+        _NotificationService.Notify(message);
     }
 }

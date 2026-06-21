@@ -3,48 +3,48 @@
 
 <div style="width:100%; overflow:auto; ">
 
-
-
     <RadzenTemplateForm TItem="PisEmpmasModel" Data=@empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
         <RadzenFieldset Text="Employee Details" class="fw-bold">
 
             <div class="fw-normal">
-                @* ----- EmpNumber (varchar(10))----------*@
-                <div class="d-flex gap-2 p-1 mb-3" style="border-bottom:1px solid lightgray">
-                    <div class="p-2 col-lg-2 col-md-3 fw-bold text-primary">Email </div>
-                    <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext" MaxLength="50" class="w-75" @bind-Value=@V.Empmas!.Email />
-                        <RadzenRequiredValidator Component="Email" Text="Email is required" Style="color: red; display:block" />
-                        <RadzenEmailValidator Component="Email" Text="Enter a valid email address" Style="color: red; display:block" />
-                    </div>
-                </div>
 
                 @* ----- EmpNumber (varchar(10))----------*@
-                <div class="d-flex gap-2 p-1">
-                    <div class="p-1 col-lg-2 col-md-3">Emp. No. </div>
+                <div class="d-flex gap-2 p-1 ">
+                    <div class="p-1 col-lg-2 col-md-3 text-primary fw-bold">Emp. No. </div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="EmpNumber" Placeholder="0000000000" MaxLength="5" class="w-25" @bind-Value=@V.Empmas.EmpNumber Disabled=@(V.IsNewEntry == false) />
-                        <RadzenRequiredValidator Component="EmpNumber" Text="Employee number is required" Style="color: red; display:block" />
+                        <div class="d-flex align-items-start gap-3 flex-wrap">
+                            <div>
+                                <RadzenTextBox Name="EmpNumber" Placeholder="0000000000" MaxLength="5" style="width:120px;"
+                                               @bind-Value=@V.EmpmasToEdit.EmpNumber
+                                               @onfocusout="OnEmpNumberLostFocus" />
+                                <RadzenRequiredValidator Component="EmpNumber" Text="Employee number is required" Style="color: red; display:block" />
+                            </div>
+
+                            @if (V.IsNewEntry == true && !string.IsNullOrEmpty(V.LastEmpNumber))
+                            {
+                                <div class="empnum-hint">
+                                    <span class="empnum-hint-label">LATEST EMPLOYEE NO</span>
+                                    <span class="empnum-hint-value">@V.LastEmpNumber</span>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
-
 
                 @* ----- EmpLastNm (varchar(25))----------*@
                 <div class="d-flex gap-2 p-1">
                     <div class="p-1 col-lg-2 col-md-3">Last Name </div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="EmpLastNm" Placeholder="Emp. Last Name" MaxLength="25" class="w-75" @bind-Value=@V.Empmas.EmpLastNm />
+                        <RadzenTextBox Name="EmpLastNm" Placeholder="Emp. Last Name" MaxLength="25" class="w-75" @bind-Value=@V.EmpmasToEdit.EmpLastNm />
                         <RadzenRequiredValidator Component="EmpLastNm" Text="Last name is required" Style="color: red; display:block" />
                     </div>
                 </div>
-
-
 
                 @* ----- EmpFirstNm (varchar(25))----------*@
                 <div class="d-flex gap-2 p-1">
                     <div class="p-1 col-lg-2 col-md-3">First Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="EmpFirstNm" Placeholder="Emp. First Name" class="w-75" MaxLength="30" @bind-Value=@V.Empmas.EmpFirstNm />
+                        <RadzenTextBox Name="EmpFirstNm" Placeholder="Emp. First Name" class="w-75" MaxLength="30" @bind-Value=@V.EmpmasToEdit.EmpFirstNm />
                         <RadzenRequiredValidator Component="EmpFirstNm" Text="First name is required" Style="color: red; display:block" />
                     </div>
                 </div>
@@ -53,43 +53,53 @@
                 <div class="d-flex gap-2 p-1">
                     <div class="p-1 col-lg-2 col-md-3">Mid. Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Placeholder="Emp Mid Name" class="w-75" MaxLength="15" @bind-Value=@V.Empmas.EmpMidNm />
+                        <RadzenTextBox Placeholder="Emp Mid Name" class="w-75" MaxLength="15" @bind-Value=@V.EmpmasToEdit.EmpMidNm />
                     </div>
                 </div>
-
 
                 @* ----- Suffix (char(3))----------*@
                 <div class="d-flex gap-2 p-1">
                     <div class="p-1 col-lg-2 col-md-3">Suffix</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Placeholder="Suffix" MaxLength="3" class="w-25" @bind-Value=@V.Empmas.Suffix />
+                        <RadzenTextBox Placeholder="Suffix" MaxLength="3" class="w-25" @bind-Value=@V.EmpmasToEdit.Suffix />
                     </div>
                 </div>
 
                 @* ----- EmpAlias (varchar(15))----------*@
-                <div class="d-flex gap-2 p-1">
+                <div class="d-flex gap-2 p-1" style="border-bottom:1px solid lightgray">
                     <div class="p-1 col-lg-2 col-md-3">Alias</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Placeholder="Emp. Alias" MaxLength="15" class="w-25" @bind-Value=@V.Empmas.EmpAlias />
+                        <RadzenTextBox Placeholder="Emp. Alias" MaxLength="15" class="w-25" @bind-Value=@V.EmpmasToEdit.EmpAlias />
                     </div>
+                </div>
+            </div>
+
+            @* ----- Email (varchar(10))----------*@
+            <div class="d-flex gap-2 p-1 mb-3">
+                <div class="p-2 col-lg-2 col-md-3 ">Email </div>
+                <div class="p-1 col-lg-10 col-md-9">
+                    <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext" MaxLength="50" class="w-75" @bind-Value=@V.EmpmasToEdit!.Email />
+                    <RadzenEmailValidator Component="Email" Text="Enter a valid email address" Style="color: red; display:block" />
                 </div>
             </div>
 
         </RadzenFieldset>
 
-        @* ----- Action buttons moved INSIDE the form so type="submit" can trigger Submit/InvalidSubmit ----- *@
         <div class="d-flex gap-2 mt-3 justify-content-end p-1">
             <button type="button" class="btn btn-secondary" @onclick="@(() => HideModal())"
                     data-bs-dismiss="modal">
                 Close
             </button>
-            <button type="submit" class="btn btn-primary">Save changes</button>
+
+         
+            <button type="submit" class="btn btn-primary">
+                @(V.IsNewEntry == true ? "Save changes" : "Update")
+            </button>
         </div>
 
     </RadzenTemplateForm>
 
 </div>
-
 
 @code {
 
@@ -116,6 +126,10 @@
     List<PisEmpmasModel?>? empmassToUpdate = new();
     string? errorMsg = string.Empty;
 
+    bool IsSaveDisabled =>
+        string.IsNullOrWhiteSpace(V.Empmas?.EmpLastNm) ||
+        string.IsNullOrWhiteSpace(V.Empmas?.EmpFirstNm);
+
     protected override void OnParametersSet()
     {
     }
@@ -133,9 +147,41 @@
 
     async Task HideModal()
     {
-
         V.Action = "HideDataEntry";
         await ChildAction.InvokeAsync();
     }
 
+
+    async Task OnEmpNumberLostFocus()
+    {
+        V.SelectedEmpnumber = V.EmpmasToEdit.EmpNumber;
+        V.Action = "SelectEmpmas";
+        await ChildAction.InvokeAsync();
+    }
 }
+
+<style>
+    .empnum-hint {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.1;
+        padding: 4px 12px;
+        border-left: 2px solid #cbd5e1;
+        margin-top: 2px;
+    }
+
+    .empnum-hint-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+
+    .empnum-hint-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #475569;
+        font-family: 'Consolas', 'Courier New', monospace;
+    }
+</style>

@@ -1,4 +1,4 @@
-﻿@using HRMvc.Applications.PisModules.Vars.NonExclusive
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03
 
 
@@ -37,6 +37,8 @@
 
 </div>
 
+@inject IOEmpmasDataAccess _empmas
+
 @code {
 
     [Parameter]
@@ -46,15 +48,24 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    async void NewEntry()
+    async Task NewEntry()
     {
-        V.Action                = "New Entry";
-        V.SelectedEmpnumber     = string.Empty; 
-        V.Empmas                = new(); 
-        V.Deprec                = new();
-        V.ShowDataEntry         = true;
-        V.IsNewEntry            = true;
-        await ChildAction.InvokeAsync(); 
+        V.Action           = "New Entry";
+        V.ShowDataEntry    = true;
+        V.EmpmasToEdit     = new OEmpmasModel();
+        V.IsNewEntry       = true;
+        await GetLastEmpNumber();
+        await ChildAction.InvokeAsync();
+    }
+
+    async Task GetLastEmpNumber()
+    {
+        if (V.IsNewEntry == true)
+        {
+            var maxEmpNo = await _empmas._02MaxEmpnumber(V.pisdb, V.conn);
+            if (!string.IsNullOrWhiteSpace(maxEmpNo.EmpNumber)) V.LastEmpNumber = maxEmpNo.EmpNumber;
+        }
+
     }
 
 }

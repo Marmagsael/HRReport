@@ -34,6 +34,7 @@ public class V2052
     public int?                              TabNo               { get; set; } = 1;
     public int?                              SelectedId          { get; set; } = 0;
     public string?                           SelectedEmpnumber   { get; set; } = string.Empty;
+    public string?                           LastEmpNumber      { get; set; } = string.Empty;
 
     public List<Uc_accessreqModel?>?       UcAccessreq          { get; set; } = new();
     public OEmpmasModel?                    Empmas              { get; set; } = new();  
@@ -110,7 +111,6 @@ public class V2052
         {
             d = new()
                 {
-                    //Id              = e.Id,
                     SystemId        = e.SystemId,
                     EmpNumber       = e.EmpNumber,
                     EmpLastNm       = e.EmpLastNm,
@@ -118,24 +118,8 @@ public class V2052
                     EmpMidNm        = e.EmpMidNm,
                     Suffix          = e.Suffix,
                     EmpAlias        = e.EmpAlias,
-
                     Fullname        = e.Fullname,
-                    //Empmasname      = e.Empmasname,
                     Email           = e.Email,
-                    //UsersId         = e.UsersId,
-
-                    //Divid           = e.Divid,
-                    //Depid           = e.Depid,
-                    //Secid           = e.Secid,
-                    //Leavegrpid      = e.Leavegrpid,
-                    //Payrollgrpid    = e.Payrollgrpid,
-
-                    //Dept_           = e.Dept_,
-                    //Position_       = e.Position_,
-                    //Deployment_     = e.Deployment_,
-                    //PayrollGrp_     = e.PayrollGrp_,
-                    //EmpStat_        = e.EmpStat_,
-                    //SalaryGrade_    = e.SalaryGrade_
                 };
         }
 
