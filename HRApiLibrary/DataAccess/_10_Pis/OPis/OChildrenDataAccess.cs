@@ -19,9 +19,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string? sql = $@"Insert into {schema}.Children (empnumber, name, bday) values (@empnumber, @name, @bday)";
             await _sql.ExecuteCmd<dynamic>(sql, children, conn);
 
-            sql = $@"SELECT * FROM {schema}.Children WHERE ID = (SELECT @@IDENTITY)";
+            sql = $@"SELECT * FROM {schema}.Children WHERE empnumber = @empnumber";
 
-            var res = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { children.EmpNumber }, conn);
 
             return res.FirstOrDefault();
         }
@@ -45,13 +45,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
-        public async Task<OChildrenModel?> _04(int? id, string? schema, string? conn)
+        public async Task<OChildrenModel?> _04(string? empnumber, string? schema, string? conn)
         {
-            string? sql = $@"Delete from {schema}.Children where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+            string? sql = $@"Delete from {schema}.Children where Empnumber = @Empnumber;";
+            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
 
-            sql = $@" select  * from {schema}.Children x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Id = id }, conn);
+            sql = $@" select  * from {schema}.Children x where x.Empnumber = @Empnumber ;";
+            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
     }
@@ -62,5 +62,5 @@ public interface IOChildrenDataAccess
     Task<OChildrenModel?> _01(OChildrenModel children, string? schema, string? conn);
     Task<List<OChildrenModel?>?> _02(string? empnumber, string? schema, string? conn);
     Task<OChildrenModel?> _03(int? id, OChildrenModel children, string? schema, string? conn);
-    Task<OChildrenModel?> _04(int? id, string? schema, string? conn);
+    Task<OChildrenModel?> _04(string? empnumber, string? schema, string? conn);
 }

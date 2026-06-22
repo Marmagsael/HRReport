@@ -1,8 +1,7 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-
 @inject NotificationService _NotificationService;
 @inject DialogService _DialogService;
-
+@inject I_10_EmpmasDataAccess _empmas;
 
 <div class="p-2">
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
@@ -12,10 +11,9 @@
         </div>
     }
 
-
     <div class="custom-grid mt-2">
         <RadzenDataGrid Data="@V.EmergencyContacts"
-                        TItem="EmpmasEmergencyContactModel"
+                        TItem="OEmergencModel"
                         @ref="V.EmergencyContactGrid"
                         EditMode="DataGridEditMode.Single"
                         AllowSorting="true"
@@ -25,8 +23,8 @@
                         ColumnWidth="200px"
                         IsLoading="isLoading">
             <Columns>
-                <RadzenDataGridColumn TItem="EmpmasEmergencyContactModel"
-                                      Context="EmpmasEmergencyContactModel"
+                <RadzenDataGridColumn TItem="OEmergencModel"
+                                      Context="OEmergencModel"
                                       Filterable="false"
                                       Sortable="false"
                                       Width="100%">
@@ -39,14 +37,10 @@
                     </HeaderTemplate>
 
                     <Template Context="rec">
-
                         @* ======= Small Screen =========*@
                         <RadzenStack Gap="0" class="custom-grid-sm">
-                            @*-- Company Name --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Name" Component="Name" />
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="Name" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
                                         <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="60" />
@@ -54,76 +48,61 @@
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Address --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Relationship" Component="Relationship" />
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Relationship" Component="Relationship" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Relationship" Disabled="true" MaxLength="120" />
+                                        <RadzenTextBox @bind-Value="rec.Rela" Disabled="true" MaxLength="20" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Tel No. --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Address" Component="Addr" />
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Address" Component="Addr" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Addr" Disabled="true" MaxLength="25" />
+                                        <RadzenTextBox @bind-Value="rec.Addr" Disabled="true" MaxLength="60" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Tel No. --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Tel No." Component="TelNo" />
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Tel No." Component="TelNo" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.TelNo" Disabled="true" MaxLength="25" />
+                                        <RadzenTextBox @bind-Value="rec.Tel" Disabled="true" MaxLength="15" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
-
-
                         </RadzenStack>
 
                         @* ======= Large Screen =========*@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow>
-                                @*--  Name / Address  --*@
                                 <RadzenColumn Size="7">
                                     <div>@rec.Name</div>
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
                                             <RadzenColumn Size="12">
-                                                Address: <span class="text-muted text-decoration-underline">@rec.Addr</span>
+                                                Address: <span class="text-muted text-decoration-underline" style="word-break: break-word; white-space: normal;">@rec.Addr</span>
                                             </RadzenColumn>
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
 
-                                @*-- Relationship / Tel--*@
                                 <RadzenColumn Size="5">
-                                    <div class="fw-bold">@rec.Relationship</div>
+                                    <div class="fw-bold">@rec.Rela</div>
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
-                                            @if (rec.TelNo is not null && rec.TelNo.Length > 0)
+                                            @if (rec.Tel is not null && rec.Tel.Length > 0)
                                             {
                                                 <RadzenColumn Size="12">
-                                                    Tel No.: <span class="text-muted text-decoration-underline">@rec.TelNo</span>
+                                                    Tel No.: <span class="text-muted text-decoration-underline">@rec.Tel</span>
                                                 </RadzenColumn>
                                             }
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
-
-
                             </RadzenRow>
                         </RadzenStack>
                     </Template>
@@ -131,37 +110,28 @@
                     <EditTemplate Context="rec">
                         @* ======= Small Screen =========*@
                         <RadzenStack Gap="0" class="custom-grid-sm">
-                            @*-- Company Name --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Name" Component="NameSm" />
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="NameSm" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameSm" MaxLength="25" />
-                                        <RadzenRequiredValidator Component="NameSm" Text="Name is required" Popup="true" Style="position: absolute; " />
+                                        <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameSm" MaxLength="60" />
+                                        <RadzenRequiredValidator Component="NameSm" Text="Name is required" Popup="true" Style="position: absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Relationship --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Relationship" />
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Relationship" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Relationship" Change="@(args => rec.Relationship = args.ToString().Trim())" class="w-100" Name="RelSm" MaxLength="20" />
-                                        <RadzenRequiredValidator Component="RelSm" Text="Relationship is required" Popup="true" Style="position: absolute; " />
+                                        <RadzenTextBox @bind-Value="rec.Rela" Change="@(args => rec.Rela = args.ToString().Trim())" class="w-100" Name="RelSm" MaxLength="20" />
+                                        <RadzenRequiredValidator Component="RelSm" Text="Relationship is required" Popup="true" Style="position: absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Address --*@
-                            <RadzenRow AlignItems="AlignItems.Center" class="row">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Address" />
-                                </RadzenColumn>
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4"><RadzenLabel Text="Address" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
                                         <RadzenTextBox @bind-Value="rec.Addr" MaxLength="60" />
@@ -169,15 +139,11 @@
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Tel No. --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Telephone No." />
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Telephone No." /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.TelNo" class="w-100" MaxLength="15" />
-
+                                        <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="15" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -186,11 +152,9 @@
                         @* ======= Large Screen =========*@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow Gap=".3rem">
-
-                                @*--  Name / Address  --*@
                                 <RadzenColumn Size="7">
-                                    <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameLg" MaxLength="25" Style=" display: block" />
-                                    <RadzenRequiredValidator Component="NameLg" Text="Name is required" Popup="true" Style="position: absolute; " />
+                                    <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameLg" MaxLength="60" Style="display: block" />
+                                    <RadzenRequiredValidator Component="NameLg" Text="Name is required" Popup="true" Style="position: absolute;" />
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
                                             <RadzenColumn Size="12">
@@ -198,35 +162,30 @@
                                                     <RadzenTextBox @bind-Value="rec.Addr" class="w-100" MaxLength="60" />
                                                 </RadzenFormField>
                                             </RadzenColumn>
-
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
 
-                                @*-- Relationship / Tel --*@
                                 <RadzenColumn Size="5">
-                                    <RadzenTextBox @bind-Value="rec.Relationship" Change="@(args => rec.Relationship = args.ToString().Trim())" class="w-100" Name="RelLg" MaxLength="20" Style=" display: block" />
-                                    <RadzenRequiredValidator Component="RelLg" Text="Relationship  is required" Popup="true" Style="position: absolute; " />
+                                    <RadzenTextBox @bind-Value="rec.Rela" Change="@(args => rec.Rela = args.ToString().Trim())" class="w-100" Name="RelLg" MaxLength="20" Style="display: block" />
+                                    <RadzenRequiredValidator Component="RelLg" Text="Relationship is required" Popup="true" Style="position: absolute;" />
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
                                             <RadzenColumn Size="12">
                                                 <RadzenFormField AllowFloatingLabel="false" Text="Tel No." Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                    <RadzenTextBox @bind-Value="rec.TelNo" class="w-100" MaxLength="15" />
+                                                    <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="15" />
                                                 </RadzenFormField>
                                             </RadzenColumn>
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
-
-
                             </RadzenRow>
                         </RadzenStack>
                     </EditTemplate>
-
                 </RadzenDataGridColumn>
 
                 @* Actions Column *@
-                <RadzenDataGridColumn TItem="EmpmasEmergencyContactModel" Context="EmpmasEmergencyContactModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
+                <RadzenDataGridColumn TItem="OEmergencModel" Context="OEmergencModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
                     <Template Context="rec">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true"></RadzenButton>
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true"></RadzenButton>
@@ -237,49 +196,35 @@
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1"></RadzenButton>
                     </EditTemplate>
                 </RadzenDataGridColumn>
-
             </Columns>
         </RadzenDataGrid>
     </div>
-
-
-
 </div>
 
-
-
-
-@inject I_10_EmpmasDataAccess _empmas;
-
+@inject IOEmergencDataAccess _empmas;
 
 @code {
 
-    int? empmasId = 0;
+    string? empnumber = string.Empty;
 
-    [Parameter]
-    public V2052 V { get; set; } = new();
+    [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
 
-    [Parameter]
-    public EventCallback ChildAction { get; set; }
-
-    List<EmpmasEmergencyContactModel?>? emergencycontactToInsert = new();
-    List<EmpmasEmergencyContactModel?>? emergencycontactToUpdate = new();
+    List<OEmergencModel?>? emergencycontactToInsert = new();
+    List<OEmergencModel?>? emergencycontactToUpdate = new();
     string? errorMsg = string.Empty;
     bool isLoading = true;
     bool editMode = false;
-    private int screenWidth;
 
+    OEmergencModel? recBackup;
 
-    protected override async void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        if (empmasId != V.SelectedId)
+        if (empnumber != V.SelectedEmpnumber)
         {
-            empmasId = V.SelectedId;
-
+            empnumber = V.SelectedEmpnumber;
             await Task.Delay(250);
-
-            V.EmergencyContacts = await _empmas._02EmpmasEmergencyContactList(empmasId, V.pisdb!, V.conn!);
-
+            V.EmergencyContacts = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
         isLoading = false;
         StateHasChanged();
@@ -291,11 +236,14 @@
         errorMsg = string.Empty;
         Reset();
 
-        var rec = new EmpmasEmergencyContactModel();
+        var rec = new OEmergencModel();
+        rec.EmpNumber = V.SelectedEmpnumber;
+
         emergencycontactToInsert!.Add(rec);
         await V.EmergencyContactGrid!.InsertRow(rec);
         editMode = true;
     }
+
     //-- Reset ----------------
     private void Reset()
     {
@@ -304,14 +252,14 @@
     }
 
     //-- Reset ----------------
-    private void Reset(EmpmasEmergencyContactModel rec)
+    private void Reset(OEmergencModel rec)
     {
         emergencycontactToInsert!.Remove(rec);
         emergencycontactToUpdate!.Remove(rec);
     }
 
     //-- Edit Row ----------------
-    private async Task EditRow(EmpmasEmergencyContactModel rec)
+    private async Task EditRow(OEmergencModel rec)
     {
         editMode = true;
 
@@ -319,28 +267,68 @@
         {
             Reset();
             emergencycontactToUpdate?.Add(rec);
+
+            recBackup = new OEmergencModel
+            {
+                EmpNumber       = rec.EmpNumber,
+                Name            = rec.Name,
+                Rela            = rec.Rela,
+                Addr            = rec.Addr,
+                Tel             = rec.Tel
+            };
+
             await V.EmergencyContactGrid.EditRow(rec);
         }
     }
+
     //-- Delete Row ----------------
-    private async Task DeleteRow(EmpmasEmergencyContactModel rec)
+    private async Task DeleteRow(OEmergencModel rec)
     {
         if (V.EmergencyContacts == null) return;
         if (V.EmergencyContactGrid == null) return;
+        if (rec == null) return;
 
         Reset(rec);
 
         if (V.EmergencyContacts.Contains(rec))
         {
-            if (rec != null)
+            var option = await _DialogService.Confirm(
+                $"Delete {rec.Name}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+
+            if (option == true)
             {
-                var option = await _DialogService.Confirm("Delete " + rec.Name + "  record?", "Confirm Delete",
-                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
+                V.EmergencyContacts.Remove(rec);
+
+                try
                 {
-                    // await _empmas._04EmpmasEmergencyContact(rec!.Id, V.pisdb!, V.conn!);
-                    V.EmergencyContacts.Remove(rec);
-                    ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully deleted a record.", Detail = "Record has been deleted from the list.", Duration = 4000 });
+                    await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
+
+                    foreach (var item in V.EmergencyContacts)
+                    {
+                        if (item != null)
+                            await _empmas._01(item, V.pisdb!, V.conn!);
+                    }
+
+                    ShowNotification(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Successfully deleted a record.",
+                        Detail = "Record has been deleted from the list.",
+                        Duration = 4000
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    ShowNotification(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Unable to delete",
+                        Detail = "Something went wrong while deleting. Please try again.",
+                        Duration = 6000
+                    });
+                    return;
                 }
             }
         }
@@ -348,79 +336,100 @@
         {
             V.EmergencyContactGrid.CancelEditRow(rec);
         }
+
         await V.EmergencyContactGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
 
-
     //-- Cancel Edit ----------------
-    private async void CancelEdit(EmpmasEmergencyContactModel rec)
+    private async Task CancelEdit(OEmergencModel rec)
     {
         errorMsg = string.Empty;
         if (V.EmergencyContactGrid == null) return;
+
+        bool isNew = emergencycontactToInsert!.Contains(rec);
 
         Reset(rec);
         editMode = false;
 
-        V.EmergencyContactGrid.CancelEditRow(rec);
-        if (rec.Id < 1) return;
+        if (isNew)
+        {
+            V.EmergencyContacts?.Remove(rec);
+        }
+        else if (recBackup != null)
+        {
+            rec.Name    = recBackup.Name;
+            rec.Rela    = recBackup.Rela;
+            rec.Addr    = recBackup.Addr;
+            rec.Tel     = recBackup.Tel;
+        }
 
-        int? id = rec.Id;
-        // var res = await _mainPis._02EmpmasEmployment(rec.Id, mydb!, conn!);
-        // if (res == null) return;
-        // Remap_Flds(rec, res);
+        V.EmergencyContactGrid.CancelEditRow(rec);
+        recBackup = null;
+
         await V.EmergencyContactGrid.Reload();
     }
-    //-- Remap ----------------
-    private void Remap_Flds(EmpmasEmergencyContactModel destination, EmpmasEmergencyContactModel source)
-    {
 
-    }
     //-- Save Row ----------------
-    private async Task SaveRow(EmpmasEmergencyContactModel rec)
+    private async Task SaveRow(OEmergencModel rec)
     {
         if (V.EmergencyContactGrid == null) return;
+        if (rec == null) return;
 
         if (!SafeToSave(rec))
         {
             await V.EmergencyContactGrid.UpdateRow(rec);
             return;
         }
-        ;
 
-        if (rec.Id == 0)
+        try
         {
-            rec.EmpmasId = empmasId;
-            // var res = await _empmas._01EmpmasEmergencyContact(rec, V.pisdb!, V.conn!);
-            // if (res != null)
-            // {
-            //     rec.Id = res.Id;
-            //     V.EmergencyContacts!.Add(rec);
-            //     ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully added a record.", Detail = "Record has been added to the list.", Duration = 4000 });
-            // }
+            V.EmergencyContacts ??= new();
+            if (!V.EmergencyContacts.Contains(rec))
+                V.EmergencyContacts.Add(rec);
+
+            await V.EmergencyContactGrid.UpdateRow(rec);
+
+            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
+
+            foreach (var item in V.EmergencyContacts!)
+            {
+                if (item != null)
+                    await _empmas._01(item, V.pisdb!, V.conn!);
+            }
+
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Successfully saved",
+                Detail = "Record has been successfully saved.",
+                Duration = 4000
+            });
         }
-        else
+        catch (Exception ex)
         {
-            // await _empmas._03EmpmasEmergencyContact(rec.Id, rec, V.pisdb!, V.conn!);
-            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully updated a record.", Detail = "Record has been updated from the list.", Duration = 4000 });
+            Console.WriteLine(ex);
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to save",
+                Detail = "Something went wrong while saving. Please try again.",
+                Duration = 6000
+            });
+            return;
         }
-        await V.EmergencyContactGrid.UpdateRow(rec);
+
+        recBackup = null;
         editMode = false;
         errorMsg = string.Empty;
     }
-    // -- Safe to Save ----------------
-    private bool SafeToSave(EmpmasEmergencyContactModel rec)
-    {
-        if (rec.Name?.Length == 0 || rec.Name == null)
-        {
-            return false;
-        }
 
-        if (rec.Relationship?.Length == 0 || rec.Relationship == null)
-        {
-            return false;
-        }
+    //-- Safe to Save ----------------
+    private bool SafeToSave(OEmergencModel rec)
+    {
+        if (string.IsNullOrWhiteSpace(rec.Name)) return false;
+        if (string.IsNullOrWhiteSpace(rec.Rela)) return false;
         return true;
     }
 
@@ -428,12 +437,4 @@
     {
         _NotificationService.Notify(message);
     }
-
-
-
-
 }
-
-
-
-

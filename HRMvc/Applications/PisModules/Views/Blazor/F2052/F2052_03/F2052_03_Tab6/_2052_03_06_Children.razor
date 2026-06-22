@@ -1,9 +1,9 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+
 @inject NotificationService _NotificationService
 @inject DialogService _DialogService
-@inject IOFamilyDataAccess _empmas
 
-<div class="p-2">
+<RadzenFieldset Text="Children">
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
     {
         <div class="p-2 bordered mb-2 w-100">
@@ -16,9 +16,9 @@
     }
 
     <div class="custom-grid mt-2">
-        <RadzenDataGrid Data="@V.Familys"
-                        TItem="OFamilyModel"
-                        @ref="V.FamilyGrid"
+        <RadzenDataGrid Data="@V.Children"
+                        TItem="OChildrenModel"
+                        @ref="V.ChildrenGrid"
                         EditMode="DataGridEditMode.Single"
                         AllowSorting="true"
                         AllowPaging="true"
@@ -27,16 +27,15 @@
                         ColumnWidth="200px"
                         IsLoading="isLoading">
             <Columns>
-                <RadzenDataGridColumn TItem="OFamilyModel"
-                                      Context="OFamilyModel"
+                <RadzenDataGridColumn TItem="OChildrenModel"
+                                      Context="OChildrenModel"
                                       Filterable="false"
                                       Sortable="false"
                                       Width="100%">
                     <HeaderTemplate>
                         <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
-                            <RadzenColumn Size="5" class="custom-grid-md">Name</RadzenColumn>
-                            <RadzenColumn Size="4" class="custom-grid-md">Birth</RadzenColumn>
-                            <RadzenColumn Size="3" class="custom-grid-md">Relation</RadzenColumn>
+                            <RadzenColumn Size="8" class="custom-grid-md">Name</RadzenColumn>
+                            <RadzenColumn Size="4" class="custom-grid-md">Birthday</RadzenColumn>
                         </RadzenRow>
                     </HeaderTemplate>
 
@@ -47,23 +46,15 @@
                                 <RadzenColumn Size="4"><RadzenLabel Text="Name" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="30" />
+                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="60" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Birth" /></RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Birthday" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" Disabled="true" DateFormat="MMM dd, yyyy" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Relation" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Relation" Disabled="true" MaxLength="15" />
+                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Disabled="true" DateFormat="MMM dd, yyyy" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -72,9 +63,8 @@
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow>
-                                <RadzenColumn Size="5">@rec.Name</RadzenColumn>
-                                <RadzenColumn Size="4">@rec.Birth?.ToString("MMM dd, yyyy")</RadzenColumn>
-                                <RadzenColumn Size="3">@rec.Relation</RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Name</RadzenColumn>
+                                <RadzenColumn Size="4">@rec.BDay?.ToString("MMM dd, yyyy")</RadzenColumn>
                             </RadzenRow>
                         </RadzenStack>
                     </Template>
@@ -83,28 +73,20 @@
                         @* ======= Small Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-sm">
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="NameSm" /></RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="ChildNameSm" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" class="w-100" Name="NameSm" MaxLength="30" />
-                                        <RadzenRequiredValidator Component="NameSm" Text="Name is required" Popup="true" Style="position:absolute;" />
+                                        <RadzenTextBox @bind-Value="rec.Name" class="w-100" Name="ChildNameSm" MaxLength="60" />
+                                        <RadzenRequiredValidator Component="ChildNameSm" Text="Name is required" Popup="true" Style="position:absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Birth" /></RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Birthday" Component="ChildBDaySm" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Relation" Component="RelSm" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Relation" class="w-100" Name="RelSm" MaxLength="15" />
-                                        <RadzenRequiredValidator Component="RelSm" Text="Relation is required" Popup="true" Style="position:absolute;" />
+                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDaySm" DateFormat="MMM dd, yyyy" />
+                                        <RadzenRequiredValidator Component="ChildBDaySm" Text="Birthday is required" Popup="true" Style="position:absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -113,16 +95,13 @@
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow Gap=".3rem">
-                                <RadzenColumn Size="5">
-                                    <RadzenTextBox @bind-Value="rec.Name" Name="NameLg" class="w-100" MaxLength="30" Style="display:block" />
-                                    <RadzenRequiredValidator Component="NameLg" Text="Name is required" Popup="true" Style="position:absolute;" />
+                                <RadzenColumn Size="8">
+                                    <RadzenTextBox @bind-Value="rec.Name" Name="ChildNameLg" class="w-100" MaxLength="60" Style="display:block" />
+                                    <RadzenRequiredValidator Component="ChildNameLg" Text="Name is required" Popup="true" Style="position:absolute;" />
                                 </RadzenColumn>
                                 <RadzenColumn Size="4">
-                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" class="w-100" />
-                                </RadzenColumn>
-                                <RadzenColumn Size="3">
-                                    <RadzenTextBox @bind-Value="rec.Relation" Name="RelLg" class="w-100" MaxLength="15" Style="display:block" />
-                                    <RadzenRequiredValidator Component="RelLg" Text="Relation is required" Popup="true" Style="position:absolute;" />
+                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDayLg" DateFormat="MMM dd, yyyy" class="w-100" Style="display:block" />
+                                    <RadzenRequiredValidator Component="ChildBDayLg" Text="Birthday is required" Popup="true" Style="position:absolute;" />
                                 </RadzenColumn>
                             </RadzenRow>
                         </RadzenStack>
@@ -130,8 +109,8 @@
                 </RadzenDataGridColumn>
 
                 @* Actions Column *@
-                <RadzenDataGridColumn TItem="OFamilyModel"
-                                      Context="OFamilyModel"
+                <RadzenDataGridColumn TItem="OChildrenModel"
+                                      Context="OChildrenModel"
                                       Filterable="false"
                                       Sortable="false"
                                       TextAlign="TextAlign.Center"
@@ -152,7 +131,10 @@
             </Columns>
         </RadzenDataGrid>
     </div>
-</div>
+</RadzenFieldset>
+
+@inject IOChildrenDataAccess _empmas
+
 @code {
 
     string? empnumber = string.Empty;
@@ -160,13 +142,13 @@
     [Parameter] public V2052 V { get; set; } = new();
     [Parameter] public EventCallback ChildAction { get; set; }
 
-    List<OFamilyModel?>? familyToInsert = new();
-    List<OFamilyModel?>? familyToUpdate = new();
+    List<OChildrenModel?>? ChildrenToInsert = new();
+    List<OChildrenModel?>? ChildrenToUpdate = new();
     string? errorMsg = string.Empty;
     bool isLoading = true;
     bool editMode = false;
 
-    OFamilyModel? recBackup;
+    OChildrenModel? recBackup;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -174,7 +156,7 @@
         {
             empnumber = V.SelectedEmpnumber;
             await Task.Delay(250);
-            V.Familys = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            V.Children = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
         isLoading = false;
         StateHasChanged();
@@ -186,60 +168,59 @@
         errorMsg = string.Empty;
         Reset();
 
-        var rec = new OFamilyModel();
+        var rec = new OChildrenModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        familyToInsert!.Add(rec);
-        await V.FamilyGrid!.InsertRow(rec);
+        ChildrenToInsert!.Add(rec);
+        await V.ChildrenGrid!.InsertRow(rec);
         editMode = true;
     }
 
     //-- Reset ----------------
     private void Reset()
     {
-        familyToInsert!.Clear();
-        familyToUpdate!.Clear();
+        ChildrenToInsert!.Clear();
+        ChildrenToUpdate!.Clear();
     }
 
     //-- Reset ----------------
-    private void Reset(OFamilyModel rec)
+    private void Reset(OChildrenModel rec)
     {
-        familyToInsert!.Remove(rec);
-        familyToUpdate!.Remove(rec);
+        ChildrenToInsert!.Remove(rec);
+        ChildrenToUpdate!.Remove(rec);
     }
 
     //-- Edit Row ----------------
-    private async Task EditRow(OFamilyModel rec)
+    private async Task EditRow(OChildrenModel rec)
     {
         editMode = true;
 
-        if (V.FamilyGrid != null)
+        if (V.ChildrenGrid != null)
         {
             Reset();
-            familyToUpdate?.Add(rec);
+            ChildrenToUpdate?.Add(rec);
 
-            recBackup = new OFamilyModel
+            recBackup = new OChildrenModel
             {
                 EmpNumber = rec.EmpNumber,
                 Name = rec.Name,
-                Birth = rec.Birth,
-                Relation = rec.Relation
+                BDay = rec.BDay
             };
 
-            await V.FamilyGrid.EditRow(rec);
+            await V.ChildrenGrid.EditRow(rec);
         }
     }
 
     //-- Delete Row ----------------
-    private async Task DeleteRow(OFamilyModel rec)
+    private async Task DeleteRow(OChildrenModel rec)
     {
-        if (V.Familys == null) return;
-        if (V.FamilyGrid == null) return;
+        if (V.Children == null) return;
+        if (V.ChildrenGrid == null) return;
         if (rec == null) return;
 
         Reset(rec);
 
-        if (V.Familys.Contains(rec))
+        if (V.Children.Contains(rec))
         {
             var option = await _DialogService.Confirm(
                 $"Delete {rec.Name}'s record?", "Confirm Delete",
@@ -247,13 +228,13 @@
 
             if (option == true)
             {
-                V.Familys.Remove(rec);
+                V.Children.Remove(rec);
 
                 try
                 {
                     await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
 
-                    foreach (var item in V.Familys)
+                    foreach (var item in V.Children)
                     {
                         if (item != null)
                             await _empmas._01(item, V.pisdb!, V.conn!);
@@ -283,65 +264,65 @@
         }
         else
         {
-            V.FamilyGrid.CancelEditRow(rec);
+            V.ChildrenGrid.CancelEditRow(rec);
         }
 
-        await V.FamilyGrid.Reload();
+        await V.ChildrenGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
 
     //-- Cancel Edit ----------------
-    private async Task CancelEdit(OFamilyModel rec)
+    private async Task CancelEdit(OChildrenModel rec)
     {
         errorMsg = string.Empty;
-        if (V.FamilyGrid == null) return;
+        if (V.ChildrenGrid == null) return;
 
-        bool isNew = familyToInsert!.Contains(rec);
+        bool isNew = ChildrenToInsert!.Contains(rec);
 
         Reset(rec);
         editMode = false;
 
         if (isNew)
         {
-            V.Familys?.Remove(rec);
+            V.Children?.Remove(rec);
         }
         else if (recBackup != null)
         {
+            rec.EmpNumber = recBackup.EmpNumber;
             rec.Name = recBackup.Name;
-            rec.Birth = recBackup.Birth;
-            rec.Relation = recBackup.Relation;
+            rec.BDay = recBackup.BDay;
         }
 
-        V.FamilyGrid.CancelEditRow(rec);
+        V.ChildrenGrid.CancelEditRow(rec);
         recBackup = null;
 
-        await V.FamilyGrid.Reload();
+        await V.ChildrenGrid.Reload();
     }
 
     //-- Save Row ----------------
-    private async Task SaveRow(OFamilyModel rec)
+    private async Task SaveRow(OChildrenModel rec)
     {
-        if (V.FamilyGrid == null) return;
+        if (V.ChildrenGrid == null) return;
         if (rec == null) return;
 
         if (!SafeToSave(rec))
         {
-            await V.FamilyGrid.UpdateRow(rec);
+            await V.ChildrenGrid.UpdateRow(rec);
             return;
         }
 
         try
         {
-            V.Familys ??= new();
-            if (!V.Familys.Contains(rec))
-                V.Familys.Add(rec);
+            V.Children ??= new();
+            if (!V.Children.Contains(rec))
+                V.Children.Add(rec);
 
-            await V.FamilyGrid.UpdateRow(rec);
+            await V.ChildrenGrid.UpdateRow(rec);
 
             await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
 
-            foreach (var item in V.Familys!)
+            foreach (var item in V.Children!)
             {
                 if (item != null)
                     await _empmas._01(item, V.pisdb!, V.conn!);
@@ -374,10 +355,10 @@
     }
 
     //-- Safe to Save ----------------
-    private bool SafeToSave(OFamilyModel rec)
+    private bool SafeToSave(OChildrenModel rec)
     {
         if (string.IsNullOrWhiteSpace(rec.Name)) return false;
-        if (string.IsNullOrWhiteSpace(rec.Relation)) return false;
+        if (rec?.BDay == null) return false;
         return true;
     }
 

@@ -55,9 +55,10 @@ public class V2052
     public List<OEmployModel?>?             Employments         { get; set; } = new();
     public List<OEducateModel?>?            Educations          { get; set; } = new();
     public List<EmpmasEducateRefModel?>?    EducationRefs       { get; set; } = new();
-    public List<EmpmasFamilyModel?>?        Familys             { get; set; } = new();
-    public List<EmpmasEmergencyContactModel?>? EmergencyContacts{ get; set; } = new();
-    public List<EmpmasRelativesModel?>?     Relatives           { get; set; } = new();
+    public List<OFamilyModel?>?             Familys             { get; set; } = new();
+    public List<OParentModel?>?             Parents             { get; set; } = new();
+    public List<OChildrenModel?>?           Children            { get; set; } = new();
+    public List<OEmergencModel?>?           EmergencyContacts   { get; set; } = new();
     public List<EmpmasRelativesRefModel?>?  RelativesRef        { get; set; } = new();
     public List<EmpmasTrainingModel?>?      Trainings           { get; set; } = new();
     public List<EmpmasCharRefModel?>?       CharRefs            { get; set; } = new();
@@ -100,8 +101,10 @@ public class V2052
 
     public RadzenDataGrid<OEmployModel?>?                   EmploymentGrid          = new();
     public RadzenDataGrid<EmpmasEducateModel?>?             EducationGrid           = new();
-    public RadzenDataGrid<EmpmasFamilyModel?>?              FamilyGrid              = new();
-    public RadzenDataGrid<EmpmasEmergencyContactModel?>?    EmergencyContactGrid    = new();
+    public RadzenDataGrid<OFamilyModel?>?                   FamilyGrid              = new();
+    public RadzenDataGrid<OParentModel?>?                   ParentGrid              = new();
+    public RadzenDataGrid<OChildrenModel?>?                 ChildrenGrid            = new();
+    public RadzenDataGrid<OEmergencModel?>?                 EmergencyContactGrid    = new();
     public RadzenDataGrid<EmpmasRelativesModel?>?           RelativesGrid           = new();
     public RadzenDataGrid<EmpmasTrainingModel?>?            TrainingGrid            = new();
     public RadzenDataGrid<EmpmasCharRefModel?>?             ReferenceGrid           = new();
