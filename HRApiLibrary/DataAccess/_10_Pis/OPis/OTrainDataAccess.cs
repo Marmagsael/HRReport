@@ -18,9 +18,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string? sql = $@"Insert into {schema}.Train (EMPNUMBER, PROGRAM, TAKEN, SCHOOL, TRAINOR, TYPE, idtrainhdr) values (@EMPNUMBER, @PROGRAM, @TAKEN, @SCHOOL, @TRAINOR, @TYPE, @idtrainhdr)";
             await _sql.ExecuteCmd<dynamic>(sql, train, conn);
 
-            sql = $@"SELECT * FROM {schema}.Train WHERE ID = (SELECT @@IDENTITY)";
+            sql = $@"SELECT * FROM {schema}.Train WHERE EMPNUMBER = EMPNUMBER";
 
-            var res = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { train.EmpNumber}, conn);
 
             return res.FirstOrDefault();
         }
@@ -44,13 +44,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
-        public async Task<OTrainModel?> _04(int? id, string? schema, string? conn)
+        public async Task<OTrainModel?> _04(string? empnmber, string? schema, string? conn)
         {
-            string? sql = $@"Delete from {schema}.Train where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+            string? sql = $@"Delete from {schema}.Train where EMPNUMBER = @EMPNUMBER;";
+            await _sql.ExecuteCmd<dynamic>(sql, new { EMPNUMBER = empnmber }, conn);
 
-            sql = $@" select  * from {schema}.Train x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { Id = id }, conn);
+            sql = $@" select  * from {schema}.Train x where x.EMPNUMBER = @EMPNUMBER ;";
+            var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { EMPNUMBER = empnmber }, conn);
             return data?.FirstOrDefault();
         }
     }
@@ -61,5 +61,5 @@ public interface IOTrainDataAccess
     Task<OTrainModel?> _01(OTrainModel train, string? schema, string? conn);
     Task<List<OTrainModel?>?> _02( string? empnumber, string? schema, string? conn);
     Task<OTrainModel?> _03(int? id, OTrainModel train, string? schema, string? conn);
-    Task<OTrainModel?> _04(int? id, string? schema, string? conn);
+    Task<OTrainModel?> _04(string? empnumber, string? schema, string? conn);
 }

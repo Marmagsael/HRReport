@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._00_MainPis;
@@ -441,16 +442,14 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Government(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-                    TIN = @TIN, SSS = @SSS, HDMF = @HDMF, PHIC = @PHIC,
-                    PAGIBIGNO = @PAGIBIGNO, COMTAXNO = @COMTAXNO, COMTAXDATE = @COMTAXDATE,
-                    COMTAX_AT = @COMTAX_AT, TAXCODE = @TAXCODE,
-                    iswithSSS = @iswithSSS, iswithGSIS = @iswithGSIS,
-                    iswithPHIC = @iswithPHIC, iswithPagibig = @iswithPagibig, ismaxsss = @ismaxsss
+                     SSS = @SSS, TIN = @TIN,  PAGIBIGNO = @PAGIBIGNO,  PHIC = @PHIC, HDMF = @HDMF,
+                     Drv_License = @Drv_License, Drv_Exp =@Drv_Exp, Hdmf =@Hdmf, AcctCode =@AcctCode, 
+                     TAXCODE = @TAXCODE, Bank =@Bank
+                   
                     WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
-        sql = $@"SELECT TIN, SSS, HDMF, PHIC, PAGIBIGNO, COMTAXNO, COMTAXDATE,
-                COMTAX_AT, TAXCODE, iswithSSS, iswithGSIS, iswithPHIC, iswithPagibig, ismaxsss, EMPNUMBER
+        sql = $@"SELECT  SSS, TIN, PAGIBIGNO, PHIC, HDMF, Drv_License, Drv_Exp, Hdmf, AcctCode,  TAXCODE, Bank, EMPNUMBER
                 FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();

@@ -19,9 +19,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string? sql = $@"Insert into {schema}.Refer (EMPNUMBER, NAME, ADDR, TEL, POSITION) values (@EMPNUMBER, @NAME, @ADDR, @TEL, @POSITION)";
             await _sql.ExecuteCmd<dynamic>(sql, refer, conn);
 
-            sql = $@"SELECT * FROM {schema}.Refer WHERE ID = (SELECT @@IDENTITY)";
+            sql = $@"SELECT * FROM {schema}.Refer WHERE EMPNUMBER = EMPNUMBER";
 
-            var res = await _sql.FetchData<OReferModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchData<OReferModel?, dynamic>(sql, new { refer.EmpNumber}, conn);
 
             return res.FirstOrDefault();
         }
@@ -45,13 +45,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
-        public async Task<OReferModel?> _04(int? id, string? schema, string? conn)
+        public async Task<OReferModel?> _04(string? empnumber, string? schema, string? conn)
         {
-            string? sql = $@"Delete from {schema}.Refer where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+            string? sql = $@"Delete from {schema}.Refer where EMPNUMBER = @EMPNUMBER;";
+            await _sql.ExecuteCmd<dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
 
-            sql = $@" select  * from {schema}.Refer x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { Id = id }, conn);
+            sql = $@" select  * from {schema}.Refer x where x.EMPNUMBER = @EMPNUMBER ;";
+            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -64,5 +64,5 @@ public interface IOReferDataAccess
     Task<OReferModel?> _01(OReferModel refer, string? schema, string? conn);
     Task<List<OReferModel?>?> _02(string? empnumber, string? schema, string? conn);
     Task<OReferModel?> _03(int? id, OReferModel refer, string? schema, string? conn);
-    Task<OReferModel?> _04(int? id, string? schema, string? conn);
+    Task<OReferModel?> _04(string? empnumber, string? schema, string? conn);
 }

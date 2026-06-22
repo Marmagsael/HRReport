@@ -60,8 +60,8 @@ public class V2052
     public List<OChildrenModel?>?           Children            { get; set; } = new();
     public List<OEmergencModel?>?           EmergencyContacts   { get; set; } = new();
     public List<EmpmasRelativesRefModel?>?  RelativesRef        { get; set; } = new();
-    public List<EmpmasTrainingModel?>?      Trainings           { get; set; } = new();
-    public List<EmpmasCharRefModel?>?       CharRefs            { get; set; } = new();
+    public List<OTrainModel?>?              Trainings           { get; set; } = new();
+    public List<OReferModel?>?              CharRefs            { get; set; } = new();
     public List<EmpmasInsuranceModel?>?     Insurances          { get; set; } = new();
 
 
@@ -106,8 +106,8 @@ public class V2052
     public RadzenDataGrid<OChildrenModel?>?                 ChildrenGrid            = new();
     public RadzenDataGrid<OEmergencModel?>?                 EmergencyContactGrid    = new();
     public RadzenDataGrid<EmpmasRelativesModel?>?           RelativesGrid           = new();
-    public RadzenDataGrid<EmpmasTrainingModel?>?            TrainingGrid            = new();
-    public RadzenDataGrid<EmpmasCharRefModel?>?             ReferenceGrid           = new();
+    public RadzenDataGrid<OTrainModel?>?                    TrainingGrid            = new();
+    public RadzenDataGrid<OReferModel?>?                    ReferenceGrid           = new();
     public RadzenDataGrid<EmpmasInsuranceModel?>?           InsuranceGrid           = new();
 
 

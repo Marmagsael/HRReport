@@ -1,9 +1,7 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 
-
-@inject NotificationService _NotificationService;
-@inject DialogService _DialogService;
-
+@inject NotificationService _NotificationService
+@inject DialogService _DialogService
 
 <div class="p-2">
     <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="References" />
@@ -15,10 +13,9 @@
         </div>
     }
 
-
     <div class="custom-grid mt-2">
         <RadzenDataGrid Data="@V.CharRefs"
-                        TItem="EmpmasCharRefModel"
+                        TItem="OReferModel"
                         @ref="V.ReferenceGrid"
                         EditMode="DataGridEditMode.Single"
                         AllowSorting="true"
@@ -28,8 +25,8 @@
                         ColumnWidth="200px"
                         IsLoading="isLoading">
             <Columns>
-                <RadzenDataGridColumn TItem="EmpmasCharRefModel"
-                                      Context="EmpmasCharRefModel"
+                <RadzenDataGridColumn TItem="OReferModel"
+                                      Context="OReferModel"
                                       Filterable="false"
                                       Sortable="false"
                                       Width="100%">
@@ -40,7 +37,6 @@
                             <RadzenColumn Size="6" class="custom-grid-md">Position</RadzenColumn>
                         </RadzenRow>
                     </HeaderTemplate>
-
 
                     <Template Context="rec">
 
@@ -58,7 +54,7 @@
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Address --*@
+                            @*-- Position --*@
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4">
                                     <RadzenLabel Text="Position" />
@@ -70,7 +66,7 @@
                                 </RadzenColumn>
                             </RadzenRow>
 
-                            @*-- Position --*@
+                            @*-- Address --*@
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4">
                                     <RadzenLabel Text="Address" />
@@ -103,8 +99,8 @@
                                     <div class="fw-bold">@rec.Name</div>
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="6">
-                                                Address: <span class="text-muted text-decoration-underline"> @rec.Addr </span>
+                                            <RadzenColumn Size="12">
+                                                Address: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;"> @rec.Addr </span>
                                             </RadzenColumn>
                                         </RadzenRow>
                                     </div>
@@ -121,7 +117,6 @@
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
-
 
                             </RadzenRow>
                         </RadzenStack>
@@ -146,7 +141,7 @@
                             @*-- Position --*@
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4">
-                                    <RadzenLabel Text="Position" />
+                                    <RadzenLabel Text="Position" Component="PositionSm" />
                                 </RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
@@ -175,11 +170,10 @@
                                 </RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="45" />
+                                        <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="15" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
-
 
                         </RadzenStack>
 
@@ -190,16 +184,14 @@
                                 @*--  Name / Address  --*@
                                 <RadzenColumn Size="6">
                                     <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameLg" MaxLength="50" Style=" display: block" />
-                                    <RadzenRequiredValidator Component="NameLg" Text=" Name is required" Popup="true" Style="position: absolute; " />
+                                    <RadzenRequiredValidator Component="NameLg" Text="Name is required" Popup="true" Style="position: absolute; " />
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="6">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="Addr" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                            <RadzenColumn Size="12">
+                                                <RadzenFormField AllowFloatingLabel="false" Text="Address" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
                                                     <RadzenTextBox @bind-Value="rec.Addr" class="w-100" MaxLength="60" />
                                                 </RadzenFormField>
                                             </RadzenColumn>
-
-
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
@@ -207,18 +199,17 @@
                                 @*-- Position / Tel No --*@
                                 <RadzenColumn Size="6">
                                     <RadzenTextBox @bind-Value="rec.Position" Change="@(args => rec.Position = args.ToString().Trim())" class="w-100" Name="PositionLg" MaxLength="75" Style=" display: block" />
-                                    <RadzenRequiredValidator Component="PositionLg" Text="Instituion is required" Popup="true" Style="position: absolute; " />
+                                    <RadzenRequiredValidator Component="PositionLg" Text="Position is required" Popup="true" Style="position: absolute; " />
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
                                             <RadzenColumn Size="12">
                                                 <RadzenFormField AllowFloatingLabel="false" Text="Tel No." Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                    <RadzenTextBox @bind-Value="rec.Tel" MaxLength="45" />
+                                                    <RadzenTextBox @bind-Value="rec.Tel" MaxLength="15" />
                                                 </RadzenFormField>
                                             </RadzenColumn>
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
-
 
                             </RadzenRow>
                         </RadzenStack>
@@ -227,7 +218,7 @@
                 </RadzenDataGridColumn>
 
                 @* Actions Column *@
-                <RadzenDataGridColumn TItem="EmpmasCharRefModel" Context="EmpmasCharRefModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
+                <RadzenDataGridColumn TItem="OReferModel" Context="OReferModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
                     <Template Context="rec">
                         <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true"></RadzenButton>
                         <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true"></RadzenButton>
@@ -243,19 +234,14 @@
         </RadzenDataGrid>
     </div>
 
-
-
 </div>
 
-
-
-
-@inject I_10_EmpmasDataAccess _empmas;
+@inject IOReferDataAccess _empmas
 
 
 @code {
 
-    int? empmasId = 0;
+    string? empnumber = string.Empty;
 
     [Parameter]
     public V2052 V { get; set; } = new();
@@ -263,30 +249,26 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    List<EmpmasCharRefModel?>? charrefToInsert = new();
-    List<EmpmasCharRefModel?>? charrefToUpdate = new();
+    List<OReferModel?>? charrefToInsert = new();
+    List<OReferModel?>? charrefToUpdate = new();
     string? errorMsg = string.Empty;
     bool isLoading = true;
     bool editMode = false;
-    private int screenWidth;
 
+    OReferModel? recBackup;
 
-
-
-    protected override async void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
-        if (empmasId != V.SelectedId)
+        if (empnumber != V.SelectedEmpnumber)
         {
-            empmasId = V.SelectedId;
+            empnumber = V.SelectedEmpnumber;
 
             await Task.Delay(250);
 
-            V.CharRefs = await _empmas._02EmpmasCharRefList(empmasId, V.pisdb!, V.conn!);
+            V.CharRefs = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
         isLoading = false;
         StateHasChanged();
-
-
     }
 
     //-- InsertRow ----------------
@@ -295,11 +277,14 @@
         errorMsg = string.Empty;
         Reset();
 
-        var rec = new EmpmasCharRefModel();
+        var rec = new OReferModel();
+        rec.EmpNumber = V.SelectedEmpnumber;
+
         charrefToInsert!.Add(rec);
         await V.ReferenceGrid!.InsertRow(rec);
         editMode = true;
     }
+
     //-- Reset ----------------
     private void Reset()
     {
@@ -308,14 +293,14 @@
     }
 
     //-- Reset ----------------
-    private void Reset(EmpmasCharRefModel rec)
+    private void Reset(OReferModel rec)
     {
         charrefToInsert!.Remove(rec);
         charrefToUpdate!.Remove(rec);
     }
 
     //-- Edit Row ----------------
-    private async Task EditRow(EmpmasCharRefModel rec)
+    private async Task EditRow(OReferModel rec)
     {
         editMode = true;
 
@@ -323,28 +308,68 @@
         {
             Reset();
             charrefToUpdate?.Add(rec);
+
+            recBackup = new OReferModel
+            {
+                EmpNumber = rec.EmpNumber,
+                Name = rec.Name,
+                Addr = rec.Addr,
+                Tel = rec.Tel,
+                Position = rec.Position
+            };
+
             await V.ReferenceGrid.EditRow(rec);
         }
     }
+
     //-- Delete Row ----------------
-    private async Task DeleteRow(EmpmasCharRefModel rec)
+    private async Task DeleteRow(OReferModel rec)
     {
         if (V.CharRefs == null) return;
         if (V.ReferenceGrid == null) return;
+        if (rec == null) return;
 
         Reset(rec);
 
         if (V.CharRefs.Contains(rec))
         {
-            if (rec != null)
+            var option = await _DialogService.Confirm(
+                $"Delete {rec.Name}  record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+
+            if (option == true)
             {
-                var option = await _DialogService.Confirm("Delete " + rec.Name + "  record?", "Confirm Delete",
-                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
+                V.CharRefs.Remove(rec);
+
+                try
                 {
-                    await _empmas._04EmpmasTraining(rec!.Id, V.pisdb!, V.conn!);
-                    V.CharRefs.Remove(rec);
-                    ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully deleted a record.", Detail = "Record has been deleted from the list.", Duration = 4000 });
+                    await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
+
+                    foreach (var item in V.CharRefs)
+                    {
+                        if (item != null)
+                            await _empmas._01(item, V.pisdb!, V.conn!);
+                    }
+
+                    ShowNotification(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Success,
+                        Summary = "Successfully deleted a record.",
+                        Detail = "Record has been deleted from the list.",
+                        Duration = 4000
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                    ShowNotification(new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Unable to delete",
+                        Detail = "Something went wrong while deleting. Please try again.",
+                        Duration = 6000
+                    });
+                    return;
                 }
             }
         }
@@ -352,40 +377,47 @@
         {
             V.ReferenceGrid.CancelEditRow(rec);
         }
+
         await V.ReferenceGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
 
-
     //-- Cancel Edit ----------------
-    private async void CancelEdit(EmpmasCharRefModel rec)
+    private async Task CancelEdit(OReferModel rec)
     {
         errorMsg = string.Empty;
         if (V.ReferenceGrid == null) return;
+
+        bool isNew = charrefToInsert!.Contains(rec);
 
         Reset(rec);
         editMode = false;
 
-        V.ReferenceGrid.CancelEditRow(rec);
-        if (rec.Id < 1) return;
+        if (isNew)
+        {
+            V.CharRefs?.Remove(rec);
+        }
+        else if (recBackup != null)
+        {
+            rec.EmpNumber = recBackup.EmpNumber;
+            rec.Name = recBackup.Name;
+            rec.Addr = recBackup.Addr;
+            rec.Tel = recBackup.Tel;
+            rec.Position = recBackup.Position;
+        }
 
-        int? id = rec.Id;
-        // var res = await _mainPis._02EmpmasEmployment(rec.Id, mydb!, conn!);
-        // if (res == null) return;
-        // Remap_Flds(rec, res);
+        V.ReferenceGrid.CancelEditRow(rec);
+        recBackup = null;
+
         await V.ReferenceGrid.Reload();
     }
-    //-- Remap ----------------
-    private void Remap_Flds(EmpmasCharRefModel destination, EmpmasCharRefModel source)
-    {
 
-    }
     //-- Save Row ----------------
-    private async Task SaveRow(EmpmasCharRefModel rec)
+    private async Task SaveRow(OReferModel rec)
     {
         if (V.ReferenceGrid == null) return;
-
+        if (rec == null) return;
 
         if (!SafeToSave(rec))
         {
@@ -393,40 +425,55 @@
             return;
         }
 
-
-
-        if (rec.Id == 0)
+        try
         {
-            rec.EmpmasId = empmasId;
-            var res = await _empmas._01EmpmasCharRef(rec, V.pisdb!, V.conn!);
-            if (res != null)
+            V.CharRefs ??= new();
+
+            if (!V.CharRefs.Contains(rec))
+                V.CharRefs.Add(rec);
+
+            await V.ReferenceGrid.UpdateRow(rec);
+
+            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
+
+            foreach (var item in V.CharRefs!)
             {
-                rec.Id = res.Id;
-                V.CharRefs!.Add(rec);
-                ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully added a record.", Detail = "Record has been added to the list.", Duration = 4000 });
+                if (item != null)
+                    await _empmas._01(item, V.pisdb!, V.conn!);
             }
+
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Successfully saved",
+                Detail = "Record has been successfully saved.",
+                Duration = 4000
+            });
         }
-        else
+        catch (Exception ex)
         {
-            await _empmas._03EmpmasCharRef(rec.Id, rec, V.pisdb!, V.conn!);
-            ShowNotification(new NotificationMessage { Severity = NotificationSeverity.Success, Summary = "Successfully updated a record.", Detail = "Record has been updated from the list.", Duration = 4000 });
+            Console.WriteLine(ex);
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to save",
+                Detail = "Something went wrong while saving. Please try again.",
+                Duration = 6000
+            });
+            return;
         }
-        await V.ReferenceGrid.UpdateRow(rec);
+
+        recBackup = null;
         editMode = false;
         errorMsg = string.Empty;
     }
-    // -- Safe to Save ----------------
-    private bool SafeToSave(EmpmasCharRefModel rec)
-    {
-        if (rec.Name?.Length == 0 || rec.Name == null)
-        {
-            return false;
-        }
 
-        if (rec.Position?.Length == 0 || rec.Position == null)
-        {
-            return false;
-        }
+
+    // -- Safe to Save ----------------
+    private bool SafeToSave(OReferModel rec)
+    {
+        if (string.IsNullOrWhiteSpace(rec.Name)) return false;
+        if (string.IsNullOrWhiteSpace(rec.Position)) return false;
         return true;
     }
 
@@ -434,12 +481,4 @@
     {
         _NotificationService.Notify(message);
     }
-
-
-
-
 }
-
-
-
-
