@@ -43,7 +43,7 @@ public class V2052
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();
     public EmpmasEmploymentModel?          Employment           { get; set; } = new();
-    public EmpmasEducateModel?             Education            { get; set; } = new();
+    public OEducateModel?                  Education            { get; set; } = new();
     public EmpmasFamilyModel?              Family               { get; set; } = new();
     public List<EmpmasFamilyRefModel?>?    FamilyRef            { get; set; } = new();
     public EmpmasTrainingModel?            Training             { get; set; } = new();
@@ -53,7 +53,7 @@ public class V2052
     public EmpmasPIModel?                  EmpmasPI             { get; set; } = new(); 
 
     public List<OEmployModel?>?             Employments         { get; set; } = new();
-    public List<EmpmasEducateModel?>?       Educations          { get; set; } = new();
+    public List<OEducateModel?>?            Educations          { get; set; } = new();
     public List<EmpmasEducateRefModel?>?    EducationRefs       { get; set; } = new();
     public List<EmpmasFamilyModel?>?        Familys             { get; set; } = new();
     public List<EmpmasEmergencyContactModel?>? EmergencyContacts{ get; set; } = new();
