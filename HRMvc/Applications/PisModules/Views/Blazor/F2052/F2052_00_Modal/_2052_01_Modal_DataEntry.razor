@@ -75,7 +75,7 @@
 
     async Task SaveUpdate()
     {
-        if (!await ValidateEmail()) return;
+        if (await ValidateEmail() == false) return;
 
 
         try
@@ -125,54 +125,17 @@
             });
             return;
         }
-       
+
 
         V.ShowDataEntry = false;
         await ChildAction.InvokeAsync();
     }
 
-    async Task<bool> ValidateEmail()
+    async Task<bool?> ValidateEmail()
     {
-
-        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email))
-            return true;
-
-        try
-        {
-            var existing = await _empmas._02EmpmasAddress_ByEmailNotTheOwner( V.SelectedEmpnumber, V.EmpmasToEdit.Email, V.pisdb, V.conn);
-
-            if (existing.Count() > 0)
-            {
-                ShowNotification(new NotificationMessage
-                {
-                    Severity    = NotificationSeverity.Error,
-                    Summary     = "Duplicate email",
-                    Detail      = "This email address is already used by another employee.",
-                    Duration    = 5000
-                });
-                return false;
-
-            }
-            else
-            {
-                _NotificationService.Messages.Clear();
-            }
-
-            
-        }
-        catch (Exception)
-        {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to validate email",
-                Detail = "Something went wrong while checking the email address. Please try again.",
-                Duration = 6000
-            });
-            return false;
-        }
-
-        return true;
+        V.Action = "ValidateEmail";
+        await ChildAction.InvokeAsync();
+        return V.IsEmailValid; 
     }
 
 

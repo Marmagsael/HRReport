@@ -32,11 +32,17 @@
     </div>
 </div>
 
-
- @inject IOEmpmasDataAccess _empmas 
+@inject IOEmpmasDataAccess      _empmas 
+@inject IOCivstatDataAccess     _ocivstat
+@inject IOGenderDataAccess      _ogender
+@inject I_00CountryDataAccess   _ocountry
+@inject IOMlacodeDataAccess     _omla
+@inject IOPositionDataAccess    _oposition
+@inject IOEmpstatDataAccess     _oempstat
+@inject IOProcodeDataAccess     _opro
+@inject NotificationService _NotificationService
 
 @code {
-    private readonly NotificationService _NotificationService;
 
 
     V2052 v { get; set; } = new();
@@ -44,10 +50,11 @@
     [Parameter]
     public UserClaimsModel? Uc { get; set; } = new();
 
-
-    protected override async void OnParametersSet()
+    protected override async Task OnInitializedAsync()
     {
         if (Uc == null) return;
+
+        v.maindb        = Uc.SchemaMain;
         v.pisdb         = Uc.OpisDb;
         v.newpisdb      = Uc.SchemaUserPis;
         v.paydb         = Uc.OpayDb;
@@ -55,23 +62,54 @@
         v.userid        = Uc.UserId;
         v.defcoid       = int.Parse(Uc.DefCompanyId ?? "0");
 
-        if (v.conn == null) return;
-        if (v.pisdb == null) return;
-        if (v.paydb == null) return;
-
+        if (v.conn == null || v.pisdb == null || v.paydb == null) return;
 
         v.EmpmasList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
-
-
-        StateHasChanged();
-
+        await DropdownValues();
     }
 
+
+
+
+    async Task DropdownValues()
+    {
+        v.OCivStats     = await _ocivstat._02(v.pisdb, v.conn) ?? new();
+        v.OGenders      = await _ogender._02(v.pisdb, v.conn) ?? new();
+        v.Countrys      = await _ocountry._02(v.maindb, v.conn) ?? new();
+        v.MlaList       = await _omla._02(v.pisdb, v.conn) ?? new();
+        v.ProList       = await _opro._02(v.pisdb, v.conn) ?? new();
+
+        var positions   = await _oposition._02(v.pisdb, v.conn) ?? new();
+        if (positions != null && positions.Any())
+        {
+            v.OPositions = positions
+                .Where(p => !string.IsNullOrWhiteSpace(p.Code) && !string.IsNullOrWhiteSpace(p.Name))
+                .ToList();
+        }
+        else
+        {
+            v.OPositions = new();
+        }
+
+
+        var empstats = await _oempstat._02s(v.pisdb, v.conn);
+        if (empstats != null && empstats.Any())
+        {
+            v.OEmpstats = empstats
+                .Where(e => !string.IsNullOrWhiteSpace(e.Code) && !string.IsNullOrWhiteSpace(e.Name))
+                .ToList();
+        }
+        else
+        {
+            v.OEmpstats = new();
+        }
+    }
 
     async Task ChildAction()
     {
         if (v == null) return;
-        if (v.Action == "SelectEmpmas") await SelectEmpmas();
+        if (v.Action == "SelectEmpmas")     await SelectEmpmas();
+        if (v.Action == "ValidateEmail")    await ValidateEmail();
 
         v.Action = "";
         v.ActionRef = string.Empty;
@@ -111,6 +149,53 @@
             throw;
         }
     }
+
+
+    async Task<bool?> ValidateEmail()
+    {
+        if (string.IsNullOrWhiteSpace(v.EmpmasToEdit.Email))
+        {
+            v.IsEmailValid = true;
+            return v.IsEmailValid; 
+        }
+
+        try
+        {
+            var existing = await _empmas._02EmpmasAddress_ByEmailNotTheOwner(v.SelectedEmpnumber, v.EmpmasToEdit.Email, v.pisdb, v.conn);
+            if (existing.Count() > 0)
+            {
+                ShowNotification(new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Error,
+                    Summary = "Duplicate email",
+                    Detail = "This email address is already used by another employee.",
+                    Duration = 5000
+                });
+                v.IsEmailValid = false;
+            }
+            else
+            {
+                _NotificationService.Messages.Clear();
+                v.IsEmailValid = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowNotification(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to validate email",
+                Detail = "Something went wrong while checking the email address. Please try again.",
+                Duration = 6000
+            });
+            v.IsEmailValid = false;
+        }
+
+        return v.IsEmailValid;
+    }
+
+
 
 
     void ClearFields()

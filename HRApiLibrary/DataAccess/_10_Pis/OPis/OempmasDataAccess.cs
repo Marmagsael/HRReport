@@ -407,13 +407,14 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Address(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
+        EMAIL = @EMAIL,
         ADDR1 = @ADDR1, MLACODE_ = @MLACODE_, TEL1 = @TEL1,
         ADDR2 = @ADDR2, PROCODE_ = @PROCODE_, TEL2 = @TEL2,
         CLNAME = @CLNAME, MLANAME = @MLANAME, Countrycode = @Countrycode
         WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
-        sql = $@"SELECT ADDR1, MLACODE_, TEL1, ADDR2, PROCODE_, TEL2, 
+        sql = $@"SELECT  EMAIL, ADDR1, MLACODE_, TEL1, ADDR2, PROCODE_, TEL2, 
         CLNAME, MLANAME, Countrycode, EMPNUMBER
         FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
@@ -423,15 +424,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Deployment(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        MOVNUMBER = @MOVNUMBER, MOVMODE = @MOVMODE, MOVDATE = @MOVDATE,
-        MOVEND = @MOVEND, DUTYDATE = @DUTYDATE, DATEHIRED = @DATEHIRED,
-        POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, STATUSDATE = @STATUSDATE,
-        CLIENT = @CLIENT, CLIENT_ = @CLIENT_, MBRANCH = @MBRANCH
+        DATEHIRED = @DATEHIRED,POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF
         WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
-        sql = $@"SELECT MOVNUMBER, MOVMODE, MOVDATE, MOVEND, DUTYDATE, DATEHIRED,
-        POSITION_, EMPSTAT_, STATUSDATE, CLIENT, CLIENT_, MBRANCH, EMPNUMBER
+        sql = $@"SELECT MOVNUMBER, MOVMODE, MOVDATE, MOVEND, DUTYDATE, DATEHIRED,POSITION_, EMPSTAT_, STATUSDATE, CLIENT, CLIENT_, MBRANCH, EMPNUMBER
         FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();

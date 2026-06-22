@@ -20,35 +20,37 @@ public class V2052
 {
 
 
+    public string?  maindb            { get; set; } = string.Empty;
     public string?  pisdb            { get; set; } = string.Empty;
     public string?  newpisdb         { get; set; } = string.Empty;
     public string?  paydb            { get; set; } = string.Empty;
     public string?  conn             { get; set; } = string.Empty;
-    public int?      defcoid          { get; set; } = 0;
-    public int?      userid           { get; set; } = 0; 
+    public int?     defcoid          { get; set; } = 0;
+    public int?     userid           { get; set; } = 0; 
 
-    public bool                             ShowDataEntry        { get; set; } = false;
-    public string?                           Action              { get; set; } = string.Empty;
-    public bool?                             IsNewEntry           { get; set; } = false;
-    public string?                           ActionRef           { get; set; } = string.Empty;
-    public int?                              TabNo               { get; set; } = 1;
-    public int?                              SelectedId          { get; set; } = 0;
-    public string?                           SelectedEmpnumber   { get; set; } = string.Empty;
-    public string?                           LastEmpNumber      { get; set; } = string.Empty;
+    public bool                          ShowDataEntry          { get; set; } = false;
+    public string?                       Action                 { get; set; } = string.Empty;
+    public bool?                         IsNewEntry             { get; set; } = false;
+    public string?                       ActionRef              { get; set; } = string.Empty;
+    public int?                          TabNo                  { get; set; } = 1;
+    public int?                          SelectedId             { get; set; } = 0;
+    public string?                       SelectedEmpnumber      { get; set; } = string.Empty;
+    public string?                       LastEmpNumber          { get; set; } = string.Empty;
+    public bool?                        IsEmailValid            { get; set; } = false;
 
     public List<Uc_accessreqModel?>?       UcAccessreq          { get; set; } = new();
-    public OEmpmasModel?                    Empmas              { get; set; } = new();  
-    public EmpmasAddressModel               Empmasaddress       { get; set; } = new();
-    public DeprecModel?                     Deprec              { get; set; } = new();
-    public EmpmasEmploymentModel?           Employment          { get; set; } = new();
-    public EmpmasEducateModel?              Education           { get; set; } = new();
-    public EmpmasFamilyModel?               Family              { get; set; } = new();
-    public List<EmpmasFamilyRefModel?>?     FamilyRef           { get; set; } = new();
-    public EmpmasTrainingModel?             Training            { get; set; } = new();
-    public EmpmasCharRefModel?              CharRef             { get; set; } = new();
-    public EmpmasInsuranceModel?            Insurance           { get; set; } = new();
-    public EmpmasGovPhModel?                EmpmasGovPh         { get; set; } = new();
-    public EmpmasPIModel?                   EmpmasPI            { get; set; } = new(); 
+    public OEmpmasModel?                   Empmas               { get; set; } = new();  
+    public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
+    public DeprecModel?                    Deprec               { get; set; } = new();
+    public EmpmasEmploymentModel?          Employment           { get; set; } = new();
+    public EmpmasEducateModel?             Education            { get; set; } = new();
+    public EmpmasFamilyModel?              Family               { get; set; } = new();
+    public List<EmpmasFamilyRefModel?>?    FamilyRef            { get; set; } = new();
+    public EmpmasTrainingModel?            Training             { get; set; } = new();
+    public EmpmasCharRefModel?             CharRef              { get; set; } = new();
+    public EmpmasInsuranceModel?           Insurance            { get; set; } = new();
+    public EmpmasGovPhModel?               EmpmasGovPh          { get; set; } = new();
+    public EmpmasPIModel?                  EmpmasPI             { get; set; } = new(); 
 
     public List<EmpmasEmploymentModel?>?    Employments         { get; set; } = new();
     public List<EmpmasEducateModel?>?       Educations          { get; set; } = new();
@@ -62,8 +64,11 @@ public class V2052
     public List<EmpmasInsuranceModel?>?     Insurances          { get; set; } = new();
 
 
-    public List<RCivStatModel?>?            RCivStats           { get; set; } = new();
+    public List<OCivstatModel?>?            OCivStats           { get; set; } = new();
+    public List<OGenderModel?>?             OGenders            { get; set; } = new();
     public List<CountryModel?>?             Countrys            { get; set; } = new();
+    public List<OMlacodeModel?>?             MlaList             { get; set; } = new();
+    public List<OProcodeModel?>?             ProList             { get; set; } = new();
     
     public EmpmasgrpModel                   Empmasgrp           { get; set; } = new();
     
@@ -73,7 +78,7 @@ public class V2052
     public EmpmasPIModel?                   EmpmasPIToEdit      { get; set; } = new(); 
 
     public List<PisEmpmasModel?>?           Empmass             { get; set; } = new();
-    public List<RempstatModel?>?            Rempstats           { get; set; } = new();
+    public List<OEmpstatModel?>?            OEmpstats           { get; set; } = new();
 
     public List<OEmpmasModel?>?             EmpmasList          { get; set; } = new();
     public List<RdivisionModel?>?           Rdivisions          { get; set; } = new();
@@ -81,7 +86,7 @@ public class V2052
     public List<RsectionModel?>?            Rsections           { get; set; } = new();
     public List<LeavegrpModel?>?            Leavegrps           { get; set; } = new();
     public List<PayrollgrpModel?>?          Payrollgprs         { get; set; } = new();
-    public List<PositionModel?>?            Positions           { get; set; } = new();
+    public List<OPositionModel?>?           OPositions           { get; set; } = new();
     public List<EmploymenttypeModel?>?      Employmenttypes     { get; set; } = new();
 
     public RadzenDataGrid<PisEmpmasModel?>? EmpmassGrid         { get; set; } = new();

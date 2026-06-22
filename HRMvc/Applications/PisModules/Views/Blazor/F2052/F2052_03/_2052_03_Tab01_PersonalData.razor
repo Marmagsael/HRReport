@@ -1,8 +1,9 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 
 
 @inject NotificationService _NotificationService;
-@inject DialogService       _DialogService; 
+@inject DialogService _DialogService;
 
 
 <style>
@@ -11,19 +12,19 @@
         width: 20%;
     }
 </style>
-    
+
 <div class="p-2">
     <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Personal Data" />
 
     <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
-        <br />
+        <div class="h-10p"></div>
         @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
         {
             <div class="p-2 bordered mb-2 w-100">
                 <input class="btn btn-secondary w-100p" type="submit" value="Save" />
             </div>
-          }
-        <RadzenFieldset >
+        }
+        <RadzenFieldset>
 
             <div class="h-10p"></div>
             <RadzenFieldset Text="******">
@@ -39,13 +40,13 @@
                 @* ----- BirthPlace (varchar(75))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20 s222-t1-lbl-01">Birth Place </div>
-                    <div class="w-80">
+                    <div class="w-40">
                         <RadzenTextBox @bind-Value=@V.Empmas.BirthPlace class="form-control" Name="BirthPlace" MaxLength="75" Placeholder="BirthPlace" />
                         <RadzenRequiredValidator Component="BirthPlace" Text="Birth of Place is required" Style="color: red; display:block" />
                     </div>
                 </div>
             </RadzenFieldset>
-            
+
             <div class="h-10p"></div>
             <RadzenFieldset Text="******">
                 @* ----- Sex_ (varchar(1))----------*@
@@ -54,8 +55,10 @@
                     <div class="w-20">
                         <RadzenDropDown TValue="string"
                                         @bind-Value=@V.Empmas.Sex_
-                                        Data=@sexs
-                                        Style="width: 100%; max-width: 200px;"
+                                        Data=@V.OGenders
+                                        TextProperty="Name"
+                                        ValueProperty="Code"
+                                        Style="width: 100%;  max-width: 400px;"
                                         Name="ddSex" />
                         <RadzenRequiredValidator Component="ddSex" Text="Gender is required" Style="color: red; display:block" />
                     </div>
@@ -65,10 +68,10 @@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Civil Status </div>
                     <div class="w-20">
-                        @* <RadzenTextBox Placeholder="CivStat_" class="w-100" @bind-Value=@V.Empmas.CivStat_ />  *@
+                        @* <RadzenTextBox Placeholder="CivStat_"class="form-control" @bind-Value=@V.Empmas.CivStat_ />  *@
                         <RadzenDropDown TValue="string"
                                         @bind-Value=@V.Empmas.CivStat_
-                                        Data=@V.RCivStats
+                                        Data=@V.OCivStats
                                         TextProperty="Name"
                                         ValueProperty="Code"
                                         Style="width: 100%; max-width: 400px;"
@@ -94,8 +97,8 @@
                 @* ----- Religion (varchar(35))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Religion </div>
-                    <div class="w-60">
-                        <RadzenTextBox MaxLength="35" Placeholder="Religion" class="w-100" @bind-Value=@V.Empmas.Religion />
+                    <div class="w-40">
+                        <RadzenTextBox MaxLength="35" Placeholder="Religion"  @bind-Value=@V.Empmas.Religion class="form-control" />
                     </div>
                 </div>
 
@@ -105,18 +108,18 @@
                     <div class="w-80 d-flex">
                         <div class="w-125p gap-2">
                             <RadzenNumeric Placeholder="0" Step="1" @bind-Value=@V.Empmas.Height TextAlign="TextAlign.Right"
-                                           InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "enter value" }})" />
+                                           InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                         </div><div class="p-2"> Feet</div>
 
                         <div class="w-125p">
                             <RadzenNumeric Placeholder="0" Step="1" @bind-Value=@V.Empmas.HeightInches TextAlign="TextAlign.Right"
-                                           InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "enter value" }})" />
+                                           InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                         </div>
                         <div class="p-2"> Inches</div>
 
                     </div>
                 </div>
-            
+
 
                 @* ----- Weight (double(6,2))----------*@
                 <div class="w-100 d-flex p-1">
@@ -136,19 +139,19 @@
 
             <div class="h-10p">&nbsp</div>
             <RadzenFieldset Text="******">
-                @* ----- Hair (varchar(15))----------*@
+                @* ----- Hair (varchar(5))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Hair Color </div>
                     <div class="w-20">
-                        <RadzenTextBox MaxLength="15" Placeholder="Hair" class="w-100" @bind-Value=@V.Empmas.Hair />
+                        <RadzenTextBox MaxLength="5" Placeholder="Hair" @bind-Value=@V.Empmas.Hair class="form-control" />
                     </div>
                 </div>
 
-                @* ----- Eyes (varchar(15))----------*@
+                @* ----- Eyes (varchar(5))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Eyes Color</div>
                     <div class="w-20">
-                        <RadzenTextBox Placeholder="Eyes" class="w-100" @bind-Value=@V.Empmas.Eyes MaxLength="15" />
+                        <RadzenTextBox Placeholder="Eyes" @bind-Value=@V.Empmas.Eyes MaxLength="5" class="form-control" />
                     </div>
                 </div>
 
@@ -156,7 +159,7 @@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Complexion </div>
                     <div class="w-20">
-                        <RadzenTextBox Placeholder="Complexion" class="w-100" @bind-Value=@V.Empmas.Complexion MaxLength="10" />
+                        <RadzenTextBox Placeholder="Complexion" @bind-Value=@V.Empmas.Complexion MaxLength="10" class="form-control" />
                     </div>
                 </div>
 
@@ -164,7 +167,7 @@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Marks </div>
                     <div class="w-20">
-                        <RadzenTextBox Placeholder="Marks" class="w-100" @bind-Value=@V.Empmas.Marks MaxLength="60" />
+                        <RadzenTextBox Placeholder="Marks" @bind-Value=@V.Empmas.Marks MaxLength="60" class="form-control" />
                     </div>
                 </div>
 
@@ -174,7 +177,7 @@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Blood Type </div>
                     <div class="w-20">
-                        <RadzenTextBox Placeholder="BloodType" class="w-100" @bind-Value=@V.Empmas.BloodType MaxLength="10" />
+                        <RadzenTextBox Placeholder="BloodType" @bind-Value=@V.Empmas.BloodType MaxLength="10" class="form-control" />
                     </div>
                 </div>
 
@@ -188,27 +191,27 @@
                 @* ----- Spouse (varchar(25))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Spouse Name </div>
-                    <div class="w-50">
-                        <RadzenTextBox Placeholder="Spouse" class="w-100" @bind-Value=@V.Empmas.Spouse MaxLength="25" />
+                    <div class="w-40">
+                        <RadzenTextBox Placeholder="Spouse" @bind-Value=@V.Empmas.Spouse MaxLength="25" class="form-control" />
                     </div>
                 </div>
 
                 @* ----- Occupation (varchar(75))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Spouse Occupation </div>
-                    <div class="w-80">
-                        <RadzenTextBox Placeholder="Occupation" class="w-100" @bind-Value=@V.Empmas.Occupation MaxLength="75" />
+                    <div class="w-40">
+                        <RadzenTextBox Placeholder="Occupation" @bind-Value=@V.Empmas.Occupation MaxLength="75" class="form-control" />
                     </div>
                 </div>
 
 
 
-                @* ----- NoChildren (int(11))----------*@
+                @* ----- NoChildren (double(2,0))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="s222-t1-lbl-01">No of Children </div>
                     <div>
-                        <RadzenNumeric Placeholder="0" Step="1" @bind-Value=@V.Empmas.NoChildren
-                                       InputAttributes="@(new Dictionary<string,object>(){ { "aria-label", "enter value" }})" />
+                        <RadzenNumeric Placeholder="0" Step="1" Max="99" @bind-Value=@V.Empmas.NoChildren
+                                       InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                     </div>
                 </div>
 
@@ -219,7 +222,7 @@
 </div>
 
 
-@inject I_10_EmpmasDataAccess _empmas;
+@inject IOEmpmasDataAccess _empmas
 
 @code {
     [Parameter]
@@ -228,25 +231,32 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    
-    string[] sexs = { "M", "F" };
-    string[] civistatuss = { "M", "F" };
-
-    async void OnSubmit(OEmpmasModel model)
+    async Task OnSubmit(OEmpmasModel model)
     {
-        // await _empmas._03Empmas(V.SelectedId, model, V.pisdb!, V.conn!); 
-        
-        // var severity    = NotificationSeverity.Info; 
-        // var summary     = "Saved";
-        // var detail      = "Record Saved."; 
-        // _NotificationService.Notify(new NotificationMessage
-        //     {
-        //         Severity    = severity,
-        //         Summary     = summary,
-        //         Detail      = detail,
-        //         Duration    = 3000
-        //     });
+        if (model == null) return;
+        try
+        {
+            await _empmas._03_PersonalData(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
 
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Successfully saved",
+                Detail = "Record has been successfully saved.",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to save",
+                Detail = "Something went wrong while saving. Please try again.",
+                Duration = 6000
+            });
+        }
     }
 
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
@@ -254,6 +264,3 @@
 
     }
 }
-
-
-
