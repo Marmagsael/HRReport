@@ -52,7 +52,7 @@ public class V2052
     public EmpmasGovPhModel?               EmpmasGovPh          { get; set; } = new();
     public EmpmasPIModel?                  EmpmasPI             { get; set; } = new(); 
 
-    public List<EmpmasEmploymentModel?>?    Employments         { get; set; } = new();
+    public List<OEmployModel?>?             Employments         { get; set; } = new();
     public List<EmpmasEducateModel?>?       Educations          { get; set; } = new();
     public List<EmpmasEducateRefModel?>?    EducationRefs       { get; set; } = new();
     public List<EmpmasFamilyModel?>?        Familys             { get; set; } = new();
@@ -98,7 +98,7 @@ public class V2052
     public List<EmpmovementModel?>?         EmpmovementList     { get; set; } = new();
 
 
-    public RadzenDataGrid<EmpmasEmploymentModel?>?          EmploymentGrid          = new();
+    public RadzenDataGrid<OEmployModel?>?                   EmploymentGrid          = new();
     public RadzenDataGrid<EmpmasEducateModel?>?             EducationGrid           = new();
     public RadzenDataGrid<EmpmasFamilyModel?>?              FamilyGrid              = new();
     public RadzenDataGrid<EmpmasEmergencyContactModel?>?    EmergencyContactGrid    = new();

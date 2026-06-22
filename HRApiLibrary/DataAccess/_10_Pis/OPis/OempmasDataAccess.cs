@@ -389,12 +389,12 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_PersonalData(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        EMPBIRTH = @EMPBIRTH, BIRTHPLACE = @BIRTHPLACE, SEX_ = @SEX_,
-        CIVSTAT_ = @CIVSTAT_, CITIZEN = @CITIZEN, HEIGHT = @HEIGHT, 
-        WEIGHT = @WEIGHT, BLOODTYPE = @BLOODTYPE, RELIGION = @RELIGION,
-        HAIR = @HAIR, EYES = @EYES, MARKS = @MARKS, COMPLEXION = @COMPLEXION,
-        AGE = @AGE
-        WHERE EMPNUMBER = @EMPNUMBER";
+                    EMPBIRTH = @EMPBIRTH, BIRTHPLACE = @BIRTHPLACE, SEX_ = @SEX_,
+                    CIVSTAT_ = @CIVSTAT_, CITIZEN = @CITIZEN, HEIGHT = @HEIGHT, 
+                    WEIGHT = @WEIGHT, BLOODTYPE = @BLOODTYPE, RELIGION = @RELIGION,
+                    HAIR = @HAIR, EYES = @EYES, MARKS = @MARKS, COMPLEXION = @COMPLEXION,
+                    AGE = @AGE
+                    WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT EMPBIRTH, BIRTHPLACE, SEX_, CIVSTAT_, CITIZEN, HEIGHT, 
@@ -407,16 +407,17 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Address(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        EMAIL = @EMAIL,
-        ADDR1 = @ADDR1, MLACODE_ = @MLACODE_, TEL1 = @TEL1,
-        ADDR2 = @ADDR2, PROCODE_ = @PROCODE_, TEL2 = @TEL2,
-        CLNAME = @CLNAME, MLANAME = @MLANAME, Countrycode = @Countrycode
-        WHERE EMPNUMBER = @EMPNUMBER";
+                        EMAIL = @EMAIL,
+                        ADDR1 = @ADDR1, MLACODE_ = @MLACODE_, TEL1 = @TEL1,
+                        ADDR2 = @ADDR2, PROCODE_ = @PROCODE_, TEL2 = @TEL2,
+                        CLNAME = @CLNAME, MLANAME = @MLANAME, Countrycode = @Countrycode
+                        WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT  EMAIL, ADDR1, MLACODE_, TEL1, ADDR2, PROCODE_, TEL2, 
-        CLNAME, MLANAME, Countrycode, EMPNUMBER
-        FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+                CLNAME, MLANAME, Countrycode, EMPNUMBER
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
@@ -424,12 +425,15 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Deployment(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        DATEHIRED = @DATEHIRED,POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF
-        WHERE EMPNUMBER = @EMPNUMBER";
+                    DATEHIRED = @DATEHIRED,POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF
+                    WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
-        sql = $@"SELECT MOVNUMBER, MOVMODE, MOVDATE, MOVEND, DUTYDATE, DATEHIRED,POSITION_, EMPSTAT_, STATUSDATE, CLIENT, CLIENT_, MBRANCH, EMPNUMBER
-        FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+        sql = $@"SELECT  POSITION_, EMPSTAT_,  
+                if(e.DATEHIRED  < '1000-01-01', null, DATEHIRED  )  as DATEHIRED  ,       
+                if(e.REGREF  < '1000-01-01', null, REGREF  )  as REGREF 
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
@@ -437,17 +441,17 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Government(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        TIN = @TIN, SSS = @SSS, HDMF = @HDMF, PHIC = @PHIC,
-        PAGIBIGNO = @PAGIBIGNO, COMTAXNO = @COMTAXNO, COMTAXDATE = @COMTAXDATE,
-        COMTAX_AT = @COMTAX_AT, TAXCODE = @TAXCODE,
-        iswithSSS = @iswithSSS, iswithGSIS = @iswithGSIS,
-        iswithPHIC = @iswithPHIC, iswithPagibig = @iswithPagibig, ismaxsss = @ismaxsss
-        WHERE EMPNUMBER = @EMPNUMBER";
+                    TIN = @TIN, SSS = @SSS, HDMF = @HDMF, PHIC = @PHIC,
+                    PAGIBIGNO = @PAGIBIGNO, COMTAXNO = @COMTAXNO, COMTAXDATE = @COMTAXDATE,
+                    COMTAX_AT = @COMTAX_AT, TAXCODE = @TAXCODE,
+                    iswithSSS = @iswithSSS, iswithGSIS = @iswithGSIS,
+                    iswithPHIC = @iswithPHIC, iswithPagibig = @iswithPagibig, ismaxsss = @ismaxsss
+                    WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT TIN, SSS, HDMF, PHIC, PAGIBIGNO, COMTAXNO, COMTAXDATE,
-        COMTAX_AT, TAXCODE, iswithSSS, iswithGSIS, iswithPHIC, iswithPagibig, ismaxsss, EMPNUMBER
-        FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+                COMTAX_AT, TAXCODE, iswithSSS, iswithGSIS, iswithPHIC, iswithPagibig, ismaxsss, EMPNUMBER
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
@@ -455,13 +459,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Insurance(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        INSURANCE = @INSURANCE, POLICYNO = @POLICYNO, FACEVALUE = @FACEVALUE,
-        PREMIUM = @PREMIUM, INSEXPIRE = @INSEXPIRE
-        WHERE EMPNUMBER = @EMPNUMBER";
+                INSURANCE = @INSURANCE, POLICYNO = @POLICYNO, FACEVALUE = @FACEVALUE,
+                PREMIUM = @PREMIUM, INSEXPIRE = @INSEXPIRE
+                WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE, EMPNUMBER
-        FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
@@ -469,16 +473,17 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Education(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        ELLEVEL = @ELLEVEL, HSLEVEL = @HSLEVEL, COLLEGE_ = @COLLEGE_,
-        COURSE = @COURSE, VOLEVEL = @VOLEVEL, VOCOURSE = @VOCOURSE,
-        LANGUAGE = @LANGUAGE, SKILL1 = @SKILL1, SKILL2 = @SKILL2,
-        SKILL3 = @SKILL3, SKILL4 = @SKILL4
-        WHERE EMPNUMBER = @EMPNUMBER";
+                ELLEVEL = @ELLEVEL, HSLEVEL = @HSLEVEL, COLLEGE_ = @COLLEGE_,
+                COURSE = @COURSE, VOLEVEL = @VOLEVEL, VOCOURSE = @VOCOURSE,
+                LANGUAGE = @LANGUAGE, SKILL1 = @SKILL1, SKILL2 = @SKILL2,
+                SKILL3 = @SKILL3, SKILL4 = @SKILL4
+                WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT ELLEVEL, HSLEVEL, COLLEGE_, COURSE, VOLEVEL, VOCOURSE,
-        LANGUAGE, SKILL1, SKILL2, SKILL3, SKILL4, EMPNUMBER
-        FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+            LANGUAGE, SKILL1, SKILL2, SKILL3, SKILL4, EMPNUMBER
+            FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
@@ -486,24 +491,26 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Security(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        SECLICENSE = @SECLICENSE, LICEXPIRE = @LICEXPIRE,
-        GUARDEXP = @GUARDEXP, GUARDNOYRS = @GUARDNOYRS,
-        EXMILITARY = @EXMILITARY, MILITARYNOYR = @MILITARYNOYR,
-        CSP = @CSP, CPP = @CPP, ROTC = @ROTC,
-        EXP_NBI = @EXP_NBI, EXP_POLICE = @EXP_POLICE, EXP_PNP = @EXP_PNP,
-        EXP_BRGY = @EXP_BRGY, EXP_COURT = @EXP_COURT,
-        EXP_NEURO = @EXP_NEURO, EXP_DRUG = @EXP_DRUG,
-        BADGENO = @BADGENO, DRV_LICENSE = @DRV_LICENSE, DRV_EXP = @DRV_EXP,
-        W_BIRTHC = @W_BIRTHC, W_CLOSINGR = @W_CLOSINGR, W_TRNCERT = @W_TRNCERT,
-        W_PRELIC = @W_PRELIC, W_CERTEMP = @W_CERTEMP, W_MEDEXAM = @W_MEDEXAM
-        WHERE EMPNUMBER = @EMPNUMBER";
+                    SECLICENSE = @SECLICENSE, LICEXPIRE = @LICEXPIRE,
+                    GUARDEXP = @GUARDEXP, GUARDNOYRS = @GUARDNOYRS,
+                    EXMILITARY = @EXMILITARY, MILITARYNOYR = @MILITARYNOYR,
+                    CSP = @CSP, CPP = @CPP, ROTC = @ROTC,
+                    EXP_NBI = @EXP_NBI, EXP_POLICE = @EXP_POLICE, EXP_PNP = @EXP_PNP,
+                    EXP_BRGY = @EXP_BRGY, EXP_COURT = @EXP_COURT,
+                    EXP_NEURO = @EXP_NEURO, EXP_DRUG = @EXP_DRUG,
+                    BADGENO = @BADGENO, DRV_LICENSE = @DRV_LICENSE, DRV_EXP = @DRV_EXP,
+                    W_BIRTHC = @W_BIRTHC, W_CLOSINGR = @W_CLOSINGR, W_TRNCERT = @W_TRNCERT,
+                    W_PRELIC = @W_PRELIC, W_CERTEMP = @W_CERTEMP, W_MEDEXAM = @W_MEDEXAM
+                    WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT SECLICENSE, LICEXPIRE, GUARDEXP, GUARDNOYRS, EXMILITARY, MILITARYNOYR,
-        CSP, CPP, ROTC, EXP_NBI, EXP_POLICE, EXP_PNP, EXP_BRGY, EXP_COURT,
-        EXP_NEURO, EXP_DRUG, BADGENO, DRV_LICENSE, DRV_EXP,
-        W_BIRTHC, W_CLOSINGR, W_TRNCERT, W_PRELIC, W_CERTEMP, W_MEDEXAM, EMPNUMBER
-        FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+                    CSP, CPP, ROTC, EXP_NBI, EXP_POLICE, EXP_PNP, EXP_BRGY, EXP_COURT,
+                    EXP_NEURO, EXP_DRUG, BADGENO, DRV_LICENSE, DRV_EXP,
+                    W_BIRTHC, W_CLOSINGR, W_TRNCERT, W_PRELIC, W_CERTEMP, W_MEDEXAM, EMPNUMBER
+                    FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
+
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
