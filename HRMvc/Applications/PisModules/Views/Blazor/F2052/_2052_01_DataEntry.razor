@@ -1,35 +1,59 @@
 ﻿@using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Models._90_Utils;
 
-<div style="width:100%; overflow:auto; ">
+<div style="width:100%; overflow:auto;">
 
-    <RadzenTemplateForm TItem="PisEmpmasModel" Data=@empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.EmpmasToEdit Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit >
+
+        @if (V.IsNewEntry == true && !string.IsNullOrEmpty(V.LastEmpNumber))
+        {
+            <div class="mb-banner-info d-flex align-items-center gap-2 mb-2 py-2 px-3">
+                <i class="fas fa-info-circle"></i>
+                <span class=""> <small>Last employee number used: <strong>@V.LastEmpNumber</strong></small></span>
+            </div>
+        }
+
         <RadzenFieldset Text="Employee Details" class="fw-bold">
 
             <div class="fw-normal">
 
                 @* ----- EmpNumber (varchar(10))----------*@
                 <div class="d-flex gap-2 p-1 ">
-                    <div class="p-1 col-lg-2 col-md-3 text-primary fw-bold">Emp. No. </div>
+                    <div class="p-1 col-lg-2 col-md-3 mb-required-label">Emp. No. </div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <div class="d-flex align-items-start gap-3 flex-wrap">
-                            <div>
-                                <RadzenTextBox Name="EmpNumber" Placeholder="0000000000" MaxLength="5" style="width:120px;"
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <div class="position-relative">
+                                <RadzenTextBox Name="EmpNumber" Placeholder="00000" MaxLength="5" style="width:120px;"
                                                @bind-Value=@V.EmpmasToEdit.EmpNumber
                                                @onfocusout="OnEmpNumberLostFocus" />
-                                <RadzenRequiredValidator Component="EmpNumber" Text="Employee number is required" Style="color: red; display:block" />
-                            </div>
+                                <RadzenRequiredValidator Component="EmpNumber" Text="Employee number is required" Style=" display:block" />
 
-                            @if (V.IsNewEntry == true && !string.IsNullOrEmpty(V.LastEmpNumber))
+                                    <div class="position-absolute" style="top:100%; left:0; width:800px;">
+                                        @if (showNameError)
+                                        {
+                                            <div class="text-danger" style="font-size:12px;">
+                                                First name and last name are required before generating an employee number.
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                            @if (V.IsNewEntry == true)
                             {
-                                <div class="empnum-hint">
-                                    <span class="empnum-hint-label">LATEST EMPLOYEE NO</span>
-                                    <span class="empnum-hint-value">@V.LastEmpNumber</span>
+
+                                <div class="@EnableAutomate">
+                                    <button type="button" class="card p-1 mb-cbtn mb-cbtn-outline-blue d-flex w-180p btn-sm" @onclick="@GenerateEmpNumber">
+                                        <div class="d-flex align-items-center justify-content-center">
+                                            <i class="fas fa-sync-alt"></i> &nbsp; &nbsp;
+                                            <span>Automate No. Updated</span>
+                                        </div>
+                                    </button>
                                 </div>
                             }
                         </div>
                     </div>
                 </div>
+
 
                 @* ----- EmpLastNm (varchar(25))----------*@
                 <div class="d-flex gap-2 p-1">
@@ -66,43 +90,47 @@
                 </div>
 
                 @* ----- EmpAlias (varchar(15))----------*@
-                <div class="d-flex gap-2 p-1" style="border-bottom:1px solid lightgray">
+                <div class="d-flex gap-2 p-1 bordered-bottom">
                     <div class="p-1 col-lg-2 col-md-3">Alias</div>
                     <div class="p-1 col-lg-10 col-md-9">
                         <RadzenTextBox Placeholder="Emp. Alias" MaxLength="15" class="w-25" @bind-Value=@V.EmpmasToEdit.EmpAlias />
                     </div>
                 </div>
-            </div>
 
-            @* ----- Email (varchar(10))----------*@
-            <div class="d-flex gap-2 p-1 mb-3">
-                <div class="p-2 col-lg-2 col-md-3 ">Email </div>
-                <div class="p-1 col-lg-10 col-md-9">
-                    <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext" MaxLength="50" class="w-75" @bind-Value=@V.EmpmasToEdit!.Email />
-                    <RadzenEmailValidator Component="Email" Text="Enter a valid email address" Style="color: red; display:block" />
+                @* ----- Email (varchar(50))----------*@
+                <div class="d-flex gap-2 p-1 mb-3">
+                    <div class="p-2 col-lg-2 col-md-3 ">Email </div>
+                    <div class="p-1 col-lg-10 col-md-9">
+                        <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext" MaxLength="50" class="w-75" @bind-Value=@V.EmpmasToEdit!.Email />
+                        <RadzenEmailValidator Component="Email" Text="Enter a valid email address" Style="color: red; display:block" />
+                    </div>
                 </div>
             </div>
 
         </RadzenFieldset>
 
         <div class="d-flex gap-2 mt-3 justify-content-end p-1">
-            <button type="button" class="btn btn-secondary" @onclick="@(() => HideModal())"
-                    data-bs-dismiss="modal">
-                Close
-            </button>
 
-         
-            <button type="submit" class="btn btn-primary">
-                @(V.IsNewEntry == true ? "Save changes" : "Update")
+            <button type="button" class="card p-1 mb-cbtn mb-cbtn-gray d-flex w-100p" @onclick="@(() => HideModal())">
+                <div class="d-flex align-items-center justify-content-center">
+                    <span class="p-0">Close</span>
+                </div>
             </button>
+            <div class="@EnableSave">
+                <button type="submit" class="card p-1 mb-cbtn mb-cbtn-blue d-flex w-100p">
+                    <div class="d-flex align-items-center justify-content-center">
+                        <span class="p-0">@(V.IsNewEntry == true ? "Save" : "Update")</span>
+                    </div>
+                </button>
+            </div>
+
         </div>
 
     </RadzenTemplateForm>
-
 </div>
 
-@code {
 
+@code {
 
     [Parameter]
     public V2052 V { get; set; } = new();
@@ -113,29 +141,55 @@
     [Parameter]
     public UserClaimsModel? UserClaims { get; set; } = new();
 
-
-    //-- Initialization ----------------
-    RadzenDataGrid<PisEmpmasModel?>? empmassGrid = new();
-    bool editMode = false;
+    RadzenDataGrid<OEmpmasModel?>? empmassGrid = new();
     DataGridEditMode editMode1 = DataGridEditMode.Single;
 
-    List<PisEmpmasModel?>? empmass = new();
-    PisEmpmasModel empmas = new();
 
-    List<PisEmpmasModel?>? empmassToInsert = new();
-    List<PisEmpmasModel?>? empmassToUpdate = new();
+    List<OEmpmasModel?>? empmassToInsert = new();
+    List<OEmpmasModel?>? empmassToUpdate = new();
     string? errorMsg = string.Empty;
+    bool showNameError = false; 
 
-    bool IsSaveDisabled =>
-        string.IsNullOrWhiteSpace(V.Empmas?.EmpLastNm) ||
-        string.IsNullOrWhiteSpace(V.Empmas?.EmpFirstNm);
 
-    protected override void OnParametersSet()
+
+    bool IsFirstAndLastNameNull =>
+        string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpLastNm) ||
+        string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpFirstNm);
+
+    string EnableAutomate => IsFirstAndLastNameNull ? "disabled-div-50" : "";
+    string EnableSave => IsFirstAndLastNameNull ? "disabled-div-50" : "";
+
+    private void GenerateEmpNumber()
     {
+        showNameError = false;
+
+        if (!ValidateFirstAndLastName())
+        {
+            showNameError = true;
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(V.LastEmpNumber))
+        {
+            int lastNo = Convert.ToInt32(V.LastEmpNumber);
+            V.EmpmasToEdit.EmpNumber = (lastNo + 1).ToString("D5");
+        }
     }
 
-    async void OnSubmit(PisEmpmasModel model)
+
+
+    private bool ValidateFirstAndLastName()
     {
+        return !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpLastNm) &&
+               !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpFirstNm);
+    }
+
+
+
+    async void OnSubmit(OEmpmasModel model)
+    {
+        showNameError = false;
+
         V.Action = "SaveEmpmas";
         await ChildAction.InvokeAsync();
     }
@@ -151,7 +205,6 @@
         await ChildAction.InvokeAsync();
     }
 
-
     async Task OnEmpNumberLostFocus()
     {
         V.SelectedEmpnumber = V.EmpmasToEdit.EmpNumber;
@@ -161,27 +214,13 @@
 }
 
 <style>
-    .empnum-hint {
-        display: flex;
-        flex-direction: column;
-        line-height: 1.1;
-        padding: 4px 12px;
-        border-left: 2px solid #cbd5e1;
-        margin-top: 2px;
+    .mb-cbtn-outline-blue{
+        color: #0d6efd;
+        background: #0d6efd21;
     }
 
-    .empnum-hint-label {
-        font-size: 0.65rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        color: #94a3b8;
-        text-transform: uppercase;
+    .mb-banner-info {
+        color: #0d6efd;
+        background: #0d6efd21;
     }
-
-    .empnum-hint-value {
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: #475569;
-        font-family: 'Consolas', 'Courier New', monospace;
-    }
-</style>
+ </style>

@@ -301,9 +301,9 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                                 ELSE b.MaxEmp
                             END AS Empnumber
                         FROM
-                            (SELECT MAX(empnumber) AS MaxEmp FROM {schema}.empmas) a
+                            (SELECT MAX(cast(empnumber as signed)) AS MaxEmp FROM {schema}.empmas) a
                         CROSS JOIN
-                            (SELECT MAX(empnumber) AS MaxEmp FROM {schema}.empmasarchieved) b;";
+                            (SELECT MAX(cast(empnumber as signed)) AS MaxEmp FROM {schema}.empmasarchieved) b;";
       
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new {}, conn);
         return data.FirstOrDefault();
