@@ -3,134 +3,138 @@
 @inject NotificationService _NotificationService
 @inject DialogService _DialogService
 
-<RadzenFieldset Text="Children">
-    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
-    {
-        <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success"
-                          Icon="add_circle_outline"
-                          Text="New Entry"
-                          Click="@InsertRow"
-                          Disabled="@(editMode || isLoading)" />
+
+<RadzenFieldset Text="Children" Style="font-weight:bold">
+    <div class="fw-normal">
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="p-2 bordered mb-2 w-100">
+                <RadzenButton ButtonStyle="ButtonStyle.Success"
+                              Icon="add_circle_outline"
+                              Text="New Entry"
+                              Click="@InsertRow"
+                              Disabled="@(editMode || isLoading)" />
+            </div>
+        }
+
+        <div class="custom-grid mt-2">
+            <RadzenDataGrid Data="@V.Children"
+                            TItem="OChildrenModel"
+                            @ref="V.ChildrenGrid"
+                            EditMode="DataGridEditMode.Single"
+                            AllowSorting="true"
+                            AllowPaging="true"
+                            PageSize="10"
+                            PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                            ColumnWidth="200px"
+                            IsLoading="isLoading">
+                <Columns>
+                    <RadzenDataGridColumn TItem="OChildrenModel"
+                                          Context="OChildrenModel"
+                                          Filterable="false"
+                                          Sortable="false"
+                                          Width="100%">
+                        <HeaderTemplate>
+                            <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
+                                <RadzenColumn Size="8" class="custom-grid-md">Name</RadzenColumn>
+                                <RadzenColumn Size="4" class="custom-grid-md">Birthday</RadzenColumn>
+                            </RadzenRow>
+                        </HeaderTemplate>
+
+                        <Template Context="rec">
+                            @* ======= Small Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-sm">
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Name" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="60" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Birthday" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Disabled="true" DateFormat="MMM dd, yyyy" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+
+                            @* ======= Large Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-md">
+                                <RadzenRow>
+                                    <RadzenColumn Size="8">@rec.Name</RadzenColumn>
+                                    <RadzenColumn Size="4">@rec.BDay?.ToString("MMM dd, yyyy")</RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+                        </Template>
+
+                        <EditTemplate Context="rec">
+                            @* ======= Small Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-sm">
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="ChildNameSm" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenTextBox @bind-Value="rec.Name" class="w-100" Name="ChildNameSm" MaxLength="60" />
+                                            <RadzenRequiredValidator Component="ChildNameSm" Text="Name is required" Popup="true" Style="position:absolute;" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Birthday" Component="ChildBDaySm" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDaySm" DateFormat="MMM dd, yyyy" />
+                                            <RadzenRequiredValidator Component="ChildBDaySm" Text="Birthday is required" Popup="true" Style="position:absolute;" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+
+                            @* ======= Large Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-md">
+                                <RadzenRow Gap=".3rem">
+                                    <RadzenColumn Size="8">
+                                        <RadzenTextBox @bind-Value="rec.Name" Name="ChildNameLg" class="w-100" MaxLength="60" Style="display:block" />
+                                        <RadzenRequiredValidator Component="ChildNameLg" Text="Name is required" Popup="true" Style="position:absolute;" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="4">
+                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDayLg" DateFormat="MMM dd, yyyy" class="w-100" Style="display:block" />
+                                        <RadzenRequiredValidator Component="ChildBDayLg" Text="Birthday is required" Popup="true" Style="position:absolute;" />
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+
+                    @* Actions Column *@
+                    <RadzenDataGridColumn TItem="OChildrenModel"
+                                          Context="OChildrenModel"
+                                          Filterable="false"
+                                          Sortable="false"
+                                          TextAlign="TextAlign.Center"
+                                          Title="Actions"
+                                          Frozen="true"
+                                          FrozenPosition="FrozenColumnPosition.Right"
+                                          Width="120px">
+                        <Template Context="rec">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true" />
+                        </Template>
+                        <EditTemplate Context="rec">
+                            <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => SaveRow(rec))" />
+                            <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => CancelEdit(rec))" class="my-1 ms-1" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
         </div>
-    }
-
-    <div class="custom-grid mt-2">
-        <RadzenDataGrid Data="@V.Children"
-                        TItem="OChildrenModel"
-                        @ref="V.ChildrenGrid"
-                        EditMode="DataGridEditMode.Single"
-                        AllowSorting="true"
-                        AllowPaging="true"
-                        PageSize="10"
-                        PageSizeOptions=@(new int[]{5, 10, 20, 30})
-                        ColumnWidth="200px"
-                        IsLoading="isLoading">
-            <Columns>
-                <RadzenDataGridColumn TItem="OChildrenModel"
-                                      Context="OChildrenModel"
-                                      Filterable="false"
-                                      Sortable="false"
-                                      Width="100%">
-                    <HeaderTemplate>
-                        <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
-                            <RadzenColumn Size="8" class="custom-grid-md">Name</RadzenColumn>
-                            <RadzenColumn Size="4" class="custom-grid-md">Birthday</RadzenColumn>
-                        </RadzenRow>
-                    </HeaderTemplate>
-
-                    <Template Context="rec">
-                        @* ======= Small Screen ========= *@
-                        <RadzenStack Gap="0" class="custom-grid-sm">
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Name" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="60" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Birthday" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Disabled="true" DateFormat="MMM dd, yyyy" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                        </RadzenStack>
-
-                        @* ======= Large Screen ========= *@
-                        <RadzenStack Gap="0" class="custom-grid-md">
-                            <RadzenRow>
-                                <RadzenColumn Size="8">@rec.Name</RadzenColumn>
-                                <RadzenColumn Size="4">@rec.BDay?.ToString("MMM dd, yyyy")</RadzenColumn>
-                            </RadzenRow>
-                        </RadzenStack>
-                    </Template>
-
-                    <EditTemplate Context="rec">
-                        @* ======= Small Screen ========= *@
-                        <RadzenStack Gap="0" class="custom-grid-sm">
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="ChildNameSm" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" class="w-100" Name="ChildNameSm" MaxLength="60" />
-                                        <RadzenRequiredValidator Component="ChildNameSm" Text="Name is required" Popup="true" Style="position:absolute;" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Birthday" Component="ChildBDaySm" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDaySm" DateFormat="MMM dd, yyyy" />
-                                        <RadzenRequiredValidator Component="ChildBDaySm" Text="Birthday is required" Popup="true" Style="position:absolute;" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                        </RadzenStack>
-
-                        @* ======= Large Screen ========= *@
-                        <RadzenStack Gap="0" class="custom-grid-md">
-                            <RadzenRow Gap=".3rem">
-                                <RadzenColumn Size="8">
-                                    <RadzenTextBox @bind-Value="rec.Name" Name="ChildNameLg" class="w-100" MaxLength="60" Style="display:block" />
-                                    <RadzenRequiredValidator Component="ChildNameLg" Text="Name is required" Popup="true" Style="position:absolute;" />
-                                </RadzenColumn>
-                                <RadzenColumn Size="4">
-                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDayLg" DateFormat="MMM dd, yyyy" class="w-100" Style="display:block" />
-                                    <RadzenRequiredValidator Component="ChildBDayLg" Text="Birthday is required" Popup="true" Style="position:absolute;" />
-                                </RadzenColumn>
-                            </RadzenRow>
-                        </RadzenStack>
-                    </EditTemplate>
-                </RadzenDataGridColumn>
-
-                @* Actions Column *@
-                <RadzenDataGridColumn TItem="OChildrenModel"
-                                      Context="OChildrenModel"
-                                      Filterable="false"
-                                      Sortable="false"
-                                      TextAlign="TextAlign.Center"
-                                      Title="Actions"
-                                      Frozen="true"
-                                      FrozenPosition="FrozenColumnPosition.Right"
-                                      Width="120px">
-                    <Template Context="rec">
-                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true" />
-                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true" />
-                    </Template>
-                    <EditTemplate Context="rec">
-                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => SaveRow(rec))" />
-                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => CancelEdit(rec))" class="my-1 ms-1" />
-                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" />
-                    </EditTemplate>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
     </div>
+  
 </RadzenFieldset>
 
 @inject IOChildrenDataAccess _empmas

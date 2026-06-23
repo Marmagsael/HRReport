@@ -426,14 +426,14 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Deployment(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-                    DATEHIRED = @DATEHIRED,POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF
+                    DATEHIRED = @DATEHIRED, POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF
                     WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT  POSITION_, EMPSTAT_,  
                 if(e.DATEHIRED  < '1000-01-01', null, DATEHIRED  )  as DATEHIRED  ,       
                 if(e.REGREF  < '1000-01-01', null, REGREF  )  as REGREF 
-                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+                FROM {schema}.Empmas e WHERE Empnumber = @Empnumber";
 
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
