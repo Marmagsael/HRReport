@@ -102,6 +102,8 @@
                     </div>
                 </div>
 
+                okay lets rewrit ethis
+
                 @* ----- Height (int(11))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20">Height </div>
@@ -110,13 +112,11 @@
                             <RadzenNumeric Placeholder="0" Step="1" @bind-Value=@V.Empmas.Height TextAlign="TextAlign.Right"
                                            InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                         </div><div class="p-2"> Feet</div>
-
                         <div class="w-125p">
                             <RadzenNumeric Placeholder="0" Step="1" @bind-Value=@V.Empmas.HeightInches TextAlign="TextAlign.Right"
                                            InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                         </div>
                         <div class="p-2"> Inches</div>
-
                     </div>
                 </div>
 
@@ -236,6 +236,7 @@
         if (model == null) return;
         try
         {
+            CombineHeight();
             await _empmas._03_PersonalData(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
 
             _NotificationService.Notify(new NotificationMessage
@@ -262,5 +263,20 @@
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
     {
 
+    }
+
+    private void CombineHeight()
+    {
+        if (V.Empmas.Height.HasValue || V.Empmas.HeightInches.HasValue)
+        {
+            double feet = V.Empmas.Height ?? 0;
+            double inches = V.Empmas.HeightInches ?? 0;
+
+            V.Empmas.Height = feet + (inches / 100);
+        }
+        else
+        {
+            V.Empmas.Height = null;
+        }
     }
 }
