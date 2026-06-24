@@ -9,7 +9,7 @@ public class LeaveapplicationdtlModel
 	public DateTime?		Date 			        { get; set; } = DateTime.Now.Date; 
 	public string? 			DutyType 		        { get; set; } = "R"; 
 	public int?				IsPayable 		        { get; set; } = 0; 
-	public int?				LeaveDateTypeId 		{ get; set; } = 0; 
+	public int?				LeaveDayTypeId 		    { get; set; } = 0; 
 
 	//---------------------------------------------------------------------------------------------------------------
 	public bool     		IsPayableB              { get => IsPayable == 1; set => IsPayable = value ? 1 : 0; }

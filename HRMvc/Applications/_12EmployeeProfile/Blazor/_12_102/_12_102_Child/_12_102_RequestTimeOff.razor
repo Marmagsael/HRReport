@@ -4,11 +4,14 @@
 @using HRApiLibrary.DataAccess._90_Utils
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.Leave
+@using HRMvc.Applications.PisModules.Vars
 @using Radzen
 @using Radzen.Blazor
 
 <RadzenDialog />
 @inject DialogService _DialogService
+
+@if(isLoading) { <_00Loading  />   } 
 
 <CascadingValue Value="Uc" IsFixed="true">
 <CascadingValue Value="v">
@@ -32,7 +35,7 @@
 
     @* <div>Count : @v.LeaveApplicationdtls.Count * @Uc.UserId </div> *@
 
-    <div class="card-body p-0 ">
+    <div class="card-body p-0 @DivLocked ">
         <table class="table table-small table-bordered">
             <tbody>
                 <tr>
@@ -48,7 +51,7 @@
                         <div class="w-175p d-flex p-1 ">
                             <div class=""> Status : </div>
                             <div class="ms-2 bordered-bottom text-center text-primary"> 
-                                @* @(_02LvStatus(@v.LeaveApplication.Status))  *@
+                                 @(_02LvStatus(@v.LeaveApplication.Status)) 
                             </div>
                         </div>
 
@@ -226,12 +229,13 @@
                             @* --- Available Credit --------- *@
                             <div class="text-primary">Days Count : </div>
                             <div class="text-center">
-                                @lva.DaysCnt.ToString("N2")
+                                @(v.LeaveApplicationdtls.Count)
+                                @* @lva.DaysCnt.ToString("N2") *@
                             </div>
                             @* --- Leave with Pay *@
                             <div class="text-primary">With Pay : </div>
                             <div class="text-center">
-                                @* @lvWPay.ToString("N2")  *@
+                                @lvWPay.ToString("N2")  
                             </div>
 
 
@@ -244,104 +248,60 @@
     </div>
 
     @* --- Leave Details ----------------------------------------- *@
-    <div>
+    <div class="@DivLocked ">
         <div class="card-header bg mb-a-green fw-bold  ">Leave Details</div>
+        @if(v.LeaveApplicationdtls.Count > 5 && v.LeaveApplication.Status is not "F" and not "A")
+        {
+            <div class="card-header bg mb-a-green   ">
+                <div @onclick="MarkPayable" class="p-1 mb-cbtn mb-cbtn-gray card w-200p ">Mark Regular Day Payable </div>
+            </div>
+        }
+        
+
         <div class="card-body p-0">
 
+
+
                 <div class="w-100 d-flex gap-1 py-2 border-bottom">
+                    <div class="w-75p text-center bg-dgray ">Entry #</div>
                     <div class="w-130p text-center ">Date</div>
                     <div class="w-75p text-center text-primary "> Day </div>
-                    <div class="w-125p text-center">Credited Hrs.</div>
+                    <div class="w-75p text-center text-primary "> Duty Type </div>
+                    <div class="w-150p text-center">Credited Hrs.</div>
                     <div class="w-100p text-center">Payable</div>
                 </div>
 
+                
+
                 @foreach (LeaveapplicationdtlModel lvd in v.LeaveApplicationdtls)
                 {
+                    string? dtype    = _02DutyType(@lvd.Date?.ToString("ddd")); 
+                    string? dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
+
                     <div class="w-100 d-flex p-0 mt-1 gap-1 ">
-                        <div class="w-130p text-center ">@lvd.Date?.ToString("MMM dd, yyyy")</div>
-                        <div class="w-75p text-center text-primary "> Day </div>
-                        <div class="w-125p text-center">
+                        <div class="w-75p  bg-dgray @center_xy ">@(lvd.Id==0 ? "-" : lvd.Id.ToString())</div>
+                        <div class="w-130p @center_xy ">@lvd.Date?.ToString("MMM dd, yyyy")</div>
+                        <div class="w-75p d-flex @center_xy ">  @lvd.Date?.ToString("ddd") </div>
+                        <div class="w-75p d-flex @center_xy" ">  @dtype </div>
+                        <div class="w-155p text-center">
                             <RadzenDropDown 
                                 Data="@v.LeaveDayTypes" 
                                 TValue="int?"
                                 TextProperty="Name"
-                                ValueProperty="Id" @bind-Value="@lvd.LeaveDateTypeId"
+                                ValueProperty="Id" @bind-Value="@lvd.LeaveDayTypeId"
                                 Placeholder="Schedule"
-                            Style="width:125px" />
+                            Style="width:150px" />
                         </div>
-                        <div class="w-100p text-center">Payable</div>
-                    </div>
-                }
-        
-
-
-
-            @* @foreach(LeaveapplicationdtlModel ld in v.LeaveApplicationdtls){
-                string? dtype    = _02DutyType(@ld.Start?.ToString("ddd")); 
-                string? dTypeCss = dtype=="RD" ? " text-danger disabled-div-50 " : ""; 
-
-                <div class="w-100 d-flex p-0 mt-1 gap-1 @dTypeCss ">
-                    <div class="w-130p text-center py-2 ">
-                    @ld.Start?.ToString("MMM dd, yyyy").Trim() 
-                    </div>
-                    <div class="w-75p text-center  py-2 ">
-                        @ld.Start?.ToString("ddd")
-                    </div>
-                    <div class="w-75p text-center py-2 ">
-                        @dtype
-                    </div>
-                    <div class="w-130p">
-                        <RadzenDropDown
-                            Change="@(() => ComputeEnd(ld))"
-                            Data="@v.Hrs"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="@ld.TimeStart"
-                            Placeholder="Select Time"
-                            Style="width:125px" /> 
-                    </div>
-                    <div class="w-130p">
-                        <RadzenDropDown
-                            Change="@(() => ComputeEnd(ld))"
-                            Data="@v.Durations"
-                            TextProperty="Text"
-                            ValueProperty="Value"
-                            @bind-Value="@ld.TimeDuration"
-                            Placeholder="Hr Duration"
-                            Style="width:125px; align-items: center;" /> 
-                    </div>
-                    <div class="w-100p text-center py-2 ">
-                        @ld.End?.ToString("hh:mm tt")
-                    </div>
-                    
-                    <div class="w-100p text-center py-2 ">
-                        <input 
+                        <div class="w-100p d-flex @center_xy">
+                            <input 
                             class="form-check-input" 
                             type="checkbox"
-                            checked="@ld!.IsPayableB"
-                            @onchange="@((ChangeEventArgs e) => MarkPayable(e, ld))" />
+                            checked="@lvd!.IsPayableB"
+                            @onchange="@((ChangeEventArgs e) => MarkPayable(e, lvd))" />
+                        </div>
                     </div>
-                    <div class="w-100p text-center @(ld?.IsPayableB??false ? "" : " disabled-div ") ">
-                        <RadzenNumeric @bind-Value="ld.CreditedHrs"
-                            TValue="decimal?"
-                            Min="@(0m)"
-                            Max="@(23.5m)"
-                            Step="0.5"
-                            Format="0.00"
-                            Style="width:100px;"
-                            TextAlign="TextAlign.Center"/>  
-                    </div>
-
-                </div>    
-
-
-            } *@
-
+                }
         </div>
-
-        
-        
-
     </div>
 
 </CascadingValue>
@@ -357,6 +317,8 @@
 @inject ISettingsDataAccess             _settings; 
 @inject IEmpmasInternalDataAccess       _empmasInternal; 
 @inject I_10_EmpmasDataAccess           _empmas; 
+@inject ILeavedaytypeDataAccess         _lvdaytype;
+
 
 
 @inject ILeaveapplicationdtlDataAccess  _lvApplicationdtl; 
@@ -366,6 +328,18 @@
     V12_102Lv   v = new();
     V00_RepVars rv = new(); 
     int? ctr = 0; 
+    bool isLoading = false;
+
+    void MarkPayable() {
+        int ctr = 1; 
+        foreach(var d in v.LeaveApplicationdtls) {
+            
+            if(d.DutyType == "R" && ctr <= lva.LvBalance) { 
+                ctr++;
+                d.IsPayableB = true; 
+            }
+        }
+    }
 
     @* =================================================== *@
     async Task ChildActionCatcher() {
@@ -383,8 +357,7 @@
     }
 
     async Task New() { 
-        @* Console.WriteLine($"Test");  *@
-
+       
         v.LeaveApplication      = new(); 
         v.LeaveApplicationdtl   = new(); 
         v.LeaveApplicationdtls  = []; 
@@ -397,6 +370,49 @@
 
     async Task Save()
     {
+
+        @* --- Check for Overlapping Leave Applications --- *@
+        var resOverlapping = await _lvApplication._02Overlapping(Uc.EmpmasId, v.LeaveApplication.Id, v.LeaveApplication.LvStart, v.LeaveApplication.LvEnd, Uc.SchemaUserPis, Uc.Conn);
+        if(resOverlapping!=null && resOverlapping.Any()) {
+            await _DialogService.Alert(
+            @"The leave application could not be saved because the selected dates overlap with an existing leave application. 
+                        Please review your current leave applications and modify the dates to avoid any overlap.",
+                "Overlapping Leave Application",    new AlertOptions() { OkButtonText = "OK" });
+            return; 
+        }
+        @* =================================================================================== *@
+
+
+        var lvapp = v.LeaveApplication;
+        lvapp.Status      = "S";
+        lvapp.EmpmasId    = Uc.EmpmasId;
+        lvapp.DaysWithPay = lvWPay;
+
+        /*--- Insert -----------------------------------------------------*/
+        if (lva.Id == 0)
+        {
+            var res = await _lvApplication._01(lva, Uc.SchemaUserPis, Uc.Conn);
+            lvapp.Id = res.Id ?? 0; 
+        }
+        
+        /*--- Update -----------------------------------------------------*/
+        if (lva.Id > 0)
+        {
+            await _lvApplication._03(lva.Id, lva, Uc.SchemaUserPis, Uc.Conn);
+            await _lvaDtls._04OutRange(lva.Id,lva.LvStart.Date, lva.LvEnd.Date, Uc.SchemaUserPis, Uc.Conn); 
+        }
+        
+        foreach(var d in v.LeaveApplicationdtls) {
+            d.LeaveApplicationId    = lva.Id; 
+            d.EmpmasId              = Uc.EmpmasId; 
+            d.EmpNumber             = Uc.OempNumber??"";
+
+            if(d.Id == 0)   { await _lvaDtls._01(d, Uc.SchemaUserPis, Uc.Conn);  } 
+            else            { await _lvaDtls._03(d.Id??0, d, Uc.SchemaUserPis, Uc.Conn); }; 
+        }
+        
+        var resd = await _lvaDtls._02ByLvApplicationId(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
+        if(resd!=null) v.LeaveApplicationdtls = resd!; 
         
 
     }
@@ -486,8 +502,10 @@
     AtttemplateModel at => v.AttTemplate;
     LeaveapplicationModel lva => v.LeaveApplication;
 
+    string center_xy => "d-flex justify-content-center align-items-center";
     bool IsCanSave => lva != null
                && lva.Status is "N" or "S"
+               && (v.LeaveApplicationdtls.Count > 0)
                && (lva.LeaveTypeId) > 0
                && lva.LvEnd >= lva.LvStart
                && !string.IsNullOrWhiteSpace(lva.Address)
@@ -508,12 +526,17 @@
 
     bool IsCanPrint     => lva != null
                             && (lva.Status is "S" or "FA" or "F"); 
+                            
+    bool IsLocked     =>  lva != null
+                            && (lva.Status is "N" or "S"); 
+
 
     string? CanSaveCss =>    IsCanSave ? "" : " disabled-div ";
     string? CanSendCss =>    IsCanSend ? "" : " disabled-div ";
     string? CanCancelCss =>  IsCanCancel ? "" : " disabled-div ";
     string? CanPrintCss =>  IsCanPrint ? "" : " disabled-div ";
-
+    string? DivLocked =>  IsLocked ? "" : " disabled-div-75 ";
+    
     @* =================================================== *@
     async Task _02LeaveBalance() {
         var res = await _lvApplication
@@ -529,11 +552,39 @@
         v.LeaveApplicationdtls = [];
         
         if (v.LeaveApplication.LvStart.Date > v.LeaveApplication.LvEnd.Date) return;
-
         var leaveApp = v.LeaveApplication;
-       
+		for (DateTime date = leaveApp.LvStart; date < leaveApp.LvEnd.AddDays(1); date = date.AddDays(1))
+        {
+			string?                      ddd    = date.ToString("ddd");
+            LeaveapplicationdtlModel?   dtl     = _02LA(ddd);
+			dtl.Date                            = date;
+            dtl.LeaveDayTypeId                  = 1;
+            @* if (dtl.DutyType == "R") dtl.IsPayableB = true; *@
+            v.LeaveApplicationdtls.Add(dtl);
+        }
 
+        @* --- Populate details from existing records --------------------------------- *@
+        int? lvaId = lva.Id??0; 
+        if(lvaId>0) {
+            isLoading = true;
+            var res = await _lvaDtls._02ByLvApplicationId(lva.Id, Uc.SchemaUserPis, Uc.Conn); 
+            isLoading = false;
 
+            res.ForEach(r =>{
+                v.LeaveApplicationdtls.ForEach(d => {
+                    if(d.Date == r.Date) {
+                        d.Id                    = r.Id; 
+                        d.LeaveApplicationId    = r.LeaveApplicationId; 
+                        d.LeaveDayTypeId        = r.LeaveDayTypeId; 
+                        d.IsPayableB            = r.IsPayableB; 
+                    }
+                });
+            }); 
+        }
+
+        @* --- Days Count -------------------------------- *@
+        if(lva.LvEnd.Date < lva.LvStart.Date) { v.LeaveApplication.DaysCnt = 0; }
+        else { v.LeaveApplication.DaysCnt = (lva.LvEnd - lva.LvStart).TotalDays + 1;  }
     }
 
     void ComputeEnd(LeaveapplicationdtlModel ld) {
@@ -576,11 +627,11 @@
         v.LvFinalApprovers = finalApprovers!; 
         v.LvFinalApprovers.Insert(0, new() { ApproverId = 0, ApproverName = "No Assigned Approver" });
 
-        @* --- Leaveapplicationdtl Inital Value *@
-        v.LeaveApplicationdtls = new List<LeaveapplicationdtlModel>() 
-        {  
-            new LeaveapplicationdtlModel() { Id=0, LeaveApplicationId = 0, Date = DateTime.Now.Date, LeaveDateTypeId = 1 } 
-        };
+        v.LeaveDayTypes = [];
+        var resLvDayTypes = await _lvdaytype._02(Uc.SchemaUserPis, Uc.Conn);
+        if(resLvDayTypes!=null && resLvDayTypes.Any()) v.LeaveDayTypes = resLvDayTypes!;
+
+
 
 
     }
@@ -611,18 +662,18 @@
 
     double lvWPay => v.LeaveApplicationdtls 
                         .Where(l => l.IsPayableB)
-                        .Sum(l => l.LeaveDateTypeId == 1  ? 1 : .5 ); 
+                        .Sum(l => l.LeaveDayTypeId == 1  ? 1 : .5 ); 
 
     LeaveapplicationdtlModel _02LA(string? ddd) => ddd switch
     {
-        @* "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype, TimeStart = at.D2_in, TimeDuration = at.D2_hrslength },
-        "Tue" => new LeaveapplicationdtlModel { DutyType = at.D3_dutytype, TimeStart = at.D3_in, TimeDuration = at.D3_hrslength },
-        "Wed" => new LeaveapplicationdtlModel { DutyType = at.D4_dutytype, TimeStart = at.D4_in, TimeDuration = at.D4_hrslength },
-        "Thu" => new LeaveapplicationdtlModel { DutyType = at.D5_dutytype, TimeStart = at.D5_in, TimeDuration = at.D5_hrslength },
-        "Fri" => new LeaveapplicationdtlModel { DutyType = at.D6_dutytype, TimeStart = at.D6_in, TimeDuration = at.D6_hrslength },
-        "Sat" => new LeaveapplicationdtlModel { DutyType = at.D7_dutytype, TimeStart = at.D7_in, TimeDuration = at.D7_hrslength },
-        "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype, TimeStart = at.D1_in, TimeDuration = at.D1_hrslength },
-        _ => new LeaveapplicationdtlModel() *@
+        "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype},
+        "Tue" => new LeaveapplicationdtlModel { DutyType = at.D3_dutytype},
+        "Wed" => new LeaveapplicationdtlModel { DutyType = at.D4_dutytype},
+        "Thu" => new LeaveapplicationdtlModel { DutyType = at.D5_dutytype},
+        "Fri" => new LeaveapplicationdtlModel { DutyType = at.D6_dutytype},
+        "Sat" => new LeaveapplicationdtlModel { DutyType = at.D7_dutytype},
+        "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype},
+        _ => new LeaveapplicationdtlModel() 
     };
     
     string? _02LvTypeName(int? lvTypeId)  => (v?.LeaveTypes.FirstOrDefault(l=>l.Id == lvTypeId).LeaveName)??"-";

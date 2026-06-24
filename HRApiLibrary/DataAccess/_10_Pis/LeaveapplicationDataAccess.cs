@@ -41,8 +41,17 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         string? sql  = $@"select  * from {schema}.Leaveapplication where EmpmasId = @EmpmasId and Status in ('S','F') ";
         var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { EmpmasId = empmasId }, conn);
         return data;
-
     }
+    
+    
+    public async Task<List<LeaveapplicationModel?>?> _02Overlapping(int? empmasId, int? lvapplicationId, DateTime startDate, DateTime endDate, string? schema, string? conn)
+    {
+        string? sql  = $@"select  * from {schema}.Leaveapplication 
+                          where EmpmasId = @EmpmasId and Status in ('F','A') and LvStart <= @EndDate and LvEnd >= @StartDate and Id != @LvapplicationId ";
+        var data    = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql, new { EmpmasId = empmasId, StartDate = startDate, EndDate = endDate, LvapplicationId = lvapplicationId }, conn);
+        return data;
+    }
+
     
     public async Task<double> _02LvBalance(int? lvTypeId, int? empmasId, int? yr, string? schema, string? conn)
     {

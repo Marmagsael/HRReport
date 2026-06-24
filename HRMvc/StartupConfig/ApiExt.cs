@@ -60,7 +60,7 @@ public static class ApiExt
         builder.Services.AddScoped<IAttpunches1DataAccess, Attpunches1DataAccess>();
         builder.Services.AddScoped<IEmpmasInternalDataAccess, EmpmasInternalDataAccess>();
         builder.Services.AddScoped<IPissettingsDataAccess, PissettingsDataAccess>();
-        //builder.Services.AddScoped<ILeavedaytypeDataAccess, LeavedaytypeDataAccess>();
+        builder.Services.AddScoped<ILeavedaytypeDataAccess, LeavedaytypeDataAccess>();
         builder.Services.AddScoped<ILeavetypeDataAccess, LeavetypeDataAccess>();
         builder.Services.AddScoped<ILeavegrpDataAccess, LeavegrpDataAccess>();
         builder.Services.AddScoped<ILeavedefaultapproverDataAccess, LeavedefaultapproverDataAccess>();

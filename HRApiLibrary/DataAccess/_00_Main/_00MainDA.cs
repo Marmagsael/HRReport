@@ -80,6 +80,15 @@ public class _00MainDA : I_00MainDA
             uc.OpayDb               = claims.FirstOrDefault(c => c?.Type == "OldPay")?.Value;
             uc.OpisDb               = claims.FirstOrDefault(c => c?.Type == "OldPis")?.Value;
             
+            uc.EmpmasId             = 0;
+            var empmasId     = claims.FirstOrDefault(c => c?.Type == "EmpmasId")?.Value;
+            if(empmasId != null) uc.EmpmasId = int.Parse(empmasId);
+
+            uc.UserId = 0; 
+            var userid      = claims.FirstOrDefault(c => c?.Type == "UserId")?.Value;
+            if(userid != null) uc.UserId = int.Parse(userid);
+
+
             //var baseConn = _config.GetConnectionString(uc.Conn);
             //uc.ConnPay      = uc.ConnNoDb;   
             //uc.ConnPis      = $"{baseConn}; database={uc.SchemaUserPis}";

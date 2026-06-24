@@ -31,6 +31,15 @@ public class LeavedaytypeDataAccess : ILeavedaytypeDataAccess
         var data = await _sql.FetchData<LeavedaytypeModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
+    
+    public async Task<List<LeavedaytypeModel?>?> _02(string schema, string conn)
+    {
+        string  sql  = $@"select  * from {schema}.Leavedaytype ";
+        var     data = await _sql.FetchData<LeavedaytypeModel?, dynamic>(sql, new {  }, conn);
+        return data;
+        
+    }
+
 
 
     public async Task<LeavedaytypeModel?> _03(int id, LeavedaytypeModel leavedaytype, string schema, string conn)
@@ -56,8 +65,9 @@ public class LeavedaytypeDataAccess : ILeavedaytypeDataAccess
 
 public interface ILeavedaytypeDataAccess
 {
-    Task<LeavedaytypeModel?> _01(LeavedaytypeModel leavedaytype, string schema, string conn);
-    Task<LeavedaytypeModel?> _02(int id, string schema, string conn);
-    Task<LeavedaytypeModel?> _03(int id, LeavedaytypeModel leavedaytype, string schema, string conn);
-    Task<LeavedaytypeModel?> _04(int id, string schema, string conn);
+    Task<LeavedaytypeModel?>            _01(LeavedaytypeModel leavedaytype, string schema, string conn);
+    Task<LeavedaytypeModel?>            _02(int id, string schema, string conn);
+    Task<List<LeavedaytypeModel?>?>     _02(string schema, string conn);
+    Task<LeavedaytypeModel?>            _03(int id, LeavedaytypeModel leavedaytype, string schema, string conn);
+    Task<LeavedaytypeModel?>            _04(int id, string schema, string conn);
 }
