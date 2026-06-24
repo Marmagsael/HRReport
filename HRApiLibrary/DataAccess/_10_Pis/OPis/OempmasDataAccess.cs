@@ -173,33 +173,48 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
     public async Task<List<OEmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn)
     {
-        var sql = $@"select  e.empnumber from {schema}.Empmas e  where LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
+        var sql = $@"SELECT e.empnumber FROM {schema}.Empmas e 
+                   WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))
+                     UNION
+                     SELECT e.empnumber FROM {schema}.empmasarchieved e 
+                   WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }
 
     public async Task<List<OEmpmasModel?>?> _02EmpmasAddress_ByEmailNotTheOwner(string? empnumber, string? email, string? schema, string? conn)
     {
-        var flds = EmpmasFields();
+        var sql = string.IsNullOrEmpty(empnumber)
+            ? $@"SELECT e.email FROM {schema}.Empmas e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
+             UNION
+             SELECT e.email FROM {schema}.empmasarchieved e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))"
 
-        var sql = $@"select  {flds} from {schema}.Empmas e
-                 where LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
-                   and LOWER(TRIM(e.Empnumber)) != LOWER(TRIM(@Empnumber))";
+            : $@"SELECT e.email FROM {schema}.Empmas e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
+               AND LOWER(TRIM(e.Empnumber)) != LOWER(TRIM(@Empnumber))
+             UNION
+             SELECT e.email FROM {schema}.empmasarchieved e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
+               AND LOWER(TRIM(e.Empnumber)) != LOWER(TRIM(@Empnumber))";
+
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber, Email = email }, conn);
         return data;
     }
 
 
-    public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? newdb, string? conn)
+    public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? maindb,  string? newdb ,string? conn)
     {
         var flds = EmpmasFields();
 
-        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, ne.SystemId
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, m.Id UserId, ne.Id EmpmasId 
                         from {olddb}.Empmas e
                      left join {olddb}.position    p on p.code = e.position_
                      left join {olddb}.empstat     s on s.code = e.empstat_                              
-                     left join {olddb}.Client      c  on c.ClNumber = e.Client_                              
-                     left join {newdb}.empmas      ne  on ne.empnumber = e.empnumber                              
+                     left join {olddb}.Client      c on c.ClNumber = e.Client_                              
+                     left join {maindb}.users      m on m.email = e.email                              
+                     left join {newdb}.empmas      ne on ne.SystemId = m.Id                              
                      where e.Empnumber = @Empnumber";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
@@ -309,9 +324,6 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data.FirstOrDefault();
     }
 
-
-
-
     public async Task<OEmpmasModel?> _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn)
 	{
 		string sql = $@"Update {schema}.Empmas set 
@@ -369,21 +381,35 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
 
     // Header: Employee Name
-    public async Task<OEmpmasModel?> _03_EmployeeName(string empnumber, OEmpmasModel empmas, string schema, string conn)
+   public async Task<OEmpmasModel?> _03_EmployeeName(string selectedEmpnumber, OEmpmasModel empmas, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-        EMPLASTNM  = @EMPLASTNM,
-        EMPFIRSTNM = @EMPFIRSTNM,
-        EMPMIDNM   = @EMPMIDNM,
-        SUFFIX     = @SUFFIX,
-        EMPALIAS   = @EMPALIAS,
-        EMPNUMBER  = @EMPNUMBER,
-        EMAIL      = @EMAIL
-        WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
+                    EMPLASTNM  = @EmpLastNm,
+                    EMPFIRSTNM = @EmpFirstNm,
+                    EMPMIDNM   = @EmpMidNm,
+                    SUFFIX     = @Suffix,
+                    EMPALIAS   = @EmpAlias,
+                    EMPNUMBER  = @EmpNumber,
+                    EMAIL      = @Email
+                    WHERE EMPNUMBER = @SelEmpnumber";
 
-        sql = $@"SELECT  EMPLASTNM, EMPFIRSTNM, EMPMIDNM, SUFFIX, EMPALIAS, EMPNUMBER, EMAIL  FROM {schema}.Empmas  WHERE Empnumber = @Empnumber";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        await _sql.ExecuteCmd<dynamic>(sql, new
+        {
+            SelEmpnumber = selectedEmpnumber,
+            empmas.EmpLastNm,
+            empmas.EmpFirstNm,
+            empmas.EmpMidNm,
+            empmas.Suffix,
+            empmas.EmpAlias,
+            empmas.EmpNumber,
+            empmas.Email
+        }, conn);
+
+        sql = $@"SELECT EMPLASTNM, EMPFIRSTNM, EMPMIDNM, SUFFIX, EMPALIAS, EMPNUMBER, EMAIL
+             FROM {schema}.Empmas
+             WHERE Empnumber = @EmpNumber";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { empmas.EmpNumber }, conn);
         return data?.FirstOrDefault();
     }
     // Tab: Personal Data
@@ -698,7 +724,7 @@ public interface IOEmpmasDataAccess
     Task                        _00MigrateData(string? pisDb, string? oPisDb, string? conn);
     Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02(string? empnumber, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?>  _02(string? empnumber, string? olddb, string? newdb, string? conn);
+    Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? maindb, string? newdb, string? conn);
     Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
@@ -721,4 +747,7 @@ public interface IOEmpmasDataAccess
     Task<OEmpmasModel?>         _03_Security(string empnumber, OEmpmasModel mempmas, string schema, string conn);
 
     Task<OEmpmasModel?>         _04(int? id, string? schema, string? conn);
+
+
+
 }

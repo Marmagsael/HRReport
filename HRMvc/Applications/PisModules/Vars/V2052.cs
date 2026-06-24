@@ -36,21 +36,13 @@ public class V2052
     public int?                          SelectedId             { get; set; } = 0;
     public string?                       SelectedEmpnumber      { get; set; } = string.Empty;
     public string?                       LastEmpNumber          { get; set; } = string.Empty;
-    public bool?                        IsEmailValid            { get; set; } = false;
+    public bool?                         IsEmailValid           { get; set; } = true;
+    public bool?                         IsEmpNoValid           { get; set; } = true;
 
-    public List<Uc_accessreqModel?>?       UcAccessreq          { get; set; } = new();
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();
-    public EmpmasEmploymentModel?          Employment           { get; set; } = new();
     public OEducateModel?                  Education            { get; set; } = new();
-    public EmpmasFamilyModel?              Family               { get; set; } = new();
-    public List<EmpmasFamilyRefModel?>?    FamilyRef            { get; set; } = new();
-    public EmpmasTrainingModel?            Training             { get; set; } = new();
-    public EmpmasCharRefModel?             CharRef              { get; set; } = new();
-    public EmpmasInsuranceModel?           Insurance            { get; set; } = new();
-    public EmpmasGovPhModel?               EmpmasGovPh          { get; set; } = new();
-    public EmpmasPIModel?                  EmpmasPI             { get; set; } = new(); 
 
     public List<OEmployModel?>?             Employments         { get; set; } = new();
     public List<OEducateModel?>?            Educations          { get; set; } = new();
@@ -64,19 +56,13 @@ public class V2052
     public List<OReferModel?>?              CharRefs            { get; set; } = new();
     public List<EmpmasInsuranceModel?>?     Insurances          { get; set; } = new();
 
-
     public List<OCivstatModel?>?            OCivStats           { get; set; } = new();
     public List<OGenderModel?>?             OGenders            { get; set; } = new();
     public List<CountryModel?>?             Countrys            { get; set; } = new();
     public List<OMlacodeModel?>?             MlaList             { get; set; } = new();
     public List<OProcodeModel?>?             ProList             { get; set; } = new();
     
-    public EmpmasgrpModel                   Empmasgrp           { get; set; } = new();
-    
     public OEmpmasModel?                    EmpmasToEdit        { get; set; } = new();
-    public DeprecModel?                     DeprecToEdit        { get; set; } = new();
-    public EmpmasAddressModel               EmpmasaddressToEdit { get; set; } = new();
-    public EmpmasPIModel?                   EmpmasPIToEdit      { get; set; } = new(); 
 
     public List<PisEmpmasModel?>?           Empmass             { get; set; } = new();
     public List<OEmpstatModel?>?            OEmpstats           { get; set; } = new();
@@ -89,12 +75,6 @@ public class V2052
     public List<PayrollgrpModel?>?          Payrollgprs         { get; set; } = new();
     public List<OPositionModel?>?           OPositions           { get; set; } = new();
     public List<EmploymenttypeModel?>?      Employmenttypes     { get; set; } = new();
-
-    public RadzenDataGrid<PisEmpmasModel?>? EmpmassGrid         { get; set; } = new();
-    public DataGridEditMode                 EditMode1           { get; set; } = DataGridEditMode.Single;
-
-    public List<PisEmpmasModel?>?           EmpmassToInsert     { get; set; } = new();
-    public List<PisEmpmasModel?>?           EmpmassToUpdate     { get; set; } = new();
 
     public List<EmpmovementModel?>?         EmpmovementList     { get; set; } = new();
 
@@ -119,7 +99,8 @@ public class V2052
         {
             d = new()
                 {
-                    SystemId        = e.SystemId,
+                    UserId          = e.UserId,
+                    EmpmasId        = e.EmpmasId,
                     EmpNumber       = e.EmpNumber,
                     EmpLastNm       = e.EmpLastNm,
                     EmpFirstNm      = e.EmpFirstNm,
@@ -132,6 +113,28 @@ public class V2052
         }
 
         return d; 
+
+    }
+
+    public EmpmasModel OldEmpmasToNewEmpmasMapper(OEmpmasModel source, EmpmasModel destination)
+    {
+        var d = destination;
+        var e = source;
+        if (source != null)
+        {
+            d = new()
+            {
+                SystemId    = e.UserId,
+                EmpNumber   = e.EmpNumber,
+                EmpLastNm   = e.EmpLastNm,
+                EmpFirstNm  = e.EmpFirstNm,
+                EmpMidNm    = e.EmpMidNm,
+                Suffix      = e.Suffix,
+                EmpAlias    = e.EmpAlias,
+            };
+        }
+
+        return d;
 
     }
 

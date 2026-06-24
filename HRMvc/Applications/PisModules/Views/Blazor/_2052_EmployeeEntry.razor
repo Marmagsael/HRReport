@@ -1,15 +1,12 @@
-@using HRApiLibrary.DataAccess._00_Main.Interface
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_00_Modal
 
-
 <RadzenDialog />
 <RadzenNotification />
-
-
 
 <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02PageHdr pageTitle="Employee Entry" />
 
@@ -18,32 +15,28 @@
     <_2052_01_Modal_DataEntry V="@v" ChildAction="ChildAction" />
 }
 
-
 <div style="z-index:2">
     <div class="d-flex">
         <div style="width:25%; min-height:90vh; background-color:azure">
             <_2052_02_EmpList V="@v" ChildAction="ChildAction" />
         </div>
-
         <div style="width:75%; min-height:90vh; background-color:aliceblue">
             <_2052_03_RecordsEntry V="@v" ChildAction="ChildAction" />
-
         </div>
     </div>
 </div>
 
-@inject IOEmpmasDataAccess      _empmas 
-@inject IOCivstatDataAccess     _ocivstat
-@inject IOGenderDataAccess      _ogender
-@inject I_00CountryDataAccess   _ocountry
-@inject IOMlacodeDataAccess     _omla
-@inject IOPositionDataAccess    _oposition
-@inject IOEmpstatDataAccess     _oempstat
-@inject IOProcodeDataAccess     _opro
+@inject IOEmpmasDataAccess _empmas
+@inject IOCivstatDataAccess _ocivstat
+@inject IOGenderDataAccess _ogender
+@inject I_00CountryDataAccess _ocountry
+@inject IOMlacodeDataAccess _omla
+@inject IOPositionDataAccess _oposition
+@inject IOEmpstatDataAccess _oempstat
+@inject IOProcodeDataAccess _opro
 @inject NotificationService _NotificationService
 
 @code {
-
 
     V2052 v { get; set; } = new();
 
@@ -54,164 +47,115 @@
     {
         if (Uc == null) return;
 
-        v.maindb        = Uc.SchemaMain;
-        v.pisdb         = Uc.OpisDb;
-        v.newpisdb      = Uc.SchemaUserPis;
-        v.paydb         = Uc.OpayDb;
-        v.conn          = Uc.Conn;
-        v.userid        = Uc.UserId;
-        v.defcoid       = int.Parse(Uc.DefCompanyId ?? "0");
+        v.maindb    = Uc.SchemaMain;
+        v.pisdb     = Uc.OpisDb;
+        v.newpisdb  = Uc.SchemaUserPis;
+        v.paydb     = Uc.OpayDb;
+        v.conn      = Uc.Conn;
+        v.userid    = Uc.UserId;
+        v.defcoid   = int.Parse(Uc.DefCompanyId ?? "0");
 
         if (v.conn == null || v.pisdb == null || v.paydb == null) return;
 
         v.EmpmasList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
-        await DropdownValues();
+        await LoadDropdownValues();
     }
 
 
 
-
-    async Task DropdownValues()
+    async Task LoadDropdownValues()
     {
-        v.OCivStats     = await _ocivstat._02(v.pisdb, v.conn) ?? new();
-        v.OGenders      = await _ogender._02(v.pisdb, v.conn) ?? new();
-        v.Countrys      = await _ocountry._02(v.maindb, v.conn) ?? new();
-        v.MlaList       = await _omla._02(v.pisdb, v.conn) ?? new();
-        v.ProList       = await _opro._02(v.pisdb, v.conn) ?? new();
+        v.OCivStats = await _ocivstat._02(v.pisdb, v.conn) ?? new();
+        v.OGenders  = await _ogender._02(v.pisdb, v.conn) ?? new();
+        v.Countrys  = await _ocountry._02(v.maindb, v.conn) ?? new();
+        v.MlaList   = await _omla._02(v.pisdb, v.conn) ?? new();
+        v.ProList   = await _opro._02(v.pisdb, v.conn) ?? new();
 
-        var positions   = await _oposition._02(v.pisdb, v.conn) ?? new();
-        if (positions != null && positions.Any())
-        {
-            v.OPositions = positions
-                .Where(p => !string.IsNullOrWhiteSpace(p.Code) && !string.IsNullOrWhiteSpace(p.Name))
-                .ToList();
-        }
-        else
-        {
-            v.OPositions = new();
-        }
+        var positions = await _oposition._02(v.pisdb, v.conn) ?? new();
+        v.OPositions = positions
+            .Where(p => !string.IsNullOrWhiteSpace(p.Code) && !string.IsNullOrWhiteSpace(p.Name))
+            .ToList();
 
-
-        var empstats = await _oempstat._02s(v.pisdb, v.conn);
-        if (empstats != null && empstats.Any())
-        {
-            v.OEmpstats = empstats
-                .Where(e => !string.IsNullOrWhiteSpace(e.Code) && !string.IsNullOrWhiteSpace(e.Name))
-                .ToList();
-        }
-        else
-        {
-            v.OEmpstats = new();
-        }
+        var empstats = await _oempstat._02s(v.pisdb, v.conn) ?? new();
+        v.OEmpstats = empstats
+            .Where(e => !string.IsNullOrWhiteSpace(e.Code) && !string.IsNullOrWhiteSpace(e.Name))
+            .ToList();
     }
+
+
 
     async Task ChildAction()
     {
         if (v == null) return;
-        if (v.Action == "SelectEmpmas")     await SelectEmpmas();
-        if (v.Action == "ValidateEmail")    await ValidateEmail();
 
-        v.Action = "";
         v.ActionRef = string.Empty;
+
+        if (v.Action == "SelectEmpmas") await SelectEmpmas();
+        v.Action = "";
+
     }
+
+
 
     async Task SelectEmpmas()
     {
         if (string.IsNullOrWhiteSpace(v.SelectedEmpnumber)) return;
+
         try
         {
-            var res = await _empmas._02(v.SelectedEmpnumber, v.pisdb, v.newpisdb, v.conn);
+            var res = await _empmas._02(v.SelectedEmpnumber, v.pisdb, v.maindb, v.newpisdb, v.conn);
             var emp = res?.FirstOrDefault();
 
             if (emp != null)
             {
-                v.IsNewEntry    = false;
-                v.Empmas        = emp;
-                v.EmpmasToEdit  = emp;
+                v.IsNewEntry = false;
+                v.Empmas = emp;
+                v.EmpmasToEdit = emp;
             }
             else
             {
                 v.IsNewEntry    = true;
                 v.Empmas        = new OEmpmasModel();
                 ClearFields();
-
             }
         }
         catch (Exception)
         {
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to load data",
-                Detail = "Something went wrong while loading employee information. Please check your details and try again, or contact your system administrator if the problem continues.",
-                Duration = 6000
-            });
+            ShowError(
+                "Unable to load data",
+                "Something went wrong while loading employee information. Please try again or contact your system administrator.",
+                6000
+            );
             throw;
         }
     }
 
 
-    async Task<bool?> ValidateEmail()
-    {
-        if (string.IsNullOrWhiteSpace(v.EmpmasToEdit.Email))
-        {
-            v.IsEmailValid = true;
-            return v.IsEmailValid; 
-        }
 
-        try
-        {
-            var existing = await _empmas._02EmpmasAddress_ByEmailNotTheOwner(v.SelectedEmpnumber, v.EmpmasToEdit.Email, v.pisdb, v.conn);
-            if (existing.Count() > 0)
-            {
-                ShowNotification(new NotificationMessage
-                {
-                    Severity = NotificationSeverity.Error,
-                    Summary = "Duplicate email",
-                    Detail = "This email address is already used by another employee.",
-                    Duration = 5000
-                });
-                v.IsEmailValid = false;
-            }
-            else
-            {
-                _NotificationService.Messages.Clear();
-                v.IsEmailValid = true;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to validate email",
-                Detail = "Something went wrong while checking the email address. Please try again.",
-                Duration = 6000
-            });
-            v.IsEmailValid = false;
-        }
-
-        return v.IsEmailValid;
-    }
-
+   
 
 
 
     void ClearFields()
     {
-        v.EmpmasToEdit.SystemId     = 0;
-        v.EmpmasToEdit.EmpLastNm    = string.Empty;
-        v.EmpmasToEdit.EmpFirstNm   = string.Empty;
-        v.EmpmasToEdit.EmpMidNm     = string.Empty;
-        v.EmpmasToEdit.EmpAlias     = string.Empty;
-        v.EmpmasToEdit.Suffix       = string.Empty;
-        v.EmpmasToEdit.Email        = string.Empty;
-
+        v.EmpmasToEdit.UserId = 0;
+        v.EmpmasToEdit.EmpmasId = 0;
+        v.EmpmasToEdit.EmpLastNm = string.Empty;
+        v.EmpmasToEdit.EmpFirstNm = string.Empty;
+        v.EmpmasToEdit.EmpMidNm = string.Empty;
+        v.EmpmasToEdit.EmpAlias = string.Empty;
+        v.EmpmasToEdit.Suffix = string.Empty;
+        v.EmpmasToEdit.Email = string.Empty;
     }
 
-    private void ShowNotification(NotificationMessage message)
+    void ShowError(string summary, string detail, int duration = 5000)
     {
-        _NotificationService.Notify(message);
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
     }
 }

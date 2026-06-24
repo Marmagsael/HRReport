@@ -57,6 +57,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<EmpmasClearancePhModel?>?> _02EmpmasClearancePhList(int? id, string? schema, string? conn);
         Task<EmpmasFamilyRefModel?> _03EmpmasFamilyRef(string? code, string? name, string? schema, string? conn);
         Task<EmpmasModel?> _03Empmas(int? id, EmpmasModel empmas, string? schema, string? conn);
+        Task<EmpmasModel?> _03EmpmasWithSystemId(int? id, EmpmasModel empmas, string? schema, string? conn);
         Task<EmpmasAddressModel?> _03EmpmasAddress(int? id, EmpmasAddressModel empmasaddress, string? schema, string? conn);
         Task<EmpmasCharRefModel?> _03EmpmasCharRef(int? id, EmpmasCharRefModel empmascharref, string? schema, string? conn);
         Task<EmpmasClearancePhModel?> _03EmpmasClearancePh(int? id, EmpmasClearancePhModel empmasclearanceph, string? schema, string? conn);
@@ -95,6 +96,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<EmpmasModel?>?>           _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn");
         Task<List<EmpmasModel?>?>           _02SearchName(string? skey, string? schema = "MainPis", string? conn = "MySqlConn");
         Task<EmpmasModel?>                  _01EmpmasV1(EmpmasModel empmas, string? schema, string? conn);
+        Task<EmpmasModel?> _01EmpmasWithSystemId(EmpmasModel empmas, string? schema, string? conn);
         Task<EmpmasAddressModel?>           _02EmpmasAddress_ByIdAndEmail(int? id, string? email, string? schema, string? conn);
         Task<List<EmpmasAddressModel?>?>    _02EmpmasAddress_ByEmailNotTheOwner(int? id, string? email, string? schema, string? conn);
         Task<List<EmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(int? id, string? empnumber, string? schema, string? conn);

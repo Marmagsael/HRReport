@@ -212,7 +212,8 @@ public class OEmpmasModel
     
     
     //-------------------------------------------------------
-    public int?     SystemId                { get; set; } = 0;
+    public int?     UserId                 { get; set; } = 0;
+    public int?     EmpmasId                { get; set; } = 0;
     public string?  EmpName                 { get; set; } = string.Empty;
     public string?  Fullname                { get; set; } = string.Empty;
     public string?  PositionName            { get; set; } = string.Empty;

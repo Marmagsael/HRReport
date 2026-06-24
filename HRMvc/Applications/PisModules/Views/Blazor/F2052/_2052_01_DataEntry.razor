@@ -1,51 +1,73 @@
 ﻿@using HRApiLibrary.Models._10_Pis
-@using HRApiLibrary.Models._90_Utils;
+@using HRApiLibrary.Models._90_Utils
 
 <div style="width:100%; overflow:auto;">
 
-    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.EmpmasToEdit Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit >
-
-        @if (V.IsNewEntry == true && !string.IsNullOrEmpty(V.LastEmpNumber))
+    @if (V.IsNewEntry == true && !string.IsNullOrEmpty(V.LastEmpNumber))
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Info"
+                     Variant="Variant.Flat"
+                     Shade="Shade.Lighter"
+                     AllowClose="false"
+                     class="no-shadow">
+            <small>Last employee number used: <strong>@V.LastEmpNumber</strong></small>
+            <br />
+            <small class="text-muted">Last name and first name are required to enable the Automate No. button.</small>
+        </RadzenAlert>
+    }
+    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.EmpmasToEdit Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+        @if (V.IsEmpNoValid == false)
         {
-            <div class="mb-banner-info d-flex align-items-center gap-2 mb-2 py-2 px-3">
-                <i class="fas fa-info-circle"></i>
-                <span class=""> <small>Last employee number used: <strong>@V.LastEmpNumber</strong></small></span>
-            </div>
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         AllowClose="false"
+                         class="no-shadow">
+                <small>Employee number <strong>@V.EmpmasToEdit.EmpNumber</strong> already exists. Please use a different number.</small>
+            </RadzenAlert>
+        }
+        @if (V.IsEmailValid == false)
+        {
+            <RadzenAlert AlertStyle="AlertStyle.Danger"
+                         Variant="Variant.Flat"
+                         Shade="Shade.Lighter"
+                         AllowClose="false"
+                         class="no-shadow">
+                <small>Email <strong>@V.EmpmasToEdit.Email</strong>  already exists. Please use a different email.</small>
+            </RadzenAlert>
         }
 
         <RadzenFieldset Text="Employee Details" class="fw-bold">
-
             <div class="fw-normal">
 
-                @* ----- EmpNumber (varchar(10))----------*@
-                <div class="d-flex gap-2 p-1 ">
-                    <div class="p-1 col-lg-2 col-md-3 mb-required-label">Emp. No. </div>
+                <div class="d-flex gap-2 p-1">
+                    <div class="p-1 col-lg-2 col-md-3 mb-required-label">Emp. No.</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="d-flex align-items-center gap-1 flex-wrap">
                             <div class="position-relative">
-                                <RadzenTextBox Name="EmpNumber" Placeholder="00000" MaxLength="5" style="width:120px;"
+                                <RadzenTextBox Name="EmpNumber"
+                                               Placeholder="00000"
+                                               MaxLength="5"
+                                               style="width:120px; height:32px;"
                                                @bind-Value=@V.EmpmasToEdit.EmpNumber
                                                @onfocusout="OnEmpNumberLostFocus" />
-                                <RadzenRequiredValidator Component="EmpNumber" Text="Employee number is required" Style=" display:block" />
+                                <RadzenRequiredValidator Component="EmpNumber"
+                                                         Text="Employee number is required"
+                                                         Style="display:block" />
+                            </div>
 
-                                    <div class="position-absolute" style="top:100%; left:0; width:800px;">
-                                        @if (showNameError)
-                                        {
-                                            <div class="text-danger" style="font-size:12px;">
-                                                First name and last name are required before generating an employee number.
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
 
                             @if (V.IsNewEntry == true)
                             {
-
-                                <div class="@EnableAutomate">
-                                    <button type="button" class="card p-1 mb-cbtn mb-cbtn-outline-blue d-flex w-180p btn-sm" @onclick="@GenerateEmpNumber">
+                                <div class="@EnableButton">
+                                    <button type="button" class="card mb-cbtn mb-cbtn-outline-blue d-flex align-items-center w-180p shadow-none border-0"
+                                            style="height:32px; padding:0 0.75rem;"
+                                            @onclick="GenerateEmpNumber"
+                                            @onclick:preventDefault="true"
+                                            @onclick:stopPropagation="true">
                                         <div class="d-flex align-items-center justify-content-center">
-                                            <i class="fas fa-sync-alt"></i> &nbsp; &nbsp;
-                                            <span>Automate No. Updated</span>
+                                            <i class="fas fa-sync-alt"></i>&nbsp;&nbsp;
+                                            <small>Automate No.</small>
                                         </div>
                                     </button>
                                 </div>
@@ -54,173 +76,165 @@
                     </div>
                 </div>
 
-
-                @* ----- EmpLastNm (varchar(25))----------*@
                 <div class="d-flex gap-2 p-1">
-                    <div class="p-1 col-lg-2 col-md-3">Last Name </div>
+                    <div class="p-1 col-lg-2 col-md-3">Last Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="EmpLastNm" Placeholder="Emp. Last Name" MaxLength="25" class="w-75" @bind-Value=@V.EmpmasToEdit.EmpLastNm />
-                        <RadzenRequiredValidator Component="EmpLastNm" Text="Last name is required" Style="color: red; display:block" />
+                        <RadzenTextBox Name="EmpLastNm" Placeholder="Emp. Last Name"
+                                       MaxLength="25" class="w-75"
+                                       @bind-Value=@V.EmpmasToEdit.EmpLastNm />
+                        <RadzenRequiredValidator Component="EmpLastNm"
+                                                 Text="Last name is required"
+                                                 Style="color:red; display:block" />
                     </div>
                 </div>
 
-                @* ----- EmpFirstNm (varchar(25))----------*@
                 <div class="d-flex gap-2 p-1">
                     <div class="p-1 col-lg-2 col-md-3">First Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="EmpFirstNm" Placeholder="Emp. First Name" class="w-75" MaxLength="30" @bind-Value=@V.EmpmasToEdit.EmpFirstNm />
-                        <RadzenRequiredValidator Component="EmpFirstNm" Text="First name is required" Style="color: red; display:block" />
+                        <RadzenTextBox Name="EmpFirstNm" Placeholder="Emp. First Name"
+                                       MaxLength="30" class="w-75"
+                                       @bind-Value=@V.EmpmasToEdit.EmpFirstNm />
+                        <RadzenRequiredValidator Component="EmpFirstNm"
+                                                 Text="First name is required"
+                                                 Style="color:red; display:block" />
                     </div>
                 </div>
 
-                @* ----- EmpMidNm (varchar(15))----------*@
                 <div class="d-flex gap-2 p-1">
                     <div class="p-1 col-lg-2 col-md-3">Mid. Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Placeholder="Emp Mid Name" class="w-75" MaxLength="15" @bind-Value=@V.EmpmasToEdit.EmpMidNm />
+                        <RadzenTextBox Placeholder="Emp Mid Name" MaxLength="15"
+                                       class="w-75" @bind-Value=@V.EmpmasToEdit.EmpMidNm />
                     </div>
                 </div>
 
-                @* ----- Suffix (char(3))----------*@
                 <div class="d-flex gap-2 p-1">
                     <div class="p-1 col-lg-2 col-md-3">Suffix</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Placeholder="Suffix" MaxLength="3" class="w-25" @bind-Value=@V.EmpmasToEdit.Suffix />
+                        <RadzenTextBox Placeholder="Suffix" MaxLength="3"
+                                       class="w-25" @bind-Value=@V.EmpmasToEdit.Suffix />
                     </div>
                 </div>
 
-                @* ----- EmpAlias (varchar(15))----------*@
                 <div class="d-flex gap-2 p-1 bordered-bottom">
                     <div class="p-1 col-lg-2 col-md-3">Alias</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Placeholder="Emp. Alias" MaxLength="15" class="w-25" @bind-Value=@V.EmpmasToEdit.EmpAlias />
+                        <RadzenTextBox Placeholder="Emp. Alias" MaxLength="15"
+                                       class="w-25" @bind-Value=@V.EmpmasToEdit.EmpAlias />
                     </div>
                 </div>
 
-                @* ----- Email (varchar(50))----------*@
                 <div class="d-flex gap-2 p-1 mb-3">
-                    <div class="p-2 col-lg-2 col-md-3 ">Email </div>
+                    <div class="p-2 col-lg-2 col-md-3">Email</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext" MaxLength="50" class="w-75" @bind-Value=@V.EmpmasToEdit!.Email />
-                        <RadzenEmailValidator Component="Email" Text="Enter a valid email address" Style="color: red; display:block" />
+                        <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext"
+                                       MaxLength="50" class="w-75"
+                                       @bind-Value=@V.EmpmasToEdit!.Email />
+                        <RadzenEmailValidator Component="Email"
+                                              Text="Enter a valid email address"
+                                              Style="color:red; display:block" />
                     </div>
                 </div>
-            </div>
 
+            </div>
         </RadzenFieldset>
 
         <div class="d-flex gap-2 mt-3 justify-content-end p-1">
-
-            <button type="button" class="card p-1 mb-cbtn mb-cbtn-gray d-flex w-100p" @onclick="@(() => HideModal())">
+            <button type="button" class="card p-1 mb-cbtn mb-cbtn-gray d-flex w-100p"
+                    @onclick="HideModal">
                 <div class="d-flex align-items-center justify-content-center">
                     <span class="p-0">Close</span>
                 </div>
             </button>
-            <div class="@EnableSave">
+
+            <div class="@EnableButton">
                 <button type="submit" class="card p-1 mb-cbtn mb-cbtn-blue d-flex w-100p">
                     <div class="d-flex align-items-center justify-content-center">
                         <span class="p-0">@(V.IsNewEntry == true ? "Save" : "Update")</span>
                     </div>
                 </button>
             </div>
-
         </div>
 
     </RadzenTemplateForm>
 </div>
 
-
 @code {
 
-    [Parameter]
-    public V2052 V { get; set; } = new();
+    [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+    [Parameter] public UserClaimsModel? UserClaims { get; set; } = new();
 
-    [Parameter]
-    public EventCallback ChildAction { get; set; }
+    bool showNameError = false;
 
-    [Parameter]
-    public UserClaimsModel? UserClaims { get; set; } = new();
-
-    RadzenDataGrid<OEmpmasModel?>? empmassGrid = new();
-    DataGridEditMode editMode1 = DataGridEditMode.Single;
-
-
-    List<OEmpmasModel?>? empmassToInsert = new();
-    List<OEmpmasModel?>? empmassToUpdate = new();
-    string? errorMsg = string.Empty;
-    bool showNameError = false; 
-
-
-
-    bool IsFirstAndLastNameNull =>
+    bool IsNameIncomplete =>
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpLastNm) ||
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpFirstNm);
 
-    string EnableAutomate => IsFirstAndLastNameNull ? "disabled-div-50" : "";
-    string EnableSave => IsFirstAndLastNameNull ? "disabled-div-50" : "";
+    string EnableButton => IsNameIncomplete ? "disabled-div-50" : "";
 
-    private void GenerateEmpNumber()
+
+    async Task GenerateEmpNumber()
     {
-        showNameError = false;
-
-        if (!ValidateFirstAndLastName())
-        {
-            showNameError = true;
-            return;
-        }
+        V.IsEmpNoValid = true;
+        if (IsNameIncomplete) return;
 
         if (!string.IsNullOrEmpty(V.LastEmpNumber))
         {
             int lastNo = Convert.ToInt32(V.LastEmpNumber);
             V.EmpmasToEdit.EmpNumber = (lastNo + 1).ToString("D5");
+
+            await OnEmpNumberLostFocus(); 
         }
     }
 
 
-
-    private bool ValidateFirstAndLastName()
+    async Task<bool?> OnEmpNumberLostFocus()
     {
-        return !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpLastNm) &&
-               !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpFirstNm);
+
+        V.Action = "CheckIfEmpNoExists";
+        await ChildAction.InvokeAsync();
+        return V.IsEmpNoValid;
     }
 
 
-
-    async void OnSubmit(OEmpmasModel model)
+    async Task<bool?> CheckEmail()
     {
-        showNameError = false;
+        V.Action = "CheckIfEmailExists";
+        await ChildAction.InvokeAsync();
+        return V.IsEmailValid;
+    }
 
+
+    async Task OnSubmit(OEmpmasModel model)
+    {
+        var empNoValid = await OnEmpNumberLostFocus();
+        var emailValid = await CheckEmail();
+
+        if (empNoValid == false || emailValid == false) return;
+
+        showNameError = false;
         V.Action = "SaveEmpmas";
         await ChildAction.InvokeAsync();
     }
 
-    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
-    {
-        errorMsg = "Please correct the highlighted fields before saving.";
-    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args) { }
 
     async Task HideModal()
     {
         V.Action = "HideDataEntry";
         await ChildAction.InvokeAsync();
     }
-
-    async Task OnEmpNumberLostFocus()
-    {
-        V.SelectedEmpnumber = V.EmpmasToEdit.EmpNumber;
-        V.Action = "SelectEmpmas";
-        await ChildAction.InvokeAsync();
-    }
 }
 
 <style>
-    .mb-cbtn-outline-blue{
+    .mb-cbtn-outline-blue {
         color: #0d6efd;
         background: #0d6efd21;
     }
 
-    .mb-banner-info {
-        color: #0d6efd;
-        background: #0d6efd21;
-    }
- </style>
+        .mb-cbtn-outline-blue:focus {
+            outline: none !important;
+        }
+</style>
