@@ -146,13 +146,22 @@
     [Parameter] public V2052 V { get; set; } = new();
     [Parameter] public EventCallback ChildAction { get; set; }
 
-    List<OChildrenModel?>? ChildrenToInsert = new();
-    List<OChildrenModel?>? ChildrenToUpdate = new();
+    List<OChildrenModel?>? childrenToInsert  = new();
+    List<OChildrenModel?>? childrenToUpdate  = new();
     string? errorMsg = string.Empty;
     bool isLoading = true;
     bool editMode = false;
 
     OChildrenModel? recBackup;
+
+    public class ParentCodeModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+
+
+
 
     protected override async Task OnParametersSetAsync()
     {
@@ -175,23 +184,25 @@
         var rec = new OChildrenModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        ChildrenToInsert!.Add(rec);
-        await V.ChildrenGrid!.InsertRow(rec);
+        V.Children ??= new();
+        V.Children.Insert(0, rec);
+        childrenToInsert !.Add(rec);
+        await V.ChildrenGrid !.InsertRow(rec);
         editMode = true;
     }
 
     //-- Reset ----------------
     private void Reset()
     {
-        ChildrenToInsert!.Clear();
-        ChildrenToUpdate!.Clear();
+        childrenToInsert !.Clear();
+        childrenToUpdate !.Clear();
     }
 
     //-- Reset ----------------
     private void Reset(OChildrenModel rec)
     {
-        ChildrenToInsert!.Remove(rec);
-        ChildrenToUpdate!.Remove(rec);
+        childrenToInsert !.Remove(rec);
+        childrenToUpdate !.Remove(rec);
     }
 
     //-- Edit Row ----------------
@@ -199,10 +210,10 @@
     {
         editMode = true;
 
-        if (V.ChildrenGrid != null)
+        if (V.ChildrenGrid  != null)
         {
             Reset();
-            ChildrenToUpdate?.Add(rec);
+            childrenToUpdate ?.Add(rec);
 
             recBackup = new OChildrenModel
             {
@@ -211,7 +222,7 @@
                 BDay = rec.BDay
             };
 
-            await V.ChildrenGrid.EditRow(rec);
+            await V.ChildrenGrid .EditRow(rec);
         }
     }
 
@@ -219,70 +230,41 @@
     private async Task DeleteRow(OChildrenModel rec)
     {
         if (V.Children == null) return;
-        if (V.ChildrenGrid == null) return;
-        if (rec == null) return;
+        if (V.ChildrenGrid  == null) return;
 
         Reset(rec);
 
         if (V.Children.Contains(rec))
         {
-            var option = await _DialogService.Confirm(
-                $"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-
-            if (option == true)
+            if (rec != null)
             {
-                V.Children.Remove(rec);
-
-                try
+                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
                 {
-                    await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-                    foreach (var item in V.Children)
-                    {
-                        if (item != null)
-                            await _empmas._01(item, V.pisdb!, V.conn!);
-                    }
-
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Successfully deleted a record.",
-                        Detail = "Record has been deleted from the list.",
-                        Duration = 4000
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Error,
-                        Summary = "Unable to delete",
-                        Detail = "Something went wrong while deleting. Please try again.",
-                        Duration = 6000
-                    });
-                    return;
+                    await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+                    V.Children.Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
                 }
             }
         }
         else
         {
-            V.ChildrenGrid.CancelEditRow(rec);
+            V.ChildrenGrid .CancelEditRow(rec);
         }
-
-        await V.ChildrenGrid.Reload();
+        await V.ChildrenGrid .Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
+
 
     //-- Cancel Edit ----------------
     private async Task CancelEdit(OChildrenModel rec)
     {
         errorMsg = string.Empty;
-        if (V.ChildrenGrid == null) return;
+        if (V.ChildrenGrid  == null) return;
 
-        bool isNew = ChildrenToInsert!.Contains(rec);
+        bool isNew = childrenToInsert !.Contains(rec);
 
         Reset(rec);
         editMode = false;
@@ -298,58 +280,59 @@
             rec.BDay = recBackup.BDay;
         }
 
-        V.ChildrenGrid.CancelEditRow(rec);
+        V.ChildrenGrid .CancelEditRow(rec);
         recBackup = null;
 
-        await V.ChildrenGrid.Reload();
+        await V.ChildrenGrid .Reload();
     }
 
     //-- Save Row ----------------
     private async Task SaveRow(OChildrenModel rec)
     {
-        if (V.ChildrenGrid == null) return;
-        if (rec == null) return;
-
+        if (V.ChildrenGrid  == null || rec == null) return;
         if (!SafeToSave(rec))
         {
-            await V.ChildrenGrid.UpdateRow(rec);
+            await V.ChildrenGrid .UpdateRow(rec);
             return;
         }
-
         try
         {
-            V.Children ??= new();
-            if (!V.Children.Contains(rec))
-                V.Children.Add(rec);
+            bool isNew = childrenToInsert !.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+            bool exists = res != null && res.Count > 0;
 
-            await V.ChildrenGrid.UpdateRow(rec);
-
-            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-            foreach (var item in V.Children!)
+            if (exists)
             {
-                if (item != null)
-                    await _empmas._01(item, V.pisdb!, V.conn!);
+                bool isSameAsOriginal = !isNew && recBackup != null 
+                    && recBackup.Name == rec.Name
+                    && recBackup.BDay == rec.BDay;
+
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    return;
+                }
             }
 
-            ShowNotification(new NotificationMessage
+            if (isNew)
             {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 4000
-            });
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.Children = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            }
+            else
+            {
+                 await _empmas._03(rec.EmpNumber, rec.Name, rec.BDay, rec, V.pisdb!, V.conn!);
+                V.ChildrenGrid .CancelEditRow(rec);
+            }
+
+            Reset(rec);
+            await V.ChildrenGrid .Reload();
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
             return;
         }
 
@@ -358,16 +341,35 @@
         errorMsg = string.Empty;
     }
 
+
+
     //-- Safe to Save ----------------
     private bool SafeToSave(OChildrenModel rec)
     {
         if (string.IsNullOrWhiteSpace(rec.Name)) return false;
-        if (rec?.BDay == null) return false;
+        if (rec.BDay == null) return false;
         return true;
     }
 
-    private void ShowNotification(NotificationMessage message)
-    {
-        _NotificationService.Notify(message);
-    }
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 }
+
+
+
+  

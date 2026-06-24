@@ -1,5 +1,6 @@
 ﻿using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis.OPis;
+using System.Xml.Linq;
 
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis
@@ -34,6 +35,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data;
         }
 
+        public async Task<List<OChildrenModel?>?> _02CheckExisting(string? empnumber,  string? name, DateTime? bday, string? schema, string? conn)
+        {
+            string? sql = $@"select  empnumber, name, bday from {schema}.Children where Empnumber = @Empnumber AND Name = @Name AND BDay = @BDay";
+            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Empnumber = empnumber ,  Name = name ,  BDay = bday }, conn);
+            return data;
+        }
+
 
         public async Task<OChildrenModel?> _03(int? id, OChildrenModel children, string? schema, string? conn)
         {
@@ -42,6 +50,27 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
             sql = $@" select  * from {schema}.Children x where x.Id = @Id ;";
             var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Id = id }, conn);
+            return data?.FirstOrDefault();
+        }
+
+
+
+        public async Task<OChildrenModel?> _03(string? empnumber, string? name, DateTime? bday, OChildrenModel children, string? schema, string? conn)
+        {
+            string? sql = $@"Update {schema}.Children set empnumber = @empnumber, name = @name, bday = @bday where Empnumber = @Empnumber AND Name = @Name AND BDay = @BDay;";
+            var parameters = new
+            {
+                children.EmpNumber,
+                children.Name,
+                children.BDay,
+                OldEmpnumber = empnumber,
+                OldName = name,
+                Oldbday = bday
+            };
+            await _sql.ExecuteCmd<dynamic>(sql, children, conn);
+
+            sql = $@" select  * from {schema}.Children x where x.Empnumber = @Empnumber ;";
+            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -54,6 +83,16 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
+
+        public async Task<OChildrenModel?> _04(string? empnumber, string? name, DateTime? bday, string? schema, string? conn)
+        {
+            string? sql = $@"Delete from {schema}.Children where Empnumber = @Empnumber AND Name = @Name AND BDay = @BDay;";
+            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber, Name = name, BDay = bday }, conn);
+
+            sql = $@" select  * from {schema}.Children x where x.Empnumber = @Empnumber ;";
+            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            return data?.FirstOrDefault();
+        }
     }
 }
 
@@ -61,6 +100,10 @@ public interface IOChildrenDataAccess
 {
     Task<OChildrenModel?> _01(OChildrenModel children, string? schema, string? conn);
     Task<List<OChildrenModel?>?> _02(string? empnumber, string? schema, string? conn);
+    Task<List<OChildrenModel?>?> _02CheckExisting(string? empnumber, string? name, DateTime? bday, string? schema, string? conn);
     Task<OChildrenModel?> _03(int? id, OChildrenModel children, string? schema, string? conn);
+    Task<OChildrenModel?> _03(string? empnumber, string? name, DateTime? bday, OChildrenModel children, string? schema, string? conn);
     Task<OChildrenModel?> _04(string? empnumber, string? schema, string? conn);
+    Task<OChildrenModel?> _04(string? empnumber, string? name, DateTime? bday, string? schema, string? conn);
+
 }

@@ -3,13 +3,14 @@
 @inject NotificationService _NotificationService
 @inject DialogService _DialogService
 
-<div class="p-2">
+
+<div class="p-2 overflow-auto" style="height:49.5vh;">
     <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Training and Seminar" />
     <div class="h-10p"></div>
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
     {
         <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" />
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" class="bg-primary-green" />
         </div>
     }
 
@@ -274,6 +275,7 @@
 
 @code {
 
+
     string? empnumber = string.Empty;
 
     [Parameter]
@@ -291,14 +293,14 @@
     private List<string> typeOptions = new List<string> { "Internal", "External" };
     OTrainModel? recBackup;
 
+
+
     protected override async Task OnParametersSetAsync()
     {
         if (empnumber != V.SelectedEmpnumber)
         {
             empnumber = V.SelectedEmpnumber;
-
             await Task.Delay(250);
-
             V.Trainings = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
         isLoading = false;
@@ -314,6 +316,8 @@
         var rec = new OTrainModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
+        V.Trainings ??= new();
+        V.Trainings.Insert(0, rec);
         trainingToInsert!.Add(rec);
         await V.TrainingGrid!.InsertRow(rec);
         editMode = true;
@@ -362,49 +366,20 @@
     {
         if (V.Trainings == null) return;
         if (V.TrainingGrid == null) return;
-        if (rec == null) return;
 
         Reset(rec);
 
         if (V.Trainings.Contains(rec))
         {
-            var option = await _DialogService.Confirm(
-                $"Delete {rec.Program}  record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-
-            if (option == true)
+            if (rec != null)
             {
-                V.Trainings.Remove(rec);
-
-                try
+                var option = await _DialogService.Confirm($"Delete {rec.Program}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
                 {
-                    await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-                    foreach (var item in V.Trainings)
-                    {
-                        if (item != null)
-                            await _empmas._01(item, V.pisdb!, V.conn!);
-                    }
-
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Successfully deleted a record.",
-                        Detail = "Record has been deleted from the list.",
-                        Duration = 4000
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Error,
-                        Summary = "Unable to delete",
-                        Detail = "Something went wrong while deleting. Please try again.",
-                        Duration = 6000
-                    });
-                    return;
+                    await _empmas._04(rec.EmpNumber, rec.Program, rec.Taken, V.pisdb!, V.conn!);
+                    V.Trainings.Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
                 }
             }
         }
@@ -412,11 +387,11 @@
         {
             V.TrainingGrid.CancelEditRow(rec);
         }
-
         await V.TrainingGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
+
 
     //-- Cancel Edit ----------------
     private async Task CancelEdit(OTrainModel rec)
@@ -452,50 +427,50 @@
     //-- Save Row ----------------
     private async Task SaveRow(OTrainModel rec)
     {
-        if (V.TrainingGrid == null) return;
-        if (rec == null) return;
-
+        if (V.TrainingGrid == null || rec == null) return;
         if (!SafeToSave(rec))
         {
             await V.TrainingGrid.UpdateRow(rec);
             return;
         }
-
         try
         {
-            V.Trainings ??= new();
+            bool isNew = trainingToInsert!.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Program, rec.Taken, V.pisdb!, V.conn!);
+            bool exists = res != null && res.Count > 0;
 
-            if (!V.Trainings.Contains(rec))
-                V.Trainings.Add(rec);
-
-            await V.TrainingGrid.UpdateRow(rec);
-
-            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-            foreach (var item in V.Trainings!)
+            if (exists)
             {
-                if (item != null)
-                    await _empmas._01(item, V.pisdb!, V.conn!);
+                bool isSameAsOriginal = !isNew && recBackup != null
+                && recBackup.Program == rec.Program
+                && recBackup.Taken == rec.Taken;
+
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    return;
+                }
             }
 
-            ShowNotification(new NotificationMessage
+            if (isNew)
             {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 4000
-            });
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.Trainings = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            }
+            else
+            {
+                await _empmas._03(rec.EmpNumber, rec.Program, rec.Taken, rec, V.pisdb!, V.conn!);
+                V.TrainingGrid.CancelEditRow(rec);
+            }
+
+            Reset(rec);
+            await V.TrainingGrid.Reload();
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
             return;
         }
 
@@ -504,16 +479,34 @@
         errorMsg = string.Empty;
     }
 
+
+
     //-- Safe to Save ----------------
     private bool SafeToSave(OTrainModel rec)
     {
         if (string.IsNullOrWhiteSpace(rec.Program)) return false;
-        if (string.IsNullOrWhiteSpace(rec.School)) return false;
+        if (string.IsNullOrWhiteSpace(rec.Taken)) return false;
         return true;
     }
 
-    private void ShowNotification(NotificationMessage message)
-    {
-        _NotificationService.Notify(message);
-    }
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 }
+
+
+

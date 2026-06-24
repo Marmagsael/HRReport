@@ -4,7 +4,8 @@
 @inject DialogService _DialogService;
 
 
-<div class="p-2">
+
+<div class="p-2 overflow-auto" style="height:49.5vh;">
     <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Educational Background" />
 
     <RadzenTemplateForm TItem="OEducateModel" Data=@V.Education Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
@@ -12,7 +13,7 @@
         @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
         {
             <div class="p-2 bordered mb-2 w-100">
-                <input class="btn btn-secondary w-100p" type="submit" value="Save" />
+                <input class="btn btn-secondary bg-primary-green w-100p" type="submit" value="Save" />
             </div>
         }
 
@@ -73,7 +74,7 @@
             foreach (var code in codes)
             {
                 if (!res.Any(e => e?.Code == code))
-                    res.Add(new OEducateModel { Code = code });
+                    res.Add(new OEducateModel { Code = code, EmpNumber = V.SelectedEmpnumber });
             }
 
             V.Educations = res;
@@ -99,36 +100,46 @@
     {
         try
         {
-            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-            foreach (var rec in V.Educations ?? new())
+            foreach (var edu in V.Educations)
             {
-                if (rec != null)
-                    await _empmas._01(rec, V.pisdb!, V.conn!); 
+                if (string.IsNullOrWhiteSpace(edu.School)) continue; 
+
+                var res = await _empmas._02ByEmpnumberAndCode(
+                              V.SelectedEmpnumber, edu.Code, V.pisdb!, V.conn!);
+
+                if (res.Any())
+                    await _empmas._03(V.SelectedEmpnumber, edu, V.pisdb!, V.conn!);
+                else
+                    await _empmas._01(edu, V.pisdb!, V.conn!);
             }
 
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 3000
-            });
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            ShowError("Unable to save", "Something went wrong.", 6000);
         }
     }
-
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
     {
     }
+
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+     _NotificationService.Notify(new NotificationMessage
+     {
+         Severity = NotificationSeverity.Success,
+         Summary = summary,
+         Detail = detail,
+         Duration = duration
+     });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 }

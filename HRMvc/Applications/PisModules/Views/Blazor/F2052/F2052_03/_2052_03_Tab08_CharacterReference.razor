@@ -3,13 +3,14 @@
 @inject NotificationService _NotificationService
 @inject DialogService _DialogService
 
-<div class="p-2">
+
+<div class="p-2 overflow-auto" style="height:49.5vh;">
     <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="References" />
     <div class="h-10p"></div>
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
     {
         <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" />
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" class="bg-primary-green" />
         </div>
     }
 
@@ -241,6 +242,7 @@
 
 @code {
 
+
     string? empnumber = string.Empty;
 
     [Parameter]
@@ -257,15 +259,14 @@
 
     OReferModel? recBackup;
 
+
     protected override async Task OnParametersSetAsync()
     {
         if (empnumber != V.SelectedEmpnumber)
         {
             empnumber = V.SelectedEmpnumber;
-
             await Task.Delay(250);
-
-            V.CharRefs = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            V.CharRefs  = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
         isLoading = false;
         StateHasChanged();
@@ -280,6 +281,8 @@
         var rec = new OReferModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
+        V.CharRefs  ??= new();
+        V.CharRefs .Insert(0, rec);
         charrefToInsert!.Add(rec);
         await V.ReferenceGrid!.InsertRow(rec);
         editMode = true;
@@ -325,51 +328,22 @@
     //-- Delete Row ----------------
     private async Task DeleteRow(OReferModel rec)
     {
-        if (V.CharRefs == null) return;
+        if (V.CharRefs  == null) return;
         if (V.ReferenceGrid == null) return;
-        if (rec == null) return;
 
         Reset(rec);
 
-        if (V.CharRefs.Contains(rec))
+        if (V.CharRefs .Contains(rec))
         {
-            var option = await _DialogService.Confirm(
-                $"Delete {rec.Name}  record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-
-            if (option == true)
+            if (rec != null)
             {
-                V.CharRefs.Remove(rec);
-
-                try
+                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
                 {
-                    await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-                    foreach (var item in V.CharRefs)
-                    {
-                        if (item != null)
-                            await _empmas._01(item, V.pisdb!, V.conn!);
-                    }
-
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Successfully deleted a record.",
-                        Detail = "Record has been deleted from the list.",
-                        Duration = 4000
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Error,
-                        Summary = "Unable to delete",
-                        Detail = "Something went wrong while deleting. Please try again.",
-                        Duration = 6000
-                    });
-                    return;
+                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Position, V.pisdb!, V.conn!);
+                    V.CharRefs .Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
                 }
             }
         }
@@ -377,11 +351,11 @@
         {
             V.ReferenceGrid.CancelEditRow(rec);
         }
-
         await V.ReferenceGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
+
 
     //-- Cancel Edit ----------------
     private async Task CancelEdit(OReferModel rec)
@@ -396,7 +370,7 @@
 
         if (isNew)
         {
-            V.CharRefs?.Remove(rec);
+            V.CharRefs ?.Remove(rec);
         }
         else if (recBackup != null)
         {
@@ -416,50 +390,50 @@
     //-- Save Row ----------------
     private async Task SaveRow(OReferModel rec)
     {
-        if (V.ReferenceGrid == null) return;
-        if (rec == null) return;
-
+        if (V.ReferenceGrid == null || rec == null) return;
         if (!SafeToSave(rec))
         {
             await V.ReferenceGrid.UpdateRow(rec);
             return;
         }
-
         try
         {
-            V.CharRefs ??= new();
+            bool isNew = charrefToInsert!.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Position, V.pisdb!, V.conn!);
+            bool exists = res != null && res.Count > 0;
 
-            if (!V.CharRefs.Contains(rec))
-                V.CharRefs.Add(rec);
-
-            await V.ReferenceGrid.UpdateRow(rec);
-
-            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-            foreach (var item in V.CharRefs!)
+            if (exists)
             {
-                if (item != null)
-                    await _empmas._01(item, V.pisdb!, V.conn!);
+                bool isSameAsOriginal = !isNew && recBackup != null
+                && recBackup.Name == rec.Name
+                && recBackup.Position == rec.Position;
+
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    return;
+                }
             }
 
-            ShowNotification(new NotificationMessage
+            if (isNew)
             {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 4000
-            });
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.CharRefs = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            }
+            else
+            {
+                await _empmas._03(rec.EmpNumber, rec.Name, rec.Position, rec, V.pisdb!, V.conn!);
+                V.ReferenceGrid.CancelEditRow(rec);
+            }
+
+            Reset(rec);
+            await V.ReferenceGrid.Reload();
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
             return;
         }
 
@@ -469,7 +443,8 @@
     }
 
 
-    // -- Safe to Save ----------------
+
+    //-- Safe to Save ----------------
     private bool SafeToSave(OReferModel rec)
     {
         if (string.IsNullOrWhiteSpace(rec.Name)) return false;
@@ -477,8 +452,22 @@
         return true;
     }
 
-    private void ShowNotification(NotificationMessage message)
-    {
-        _NotificationService.Notify(message);
-    }
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 }
+

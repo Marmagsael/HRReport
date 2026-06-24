@@ -7,7 +7,7 @@
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
     {
         <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" />
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" class="bg-primary-green" />
         </div>
     }
 
@@ -218,6 +218,8 @@
 
     OEmergencModel? recBackup;
 
+
+
     protected override async Task OnParametersSetAsync()
     {
         if (empnumber != V.SelectedEmpnumber)
@@ -239,6 +241,8 @@
         var rec = new OEmergencModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
+        V.EmergencyContacts ??= new();
+        V.EmergencyContacts.Insert(0, rec);
         emergencycontactToInsert!.Add(rec);
         await V.EmergencyContactGrid!.InsertRow(rec);
         editMode = true;
@@ -270,11 +274,11 @@
 
             recBackup = new OEmergencModel
             {
-                EmpNumber       = rec.EmpNumber,
-                Name            = rec.Name,
-                Rela            = rec.Rela,
-                Addr            = rec.Addr,
-                Tel             = rec.Tel
+                EmpNumber = rec.EmpNumber,
+                Name = rec.Name,
+                Rela = rec.Rela,
+                Addr = rec.Addr,
+                Tel = rec.Tel
             };
 
             await V.EmergencyContactGrid.EditRow(rec);
@@ -286,49 +290,20 @@
     {
         if (V.EmergencyContacts == null) return;
         if (V.EmergencyContactGrid == null) return;
-        if (rec == null) return;
 
         Reset(rec);
 
         if (V.EmergencyContacts.Contains(rec))
         {
-            var option = await _DialogService.Confirm(
-                $"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-
-            if (option == true)
+            if (rec != null)
             {
-                V.EmergencyContacts.Remove(rec);
-
-                try
+                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
                 {
-                    await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-                    foreach (var item in V.EmergencyContacts)
-                    {
-                        if (item != null)
-                            await _empmas._01(item, V.pisdb!, V.conn!);
-                    }
-
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Successfully deleted a record.",
-                        Detail = "Record has been deleted from the list.",
-                        Duration = 4000
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Error,
-                        Summary = "Unable to delete",
-                        Detail = "Something went wrong while deleting. Please try again.",
-                        Duration = 6000
-                    });
-                    return;
+                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Rela, V.pisdb!, V.conn!);
+                    V.EmergencyContacts.Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
                 }
             }
         }
@@ -336,11 +311,11 @@
         {
             V.EmergencyContactGrid.CancelEditRow(rec);
         }
-
         await V.EmergencyContactGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
+
 
     //-- Cancel Edit ----------------
     private async Task CancelEdit(OEmergencModel rec)
@@ -359,10 +334,10 @@
         }
         else if (recBackup != null)
         {
-            rec.Name    = recBackup.Name;
-            rec.Rela    = recBackup.Rela;
-            rec.Addr    = recBackup.Addr;
-            rec.Tel     = recBackup.Tel;
+            rec.Name = recBackup.Name;
+            rec.Rela = recBackup.Rela;
+            rec.Addr = recBackup.Addr;
+            rec.Tel = recBackup.Tel;
         }
 
         V.EmergencyContactGrid.CancelEditRow(rec);
@@ -374,49 +349,50 @@
     //-- Save Row ----------------
     private async Task SaveRow(OEmergencModel rec)
     {
-        if (V.EmergencyContactGrid == null) return;
-        if (rec == null) return;
-
+        if (V.EmergencyContactGrid == null || rec == null) return;
         if (!SafeToSave(rec))
         {
             await V.EmergencyContactGrid.UpdateRow(rec);
             return;
         }
-
         try
         {
-            V.EmergencyContacts ??= new();
-            if (!V.EmergencyContacts.Contains(rec))
-                V.EmergencyContacts.Add(rec);
+            bool isNew = emergencycontactToInsert!.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Rela, V.pisdb!, V.conn!);
+            bool exists = res != null && res.Count > 0;
 
-            await V.EmergencyContactGrid.UpdateRow(rec);
-
-            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-            foreach (var item in V.EmergencyContacts!)
+            if (exists)
             {
-                if (item != null)
-                    await _empmas._01(item, V.pisdb!, V.conn!);
+                bool isSameAsOriginal = !isNew && recBackup != null
+                && recBackup.Name == rec.Name
+                && recBackup.Rela == rec.Rela;
+
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    return;
+                }
             }
 
-            ShowNotification(new NotificationMessage
+            if (isNew)
             {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 4000
-            });
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.EmergencyContacts = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            }
+            else
+            {
+                await _empmas._03(rec.EmpNumber, rec.Name, rec.Rela, rec, V.pisdb!, V.conn!);
+                V.EmergencyContactGrid.CancelEditRow(rec);
+            }
+
+            Reset(rec);
+            await V.EmergencyContactGrid.Reload();
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
             return;
         }
 
@@ -424,6 +400,8 @@
         editMode = false;
         errorMsg = string.Empty;
     }
+
+
 
     //-- Safe to Save ----------------
     private bool SafeToSave(OEmergencModel rec)
@@ -433,8 +411,25 @@
         return true;
     }
 
-    private void ShowNotification(NotificationMessage message)
-    {
-        _NotificationService.Notify(message);
-    }
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 }
+
+
+
+  

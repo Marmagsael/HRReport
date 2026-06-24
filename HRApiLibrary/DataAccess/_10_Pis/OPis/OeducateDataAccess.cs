@@ -33,6 +33,15 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data;
         }
 
+        public async Task<List<OEducateModel?>?> _02ByEmpnumberAndCode(string? empnumber, string code, string? schema, string? conn)
+        {
+            string? sql = $@"select  EMPNUMBER, CODE, SCHOOL, FROM_, TO_, COURSE, LEVEL from {schema}.Educate where Empnumber = @Empnumber and Code = @Code";
+            var data = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber, Code = code }, conn);
+            return data;
+        }
+
+        
+
 
         public async Task<OEducateModel?> _03(string? empnumber, OEducateModel educate, string? schema, string? conn)
         {
@@ -60,6 +69,7 @@ public interface IOEducateDataAccess
 {
     Task<OEducateModel?> _01(OEducateModel educate, string? schema, string? conn);
     Task<List<OEducateModel?>?> _02(string? empnumber, string? schema, string? conn);
+    Task<List<OEducateModel?>?> _02ByEmpnumberAndCode(string? empnumber, string code, string? schema, string? conn);
     Task<OEducateModel?> _03(string? empnumber, OEducateModel educate, string? schema, string? conn);
     Task<OEducateModel?> _04(string? empnumber, string? schema, string? conn);
 }

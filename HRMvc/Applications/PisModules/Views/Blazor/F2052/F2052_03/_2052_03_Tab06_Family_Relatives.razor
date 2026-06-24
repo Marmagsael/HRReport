@@ -11,7 +11,8 @@
                           Icon="add_circle_outline"
                           Text="New Entry"
                           Click="@InsertRow"
-                          Disabled="@(editMode || isLoading)" />
+                          Disabled="@(editMode || isLoading)"
+                          class="bg-primary-green" />
         </div>
     }
 
@@ -155,6 +156,7 @@
 </div>
 @code {
 
+
     string? empnumber = string.Empty;
 
     [Parameter] public V2052 V { get; set; } = new();
@@ -168,13 +170,15 @@
 
     OFamilyModel? recBackup;
 
+
+
     protected override async Task OnParametersSetAsync()
     {
         if (empnumber != V.SelectedEmpnumber)
         {
             empnumber = V.SelectedEmpnumber;
             await Task.Delay(250);
-            V.Familys = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            V.Familys  = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
         isLoading = false;
         StateHasChanged();
@@ -189,6 +193,8 @@
         var rec = new OFamilyModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
+        V.Familys  ??= new();
+        V.Familys .Insert(0, rec);
         familyToInsert!.Add(rec);
         await V.FamilyGrid!.InsertRow(rec);
         editMode = true;
@@ -233,51 +239,22 @@
     //-- Delete Row ----------------
     private async Task DeleteRow(OFamilyModel rec)
     {
-        if (V.Familys == null) return;
+        if (V.Familys  == null) return;
         if (V.FamilyGrid == null) return;
-        if (rec == null) return;
 
         Reset(rec);
 
-        if (V.Familys.Contains(rec))
+        if (V.Familys .Contains(rec))
         {
-            var option = await _DialogService.Confirm(
-                $"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-
-            if (option == true)
+            if (rec != null)
             {
-                V.Familys.Remove(rec);
-
-                try
+                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
                 {
-                    await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-                    foreach (var item in V.Familys)
-                    {
-                        if (item != null)
-                            await _empmas._01(item, V.pisdb!, V.conn!);
-                    }
-
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Success,
-                        Summary = "Successfully deleted a record.",
-                        Detail = "Record has been deleted from the list.",
-                        Duration = 4000
-                    });
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                    ShowNotification(new NotificationMessage
-                    {
-                        Severity = NotificationSeverity.Error,
-                        Summary = "Unable to delete",
-                        Detail = "Something went wrong while deleting. Please try again.",
-                        Duration = 6000
-                    });
-                    return;
+                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
+                    V.Familys .Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
                 }
             }
         }
@@ -285,11 +262,11 @@
         {
             V.FamilyGrid.CancelEditRow(rec);
         }
-
         await V.FamilyGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
+
 
     //-- Cancel Edit ----------------
     private async Task CancelEdit(OFamilyModel rec)
@@ -304,7 +281,7 @@
 
         if (isNew)
         {
-            V.Familys?.Remove(rec);
+            V.Familys ?.Remove(rec);
         }
         else if (recBackup != null)
         {
@@ -322,49 +299,50 @@
     //-- Save Row ----------------
     private async Task SaveRow(OFamilyModel rec)
     {
-        if (V.FamilyGrid == null) return;
-        if (rec == null) return;
-
+        if (V.FamilyGrid == null || rec == null) return;
         if (!SafeToSave(rec))
         {
             await V.FamilyGrid.UpdateRow(rec);
             return;
         }
-
         try
         {
-            V.Familys ??= new();
-            if (!V.Familys.Contains(rec))
-                V.Familys.Add(rec);
+            bool isNew = familyToInsert!.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
+            bool exists =  res != null && res.Count > 0;
 
-            await V.FamilyGrid.UpdateRow(rec);
-
-            await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-            foreach (var item in V.Familys!)
+            if (exists)
             {
-                if (item != null)
-                    await _empmas._01(item, V.pisdb!, V.conn!);
+                bool isSameAsOriginal = !isNew && recBackup != null
+                && recBackup.Name == rec.Name
+                && recBackup.Relation == rec.Relation;
+
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    return;
+                }
             }
 
-            ShowNotification(new NotificationMessage
+            if (isNew)
             {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 4000
-            });
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.Familys = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            }
+            else
+            {
+                await _empmas._03(rec.EmpNumber, rec.Name, rec.Relation, rec, V.pisdb!, V.conn!);
+                V.FamilyGrid.CancelEditRow(rec);
+            }
+
+            Reset(rec);
+            await V.FamilyGrid.Reload();
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowNotification(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
             return;
         }
 
@@ -372,6 +350,8 @@
         editMode = false;
         errorMsg = string.Empty;
     }
+
+
 
     //-- Safe to Save ----------------
     private bool SafeToSave(OFamilyModel rec)
@@ -381,8 +361,24 @@
         return true;
     }
 
-    private void ShowNotification(NotificationMessage message)
-    {
-        _NotificationService.Notify(message);
-    }
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 }
+
+
+
