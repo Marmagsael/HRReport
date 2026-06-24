@@ -349,6 +349,8 @@
         var rec = new OEmployModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
+        V.Employments ??= new();
+        V.Employments.Insert(0, rec);     
         employmentsToInsert!.Add(rec);
         await V.EmploymentGrid!.InsertRow(rec);
         editMode = true;
@@ -399,160 +401,150 @@
     //-- Delete Row ----------------
     private async Task DeleteRow(OEmployModel rec)
     {
-        // if (V.Employments == null) return;
-        // if ( V.EmploymentGrid == null) return;
-        // if (rec == null) return;
+        if (V.Employments == null) return;
+        if (V.EmploymentGrid == null) return;
 
-        // Reset(rec);
+        Reset(rec);
 
-        // if (V.Employments.Contains(rec))
-        // {
-        //     var option = await _DialogService.Confirm(
-        //         $"Delete {rec.Comp}'s record?", "Confirm Delete",
-        //         new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-
-        //     if (option == true)
-        //     {
-        //         V.Parents.Remove(rec);
-
-        //         try
-        //         {
-        //             await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
-
-        //             foreach (var item in V.Parents)
-        //             {
-        //                 if (item != null)
-        //                     await _empmas._01(item, V.pisdb!, V.conn!);
-        //             }
-
-        //             ShowNotification(new NotificationMessage
-        //             {
-        //                 Severity = NotificationSeverity.Success,
-        //                 Summary = "Successfully deleted a record.",
-        //                 Detail = "Record has been deleted from the list.",
-        //                 Duration = 4000
-        //             });
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             Console.WriteLine(ex);
-        //             ShowNotification(new NotificationMessage
-        //             {
-        //                 Severity = NotificationSeverity.Error,
-        //                 Summary = "Unable to delete",
-        //                 Detail = "Something went wrong while deleting. Please try again.",
-        //                 Duration = 6000
-        //             });
-        //             return;
-        //         }
-        //     }
-        // }
-        // else
-        // {
-        //     V.ParentGrid.CancelEditRow(rec);
-        // }
-
-        // await V.ParentGrid.Reload();
-        // editMode = false;
-        // errorMsg = string.Empty;
+        if (V.Employments.Contains(rec))
+        {
+            if (rec != null)
+            {
+                var option = await _DialogService.Confirm("Delete " + rec.Comp + " employment record?", "Confirm Delete",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
+                {
+                    await _empmas._04(rec.EmpNumber, rec.Posi, rec.From_, rec.To_, V.pisdb!, V.conn!);
+                    V.Employments.Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
+                }
+            }
+        }
+        else
+        {
+            V.EmploymentGrid.CancelEditRow(rec);
+        }
+        await V.EmploymentGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
     }
+
 
     //-- Cancel Edit ----------------
     private async Task CancelEdit(OEmployModel rec)
     {
-        // errorMsg = string.Empty;
-        // if (V.ParentGrid == null) return;
+        errorMsg = string.Empty;
+        if (V.EmploymentGrid == null) return;
 
-        // bool isNew = ParentToInsert!.Contains(rec);
+        bool isNew = employmentsToInsert!.Contains(rec);
 
-        // Reset(rec);
-        // editMode = false;
+        Reset(rec);
+        editMode = false;
 
-        // if (isNew)
-        // {
-        //     V.Parents?.Remove(rec);
-        // }
-        // else if (recBackup != null)
-        // {
-        //     rec.EmpNumber = recBackup.EmpNumber;
-        //     rec.Code = recBackup.Code;
-        //     rec.Name = recBackup.Name;
-        //     rec.Age = recBackup.Age;
-        //     rec.Occ = recBackup.Occ;
-        //     rec.Addr = recBackup.Addr;
-        //     rec.DoB = recBackup.DoB;
-        // }
+        if (isNew)
+        {
+            V.Employments?.Remove(rec);
+        }
+        else if (recBackup != null)
+        {
+            rec.EmpNumber = recBackup.EmpNumber;
+            rec.Comp    = recBackup.Comp;
+            rec.Posi    = recBackup.Posi;
+            rec.From_   = recBackup.From_;
+            rec.To_     = recBackup.To_;
+            rec.Rem1    = recBackup.Rem1;
+            rec.Addr1   = recBackup.Addr1;
+        }
 
-        // V.ParentGrid.CancelEditRow(rec);
-        // recBackup = null;
+        V.EmploymentGrid.CancelEditRow(rec);
+        recBackup = null;
 
-        // await V.ParentGrid.Reload();
+        await V.EmploymentGrid.Reload();
     }
 
     //-- Save Row ----------------
     private async Task SaveRow(OEmployModel rec)
     {
-        // if (V.ParentGrid == null) return;
-        // if (rec == null) return;
+        if (V.EmploymentGrid == null || rec == null) return;
+        if (!SafeToSave(rec))
+        {
+            await V.EmploymentGrid.UpdateRow(rec);
+            return;
+        }
+        try
+        {
+            bool isNew = employmentsToInsert!.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Posi, rec.From_, rec.To_, V.pisdb!, V.conn!);
+            bool exists = res != null && res.Count > 0;
 
-        // if (!SafeToSave(rec))
-        // {
-        //     await V.ParentGrid.UpdateRow(rec);
-        //     return;
-        // }
+            if (exists)
+            {
+                bool isSameAsOriginal = !isNew && recBackup != null
+                    && recBackup.Posi == rec.Posi
+                    && recBackup.From_ == rec.From_;
 
-        // try
-        // {
-        //     V.Parents ??= new();
-        //     if (!V.Parents.Contains(rec))
-        //         V.Parents.Add(rec);
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same position, and date already exists.", 5000);
+                    return;
+                }
+            }
 
-        //     await V.ParentGrid.UpdateRow(rec);
+            if (isNew)
+            {
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.Employments = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            }
+            else
+            {
+                await _empmas._03(rec.EmpNumber, rec.Posi, rec.From_, rec.To_, V.pisdb!, V.conn!);
+            }
 
-        //     await _empmas._04(V.SelectedEmpnumber, V.pisdb!, V.conn!);
+            Reset(rec);
+            V.EmploymentGrid.CancelEditRow(rec);  
+            await V.EmploymentGrid.Reload();      
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            return;
+        }
 
-        //     foreach (var item in V.Parents!)
-        //     {
-        //         if (item != null)
-        //             await _empmas._01(item, V.pisdb!, V.conn!);
-        //     }
-
-        //     ShowNotification(new NotificationMessage
-        //     {
-        //         Severity = NotificationSeverity.Success,
-        //         Summary = "Successfully saved",
-        //         Detail = "Record has been successfully saved.",
-        //         Duration = 4000
-        //     });
-        // }
-        // catch (Exception ex)
-        // {
-        //     Console.WriteLine(ex);
-        //     ShowNotification(new NotificationMessage
-        //     {
-        //         Severity = NotificationSeverity.Error,
-        //         Summary = "Unable to save",
-        //         Detail = "Something went wrong while saving. Please try again.",
-        //         Duration = 6000
-        //     });
-        //     return;
-        // }
-
-        // recBackup = null;
-        // editMode = false;
-        // errorMsg = string.Empty;
+        recBackup = null;
+        editMode = false;
+        errorMsg = string.Empty;
     }
 
+
+
     //-- Safe to Save ----------------
-    private bool SafeToSave(OParentModel rec)
+    private bool SafeToSave(OEmployModel rec)
     {
-        if (string.IsNullOrWhiteSpace(rec.Name)) return false;
-        if (string.IsNullOrWhiteSpace(rec.Code)) return false;
+        if (string.IsNullOrWhiteSpace(rec.Comp)) return false;
+        if (string.IsNullOrWhiteSpace(rec.Posi)) return false;
+        if (string.IsNullOrWhiteSpace(rec.From_)) return false;
+        if (string.IsNullOrWhiteSpace(rec.To_)) return false;
         return true;
     }
 
-    private void ShowNotification(NotificationMessage message)
-    {
-        _NotificationService.Notify(message);
-    }
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 }
+
