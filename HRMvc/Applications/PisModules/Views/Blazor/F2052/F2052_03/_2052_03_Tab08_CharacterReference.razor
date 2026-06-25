@@ -1,0 +1,469 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+
+@inject NotificationService _NotificationService
+@inject DialogService _DialogService
+
+
+<div class="p-2 overflow-auto" style="height:49.5vh;">
+    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="References" />
+    <div class="h-10p"></div>
+    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+    {
+        <div class="p-2 bordered mb-2 w-100">
+            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" class="bg-primary-green" />
+        </div>
+    }
+
+    <div class="custom-grid mt-2">
+        <RadzenDataGrid Data="@V.CharRefs"
+                        TItem="OReferModel"
+                        @ref="V.ReferenceGrid"
+                        EditMode="DataGridEditMode.Single"
+                        AllowSorting="true"
+                        AllowPaging="true"
+                        PageSize="10"
+                        PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                        ColumnWidth="200px"
+                        IsLoading="isLoading">
+            <Columns>
+                <RadzenDataGridColumn TItem="OReferModel"
+                                      Context="OReferModel"
+                                      Filterable="false"
+                                      Sortable="false"
+                                      Width="100%">
+                    <HeaderTemplate>
+                        <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
+                            <RadzenColumn Size="5" class="custom-grid-sm">Details</RadzenColumn>
+                            <RadzenColumn Size="6" class="custom-grid-md">Name</RadzenColumn>
+                            <RadzenColumn Size="6" class="custom-grid-md">Position</RadzenColumn>
+                        </RadzenRow>
+                    </HeaderTemplate>
+
+                    <Template Context="rec">
+
+                        @* ======= Small Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-sm">
+                            @*-- Name --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Name" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Position --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Position" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Position" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Address --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Address" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Addr" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Tel No --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Tel No." />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Tel" Disabled="true" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </RadzenStack>
+
+                        @* ======= Large Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-md">
+                            <RadzenRow>
+                                @*--  Name / Addr  --*@
+                                <RadzenColumn Size="6">
+                                    <div class="fw-bold">@rec.Name</div>
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12">
+                                                Address: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;"> @rec.Addr </span>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                                @*-- Position / Tel No --*@
+                                <RadzenColumn Size="6">
+                                    <div>@rec.Position</div>
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12">
+                                                Tel No.: <span class="text-muted text-decoration-underline"> @rec.Tel</span>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                            </RadzenRow>
+                        </RadzenStack>
+                    </Template>
+
+                    <EditTemplate Context="rec">
+                        @* ======= Small Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-sm">
+                            @*-- Name --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Name" Component="NameSm" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameSm" MaxLength="50" />
+                                        <RadzenRequiredValidator Component="NameSm" Text="Name is required" Popup="true" Style="position: absolute; " />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Position --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Position" Component="PositionSm" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Position" Change="@(args => rec.Position = args.ToString().Trim())" class="w-100" Name="PositionSm" MaxLength="75" />
+                                        <RadzenRequiredValidator Component="PositionSm" Text="Position is required" Popup="true" Style="position: absolute; " />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Address --*@
+                            <RadzenRow AlignItems="AlignItems.Center" class="row">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Address" />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Addr" class="w-100" MaxLength="60" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Tel No. --*@
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4">
+                                    <RadzenLabel Text="Tel No." />
+                                </RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="15" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                        </RadzenStack>
+
+                        @* ======= Large Screen =========*@
+                        <RadzenStack Gap="0" class="custom-grid-md">
+                            <RadzenRow Gap=".3rem">
+
+                                @*--  Name / Address  --*@
+                                <RadzenColumn Size="6">
+                                    <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameLg" MaxLength="50" Style=" display: block" />
+                                    <RadzenRequiredValidator Component="NameLg" Text="Name is required" Popup="true" Style="position: absolute; " />
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12">
+                                                <RadzenFormField AllowFloatingLabel="false" Text="Address" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                    <RadzenTextBox @bind-Value="rec.Addr" class="w-100" MaxLength="60" />
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                                @*-- Position / Tel No --*@
+                                <RadzenColumn Size="6">
+                                    <RadzenTextBox @bind-Value="rec.Position" Change="@(args => rec.Position = args.ToString().Trim())" class="w-100" Name="PositionLg" MaxLength="75" Style=" display: block" />
+                                    <RadzenRequiredValidator Component="PositionLg" Text="Position is required" Popup="true" Style="position: absolute; " />
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12">
+                                                <RadzenFormField AllowFloatingLabel="false" Text="Tel No." Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                    <RadzenTextBox @bind-Value="rec.Tel" MaxLength="15" />
+                                                </RadzenFormField>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
+
+                            </RadzenRow>
+                        </RadzenStack>
+                    </EditTemplate>
+
+                </RadzenDataGridColumn>
+
+                @* Actions Column *@
+                <RadzenDataGridColumn TItem="OReferModel" Context="OReferModel" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Title="Actions" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" Width="120px">
+                    <Template Context="rec">
+                        <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true"></RadzenButton>
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true"></RadzenButton>
+                    </Template>
+                    <EditTemplate Context="rec">
+                        <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@((args) => SaveRow(rec))"></RadzenButton>
+                        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Click="@((args) => CancelEdit(rec))" Size="ButtonSize.Small" class="my-1 ms-1"></RadzenButton>
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1"></RadzenButton>
+                    </EditTemplate>
+                </RadzenDataGridColumn>
+
+            </Columns>
+        </RadzenDataGrid>
+    </div>
+
+</div>
+
+@inject IOReferDataAccess _empmas
+
+
+@code {
+
+
+    string? empnumber = string.Empty;
+
+    [Parameter]
+    public V2052 V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    List<OReferModel?>? charrefToInsert = new();
+    List<OReferModel?>? charrefToUpdate = new();
+    string? errorMsg = string.Empty;
+    bool isLoading = true;
+    bool editMode = false;
+
+    OReferModel? recBackup;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (empnumber != V.SelectedEmpnumber)
+        {
+            empnumber = V.SelectedEmpnumber;
+            await Task.Delay(250);
+            V.CharRefs  = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    //-- InsertRow ----------------
+    private async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new OReferModel();
+        rec.EmpNumber = V.SelectedEmpnumber;
+
+        charrefToInsert!.Add(rec);
+        await V.ReferenceGrid!.InsertRow(rec);
+        editMode = true;
+    }
+
+    //-- Reset ----------------
+    private void Reset()
+    {
+        charrefToInsert!.Clear();
+        charrefToUpdate!.Clear();
+    }
+
+    //-- Reset ----------------
+    private void Reset(OReferModel rec)
+    {
+        charrefToInsert!.Remove(rec);
+        charrefToUpdate!.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    private async Task EditRow(OReferModel rec)
+    {
+        editMode = true;
+
+        if (V.ReferenceGrid != null)
+        {
+            Reset();
+            charrefToUpdate?.Add(rec);
+
+            recBackup = new OReferModel
+            {
+                EmpNumber = rec.EmpNumber,
+                Name = rec.Name,
+                Addr = rec.Addr,
+                Tel = rec.Tel,
+                Position = rec.Position
+            };
+
+            await V.ReferenceGrid.EditRow(rec);
+        }
+    }
+
+    //-- Delete Row ----------------
+    private async Task DeleteRow(OReferModel rec)
+    {
+        if (V.CharRefs  == null) return;
+        if (V.ReferenceGrid == null) return;
+
+        Reset(rec);
+
+        if (V.CharRefs .Contains(rec))
+        {
+            if (rec != null)
+            {
+                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
+                {
+                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Position, V.pisdb!, V.conn!);
+                    V.CharRefs .Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
+                }
+            }
+        }
+        else
+        {
+            V.ReferenceGrid.CancelEditRow(rec);
+        }
+        await V.ReferenceGrid.Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+    //-- Cancel Edit ----------------
+    private async Task CancelEdit(OReferModel rec)
+    {
+        errorMsg = string.Empty;
+        if (V.ReferenceGrid == null) return;
+
+        bool isNew = charrefToInsert!.Contains(rec);
+
+        Reset(rec);
+        editMode = false;
+
+        if (isNew)
+        {
+            V.CharRefs ?.Remove(rec);
+        }
+        else if (recBackup != null)
+        {
+            rec.EmpNumber = recBackup.EmpNumber;
+            rec.Name = recBackup.Name;
+            rec.Addr = recBackup.Addr;
+            rec.Tel = recBackup.Tel;
+            rec.Position = recBackup.Position;
+        }
+
+        V.ReferenceGrid.CancelEditRow(rec);
+        recBackup = null;
+
+        await V.ReferenceGrid.Reload();
+    }
+
+    //-- Save Row ----------------
+    private async Task SaveRow(OReferModel rec)
+    {
+        if (V.ReferenceGrid == null || rec == null) return;
+        if (!SafeToSave(rec))
+        {
+            await V.ReferenceGrid.UpdateRow(rec);
+            return;
+        }
+        try
+        {
+            bool isNew = charrefToInsert!.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Position, V.pisdb!, V.conn!);
+            bool exists = res != null && res.Count > 0;
+
+            if (exists)
+            {
+                bool isSameAsOriginal = !isNew && recBackup != null
+                && recBackup.Name == rec.Name
+                && recBackup.Position == rec.Position;
+
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same name and position already exists.", 5000);
+                    return;
+                }
+            }
+
+            if (isNew)
+            {
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.CharRefs!.Add(rec);
+            }
+            else
+            {
+                await _empmas._03(rec.EmpNumber, rec.Name, rec.Position, rec, V.pisdb!, V.conn!);
+            }
+
+            await V.ReferenceGrid.UpdateRow(rec);
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            return;
+        }
+
+        recBackup = null;
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+
+    //-- Safe to Save ----------------
+    private bool SafeToSave(OReferModel rec)
+    {
+        if (string.IsNullOrWhiteSpace(rec.Name)) return false;
+        if (string.IsNullOrWhiteSpace(rec.Position)) return false;
+        return true;
+    }
+
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
+}
+

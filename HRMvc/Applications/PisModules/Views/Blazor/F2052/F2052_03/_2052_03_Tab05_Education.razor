@@ -1,0 +1,145 @@
+﻿@using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03.F2052_03_Tab5
+
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+
+
+<div class="p-2 overflow-auto" style="height:49.5vh;">
+    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Educational Background" />
+
+    <RadzenTemplateForm TItem="OEducateModel" Data=@V.Education Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+        <div class="h-10p"></div>
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="p-2 bordered mb-2 w-100">
+                <input class="btn btn-secondary bg-primary-green w-100p" type="submit" value="Save" />
+            </div>
+        }
+
+        <RadzenFieldset Text="******">
+            <div class="custom-grid mt-2">
+
+                @* ----- Header Row (Large screen only) ----------*@
+                <RadzenRow Gap="0.5rem" class="fw-bold d-none d-md-flex" Style="border-bottom: 1px solid #ddd; padding-bottom: 4px;">
+                    <RadzenColumn Size="12" SizeMD="2"></RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">School Name</RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="1">From</RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="1">To</RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="3">Course</RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="2">Remarks</RadzenColumn>
+                </RadzenRow>
+
+                @* ----- Elementary ----------*@
+                <_2052_03_05_EducationRow Label="Elementary" Rec="@(LoadRec("E"))"  />
+
+                @* ----- High School ----------*@
+                <_2052_03_05_EducationRow Label="High School" Rec="@(LoadRec("H"))"  />
+
+                @* ----- College ----------*@
+                <_2052_03_05_EducationRow Label="College" Rec="@(LoadRec("C"))"  />
+
+                @* ----- Vocational ----------*@
+                <_2052_03_05_EducationRow Label="Vocational" Rec="@(LoadRec("V"))"  />
+
+                @* ----- Post Graduate ----------*@
+                <_2052_03_05_EducationRow Label="Post Graduate" Rec="@(LoadRec("P"))"  />
+
+            </div>
+        </RadzenFieldset>
+    </RadzenTemplateForm>
+</div>
+
+
+@inject IOEducateDataAccess _empmas
+
+@code {
+
+    string? empnumber = string.Empty;
+    bool isLoading = true;
+
+    [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (empnumber != V.SelectedEmpnumber)
+        {
+            empnumber = V.SelectedEmpnumber;
+            await Task.Delay(250);
+
+            var res = await _empmas._02(V.SelectedEmpnumber, V.pisdb, V.conn) ?? new();
+
+            var codes = new[] { "E", "H", "C", "V", "P" };
+            foreach (var code in codes)
+            {
+                if (!res.Any(e => e?.Code == code))
+                    res.Add(new OEducateModel { Code = code, EmpNumber = V.SelectedEmpnumber });
+            }
+
+            V.Educations = res;
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    OEducateModel LoadRec(string code)
+    {
+        var rec = V.Educations?.FirstOrDefault(e => e?.Code == code);
+        if (rec == null)
+        {
+            rec = new OEducateModel { Code = code, EmpNumber = V.SelectedEmpnumber };
+            V.Educations ??= new();
+            V.Educations.Add(rec);
+        }
+        return rec;
+    }
+
+
+    async Task OnSubmit(OEducateModel? model)
+    {
+        try
+        {
+            foreach (var edu in V.Educations)
+            {
+                if (string.IsNullOrWhiteSpace(edu.School)) continue; 
+
+                var res = await _empmas._02ByEmpnumberAndCode(
+                              V.SelectedEmpnumber, edu.Code, V.pisdb!, V.conn!);
+
+                if (res.Any())
+                    await _empmas._03(V.SelectedEmpnumber, edu, V.pisdb!, V.conn!);
+                else
+                    await _empmas._01(edu, V.pisdb!, V.conn!);
+            }
+
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong.", 6000);
+        }
+    }
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+    }
+
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+     _NotificationService.Notify(new NotificationMessage
+     {
+         Severity = NotificationSeverity.Success,
+         Summary = summary,
+         Detail = detail,
+         Duration = duration
+     });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
+}

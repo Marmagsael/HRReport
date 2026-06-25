@@ -45,6 +45,20 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         return res.FirstOrDefault();
     }
 
+    public async Task<EmpmasModel?> _01EmpmasWithSystemId(EmpmasModel empmas, string? schema, string? conn)
+    {
+        Console.WriteLine("Insert");
+        int? id = empmas.Id;
+        if (id != 0) return empmas;
+
+        string? sql = $@"Insert into {schema}.Empmas 
+                    (SystemId,  EmpNumber,  EmpLastNm,  EmpFirstNm,  EmpMidNm,  Suffix,  EmpAlias) values 
+                    (@SystemId, @EmpNumber, @EmpLastNm, @EmpFirstNm, @EmpMidNm, @Suffix, @EmpAlias); 
+                 SELECT * FROM {schema}.Empmas  WHERE ID = (SELECT @@IDENTITY); ";
+        var res = await _sql.FetchData<EmpmasModel?, dynamic>(sql, empmas, conn);
+        return res.FirstOrDefault();
+    }
+
 
     public async Task<EmpmasModel?> _02Empmas(int? id, string? schema, string? conn)
     {
@@ -128,6 +142,22 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
                             EmpFirstNm  = @EmpFirstNm,  
                             EmpMidNm    = @EmpMidNm,  
                             Suffix      = @Suffix,  
+                            EmpAlias    = @EmpAlias where Id = @Id;";
+        await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
+        sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<EmpmasModel?> _03EmpmasWithSystemId(int? id, EmpmasModel empmas, string? schema, string? conn)
+    {
+        string? sql = $@"Update {schema}.Empmas set 
+                            EmpNumber   = @EmpNumber, 
+                            EmpLastNm   = @EmpLastNm,  
+                            EmpFirstNm  = @EmpFirstNm,  
+                            EmpMidNm    = @EmpMidNm,  
+                            Suffix      = @Suffix, 
+                            SystemId    = @SystemId, 
                             EmpAlias    = @EmpAlias where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
         sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
@@ -370,6 +400,8 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
+
+
 
     public async Task<EmpmasAddressModel?> _04EmpmasAddress(int? id, string? schema, string? conn)
     {
@@ -881,14 +913,14 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     // *********************************************************************************************
     // --- EmpmasInsurance *************************************************************************
     //**********************************************************************************************
-    public async Task<EmpmasInsuranceModel?> _01EmpmasInsurance(int? id, EmpmasInsuranceModel empmasinsurance, string? schema, string? conn)
+    public async Task<EmpmasInsuranceModel?> _01EmpmasInsurance( EmpmasInsuranceModel empmasinsurance, string? schema, string? conn)
     {
-        string? sql = $@"Insert into {schema}.Empmasinsurance (Id,  INSURANCE,  PolicyNo,  FaceValue,  Premium,  InsExpire) values 
-                                                             (@Id, @INSURANCE, @PolicyNo, @FaceValue, @Premium, @InsExpire)";
+        string? sql = $@"Insert into {schema}.Empmasinsurance (  INSURANCE,  PolicyNo,  FaceValue,  Premium,  InsExpire) values 
+                                                             ( @INSURANCE, @PolicyNo, @FaceValue, @Premium, @InsExpire)";
         await _sql.ExecuteCmd<dynamic>(sql, empmasinsurance, conn);
 
-        sql = $@"SELECT * FROM {schema}.Empmasinsurance WHERE Id = @Id";
-        var res = await _sql.FetchData<EmpmasInsuranceModel?, dynamic>(sql, new { Id = id }, conn);
+        sql = $@"SELECT * FROM {schema}.Empmasinsurance WHERE Id = (SELECT @@IDENTITY);";
+        var res = await _sql.FetchData<EmpmasInsuranceModel?, dynamic>(sql, new {  }, conn);
         return res.FirstOrDefault();
     }
 
