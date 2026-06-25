@@ -52,23 +52,25 @@
                                     <RadzenColumn Size="4"><RadzenLabel Text="Name" /></RadzenColumn>
                                     <RadzenColumn Size="8">
                                         <RadzenFormField Variant="Variant.Text" class="w-100">
-                                            <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="60" />
+                                            <RadzenTextBox Value="@rec.Name" Disabled="true" MaxLength="60" />
                                         </RadzenFormField>
                                     </RadzenColumn>
                                 </RadzenRow>
                                 <RadzenRow AlignItems="AlignItems.Center">
                                     <RadzenColumn Size="4"><RadzenLabel Text="Relationship" /></RadzenColumn>
                                     <RadzenColumn Size="8">
-                                        <RadzenTextBox @bind-Value="ParentCodes.FirstOrDefault( c => c.Code == rec.Code).Name" Disabled="true" MaxLength="30" />
                                         <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenTextBox Value="@(ParentCodes.FirstOrDefault(c => c.Code == rec.Code)?.Name)"
+                                                           Disabled="true"
+                                                           MaxLength="30" />
                                         </RadzenFormField>
                                     </RadzenColumn>
                                 </RadzenRow>
                                 <RadzenRow AlignItems="AlignItems.Center">
-                                    <RadzenColumn Size="4"><RadzenLabel Text="Relation" /></RadzenColumn>
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Age" /></RadzenColumn>
                                     <RadzenColumn Size="8">
                                         <RadzenFormField Variant="Variant.Text" class="w-100">
-                                            <RadzenNumeric @bind-Value="rec.Age" Disabled="true" MaxLength="15" />
+                                            <RadzenNumeric Value="@rec.Age" Disabled="true" />
                                         </RadzenFormField>
                                     </RadzenColumn>
                                 </RadzenRow>
@@ -84,18 +86,16 @@
                                                 <RadzenColumn Size="12">
                                                     Address: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;">@rec.Addr</span>
                                                 </RadzenColumn>
-
                                             </RadzenRow>
                                         </div>
                                     </RadzenColumn>
                                     <RadzenColumn Size="4">
-                                        <div class="fw-bold">@ParentCodes.FirstOrDefault( c => c.Code == rec.Code).Name </div>
+                                        <div class="fw-bold">@(ParentCodes.FirstOrDefault(c => c.Code == rec.Code)?.Name)</div>
                                         <div class="mt-1">
                                             <RadzenRow RowGap="0">
                                                 <RadzenColumn Size="12">
                                                     Occupation: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;">@rec.Occ</span>
                                                 </RadzenColumn>
-
                                             </RadzenRow>
                                         </div>
                                     </RadzenColumn>
@@ -126,13 +126,13 @@
                                     <RadzenColumn Size="4"><RadzenLabel Text="Relationship" Component="CodeSm" /></RadzenColumn>
                                     <RadzenColumn Size="8">
                                         <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDropDown TValue="string"
-                                                        @bind-Value="rec.Code"
-                                                        Data="@ParentCodes"
-                                                        TextProperty="Name"
-                                                        ValueProperty="Code"
-                                                        class="w-100"
-                                                        Name="CodeSm" />
+                                            <RadzenDropDown TValue="string"
+                                                            @bind-Value="rec.Code"
+                                                            Data="@ParentCodes"
+                                                            TextProperty="Name"
+                                                            ValueProperty="Code"
+                                                            class="w-100"
+                                                            Name="CodeSm" />
                                             <RadzenRequiredValidator Component="CodeSm" Text="Relationship is required" Popup="true" Style="position:absolute;" />
                                         </RadzenFormField>
                                     </RadzenColumn>
@@ -187,14 +187,14 @@
 
                                     @*--  Relationship / Occupation --*@
                                     <RadzenColumn Size="4">
-                                    <RadzenDropDown TValue="string"
-                                                    @bind-Value="rec.Code"
-                                                    Data="@ParentCodes"
-                                                    TextProperty="Name"
-                                                    ValueProperty="Code"
-                                                    class="w-100"
-                                                    Name="CodeLg"
-                                                    Style="display:block" />
+                                        <RadzenDropDown TValue="string"
+                                                        @bind-Value="rec.Code"
+                                                        Data="@ParentCodes"
+                                                        TextProperty="Name"
+                                                        ValueProperty="Code"
+                                                        class="w-100"
+                                                        Name="CodeLg"
+                                                        Style="display:block" />
                                         <RadzenRequiredValidator Component="CodeLg" Text="Relationship is required" Popup="true" Style="position:absolute;" />
                                         <div class="mt-1">
                                             <RadzenFormField AllowFloatingLabel="false" Text="Occupation" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
@@ -241,10 +241,7 @@
             </RadzenDataGrid>
         </div>
     </div>
-
-    </RadzenFieldset>
-
-  
+</RadzenFieldset>
 
 
 @inject IOParentDataAccess _empmas
@@ -272,10 +269,10 @@
     }
 
     List<ParentCodeModel> ParentCodes = new()
-{
-    new ParentCodeModel { Code = "M", Name = "Mother" },
-    new ParentCodeModel { Code = "F", Name = "Father" },
-};
+    {
+        new ParentCodeModel { Code = "M", Name = "Mother" },
+        new ParentCodeModel { Code = "F", Name = "Father" },
+    };
 
 
     protected override async Task OnParametersSetAsync()
@@ -284,7 +281,7 @@
         {
             empnumber = V.SelectedEmpnumber;
             await Task.Delay(250);
-            V.Parents  = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+            V.Parents = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
         isLoading = false;
         StateHasChanged();
@@ -299,10 +296,8 @@
         var rec = new OParentModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        V.Parents  ??= new();
-        V.Parents .Insert(0, rec);
         parentToInsert!.Add(rec);
-        await V.ParentGrid !.InsertRow(rec);
+        await V.ParentGrid!.InsertRow(rec);
         editMode = true;
     }
 
@@ -325,7 +320,7 @@
     {
         editMode = true;
 
-        if (V.ParentGrid  != null)
+        if (V.ParentGrid != null)
         {
             Reset();
             parentToUpdate?.Add(rec);
@@ -341,47 +336,46 @@
                 DoB = rec.DoB
             };
 
-            await V.ParentGrid .EditRow(rec);
+            await V.ParentGrid.EditRow(rec);
         }
     }
 
     //-- Delete Row ----------------
     private async Task DeleteRow(OParentModel rec)
     {
-        if (V.Parents  == null) return;
-        if (V.ParentGrid  == null) return;
+        if (V.Parents == null) return;
+        if (V.ParentGrid == null) return;
 
         Reset(rec);
 
-        if (V.Parents .Contains(rec))
+        if (V.Parents.Contains(rec))
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm( $"Delete {rec.Name}'s record?", "Confirm Delete",
+                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
                 new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
                 if (option == true)
                 {
                     await _empmas._04(rec.EmpNumber, rec.Name, rec.Code, V.pisdb!, V.conn!);
-                    V.Parents .Remove(rec);
+                    V.Parents.Remove(rec);
                     ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
                 }
             }
         }
         else
         {
-            V.ParentGrid .CancelEditRow(rec);
+            V.ParentGrid.CancelEditRow(rec);
         }
-        await V.ParentGrid .Reload();
+        await V.ParentGrid.Reload();
         editMode = false;
         errorMsg = string.Empty;
     }
-
 
     //-- Cancel Edit ----------------
     private async Task CancelEdit(OParentModel rec)
     {
         errorMsg = string.Empty;
-        if (V.ParentGrid  == null) return;
+        if (V.ParentGrid == null) return;
 
         bool isNew = parentToInsert!.Contains(rec);
 
@@ -390,7 +384,7 @@
 
         if (isNew)
         {
-            V.Parents ?.Remove(rec);
+            V.Parents?.Remove(rec);
         }
         else if (recBackup != null)
         {
@@ -403,26 +397,26 @@
             rec.DoB = recBackup.DoB;
         }
 
-        V.ParentGrid .CancelEditRow(rec);
+        V.ParentGrid.CancelEditRow(rec);
         recBackup = null;
 
-        await V.ParentGrid .Reload();
+        await V.ParentGrid.Reload();
     }
 
     //-- Save Row ----------------
     private async Task SaveRow(OParentModel rec)
     {
-        if (V.ParentGrid  == null || rec == null) return;
+        if (V.ParentGrid == null || rec == null) return;
         if (!SafeToSave(rec))
         {
-            await V.ParentGrid .UpdateRow(rec);
+            await V.ParentGrid.UpdateRow(rec);
             return;
         }
         try
         {
             bool isNew = parentToInsert!.Contains(rec);
             var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Code, V.pisdb!, V.conn!);
-            bool exists =  res != null && res.Count > 0;
+            bool exists = res != null && res.Count > 0;
 
             if (exists)
             {
@@ -439,17 +433,15 @@
 
             if (isNew)
             {
-                 await _empmas._01(rec, V.pisdb!, V.conn!);
-                V.Parents = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.Parents!.Add(rec);
             }
             else
             {
                 await _empmas._03(rec.EmpNumber, rec.Name, rec.Code, rec, V.pisdb!, V.conn!);
-                V.ParentGrid .CancelEditRow(rec);
             }
 
-            Reset(rec);
-            await V.ParentGrid .Reload();
+            await V.ParentGrid.UpdateRow(rec);
             ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
@@ -464,8 +456,6 @@
         errorMsg = string.Empty;
     }
 
-
-
     //-- Safe to Save ----------------
     private bool SafeToSave(OParentModel rec)
     {
@@ -475,13 +465,13 @@
     }
 
     void ShowSuccess(string summary, string detail, int duration = 5000) =>
-      _NotificationService.Notify(new NotificationMessage
-      {
-          Severity = NotificationSeverity.Success,
-          Summary = summary,
-          Detail = detail,
-          Duration = duration
-      });
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
 
     void ShowError(string summary, string detail, int duration = 5000) =>
         _NotificationService.Notify(new NotificationMessage
@@ -492,4 +482,3 @@
             Duration = duration
         });
 }
-

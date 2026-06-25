@@ -35,12 +35,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<List<OEducateModel?>?> _02ByEmpnumberAndCode(string? empnumber, string code, string? schema, string? conn)
         {
-            string? sql = $@"select  EMPNUMBER, CODE, SCHOOL, FROM_, TO_, COURSE, LEVEL from {schema}.Educate where Empnumber = @Empnumber and Code = @Code";
-            var data = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber, Code = code }, conn);
+            string? sql = $@"select EMPNUMBER, CODE, SCHOOL, FROM_, TO_, COURSE, LEVEL from {schema}.Educate where Empnumber = @Empnumber and LOWER(TRIM(Code)) = LOWER(TRIM(@Code))";
+            var data = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber, Code = code?.Trim().ToLower() }, conn);
             return data;
         }
 
-        
 
 
         public async Task<OEducateModel?> _03(string? empnumber, OEducateModel educate, string? schema, string? conn)

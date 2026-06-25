@@ -241,8 +241,7 @@
         var rec = new OEmergencModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        V.EmergencyContacts ??= new();
-        V.EmergencyContacts.Insert(0, rec);
+       
         emergencycontactToInsert!.Add(rec);
         await V.EmergencyContactGrid!.InsertRow(rec);
         editMode = true;
@@ -377,16 +376,14 @@
             if (isNew)
             {
                 await _empmas._01(rec, V.pisdb!, V.conn!);
-                V.EmergencyContacts = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+                V.EmergencyContacts!.Add(rec);
             }
             else
             {
                 await _empmas._03(rec.EmpNumber, rec.Name, rec.Rela, rec, V.pisdb!, V.conn!);
-                V.EmergencyContactGrid.CancelEditRow(rec);
             }
 
-            Reset(rec);
-            await V.EmergencyContactGrid.Reload();
+            await V.EmergencyContactGrid.UpdateRow(rec);
             ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)

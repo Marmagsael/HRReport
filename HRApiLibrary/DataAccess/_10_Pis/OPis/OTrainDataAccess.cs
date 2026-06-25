@@ -36,8 +36,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<List<OTrainModel?>?> _02CheckExisting(string? empnumber, string? program, string? taken, string? schema, string? conn)
         {
-            string? sql = $@"select  EMPNUMBER, PROGRAM, TAKEN, SCHOOL, TRAINOR, TYPE, idtrainhdr from {schema}.Train  where EMPNUMBER = @EMPNUMBER AND  PROGRAM = @PROGRAM AND TAKEN =@TAKEN";
-            var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { EMPNUMBER = empnumber, PROGRAM = program, TAKEN = taken }, conn);
+            string? sql = $@"select EMPNUMBER, PROGRAM, TAKEN, SCHOOL, TRAINOR, TYPE, idtrainhdr from {schema}.Train where EMPNUMBER = @EMPNUMBER AND LOWER(TRIM(PROGRAM)) = LOWER(TRIM(@PROGRAM)) AND LOWER(TRIM(TAKEN)) = LOWER(TRIM(@TAKEN))";
+            var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { EMPNUMBER = empnumber, PROGRAM = program?.Trim().ToLower(), TAKEN = taken?.Trim().ToLower() }, conn);
             return data;
         }
 
@@ -53,18 +53,22 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OTrainModel?> _03(string? empnumber, string? program, string? taken, OTrainModel train, string? schema, string? conn)
         {
-            string? sql = $@"Update {schema}.Train set EMPNUMBER = @EMPNUMBER, PROGRAM = @PROGRAM, TAKEN = @TAKEN, SCHOOL = @SCHOOL, TRAINOR = @TRAINOR, TYPE = @TYPE, idtrainhdr = @idtrainhdr where EMPNUMBER = @OldEmpnumber AND  PROGRAM = @OldProgram AND TAKEN =@OldTaken;";
-
+            string? sql = $@"Update {schema}.Train set EMPNUMBER = @EMPNUMBER, PROGRAM = @PROGRAM, TAKEN = @TAKEN, SCHOOL = @SCHOOL, TRAINOR = @TRAINOR, TYPE = @TYPE, idtrainhdr = @idtrainhdr where LOWER(TRIM(EMPNUMBER)) = LOWER(TRIM(@OldEmpnumber)) AND LOWER(TRIM(PROGRAM)) = LOWER(TRIM(@OldProgram)) AND LOWER(TRIM(TAKEN)) = LOWER(TRIM(@OldTaken));";
             var parameters = new
             {
-                train.Program,
-                train.Taken,
-                OldEmpnumber = empnumber,
-                OldProgram = program,
-                OldTaken = taken
-            }; await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
-
-            sql = $@" select  * from {schema}.Train x where x.EMPNUMBER = @EMPNUMBER ;";
+                EMPNUMBER = train.EmpNumber,
+                PROGRAM = train.Program,
+                TAKEN = train.Taken,
+                SCHOOL = train.School,
+                TRAINOR = train.Trainor,
+                TYPE = train.Type,
+                idtrainhdr = 0,
+                OldEmpnumber = empnumber?.Trim().ToLower(),
+                OldProgram = program?.Trim().ToLower(),
+                OldTaken = taken?.Trim().ToLower()
+            };
+            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            sql = $@"select * from {schema}.Train where EMPNUMBER = @EMPNUMBER;";
             var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }

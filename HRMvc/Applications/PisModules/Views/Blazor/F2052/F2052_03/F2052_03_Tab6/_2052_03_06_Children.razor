@@ -13,7 +13,8 @@
                               Icon="add_circle_outline"
                               Text="New Entry"
                               Click="@InsertRow"
-                              Disabled="@(editMode || isLoading)" />
+                              Disabled="@(editMode || isLoading)"
+                              class="bg-primary-green" />
             </div>
         }
 
@@ -184,10 +185,8 @@
         var rec = new OChildrenModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        V.Children ??= new();
-        V.Children.Insert(0, rec);
-        childrenToInsert !.Add(rec);
-        await V.ChildrenGrid !.InsertRow(rec);
+        childrenToInsert!.Add(rec);
+        await V.ChildrenGrid!.InsertRow(rec);
         editMode = true;
     }
 
@@ -309,7 +308,7 @@
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    ShowError("Duplicate entry", "A record with the same name and birthday already exists.", 5000);
                     return;
                 }
             }
@@ -317,16 +316,14 @@
             if (isNew)
             {
                 await _empmas._01(rec, V.pisdb!, V.conn!);
-                V.Children = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+                V.Children!.Add(rec);
             }
             else
             {
                  await _empmas._03(rec.EmpNumber, rec.Name, rec.BDay, rec, V.pisdb!, V.conn!);
-                V.ChildrenGrid .CancelEditRow(rec);
             }
 
-            Reset(rec);
-            await V.ChildrenGrid .Reload();
+            await V.ChildrenGrid.UpdateRow(rec);
             ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)

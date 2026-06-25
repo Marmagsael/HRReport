@@ -38,8 +38,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<List<OReferModel?>?> _02CheckExisting(string? empnumber, string? name, string? position, string? schema, string? conn)
         {
-            string? sql = $@"select  EMPNUMBER, NAME, ADDR, TEL, POSITION from {schema}.Refer where EMPNUMBER = @EMPNUMBER AND NAME = @NAME AND POSITION = @POSITION";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber, NAME = name, POSITION = position }, conn);
+            string? sql = $@"select EMPNUMBER, NAME, ADDR, TEL, POSITION from {schema}.Refer where EMPNUMBER = @EMPNUMBER AND LOWER(TRIM(NAME)) = LOWER(TRIM(@NAME)) AND LOWER(TRIM(POSITION)) = LOWER(TRIM(@POSITION))";
+            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber, NAME = name?.Trim().ToLower(), POSITION = position?.Trim().ToLower() }, conn);
             return data;
         }
 
@@ -56,22 +56,21 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OReferModel?> _03(string? empnumber, string? name, string? position, OReferModel refer, string? schema, string? conn)
         {
-            string? sql = $@"Update {schema}.Refer set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, TEL = @TEL, POSITION = @POSITION 
-                        where EMPNUMBER = @OldEmpnumber AND NAME = @OldName AND POSITION = @OldPosition;";
+            string? sql = $@"Update {schema}.Refer set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, TEL = @TEL, POSITION = @POSITION
+                where LOWER(TRIM(EMPNUMBER)) = LOWER(TRIM(@OldEmpnumber)) AND LOWER(TRIM(NAME)) = LOWER(TRIM(@OldName)) AND LOWER(TRIM(POSITION)) = LOWER(TRIM(@OldPosition));";
             var parameters = new
             {
-                refer.EmpNumber,
-                refer.Name,
-                refer.Addr,
-                refer.Tel,
-                refer.Position,
-                OldEmpnumber = empnumber,
-                OldName = name,
-                OldPosition = position
+                EMPNUMBER = refer.EmpNumber,
+                NAME = refer.Name,
+                ADDR = refer.Addr,
+                TEL = refer.Tel,
+                POSITION = refer.Position,
+                OldEmpnumber = empnumber?.Trim().ToLower(),
+                OldName = name?.Trim().ToLower(),
+                OldPosition = position?.Trim().ToLower()
             };
-            await _sql.ExecuteCmd<dynamic>(sql, refer, conn);
-
-            sql = $@" select  * from {schema}.Refer x where x.Id = @Id ;";
+            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            sql = $@"select * from {schema}.Refer where EMPNUMBER = @EMPNUMBER;";
             var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }

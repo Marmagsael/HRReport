@@ -52,25 +52,24 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
-        public async Task<OFamilyModel?> _03(string? empnumber, string name, string Relation,  OFamilyModel family, string? schema, string? conn)
+        public async Task<OFamilyModel?> _03(string? empnumber, string name, string relation, OFamilyModel family, string? schema, string? conn)
         {
-            string? sql = $@"Update {schema}.Family set EMPNUMBER = @EMPNUMBER, NAME = @NAME, BIRTH = @BIRTH, RELATION = @RELATION where Empnumber = @Empnumber AND Name = @OldName AND Relation = @OldRela;";
+            string? sql = $@"Update {schema}.Family set EMPNUMBER = @EMPNUMBER, NAME = @NAME, BIRTH = @BIRTH, RELATION = @RELATION where LOWER(TRIM(Empnumber)) = LOWER(TRIM(@OldEmpnumber)) AND LOWER(TRIM(Name)) = LOWER(TRIM(@OldName)) AND LOWER(TRIM(Relation)) = LOWER(TRIM(@OldRela));";
             var parameters = new
             {
-                family.EmpNumber,
-                family.Relation,
-                family.Name,
+                EMPNUMBER = family.EmpNumber,
+                NAME = family.Name,
+                BIRTH = family.Birth,
+                RELATION = family.Relation,
                 OldEmpnumber = empnumber,
                 OldName = name,
-                OldRela = Relation
+                OldRela = relation
             };
-            await _sql.ExecuteCmd<dynamic>(sql, family, conn);
-
-            sql = $@" select  * from {schema}.Family x where x.Empnumber = @Empnumber ;";
+            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            sql = $@"select * from {schema}.Family where Empnumber = @Empnumber;";
             var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
-
         public async Task<OFamilyModel?> _04(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Family where Empnumber = @Empnumber;";

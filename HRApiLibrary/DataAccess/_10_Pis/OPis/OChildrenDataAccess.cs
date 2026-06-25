@@ -35,10 +35,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data;
         }
 
-        public async Task<List<OChildrenModel?>?> _02CheckExisting(string? empnumber,  string? name, DateTime? bday, string? schema, string? conn)
+        public async Task<List<OChildrenModel?>?> _02CheckExisting(string? empnumber, string? name, DateTime? bday, string? schema, string? conn)
         {
-            string? sql = $@"select  empnumber, name, bday from {schema}.Children where Empnumber = @Empnumber AND Name = @Name AND BDay = @BDay";
-            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Empnumber = empnumber ,  Name = name ,  BDay = bday }, conn);
+            string? sql = $@"select empnumber, name, bday from {schema}.Children where Empnumber = @Empnumber AND LOWER(TRIM(Name)) = LOWER(TRIM(@Name)) AND BDay = @BDay";
+            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Empnumber = empnumber, Name = name?.Trim().ToLower(), BDay = bday }, conn);
             return data;
         }
 

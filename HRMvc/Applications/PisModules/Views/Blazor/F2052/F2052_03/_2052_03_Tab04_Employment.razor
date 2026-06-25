@@ -201,7 +201,6 @@
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
                                         <RadzenTextBox @bind-Value="rec.From_" MaxLength="10" Name="FromSm" />
-                                        <RadzenRequiredValidator Component="FromSm" Text="From date is required" Popup="true" Style="position:absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -210,7 +209,6 @@
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
                                         <RadzenTextBox @bind-Value="rec.To_" MaxLength="10" Name="ToSm" />
-                                        <RadzenRequiredValidator Component="ToSm" Text="To date is required" Popup="true" Style="position:absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -262,13 +260,11 @@
                                             <RadzenColumn Size="12" SizeMD="6">
                                                 <RadzenFormField AllowFloatingLabel="false" Text="From" Variant="Variant.Outlined"  class="custom-form-field" >
                                                     <RadzenTextBox @bind-Value="rec.From_" class="w-100" MaxLength="10" Name="FromLg" Style="display:block" />
-                                                    <RadzenRequiredValidator Component="FromLg" Text="From date is required" Popup="true" Style="position:absolute;" />
                                                 </RadzenFormField>
                                             </RadzenColumn>
                                             <RadzenColumn Size="12" SizeMD="6">
                                                 <RadzenFormField AllowFloatingLabel="false" Text="To" Variant="Variant.Outlined"  class="custom-form-field" >
                                                     <RadzenTextBox @bind-Value="rec.To_" class="w-100" MaxLength="10" Name="ToLg" Style="display:block; width:100%" />
-                                                    <RadzenRequiredValidator Component="ToLg" Text="To date is required" Popup="true" Style="position:absolute;" />
                                                 </RadzenFormField>
                                             </RadzenColumn>
                                         </RadzenRow>
@@ -349,9 +345,6 @@
 
         var rec = new OEmployModel();
         rec.EmpNumber = V.SelectedEmpnumber;
-
-        V.Employments ??= new();
-        V.Employments.Insert(0, rec);     
         employmentsToInsert!.Add(rec);
         await V.EmploymentGrid!.InsertRow(rec);
         editMode = true;
@@ -415,7 +408,7 @@
                     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
                 if (option == true)
                 {
-                    await _empmas._04(rec.EmpNumber, rec.Posi, rec.From_, rec.To_, V.pisdb!, V.conn!);
+                    await _empmas._04(rec.EmpNumber, rec.Comp, rec.Posi, V.pisdb!, V.conn!);
                     V.Employments.Remove(rec);
                     ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
                 }
@@ -475,18 +468,18 @@
         try
         {
             bool isNew = employmentsToInsert!.Contains(rec);
-            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Posi, rec.From_, rec.To_, V.pisdb!, V.conn!);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Comp, rec.Posi,  V.pisdb!, V.conn!);
             bool exists = res != null && res.Count > 0;
 
             if (exists)
             {
                 bool isSameAsOriginal = !isNew && recBackup != null
-                    && recBackup.Posi == rec.Posi
-                    && recBackup.From_ == rec.From_;
+                    && recBackup.Posi == rec.Comp
+                    && recBackup.Posi == rec.Posi;
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same position, and date already exists.", 5000);
+                    ShowError("Duplicate entry", "A record with the same company and position already exists.", 5000);
                     return;
                 }
             }
@@ -494,16 +487,14 @@
             if (isNew)
             {
                 await _empmas._01(rec, V.pisdb!, V.conn!);
-                V.Employments = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+                V.Employments!.Add(rec);
             }
             else
             {
-                await _empmas._03(recBackup.EmpNumber, recBackup.Posi, recBackup.From_, recBackup.To_, rec, V.pisdb!, V.conn!);
-                V.EmploymentGrid.CancelEditRow(rec);  
+                await _empmas._03(recBackup.EmpNumber, recBackup.Comp, recBackup.Posi, rec, V.pisdb!, V.conn!);
             }
 
-            Reset(rec);
-            await V.EmploymentGrid.Reload();      
+            await V.EmploymentGrid.UpdateRow(rec);      
             ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
@@ -525,8 +516,6 @@
     {
         if (string.IsNullOrWhiteSpace(rec.Comp)) return false;
         if (string.IsNullOrWhiteSpace(rec.Posi)) return false;
-        if (string.IsNullOrWhiteSpace(rec.From_)) return false;
-        if (string.IsNullOrWhiteSpace(rec.To_)) return false;
         return true;
     }
 

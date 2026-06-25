@@ -89,10 +89,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OEmergencModel?> _04(string? empnumber, string? name, string? relationship, string? schema, string? conn)
         {
-            string? sql = $@"Delete from {schema}.Emergenc where  Empnumber = @Empnumber AND Name = @Name AND Rela = @Rela;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
-
-            sql = $@" select  * from {schema}.Emergenc x where x.Empnumber = @Empnumber ;";
+            string? sql = $@"Delete from {schema}.Emergenc where Empnumber = @Empnumber AND LOWER(TRIM(Name)) = LOWER(TRIM(@Name)) AND LOWER(TRIM(Rela)) = LOWER(TRIM(@Rela));";
+            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber, Name = name, Rela = relationship}, conn);
+            sql = $@"select * from {schema}.Emergenc where Empnumber = @Empnumber;";
             var data = await _sql.FetchData<OEmergencModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }

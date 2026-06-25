@@ -281,8 +281,6 @@
         var rec = new OReferModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        V.CharRefs  ??= new();
-        V.CharRefs .Insert(0, rec);
         charrefToInsert!.Add(rec);
         await V.ReferenceGrid!.InsertRow(rec);
         editMode = true;
@@ -410,7 +408,7 @@
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    ShowError("Duplicate entry", "A record with the same name and position already exists.", 5000);
                     return;
                 }
             }
@@ -418,16 +416,14 @@
             if (isNew)
             {
                 await _empmas._01(rec, V.pisdb!, V.conn!);
-                V.CharRefs = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+                V.CharRefs!.Add(rec);
             }
             else
             {
                 await _empmas._03(rec.EmpNumber, rec.Name, rec.Position, rec, V.pisdb!, V.conn!);
-                V.ReferenceGrid.CancelEditRow(rec);
             }
 
-            Reset(rec);
-            await V.ReferenceGrid.Reload();
+            await V.ReferenceGrid.UpdateRow(rec);
             ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)
