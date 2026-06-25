@@ -387,7 +387,7 @@ namespace HRApiLibrary.Controllers._00_Main
         [HttpPut("01EmpmasInsurance/{id}/{schema}/{conn}")]
         public async Task<ActionResult<EmpmasInsuranceModel?>> _01EmpmasInsurance([FromBody] EmpmasInsuranceModel empmasInsurance, int? id, string? schema = "MainPis", string? conn = "MySqlConn")
         {
-            var res = await _empmas._01EmpmasInsurance(id, empmasInsurance, schema, conn);
+            var res = await _empmas._01EmpmasInsurance( empmasInsurance, schema, conn);
             return Ok(res);
 
         }

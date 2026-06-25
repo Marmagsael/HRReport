@@ -9,12 +9,12 @@ public class OParentModel
 
     public string?  Name        { get; set; }
 
-    public double   Age         { get; set; }
+    public double?   Age         { get; set; }
 
     public string?  Occ         { get; set; }
 
     public string?  Addr        { get; set; }
 
-    public DateTime DoB         { get; set; }
+    public DateTime? DoB         { get; set; }
 }
 

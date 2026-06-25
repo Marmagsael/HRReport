@@ -1,0 +1,372 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+
+@inject NotificationService _NotificationService
+@inject DialogService _DialogService
+
+
+<RadzenFieldset Text="Children" Style="font-weight:bold">
+    <div class="fw-normal">
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="p-2 bordered mb-2 w-100">
+                <RadzenButton ButtonStyle="ButtonStyle.Success"
+                              Icon="add_circle_outline"
+                              Text="New Entry"
+                              Click="@InsertRow"
+                              Disabled="@(editMode || isLoading)"
+                              class="bg-primary-green" />
+            </div>
+        }
+
+        <div class="custom-grid mt-2">
+            <RadzenDataGrid Data="@V.Children"
+                            TItem="OChildrenModel"
+                            @ref="V.ChildrenGrid"
+                            EditMode="DataGridEditMode.Single"
+                            AllowSorting="true"
+                            AllowPaging="true"
+                            PageSize="10"
+                            PageSizeOptions=@(new int[]{5, 10, 20, 30})
+                            ColumnWidth="200px"
+                            IsLoading="isLoading">
+                <Columns>
+                    <RadzenDataGridColumn TItem="OChildrenModel"
+                                          Context="OChildrenModel"
+                                          Filterable="false"
+                                          Sortable="false"
+                                          Width="100%">
+                        <HeaderTemplate>
+                            <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
+                                <RadzenColumn Size="8" class="custom-grid-md">Name</RadzenColumn>
+                                <RadzenColumn Size="4" class="custom-grid-md">Birthday</RadzenColumn>
+                            </RadzenRow>
+                        </HeaderTemplate>
+
+                        <Template Context="rec">
+                            @* ======= Small Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-sm">
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Name" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="60" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Birthday" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Disabled="true" DateFormat="MMM dd, yyyy" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+
+                            @* ======= Large Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-md">
+                                <RadzenRow>
+                                    <RadzenColumn Size="8">@rec.Name</RadzenColumn>
+                                    <RadzenColumn Size="4">@rec.BDay?.ToString("MMM dd, yyyy")</RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+                        </Template>
+
+                        <EditTemplate Context="rec">
+                            @* ======= Small Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-sm">
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="ChildNameSm" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenTextBox @bind-Value="rec.Name" class="w-100" Name="ChildNameSm" MaxLength="60" />
+                                            <RadzenRequiredValidator Component="ChildNameSm" Text="Name is required" Popup="true" Style="position:absolute;" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                                <RadzenRow AlignItems="AlignItems.Center">
+                                    <RadzenColumn Size="4"><RadzenLabel Text="Birthday" Component="ChildBDaySm" /></RadzenColumn>
+                                    <RadzenColumn Size="8">
+                                        <RadzenFormField Variant="Variant.Text" class="w-100">
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDaySm" DateFormat="MMM dd, yyyy" />
+                                            <RadzenRequiredValidator Component="ChildBDaySm" Text="Birthday is required" Popup="true" Style="position:absolute;" />
+                                        </RadzenFormField>
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+
+                            @* ======= Large Screen ========= *@
+                            <RadzenStack Gap="0" class="custom-grid-md">
+                                <RadzenRow Gap=".3rem">
+                                    <RadzenColumn Size="8">
+                                        <RadzenTextBox @bind-Value="rec.Name" Name="ChildNameLg" class="w-100" MaxLength="60" Style="display:block" />
+                                        <RadzenRequiredValidator Component="ChildNameLg" Text="Name is required" Popup="true" Style="position:absolute;" />
+                                    </RadzenColumn>
+                                    <RadzenColumn Size="4">
+                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.BDay" Name="ChildBDayLg" DateFormat="MMM dd, yyyy" class="w-100" Style="display:block" />
+                                        <RadzenRequiredValidator Component="ChildBDayLg" Text="Birthday is required" Popup="true" Style="position:absolute;" />
+                                    </RadzenColumn>
+                                </RadzenRow>
+                            </RadzenStack>
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+
+                    @* Actions Column *@
+                    <RadzenDataGridColumn TItem="OChildrenModel"
+                                          Context="OChildrenModel"
+                                          Filterable="false"
+                                          Sortable="false"
+                                          TextAlign="TextAlign.Center"
+                                          Title="Actions"
+                                          Frozen="true"
+                                          FrozenPosition="FrozenColumnPosition.Right"
+                                          Width="120px">
+                        <Template Context="rec">
+                            <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => EditRow(rec))" @onclick:stopPropagation="true" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.Small" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" @onclick:stopPropagation="true" />
+                        </Template>
+                        <EditTemplate Context="rec">
+                            <RadzenButton Icon="check" ButtonStyle="ButtonStyle.Success" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => SaveRow(rec))" />
+                            <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Variant="Variant.Flat" Size="ButtonSize.Small" Click="@(args => CancelEdit(rec))" class="my-1 ms-1" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" Click="@(args => DeleteRow(rec))" class="my-1 ms-1" />
+                        </EditTemplate>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </div>
+    </div>
+  
+</RadzenFieldset>
+
+@inject IOChildrenDataAccess _empmas
+
+@code {
+
+    string? empnumber = string.Empty;
+
+    [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    List<OChildrenModel?>? childrenToInsert  = new();
+    List<OChildrenModel?>? childrenToUpdate  = new();
+    string? errorMsg = string.Empty;
+    bool isLoading = true;
+    bool editMode = false;
+
+    OChildrenModel? recBackup;
+
+    public class ParentCodeModel
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+
+
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (empnumber != V.SelectedEmpnumber)
+        {
+            empnumber = V.SelectedEmpnumber;
+            await Task.Delay(250);
+            V.Children = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    //-- InsertRow ----------------
+    private async Task InsertRow()
+    {
+        errorMsg = string.Empty;
+        Reset();
+
+        var rec = new OChildrenModel();
+        rec.EmpNumber = V.SelectedEmpnumber;
+
+        childrenToInsert!.Add(rec);
+        await V.ChildrenGrid!.InsertRow(rec);
+        editMode = true;
+    }
+
+    //-- Reset ----------------
+    private void Reset()
+    {
+        childrenToInsert !.Clear();
+        childrenToUpdate !.Clear();
+    }
+
+    //-- Reset ----------------
+    private void Reset(OChildrenModel rec)
+    {
+        childrenToInsert !.Remove(rec);
+        childrenToUpdate !.Remove(rec);
+    }
+
+    //-- Edit Row ----------------
+    private async Task EditRow(OChildrenModel rec)
+    {
+        editMode = true;
+
+        if (V.ChildrenGrid  != null)
+        {
+            Reset();
+            childrenToUpdate ?.Add(rec);
+
+            recBackup = new OChildrenModel
+            {
+                EmpNumber = rec.EmpNumber,
+                Name = rec.Name,
+                BDay = rec.BDay
+            };
+
+            await V.ChildrenGrid .EditRow(rec);
+        }
+    }
+
+    //-- Delete Row ----------------
+    private async Task DeleteRow(OChildrenModel rec)
+    {
+        if (V.Children == null) return;
+        if (V.ChildrenGrid  == null) return;
+
+        Reset(rec);
+
+        if (V.Children.Contains(rec))
+        {
+            if (rec != null)
+            {
+                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
+                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
+                if (option == true)
+                {
+                    await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+                    V.Children.Remove(rec);
+                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
+                }
+            }
+        }
+        else
+        {
+            V.ChildrenGrid .CancelEditRow(rec);
+        }
+        await V.ChildrenGrid .Reload();
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+    //-- Cancel Edit ----------------
+    private async Task CancelEdit(OChildrenModel rec)
+    {
+        errorMsg = string.Empty;
+        if (V.ChildrenGrid  == null) return;
+
+        bool isNew = childrenToInsert !.Contains(rec);
+
+        Reset(rec);
+        editMode = false;
+
+        if (isNew)
+        {
+            V.Children?.Remove(rec);
+        }
+        else if (recBackup != null)
+        {
+            rec.EmpNumber = recBackup.EmpNumber;
+            rec.Name = recBackup.Name;
+            rec.BDay = recBackup.BDay;
+        }
+
+        V.ChildrenGrid .CancelEditRow(rec);
+        recBackup = null;
+
+        await V.ChildrenGrid .Reload();
+    }
+
+    //-- Save Row ----------------
+    private async Task SaveRow(OChildrenModel rec)
+    {
+        if (V.ChildrenGrid  == null || rec == null) return;
+        if (!SafeToSave(rec))
+        {
+            await V.ChildrenGrid .UpdateRow(rec);
+            return;
+        }
+        try
+        {
+            bool isNew = childrenToInsert !.Contains(rec);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+            bool exists = res != null && res.Count > 0;
+
+            if (exists)
+            {
+                bool isSameAsOriginal = !isNew && recBackup != null 
+                    && recBackup.Name == rec.Name
+                    && recBackup.BDay == rec.BDay;
+
+                if (!isSameAsOriginal)
+                {
+                    ShowError("Duplicate entry", "A record with the same name and birthday already exists.", 5000);
+                    return;
+                }
+            }
+
+            if (isNew)
+            {
+                await _empmas._01(rec, V.pisdb!, V.conn!);
+                V.Children!.Add(rec);
+            }
+            else
+            {
+                 await _empmas._03(rec.EmpNumber, rec.Name, rec.BDay, rec, V.pisdb!, V.conn!);
+            }
+
+            await V.ChildrenGrid.UpdateRow(rec);
+            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            return;
+        }
+
+        recBackup = null;
+        editMode = false;
+        errorMsg = string.Empty;
+    }
+
+
+
+    //-- Safe to Save ----------------
+    private bool SafeToSave(OChildrenModel rec)
+    {
+        if (string.IsNullOrWhiteSpace(rec.Name)) return false;
+        if (rec.BDay == null) return false;
+        return true;
+    }
+
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+      _NotificationService.Notify(new NotificationMessage
+      {
+          Severity = NotificationSeverity.Success,
+          Summary = summary,
+          Detail = detail,
+          Duration = duration
+      });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
+}
+
+
+
+  

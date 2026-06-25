@@ -14,6 +14,6 @@
 
         public string?      Type        { get; set; }
 
-        public int?          IdTrainHdr  { get; set; }
+        public int?         IdTrainHdr  { get; set; } = 0;
     } 
 }

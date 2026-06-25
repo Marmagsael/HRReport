@@ -1,0 +1,137 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications.PisModules.Vars.NonExclusive
+@using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03.F2052_03_Tab2
+
+@inject NotificationService _NotificationService;
+@inject DialogService       _DialogService; 
+
+
+
+<div class="p-2 overflow-auto" style="height:49.5vh;">
+    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Address" />
+    
+    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>    
+        <div class="h-10p"></div>
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="p-2 bordered mb-2 w-100">
+                <input class="btn btn-secondary bg-primary-green w-100p" type="submit" value="Save" />
+            </div>
+        }
+        
+        
+        <RadzenFieldset Text="*****" >
+            <div class="fw-normal">
+
+                <div class="w-100 d-flex p-1">
+                    @* ----- PresAddCountryId (varchar(10))----------*@
+                    <div class="w-20 p-2">Country </div>
+                    <div class="w-40">
+                        <RadzenDropDown TValue="string" @bind-Value=@V.Empmas.CountryCode Data=@V.Countrys TextProperty="Name" ValueProperty="Code" Name="ddCountrys" class="form-control" Style="max-width:400px" />
+                    </div>
+                </div>
+
+        </div>
+        </RadzenFieldset>
+
+        @* **** ******************************************@
+        @* **** Present Address **************************@
+        @* **** ******************************************@
+        <div class="h-25p"></div>
+        <RadzenFieldset Text="Present Address" class="fw-bold">
+            <div class="fw-normal">
+                <_2052_03_Tab2_PHL_PresentAddress ChildAction="ChildAction" V="@V" V03="v2203" />
+            </div>
+        </RadzenFieldset>
+
+
+
+        @* **** ******************************************@
+        @* **** Provincial Address ***********************@
+        @* **** ******************************************@
+        <div class="h-25p"></div>
+        <RadzenFieldset Text="Provincial Address" class="fw-bold">
+            <div class="fw-normal">
+                <_2052_03_Tab2_PHL_ProvincialAddress ChildAction="ChildAction" V="@V" V03="v2203" />
+            </div>
+        </RadzenFieldset>          
+    </RadzenTemplateForm>
+
+
+</div>
+
+@inject IOEmpmasDataAccess _empmas
+
+
+
+@code {
+
+    int? empmasId            = 0; 
+
+    [Parameter]
+    public V2052 V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback    ChildAction     { get; set; }
+
+    V2052_03 v2203 = new();
+
+
+
+    async Task OnSubmit(OEmpmasModel model)
+    {
+        if (model == null) return;
+
+
+        if (await ValidateEmail() == false) return;
+
+        try
+        {
+            await _empmas._03_Address(V.SelectedEmpnumber, model, V.pisdb, V.conn);
+
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Successfully saved",
+                Detail = "Record has been successfully saved.",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to save",
+                Detail = "Something went wrong while saving. Please try again.",
+                Duration = 6000
+            });
+        }
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+    }
+
+    async Task<bool?> ValidateEmail()
+    {
+        V.Action = "ValidateEmail";
+        await ChildAction.InvokeAsync();
+        return V.IsEmailValid;
+    }
+
+
+
+
+
+ 
+}
+
+
+
+
+
+

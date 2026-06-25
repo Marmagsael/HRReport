@@ -1,0 +1,407 @@
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis
+
+@inject NotificationService _NotificationService
+@inject DialogService _DialogService
+
+<div class="msds-modal">
+    <div class="msds-modal-content" style="max-width: 980px;">
+        <div class="modal-content bg-opacity-75">
+
+            <div class="modal-header bg-opacity-75">
+                <h1 class="modal-title fs-5">
+                    @(V.IsNewEntry == true ? "Add New Employee" : "Update Employee")
+                </h1>
+                <button type="button" class="btn-close"
+                        @onclick="@(() => ShowHideModal(false))"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <_2052_01_DataEntry V="@V" ChildAction="ChildActionCatcher" />
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@inject I_00UsersAccess _user;
+@inject IOEmpmasDataAccess _oempmas
+@inject I_10_EmpmasDataAccess _empmas;
+@code {
+
+    [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    string errormsg = string.Empty;
+
+
+    async Task ChildActionCatcher()
+    {
+        if (V == null) return;
+
+        var action = V.Action;
+        V.Action = "";
+        V.ActionRef = string.Empty;
+
+        if (action == "SaveEmpmas") await SaveUpdate();
+        if (action == "HideDataEntry") await ShowHideModal(false);
+        if (action == "CheckIfEmpNoExists") await CheckIfEmpNoExists();
+        if (action == "CheckIfEmailExists") await CheckEmailExists();
+    }
+
+
+    async Task ShowHideModal(bool show)
+    {
+        if (show) return;
+
+        V.ShowDataEntry = false;
+        V.IsNewEntry = false;
+        V.IsEmpNoValid = true;
+        V.IsEmailValid = true;
+        V.EmpmasToEdit = new OEmpmasModel();
+        await ChildAction.InvokeAsync();
+    }
+
+
+    async Task SaveUpdate()
+    {
+        if (await CheckIfEmpNoExists() == false) return;
+        if (await CheckEmailExists() == false) return;
+        if (await CheckIfEmailChangeIsBlocked() == false) return;  
+
+        bool success;
+        try
+        {
+            success = V.IsNewEntry == true ? await InsertEmpmas() : await UpdateEmpmas();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            return;
+        }
+
+        if (success == false) return;
+
+        V.ShowDataEntry = false;
+        await ChildAction.InvokeAsync();
+    }
+
+    async Task<bool> CheckIfEmailChangeIsBlocked()
+    {
+        if (V.IsNewEntry == true) return true;
+
+        if (V.Empmas.UserId == null || V.Empmas.UserId == 0) return true;
+
+        var originalEmail = V.Empmas?.Email?.Trim().ToLower() ?? string.Empty;
+        var newEmail = V.EmpmasToEdit?.Email?.Trim().ToLower() ?? string.Empty;
+
+        if (originalEmail != newEmail)
+        {
+            ShowError(
+                "Email cannot be changed",
+                "This employee is already linked to a system account. Email updates are not allowed once linked."
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    async Task<bool> InsertEmpmas()
+    {
+        try
+        {
+            V.EmpmasToEdit.EmpStat_ = "_";
+            var res = await _oempmas._01(V.EmpmasToEdit, V.pisdb, V.conn);
+            if (res == null || res.EmpNumber == null)
+            {
+                ShowError("Insert failed", "Employee record could not be saved.");
+                return false;
+            }
+
+            V.Empmas = res;
+            V.SelectedEmpnumber = res.EmpNumber;
+
+            await UpdateEmpmasList(res.EmpNumber);   
+
+            var synced = await SyncEmpmasToNewPIS();
+            if (synced == false)
+                return true;
+
+            ShowSuccess("Successfully saved", "Record has been successfully saved.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowError("Error", ex.Message);
+            return false;
+        }
+    }
+
+
+    async Task<bool> UpdateEmpmas()
+    {
+        try
+        {
+            var oldEmpNumber = V.SelectedEmpnumber;   
+
+            var res = await _oempmas._03_EmployeeName(V.SelectedEmpnumber.Trim(), V.EmpmasToEdit, V.pisdb, V.conn);
+            if (res == null || res.EmpNumber == null)
+            {
+                ShowError("Update failed", "Employee record could not be updated.");
+                return false;
+            }
+
+            V.Empmas.EmpLastNm = res.EmpLastNm;
+            V.Empmas.EmpFirstNm = res.EmpFirstNm;
+            V.Empmas.EmpMidNm = res.EmpMidNm;
+            V.Empmas.EmpAlias = res.EmpAlias;
+            V.Empmas.Suffix = res.Suffix;
+            V.Empmas.Email = res.Email;
+            V.Empmas.EmpNumber = res.EmpNumber;
+            V.SelectedEmpnumber = res.EmpNumber;
+
+            await UpdateEmpmasList(oldEmpNumber);  
+
+            var synced = await SyncEmpmasToNewPIS();
+            if (synced == false) return true;
+
+            ShowSuccess("Successfully updated", "Record has been successfully updated.");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowError("Error", ex.Message);
+            return false;
+        }
+    }
+
+
+    async Task<bool> SyncEmpmasToNewPIS()
+    {
+        try
+        {
+            if (await CheckIfEmployeeEmailIsRegistered())
+                await UpsertEmpmasInNewPIS();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ShowError("Sync Error", ex.Message);
+            return false;
+        }
+    }
+
+    async Task<bool> CheckIfEmployeeEmailIsRegistered()
+    {
+        if (string.IsNullOrEmpty(V.Empmas.Email)) return false;
+        if (V.Empmas.UserId > 0) return true;
+
+        var res = await _user._02ByEmail(V.Empmas.Email, V.maindb, V.conn);
+        if (res == null || res.Id == null || res.Id == 0) return false;
+
+        V.Empmas.UserId = res.Id;
+        V.EmpmasToEdit.UserId = res.Id;
+        return true;
+    }
+
+
+
+
+    async Task<bool> CheckIfEmployeeRecIsMigratedOnNewPIS()
+    {
+        if (V.Empmas.UserId == null || V.Empmas.UserId == 0) return false;
+
+        var res = await _empmas._02BySystemId(V.Empmas.UserId, V.newpisdb, V.conn);
+        if (res == null || res.Id == null || res.Id == 0) return false;
+
+        V.Empmas.EmpmasId = res.Id;
+        Console.WriteLine($"Id 1 {V.Empmas.EmpmasId}");
+        return true;
+    }
+
+
+
+
+    async Task UpsertEmpmasInNewPIS()
+    {
+        var empmas = V.OldEmpmasToNewEmpmasMapper(V.Empmas, new EmpmasModel());
+        empmas.SystemId = V.Empmas.UserId;
+
+
+
+        if (await CheckIfEmployeeRecIsMigratedOnNewPIS())
+        {
+
+            // already migrated, has SystemId linked
+            empmas.Id = V.Empmas.EmpmasId;
+            await _empmas._03EmpmasWithSystemId(empmas.Id, empmas, V.newpisdb, V.conn);
+        }
+        else
+        {
+            empmas.Id = V.Empmas.EmpmasId;
+
+            // not migrated yet, check if EmpNumber already exists in new PIS under another record
+            var existing = await _empmas._02Empmas_EmpnumberOwnedByOthers(0, V.Empmas.EmpNumber, V.newpisdb, V.conn);
+            var existingId = existing?.FirstOrDefault()?.Id;
+
+            if (existingId != null && existingId != 0)
+            {
+
+                // exists but no SystemId linked yet
+                V.Empmas.EmpmasId = existingId;
+                await _empmas._03EmpmasWithSystemId(V.Empmas.EmpmasId, empmas, V.newpisdb, V.conn);
+            }
+            else
+            {
+
+                var res = await _empmas._01EmpmasWithSystemId(empmas, V.newpisdb, V.conn);
+                if (res == null || res.Id == null || res.Id == 0) return;
+                V.Empmas.EmpmasId = res.Id;
+            }
+        }
+
+        await _empmas._01EmpmasAddress_EmailOnly(V.Empmas.EmpmasId, V.Empmas.Email, V.newpisdb, V.conn);
+    }
+
+    async Task<bool?> CheckIfEmpNoExists()
+    {
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber))
+        {
+            V.IsEmpNoValid = true;
+            return true;
+        }
+
+        bool shouldCheck = true;
+        if (V.IsNewEntry == false)
+        {
+            shouldCheck = V.SelectedEmpnumber?.Trim() != V.EmpmasToEdit.EmpNumber?.Trim();
+        }
+
+        if (shouldCheck)
+        {
+            try
+            {
+                var result = await _oempmas._02Empmas_EmpnumberOwnedByOthers(V.EmpmasToEdit.EmpNumber, V.pisdb, V.conn);
+
+                if (result?.Any() == true)
+                {
+                    V.IsEmpNoValid = false;
+                }
+                else
+                {
+                    V.IsEmpNoValid = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                ShowError("Unable to validate emp number", "Something went wrong while checking the employee number. Please try again.");
+                V.IsEmpNoValid = false;
+            }
+        }
+        else
+        {
+            V.IsEmpNoValid = true;
+        }
+
+        return V.IsEmpNoValid;
+    }
+
+
+    async Task<bool?> CheckEmailExists()
+    {
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email))
+        {
+            V.IsEmailValid = true;
+            return true;
+        }
+
+        var newEmail = V.EmpmasToEdit.Email.Trim().ToLower();
+        var originalEmail = V.Empmas?.Email?.Trim().ToLower() ?? string.Empty;
+
+        bool shouldCheck = true;
+        if (V.IsNewEntry == false)
+        {
+            shouldCheck = originalEmail != newEmail;
+        }
+
+        if (shouldCheck)
+        {
+            try
+            {
+                var result = await _oempmas._02EmpmasAddress_ByEmailNotTheOwner(V.SelectedEmpnumber, newEmail, V.pisdb, V.conn);
+
+                if (result?.Any() == true)
+                {
+                    V.IsEmailValid = false;
+                }
+                else
+                {
+                    V.IsEmailValid = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+                ShowError("Unable to validate email", "Something went wrong while checking the email. Please try again.");
+                V.IsEmailValid = false;
+            }
+        }
+        else
+        {
+            V.IsEmailValid = true;
+        }
+
+        return V.IsEmailValid;
+    }
+
+
+    async Task UpdateEmpmasList(string oldEmpNumber)
+    {
+        var record = V.EmpmasList?.FirstOrDefault(e => e.EmpNumber == oldEmpNumber);
+
+        if (record == null)
+        {
+            V.EmpmasList?.Insert(0, V.Empmas);
+            StateHasChanged();
+            return;
+        }
+
+        record.EmpLastNm    = V.Empmas.EmpLastNm;
+        record.EmpFirstNm   = V.Empmas.EmpFirstNm;
+        record.EmpMidNm     = V.Empmas.EmpMidNm;
+        record.Suffix       = V.Empmas.Suffix;
+        record.EmpAlias     = V.Empmas.EmpAlias;
+        record.Email        = V.Empmas.Email;
+        record.EmpNumber    = V.Empmas.EmpNumber;   
+        record.UserId       = V.Empmas.UserId;
+
+        StateHasChanged();
+    }
+
+
+    void ShowSuccess(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
+
+    void ShowError(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
+}

@@ -1,5 +1,7 @@
+using Google.Protobuf.WellKnownTypes;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._00_MainPis;
 using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._90_Utils;
 
@@ -118,7 +120,31 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
         return data;    
     }
-    
+
+    public async Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
+    {
+
+        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+                        from {schema}.Empmas e 
+                        where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter
+                        order by e.EmplastNm, e.EmpFirstNm";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter }, conn);
+        return data;
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02SearchName(string? skey, string? schema = "MainPis", string? conn = "MySqlConn")
+    {
+        string? searchKey = $"{skey}%";
+        string? sql = $@"select  e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+                        from {schema}.Empmas e 
+                        where e.EmpLastNm like @SearchKey or e.EmpFirstNm like @SearchKey
+                        order by e.EmplastNm, e.EmpFirstNm";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { SearchKey = searchKey }, conn);
+        return data;
+    }
+
+
     public async Task<List<OEmpmasModel?>?> _02Migrated( string? schema, string? conn)
     {
         var sql = $@"select count(*) as CntNotMigrated from {schema}.Empmas e 
@@ -144,7 +170,57 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }
-    
+
+    public async Task<List<OEmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn)
+    {
+        var sql = $@"SELECT e.empnumber FROM {schema}.Empmas e 
+                   WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))
+                     UNION
+                     SELECT e.empnumber FROM {schema}.empmasarchieved e 
+                   WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data;
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02EmpmasAddress_ByEmailNotTheOwner(string? empnumber, string? email, string? schema, string? conn)
+    {
+        var sql = string.IsNullOrEmpty(empnumber)
+            ? $@"SELECT e.email FROM {schema}.Empmas e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
+             UNION
+             SELECT e.email FROM {schema}.empmasarchieved e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))"
+
+            : $@"SELECT e.email FROM {schema}.Empmas e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
+               AND LOWER(TRIM(e.Empnumber)) != LOWER(TRIM(@Empnumber))
+             UNION
+             SELECT e.email FROM {schema}.empmasarchieved e
+             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
+               AND LOWER(TRIM(e.Empnumber)) != LOWER(TRIM(@Empnumber))";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber, Email = email }, conn);
+        return data;
+    }
+
+
+    public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? maindb,  string? newdb ,string? conn)
+    {
+        var flds = EmpmasFields();
+
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, m.Id UserId, ne.Id EmpmasId 
+                        from {olddb}.Empmas e
+                     left join {olddb}.position    p on p.code = e.position_
+                     left join {olddb}.empstat     s on s.code = e.empstat_                              
+                     left join {olddb}.Client      c on c.ClNumber = e.Client_                              
+                     left join {maindb}.users      m on m.email = e.email                              
+                     left join {newdb}.empmas      ne on ne.SystemId = m.Id                              
+                     where e.Empnumber = @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data;
+    }
+
+
     public async Task<List<OEmpmasModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn)
     {
         var usql = $@"UPDATE {schema}.Empmas SET
@@ -230,10 +306,25 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Email = email }, conn); 
 		return data;
 	}
-	
 
-	
-	public async Task<OEmpmasModel?> _03(int? id,OEmpmasModel empmas, string? schema, string? conn)
+
+    public async Task<OEmpmasModel?>_02MaxEmpnumber( string? schema, string? conn)
+    {
+
+        var sql = $@"SELECT CASE
+                                WHEN a.MaxEmp >= b.MaxEmp THEN a.MaxEmp
+                                ELSE b.MaxEmp
+                            END AS Empnumber
+                        FROM
+                            (SELECT MAX(cast(empnumber as signed)) AS MaxEmp FROM {schema}.empmas) a
+                        CROSS JOIN
+                            (SELECT MAX(cast(empnumber as signed)) AS MaxEmp FROM {schema}.empmasarchieved) b;";
+      
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new {}, conn);
+        return data.FirstOrDefault();
+    }
+
+    public async Task<OEmpmasModel?> _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn)
 	{
 		string sql = $@"Update {schema}.Empmas set 
                                EMPNUMBER = @EMPNUMBER, 
@@ -280,15 +371,178 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                                DRV_LICENSE = @DRV_LICENSE, DRV_EXP = @DRV_EXP, isTaxable = @isTaxable, isconfi = @isconfi, 
                                iswithSSS = @iswithSSS, iswithGSIS = @iswithGSIS, iswithPHIC = @iswithPHIC, iswithPagibig = @iswithPagibig,
                                ismaxsss = @ismaxsss, email = @email, passwd = @passwd, Countrycode = @Countrycode, 
-                               sgcode = @sgcode, dpadate = @dpadate, dpclient = @dpclient where Id = @Id;"; 
+                               sgcode = @sgcode, dpadate = @dpadate, dpclient = @dpclient where Empnumber = @Empnumber;"; 
 		await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
 		
-		sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
-		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+		sql = $@" select  * from {schema}.Empmas x where x.Empnumber = @Empnumber ;";
+		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
 		return data?.FirstOrDefault();
 	}
 
-	public async Task<OEmpmasModel?> _04(int? id, string? schema, string? conn)
+
+    // Header: Employee Name
+   public async Task<OEmpmasModel?> _03_EmployeeName(string selectedEmpnumber, OEmpmasModel empmas, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                    EMPLASTNM  = @EmpLastNm,
+                    EMPFIRSTNM = @EmpFirstNm,
+                    EMPMIDNM   = @EmpMidNm,
+                    SUFFIX     = @Suffix,
+                    EMPALIAS   = @EmpAlias,
+                    EMPNUMBER  = @EmpNumber,
+                    EMAIL      = @Email
+                    WHERE EMPNUMBER = @SelEmpnumber";
+
+        await _sql.ExecuteCmd<dynamic>(sql, new
+        {
+            SelEmpnumber = selectedEmpnumber,
+            empmas.EmpLastNm,
+            empmas.EmpFirstNm,
+            empmas.EmpMidNm,
+            empmas.Suffix,
+            empmas.EmpAlias,
+            empmas.EmpNumber,
+            empmas.Email
+        }, conn);
+
+        sql = $@"SELECT EMPLASTNM, EMPFIRSTNM, EMPMIDNM, SUFFIX, EMPALIAS, EMPNUMBER, EMAIL
+             FROM {schema}.Empmas
+             WHERE Empnumber = @EmpNumber";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { empmas.EmpNumber }, conn);
+        return data?.FirstOrDefault();
+    }
+    // Tab: Personal Data
+    public async Task<OEmpmasModel?> _03_PersonalData(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                    EMPBIRTH = @EMPBIRTH, BIRTHPLACE = @BIRTHPLACE, SEX_ = @SEX_,
+                    CIVSTAT_ = @CIVSTAT_, CITIZEN = @CITIZEN, HEIGHT = @HEIGHT, 
+                    WEIGHT = @WEIGHT, BLOODTYPE = @BLOODTYPE, RELIGION = @RELIGION,
+                    HAIR = @HAIR, EYES = @EYES, MARKS = @MARKS, COMPLEXION = @COMPLEXION,
+                    AGE = @AGE
+                    WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT EMPBIRTH, BIRTHPLACE, SEX_, CIVSTAT_, CITIZEN, HEIGHT, 
+        WEIGHT, BLOODTYPE, RELIGION, HAIR, EYES, MARKS, COMPLEXION, AGE, EMPNUMBER
+        FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<OEmpmasModel?> _03_Address(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                        EMAIL = @EMAIL,
+                        ADDR1 = @ADDR1, MLACODE_ = @MLACODE_, TEL1 = @TEL1,
+                        ADDR2 = @ADDR2, PROCODE_ = @PROCODE_, TEL2 = @TEL2,
+                        CLNAME = @CLNAME, MLANAME = @MLANAME, Countrycode = @Countrycode
+                        WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT  EMAIL, ADDR1, MLACODE_, TEL1, ADDR2, PROCODE_, TEL2, 
+                CLNAME, MLANAME, Countrycode, EMPNUMBER
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<OEmpmasModel?> _03_Deployment(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                    DATEHIRED = @DATEHIRED, POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF
+                    WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT  POSITION_, EMPSTAT_,  
+                if(e.DATEHIRED  < '1000-01-01', null, DATEHIRED  )  as DATEHIRED  ,       
+                if(e.REGREF  < '1000-01-01', null, REGREF  )  as REGREF 
+                FROM {schema}.Empmas e WHERE Empnumber = @Empnumber";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<OEmpmasModel?> _03_Government(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                     SSS = @SSS, TIN = @TIN,  PAGIBIGNO = @PAGIBIGNO,  PHIC = @PHIC, HDMF = @HDMF,
+                     Drv_License = @Drv_License, Drv_Exp =@Drv_Exp, Hdmf =@Hdmf, AcctCode =@AcctCode, 
+                     TAXCODE = @TAXCODE, Bank =@Bank
+                   
+                    WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT  SSS, TIN, PAGIBIGNO, PHIC, HDMF, Drv_License, Drv_Exp, Hdmf, AcctCode,  TAXCODE, Bank, EMPNUMBER
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<OEmpmasModel?> _03_Insurance(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                INSURANCE = @INSURANCE, POLICYNO = @POLICYNO, FACEVALUE = @FACEVALUE,
+                PREMIUM = @PREMIUM, INSEXPIRE = @INSEXPIRE
+                WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE, EMPNUMBER
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<OEmpmasModel?> _03_Education(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                ELLEVEL = @ELLEVEL, HSLEVEL = @HSLEVEL, COLLEGE_ = @COLLEGE_,
+                COURSE = @COURSE, VOLEVEL = @VOLEVEL, VOCOURSE = @VOCOURSE,
+                LANGUAGE = @LANGUAGE, SKILL1 = @SKILL1, SKILL2 = @SKILL2,
+                SKILL3 = @SKILL3, SKILL4 = @SKILL4
+                WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT ELLEVEL, HSLEVEL, COLLEGE_, COURSE, VOLEVEL, VOCOURSE,
+            LANGUAGE, SKILL1, SKILL2, SKILL3, SKILL4, EMPNUMBER
+            FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<OEmpmasModel?> _03_Security(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                    SECLICENSE = @SECLICENSE, LICEXPIRE = @LICEXPIRE,
+                    GUARDEXP = @GUARDEXP, GUARDNOYRS = @GUARDNOYRS,
+                    EXMILITARY = @EXMILITARY, MILITARYNOYR = @MILITARYNOYR,
+                    CSP = @CSP, CPP = @CPP, ROTC = @ROTC,
+                    EXP_NBI = @EXP_NBI, EXP_POLICE = @EXP_POLICE, EXP_PNP = @EXP_PNP,
+                    EXP_BRGY = @EXP_BRGY, EXP_COURT = @EXP_COURT,
+                    EXP_NEURO = @EXP_NEURO, EXP_DRUG = @EXP_DRUG,
+                    BADGENO = @BADGENO, DRV_LICENSE = @DRV_LICENSE, DRV_EXP = @DRV_EXP,
+                    W_BIRTHC = @W_BIRTHC, W_CLOSINGR = @W_CLOSINGR, W_TRNCERT = @W_TRNCERT,
+                    W_PRELIC = @W_PRELIC, W_CERTEMP = @W_CERTEMP, W_MEDEXAM = @W_MEDEXAM
+                    WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT SECLICENSE, LICEXPIRE, GUARDEXP, GUARDNOYRS, EXMILITARY, MILITARYNOYR,
+                    CSP, CPP, ROTC, EXP_NBI, EXP_POLICE, EXP_PNP, EXP_BRGY, EXP_COURT,
+                    EXP_NEURO, EXP_DRUG, BADGENO, DRV_LICENSE, DRV_EXP,
+                    W_BIRTHC, W_CLOSINGR, W_TRNCERT, W_PRELIC, W_CERTEMP, W_MEDEXAM, EMPNUMBER
+                    FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+
+
+    public async Task<OEmpmasModel?> _04(int? id, string? schema, string? conn)
 	{
 		string sql = $@"Delete from {schema}.Empmas where Id = @Id;";
 		// await _sql.ExecuteCmd<dynamic>(sql, new {Id=id},conn);
@@ -469,10 +723,31 @@ public interface IOEmpmasDataAccess
     Task                        _00CreateEmpmasMigration_Marker(string? oPisDb, string? conn);
     Task                        _00MigrateData(string? pisDb, string? oPisDb, string? conn);
     Task<OEmpmasModel?>         _01(OEmpmasModel empmas, string? schema, string? conn);
-	Task<List<OEmpmasModel?>?>  _02(string? empnumber, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn); 
+    Task<List<OEmpmasModel?>?>  _02(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? maindb, string? newdb, string? conn);
+    Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn); 
-	Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn); 
-	
+    Task<List<OEmpmasModel?>?>  _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02Empmas_EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02EmpmasAddress_ByEmailNotTheOwner(string? empnumber, string? email, string? schema, string? conn);
+    Task<OEmpmasModel?>         _02MaxEmpnumber(string? schema, string? conn);
+
+    Task<OEmpmasModel?>         _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn);
+
+    Task<OEmpmasModel?>         _03_EmployeeName(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_PersonalData(string empnumber, OEmpmasModel mempmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_Address(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_Deployment(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_Government(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_Insurance(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_Education(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_Security(string empnumber, OEmpmasModel mempmas, string schema, string conn);
+
+    Task<OEmpmasModel?>         _04(int? id, string? schema, string? conn);
+
+
+
 }
