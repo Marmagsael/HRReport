@@ -54,7 +54,7 @@ public class V2052
     public List<EmpmasRelativesRefModel?>?  RelativesRef        { get; set; } = new();
     public List<OTrainModel?>?              Trainings           { get; set; } = new();
     public List<OReferModel?>?              CharRefs            { get; set; } = new();
-    public List<EmpmasInsuranceModel?>?     Insurances          { get; set; } = new();
+    public OInsuranceaccidentModel?         InsuranceAccident  { get; set; } = new();
 
     public List<OCivstatModel?>?            OCivStats           { get; set; } = new();
     public List<OGenderModel?>?             OGenders            { get; set; } = new();
