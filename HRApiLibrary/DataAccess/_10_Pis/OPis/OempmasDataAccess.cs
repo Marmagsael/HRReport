@@ -420,7 +420,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                     CIVSTAT_ = @CIVSTAT_, CITIZEN = @CITIZEN, HEIGHT = @HEIGHT, 
                     WEIGHT = @WEIGHT, BLOODTYPE = @BLOODTYPE, RELIGION = @RELIGION,
                     HAIR = @HAIR, EYES = @EYES, MARKS = @MARKS, COMPLEXION = @COMPLEXION,
-                    AGE = @AGE
+                    AGE = @AGE, SPOUSE = @SPOUSE, OCCUPATION =@OCCUPATION, NOCHILDREN =@NOCHILDREN
                     WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 

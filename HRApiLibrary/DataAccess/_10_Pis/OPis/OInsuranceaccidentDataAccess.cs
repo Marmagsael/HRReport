@@ -27,11 +27,18 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         }
 
 
-        public async Task<OInsuranceaccidentModel?> _02(int empnumber, string schema, string conn)
+        public async Task<OInsuranceaccidentModel?> _02(string empnumber, string schema, string conn)
         {
-            string sql = $@"select  EMPNUMBER, INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE from {schema}.Insurance_accident where Id = @Id";
+            string sql = $@"select  EMPNUMBER, INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE from {schema}.Insurance_accident where EMPNUMBER = @EMPNUMBER";
             var data = await _sql.FetchData<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
+        }
+
+        public async Task<List<OInsuranceaccidentModel?>?> _02List(string empnumber, string schema, string conn)
+        {
+            string sql = $@"select  EMPNUMBER, INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE from {schema}.Insurance_accident where EMPNUMBER = @EMPNUMBER";
+            var data = await _sql.FetchData<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            return data;
         }
 
         public async Task<OInsuranceaccidentModel?> _03(string empnumber, OInsuranceaccidentModel insurance_accident, string schema, string conn)
@@ -69,7 +76,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 public interface IOInsuranceaccidentDataAccess
 {
     Task<OInsuranceaccidentModel?> _01(OInsuranceaccidentModel insurance_accident, string schema, string conn);
-    Task<OInsuranceaccidentModel?> _02(int id, string schema, string conn);
+    Task<OInsuranceaccidentModel?> _02(string empnumber, string schema, string conn);
+    Task<List<OInsuranceaccidentModel?>?> _02List(string empnumber, string schema, string conn);
     Task<OInsuranceaccidentModel?> _03(string empnumber, OInsuranceaccidentModel insurance_accident, string schema, string conn);
     Task<OInsuranceaccidentModel?> _04(int id, string schema, string conn);
 }
