@@ -204,8 +204,6 @@
         var rec = new OFamilyModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        V.Familys  ??= new();
-        V.Familys .Insert(0, rec);
         familyToInsert!.Add(rec);
         await V.FamilyGrid!.InsertRow(rec);
         editMode = true;
@@ -338,16 +336,14 @@
             if (isNew)
             {
                 await _empmas._01(rec, V.pisdb!, V.conn!);
-                V.Familys = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+                V.Familys!.Add(rec);
             }
             else
             {
                 await _empmas._03(rec.EmpNumber, rec.Name, rec.Relation, rec, V.pisdb!, V.conn!);
-                V.FamilyGrid.CancelEditRow(rec);
             }
 
-            Reset(rec);
-            await V.FamilyGrid.Reload();
+            await V.FamilyGrid.UpdateRow(rec);
             ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)

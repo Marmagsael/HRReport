@@ -30,18 +30,31 @@
 
 
 
-@inject I_10_EmpmasDataAccess _empmas;
+@inject IOInsuranceaccidentDataAccess _empmas
 
 
 @code {
+    string? empnumber = string.Empty;
 
-    int empmasId = 0;
+    [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
 
-    [Parameter]
-    public V2052 V { get; set; } = new();
+    bool isLoading = true;
 
-    [Parameter]
-    public EventCallback ChildAction { get; set; }
+    protected override async Task OnParametersSetAsync()
+    {
+        if (empnumber != V.SelectedEmpnumber)
+        {
+            empnumber = V.SelectedEmpnumber;
+            await Task.Delay(250);
+            V.InsuranceAccident = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+
+
+    
 
 
 
