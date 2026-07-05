@@ -171,7 +171,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
-    public async Task<List<OEmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn)
+    public async Task<List<OEmpmasModel?>?> _02EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn)
     {
         var sql = $@"SELECT e.empnumber FROM {schema}.Empmas e 
                    WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))
@@ -182,7 +182,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
-    public async Task<List<OEmpmasModel?>?> _02EmpmasAddress_ByEmailNotTheOwner(string? empnumber, string? email, string? schema, string? conn)
+    public async Task<List<OEmpmasModel?>?> _02EmailOwnedByOthers(string? empnumber, string? email, string? schema, string? conn)
     {
         var sql = string.IsNullOrEmpty(empnumber)
             ? $@"SELECT e.email FROM {schema}.Empmas e
@@ -731,8 +731,8 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?>  _02Empmas_EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?>  _02EmpmasAddress_ByEmailNotTheOwner(string? empnumber, string? email, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?>  _02EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02EmailOwnedByOthers(string? empnumber, string? email, string? schema, string? conn);
     Task<OEmpmasModel?>         _02MaxEmpnumber(string? schema, string? conn);
 
     Task<OEmpmasModel?>         _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn);

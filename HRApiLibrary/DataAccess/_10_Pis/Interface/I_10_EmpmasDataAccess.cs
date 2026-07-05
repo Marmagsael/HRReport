@@ -91,6 +91,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasInternalModel?> _01EmpmasInternal(EmpmasInternalModel empmas, string? schema, string? conn);
         Task<EmpmasInternalModel?> _02EmpmasInternal(int? id, string? schema, string? conn);
         Task<EmpmasInternalModel?> _03EmpmasInternal(int? id, EmpmasInternalModel empmas, string? schema, string? conn);
+        Task<EmpmasInternalModel?> _03UnlinkSystemId(int? id, string? schema, string? conn);
         Task<EmpmasInternalModel?> _04EmpmasInternal(int? id, string? schema, string? conn);
         Task<EmpmasModel?>                  _02ByUserId(int? id, string? schema = "MainPis", string? conn = "MySqlConn");
         Task<List<EmpmasModel?>?>           _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn");

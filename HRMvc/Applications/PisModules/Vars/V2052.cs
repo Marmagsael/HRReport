@@ -37,6 +37,7 @@ public class V2052
     public string?                       SelectedEmpnumber      { get; set; } = string.Empty;
     public string?                       LastEmpNumber          { get; set; } = string.Empty;
     public bool?                         IsEmailValid           { get; set; } = true;
+    public string?                       EmailDuplicateMessage  { get; set; } = string.Empty;
     public bool?                         IsEmpNoValid           { get; set; } = true;
 
     public OEmpmasModel?                   Empmas               { get; set; } = new();  

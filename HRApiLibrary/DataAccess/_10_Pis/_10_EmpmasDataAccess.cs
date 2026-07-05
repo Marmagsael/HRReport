@@ -47,9 +47,9 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
 
     public async Task<EmpmasModel?> _01EmpmasWithSystemId(EmpmasModel empmas, string? schema, string? conn)
     {
-        Console.WriteLine("Insert");
-        int? id = empmas.Id;
-        if (id != 0) return empmas;
+
+        Console.WriteLine($" save to userpis{empmas.SystemId} {schema} >> {empmas.Id}");
+
 
         string? sql = $@"Insert into {schema}.Empmas 
                     (SystemId,  EmpNumber,  EmpLastNm,  EmpFirstNm,  EmpMidNm,  Suffix,  EmpAlias) values 
@@ -136,6 +136,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
 
     public async Task<EmpmasModel?> _03Empmas(int? id, EmpmasModel empmas, string? schema, string? conn)
     {
+
         string? sql = $@"Update {schema}.Empmas set 
                             EmpNumber   = @EmpNumber, 
                             EmpLastNm   = @EmpLastNm,  
@@ -214,6 +215,18 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
 
         sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
+        var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = id }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<EmpmasInternalModel?> _03UnlinkSystemId(int? id, string? schema, string? conn)
+    {
+        string? sql = $@"Update {schema}.Empmas set 
+                        SystemId = null 
+                      where Id = @Id;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+
+        sql = $@"select * from {schema}.Empmas x where x.Id = @Id;";
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }

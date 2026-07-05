@@ -5,6 +5,9 @@
 
 @inject NotificationService _NotificationService
 @inject DialogService _DialogService
+@inject I_00UsersAccess _user
+@inject IOEmpmasDataAccess _oempmas
+@inject I_10_EmpmasDataAccess _empmas
 
 <div class="msds-modal">
     <div class="msds-modal-content" style="max-width: 980px;">
@@ -29,16 +32,13 @@
     </div>
 </div>
 
-@inject I_00UsersAccess _user;
-@inject IOEmpmasDataAccess _oempmas
-@inject I_10_EmpmasDataAccess _empmas;
 @code {
 
     [Parameter] public V2052 V { get; set; } = new();
     [Parameter] public EventCallback ChildAction { get; set; }
 
-    string errormsg = string.Empty;
-
+    private int? empmasId = 0;
+    private bool isSaving = false;
 
     async Task ChildActionCatcher()
     {
@@ -48,12 +48,11 @@
         V.Action = "";
         V.ActionRef = string.Empty;
 
-        if (action == "SaveEmpmas") await SaveUpdate();
+        if (action == "CheckIfEmpNoExists") await CheckIfEmpNoExistsOnSecpis();
+        if (action == "CheckIfEmailExists") await CheckIfEmpEmailExistsOnSecpis();
+        if (action == "SaveEmpmas") await SaveEmpmas();
         if (action == "HideDataEntry") await ShowHideModal(false);
-        if (action == "CheckIfEmpNoExists") await CheckIfEmpNoExists();
-        if (action == "CheckIfEmailExists") await CheckEmailExists();
     }
-
 
     async Task ShowHideModal(bool show)
     {
@@ -68,254 +67,134 @@
     }
 
 
-    async Task SaveUpdate()
+    // Flow:
+    // 1. Validate emp number (Secpis) - block save kung existing na (or bagong entry lang).
+    // 2. Kung may email:
+    //      a. Validate email (Secpis) - block kung existing na.
+    //      b. Check main.users kung existing ang email -> kunin ang UserId (bagong SystemId).
+    //         Hindi ito dapat i-block kung walang match - "not yet registered" note lang.
+    //      c. Check kung naa-assign na ang SystemId na iyon sa ibang empmas record sa UserPIS
+    //         - notify at stop kung ganon.
+    // 3. Save/update ang record sa Secpis.
+    // 4. Unlink ang dating SystemId (UserPIS) kung:
+    //      - wala nang email ngayon (dapat unlinked),
+    //      - may email pero ibang user na ang bagong link.
+    // 5. Kung may email, i-link/i-update ang record sa UserPIS gamit ang bagong SystemId,
+    //    saka i-save ang email address.
+    // 6. Finalize ang UserId + list
+    async Task SaveEmpmas()
     {
-        if (await CheckIfEmpNoExists() == false) return;
-        if (await CheckEmailExists() == false) return;
-        if (await CheckIfEmailChangeIsBlocked() == false) return;  
+        if (isSaving) return;
+        isSaving = true;
 
-        bool success;
         try
         {
-            success = V.IsNewEntry == true ? await InsertEmpmas() : await UpdateEmpmas();
+            V.IsEmpNoValid = true;
+            V.IsEmailValid = true;
+            empmasId = 0; 
+
+            var originalEmpNumber = V.Empmas?.EmpNumber;
+            var oldUserId = V.Empmas?.UserId;
+            var hasEmail = !string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email);
+
+            // Step 1
+            if (await CheckIfEmpNoExistsOnSecpis() == false) return;
+
+            if (hasEmail)
+            {
+                if (await CheckIfEmpEmailExistsOnSecpis() == false) return;
+                if (await CheckIfEmailExistOnMain() == true)
+                {
+                    if (await CheckIfUserExistOnUserPIS() == false) return;
+                }
+            }
+
+            // Step 3
+            if (await SaveEmpmasToSecpis() == false) return;
+
+            // Step 4
+            bool willRelink = hasEmail && oldUserId != V.EmpmasToEdit.UserId;
+            if (!hasEmail || willRelink)
+            {
+                if (await UnlinkUserPisAccount(oldUserId) == false) return;
+
+                if (!hasEmail)
+                {
+                    V.EmpmasToEdit.UserId = null;
+                }
+            }
+
+            // Step 5
+            if (hasEmail && V.EmpmasToEdit.UserId > 0)
+            {
+                if (await SaveEmpmasToNewPis() == false) return;
+                if (await SaveEmailToNewPis() == false) return;
+            }
+
+            // Step 6:
+            await FinalizeEmpmasState(hasEmail, originalEmpNumber);
+
+            ShowSuccess(
+                V.IsNewEntry == true ? "Successfully saved" : "Successfully updated",
+                "Employee record has been saved.");
+
+            await ShowHideModal(false);
+            V.SelectedEmpnumber = V.Empmas.EmpNumber;
+            V.Action = "SelectEmpmas";
+            await ChildAction.InvokeAsync();
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+
+    bool IsEmailChanged()
+    {
+        var newEmail = V.EmpmasToEdit.Email?.Trim().ToLower() ?? string.Empty;
+        var originalEmail = V.Empmas?.Email?.Trim().ToLower() ?? string.Empty;
+        return V.IsNewEntry == true || originalEmail != newEmail;
+    }
+
+
+    async Task<bool> CheckIfEmpNoExistsOnSecpis()
+    {
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber))
+        {
+            V.IsEmpNoValid = false;
+            ShowError("Employee number required", "Please enter an employee number.");
+            return false;
+        }
+
+        if (V.IsNewEntry == false)
+        {
+            V.IsEmpNoValid = true;
+            return true;
+        }
+
+        try
+        {
+            var res = await _oempmas._02EmpnumberOwnedByOthers(V.EmpmasToEdit.EmpNumber, V.pisdb, V.conn);
+            bool isExist = res != null && res.Any();
+            V.IsEmpNoValid = !isExist;
+
+            if (isExist)
+            {
+                ShowError("Duplicate employee number", $"Employee number {V.EmpmasToEdit.EmpNumber} already exists.");
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
-            return;
+            ShowError("Unable to validate employee number", "Something went wrong while checking the employee number. Please try again.");
+            V.IsEmpNoValid = false;
         }
 
-        if (success == false) return;
-
-        V.ShowDataEntry = false;
-        await ChildAction.InvokeAsync();
+        return V.IsEmpNoValid ?? false;
     }
 
-    async Task<bool> CheckIfEmailChangeIsBlocked()
-    {
-        if (V.IsNewEntry == true) return true;
-
-        if (V.Empmas.UserId == null || V.Empmas.UserId == 0) return true;
-
-        var originalEmail = V.Empmas?.Email?.Trim().ToLower() ?? string.Empty;
-        var newEmail = V.EmpmasToEdit?.Email?.Trim().ToLower() ?? string.Empty;
-
-        if (originalEmail != newEmail)
-        {
-            ShowError(
-                "Email cannot be changed",
-                "This employee is already linked to a system account. Email updates are not allowed once linked."
-            );
-            return false;
-        }
-
-        return true;
-    }
-
-    async Task<bool> InsertEmpmas()
-    {
-        try
-        {
-            V.EmpmasToEdit.EmpStat_ = "_";
-            var res = await _oempmas._01(V.EmpmasToEdit, V.pisdb, V.conn);
-            if (res == null || res.EmpNumber == null)
-            {
-                ShowError("Insert failed", "Employee record could not be saved.");
-                return false;
-            }
-
-            V.Empmas = res;
-            V.SelectedEmpnumber = res.EmpNumber;
-
-            await UpdateEmpmasList(res.EmpNumber);   
-
-            var synced = await SyncEmpmasToNewPIS();
-            if (synced == false)
-                return true;
-
-            ShowSuccess("Successfully saved", "Record has been successfully saved.");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            ShowError("Error", ex.Message);
-            return false;
-        }
-    }
-
-
-    async Task<bool> UpdateEmpmas()
-    {
-        try
-        {
-            var oldEmpNumber = V.SelectedEmpnumber;   
-
-            var res = await _oempmas._03_EmployeeName(V.SelectedEmpnumber.Trim(), V.EmpmasToEdit, V.pisdb, V.conn);
-            if (res == null || res.EmpNumber == null)
-            {
-                ShowError("Update failed", "Employee record could not be updated.");
-                return false;
-            }
-
-            V.Empmas.EmpLastNm = res.EmpLastNm;
-            V.Empmas.EmpFirstNm = res.EmpFirstNm;
-            V.Empmas.EmpMidNm = res.EmpMidNm;
-            V.Empmas.EmpAlias = res.EmpAlias;
-            V.Empmas.Suffix = res.Suffix;
-            V.Empmas.Email = res.Email;
-            V.Empmas.EmpNumber = res.EmpNumber;
-            V.SelectedEmpnumber = res.EmpNumber;
-
-            await UpdateEmpmasList(oldEmpNumber);  
-
-            var synced = await SyncEmpmasToNewPIS();
-            if (synced == false) return true;
-
-            ShowSuccess("Successfully updated", "Record has been successfully updated.");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            ShowError("Error", ex.Message);
-            return false;
-        }
-    }
-
-
-    async Task<bool> SyncEmpmasToNewPIS()
-    {
-        try
-        {
-            if (await CheckIfEmployeeEmailIsRegistered())
-                await UpsertEmpmasInNewPIS();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            ShowError("Sync Error", ex.Message);
-            return false;
-        }
-    }
-
-    async Task<bool> CheckIfEmployeeEmailIsRegistered()
-    {
-        if (string.IsNullOrEmpty(V.Empmas.Email)) return false;
-        if (V.Empmas.UserId > 0) return true;
-
-        var res = await _user._02ByEmail(V.Empmas.Email, V.maindb, V.conn);
-        if (res == null || res.Id == null || res.Id == 0) return false;
-
-        V.Empmas.UserId = res.Id;
-        V.EmpmasToEdit.UserId = res.Id;
-        return true;
-    }
-
-
-
-
-    async Task<bool> CheckIfEmployeeRecIsMigratedOnNewPIS()
-    {
-        if (V.Empmas.UserId == null || V.Empmas.UserId == 0) return false;
-
-        var res = await _empmas._02BySystemId(V.Empmas.UserId, V.newpisdb, V.conn);
-        if (res == null || res.Id == null || res.Id == 0) return false;
-
-        V.Empmas.EmpmasId = res.Id;
-        Console.WriteLine($"Id 1 {V.Empmas.EmpmasId}");
-        return true;
-    }
-
-
-
-
-    async Task UpsertEmpmasInNewPIS()
-    {
-        var empmas = V.OldEmpmasToNewEmpmasMapper(V.Empmas, new EmpmasModel());
-        empmas.SystemId = V.Empmas.UserId;
-
-
-
-        if (await CheckIfEmployeeRecIsMigratedOnNewPIS())
-        {
-
-            // already migrated, has SystemId linked
-            empmas.Id = V.Empmas.EmpmasId;
-            await _empmas._03EmpmasWithSystemId(empmas.Id, empmas, V.newpisdb, V.conn);
-        }
-        else
-        {
-            empmas.Id = V.Empmas.EmpmasId;
-
-            // not migrated yet, check if EmpNumber already exists in new PIS under another record
-            var existing = await _empmas._02Empmas_EmpnumberOwnedByOthers(0, V.Empmas.EmpNumber, V.newpisdb, V.conn);
-            var existingId = existing?.FirstOrDefault()?.Id;
-
-            if (existingId != null && existingId != 0)
-            {
-
-                // exists but no SystemId linked yet
-                V.Empmas.EmpmasId = existingId;
-                await _empmas._03EmpmasWithSystemId(V.Empmas.EmpmasId, empmas, V.newpisdb, V.conn);
-            }
-            else
-            {
-
-                var res = await _empmas._01EmpmasWithSystemId(empmas, V.newpisdb, V.conn);
-                if (res == null || res.Id == null || res.Id == 0) return;
-                V.Empmas.EmpmasId = res.Id;
-            }
-        }
-
-        await _empmas._01EmpmasAddress_EmailOnly(V.Empmas.EmpmasId, V.Empmas.Email, V.newpisdb, V.conn);
-    }
-
-    async Task<bool?> CheckIfEmpNoExists()
-    {
-        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber))
-        {
-            V.IsEmpNoValid = true;
-            return true;
-        }
-
-        bool shouldCheck = true;
-        if (V.IsNewEntry == false)
-        {
-            shouldCheck = V.SelectedEmpnumber?.Trim() != V.EmpmasToEdit.EmpNumber?.Trim();
-        }
-
-        if (shouldCheck)
-        {
-            try
-            {
-                var result = await _oempmas._02Empmas_EmpnumberOwnedByOthers(V.EmpmasToEdit.EmpNumber, V.pisdb, V.conn);
-
-                if (result?.Any() == true)
-                {
-                    V.IsEmpNoValid = false;
-                }
-                else
-                {
-                    V.IsEmpNoValid = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                ShowError("Unable to validate emp number", "Something went wrong while checking the employee number. Please try again.");
-                V.IsEmpNoValid = false;
-            }
-        }
-        else
-        {
-            V.IsEmpNoValid = true;
-        }
-
-        return V.IsEmpNoValid;
-    }
-
-
-    async Task<bool?> CheckEmailExists()
+    async Task<bool> CheckIfEmpEmailExistsOnSecpis()
     {
         if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email))
         {
@@ -323,67 +202,266 @@
             return true;
         }
 
-        var newEmail = V.EmpmasToEdit.Email.Trim().ToLower();
-        var originalEmail = V.Empmas?.Email?.Trim().ToLower() ?? string.Empty;
-
-        bool shouldCheck = true;
-        if (V.IsNewEntry == false)
-        {
-            shouldCheck = originalEmail != newEmail;
-        }
-
-        if (shouldCheck)
-        {
-            try
-            {
-                var result = await _oempmas._02EmpmasAddress_ByEmailNotTheOwner(V.SelectedEmpnumber, newEmail, V.pisdb, V.conn);
-
-                if (result?.Any() == true)
-                {
-                    V.IsEmailValid = false;
-                }
-                else
-                {
-                    V.IsEmailValid = true;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                ShowError("Unable to validate email", "Something went wrong while checking the email. Please try again.");
-                V.IsEmailValid = false;
-            }
-        }
-        else
+        // Only re-check against other records if the email actually changed or this is a new entry
+        if (!IsEmailChanged())
         {
             V.IsEmailValid = true;
+            return true;
         }
 
-        return V.IsEmailValid;
+        var newEmail = V.EmpmasToEdit.Email.Trim().ToLower();
+
+        try
+        {
+            var res = await _oempmas._02EmailOwnedByOthers(V.Empmas?.EmpNumber, newEmail, V.pisdb, V.conn);
+            bool isExist = res != null && res.Any();
+            V.IsEmailValid = !isExist;
+
+            if (isExist)
+            {
+                V.EmailDuplicateMessage = $"Email {V.EmpmasToEdit.Email} already exists.";
+                ShowError("Duplicate email", V.EmailDuplicateMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to validate email", "Something went wrong while checking the email. Please try again.");
+            V.IsEmailValid = false;
+        }
+
+        return V.IsEmailValid ?? false;
     }
 
 
-    async Task UpdateEmpmasList(string oldEmpNumber)
+
+    async Task<bool> CheckIfEmailExistOnMain()
     {
-        var record = V.EmpmasList?.FirstOrDefault(e => e.EmpNumber == oldEmpNumber);
+        try
+        {
+            var res = await _user._02ByEmail(V.EmpmasToEdit.Email, V.maindb, V.conn);
+            bool isExist = res != null && res.Id != null && res.Id > 0;
+
+            if (isExist)
+            {
+                V.EmpmasToEdit.UserId = res.Id;
+            }
+            else
+            {
+                V.EmpmasToEdit.UserId = null;
+                ShowInfo(
+                    "Not yet registered",
+                    $"{V.EmpmasToEdit.Email} has not been registered as a system user yet. You may proceed, or link the account later.");
+            }
+
+            return true; 
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while checking the account. Please try again.");
+            return false; 
+        }
+    }
+
+    async Task<bool> CheckIfUserExistOnUserPIS()
+    {
+        empmasId = 0;
+        try
+        {
+            // 1. Check by SystemId/UserId - baka may existing record na naka-link na sa ibang tao
+            if (V.EmpmasToEdit.UserId != null && V.EmpmasToEdit.UserId > 0)
+            {
+                var res = await _empmas._02BySystemId(V.EmpmasToEdit.UserId, V.newpisdb, V.conn);
+                if (res != null && res.Id > 0)
+                {
+                    if (res.EmpNumber != V.EmpmasToEdit.EmpNumber)
+                    {
+                        // Naka-link na sa ibang tao — block.
+                        V.IsEmailValid = false;
+                        V.EmailDuplicateMessage =
+                            $"Email address is already assigned to {res.EmpFirstNm?.Trim()} {res.EmpLastNm?.Trim()}. " +
+                            "Please remove the current assignment before proceeding.";
+                        return false;
+                    }
+
+                    // Same emp number - existing link, reuse the record for update.
+                    empmasId = res.Id;
+                    return true;
+                }
+            }
+
+            // 2. Wala pang SystemId link, pero baka existing na ang EmpNumber sa newpis
+            //    under a different, unlinked record.
+            var existing = await _empmas._02Empmas_EmpnumberOwnedByOthers(0, V.EmpmasToEdit.EmpNumber, V.newpisdb, V.conn);
+            var existingId = existing?.FirstOrDefault()?.Id;
+
+            if (existingId != null && existingId != 0)
+            {
+                empmasId = existingId.Value;
+            }
+
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to validate email", "Something went wrong while checking the email. Please try again.");
+            return false;
+        }
+    }
+
+
+
+    async Task<bool> SaveEmpmasToSecpis()
+    {
+
+        if (V.IsEmailValid == false && V.IsEmpNoValid == false) return false;
+        try
+        {
+            var res = V.IsNewEntry == true
+                ? await _oempmas._01(V.EmpmasToEdit, V.pisdb, V.conn)
+                : await _oempmas._03_EmployeeName(V.EmpmasToEdit.EmpNumber, V.EmpmasToEdit, V.pisdb, V.conn);
+
+            if (res == null || string.IsNullOrWhiteSpace(res.EmpNumber))
+            {
+                ShowError("Unable to save", "Employee record could not be saved.");
+                return false;
+            }
+
+            V.Empmas = res;
+            V.SelectedEmpnumber = res.EmpNumber;
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while saving. Please try again.");
+            return false;
+        }
+    }
+
+
+    async Task<bool> SaveEmpmasToNewPis()
+    {
+        var empmas = V.OldEmpmasToNewEmpmasMapper(V.Empmas, new EmpmasModel());
+        empmas.SystemId = V.EmpmasToEdit.UserId;
+
+        try
+        {
+            if (empmasId == 0)
+            {
+
+                var res = await _empmas._01EmpmasWithSystemId(empmas, V.newpisdb, V.conn);
+                if (res == null || res.Id == null || res.Id == 0)
+                {
+                    ShowError("Unable to save", "Employee record could not be saved to User PIS.");
+                    return false;
+                }
+                empmasId = res.Id;
+            }
+            else
+            {
+                empmas.Id = empmasId;
+                var res = await _empmas._03EmpmasWithSystemId(empmasId, empmas, V.newpisdb, V.conn);
+                if (res == null || res.Id == null || res.Id == 0)
+                {
+                    ShowError("Unable to save", "Employee record could not be updated in User PIS.");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while saving to UserPIS. Please try again.");
+            return false;
+        }
+    }
+
+    async Task<bool> SaveEmailToNewPis()
+    {
+        try
+        {
+            var res = await _empmas._01EmpmasAddress_EmailOnly(empmasId, V.EmpmasToEdit.Email, V.newpisdb, V.conn);
+
+            if (res == null)
+            {
+                ShowError("Unable to save", "Employee email could not be saved to User PIS.");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while saving to UserPIS. Please try again.");
+            return false;
+        }
+    }
+
+    
+    async Task<bool> UnlinkUserPisAccount(int? userId)
+    {
+        if (userId == null || userId == 0) return true;
+        try
+        {
+            var res = await _empmas._02BySystemId(userId, V.newpisdb, V.conn);
+            if (res == null || res.Id == null || res.Id == 0) return true;
+
+            var success = await _empmas._03UnlinkSystemId(res.Id, V.newpisdb, V.conn);
+
+            if (success == null || (success.SystemId != null && success.SystemId > 0))
+            {
+                ShowError("Unable to save", "Failed to unlink the employee account. Please try again.");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to save", "Something went wrong while unlinking the account. Please try again.");
+            return false;
+        }
+    }
+
+
+    async Task FinalizeEmpmasState(bool hasEmail, string? originalEmpNumber)
+    {
+        V.Empmas.UserId = hasEmail ? V.EmpmasToEdit.UserId : null;
+        await UpdateEmpmasList(originalEmpNumber ?? V.Empmas.EmpNumber);
+    }
+
+
+    Task UpdateEmpmasList(string lookupEmpNumber)
+    {
+        var record = V.EmpmasList?.FirstOrDefault(e => e.EmpNumber == lookupEmpNumber);
 
         if (record == null)
         {
             V.EmpmasList?.Insert(0, V.Empmas);
             StateHasChanged();
-            return;
+            return Task.CompletedTask;
         }
 
-        record.EmpLastNm    = V.Empmas.EmpLastNm;
-        record.EmpFirstNm   = V.Empmas.EmpFirstNm;
-        record.EmpMidNm     = V.Empmas.EmpMidNm;
-        record.Suffix       = V.Empmas.Suffix;
-        record.EmpAlias     = V.Empmas.EmpAlias;
-        record.Email        = V.Empmas.Email;
-        record.EmpNumber    = V.Empmas.EmpNumber;   
-        record.UserId       = V.Empmas.UserId;
+        record.EmpLastNm = V.Empmas.EmpLastNm;
+        record.EmpFirstNm = V.Empmas.EmpFirstNm;
+        record.EmpMidNm = V.Empmas.EmpMidNm;
+        record.Suffix = V.Empmas.Suffix;
+        record.EmpAlias = V.Empmas.EmpAlias;
+        record.Email = V.Empmas.Email;
+        record.EmpNumber = V.Empmas.EmpNumber;
+        record.UserId = V.Empmas.UserId;
 
         StateHasChanged();
+        return Task.CompletedTask;
     }
 
 
@@ -391,6 +469,15 @@
         _NotificationService.Notify(new NotificationMessage
         {
             Severity = NotificationSeverity.Success,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
+
+    void ShowInfo(string summary, string detail, int duration = 5000) =>
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Info,
             Summary = summary,
             Detail = detail,
             Duration = duration

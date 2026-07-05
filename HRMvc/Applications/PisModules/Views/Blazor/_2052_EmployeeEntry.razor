@@ -20,7 +20,7 @@
 
     <div class="p-2" style="flex:1; overflow:hidden;">
         <div class="d-flex g-3" style="width:100%; height:100%;">
-            <div class="pe-1 hide-scroll" style="width:28%; min-width:0; height:100%; overflow-y:auto; overflow-x:hidden;">
+            <div class="pe-1 hide-scroll" style="width:28%; min-width:0; height:100%; overflow-y:hidden; overflow-x:hidden;">
                 <_2052_02_EmpList V="@v" ChildAction="ChildAction" />
             </div>
             <div class="ps-1 pe-2 hide-scroll" style="width:72%; min-width:0; height:100%; overflow-y:auto; overflow-x:hidden;">
@@ -50,21 +50,31 @@
     {
         if (Uc == null) return;
 
-        v.maindb    = Uc.SchemaMain;
-        v.pisdb     = Uc.OpisDb;
-        v.newpisdb  = Uc.SchemaUserPis;
-        v.paydb     = Uc.OpayDb;
-        v.conn      = Uc.Conn;
-        v.userid    = Uc.UserId;
-        v.defcoid   = int.Parse(Uc.DefCompanyId ?? "0");
+        v.maindb        = Uc.SchemaMain;
+        v.pisdb         = Uc.OpisDb;
+        v.newpisdb      = Uc.SchemaUserPis;
+        v.paydb         = Uc.OpayDb;
+        v.conn          = Uc.Conn;
+        v.userid        = Uc.UserId;
+        v.defcoid       = int.Parse(Uc.DefCompanyId ?? "0");
 
         if (v.conn == null || v.pisdb == null || v.paydb == null) return;
 
-        v.EmpmasList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
-        await LoadDropdownValues();
+        try
+        {
+            v.EmpmasList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
+            await LoadDropdownValues();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError(
+                "Unable to load page",
+                "Something went wrong while loading the employee page. Please refresh or contact your system administrator.",
+                6000
+            );
+        }
     }
-
-
 
     async Task LoadDropdownValues()
     {
@@ -85,8 +95,6 @@
             .ToList();
     }
 
-
-
     async Task ChildAction()
     {
         if (v == null) return;
@@ -94,13 +102,10 @@
         v.ActionRef = string.Empty;
 
         if (v.Action == "SelectEmpmas") await SelectEmpmas();
-        if (v.Action == "SplitHeight") SplitHeight(v.Empmas.Height); 
-
+        if (v.Action == "SplitHeight") SplitHeight(v.EmpmasToEdit.Height);
 
         v.Action = "";
     }
-
-
 
     async Task SelectEmpmas()
     {
@@ -113,66 +118,73 @@
 
             if (emp != null)
             {
-                v.IsNewEntry = false;
-                v.Empmas = emp;
-                v.EmpmasToEdit = emp;
-                SplitHeight(emp.Height);
+                v.IsNewEntry    = false;
+                v.Empmas        = emp;
+                v.EmpmasToEdit  = MapEmpmas(emp);
+
+                SplitHeight(v.EmpmasToEdit.Height);
             }
             else
             {
-                v.IsNewEntry    = true;
-                v.Empmas        = new OEmpmasModel();
-                ClearFields();
+                v.IsNewEntry = true;
+                v.Empmas = new OEmpmasModel();
+
+                v.EmpmasToEdit = new OEmpmasModel();
+
+                SplitHeight(null);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
             ShowError(
                 "Unable to load data",
                 "Something went wrong while loading employee information. Please try again or contact your system administrator.",
                 6000
             );
-            throw;
         }
     }
 
+   
+    static OEmpmasModel MapEmpmas(OEmpmasModel source)
+    {
+        var clone = new OEmpmasModel();
 
+        clone.EmpmasId      = source.EmpmasId;
+        clone.EmpNumber     = source.EmpNumber;
+        clone.UserId        = source.UserId;
+        clone.EmpLastNm     = source.EmpLastNm;
+        clone.EmpFirstNm    = source.EmpFirstNm;
+        clone.EmpMidNm      = source.EmpMidNm;
+        clone.EmpAlias      = source.EmpAlias;
+        clone.Suffix        = source.Suffix;
+        clone.Email         = source.Email;
+        clone.Height        = source.Height;
+        clone.HeightInches  = source.HeightInches;
+
+        return clone;
+    }
 
     private void SplitHeight(double? height)
     {
+        // FIX: reads/writes EmpmasToEdit (the form-bound, editable copy)
+        // instead of Empmas (the "before" snapshot). This only worked
+        // previously because both fields aliased the same object.
         if (height.HasValue)
         {
             double h = height.Value;
             double feet = Math.Truncate(h);
             double inchesPart = Math.Round((h - feet) * 100, MidpointRounding.AwayFromZero);
 
-            v.Empmas.Height = feet;
-            v.Empmas.HeightInches = inchesPart;
+            v.EmpmasToEdit.Height = feet;
+            v.EmpmasToEdit.HeightInches = inchesPart;
         }
         else
         {
-            v.Empmas.Height = null;
-            v.Empmas.HeightInches = null;
+            v.EmpmasToEdit.Height = null;
+            v.EmpmasToEdit.HeightInches = null;
         }
     }
-
-   
-
-
-
-    void ClearFields()
-    {
-        v.EmpmasToEdit.UserId = 0;
-        v.EmpmasToEdit.EmpmasId = 0;
-        v.EmpmasToEdit.EmpLastNm = string.Empty;
-        v.EmpmasToEdit.EmpFirstNm = string.Empty;
-        v.EmpmasToEdit.EmpMidNm = string.Empty;
-        v.EmpmasToEdit.EmpAlias = string.Empty;
-        v.EmpmasToEdit.Suffix = string.Empty;
-        v.EmpmasToEdit.Email = string.Empty;
-    }
-
-
 
     void ShowError(string summary, string detail, int duration = 5000)
     {
@@ -188,43 +200,35 @@
 
 
 <style>
-    .emp-entry  .rz-textbox,
-    .emp-entry  .rz-textarea,
-    .emp-entry  .rz-dropdown .rz-dropdown-label,
-    .emp-entry  .rz-calendar input {
+    .emp-entry .rz-textbox,
+    .emp-entry .rz-textarea,
+    .emp-entry .rz-dropdown .rz-dropdown-label,
+    .emp-entry .rz-calendar input {
         font-size: 0.875rem !important;
     }
 
-    .emp-entry  .rz-tabview-title {
+    .emp-entry .rz-tabview-title {
         font-size: 0.8rem !important;
     }
+
     .emp-entry .page-header {
-        margin-inline: 0 !important; 
+        margin-inline: 0 !important;
     }
 
-   .emp-entry .page-header h1 {
-        padding-left: 0;
-        padding: 1rem;
-        padding-bottom:0;
-    }
+        .emp-entry .page-header h1 {
+            padding-left: 0;
+            padding: 1rem;
+            padding-bottom: 0;
+        }
 
-    /* .emp-entry .hide-scroll::-webkit-scrollbar {
-        display: none;
-    }
 
-    .emp-entry .hide-scroll {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    } */
 
-    .emp-entry  .sticky-tabs .rz-tabview-nav {
+    .emp-entry .sticky-tabs .rz-tabview-nav {
         position: sticky;
         top: 0;
         z-index: 10;
         background: #fff;
         transition: box-shadow 0.15s ease;
     }
-
-  
 
 </style>
