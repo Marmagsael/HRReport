@@ -68,20 +68,24 @@
 
 
     // Flow:
-    // 1. Validate emp number (Secpis) - block save kung existing na (or bagong entry lang).
+    // 1. I-check kung available yung employee number - block kung existing na.
+    //    (For new entry lang ito nag-a-apply, dahil naka-disable na ang empno field pag edit.)
     // 2. Kung may email:
-    //      a. Validate email (Secpis) - block kung existing na.
-    //      b. Check main.users kung existing ang email -> kunin ang UserId (bagong SystemId).
-    //         Hindi ito dapat i-block kung walang match - "not yet registered" note lang.
-    //      c. Check kung naa-assign na ang SystemId na iyon sa ibang empmas record sa UserPIS
-    //         - notify at stop kung ganon.
-    // 3. Save/update ang record sa Secpis.
-    // 4. Unlink ang dating SystemId (UserPIS) kung:
-    //      - wala nang email ngayon (dapat unlinked),
-    //      - may email pero ibang user na ang bagong link.
-    // 5. Kung may email, i-link/i-update ang record sa UserPIS gamit ang bagong SystemId,
-    //    saka i-save ang email address.
-    // 6. Finalize ang UserId + list
+    //      a. I-check kung may ibang employee na gumagamit ng same email - block kung meron.
+    //      b. Kung false yung sa (2.a) - i-check kung existing yung email sa main.users.
+    //         Kung hindi existing, i-notify si user na "not yet registered" yung email
+    //         (hindi ito i-block, tuloy pa rin ang save).
+    //      c. Kung existing sa main.users ang email, i-check kung hindi pa naka-assign
+    //         yung SystemId na iyon sa ibang employee record sa UserPIS
+    //         (check by SystemId, tapos i-compare ang empnumber).
+    //         Kung naka-assign na sa iba, i-block at sabihin kung kaninong account na yun.
+    // 3. I-save/update yung employee info sa Secpis.
+    // 4. Kung kailangan mag-unlink sa UserPIS - nangyayari ito kung:
+    //      - wala nang email ngayon, o
+    //      - binago ang email.
+    //    I-unlink muna ang dating SystemId sa UserPIS bago mag-proceed sa Step 5.
+    // 5. Kung may email at may UserId, i-link/i-save yung record sa UserPIS
+    //    gamit ang bagong SystemId, saka i-save ang email address doon.
     async Task SaveEmpmas()
     {
         if (isSaving) return;
@@ -451,14 +455,14 @@
             return Task.CompletedTask;
         }
 
-        record.EmpLastNm = V.Empmas.EmpLastNm;
-        record.EmpFirstNm = V.Empmas.EmpFirstNm;
-        record.EmpMidNm = V.Empmas.EmpMidNm;
-        record.Suffix = V.Empmas.Suffix;
-        record.EmpAlias = V.Empmas.EmpAlias;
-        record.Email = V.Empmas.Email;
-        record.EmpNumber = V.Empmas.EmpNumber;
-        record.UserId = V.Empmas.UserId;
+        record.EmpLastNm    = V.Empmas.EmpLastNm;
+        record.EmpFirstNm   = V.Empmas.EmpFirstNm;
+        record.EmpMidNm     = V.Empmas.EmpMidNm;
+        record.Suffix       = V.Empmas.Suffix;
+        record.EmpAlias     = V.Empmas.EmpAlias;
+        record.Email        = V.Empmas.Email;
+        record.EmpNumber    = V.Empmas.EmpNumber;
+        record.UserId       = V.Empmas.UserId;
 
         StateHasChanged();
         return Task.CompletedTask;
