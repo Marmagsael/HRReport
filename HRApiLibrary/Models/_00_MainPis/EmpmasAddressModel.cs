@@ -38,4 +38,7 @@ public class EmpmasAddressModel
     public string?          EmailAdd1               { get; set; }
     public string?          CellNo                  { get; set; }
     public string?          CellNo1                 { get; set; }
+
+    //----------------------------------------------------------
+
 }

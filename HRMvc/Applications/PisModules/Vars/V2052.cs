@@ -39,7 +39,11 @@ public class V2052
     public bool?                         IsEmailValid           { get; set; } = true;
     public string?                       EmailDuplicateMessage  { get; set; } = string.Empty;
     public bool?                         IsEmpNoValid           { get; set; } = true;
+    public string?                       EmailToLink            { get; set; } = string.Empty;
+    public bool?                         IsSafeToSave           { get; set; } = false;
+   
 
+    public List<UsersModel?>?              MatchedEmployees     { get; set; } = new();  
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();

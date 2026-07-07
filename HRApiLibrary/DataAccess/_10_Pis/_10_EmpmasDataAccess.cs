@@ -363,7 +363,14 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new { Id = id, EmailAdd =email }, conn);
         return data?.FirstOrDefault();
     }
-    
+
+    public async Task<EmpmasAddressModel?> _02EmpmasAddress_ByEmail(string? email, string? schema, string? conn)
+    {
+        string? sql = $@"select  e.Id from {schema}.Empmasaddress e where EmailAdd = @EmailAdd";
+        var data = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new {  EmailAdd = email }, conn);
+        return data?.FirstOrDefault();
+    }
+
     public async Task<List<EmpmasAddressModel?>?> _02EmpmasAddress_ByEmailNotTheOwner(int? id, string? email, string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Empmasaddress where EmailAdd = @EmailAdd  and Id != @Id";

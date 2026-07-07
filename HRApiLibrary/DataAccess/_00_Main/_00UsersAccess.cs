@@ -39,6 +39,18 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
+    public async Task<List<UsersModel?>?> _02ByEmailWithMainPisEmpmas(string? email,  string? mainschema = "Main", string? mainpisschema = "MainPis", string? connName = "MySqlConn")
+    {
+        string sql = $@" SELECT me.*,
+                           CONCAT_WS(' ', CONCAT(TRIM(pe.emplastnm), ','), TRIM(pe.empfirstnm), TRIM(pe.empmidnm)) AS AFullName
+                    FROM {mainschema}.Users me
+                    LEFT JOIN {mainpisschema}.empmas pe ON pe.Id = me.Id  
+                    WHERE me.Email = @Email";
+
+        var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Email = email }, connName);
+        return data;
+    }
+
     public async Task<UsersModel?> _02ByLoginName(string? loginname, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@" select  * from {schema}.Users e where LoginName = @LoginName";

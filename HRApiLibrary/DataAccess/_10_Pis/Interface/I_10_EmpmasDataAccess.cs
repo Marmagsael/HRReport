@@ -108,5 +108,6 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<EmpmasPIModel?>?> _02EmpmasPIs(int? id, string? schema, string? conn);
         Task<List<DeprecModel?>?> _02Deprecs(int? id, string? schema, string? conn);
         Task<List<EmpmasAddressModel?>?> _02EmpmasAddresss(int? id, string? schema, string? conn);
+        Task<EmpmasAddressModel?> _02EmpmasAddress_ByEmail(string? email, string? schema, string? conn);
     }
 }

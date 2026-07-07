@@ -107,7 +107,8 @@
                     <div class="p-1 col-lg-10 col-md-9 position-relative">
                         <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext"
                                        MaxLength="50" class="w-75"
-                                       @bind-Value=@V.EmpmasToEdit!.Email />
+                                       @bind-Value=@V.EmpmasToEdit!.Email 
+                                       @onfocusout="OnEmailLostFocus" />
                         <RadzenEmailValidator Component="Email"
                                               Text="Enter a valid email address"
                                               Style="color:red; display:block" />
@@ -117,6 +118,22 @@
                                 <small>@V.EmailDuplicateMessage</small>
                             </div>
                         }
+                        <div class="mt-2" style="max-height: 200px; overflow-y: auto;">
+                            @foreach (var emp in V.MatchedEmployees)
+                            {
+                                <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-1 bg-light">
+                                    <small>
+                                        This email is currently registered to <strong>@emp.AFullName</strong>.
+                                    </small>
+                                    <a href="#"
+                                       @onclick:preventDefault
+                                       @onclick="() => LinkEmployee(emp.Email)"
+                                       class="text-primary small fw-bold ms-2 text-nowrap">
+                                        Link this employee
+                                    </a>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
 
@@ -170,7 +187,7 @@
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpLastNm) ||
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpFirstNm);
 
-    string EnableButton => IsNameIncomplete ? "disabled-div-50" : "";
+    string EnableButton => IsNameIncomplete || V.IsSafeToSave == false ? "disabled-div-50" : "";
 
     async Task GenerateEmpNumber()
     {
@@ -223,20 +240,14 @@
 
     async Task OnEmpNumberLostFocus()
     {
-        try
-        {
-            V.Action = "CheckIfEmpNoExists";
-            await ChildAction.InvokeAsync();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            V.IsEmpNoValid = false;
-            ShowError(
-                "Unable to validate employee number",
-                "Something went wrong while checking the employee number. Please try again or contact your system administrator."
-            );
-        }
+        V.Action = "CheckIfEmpNoExists";
+        await ChildAction.InvokeAsync();
+    }
+
+    async Task OnEmailLostFocus()
+    {
+        V.Action = "CheckIfEmailExists";
+        await ChildAction.InvokeAsync();
     }
 
     async Task OnSubmit(OEmpmasModel model)
@@ -264,6 +275,14 @@
     }
 
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args) { }
+
+
+    async Task LinkEmployee(string email)
+    {
+        V.Action = "LinkEmployee";
+        V.EmailToLink = email;
+        await ChildAction.InvokeAsync();
+    }
 
     async Task HideModal()
     {
