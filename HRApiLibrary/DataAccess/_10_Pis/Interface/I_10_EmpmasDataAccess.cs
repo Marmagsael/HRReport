@@ -24,8 +24,6 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasSecLicModel?> _01EmpmasSecLic(int? id, EmpmasSecLicModel empmasseclic, string? schema, string? conn);
         Task<EmpmasTrainingModel?> _01EmpmasTraining(EmpmasTrainingModel empmastraining, string? schema, string? conn);
         Task<EmpmasModel?> _02Empmas(int? id, string? schema, string? conn);
-        Task<EmpmasModel?> _02BySystemId(int? systemId, string? pisdb, string? conn);
-        Task<List<EmpmasInternalModel?>?> _02BySystemIdList(int? systemId, string? pisdb, string? conn);
         Task<EmpmasAddressModel?> _02EmpmasAddress(int? id, string? schema, string? conn);
         Task<EmpmasCharRefModel?> _02EmpmasCharRef(int? id, string? schema, string? conn);
         Task<List<EmpmasCharRefModel?>> _02EmpmasCharRefList(int? empmasId, string? schema, string? conn);
@@ -97,7 +95,6 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<EmpmasModel?>?>           _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn");
         Task<List<EmpmasModel?>?>           _02SearchName(string? skey, string? schema = "MainPis", string? conn = "MySqlConn");
         Task<EmpmasModel?>                  _01EmpmasV1(EmpmasModel empmas, string? schema, string? conn);
-        Task<EmpmasModel?> _01EmpmasWithSystemId(EmpmasModel empmas, string? schema, string? conn);
         Task<EmpmasAddressModel?>           _02EmpmasAddress_ByIdAndEmail(int? id, string? email, string? schema, string? conn);
         Task<List<EmpmasAddressModel?>?>    _02EmpmasAddress_ByEmailNotTheOwner(int? id, string? email, string? schema, string? conn);
         Task<List<EmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(int? id, string? empnumber, string? schema, string? conn);
@@ -108,6 +105,6 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<EmpmasPIModel?>?> _02EmpmasPIs(int? id, string? schema, string? conn);
         Task<List<DeprecModel?>?> _02Deprecs(int? id, string? schema, string? conn);
         Task<List<EmpmasAddressModel?>?> _02EmpmasAddresss(int? id, string? schema, string? conn);
-        Task<EmpmasAddressModel?> _02EmpmasAddress_ByEmail(string? email, string? schema, string? conn);
+  
     }
 }

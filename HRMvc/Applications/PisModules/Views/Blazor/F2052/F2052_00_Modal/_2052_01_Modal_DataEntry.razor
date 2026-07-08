@@ -37,7 +37,6 @@
     [Parameter] public V2052 V { get; set; } = new();
     [Parameter] public EventCallback ChildAction { get; set; }
 
-    private int? userId = 0;
     private int? empmasId = 0;
     private bool isSaving = false;
     private string oldEmail = string.Empty;
@@ -46,190 +45,139 @@
     {
         if (V == null) return;
 
-        var action = V.Action;
-        V.Action = "";
-        V.ActionRef = string.Empty;
+        if (V.Action == "ValidateEmpNoAndEmailOnLostFocus") await ValidateEmpNoAndEmailOnLostFocus();
+        if (V.Action == "SaveEmpmas")       await SaveEmpmas();
+        if (V.Action == "LinkEmployee")     await LinkEmployee();
+        if (V.Action == "HideDataEntry")    await ShowHideModal(false);
 
-        if (action == "CheckIfEmpNoExists") await CheckIfEmpNoExistsOnSecpis();
-        if (action == "CheckIfEmailExists") await CheckIfEmailExists();
-        if (action == "LinkEmployee") await CheckIfEmailExistOnUxCx();
-        if (action == "SaveEmpmas") await SaveEmpmas();
-        if (action == "HideDataEntry") await ShowHideModal(false);
+
+        V.Action = "";
+
+    }
+
+
+    async Task SaveEmpmas()
+    {
+        if (await CheckIfEmpNoAndEmailExists() == false) return;
+        if (V.IsEmailValid == true && await CheckIfEmailIsRegistered() == false) return;
+
+    }
+
+    async Task ValidateEmpNoAndEmailOnLostFocus()
+    {
+        await CheckIfEmpNoAndEmailExists();
+
+        if (V.IsEmailValid == true)
+        {
+            await CheckIfEmailIsRegistered();
+        }
+
+    }
+    async Task<bool> CheckIfEmpNoAndEmailExists()
+    {
+        try
+        {
+            var res = await _oempmas._02EmpnumberAndEmailOwnedByOthers( V.EmpmasToEdit.EmpNumber, V.EmpmasToEdit.Email, V.pisdb, V.conn);
+
+            if (res == null || !res.Any()) return true;
+
+            bool hasEmail       = !string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email);
+            bool isNewEntry     = V.IsNewEntry == true;
+            bool emailChanged   = hasEmail && (isNewEntry || !string.Equals(  V.EmpmasToEdit.Email?.Trim(), V.Empmas?.Email?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            var empNoMatch      = isNewEntry  ? res.FirstOrDefault(r => string.Equals(r?.EmpNumber?.Trim(),   V.EmpmasToEdit.EmpNumber?.Trim(), StringComparison.OrdinalIgnoreCase))  : null;
+            var emailMatch      = emailChanged  ? res.FirstOrDefault(r => string.Equals(r?.Email?.Trim(),  V.EmpmasToEdit.Email?.Trim(), StringComparison.OrdinalIgnoreCase))  : null;
+
+            if (empNoMatch != null)
+            {
+                V.IsEmpNoValid = false;
+            }
+
+            if (emailMatch != null)
+            {
+                V.IsEmailValid = false;
+                V.EmailDuplicateMessage = $"Email is already assigned to {emailMatch.Fullname}.";
+            }
+
+            return empNoMatch == null && emailMatch == null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to verify empnumber and email", "Something went wrong. Please try again.");
+            return false;
+        }
+    }
+
+    async Task<bool> CheckIfEmailIsRegistered()
+    {
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email))
+        {
+            return true; 
+        }
+
+        try
+        {
+            var res = await _user._02ByEmailWithMainPisEmpmas( V.EmpmasToEdit.Email, V.maindb, "MainPis", V.conn);
+
+            var matched = res?.FirstOrDefault(u => !string.IsNullOrWhiteSpace(u?.AFullName));
+
+            if (matched == null)
+            {
+                V.IsEmailValid = false;
+                V.EmailDuplicateMessage = "This email has not been registered as a system user yet. You may proceed by removing the email and link the account later.";
+                return false;
+            }
+
+            V.IsEmailValid = true;
+            V.MatchedEmployees = res;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to verify email", "Something went wrong while checking the account. Please try again.");
+            return false;
+        }
+    }
+
+
+    async Task LinkEmployee()
+    {
+        try
+        {
+            var res = await _empmas._02ByEmail(V.EmpmasToEdit.Email, V.newpisdb, V.conn);
+            if(res.Id != null || res.Id != 0)
+            {
+                if((res.SystemId != 0 || res.SystemId != null ) && res.EmpNumber != V.EmpmasToEdit.EmpNumber)
+                {
+                    V.IsEmailValid = false;
+                    V.EmailDuplicateMessage = $"This email is link to {res.Fulll}. You may proceed by removing the email and link the account later.";
+                    return;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError("Unable to verify email", "Something went wrong while checking the account. Please try again.");
+        }
     }
 
     async Task ShowHideModal(bool show)
     {
         if (show) return;
 
-        V.ShowDataEntry = false;
-        V.IsNewEntry    = false;
-        V.IsEmpNoValid  = true;
-        V.IsEmailValid  = true;
-        V.IsSafeToSave  = false;
-        V.EmpmasToEdit  = new OEmpmasModel();
+        V.ShowDataEntry     = false;
+        V.IsNewEntry        = false;
+        V.IsEmpNoValid      = true;
+        V.IsEmailValid      = true;
+        V.IsSafeToSave      = false;
+        V.EmailDuplicateMessage = string.Empty;
+        V.MatchedEmployees.Clear();
+        V.EmpmasToEdit = new OEmpmasModel();
         await ChildAction.InvokeAsync();
     }
-
-
-    async Task SaveEmpmas()
-    {
-        if (await CheckIfEmpNoExistsOnSecpis() == false) return;
-        await CheckIfEmailExists();
-        await CheckIfEmailExistOnUxCx();
-        if (V.IsSafeToSave == true)
-        {
-            if(empmasId == 0)
-            {
-
-            }
-            else
-            {
-
-            } 
-        }
-
-        if(V.IsNewEntry == true)
-        {
-            await _oempmas._01  
-        }
-        else
-        {
-            
-        }
-
-    }
-
-    async Task<bool> CheckIfEmpNoExistsOnSecpis()
-    {
-        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber))
-        {
-            V.IsEmpNoValid = false;
-            ShowError("Employee number required", "Please enter an employee number.");
-            return false;
-        }
-
-        if (V.IsNewEntry == false)
-        {
-            V.IsEmpNoValid = true;
-            return true;
-        }
-
-        try
-        {
-            var res = await _oempmas._02EmpnumberOwnedByOthers(V.EmpmasToEdit.EmpNumber, V.pisdb, V.conn);
-            bool isExist = res != null && res.Any();
-            V.IsEmpNoValid = !isExist;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            ShowError("Unable to validate employee number", "Something went wrong while checking the employee number. Please try again.");
-            V.IsEmpNoValid = false;
-        }
-
-        return V.IsEmpNoValid ?? false;
-    }
-
-    bool IsEmailChanged()
-    {
-        var newEmail = V.EmpmasToEdit.Email?.Trim().ToLower() ?? string.Empty;
-        var originalEmail = V.Empmas?.Email?.Trim().ToLower() ?? string.Empty;
-        return V.IsNewEntry == true || originalEmail != newEmail;
-    }
-
-    async Task CheckIfEmailExists()
-    {
-        if (await CheckIfEmailExistsOnSecpis() == false) return;
-        if (await CheckIfEmailExistOnMain() == false) return;
-    }
-
-    async Task<bool> CheckIfEmailExistsOnSecpis()
-    {
-        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email))
-        {
-            V.IsEmailValid = true;
-            return true;
-        }
-
-        // Only re-check against other records if the email actually changed or this is a new entry
-        if (!IsEmailChanged())
-        {
-            V.IsEmailValid = true;
-            return true;
-        }
-
-        var newEmail = V.EmpmasToEdit.Email.Trim().ToLower();
-
-        try
-        {
-            var res = await _oempmas._02EmailOwnedByOthers(V.Empmas?.EmpNumber, newEmail, V.pisdb, V.conn);
-            bool isExist = res != null && res.Any();
-            V.IsEmailValid = !isExist;
-
-            if (isExist)
-            {
-                V.EmailDuplicateMessage = $"Email {V.EmpmasToEdit.Email} already exists.";
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            ShowError("Unable to validate email", "Something went wrong while checking the email. Please try again.");
-            V.IsEmailValid = false;
-        }
-
-        return V.IsEmailValid ?? false;
-    }
-
-    async Task<bool> CheckIfEmailExistOnMain()
-    {
-        string notRegisteredMessage = "This email has not been registered as a system user yet. You may proceed by removing the email and link the account later.";
-        try
-        {
-            V.MatchedEmployees.Clear();
-            V.EmailDuplicateMessage = string.Empty;
-
-            var res = await _user._02ByEmailWithMainPisEmpmas(V.EmpmasToEdit.Email, V.maindb, "MainPis", V.conn);
-            V.MatchedEmployees = res.Where(e => e != null && !string.IsNullOrEmpty(e.AFullName)).ToList();
-
-            if (V.MatchedEmployees == null || !V.MatchedEmployees.Any())
-            {
-                V.IsEmailValid = false;
-                V.EmailDuplicateMessage = notRegisteredMessage;
-                return false;
-            }
-
-            V.IsEmailValid = true;
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            V.IsEmailValid = null;
-            ShowError("Unable to save", "Something went wrong while checking the account. Please try again.");
-            return false;
-        }
-    }
-
-    async Task CheckIfEmailExistOnUxCx()
-    {
-        V.IsSafeToSave = false;
-
-        try
-        {
-            var res = await _empmas._02EmpmasAddress_ByEmail(V.EmailToLink, V.newpisdb, V.conn);
-            empmasId = res != null ? res.Id : 0;
-            V.IsSafeToSave = true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            ShowError("Unable to validate email", "Something went wrong while checking the email. Please try again.");
-            return ;
-        }
-    }
-
-
 
 
     void ShowSuccess(string summary, string detail, int duration = 5000) =>

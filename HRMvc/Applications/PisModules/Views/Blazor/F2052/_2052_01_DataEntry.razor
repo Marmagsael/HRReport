@@ -30,7 +30,7 @@
                                 @if (V.IsEmpNoValid == false)
                                 {
                                     <div class="text-danger position-absolute" style="top:100%; left:0; width:280px; white-space:normal;">
-                                        <small>Employee number <strong>@V.EmpmasToEdit.EmpNumber</strong> already exists.</small>
+                                        <small>Employee number @V.EmpmasToEdit.EmpNumber already exists.</small>
                                     </div>
                                 }
                             </div>
@@ -112,12 +112,13 @@
                         <RadzenEmailValidator Component="Email"
                                               Text="Enter a valid email address"
                                               Style="color:red; display:block" />
-                        @if (V.IsEmailValid == false)
+                         @if (V.IsEmailValid == false)
                         {
                             <div class="text-danger position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal;">
                                 <small>@V.EmailDuplicateMessage</small>
                             </div>
                         }
+
                         <div class="mt-2" style="max-height: 200px; overflow-y: auto;">
                             @foreach (var emp in V.MatchedEmployees)
                             {
@@ -187,7 +188,7 @@
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpLastNm) ||
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpFirstNm);
 
-    string EnableButton => IsNameIncomplete || V.IsSafeToSave == false ? "disabled-div-50" : "";
+    string EnableButton => IsNameIncomplete  ? "disabled-div-50" : "";
 
     async Task GenerateEmpNumber()
     {
@@ -240,13 +241,13 @@
 
     async Task OnEmpNumberLostFocus()
     {
-        V.Action = "CheckIfEmpNoExists";
+        V.Action = "ValidateEmpNoAndEmailOnLostFocus";
         await ChildAction.InvokeAsync();
     }
 
     async Task OnEmailLostFocus()
     {
-        V.Action = "CheckIfEmailExists";
+        V.Action = "ValidateEmpNoAndEmailOnLostFocus";
         await ChildAction.InvokeAsync();
     }
 

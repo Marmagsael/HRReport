@@ -39,14 +39,13 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<UsersModel?>?> _02ByEmailWithMainPisEmpmas(string? email,  string? mainschema = "Main", string? mainpisschema = "MainPis", string? connName = "MySqlConn")
+    public async Task<List<UsersModel?>?> _02ByEmailWithMainPisEmpmas( string? email, string? mainschema = "Main", string? mainpisschema = "MainPis", string? connName = "MySqlConn")
     {
-        string sql = $@" SELECT me.*,
-                           CONCAT_WS(' ', CONCAT(TRIM(pe.emplastnm), ','), TRIM(pe.empfirstnm), TRIM(pe.empmidnm)) AS AFullName
-                    FROM {mainschema}.Users me
-                    LEFT JOIN {mainpisschema}.empmas pe ON pe.Id = me.Id  
-                    WHERE me.Email = @Email";
-
+        string sql = $@" SELECT u.*,
+                       CONCAT_WS(' ', CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS AFullName
+                    FROM {mainschema}.Users u
+                    LEFT JOIN {mainpisschema}.empmas e ON e.Id = u.Id  
+                    WHERE LOWER(TRIM(u.Email)) = LOWER(TRIM(@Email))";
         var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Email = email }, connName);
         return data;
     }

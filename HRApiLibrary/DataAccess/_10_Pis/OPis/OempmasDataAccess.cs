@@ -171,35 +171,26 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
-    public async Task<List<OEmpmasModel?>?> _02EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn)
+    public async Task<List<OEmpmasModel?>?> _02EmpnumberAndEmailOwnedByOthers(string? empnumber, string? email, string? schema, string? conn)
     {
-        var sql = $@"SELECT e.empnumber FROM {schema}.Empmas e 
-                   WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))
-                     UNION
-                     SELECT e.empnumber FROM {schema}.empmasarchieved e 
-                   WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
-        return data;
-    }
+        bool hasEmail = !string.IsNullOrWhiteSpace(email);
 
-    public async Task<List<OEmpmasModel?>?> _02EmailOwnedByOthers(string? empnumber, string? email, string? schema, string? conn)
-    {
-        var sql = string.IsNullOrEmpty(empnumber)
-            ? $@"SELECT e.email FROM {schema}.Empmas e
-             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
-             UNION
-             SELECT e.email FROM {schema}.empmasarchieved e
-             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))"
+        var condition = hasEmail
+                                ? "(LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber)) OR LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email)))"
+                                : "LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
 
-            : $@"SELECT e.email FROM {schema}.Empmas e
-             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
-               AND LOWER(TRIM(e.Empnumber)) != LOWER(TRIM(@Empnumber))
-             UNION
-             SELECT e.email FROM {schema}.empmasarchieved e
-             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))
-               AND LOWER(TRIM(e.Empnumber)) != LOWER(TRIM(@Empnumber))";
+        var sql = $@"SELECT e.empnumber, e.email, 
+                           concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+                            FROM {schema}.Empmas e 
+                            WHERE {condition}
+                            UNION
+                            SELECT e.empnumber, e.email, 
+                                   concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+                            FROM {schema}.empmasarchieved e 
+                            WHERE {condition}";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber, Email = email }, conn);
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>( sql, new { Empnumber = empnumber, Email = email }, conn);
+
         return data;
     }
 
@@ -731,8 +722,7 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?>  _02EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?> _02EmailOwnedByOthers(string? empnumber, string? email, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02EmpnumberAndEmailOwnedByOthers(string? empnumber, string? email, string? schema, string? conn);
     Task<OEmpmasModel?>         _02MaxEmpnumber(string? schema, string? conn);
 
     Task<OEmpmasModel?>         _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn);
