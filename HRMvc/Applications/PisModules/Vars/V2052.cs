@@ -36,14 +36,11 @@ public class V2052
     public int?                          SelectedId             { get; set; } = 0;
     public string?                       SelectedEmpnumber      { get; set; } = string.Empty;
     public string?                       LastEmpNumber          { get; set; } = string.Empty;
+    public bool?                         IsEmpNoValid            { get; set; } = true;
     public bool?                         IsEmailValid           { get; set; } = true;
     public string?                       EmailDuplicateMessage  { get; set; } = string.Empty;
-    public bool?                         IsEmpNoValid           { get; set; } = true;
-    public string?                       EmailToLink            { get; set; } = string.Empty;
-    public bool?                         IsSafeToSave           { get; set; } = false;
-   
-
-    public List<UsersModel?>?              MatchedEmployees     { get; set; } = new();  
+    public string?                       EmailRegisteredMessage { get; set; } = string.Empty;
+    
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();
@@ -130,6 +127,28 @@ public class V2052
             d = new()
             {
                 SystemId    = e.UserId,
+                EmpNumber   = e.EmpNumber,
+                EmpLastNm   = e.EmpLastNm,
+                EmpFirstNm  = e.EmpFirstNm,
+                EmpMidNm    = e.EmpMidNm,
+                Suffix      = e.Suffix,
+                EmpAlias    = e.EmpAlias,
+            };
+        }
+
+        return d;
+
+    }
+
+
+    public EmpmasModel NewEmpmasToOldEmpmasMapper(OEmpmasModel source, EmpmasModel destination)
+    {
+        var d = destination;
+        var e = source;
+        if (source != null)
+        {
+            d = new()
+            {
                 EmpNumber   = e.EmpNumber,
                 EmpLastNm   = e.EmpLastNm,
                 EmpFirstNm  = e.EmpFirstNm,

@@ -12,5 +12,6 @@ public class EmpmasModel
 
     //----------------------------------------------------------------
     public string? EmpNumber    { get; set; } = string.Empty;
+    public string? FullName    { get; set; } = string.Empty;
 
 }
