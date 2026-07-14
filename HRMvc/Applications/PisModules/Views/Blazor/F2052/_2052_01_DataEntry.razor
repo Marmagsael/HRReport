@@ -116,19 +116,24 @@
                                                   Text="Enter a valid email address"
                                                   Style="color:red; display:block" />
 
-                            <div class="text-danger position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
-                                <small>@V.EmailDuplicateMessage</small>
-                            </div>
+                           @if(!string.IsNullOrWhiteSpace(V.RelatedUserOnSecpis)){
+                                <div class="text-danger position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
+                                    <small>Email is already associated with <b>@V.RelatedUserOnSecpis</b></small>
+                                </div>
+                           }
+                            @if(!string.IsNullOrWhiteSpace(V.RegisteredUserOnMain)){
+                                <div class="text-muted position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
+                                    <small>This email is registered to <b> @V.RegisteredUserOnMain </b> in login portal.</small>
+                                </div>
+                            }
 
-                            <div class="text-muted position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
-                                <small>@V.EmailRegisteredMessage</small>
-                                @* <button type="button"
-                                        class="btn btn-link p-0 m-0 align-baseline"
-                                        style="font-size:12px; box-shadow:none; outline:none;"
-                                        @onclick:stopPropagation="true">
-                                    Link
-                                </button> *@
-                            </div>
+                            @if (!string.IsNullOrWhiteSpace(V.EmailRegisteredMessage))
+                            {
+                                <div class="text-muted position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
+                                    <small>@V.EmailRegisteredMessage</small>
+                                </div>
+                            }
+                           
                         </div>
                     </div>
                 </div>
@@ -184,7 +189,7 @@
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpFirstNm);
 
     string EnableAutomateButton => IsNameIncomplete  ? "disabled-div-50" : "";
-    string EnableSaveButton => IsNameIncomplete || string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber) ? "disabled-div-50" : "";
+    string EnableSaveButton => IsNameIncomplete || string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber) || V.IsEmpNoValid == false || V.IsEmailValid == false ? "disabled-div-50" : "";
     string EnableEmail =>  string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber) ? "disabled-div-50" : "";
 
     async Task GenerateEmpNumber()

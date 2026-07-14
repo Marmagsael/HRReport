@@ -58,7 +58,7 @@ public class _00MainPisAccess : I_00MainPisAccess
 
     public async Task<List<EmpmasModel?>?> _02ByEmailWithMainPisEmpmas(string? email, string? mainschema = "Main", string? mainpisschema = "MainPis", string? connName = "MySqlConn")
     {
-        string sql = $@" SELECT e.*, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS FullName
+        string sql = $@" SELECT u.Id, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS FullName
                     FROM {mainschema}.Users u
                     LEFT JOIN {mainpisschema}.empmas e ON e.Id = u.Id  
                     WHERE LOWER(TRIM(u.Email)) = LOWER(TRIM(@Email))";

@@ -199,13 +199,12 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     {
         var flds = EmpmasFields();
 
-        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, m.Id UserId, ne.Id EmpmasId 
+        var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName, ne.SystemId UserId, ne.Id EmpmasId 
                         from {olddb}.Empmas e
                      left join {olddb}.position    p on p.code = e.position_
                      left join {olddb}.empstat     s on s.code = e.empstat_                              
                      left join {olddb}.Client      c on c.ClNumber = e.Client_                              
-                     left join {maindb}.users      m on m.email = e.email                              
-                     left join {newdb}.empmas      ne on ne.SystemId = m.Id                              
+                     left join {newdb}.empmas      ne on ne.Empnumber = e.Empnumber                              
                      where e.Empnumber = @Empnumber";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;

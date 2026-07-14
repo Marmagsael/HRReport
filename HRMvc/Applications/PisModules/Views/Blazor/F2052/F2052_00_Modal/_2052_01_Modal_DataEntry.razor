@@ -41,6 +41,7 @@
     [Parameter] public EventCallback ChildAction { get; set; }
 
     private int? empmasId = 0;
+    private int? userId = 0;
     private bool isSaving = false;
 
     async Task ChildActionCatcher()
@@ -60,8 +61,8 @@
         await CheckEmpnoAndEmailOnSecpis();
         if (V.IsEmpNoValid == false || V.IsEmailValid == false) return;
 
-        // await DomainApplication_Update201();
         await SaveEmpmasToSecpis();
+        await DomainApplication_Update201();
         await ChildAction.InvokeAsync();
     }
 
@@ -114,19 +115,55 @@
     }
 
 
-    async Task DomainApplication_Update201(int action)
+    async Task DomainApplication_Update201()
     {
-      
+        try
+        {
+            var res = await _empmas._02Empmas_EmpnumberOwnedByOthers(0, V.SelectedEmpnumber, V.newpisdb, V.conn);
+            EmpmasModel empmas = V.OldEmpmasToNewEmpmasMapper(V.EmpmasToEdit, new EmpmasModel());
+
+            empmas.SystemId = userId;
+            if (res.Any())
+            {
+                // Update
+                var rec = await _empmas._03EmpmasWithSystemId(res.FirstOrDefault().Id, empmas, V.newpisdb, V.conn);
+                if (rec != null)
+                {
+                    await _empmas._01EmpmasAddress_EmailOnly(rec.Id, V.EmpmasToEdit.Email, V.newpisdb, V.conn);
+                }
+
+            }
+            else
+            {
+
+                // Insert
+                var rec = await _empmas._01EmpmasWithSystemId(empmas, V.newpisdb, V.conn);
+                if (rec != null)
+                {
+                    await _empmas._01EmpmasAddress_EmailOnly(rec.Id, V.EmpmasToEdit.Email, V.newpisdb, V.conn);
+                }
+
+            }
+
+        }
+        catch (Exception)
+        {
+
+            throw;
+        }
 
     }
 
 
     async Task CheckEmpnoAndEmailOnSecpis()
     {
-        V.IsEmpNoValid = true;
-        V.IsEmailValid = true;
-        V.EmailDuplicateMessage = string.Empty;
-        V.EmailRegisteredMessage = string.Empty;
+        V.IsEmpNoValid              = true;
+        V.IsEmailValid              = true;
+        V.EmailDuplicateMessage     = string.Empty;
+        V.EmailRegisteredMessage    = string.Empty;
+        V.RegisteredUserOnMain      = string.Empty;
+        V.RelatedUserOnSecpis       = string.Empty;
+
 
         try
         {
@@ -160,7 +197,7 @@
 
             if (V.IsEmailValid == false)
             {
-                V.EmailDuplicateMessage = $"Email is already associated with {emailMatch.Fullname}.";
+                V.RelatedUserOnSecpis = emailMatch.Fullname;
             }
             else
             {
@@ -177,21 +214,21 @@
 
     async Task CheckIfEmailIsOnMain()
     {
+        userId = 0;
         try
         {
             var res = await _mainpis._02ByEmailWithMainPisEmpmas(V.EmpmasToEdit.Email, V.maindb, "MainPis", V.conn);
-            if (!res.Any() && !string.IsNullOrWhiteSpace(res.FirstOrDefault().FullName)) 
+            var user = res.FirstOrDefault();
+
+            if (user == null)
             {
-                V.EmailRegisteredMessage = "This email is available to use but is not yet registered.";
+                V.EmailRegisteredMessage = "This email address is available for use but is not yet registered.";
             }
             else
             {
-                var user = res.FirstOrDefault();
-                V.EmailRegisteredMessage = $"This email is registered to {user?.FullName} in login portal.";
+                userId = user.Id ?? 0;
+                V.RegisteredUserOnMain = user.FullName;
             }
-           
-            
-
         }
         catch (Exception ex)
         {
@@ -202,13 +239,13 @@
 
     void UpdateRecordOnEmpmas(OEmpmasModel source)
     {
-
-        V.EmpmasToEdit.EmpFirstNm   = source.EmpFirstNm;
-        V.EmpmasToEdit.EmpLastNm    = source.EmpLastNm;
-        V.EmpmasToEdit.EmpMidNm     = source.EmpMidNm;
-        V.EmpmasToEdit.Suffix       = source.Suffix;
-        V.EmpmasToEdit.EmpAlias     = source.EmpAlias;
-        V.EmpmasToEdit.Email        = source.Email;
+        V.Empmas.UserId     = userId;
+        V.Empmas.EmpFirstNm = source.EmpFirstNm;
+        V.Empmas.EmpLastNm  = source.EmpLastNm;
+        V.Empmas.EmpMidNm   = source.EmpMidNm;
+        V.Empmas.Suffix     = source.Suffix;
+        V.Empmas.EmpAlias   = source.EmpAlias;
+        V.Empmas.Email      = source.Email;
     }
 
     void UpdateRecordOnEmpmasList(OEmpmasModel source)
@@ -227,17 +264,19 @@
     {
         if (show) return;
 
-        V.IsNewEntry        = false;
-        V.EmpmasToEdit      = new OEmpmasModel();
+        V.IsNewEntry                = false;
+        V.EmpmasToEdit              = new OEmpmasModel();
 
-        V.IsEmpNoValid          = true;
-        V.IsEmailValid          = true;
-        V.EmailDuplicateMessage = string.Empty;
-        V.EmailRegisteredMessage = string.Empty;
+        V.IsEmpNoValid              = true;
+        V.IsEmailValid              = true;
+        V.EmailDuplicateMessage     = string.Empty;
+        V.EmailRegisteredMessage    = string.Empty;
+        V.RegisteredUserOnMain      = string.Empty;
+        V.RelatedUserOnSecpis       = string.Empty;
 
-        V.ShowDataEntry     = false;
-        
-       
+        userId                      = 0;
+        V.ShowDataEntry             = false;
+
 
         await ChildAction.InvokeAsync();
     }

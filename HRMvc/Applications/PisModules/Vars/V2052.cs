@@ -40,6 +40,8 @@ public class V2052
     public bool?                         IsEmailValid           { get; set; } = true;
     public string?                       EmailDuplicateMessage  { get; set; } = string.Empty;
     public string?                       EmailRegisteredMessage { get; set; } = string.Empty;
+    public string?                       RegisteredUserOnMain   { get; set; } = string.Empty;
+    public string?                       RelatedUserOnSecpis    { get; set; } = string.Empty;
     
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();

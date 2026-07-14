@@ -48,7 +48,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
 
     public async Task<EmpmasModel?> _01EmpmasWithSystemId(EmpmasModel empmas, string? schema, string? conn)
     {
-        int? id = empmas.Id;
+        int? id = empmas.Id ?? 0;
         if (id != 0) return empmas;
 
         string? sql = $@"Insert into {schema}.Empmas 
@@ -151,6 +151,9 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
 
     public async Task<EmpmasModel?> _03EmpmasWithSystemId(int? id, EmpmasModel empmas, string? schema, string? conn)
     {
+        if (id == null) return null;
+
+        empmas.Id = id;
         string? sql = $@"Update {schema}.Empmas set 
                             EmpNumber   = @EmpNumber, 
                             EmpLastNm   = @EmpLastNm,  
@@ -198,17 +201,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-    public async Task<EmpmasInternalModel?> _02EmpmasInternalByEmail(string? email, string? schema, string? conn)
-    {
-        string sql = $@"SELECT e.*, CONCAT_WS(', ', TRIM(e.EmpLastNm), TRIM(e.EmpFirstNm)) AS FullName
-                        FROM {schema}.Empmas e
-                        LEFT JOIN {schema}.EmpmasAddress ea
-                            ON ea.Id = e.Id
-                        WHERE ea.EmailAdd = @Email";
-
-        var data = await _sql.FetchData<EmpmasInternalModel, dynamic>( sql, new { Email = email }, conn);
-        return data?.FirstOrDefault();
-    }
+    
 
     public async Task<EmpmasInternalModel?> _03EmpmasInternal(int? id, EmpmasInternalModel empmas, string? schema, string? conn)
     {
@@ -411,6 +404,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     }
 
 
+   
 
     public async Task<EmpmasAddressModel?> _04EmpmasAddress(int? id, string? schema, string? conn)
     {
