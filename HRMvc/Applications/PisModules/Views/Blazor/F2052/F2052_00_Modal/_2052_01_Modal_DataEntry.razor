@@ -37,6 +37,7 @@
 @code {
 
     [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
     [Parameter] public EventCallback ChildAction { get; set; }
 
     private int? empmasId = 0;
@@ -58,9 +59,9 @@
     {
         await CheckEmpnoAndEmailOnSecpis();
         if (V.IsEmpNoValid == false || V.IsEmailValid == false) return;
+
+        // await DomainApplication_Update201();
         await SaveEmpmasToSecpis();
-
-
         await ChildAction.InvokeAsync();
     }
 
@@ -112,6 +113,14 @@
         await ChildAction.InvokeAsync();
     }
 
+
+    async Task DomainApplication_Update201(int action)
+    {
+      
+
+    }
+
+
     async Task CheckEmpnoAndEmailOnSecpis()
     {
         V.IsEmpNoValid = true;
@@ -124,14 +133,14 @@
 
 
             var res                 = await _oempmas._02EmpnumberAndEmailOwnedByOthers(V.EmpmasToEdit.EmpNumber, V.EmpmasToEdit.Email, V.pisdb, V.conn);
-            var empNoMatch          = res.FirstOrDefault(e => e.EmpNumber == V.EmpmasToEdit.EmpNumber);
+            var empNumberMatch      = res.FirstOrDefault(e => e.EmpNumber == V.EmpmasToEdit.EmpNumber);
             var emailMatch          = res.FirstOrDefault(e => e.Email == V.EmpmasToEdit.Email);
             bool emailHasChanged    = !string.IsNullOrWhiteSpace(V.Empmas.Email) && (V.Empmas.Email != V.EmpmasToEdit.Email);
 
             if (V.IsNewEntry == true)
             {
-                V.IsEmpNoValid = empNoMatch == null;
-                V.IsEmailValid = emailMatch == null;
+                V.IsEmpNoValid = empNumberMatch == null;
+                V.IsEmailValid = emailMatch     == null;
             }
             else if (emailHasChanged)
             {
@@ -151,7 +160,7 @@
 
             if (V.IsEmailValid == false)
             {
-                V.EmailDuplicateMessage = $"Email is already assigned to {emailMatch.Fullname}.";
+                V.EmailDuplicateMessage = $"Email is already associated with {emailMatch.Fullname}.";
             }
             else
             {
@@ -164,17 +173,23 @@
             ShowError("Unable to verify empnumber and email", "Something went wrong. Please try again.");
         }
     }
+
+
     async Task CheckIfEmailIsOnMain()
     {
         try
         {
             var res = await _mainpis._02ByEmailWithMainPisEmpmas(V.EmpmasToEdit.Email, V.maindb, "MainPis", V.conn);
-            if (!res.Any()) // what if no record exist on mainpis
+            if (!res.Any() && !string.IsNullOrWhiteSpace(res.FirstOrDefault().FullName)) 
             {
-                V.EmailRegisteredMessage = "This email is not registered yet.";
+                V.EmailRegisteredMessage = "This email is available to use but is not yet registered.";
             }
-            // should we display kung kanino naka register
-            // what if iba yung pangalan na associated sa naka register
+            else
+            {
+                var user = res.FirstOrDefault();
+                V.EmailRegisteredMessage = $"This email is registered to {user?.FullName} in login portal.";
+            }
+           
             
 
         }
