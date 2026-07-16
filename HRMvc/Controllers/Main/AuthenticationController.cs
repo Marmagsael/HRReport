@@ -662,7 +662,6 @@ public class AuthenticationController : Controller
         var acctgSchema     = prefix + "Acctg";
         var appSchema       = prefix + "App";
         var amsSchema       = prefix + "Ams";
-        var conn            = user.Domain;
         var coName          = uc?.CompanyName ?? "-";
         var email           = user.Email;
         
@@ -671,6 +670,7 @@ public class AuthenticationController : Controller
         var oldPay           = uc?.OldPay ?? "";
         var exclusiveCompany = uc?.ExclusiveCompany ?? "";
 
+        var conn            = user.Domain;
         var res = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
         
         if(res.Count > 0 ) 
@@ -695,6 +695,12 @@ public class AuthenticationController : Controller
         var defCoId                 = user.DefaultCoId.ToString() ?? "0";
         var isExclusiveCompany      = _config.GetSection("CompanyInfo:Exclusive").Value;
 
+        if (isExclusiveCompany == "true")
+        {
+            // conn = exclusiveCompany;
+        }
+
+
         var claims = new List<Claim>
         {
             new("UserId",               userId),
@@ -715,7 +721,7 @@ public class AuthenticationController : Controller
             new("OldPay",               oldPay  ?? "pay"),  
             
             new("IsExclusiveCompany",   isExclusiveCompany),
-             new("ExclusiveCompany",   exclusiveCompany) // For GSIA
+             new("ExclusiveCompany",    exclusiveCompany) // For GSIA
         }; 
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
