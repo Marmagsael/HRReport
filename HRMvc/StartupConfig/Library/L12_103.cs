@@ -30,6 +30,7 @@ public class L12_103
     private readonly IOEmployDataAccess _oemploy;
     private readonly IOReferDataAccess _orefer;
     private readonly IOTrainDataAccess _otrain;
+    private readonly IOInsuranceaccidentDataAccess _oinsurance;
 
     private readonly IOProcodeDataAccess _oprocode;
     private readonly IOMlacodeDataAccess _omlacode;
@@ -43,7 +44,7 @@ public class L12_103
     public L12_103(IOEmpmasDataAccess OEmpmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender, 
                   IOFamilyDataAccess ofamily, IOParentDataAccess oparent, IOChildrenDataAccess ochildren, IOEmergencDataAccess oemergenc,
                   IOEducateDataAccess oeducate, IOEmployDataAccess oemploy, IOReferDataAccess orefer, IOTrainDataAccess otrain,
-                  IOProcodeDataAccess oprocode, IOMlacodeDataAccess omlacode, IEmpmasInternalDataAccess iempmas
+                  IOProcodeDataAccess oprocode, IOMlacodeDataAccess omlacode, IEmpmasInternalDataAccess iempmas, IOInsuranceaccidentDataAccess oinsurance
                 )
     {
         _OEmpmas         = OEmpmas;
@@ -59,6 +60,7 @@ public class L12_103
         _oemploy         = oemploy;
         _orefer          = orefer;
         _otrain          = otrain;
+        _oinsurance      = oinsurance;
 
         _oprocode        = oprocode;
         _omlacode        = omlacode;
@@ -96,6 +98,7 @@ public class L12_103
         v12_103.OEmploys    = await _oemploy._02(empno, schema, conn);
         v12_103.ORefers     = await _orefer._02(empno, schema, conn);
         v12_103.OTrains     = await _otrain._02(empno, schema, conn);
+        v12_103.OInsurances  = await _oinsurance._02List(empno, schema, conn);
 
         
         return v12_103;

@@ -76,6 +76,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
 
         }
 
+        await _01EmpmasPic(schema, connName);
         await _01EmpmasPI(schema, connName);
         await _01EmpmasAddress(schema, connName);
     }
@@ -1071,6 +1072,23 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             NoChildren       int                        DEFAULT NULL,
                             PRIMARY KEY     (Id)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1 ;";
+        await _sql.ExecuteCmd(sql, new { }, conn);
+
+    }
+
+    private async Task _01EmpmasPic(string? schema, string? conn)
+    {
+        string? sql = @$"CREATE TABLE if not exists {schema}.EmpmasPic (
+                              Id            INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
+                              EmpmasId      INTEGER     UNSIGNED    NOT NULL,
+                              PicName       VARCHAR(45)             NOT NULL,
+                              PicAddress    VARCHAR(45)             NOT NULL,
+                              Category      CHAR(10)                NOT NULL DEFAULT 'Profile',
+                              Validity      DATETIME,
+                              Mode          INTEGER     UNSIGNED    NOT NULL DEFAULT 1 COMMENT '0-inactive, 1-active',
+                              Created       DATETIME,
+                              UploadedBy    INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                              PRIMARY KEY (Id))ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }

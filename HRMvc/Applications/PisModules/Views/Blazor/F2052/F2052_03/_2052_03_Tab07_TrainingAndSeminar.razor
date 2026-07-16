@@ -3,21 +3,24 @@
 @inject NotificationService _NotificationService
 @inject DialogService _DialogService
 
-<div class="p-2 overflow-auto" style="height:49.5vh;">
-    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Training and Seminar" />
-    <div class="h-10p"></div>
-    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
-    {
-        <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success"
-                          Icon="add_circle_outline"
-                          Text="New Entry"
-                          Click="@InsertRow"
-                          Disabled="@(editMode || isLoading)"
-                          class="bg-primary-green" />
-        </div>
-    }
-
+<div class="p-2">
+    <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:1000;">
+        <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Training and Seminar" />
+        <div class="h-10p"></div>
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="p-2 bordered mb-2 w-100">
+                <button type="button"
+                        class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
+                        @onclick="InsertRow"
+                        disabled="@(editMode || isLoading)">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"> <small>New</small> </span>
+                    </div>
+                </button>
+            </div>
+        }
+    </div>
     <div class="custom-grid mt-2">
         <RadzenDataGrid Data="@V.Trainings"
                         TItem="OTrainModel"
@@ -31,15 +34,14 @@
                         IsLoading="isLoading">
             <Columns>
                 <RadzenDataGridColumn TItem="OTrainModel"
-                                      Context="OTrainModel"
+                                      Context="row"
                                       Filterable="false"
                                       Sortable="false"
                                       Width="100%">
                     <HeaderTemplate>
                         <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
                             <RadzenColumn Size="5" class="custom-grid-sm">Details</RadzenColumn>
-                            <RadzenColumn Size="6" class="custom-grid-md">Program Name</RadzenColumn>
-                            <RadzenColumn Size="6" class="custom-grid-md">Institution</RadzenColumn>
+                            <RadzenColumn Size="12" class="custom-grid-md">Program Name</RadzenColumn>
                         </RadzenRow>
                     </HeaderTemplate>
 
@@ -49,82 +51,65 @@
                             @*-- Program Name --*@
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4"><RadzenLabel Text="Program" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox Value="@rec.Program" Disabled="true" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Program</RadzenColumn>
                             </RadzenRow>
 
                             @*-- School --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="School" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox Value="@rec.School" Disabled="true" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Institution" /></RadzenColumn>
+                                <RadzenColumn Size="8">@rec.School</RadzenColumn>
                             </RadzenRow>
 
                             @*-- Trainor --*@
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4"><RadzenLabel Text="Trainor" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox Value="@rec.Trainor" Disabled="true" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Trainor</RadzenColumn>
                             </RadzenRow>
 
                             @*-- Taken --*@
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4"><RadzenLabel Text="Taken / Coverage" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox Value="@rec.Taken" Disabled="true" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Taken</RadzenColumn>
                             </RadzenRow>
 
                             @*-- Type --*@
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4"><RadzenLabel Text="Type" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox Value="@rec.Type" Disabled="true" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Type</RadzenColumn>
                             </RadzenRow>
                         </RadzenStack>
 
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
+                            @*-- Program Name - full width --*@
                             <RadzenRow>
-                                @*-- Program / Taken / Type --*@
-                                <RadzenColumn Size="6">
+                                <RadzenColumn Size="12">
                                     <div class="fw-bold">@rec.Program</div>
-                                    <div class="mt-1">
-                                        <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="6">
-                                                Taken / Coverage: <span class="text-muted text-decoration-underline">@rec.Taken</span>
-                                            </RadzenColumn>
-                                            <RadzenColumn Size="6">
-                                                Type: <span class="text-muted text-decoration-underline">@rec.Type</span>
-                                            </RadzenColumn>
-                                        </RadzenRow>
-                                    </div>
                                 </RadzenColumn>
+                            </RadzenRow>
 
-                                @*-- School / Trainor --*@
+                            @*-- Institution / Trainor - side by side --*@
+                            <RadzenRow RowGap="0" class="mt-1">
+                                <RadzenColumn Size="12">
+                                    Institution: <span class="text-muted text-decoration-underline">@rec.School</span>
+                                </RadzenColumn>
+                               
+                            </RadzenRow>
+
+                            @*-- Institution / Trainor - side by side --*@
+                            <RadzenRow RowGap="0" class="mt-1">
+                                <RadzenColumn Size="12">
+                                    Trainor: <span class="text-muted text-decoration-underline">@rec.Trainor</span>
+                                </RadzenColumn>
+                            </RadzenRow>
+
+                            @*-- Taken / Type - side by side, below --*@
+                            <RadzenRow RowGap="0" class="mt-1">
                                 <RadzenColumn Size="6">
-                                    <div>@rec.School</div>
-                                    <div class="mt-1">
-                                        <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="12">
-                                                Trainor: <span class="text-muted text-decoration-underline">@rec.Trainor</span>
-                                            </RadzenColumn>
-                                        </RadzenRow>
-                                    </div>
+                                    Taken / Coverage: <span class="text-muted text-decoration-underline">@rec.Taken</span>
+                                </RadzenColumn>
+                                <RadzenColumn Size="6">
+                                    Type: <span class="text-muted text-decoration-underline">@rec.Type</span>
                                 </RadzenColumn>
                             </RadzenRow>
                         </RadzenStack>
@@ -146,11 +131,11 @@
 
                             @*-- School --*@
                             <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="School" Component="SchoolSm" /></RadzenColumn>
+                                <RadzenColumn Size="4"><RadzenLabel Text="Institution" Component="SchoolSm" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
                                         <RadzenTextBox @bind-Value="rec.School" class="w-100" Name="SchoolSm" MaxLength="50" />
-                                        <RadzenRequiredValidator Component="SchoolSm" Text="School is required" Popup="true" Style="position:absolute;" />
+                                        <RadzenRequiredValidator Component="SchoolSm" Text="Institution is required" Popup="true" Style="position:absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -193,44 +178,49 @@
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow Gap=".3rem">
-                                @*-- Program Name / Taken / Type --*@
-                                <RadzenColumn Size="6">
-                                    <RadzenTextBox @bind-Value="rec.Program" class="w-100" Name="ProgramLg" MaxLength="60" Style="display:block" />
-                                    <RadzenRequiredValidator Component="ProgramLg" Text="Program Name is required" Popup="true" Style="position:absolute;" />
-                                    <div class="mt-1">
-                                        <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="6">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="Taken / Coverage" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                    <RadzenTextBox @bind-Value="rec.Taken" MaxLength="20" Name="TakenLg" Style="display:block" />
-                                                    <RadzenRequiredValidator Component="TakenLg" Text="Date Taken is required" Popup="true" Style="position:absolute;" />
-                                                </RadzenFormField>
-                                            </RadzenColumn>
-                                            <RadzenColumn Size="6">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="Type" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                    <RadzenDropDown TValue="string"
-                                                                    Data="@typeOptions"
-                                                                    @bind-Value="rec.Type"
-                                                                    Placeholder="Select Type" />
-                                                </RadzenFormField>
-                                            </RadzenColumn>
-                                        </RadzenRow>
-                                    </div>
+
+                                @*-- Program Name - full width --*@
+                                <RadzenColumn Size="12">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Program Name" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                        <RadzenTextBox @bind-Value="rec.Program" class="w-100" Name="ProgramLg" MaxLength="60" />
+                                        <RadzenRequiredValidator Component="ProgramLg" Text="Program Name is required" Popup="true" Style="position:absolute;" />
+                                    </RadzenFormField>
                                 </RadzenColumn>
 
-                                @*-- School / Trainor --*@
-                                <RadzenColumn Size="6">
-                                    <RadzenTextBox @bind-Value="rec.School" class="w-100" Name="SchoolLg" MaxLength="50" Style="display:block" />
-                                    <RadzenRequiredValidator Component="SchoolLg" Text="School is required" Popup="true" Style="position:absolute;" />
-                                    <div class="mt-1">
-                                        <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="12">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="Trainor" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                    <RadzenTextBox @bind-Value="rec.Trainor" MaxLength="30" />
-                                                </RadzenFormField>
-                                            </RadzenColumn>
-                                        </RadzenRow>
-                                    </div>
+                                @*-- Institution / Trainor - side by side --*@
+                                <RadzenColumn Size="12">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Institution" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                        <RadzenTextBox @bind-Value="rec.School" class="w-100" Name="SchoolLg" MaxLength="50" />
+                                        <RadzenRequiredValidator Component="SchoolLg" Text="Institution is required" Popup="true" Style="position:absolute;" />
+                                    </RadzenFormField>
                                 </RadzenColumn>
+
+
+                                <RadzenColumn Size="12">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Trainor" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                        <RadzenTextBox @bind-Value="rec.Trainor" class="w-100" MaxLength="30" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+
+
+
+                                @*-- Taken / Type - side by side, below --*@
+                                <RadzenColumn Size="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Taken / Coverage" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                        <RadzenTextBox @bind-Value="rec.Taken" class="w-100" MaxLength="20" Name="TakenLg" />
+                                        <RadzenRequiredValidator Component="TakenLg" Text="Date Taken is required" Popup="true" Style="position:absolute;" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                                <RadzenColumn Size="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Type" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                        <RadzenDropDown TValue="string"
+                                                        Data="@typeOptions"
+                                                        @bind-Value="rec.Type"
+                                                        Placeholder="Select Type"
+                                                        class="w-100" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+
                             </RadzenRow>
                         </RadzenStack>
                     </EditTemplate>
@@ -238,7 +228,7 @@
 
                 @* Actions Column *@
                 <RadzenDataGridColumn TItem="OTrainModel"
-                                      Context="OTrainModel"
+                                      Context="row"
                                       Filterable="false"
                                       Sortable="false"
                                       TextAlign="TextAlign.Center"
@@ -260,7 +250,6 @@
         </RadzenDataGrid>
     </div>
 </div>
-
 @inject IOTrainDataAccess _empmas
 
 @code {

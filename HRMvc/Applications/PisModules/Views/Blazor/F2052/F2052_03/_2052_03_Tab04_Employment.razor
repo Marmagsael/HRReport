@@ -3,21 +3,26 @@
 @inject DialogService _DialogService
 @inject IOEmployDataAccess _empmas
 
-<div class="p-2 overflow-auto" style="height:49.5vh;">
-    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Employment History" />
-    <div class="h-10p"></div>
-    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
-    {
-        <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success"
-                          Icon="add_circle_outline"
-                          Text="New Entry"
-                          Click="@InsertRow"
-                          Disabled="@(editMode || isLoading)"
-                          class="bg-primary-green" />
-        </div>
-    }
+<div class="p-2">
+    <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:1000;">
 
+        <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Employment History" />
+            <div class="h-10p"></div>
+            @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+            {
+                <div class="p-2 bordered mb-2 w-100">
+                    <button type="button"
+                            class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
+                            @onclick="InsertRow"
+                            disabled="@(editMode || isLoading)">
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"> <small>New</small> </span>
+                        </div>
+                    </button>
+                </div>
+            }
+
+     </div>
     <div class="custom-grid mt-2">
         <RadzenDataGrid Data="@V.Employments"
                         TItem="OEmployModel"
@@ -37,10 +42,9 @@
                                       Width="100%">
                     <HeaderTemplate>
                         <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
-                            <RadzenColumn Size="5" class="custom-grid-sm">Details</RadzenColumn>
-                            <RadzenColumn Size="5" class="custom-grid-md">Company Name</RadzenColumn>
-                            <RadzenColumn Size="4" class="custom-grid-md">Position</RadzenColumn>
-                            <RadzenColumn Size="3" class="custom-grid-md">Salary</RadzenColumn>
+                            <RadzenColumn Size="6" class="custom-grid-sm">Details</RadzenColumn>
+                            <RadzenColumn Size="6" class="custom-grid-md">Company Name</RadzenColumn>
+                            <RadzenColumn Size="6" class="custom-grid-md">Position</RadzenColumn>
                         </RadzenRow>
                     </HeaderTemplate>
 
@@ -116,7 +120,7 @@
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow>
-                                <RadzenColumn Size="5">
+                                <RadzenColumn Size="6">
                                     <div>@rec.Comp</div>
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
@@ -129,31 +133,34 @@
                                                     Tel No.: <span class="text-muted text-decoration-underline">@rec.Tel</span>
                                                 </RadzenColumn>
                                             }
+
+                                            @if (!string.IsNullOrWhiteSpace(rec.Rem1))
+                                            {
+                                                <div class="mt-1">
+                                                    Remarks: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;">@rec.Rem1</span>
+                                                </div>
+                                            }
                                         </RadzenRow>
                                     </div>
                                 </RadzenColumn>
-                                <RadzenColumn Size="4">
+                                <RadzenColumn Size="6">
                                     <div class="fw-bold">@rec.Posi</div>
                                     <div class="mt-1">
+                                        Salary: <span class="text-muted text-decoration-underline">@rec.Sal.ToString("N")</span>
+                                    </div>
+                                    <div class="mt-1">
                                         <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="12">
+                                            <RadzenColumn Size="12" >
                                                 From: <span class="text-muted text-decoration-underline">@rec.From_</span>
                                             </RadzenColumn>
-                                            <RadzenColumn Size="12">
+                                            <RadzenColumn Size="12" >
                                                 To: <span class="text-muted text-decoration-underline">@rec.To_</span>
                                             </RadzenColumn>
                                         </RadzenRow>
                                     </div>
+                                   
                                 </RadzenColumn>
-                                <RadzenColumn Size="3">
-                                    <div>@rec.Sal.ToString("N")</div>
-                                    @if (!string.IsNullOrWhiteSpace(rec.Rem1))
-                                    {
-                                        <div class="mt-1">
-                                            Remarks: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;">@rec.Rem1</span>
-                                        </div>
-                                    }
-                                </RadzenColumn>
+                               
                             </RadzenRow>
                         </RadzenStack>
                     </Template>
@@ -233,51 +240,61 @@
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow Gap=".3rem">
-                                <RadzenColumn Size="5">
+                                <RadzenColumn Size="6">
                                     <RadzenTextBox @bind-Value="rec.Comp" Change="@(args => rec.Comp = args.ToString().Trim())" class="w-100" Name="CompNameLg" MaxLength="60" Style="display:block" />
                                     <RadzenRequiredValidator Component="CompNameLg" Text="Company Name is required" Popup="true" Style="position:absolute;" />
                                     <div class="mt-1">
-                                        <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="12">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="Address" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                    <RadzenTextBox @bind-Value="rec.Addr1" class="w-100" MaxLength="60" />
-                                                </RadzenFormField>
-                                            </RadzenColumn>
-                                            <RadzenColumn Size="12">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="Tel No." Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                    <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="15" />
-                                                </RadzenFormField>
-                                            </RadzenColumn>
-                                        </RadzenRow>
+                                        <RadzenColumn Size="12">
+                                            <RadzenFormField AllowFloatingLabel="false" Text="Address" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                <RadzenTextBox @bind-Value="rec.Addr1" class="w-100" MaxLength="60" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
                                     </div>
-                                </RadzenColumn>
 
-                                <RadzenColumn Size="4">
-                                    <RadzenTextBox @bind-Value="rec.Posi" Change="@(args => rec.Posi = args.ToString().Trim())" class="w-100" Name="PosLg" MaxLength="75" Style="display:block; width:100%" />
-                                    <RadzenRequiredValidator Component="PosLg" Text="Position is required" Popup="true" Style="position:absolute;" />
+
                                     <div class="mt-1">
-                                        <RadzenRow RowGap="0">
-                                            <RadzenColumn Size="12" SizeMD="6">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="From" Variant="Variant.Outlined"  class="custom-form-field" >
-                                                    <RadzenTextBox @bind-Value="rec.From_" class="w-100" MaxLength="10" Name="FromLg" Style="display:block" />
-                                                </RadzenFormField>
-                                            </RadzenColumn>
-                                            <RadzenColumn Size="12" SizeMD="6">
-                                                <RadzenFormField AllowFloatingLabel="false" Text="To" Variant="Variant.Outlined"  class="custom-form-field" >
-                                                    <RadzenTextBox @bind-Value="rec.To_" class="w-100" MaxLength="10" Name="ToLg" Style="display:block; width:100%" />
-                                                </RadzenFormField>
-                                            </RadzenColumn>
-                                        </RadzenRow>
+                                        <RadzenColumn Size="12">
+                                            <RadzenFormField AllowFloatingLabel="false" Text="Tel No." Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                <RadzenTextBox @bind-Value="rec.Tel" class="w-100" MaxLength="15" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
                                     </div>
-                                </RadzenColumn>
-                                <RadzenColumn Size="3">
-                                    <RadzenNumeric @bind-Value="rec.Sal" Format="#,##0.00" class="w-100" Max="99999999.99m" />
+
                                     <div class="mt-1">
                                         <RadzenFormField AllowFloatingLabel="false" Text="Remarks" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
                                             <RadzenTextBox @bind-Value="rec.Rem1" class="w-100" MaxLength="60" />
                                         </RadzenFormField>
                                     </div>
                                 </RadzenColumn>
+
+                                <RadzenColumn Size="6">
+                                    <RadzenTextBox @bind-Value="rec.Posi" Change="@(args => rec.Posi = args.ToString().Trim())" class="w-100" Name="PosLg" MaxLength="75" Style="display:block; width:100%" />
+                                    <RadzenRequiredValidator Component="PosLg" Text="Position is required" Popup="true" Style="position:absolute;" />
+                                    <div class="mt-1">
+                                        <RadzenColumn Size="12">
+                                            <RadzenFormField AllowFloatingLabel="false" Text="Salary" Variant="Variant.Outlined" class="custom-form-field w-100">
+                                                <RadzenNumeric @bind-Value="rec.Sal" Format="#,##0.00" class="w-100" Max="99999999.99m" />
+
+                                            </RadzenFormField>
+                                        </RadzenColumn>
+                                    </div>
+                                    <div class="mt-1">
+                                        <RadzenColumn Size="12" >
+                                            <RadzenFormField AllowFloatingLabel="false" Text="From" Variant="Variant.Outlined"  class="custom-form-field w-100" >
+                                                <RadzenTextBox @bind-Value="rec.From_" class="w-100" MaxLength="10" Name="FromLg" Style="display:block" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
+                                    </div>
+
+                                    <div class="mt-1">
+                                        <RadzenColumn Size="12">
+                                            <RadzenFormField AllowFloatingLabel="false" Text="To" Variant="Variant.Outlined" class="custom-form-field w-100">
+                                                <RadzenTextBox @bind-Value="rec.To_" class="w-100" MaxLength="10" Name="ToLg" Style="display:block; width:100%" />
+                                            </RadzenFormField>
+                                        </RadzenColumn>
+                                    </div>
+                                </RadzenColumn>
+                               
                             </RadzenRow>
                         </RadzenStack>
                     </EditTemplate>
@@ -474,7 +491,7 @@
             if (exists)
             {
                 bool isSameAsOriginal = !isNew && recBackup != null
-                    && recBackup.Posi == rec.Comp
+                    && recBackup.Comp == rec.Comp
                     && recBackup.Posi == rec.Posi;
 
                 if (!isSameAsOriginal)

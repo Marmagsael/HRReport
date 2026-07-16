@@ -15,6 +15,7 @@ namespace HRApiLibrary.DataAccess._00_Main.Interface
         Task<EmpmasRelativesModel?> _01EmpmasRelatives(EmpmasRelativesModel empmasrelatives, string? schema, string? conn);
         Task<EmpmasTrainingModel?> _01EmpmasTrainings(EmpmasTrainingModel empmastraining, string? schema, string? conn);
         Task<EmpmasModel?> _02Empmas(int? id, string? schema, string? conn);
+        Task<List<EmpmasModel?>?> _02ByEmailWithMainPisEmpmas(string? email, string? mainschema = "Main", string? mainpisschema = "MainPis", string? connName = "MySqlConn");
         Task<EmpmasAddressModel?> _02EmpmasAddress(int? id, string? schema, string? conn);
         Task<EmpmasCharRefModel?> _02EmpmasCharacterReference(int? id, string? schema, string? conn);
         Task<List<EmpmasCharRefModel?>?> _02EmpmasCharacterReferenceList(int? empmasId, string? schema, string? conn);

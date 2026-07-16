@@ -22,5 +22,5 @@ public class UserCompanyModel
     //--------------------------------------------------------------------
     public string?      CountryName         { get; set; } = string.Empty;
     public string?      OwnerName           { get; set; } = string.Empty;
-
+    public string?      ExclusiveCompany    { get; set; } = string.Empty;
 }

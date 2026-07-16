@@ -1,132 +1,63 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-@using HRApiLibrary.DataAccess._10_Pis.OPis
-
+@using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03.F2052_03_Tab9
 @inject NotificationService _NotificationService;
 @inject DialogService _DialogService;
 
-<style>
-    .s222-t1-lbl-01 {
-        color: darkgreen;
-        width: 20%;
-    }
-</style>
 
+<div class="p-2">
 
-<div class="p-2 overflow-auto" style="height:49.5vh;">
     <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Insurance" />
+    <div class="h-10p"></div>
 
-    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
-        <div class="h-10p"></div>
-        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
-        {
-            <div class="p-2 bordered mb-2 w-100">
-                <input class="btn btn-secondary bg-primary-green w-100p" type="submit" value="Save" />
-            </div>
-        }
-        <RadzenFieldset>
 
-            <div class="h-10p"></div>
-            <RadzenFieldset Text="******">
-                @* ----- INSURANCE (varchar(60))----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="s222-t1-lbl-01">Insurance Type </div>
-                    <div class="w-40">
-                        <RadzenTextBox @bind-Value=@V.Empmas.Insurance class="form-control" Name="Insurance" MaxLength="60" Placeholder="Insurance Type" />
-                        <RadzenRequiredValidator Component="Insurance" Text="Insurance Type is required" Style="color: red; display:block" />
-                    </div>
-                </div>
 
-                @* ----- PolicyNo (varchar(50))----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20 s222-t1-lbl-01">Policy No. </div>
-                    <div class="w-40">
-                        <RadzenTextBox @bind-Value=@V.Empmas.PolicyNo class="form-control" Name="PolicyNo" MaxLength="50" Placeholder="Policy No." />
-                        <RadzenRequiredValidator Component="PolicyNo" Text="Policy No. is required" Style="color: red; display:block" />
-                    </div>
-                </div>
-            </RadzenFieldset>
+    <RadzenTabs TabPosition="@TabPosition.Top" RenderMode="TabRenderMode.Client" class="sticky-tabs">
+        <Tabs>
+            <RadzenTabsItem Text="Life">
+                <_2052_03_09_Life V="@V" ChildAction="ChildAction" />
+            </RadzenTabsItem>
 
-            <div class="h-10p"></div>
-            <RadzenFieldset Text="******">
-                @* ----- FaceValue (decimal)----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20">Face Value</div>
-                    <div class="w-20">
-                        <RadzenNumeric @bind-Value=@V.Empmas.FaceValue Format="#,##0.00" Placeholder="0.00" TextAlign="TextAlign.Right"
-                                       Name="FaceValue"
-                                       InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
-                        <RadzenRequiredValidator Component="FaceValue" Text="Face Value is required" Style="color: red; display:block" />
-                    </div>
-                </div>
+            <RadzenTabsItem Text="Accident">
+                <_2052_03_09_Accident V="@V" ChildAction="ChildAction" />
+            </RadzenTabsItem>
 
-                @* ----- Premium (decimal)----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20">Premium </div>
-                    <div class="w-20">
-                        <RadzenNumeric @bind-Value=@V.Empmas.Premium Format="#,##0.00" Placeholder="0.00" TextAlign="TextAlign.Right"
-                                       Name="Premium"
-                                       InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
-                        <RadzenRequiredValidator Component="Premium" Text="Premium is required" Style="color: red; display:block" />
-                    </div>
-                </div>
-            </RadzenFieldset>
-
-            <div class="h-10p">&nbsp</div>
-            <RadzenFieldset Text="******">
-                @* ----- InsExpire (date)----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20">Expiration Date </div>
-                    <div class="w-40">
-                        <RadzenDatePicker @bind-Value=@V.Empmas.InsExpire Name="InsExpire" DateFormat="MMM dd, yyyy" />
-                        <RadzenRequiredValidator Component="InsExpire" Text="Expiration Date is required" Style="color: red; display:block" />
-                    </div>
-                </div>
-            </RadzenFieldset>
-
-        </RadzenFieldset>
-    </RadzenTemplateForm>
+           
+        </Tabs>
+    </RadzenTabs>
 
 </div>
 
-@inject IOEmpmasDataAccess _empmas
+
+
+
+@inject IOInsuranceaccidentDataAccess _empmas
+
 
 @code {
-    [Parameter]
-    public V2052 V { get; set; } = new();
+    string? empnumber = string.Empty;
 
-    [Parameter]
-    public EventCallback ChildAction { get; set; }
+    [Parameter] public V2052 V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
 
-    async Task OnSubmit(OEmpmasModel model)
+    bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
     {
-        if (model == null) return;
-        try
+        if (empnumber != V.SelectedEmpnumber)
         {
-            await _empmas._03_Insurance(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
-
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 3000
-            });
+            empnumber = V.SelectedEmpnumber;
+            await Task.Delay(250);
+            V.InsuranceAccident = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
-        }
+        isLoading = false;
+        StateHasChanged();
     }
 
-    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
-    {
 
-    }
+    
+
+
+
+
 }
+

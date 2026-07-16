@@ -1,59 +1,50 @@
 ﻿@using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Models._90_Utils
 
+@inject NotificationService _NotificationService
+
 <div style="width:100%; overflow:auto;">
 
-   
     <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.EmpmasToEdit Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
-        @if (V.IsEmpNoValid == false)
-        {
-            <RadzenAlert AlertStyle="AlertStyle.Danger"
-                         Variant="Variant.Flat"
-                         Shade="Shade.Lighter"
-                         AllowClose="false"
-                         class="no-shadow">
-                <small>Employee number <strong>@V.EmpmasToEdit.EmpNumber</strong> already exists. Please use a different number.</small>
-            </RadzenAlert>
-        }
-        @if (V.IsEmailValid == false)
-        {
-            <RadzenAlert AlertStyle="AlertStyle.Danger"
-                         Variant="Variant.Flat"
-                         Shade="Shade.Lighter"
-                         AllowClose="false"
-                         class="no-shadow">
-                <small>Email <strong>@V.EmpmasToEdit.Email</strong>  already exists. Please use a different email.</small>
-            </RadzenAlert>
-        }
 
         <RadzenFieldset Text="Employee Details" class="fw-bold">
             <div class="fw-normal">
 
                 <div class="d-flex gap-2 p-1">
-                    <div class="p-1 col-lg-2 col-md-3 mb-required-label">Emp. No.</div>
+                    <div class="p-1 col-lg-2 col-md-3 mb-required-labe small">Emp. No.</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <div class="d-flex align-items-center gap-1 flex-wrap">
-                            <div class="position-relative">
+                        <div class="d-flex align-items-center gap-1 flex-wrap @(V.IsEmpNoValid == false ? "pb-2" : "")">
+                            <div class="position-relative" style="width:120px;">
                                 <RadzenTextBox Name="EmpNumber"
                                                Placeholder="00000"
                                                MaxLength="5"
                                                style="width:120px; height:32px;"
                                                @bind-Value=@V.EmpmasToEdit.EmpNumber
-                                               @onfocusout="OnEmpNumberLostFocus" />
-                                <RadzenRequiredValidator Component="EmpNumber"
-                                                         Text="Employee number is required"
-                                                         Style="display:block" />
+                                               @onfocusout="OnEmpNumberLostFocus"
+                                               Disabled="V.IsNewEntry == false" />
+                                <div class="position-absolute" style="top:100%; left:0; white-space:nowrap;">
+                                    <RadzenRequiredValidator Component="EmpNumber" 
+                                                             Text="Employee number is required"
+                                                             Style="display:block" />
+                                </div>
+                                @if (V.IsEmpNoValid == false)
+                                {
+                                    <div class="text-danger position-absolute" style="top:100%; left:0; width:280px; white-space:normal; font-size:12px;">
+                                        <small>Employee number @V.EmpmasToEdit.EmpNumber already exists.</small>
+                                    </div>
+                                }
                             </div>
 
 
                             @if (V.IsNewEntry == true)
                             {
-                                <div class="@EnableButton">
+                                <div class="@EnableAutomateButton">
                                     <button type="button" class="card mb-cbtn mb-cbtn-outline-blue d-flex align-items-center w-180p shadow-none border-0"
                                             style="height:32px; padding:0 0.75rem;"
                                             @onclick="GenerateEmpNumber"
                                             @onclick:preventDefault="true"
-                                            @onclick:stopPropagation="true">
+                                            @onclick:stopPropagation="true"
+                                            disabled="@isBusy">
                                         <div class="d-flex align-items-center justify-content-center">
                                             <i class="fas fa-sync-alt"></i>&nbsp;&nbsp;
                                             <small>Automate No.</small>
@@ -66,7 +57,7 @@
                 </div>
 
                 <div class="d-flex gap-2 p-1">
-                    <div class="p-1 col-lg-2 col-md-3">Last Name</div>
+                    <div class="p-1 col-lg-2 col-md-3 small">Last Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
                         <RadzenTextBox Name="EmpLastNm" Placeholder="Emp. Last Name"
                                        MaxLength="25" class="w-75"
@@ -78,7 +69,7 @@
                 </div>
 
                 <div class="d-flex gap-2 p-1">
-                    <div class="p-1 col-lg-2 col-md-3">First Name</div>
+                    <div class="p-1 col-lg-2 col-md-3 small">First Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
                         <RadzenTextBox Name="EmpFirstNm" Placeholder="Emp. First Name"
                                        MaxLength="30" class="w-75"
@@ -90,7 +81,7 @@
                 </div>
 
                 <div class="d-flex gap-2 p-1">
-                    <div class="p-1 col-lg-2 col-md-3">Mid. Name</div>
+                    <div class="p-1 col-lg-2 col-md-3 small">Mid. Name</div>
                     <div class="p-1 col-lg-10 col-md-9">
                         <RadzenTextBox Placeholder="Emp Mid Name" MaxLength="15"
                                        class="w-75" @bind-Value=@V.EmpmasToEdit.EmpMidNm />
@@ -98,7 +89,7 @@
                 </div>
 
                 <div class="d-flex gap-2 p-1">
-                    <div class="p-1 col-lg-2 col-md-3">Suffix</div>
+                    <div class="p-1 col-lg-2 col-md-3 small">Suffix</div>
                     <div class="p-1 col-lg-10 col-md-9">
                         <RadzenTextBox Placeholder="Suffix" MaxLength="3"
                                        class="w-25" @bind-Value=@V.EmpmasToEdit.Suffix />
@@ -106,25 +97,46 @@
                 </div>
 
                 <div class="d-flex gap-2 p-1 bordered-bottom">
-                    <div class="p-1 col-lg-2 col-md-3">Alias</div>
+                    <div class="p-1 col-lg-2 col-md-3 small">Alias</div>
                     <div class="p-1 col-lg-10 col-md-9">
                         <RadzenTextBox Placeholder="Emp. Alias" MaxLength="15"
                                        class="w-25" @bind-Value=@V.EmpmasToEdit.EmpAlias />
                     </div>
                 </div>
 
-                <div class="d-flex gap-2 p-1 mb-3">
-                    <div class="p-2 col-lg-2 col-md-3">Email</div>
+                <div class="d-flex gap-2 p-1 mb-3 @EnableEmail @(V.IsEmailValid == false ? "pb-4" : "")">
+                    <div class="p-2 col-lg-2 col-md-3 small">Email</div>
                     <div class="p-1 col-lg-10 col-md-9">
-                        <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext"
-                                       MaxLength="50" class="w-75"
-                                       @bind-Value=@V.EmpmasToEdit!.Email />
-                        <RadzenEmailValidator Component="Email"
-                                              Text="Enter a valid email address"
-                                              Style="color:red; display:block" />
+                        <div class=" position-relative">
+                            <RadzenTextBox Name="Email" Placeholder="emailaddress@dns.ext"
+                                           MaxLength="50" class="w-75"
+                                           @bind-Value=@V.EmpmasToEdit!.Email
+                                           @onfocusout="OnEmailLostFocus" />
+                            <RadzenEmailValidator Component="Email"
+                                                  Text="Enter a valid email address"
+                                                  Style="color:red; display:block" />
+
+                           @if(!string.IsNullOrWhiteSpace(V.RelatedUserOnSecpis)){
+                                <div class="text-danger position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
+                                    <small>Email is already associated with <b>@V.RelatedUserOnSecpis</b></small>
+                                </div>
+                           }
+                            @if(!string.IsNullOrWhiteSpace(V.RegisteredUserOnMain)){
+                                <div class="text-muted position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
+                                    <small>This email is registered to <b> @V.RegisteredUserOnMain </b> in login portal.</small>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(V.EmailRegisteredMessage))
+                            {
+                                <div class="text-muted position-absolute" style="top:100%; left:0; width:100%; max-width:500px; white-space:normal; font-size:12px;">
+                                    <small>@V.EmailRegisteredMessage</small>
+                                </div>
+                            }
+                           
+                        </div>
                     </div>
                 </div>
-
 
                 @if (V.IsNewEntry == true && !string.IsNullOrEmpty(V.LastEmpNumber))
                 {
@@ -143,17 +155,19 @@
         </RadzenFieldset>
 
         <div class="d-flex gap-2 mt-3 justify-content-end p-1">
-            <button type="button" class="card p-1 mb-cbtn mb-cbtn-gray d-flex w-100p"
-                    @onclick="HideModal">
-                <div class="d-flex align-items-center justify-content-center">
-                    <span class="p-0">Close</span>
-                </div>
-            </button>
+            <div>
+                <button type="button" class="card flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4"
+                        @onclick="HideModal" disabled="@isBusy">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="p-0"><small>Close</small></span>
+                    </div>
+                </button>
+            </div>
 
-            <div class="@EnableButton">
-                <button type="submit" class="card p-1 mb-cbtn mb-cbtn-blue d-flex w-100p">
-                    <div class="d-flex align-items-center justify-content-center">
-                        <span class="p-0">@(V.IsNewEntry == true ? "Save" : "Update")</span>
+            <div class="@EnableSaveButton">
+                <button type="submit" class="card flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4" disabled="@isBusy">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="p-0"><small>Save</small></span>
                     </div>
                 </button>
             </div>
@@ -168,73 +182,150 @@
     [Parameter] public EventCallback ChildAction { get; set; }
     [Parameter] public UserClaimsModel? UserClaims { get; set; } = new();
 
-    bool showNameError = false;
+    bool isBusy = false;
 
     bool IsNameIncomplete =>
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpLastNm) ||
         string.IsNullOrWhiteSpace(V.EmpmasToEdit?.EmpFirstNm);
 
-    string EnableButton => IsNameIncomplete ? "disabled-div-50" : "";
-
+    string EnableAutomateButton => IsNameIncomplete  ? "disabled-div-50" : "";
+    string EnableSaveButton => IsNameIncomplete || string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber) || V.IsEmpNoValid == false || V.IsEmailValid == false ? "disabled-div-50" : "";
+    string EnableEmail =>  string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber) ? "disabled-div-50" : "";
 
     async Task GenerateEmpNumber()
     {
-        V.IsEmpNoValid = true;
-        if (IsNameIncomplete) return;
+        if (IsNameIncomplete || isBusy) return;
 
-        if (!string.IsNullOrEmpty(V.LastEmpNumber))
+        if (string.IsNullOrEmpty(V.LastEmpNumber))
         {
-            int lastNo = Convert.ToInt32(V.LastEmpNumber);
-            V.EmpmasToEdit.EmpNumber = (lastNo + 1).ToString("D5");
+            ShowError("Cannot generate number", "No previous employee number was found to base the new number on.");
+            return;
+        }
 
-            await OnEmpNumberLostFocus(); 
+        isBusy = true;
+        try
+        {
+            if (!int.TryParse(V.LastEmpNumber, out int lastNo))
+            {
+                ShowError("Invalid data", "The last employee number on record is not a valid number. Please contact your system administrator.");
+                return;
+            }
+
+            const int MaxEmpNumber = 99999; 
+
+            if (lastNo >= MaxEmpNumber)
+            {
+                ShowError(
+                    "Employee number limit reached",
+                    "The maximum employee number (99999) has been reached. Please assign a new number manually or contact your system administrator."
+                );
+                return;
+            }
+
+            int nextNo = lastNo + 1;
+            V.EmpmasToEdit.EmpNumber = nextNo.ToString("D5");
+
+            await OnEmpNumberLostFocus();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError(
+                "Unable to generate number",
+                "Something went wrong while generating the employee number. Please try again or contact your system administrator."
+            );
+        }
+        finally
+        {
+            isBusy = false;
         }
     }
 
+    async Task OnEmpNumberLostFocus()
+    {
+        V.Action = "CheckEmpnoAndEmailOnSecpis";
+        await ChildAction.InvokeAsync();
+    }
 
-    async Task<bool?> OnEmpNumberLostFocus()
+    async Task OnEmailLostFocus()
     {
 
-        V.Action = "CheckIfEmpNoExists";
+
+        V.Action = "CheckEmpnoAndEmailOnSecpis";
         await ChildAction.InvokeAsync();
-        return V.IsEmpNoValid;
     }
 
 
-    async Task<bool?> CheckEmail()
-    {
-        V.Action = "CheckIfEmailExists";
-        await ChildAction.InvokeAsync();
-        return V.IsEmailValid;
-    }
-
+   
 
     async Task OnSubmit(OEmpmasModel model)
     {
-        var empNoValid = await OnEmpNumberLostFocus();
-        var emailValid = await CheckEmail();
+        if (isBusy) return;
 
-        if (empNoValid == false || emailValid == false) return;
-
-        showNameError = false;
-        V.Action = "SaveEmpmas";
-        await ChildAction.InvokeAsync();
+        isBusy = true;
+        try
+        {
+            V.Action = "SaveEmpmas";
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError(
+                "Unable to save",
+                "Something went wrong while saving the employee record. Please try again or contact your system administrator."
+            );
+        }
+        finally
+        {
+            isBusy = false;
+        }
     }
-
 
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args) { }
 
+
+
     async Task HideModal()
     {
-        V.Action = "HideDataEntry";
-        await ChildAction.InvokeAsync();
+        if (isBusy) return;
+
+        isBusy = true;
+        try
+        {
+            V.Action = "HideDataEntry";
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            ShowError(
+                "Unable to close",
+                "Something went wrong while closing this window. Please try again or contact your system administrator."
+            );
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+    void ShowError(string summary, string detail, int duration = 5000)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Error,
+            Summary = summary,
+            Detail = detail,
+            Duration = duration
+        });
     }
 }
 
 <style>
     .mb-cbtn-outline-blue {
-        color: #0d6efd;
-        background: #0d6efd21;
+        color: rgb(0, 128, 192);
+        background: rgba(0, 128, 192, 0.13);
     }
 
         .mb-cbtn-outline-blue:focus {
