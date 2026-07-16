@@ -371,6 +371,13 @@ public class AuthenticationController : Controller
         // Create Schema and Tables  --------------------------------------------------------
         _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
 
+
+        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+        if (isExclusive == "true")
+        {
+            uc.ExclusiveCompany = login.CompanyId;
+        }
+
         await CreateClaims(user, uc);
         await CreateCompany(user, uc, conn);    
         
@@ -662,6 +669,7 @@ public class AuthenticationController : Controller
         var empnumber       = user.LoginName??"00000";
         var oldPis           = uc?.OldPis ?? "";
         var oldPay           = uc?.OldPay ?? "";
+        var exclusiveCompany = uc?.ExclusiveCompany ?? "";
 
         var res = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
         
@@ -706,7 +714,8 @@ public class AuthenticationController : Controller
             new("OldPis",               oldPis  ?? "secpis"),  
             new("OldPay",               oldPay  ?? "pay"),  
             
-            new("IsExclusiveCompany",   isExclusiveCompany)
+            new("IsExclusiveCompany",   isExclusiveCompany),
+             new("ExclusiveCompany",   exclusiveCompany) // For GSIA
         }; 
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
