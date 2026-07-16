@@ -715,7 +715,8 @@ public class AuthenticationController : Controller
             new("OldPay",               oldPay  ?? "pay"),  
             
             new("IsExclusiveCompany",   isExclusiveCompany),
-             new("ExclusiveCompany",   exclusiveCompany) // For GSIA
+            new("ExclusiveCompany",   exclusiveCompany) // For GSIA
+
         }; 
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
