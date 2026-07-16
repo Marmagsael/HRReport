@@ -8,317 +8,245 @@
 @inject DialogService       _DialogService; 
 
 
-<style>
-    .s222-tab-esched-lbl {
-        width: 150px;
-        padding-top: 5px;
-    }
-
-    .s222-tab-esched-lbl-marker {
-        font-weight: bold;
-        color: darkgreen;
-        width: 150px;
-        padding-top: 5px;
-        border-bottom: 1px solid green;
-    }
-
-    .s222-lbl-09 {
-        display: flex;
-        border-bottom: 1px solid gray;
-        padding: 2px;
-    }
-
-    .s222-lbl-10 {
-        width: 75px;
-        padding-top: 5px;
-        text-align: center;
-    }
-
-    .s222-lbl-11 {
-        width: 175px;
-    }
-
-</style>
-
-<div class="p-2 overflow-auto" style="height:49.5vh;">
-
-   
-
-    
-
-    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Deployment" />
-
+<div class="p-2">
     <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+
+        <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:1000;">
+            <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Deployment" />
+
+            <div class="h-10p"></div>
+            @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+            {
+                <div class="p-2 bordered mb-2 w-100">
+                    <button type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <span class="fw-semibold"><small>Save</small></span>
+                        </div>
+                    </button>
+                </div>
+            }
+        </div>
+
         <div class="h-10p"></div>
-         @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
-        {
-            <div class="p-2 bordered mb-2 w-100">
-                <input class="btn btn-secondary bg-primary-green w-100p" type="submit" value="Save" />
+        @* ============== Employment Details ============== *@
+        <RadzenFieldset Text="Employment Details">
+            <div class="w-100 d-flex p-1">
+                <div class="w-30 p-2 small">Position</div>
+                <div class="w-80">
+                    <RadzenDropDown TValue="string" @bind-Value=@V.Empmas!.Position_ Data=@V.OPositions
+                                    TextProperty="Name" ValueProperty="Code"
+                                    Style="width: 100%;  max-width: 400px;"
+                                    />
+                </div>
             </div>
 
-        }
-        
-
-            <RadzenFieldset Text="Employment Details" class="fw-bold">
-
-            <div class="fw-normal">
-                @* ----- Position----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20">Position </div>
-                    <div class="w-80"> 
-                        <RadzenDropDown TValue="string"
-                                        @bind-Value=@V.Empmas!.Position_
-                                        Data=@V.OPositions
-                                        TextProperty="Name"
-                                        ValueProperty="Code"
-                                        Style="width: 100%; max-width: 400px;"
-                                        Name="ddDivisions" />
-                    </div>
+            <div class="w-100 d-flex p-1">
+                <div class="w-30 p-2 small">Status</div>
+                <div class="w-80">
+                    <RadzenDropDown TValue="string" @bind-Value=@V.Empmas!.EmpStat_ Data=@V.OEmpstats
+                                    TextProperty="Name" ValueProperty="Code" Disabled
+                                    Style="width: 100%;  max-width: 400px;" />
                 </div>
+            </div>
 
-                @* ----- Status ----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20">Status </div>
-                    <div class="w-80">
-                        <RadzenDropDown 
-                                        TValue="string"
-                                        @bind-Value=@V.Empmas!.EmpStat_
-                                        Data=@V.OEmpstats
-                                        TextProperty="Name"
-                                        ValueProperty="Code"
-                                        Style="width: 100%; max-width: 400px;"
-                                        Disabled
-                                        Name="ddDivisions" />
-
-                    </div>
+            <div class="w-100 d-flex p-1">
+                <div class="w-30 p-2 small">Date Hired </div>
+                <div class="w-80">
+                    <RadzenDatePicker @bind-Value=@V.Empmas.DateHired DateFormat="MMM dd, yyyy" Style="width:50%" />
                 </div>
+            </div>
 
-
-
-
-                @* ----- DHired (date)----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20">Date Hired </div>
-                    <div class="w-80"> <RadzenDatePicker @bind-Value=@V.Empmas.DateHired Name="DPDHired" DateFormat="MMM dd, yyyy" /></div>
+            <div class="w-100 d-flex p-1">
+                <div class="w-30 p-2 small">Date of Regularization </div>
+                <div class="w-80">
+                    <RadzenDatePicker @bind-Value=@V.Empmas.RegRef Name="DPDRegularization" DateFormat="MMM dd, yyyy" Style="width:50%" />
                 </div>
-
-                @* ----- DRegularization (date)----------*@
-                <div class="w-100 d-flex p-1">
-                    <div class="w-20">Regularization Date</div>
-                    <div class="w-80"> <RadzenDatePicker @bind-Value=@V.Empmas.RegRef Name="DPDRegularization" DateFormat="MMM dd, yyyy" /></div>
-                </div>
-
-                <br />
-
-
-                <div class="disabled-div-50">
-                    @* **** Employment References  ***** *@
-                    @* ********************************* *@
-                    <RadzenFieldset Text="Group Assignment" class="fw-bold text-primary" Style="background-color:rgba(216, 217, 216, .2)">
-                        <div class="fw-normal">
-
-                            <div>
-
-                                @* --- Division  *@
-                                <div class="d-flex w-100">
-                                    <div class="w-20" style="padding-top: 5px;color:darkgreen">Division</div>
-                                    <div class="w-80">
-                                        <RadzenDropDown TValue="int?"
-                                                        @bind-Value=@V.Deprec!.Divid
-                                                        Data=@V.Rdivisions
-                                                        TextProperty="Name"
-                                                        ValueProperty="Id"
-                                                        Style="width: 100%; max-width: 400px;"
-                                                        Name="ddDivisions" />
-                                    </div>
-                                </div>
-
-                                @* --- Department  *@
-                                <div class="d-flex w-100 mt-2">
-                                    <div class="w-20" style="padding-top: 5px;color:darkgreen; ">Department</div>
-                                    <div class="w-80">
-                                        <RadzenDropDown 
-                                                        TValue="int?"
-                                                        @bind-Value=@V.Deprec!.Depid
-                                                        Data=@V.Rdepartments
-                                                        TextProperty="Name"
-                                                        Style="width: 100%; max-width: 400px;"
-                                                        ValueProperty="Id"
-                                                        Name="ddDepartments" />
-                                    </div>
-                                </div>
-
-                                @* --- Section  *@
-                                <div class="d-flex w-100 mt-2">
-                                    <div class="w-20" style="padding-top: 5px;color:darkgreen;">Section</div>
-                                    <div class="w-80">
-                                        <RadzenDropDown TValue="int?"
-                                                        @bind-Value=@V.Deprec!.Secid
-                                                        Data=@V.Rsections
-                                                        TextProperty="Name"
-                                                        Style="width: 100%; max-width: 400px;"
-                                                        ValueProperty="Id"
-                                                        Name="ddSections" />
-                                    </div>
-                                </div>
-
-                                <div class="w-100 bordered-bottom" style="height:10px;"> &nbsp; </div>
-
-                                @* --- Leave Grp  *@
-                                <div class="d-flex w-100 mt-2">
-                                    <div class="w-20" style="padding-top: 5px;color:darkgreen;">Leave Group</div>
-                                    <div class="w-80">
-                                        <RadzenDropDown TValue="int?"
-                                                        @bind-Value=@V.Deprec!.Leavegrpid
-                                                        Data=@V.Leavegrps
-                                                        TextProperty="Name"
-                                                        Style="width: 100%; max-width: 400px;"
-                                                        ValueProperty="Id"
-                                                        Name="ddLeavegrps" />
-                                    </div>
-                                </div>
-
-                                @* --- Payroll Grp  *@
-                                <div class="d-flex w-100 mt-2">
-                                    <div class="w-20" style="padding-top: 5px;color:darkgreen; ">Payroll Group</div>
-                                    <div class="w-80">
-                                        <RadzenDropDown TValue="int?"
-                                                        @bind-Value=@V.Deprec!.Payrollgrpid
-                                                        Data=@V.Payrollgprs
-                                                        TextProperty="Name"
-                                                        Style="width: 100%; max-width: 400px;"
-                                                        ValueProperty="Id"
-                                                        Name="ddLeavegrps" />
-                                    </div>
-                                </div>
-
-
-                            </div>
-                        </div>
-
-                    </RadzenFieldset>
-
-                    <br />
-
-                    @* **** Employment References  ***** *@
-                    @* ********************************* *@
-                    <RadzenFieldset Text="Employment References" class="fw-bold" Style="background-color:rgba(216, 217, 216, .2)">
-
-                        <div class="fw-normal">
-
-                            @* ----- Employment Type ----------*@
-                            <div class="w-100 p-1 d-flex gap-1 bordered">
-                                <div class="p-2 fw-bold w-20" style="color: darkgreen; ">Employment Type </div>
-                                <div class="w-50">
-                                    <RadzenDropDown TValue="int?"
-                                                    @bind-Value=@V.Deprec!.Employmenttypeid
-                                                    Data=@V.Employmenttypes
-                                                    TextProperty="Name"
-                                                    ValueProperty="Id"
-                                                    Name="ddEmploymentTypes"
-                                                    class="w-100" />
-                                </div>
-                            </div>
-
-
-                            @* **** Trainee ------------------ *@
-                            <div class="fw-normal">
-                                <div class="w-100 p-1 d-flex gap-1">
-                                    <div class="s222-tab-esched-lbl-marker p-2">Trainee  </div>
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">Start</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dtraineestart Name="DPDTraineeStart" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">End</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dtraineeend Name="DPDTraineeEnd" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @* **** Contractual ------------------ *@
-                            <div class="fw-normal">
-                                <div class="w-100 p-1 d-flex gap-1">
-                                    <div class="s222-tab-esched-lbl-marker p-2">Contractual </div>
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">Start</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dcontractualstart Name="DPDContractualStart" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">End</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dcontractualend Name="DPDContractualEnd" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @* **** Probationary ------------------ *@
-                            <div class="fw-normal">
-                                <div class="w-100 p-1 d-flex gap-1">
-                                    <div class="s222-tab-esched-lbl-marker p-2">Probationary </div>
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">Start</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dprobationarystart Name="DPDProbationaryStart" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">End</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dprobationaryend Name="DPDProbationaryEnd" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @* **** Regular ------------------ *@
-                            <div class="fw-normal">
-                                <div class="w-100 p-1 d-flex gap-1">
-                                    <div class="s222-tab-esched-lbl-marker p-2">Regularization</div>
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">Start</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dregularizationstart Name="DPDRegularStart" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-
-                                    <div class="s222-lbl-09">
-
-                                        <div class="s222-lbl-10">&nbsp;</div>
-                                        <div class="s222-lbl-11">
-                                            &nbsp;
-                                            @* <RadzenDatePicker @bind-Value=@V.Deprec!.Dregularizationend Name="DPDRegularEnd" DateFormat="MMMM dd, yyyy" /> *@
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                            @* **** Permanent ------------------ *@
-                            <div class="fw-normal">
-                                <div class="w-100 p-1 d-flex gap-1">
-                                    <div class="s222-tab-esched-lbl-marker p-2">Permanent</div>
-                                    <div class="s222-lbl-09">
-                                        <div class="s222-lbl-10">Start</div>
-                                        <div class="s222-lbl-11"> <RadzenDatePicker @bind-Value=@V.Deprec!.Dpermanentstart Name="DPDPermanentStart" DateFormat="MMM dd, yyyy" /></div>
-                                    </div>
-
-                                    <div class="s222-lbl-09">
-
-                                        <div class="s222-lbl-10">&nbsp;</div>
-                                        <div class="s222-lbl-11">
-                                            &nbsp;
-                                            @* <RadzenDatePicker @bind-Value=@V.Deprec!.Dpermanentend Name="DPDPermanentEnd" DateFormat="MMMM dd, yyyy" /> *@
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </RadzenFieldset>
-                </div>
-              
-
             </div>
         </RadzenFieldset>
-    </RadzenTemplateForm>
 
+
+
+        <div class="disabled-div-50">
+            @* ============== Group Asdsignment ============== *@
+            <div class="h-10p"></div>
+            <RadzenFieldset Text="Group Assignment" class="bg-lightgray">
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Division</div>
+                    <div class="w-80">
+                        <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Divid Data=@V.Rdivisions
+                                        TextProperty="Name" ValueProperty="Id"
+                                        Style="width: 100%;  max-width: 400px;" />
+                    </div>
+                </div>
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Department</div>
+                    <div class="w-80">
+                        <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Depid Data=@V.Rdepartments
+                                        TextProperty="Name" ValueProperty="Id"
+                                        Style="width: 100%;  max-width: 400px;" />
+                    </div>
+                </div>
+
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Section</div>
+                    <div class="w-80">
+                        <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Secid Data=@V.Rsections
+                                        TextProperty="Name" ValueProperty="Id"
+                                        Style="width: 100%;  max-width: 400px;" />
+                    </div>
+                </div>
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Leave Group</div>
+                    <div class="w-80">
+                        <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Leavegrpid Data=@V.Leavegrps
+                                        TextProperty="Name" ValueProperty="Id"
+                                        Style="width: 100%;  max-width: 400px;" />
+                    </div>
+                </div>
+
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Payroll Group</div>
+                    <div class="w-80">
+                        <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Payrollgrpid Data=@V.Payrollgprs
+                                        TextProperty="Name" ValueProperty="Id"
+                                        Style="width: 100%;  max-width: 400px;" />
+                    </div>
+                </div>
+
+
+
+
+
+            </RadzenFieldset>
+
+
+            @* ============== Employment References ============== *@
+            <div class="h-10p"></div>
+            <RadzenFieldset Text="Employment References" class="bg-lightgray">
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Employment Type </div>
+                    <div class="w-80">
+                        <RadzenDropDown TValue="int?"
+                                        @bind-Value=@V.Deprec!.Employmenttypeid
+                                        Data=@V.Employmenttypes
+                                        TextProperty="Name"
+                                        ValueProperty="Id"
+                                        Style="width: 100%; max-width: 400px;" />
+                    </div>
+                </div>
+
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Trainee    </div>
+                    <div class="mt-1 w-80">
+                        <RadzenRow RowGap="0">
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dtraineestart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dtraineeend" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </div>
+                </div>
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Contractual   </div>
+                    <div class="w-80">
+                        <div class="mt-1">
+                            <RadzenRow RowGap="0">
+                                <RadzenColumn Size="12" SizeMD="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
+                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dcontractualstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
+                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dcontractualend" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Probationary    </div>
+                    <div class="w-80">
+                        <div class="mt-1">
+                            <RadzenRow RowGap="0">
+                                <RadzenColumn Size="12" SizeMD="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
+                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dprobationarystart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
+                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dprobationaryend" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Regularization    </div>
+                    <div class="w-80">
+                        <div class="mt-1">
+                            <RadzenRow RowGap="0">
+                                <RadzenColumn Size="12" SizeMD="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
+                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dregularizationstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                                <RadzenColumn Size="12" SizeMD="6">
+                                    <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
+                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dregularizationend" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Permanent    </div>
+                    <div class="mt-1 w-80">
+                        <RadzenRow RowGap="0">
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dpermanentstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dpermanentstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </div>
+                </div>
+
+            </RadzenFieldset>
+
+        </div>
+   
+       
+    </RadzenTemplateForm>
 </div>
 
 @inject IOEmpmasDataAccess _empmas

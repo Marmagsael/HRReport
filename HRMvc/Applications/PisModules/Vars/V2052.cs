@@ -36,9 +36,13 @@ public class V2052
     public int?                          SelectedId             { get; set; } = 0;
     public string?                       SelectedEmpnumber      { get; set; } = string.Empty;
     public string?                       LastEmpNumber          { get; set; } = string.Empty;
+    public bool?                         IsEmpNoValid            { get; set; } = true;
     public bool?                         IsEmailValid           { get; set; } = true;
-    public bool?                         IsEmpNoValid           { get; set; } = true;
-
+    public string?                       EmailDuplicateMessage  { get; set; } = string.Empty;
+    public string?                       EmailRegisteredMessage { get; set; } = string.Empty;
+    public string?                       RegisteredUserOnMain   { get; set; } = string.Empty;
+    public string?                       RelatedUserOnSecpis    { get; set; } = string.Empty;
+    
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();
@@ -54,7 +58,7 @@ public class V2052
     public List<EmpmasRelativesRefModel?>?  RelativesRef        { get; set; } = new();
     public List<OTrainModel?>?              Trainings           { get; set; } = new();
     public List<OReferModel?>?              CharRefs            { get; set; } = new();
-    public List<EmpmasInsuranceModel?>?     Insurances          { get; set; } = new();
+    public OInsuranceaccidentModel?         InsuranceAccident  { get; set; } = new();
 
     public List<OCivstatModel?>?            OCivStats           { get; set; } = new();
     public List<OGenderModel?>?             OGenders            { get; set; } = new();
@@ -125,6 +129,28 @@ public class V2052
             d = new()
             {
                 SystemId    = e.UserId,
+                EmpNumber   = e.EmpNumber,
+                EmpLastNm   = e.EmpLastNm,
+                EmpFirstNm  = e.EmpFirstNm,
+                EmpMidNm    = e.EmpMidNm,
+                Suffix      = e.Suffix,
+                EmpAlias    = e.EmpAlias,
+            };
+        }
+
+        return d;
+
+    }
+
+
+    public EmpmasModel NewEmpmasToOldEmpmasMapper(OEmpmasModel source, EmpmasModel destination)
+    {
+        var d = destination;
+        var e = source;
+        if (source != null)
+        {
+            d = new()
+            {
                 EmpNumber   = e.EmpNumber,
                 EmpLastNm   = e.EmpLastNm,
                 EmpFirstNm  = e.EmpFirstNm,

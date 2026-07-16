@@ -11,12 +11,14 @@
         @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
         {
             <div class="p-2 bordered mb-2 w-100">
-                <RadzenButton ButtonStyle="ButtonStyle.Success"
-                              Icon="add_circle_outline"
-                              Text="New Entry"
-                              Click="@InsertRow"
-                              Disabled="@(editMode || isLoading)"
-                              class="bg-primary-green" />
+                <button type="button"
+                        class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
+                        @onclick="InsertRow"
+                        disabled="@(editMode || isLoading)">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"> <small>New</small> </span>
+                    </div>
+                </button>
             </div>
         }
 
@@ -39,9 +41,8 @@
                                           Width="100%">
                         <HeaderTemplate>
                             <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
-                                <RadzenColumn Size="5" class="custom-grid-md">Name</RadzenColumn>
-                                <RadzenColumn Size="4" class="custom-grid-md">Relationship</RadzenColumn>
-                                <RadzenColumn Size="3" class="custom-grid-md">Age</RadzenColumn>
+                                <RadzenColumn Size="6" class="custom-grid-md">Name</RadzenColumn>
+                                <RadzenColumn Size="6" class="custom-grid-md">Relationship</RadzenColumn>
                             </RadzenRow>
                         </HeaderTemplate>
 
@@ -79,7 +80,7 @@
                             @* ======= Large Screen ========= *@
                             <RadzenStack Gap="0" class="custom-grid-md">
                                 <RadzenRow>
-                                    <RadzenColumn Size="5">
+                                    <RadzenColumn Size="6">
                                         <div>@rec.Name</div>
                                         <div class="mt-1">
                                             <RadzenRow RowGap="0">
@@ -88,8 +89,16 @@
                                                 </RadzenColumn>
                                             </RadzenRow>
                                         </div>
+
+                                        <div class="mt-1">
+                                            <RadzenRow RowGap="0">
+                                                <RadzenColumn Size="12">
+                                                    Age: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;">@rec.Age</span>
+                                                </RadzenColumn>
+                                            </RadzenRow>
+                                        </div>
                                     </RadzenColumn>
-                                    <RadzenColumn Size="4">
+                                    <RadzenColumn Size="6">
                                         <div class="fw-bold">@(ParentCodes.FirstOrDefault(c => c.Code == rec.Code)?.Name)</div>
                                         <div class="mt-1">
                                             <RadzenRow RowGap="0">
@@ -98,13 +107,16 @@
                                                 </RadzenColumn>
                                             </RadzenRow>
                                         </div>
-                                    </RadzenColumn>
-                                    <RadzenColumn Size="3">
-                                        <div>@rec.Age</div>
+
                                         <div class="mt-1">
-                                            Birth: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;">@rec.DoB?.ToString("MMMM dd, yyyy")</span>
+                                            <RadzenRow RowGap="0">
+                                                <RadzenColumn Size="12">
+                                                    Birth: <span class="text-muted text-decoration-underline" style="word-break:break-word;white-space:normal;">@rec.DoB?.ToString("MMMM dd, yyyy")</span>
+                                                </RadzenColumn>
+                                            </RadzenRow>
                                         </div>
                                     </RadzenColumn>
+                                   
                                 </RadzenRow>
                             </RadzenStack>
                         </Template>
@@ -175,7 +187,7 @@
                             <RadzenStack Gap="0" class="custom-grid-md">
                                 <RadzenRow Gap=".3rem">
                                     @*--  Name / Address --*@
-                                    <RadzenColumn Size="5">
+                                    <RadzenColumn Size="6">
                                         <RadzenTextBox @bind-Value="rec.Name" Name="ParentNameLg" class="w-100" MaxLength="30" Style="display:block" />
                                         <RadzenRequiredValidator Component="ParentNameLg" Text="Name is required" Popup="true" Style="position:absolute;" />
                                         <div class="mt-1">
@@ -183,10 +195,16 @@
                                                 <RadzenTextBox @bind-Value="rec.Addr" class="w-100" MaxLength="60" />
                                             </RadzenFormField>
                                         </div>
+
+                                        <div class="mt-1">
+                                            <RadzenFormField AllowFloatingLabel="false" Text="Age" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                                <RadzenNumeric @bind-Value="rec.Age" Format="0" Max="99" class="w-100" />
+                                            </RadzenFormField>
+                                        </div>
                                     </RadzenColumn>
 
                                     @*--  Relationship / Occupation --*@
-                                    <RadzenColumn Size="4">
+                                    <RadzenColumn Size="6">
                                         <RadzenDropDown TValue="string"
                                                         @bind-Value="rec.Code"
                                                         Data="@ParentCodes"
@@ -201,17 +219,15 @@
                                                 <RadzenTextBox @bind-Value="rec.Occ" class="w-100" MaxLength="20" />
                                             </RadzenFormField>
                                         </div>
-                                    </RadzenColumn>
 
-                                    @*--  Age / DOB --*@
-                                    <RadzenColumn Size="3">
-                                        <RadzenNumeric @bind-Value="rec.Age" Format="0" Max="99" class="w-100" />
                                         <div class="mt-1">
                                             <RadzenFormField AllowFloatingLabel="false" Text="Date of Birth" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
                                                 <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMM dd, yyyy" />
                                             </RadzenFormField>
                                         </div>
                                     </RadzenColumn>
+
+                                  
                                 </RadzenRow>
                             </RadzenStack>
                         </EditTemplate>
@@ -435,10 +451,13 @@
             {
                 await _empmas._01(rec, V.pisdb!, V.conn!);
                 V.Parents!.Add(rec);
+                Console.WriteLine("Insert");
             }
             else
             {
-                await _empmas._03(rec.EmpNumber, rec.Name, rec.Code, rec, V.pisdb!, V.conn!);
+                await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.Code, rec, V.pisdb!, V.conn!);
+                Console.WriteLine("Update");
+
             }
 
             await V.ParentGrid.UpdateRow(rec);

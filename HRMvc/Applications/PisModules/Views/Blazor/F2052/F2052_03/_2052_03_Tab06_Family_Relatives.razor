@@ -7,12 +7,14 @@
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
     {
         <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success"
-                          Icon="add_circle_outline"
-                          Text="New Entry"
-                          Click="@InsertRow"
-                          Disabled="@(editMode || isLoading)"
-                          class="bg-primary-green" />
+            <button type="button"
+                    class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
+                    @onclick="InsertRow"
+                    disabled="@(editMode || isLoading)">
+                <div class="d-flex gap-1 align-items-center justify-content-center">
+                    <span class="fw-semibold"> <small>New</small> </span>
+                </div>
+            </button>
         </div>
     }
 
@@ -29,15 +31,14 @@
                         IsLoading="isLoading">
             <Columns>
                 <RadzenDataGridColumn TItem="OFamilyModel"
-                                      Context="OFamilyModel"
+                                      Context="row"
                                       Filterable="false"
                                       Sortable="false"
                                       Width="100%">
                     <HeaderTemplate>
                         <RadzenRow Gap="0" Style="padding-inline-end:1rem;">
-                            <RadzenColumn Size="5" class="custom-grid-md">Name</RadzenColumn>
-                            <RadzenColumn Size="4" class="custom-grid-md">Birth</RadzenColumn>
-                            <RadzenColumn Size="3" class="custom-grid-md">Relation</RadzenColumn>
+                            <RadzenColumn Size="7" class="custom-grid-md">Name</RadzenColumn>
+                            <RadzenColumn Size="5" class="custom-grid-md">Relation</RadzenColumn>
                         </RadzenRow>
                     </HeaderTemplate>
 
@@ -46,36 +47,37 @@
                         <RadzenStack Gap="0" class="custom-grid-sm">
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4"><RadzenLabel Text="Name" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="30" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Name</RadzenColumn>
                             </RadzenRow>
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Birth" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" Disabled="true" DateFormat="MMM dd, yyyy" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
+
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4"><RadzenLabel Text="Relation" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Relation" Disabled="true" MaxLength="15" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Relation</RadzenColumn>
+                            </RadzenRow>
+
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4"><RadzenLabel Text="Birth" /></RadzenColumn>
+                                <RadzenColumn Size="8">@rec.Birth?.ToString("MMM dd, yyyy")</RadzenColumn>
                             </RadzenRow>
                         </RadzenStack>
 
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow>
-                                <RadzenColumn Size="5">@rec.Name</RadzenColumn>
-                                <RadzenColumn Size="4">@rec.Birth?.ToString("MMM dd, yyyy")</RadzenColumn>
-                                <RadzenColumn Size="3">@rec.Relation</RadzenColumn>
+                                <RadzenColumn Size="6">
+                                    @rec.Name
+                                   
+                                </RadzenColumn>
+                                <RadzenColumn Size="6">
+                                    @rec.Relation
+                                    <div class="mt-1">
+                                        <RadzenRow RowGap="0">
+                                            <RadzenColumn Size="12">
+                                                Birth: <span class="text-muted" style="word-break:break-word;white-space:normal;">@rec.Birth?.ToString("MMM dd, yyyy")</span>
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    </div>
+                                </RadzenColumn>
                             </RadzenRow>
                         </RadzenStack>
                     </Template>
@@ -92,14 +94,7 @@
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
-                            <RadzenRow AlignItems="AlignItems.Center">
-                                <RadzenColumn Size="4"><RadzenLabel Text="Birth" /></RadzenColumn>
-                                <RadzenColumn Size="8">
-                                    <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
+
                             <RadzenRow AlignItems="AlignItems.Center">
                                 <RadzenColumn Size="4"><RadzenLabel Text="Relation" Component="RelSm" /></RadzenColumn>
                                 <RadzenColumn Size="8">
@@ -109,21 +104,36 @@
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
+
+                            <RadzenRow AlignItems="AlignItems.Center">
+                                <RadzenColumn Size="4"><RadzenLabel Text="Birth" /></RadzenColumn>
+                                <RadzenColumn Size="8">
+                                    <RadzenFormField Variant="Variant.Text" class="w-100">
+                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" class="w-100" />
+                                    </RadzenFormField>
+                                </RadzenColumn>
+                            </RadzenRow>
                         </RadzenStack>
 
                         @* ======= Large Screen ========= *@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow Gap=".3rem">
-                                <RadzenColumn Size="5">
+                                <RadzenColumn Size="7">
                                     <RadzenTextBox @bind-Value="rec.Name" Name="NameLg" class="w-100" MaxLength="30" Style="display:block" />
                                     <RadzenRequiredValidator Component="NameLg" Text="Name is required" Popup="true" Style="position:absolute;" />
+
+                                  
                                 </RadzenColumn>
-                                <RadzenColumn Size="4">
-                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" class="w-100" />
-                                </RadzenColumn>
-                                <RadzenColumn Size="3">
+
+                                <RadzenColumn Size="5">
                                     <RadzenTextBox @bind-Value="rec.Relation" Name="RelLg" class="w-100" MaxLength="15" Style="display:block" />
                                     <RadzenRequiredValidator Component="RelLg" Text="Relation is required" Popup="true" Style="position:absolute;" />
+
+                                    <div class="mt-1">
+                                        <RadzenFormField AllowFloatingLabel="false" Text="Date of Birth" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" class="w-100" />
+                                        </RadzenFormField>
+                                    </div>
                                 </RadzenColumn>
                             </RadzenRow>
                         </RadzenStack>
@@ -132,7 +142,7 @@
 
                 @* Actions Column *@
                 <RadzenDataGridColumn TItem="OFamilyModel"
-                                      Context="OFamilyModel"
+                                      Context="row"
                                       Filterable="false"
                                       Sortable="false"
                                       TextAlign="TextAlign.Center"
@@ -154,6 +164,7 @@
         </RadzenDataGrid>
     </div>
 </div>
+
 @code {
 
 
@@ -193,8 +204,6 @@
         var rec = new OFamilyModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-        V.Familys  ??= new();
-        V.Familys .Insert(0, rec);
         familyToInsert!.Add(rec);
         await V.FamilyGrid!.InsertRow(rec);
         editMode = true;
@@ -327,16 +336,14 @@
             if (isNew)
             {
                 await _empmas._01(rec, V.pisdb!, V.conn!);
-                V.Familys = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
+                V.Familys!.Add(rec);
             }
             else
             {
                 await _empmas._03(rec.EmpNumber, rec.Name, rec.Relation, rec, V.pisdb!, V.conn!);
-                V.FamilyGrid.CancelEditRow(rec);
             }
 
-            Reset(rec);
-            await V.FamilyGrid.Reload();
+            await V.FamilyGrid.UpdateRow(rec);
             ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
         }
         catch (Exception ex)

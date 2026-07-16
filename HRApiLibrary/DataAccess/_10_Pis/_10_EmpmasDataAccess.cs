@@ -20,8 +20,9 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     public async Task<EmpmasModel?> _01Empmas(EmpmasModel empmas, string? schema, string? conn)
     {
         int? id = empmas.Id;
-        string?  sql = $@"SELECT * FROM {schema}.Empmas WHERE Id = @Id";
-        var     res = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+        string? sql = $@"SELECT * FROM {schema}.Empmas WHERE Id = @Id";
+
+        var res = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
         if (res.Count > 0) return res.FirstOrDefault();
 
         sql = $@"Insert into {schema}.Empmas 
@@ -31,11 +32,11 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         res = await _sql.FetchData<EmpmasModel?, dynamic>(sql, empmas, conn);
         return res.FirstOrDefault();
     }
-    
+
     public async Task<EmpmasModel?> _01EmpmasV1(EmpmasModel empmas, string? schema, string? conn)
     {
         int? id = empmas.Id;
-        if (id != 0) return empmas; 
+        if (id != 0) return empmas;
 
         string? sql = $@"Insert into {schema}.Empmas 
                     (Id,  EmpNumber,  EmpLastNm,  EmpFirstNm,  EmpMidNm,  Suffix,  EmpAlias) values 
@@ -47,8 +48,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
 
     public async Task<EmpmasModel?> _01EmpmasWithSystemId(EmpmasModel empmas, string? schema, string? conn)
     {
-        Console.WriteLine("Insert");
-        int? id = empmas.Id;
+        int? id = empmas.Id ?? 0;
         if (id != 0) return empmas;
 
         string? sql = $@"Insert into {schema}.Empmas 
@@ -63,29 +63,29 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     public async Task<EmpmasModel?> _02Empmas(int? id, string? schema, string? conn)
     {
 
-        string?  sql     = $@"select  Id, EmpLastNm, EmpFirstNm, EmpMidNm, Suffix, EmpAlias from {schema}.Empmas where Id = @Id";
-        var     data    = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+        string? sql = $@"select  Id, EmpLastNm, EmpFirstNm, EmpMidNm, Suffix, EmpAlias from {schema}.Empmas where Id = @Id";
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-    
+
     public async Task<List<EmpmasModel?>?> _02Empmas_EmpnumberOwnedByOthers(int? id, string? empnumber, string? schema, string? conn)
     {
 
-        string?  sql     = $@"select  * from {schema}.Empmas where Empnumber = @Empnumber and  Id != @Id";
-        var     data    = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Empnumber=empnumber, Id = id }, conn);
+        string? sql = $@"select  * from {schema}.Empmas where Empnumber = @Empnumber and  Id != @Id";
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Empnumber = empnumber, Id = id }, conn);
         return data;
     }
-    
-    public async Task<EmpmasModel?> _02ByUserId(int? id, string? schema="MainPis", string? conn="MySqlConn")
+
+    public async Task<EmpmasModel?> _02ByUserId(int? id, string? schema = "MainPis", string? conn = "MySqlConn")
     {
 
-        string?  sql     = $@"select  Id, EmpLastNm, EmpFirstNm, EmpMidNm, Suffix, EmpAlias 
+        string? sql = $@"select  Id, EmpLastNm, EmpFirstNm, EmpMidNm, Suffix, EmpAlias 
                                 from {schema}.Empmas where Id = @Id";
-        var     data    = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<EmpmasInternalModel?>?> _02BySystemIdList(int? systemId, string? pisdb,  string? conn)
+    public async Task<List<EmpmasInternalModel?>?> _02BySystemIdList(int? systemId, string? pisdb, string? conn)
     {
         string? sql = $@"select  concat(trim(e.Emplastnm),', ',trim(e.Empfirstnm), ' ', trim(e.Empmidnm)) Fullname, 
                             e.*, s.Name EmpStatus, d.DHired DateHired, d.DRegularization Regref, d.DSeparated Separate, p.Name PositionName
@@ -113,23 +113,23 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     public async Task<List<EmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
     {
 
-        string?  sql = $@"select  e.*, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+        string? sql = $@"select  e.*, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
                         from {schema}.Empmas e 
                         where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter
                         order by e.EmplastNm, e.EmpFirstNm";
-        var     data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { FirstLetter=firstLetter, SecondLetter=secondLetter }, conn);
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter }, conn);
         return data;
     }
-    
+
     public async Task<List<EmpmasModel?>?> _02SearchName(string? skey, string? schema = "MainPis", string? conn = "MySqlConn")
     {
-        string? searchKey = $"{skey}%"; 
+        string? searchKey = $"{skey}%";
         string? sql = $@"select  e.*, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
                         from {schema}.Empmas e 
                         where e.EmpLastNm like @SearchKey or e.EmpFirstNm like @SearchKey
                         order by e.EmplastNm, e.EmpFirstNm";
-        
-        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { SearchKey = searchKey}, conn);
+
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { SearchKey = searchKey }, conn);
         return data;
     }
 
@@ -151,6 +151,9 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
 
     public async Task<EmpmasModel?> _03EmpmasWithSystemId(int? id, EmpmasModel empmas, string? schema, string? conn)
     {
+        if (id == null) return null;
+
+        empmas.Id = id;
         string? sql = $@"Update {schema}.Empmas set 
                             EmpNumber   = @EmpNumber, 
                             EmpLastNm   = @EmpLastNm,  
@@ -180,14 +183,13 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     //***************************************************************************************
     public async Task<EmpmasInternalModel?> _01EmpmasInternal(EmpmasInternalModel empmas, string? schema, string? conn)
     {
-        Console.WriteLine($"schema : {schema} * SystemId : {empmas.SystemId}");
         string? sql = $@"Insert into {schema}.Empmas 
                                 (SystemId,  EmpNumber,  EmpLastNm,  EmpFirstNm,  EmpMidNm,  Suffix,  EmpAlias) values 
                                 (@SystemId, @EmpNumber, @EmpLastNm, @EmpFirstNm, @EmpMidNm, @Suffix, @EmpAlias)";
         await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
 
         sql = $@"SELECT * FROM {schema}.Empmas WHERE Id = @Id";
-        var res = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = empmas.Id}, conn);
+        var res = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = empmas.Id }, conn);
 
         return res.FirstOrDefault();
     }
@@ -199,7 +201,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-
+    
 
     public async Task<EmpmasInternalModel?> _03EmpmasInternal(int? id, EmpmasInternalModel empmas, string? schema, string? conn)
     {
@@ -223,7 +225,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         string? sql = $@"Delete from {schema}.Empmas where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
-        sql      = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
+        sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
@@ -311,7 +313,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         return res.FirstOrDefault();
     }
 
-        public async Task<EmpmasAddressModel?> _01EmpmasAddress_EmailOnly(int? id, string?  emailAdd, string? schema, string? conn)
+    public async Task<EmpmasAddressModel?> _01EmpmasAddress_EmailOnly(int? id, string? emailAdd, string? schema, string? conn)
     {
         string? sql = $@"Insert into {schema}.Empmasaddress (Id, EmailAdd ) VALUES  (@Id,@EmailAdd) on duplicate key  update EmailAdd = @EmailAdd; ";
 
@@ -320,7 +322,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
             Id = id,
             EmailAdd = emailAdd
         };
-        
+
         await _sql.ExecuteCmd<dynamic>(sql, eaddress, conn);
         sql = $@"SELECT * FROM {schema}.EmpmasAddress WHERE Id = @Id";
 
@@ -335,22 +337,22 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-    
+
     public async Task<List<EmpmasAddressModel?>?> _02EmpmasAddresss(int? id, string? schema, string? conn)
     {
-        string? sql  = $@"select  * from {schema}.Empmasaddress where Id = @Id";
-        var data    = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new { Id = id }, conn);
+        string? sql = $@"select  * from {schema}.Empmasaddress where Id = @Id";
+        var data = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new { Id = id }, conn);
         return data;
     }
 
-    
+
     public async Task<EmpmasAddressModel?> _02EmpmasAddress_ByIdAndEmail(int? id, string? email, string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Empmasaddress where Id = @Id and EmailAdd = @EmailAdd";
-        var data = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new { Id = id, EmailAdd =email }, conn);
+        var data = await _sql.FetchData<EmpmasAddressModel?, dynamic>(sql, new { Id = id, EmailAdd = email }, conn);
         return data?.FirstOrDefault();
     }
-    
+
     public async Task<List<EmpmasAddressModel?>?> _02EmpmasAddress_ByEmailNotTheOwner(int? id, string? email, string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Empmasaddress where EmailAdd = @EmailAdd  and Id != @Id";
@@ -402,6 +404,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     }
 
 
+   
 
     public async Task<EmpmasAddressModel?> _04EmpmasAddress(int? id, string? schema, string? conn)
     {
@@ -660,10 +663,10 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<EmpmasEducateRefModel?>?> _02EmpmasEducateRef( string? schema, string? conn)
+    public async Task<List<EmpmasEducateRefModel?>?> _02EmpmasEducateRef(string? schema, string? conn)
     {
         string? sql = $@"select  Code, Name from {schema}.EmpmasEducateRef";
-        var data = await _sql.FetchData<EmpmasEducateRefModel?, dynamic>(sql, new {  }, conn);
+        var data = await _sql.FetchData<EmpmasEducateRefModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
@@ -747,8 +750,8 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<EmpmasEmploymentModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
-   
-    
+
+
     // *********************************************************************************************
     // --- EmpmasFamily ****************************************************************************
     //**********************************************************************************************
@@ -808,7 +811,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         await _sql.ExecuteCmd<dynamic>(sql, new { Code = code, Name = name }, conn);
 
         sql = $@"SELECT * FROM {schema}.EmpmasFamilyRef WHERE Code = @Code";
-        var res = await _sql.FetchData<EmpmasFamilyRefModel?, dynamic>(sql, new { Code = code}, conn);
+        var res = await _sql.FetchData<EmpmasFamilyRefModel?, dynamic>(sql, new { Code = code }, conn);
         return res.FirstOrDefault();
     }
 
@@ -823,7 +826,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     public async Task<List<EmpmasFamilyRefModel?>?> _02EmpmasFamilyRefList(string? schema, string? conn)
     {
         string? sql = $@"select  Code, Name from {schema}.Empmasfamilyref ";
-        var data = await _sql.FetchData<EmpmasFamilyRefModel?, dynamic>(sql, new {  }, conn);
+        var data = await _sql.FetchData<EmpmasFamilyRefModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
@@ -913,14 +916,14 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     // *********************************************************************************************
     // --- EmpmasInsurance *************************************************************************
     //**********************************************************************************************
-    public async Task<EmpmasInsuranceModel?> _01EmpmasInsurance( EmpmasInsuranceModel empmasinsurance, string? schema, string? conn)
+    public async Task<EmpmasInsuranceModel?> _01EmpmasInsurance(EmpmasInsuranceModel empmasinsurance, string? schema, string? conn)
     {
         string? sql = $@"Insert into {schema}.Empmasinsurance (  INSURANCE,  PolicyNo,  FaceValue,  Premium,  InsExpire) values 
                                                              ( @INSURANCE, @PolicyNo, @FaceValue, @Premium, @InsExpire)";
         await _sql.ExecuteCmd<dynamic>(sql, empmasinsurance, conn);
 
         sql = $@"SELECT * FROM {schema}.Empmasinsurance WHERE Id = (SELECT @@IDENTITY);";
-        var res = await _sql.FetchData<EmpmasInsuranceModel?, dynamic>(sql, new {  }, conn);
+        var res = await _sql.FetchData<EmpmasInsuranceModel?, dynamic>(sql, new { }, conn);
         return res.FirstOrDefault();
     }
 
@@ -1292,7 +1295,7 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { EmpmasId = id }, conn);
         return data?.FirstOrDefault();
     }
-    
+
     public async Task<List<DeprecModel?>?> _02Deprecs(int? id, string? schema, string? conn)
     {
         string? sql = $@"select  d.*, p.Name Positionname, s.Name Empstatusname  
@@ -1351,4 +1354,10 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { EmpmasId = id }, conn);
         return data?.FirstOrDefault();
     }
+
+
+
+
+    ///----------------------------------------------------------------------------------------------
+    /// 
 }

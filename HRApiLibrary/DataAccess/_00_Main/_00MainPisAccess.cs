@@ -1,5 +1,6 @@
 ﻿using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._00_MainPis;
 
 namespace HRApiLibrary.DataAccess._00_Main;
@@ -54,6 +55,16 @@ public class _00MainPisAccess : I_00MainPisAccess
         return data?.FirstOrDefault();
     }
 
+
+    public async Task<List<EmpmasModel?>?> _02ByEmailWithMainPisEmpmas(string? email, string? mainschema = "Main", string? mainpisschema = "MainPis", string? connName = "MySqlConn")
+    {
+        string sql = $@" SELECT u.Id, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS FullName
+                    FROM {mainschema}.Users u
+                    LEFT JOIN {mainpisschema}.empmas e ON e.Id = u.Id  
+                    WHERE LOWER(TRIM(u.Email)) = LOWER(TRIM(@Email))";
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Email = email }, connName);
+        return data;
+    }
 
     public async Task<EmpmasModel?> _03Empmas(int? id, EmpmasModel empmas, string? schema, string? conn)
     {

@@ -371,6 +371,13 @@ public class AuthenticationController : Controller
         // Create Schema and Tables  --------------------------------------------------------
         _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
 
+
+        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+        if (isExclusive == "true")
+        {
+            uc.ExclusiveCompany = login.CompanyId;
+        }
+
         await CreateClaims(user, uc);
         await CreateCompany(user, uc, conn);    
         
@@ -655,14 +662,15 @@ public class AuthenticationController : Controller
         var acctgSchema     = prefix + "Acctg";
         var appSchema       = prefix + "App";
         var amsSchema       = prefix + "Ams";
-        var conn            = user.Domain;
         var coName          = uc?.CompanyName ?? "-";
         var email           = user.Email;
         
         var empnumber       = user.LoginName??"00000";
         var oldPis           = uc?.OldPis ?? "";
         var oldPay           = uc?.OldPay ?? "";
+        var exclusiveCompany = uc?.ExclusiveCompany ?? "";
 
+        var conn            = user.Domain;
         var res = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
         
         if(res.Count > 0 ) 
@@ -687,6 +695,12 @@ public class AuthenticationController : Controller
         var defCoId                 = user.DefaultCoId.ToString() ?? "0";
         var isExclusiveCompany      = _config.GetSection("CompanyInfo:Exclusive").Value;
 
+        if (isExclusiveCompany == "true")
+        {
+            // conn = exclusiveCompany;
+        }
+
+
         var claims = new List<Claim>
         {
             new("UserId",               userId),
@@ -706,7 +720,8 @@ public class AuthenticationController : Controller
             new("OldPis",               oldPis  ?? "secpis"),  
             new("OldPay",               oldPay  ?? "pay"),  
             
-            new("IsExclusiveCompany",   isExclusiveCompany)
+            new("IsExclusiveCompany",   isExclusiveCompany),
+             new("ExclusiveCompany",    exclusiveCompany) // For GSIA
         }; 
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

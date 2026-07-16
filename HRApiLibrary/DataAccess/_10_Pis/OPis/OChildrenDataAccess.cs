@@ -57,7 +57,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OChildrenModel?> _03(string? empnumber, string? name, DateTime? bday, OChildrenModel children, string? schema, string? conn)
         {
-            string? sql = $@"Update {schema}.Children set empnumber = @empnumber, name = @name, bday = @bday where Empnumber = @Empnumber AND Name = @Name AND BDay = @BDay;";
+            string? sql = $@"Update {schema}.Children set empnumber = @empnumber, name = @name, bday = @bday where Empnumber = @OldEmpnumber AND Name = @OldName AND BDay = @Oldbday;";
             var parameters = new
             {
                 children.EmpNumber,
@@ -67,10 +67,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 OldName = name,
                 Oldbday = bday
             };
-            await _sql.ExecuteCmd<dynamic>(sql, children, conn);
+            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
             sql = $@" select  * from {schema}.Children x where x.Empnumber = @Empnumber ;";
-            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { empnumber = empnumber }, conn);
+            var data = await _sql.FetchData<OChildrenModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 

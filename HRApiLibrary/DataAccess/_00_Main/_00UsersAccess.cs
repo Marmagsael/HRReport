@@ -39,6 +39,8 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
+
+
     public async Task<UsersModel?> _02ByLoginName(string? loginname, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@" select  * from {schema}.Users e where LoginName = @LoginName";
@@ -90,4 +92,6 @@ public class _00UsersAccess : I_00UsersAccess
 
         await _sql.ExecuteCmd<dynamic>(msql, new { Id = id }, connName);
     }
+
+   
 }

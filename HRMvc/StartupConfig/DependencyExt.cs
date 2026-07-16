@@ -16,6 +16,8 @@ using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.DataAccess._20_Pay;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 
+using Microsoft.AspNetCore.DataProtection;
+
 namespace HRMvc.StartupConfig;
 
 public static class DependencyExt
@@ -49,6 +51,10 @@ public static class DependencyExt
         builder.Services.AddRadzenComponents();
 
         //--- Session ---------------------------
+        builder.Services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")))
+            .SetApplicationName("HRSeries");
+
         builder.Services.AddDistributedMemoryCache(); 
         builder.Services.AddSession(opts => {
             opts.IdleTimeout = TimeSpan.FromHours(12); 

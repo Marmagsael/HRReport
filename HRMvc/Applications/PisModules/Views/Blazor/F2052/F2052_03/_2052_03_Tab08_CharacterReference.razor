@@ -4,16 +4,24 @@
 @inject DialogService _DialogService
 
 
-<div class="p-2 overflow-auto" style="height:49.5vh;">
-    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="References" />
-    <div class="h-10p"></div>
-    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
-    {
-        <div class="p-2 bordered mb-2 w-100">
-            <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" Text="New Entry" Click="@InsertRow" Disabled="@(editMode || isLoading)" class="bg-primary-green" />
-        </div>
-    }
-
+<div class="p-2">
+    <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:1000;">
+        <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="References" />
+        <div class="h-10p"></div>
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="p-2 bordered mb-2 w-100">
+                <button type="button"
+                        class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
+                        @onclick="InsertRow"
+                        disabled="@(editMode || isLoading)">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"> <small>New</small> </span>
+                    </div>
+                </button>
+            </div>
+        }
+    </div>
     <div class="custom-grid mt-2">
         <RadzenDataGrid Data="@V.CharRefs"
                         TItem="OReferModel"
@@ -420,7 +428,7 @@
             }
             else
             {
-                await _empmas._03(rec.EmpNumber, rec.Name, rec.Position, rec, V.pisdb!, V.conn!);
+                await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.Position, rec, V.pisdb!, V.conn!);
             }
 
             await V.ReferenceGrid.UpdateRow(rec);

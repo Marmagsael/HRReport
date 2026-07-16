@@ -1,0 +1,132 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject NotificationService _NotificationService;
+@inject DialogService _DialogService;
+
+<div class="p-2">
+    <RadzenTemplateForm TItem="OInsuranceaccidentModel" Data=@V.InsuranceAccident Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+
+        <div class="h-10p"></div>
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="p-2 bordered mb-2 w-100">
+                <button type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"><small>Save</small></span>
+                    </div>
+                </button>
+            </div>
+        }
+        <RadzenFieldset>
+
+            <div class="h-10p"></div>
+            <RadzenFieldset Text="******">
+                @* ----- INSURANCE (varchar(45))----------*@
+                <div class="w-100 d-flex p-1">
+                    <div class="w-20 small">Insurance Type </div>
+                    <div class="w-80">
+                        <RadzenTextBox @bind-Value=@V.InsuranceAccident.Insurance class="form-control" Name="Insurance" MaxLength="45" Placeholder="Insurance Type" />
+                        <RadzenRequiredValidator Component="Insurance" Text="Insurance Type is required" Style="color: red; display:block" />
+                    </div>
+                </div>
+
+                @* ----- PolicyNo (varchar(25))----------*@
+                <div class="w-100 d-flex p-1">
+                    <div class="w-20 small">Policy No. </div>
+                    <div class="w-80">
+                        <RadzenTextBox @bind-Value=@V.InsuranceAccident.PolicyNo class="form-control" Name="PolicyNo" MaxLength="25" Placeholder="Policy No." />
+                        <RadzenRequiredValidator Component="PolicyNo" Text="Policy No. is required" Style="color: red; display:block" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+
+            <div class="h-10p"></div>
+            <RadzenFieldset Text="******">
+                @* ----- FaceValue (double(8,2))----------*@
+                <div class="w-100 d-flex p-1">
+                    <div class="w-20 small">Face Value</div>
+                    <div class="w-40">
+                        <RadzenNumeric @bind-Value=@V.InsuranceAccident.FaceValue Format="#,##0.00" Placeholder="0.00" TextAlign="TextAlign.Right"
+                                       Name="FaceValue"
+                                       InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
+                        <RadzenRequiredValidator Component="FaceValue" Text="Face Value is required" Style="color: red; display:block" />
+                    </div>
+                </div>
+
+                @* ----- Premium (double(8,2))----------*@
+                <div class="w-100 d-flex p-1">
+                    <div class="w-20 small">Premium </div>
+                    <div class="w-40">
+                        <RadzenNumeric @bind-Value=@V.InsuranceAccident.Premium Format="#,##0.00" Placeholder="0.00" TextAlign="TextAlign.Right"
+                                       Name="Premium"
+                                       InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
+                        <RadzenRequiredValidator Component="Premium" Text="Premium is required" Style="color: red; display:block" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+
+            <div class="h-10p">&nbsp</div>
+            <RadzenFieldset Text="******">
+                @* ----- InsExpire (date)----------*@
+                <div class="w-100 d-flex p-1">
+                    <div class="w-20 small">Expiration Date </div>
+                    <div class="w-40">
+                        <RadzenDatePicker @bind-Value=@V.InsuranceAccident.InsExpire Name="InsExpire" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                        <RadzenRequiredValidator Component="InsExpire" Text="Expiration Date is required" Style="color: red; display:block" />
+                    </div>
+                </div>
+            </RadzenFieldset>
+
+        </RadzenFieldset>
+    </RadzenTemplateForm>
+
+</div>
+
+@inject IOInsuranceaccidentDataAccess _empmas
+
+@code {
+    [Parameter]
+    public V2052 V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    async Task OnSubmit(OInsuranceaccidentModel model)
+    {
+        if (model == null) return;
+        try
+        {
+            if (string.IsNullOrWhiteSpace(V.InsuranceAccident.EmpNumber))
+            {
+                V.InsuranceAccident.EmpNumber = V.Empmas.EmpNumber;
+            }
+
+            await _empmas._03(V.SelectedEmpnumber, V.InsuranceAccident, V.pisdb, V.conn);
+
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Successfully saved",
+                Detail = "Record has been successfully saved.",
+                Duration = 3000
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _NotificationService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Error,
+                Summary = "Unable to save",
+                Detail = "Something went wrong while saving. Please try again.",
+                Duration = 6000
+            });
+        }
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+
+    }
+}

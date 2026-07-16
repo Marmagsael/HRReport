@@ -2,121 +2,112 @@
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.Models._10_Pis
-
-
 <div>
-
     @if (!disableAction)
     {
-        <div class="nav gap-1 p-1 justify-content-center mb-1 mt-1 " style="border: 1px solid gray; border-radius: 3px;">
-            <div class="@class1 " onclick="@(()=>ChangeClass(1))">A-J</div>
-            <div class="@class2 " onclick="@(()=>ChangeClass(2))">K-N</div>
-            <div class="@class3" onclick="@(()=>ChangeClass(3))">O-T</div>
-            <div class="@class4" onclick="@(()=>ChangeClass(4))">U-Z</div>
-            <div class="@class5" onclick="@(()=>ChangeClass(5))">Search</div>
-        </div>
-    } 
-    else
-    {
-        <div class="nav gap-1 p-1 justify-content-center mb-1 mt-1 " style="border: 1px solid gray; border-radius: 3px;">
-            <div class="c-222-disabled" >A-J</div>
-            <div class="c-222-disabled" >K-N</div>
-            <div class="c-222-disabled" >O-T</div>
-            <div class="c-222-disabled" >U-Z</div>
-            <div class="c-222-disabled" >Search</div>
+        <div class="d-flex mt-1" style="border: 1px solid #d9dde2; border-radius: 4px; overflow:hidden; margin-bottom: 10px;">
+            <div class="@class1 flex-fill text-center" onclick="@(() => ChangeClass(1))">A-J</div>
+            <div class="@class2 flex-fill text-center" onclick="@(() => ChangeClass(2))">K-N</div>
+            <div class="@class3 flex-fill text-center" onclick="@(() => ChangeClass(3))">O-T</div>
+            <div class="@class4 flex-fill text-center" onclick="@(() => ChangeClass(4))">U-Z</div>
+            <div class="@class5 flex-fill text-center" onclick="@(() => ChangeClass(5))">Search</div>
         </div>
     }
-
-
-    @if(showSearch) 
+    else
     {
-        <div class="p-1 d-flex gap-1 mb-1" style="border: 1px solid gray; border-radius: 3px;">
-            <div style="width: 70%;">
-                <input type="text" @oninput="@(()=>StateHasChanged())" @bind-value="skey" placeholder="Lastname" class="form-control">
-            </div>
-
-            <div style="width: 30%;">
-                <button onclick="@(()=>SearchEmployee(skey))" class="btn btn-secondary ">Search</button>
-            </div>
+        <div class="d-flex mt-1" style="border: 1px solid #d9dde2; border-radius: 4px; overflow:hidden; margin-bottom: 10px;">
+            <div class="c-222-disabled flex-fill text-center">A-J</div>
+            <div class="c-222-disabled flex-fill text-center">K-N</div>
+            <div class="c-222-disabled flex-fill text-center">O-T</div>
+            <div class="c-222-disabled flex-fill text-center">U-Z</div>
+            <div class="c-222-disabled flex-fill text-center">Search</div>
         </div>
+    }
+    @if (showSearch)
+    {
+        <div class="d-flex gap-2" style="margin-bottom: 10px;">
+            <div style="width: 70%;">
+                <input type="text" @oninput="@(() => StateHasChanged())" @bind-value="skey" placeholder="Lastname" class="form-control">
+            </div>
+            <div style="width: 30%;">
+                <button onclick="@(() => SearchEmployee(skey))"  type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"><small>Search</small></span>
+                    </div>
+                </button>
+            </div>
 
+
+                
+        </div>
         @if (showRequiredLength)
         {
             <div class="text-danger w-100 p-1" style="font-size:small; border: 1px solid red; border-radius: 3px;">
                 Input not less than 3 character to proceed.
             </div>
         }
-
     }
-
-    <div class="p-2 text-white bg-secondary" style="border:1px solid lightgrey;">
-        <h6>Name  </h6>
+    <div class="p-2 bg-lightgray" style="border:1px;">
+        <h6 class="mb-0">Name</h6>
     </div>
-    <div class="" style="border:1px solid lightgrey; min-height:70vh; max-height:80vh; overflow:auto ">
-
-
+    <div style="border:1px solid #d9dde2; height:calc(100vh - 260px); overflow-y:auto; overflow-x:hidden;">
         @if (V.EmpmasList?.Count > 0)
         {
-            <table class="table table-sm  table-hover ">
+            <table class="table table-sm table-hover">
                 <tbody>
                     @foreach (var e in V.EmpmasList!)
                     {
-                     
                         if (e!.EmpNumber == V.SelectedEmpnumber)
                         {
-                            <tr class="fw-bold bg-primary-green text-white" style="cursor:pointer;">
+                            <tr class="fw-bold" style="cursor:pointer; background-color:#eaf1fb; color:rgb(49, 134, 219) ;">
                                 <td>@e?.EmpLastNm, @e?.EmpFirstNm @e?.EmpMidNm - [@e?.EmpNumber]</td>
                             </tr>
                         }
                         else
                         {
                             <tr style="cursor:pointer;">
-                                <td onclick="@(()=>SelectEmpmas(e))">
+                                <td onclick="@(() => SelectEmpmas(e))">
                                     @e?.EmpLastNm, @e?.EmpFirstNm @e?.EmpMidNm - [@e?.EmpNumber]
                                 </td>
                             </tr>
                         }
                     }
-
                 </tbody>
             </table>
-        } else
+        }
+        else
         {
-            <div class="w-100 text-center text-white" style="background-color:darkgrey; border: 1px solid gray; ">
+            <div class="w-100 text-center" style="background-color:#eef0f2; color:#6c757d; border: 1px solid #d9dde2; padding:8px 0;">
                 Record is empty.
             </div>
         }
-
-
     </div>
-    <div class="bg-secondary " style="color:lightgray; padding: 5px 10px; font-size: small; border:1px solid lightgrey; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px ;">
+    <div class="bg-lightgray" style="color:#2c2f33; padding: 5px 10px; font-size: small; border:1px solid #d9dde2; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;">
         Employee Listing
     </div>
 </div>
-
-
-@inject IOEmpmasDataAccess      _empmas
-@inject DA2052                  _da; 
-@inject I_00MainDA              _main;
+@inject IOEmpmasDataAccess _empmas
+@inject DA2052 _da;
+@inject I_00MainDA _main;
 @inject IEmpmovementDataAccess _empMovement;
 
 
 @code {
-    string  skey    = "";
+    string skey = "";
 
-    string class1   = "c-222-selected"; 
-    string class2   = "c-222-active"; 
-    string class3   = "c-222-active"; 
-    string class4   = "c-222-active"; 
-    string class5   = "c-222-active"; 
+    string class1 = "c-222-selected";
+    string class2 = "c-222-active";
+    string class3 = "c-222-active";
+    string class4 = "c-222-active";
+    string class5 = "c-222-active";
 
-    int selectedId  = 0; 
+    int selectedId = 0;
 
-    bool showSearch         = false; 
-    bool disableAction      = false; 
-    bool showRequiredLength = false; 
+    bool showSearch = false;
+    bool disableAction = false;
+    bool showRequiredLength = false;
 
-    DA2052? da; 
+    DA2052? da;
 
     [Parameter]
     public V2052 V { get; set; } = new();
@@ -124,18 +115,19 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    async void ChangeClass(int classNo) {
+    async void ChangeClass(int classNo)
+    {
 
         V.EmpmasList = new();
-        disableAction       = true; 
-        showRequiredLength  = false; 
+        disableAction = true;
+        showRequiredLength = false;
 
-        class1 = "c-222-active";      
-        class2 = "c-222-active";      
-        class3 = "c-222-active";      
-        class4 = "c-222-active";      
-        class5 = "c-222-active";      
-        showSearch = false; 
+        class1 = "c-222-active";
+        class2 = "c-222-active";
+        class3 = "c-222-active";
+        class4 = "c-222-active";
+        class5 = "c-222-active";
+        showSearch = false;
 
         switch (classNo)
         {
@@ -161,7 +153,7 @@
                 break;
 
             default:
-                break; 
+                break;
         }
 
         if (classNo == 5)
@@ -172,8 +164,8 @@
 
         disableAction = false;
 
-        StateHasChanged(); 
-        await ChildAction.InvokeAsync(); 
+        StateHasChanged();
+        await ChildAction.InvokeAsync();
 
     }
 
@@ -181,7 +173,7 @@
     {
         V.SelectedEmpnumber = e.EmpNumber;
         V.Action = "SelectEmpmas";
-        await ChildAction.InvokeAsync(); 
+        await ChildAction.InvokeAsync();
     }
 
 
@@ -190,17 +182,17 @@
     {
         V.EmpmasList = new();
 
-        if(sval.Length < 4)
+        if (sval.Length < 4)
         {
-            showRequiredLength=true; 
-            return; 
+            showRequiredLength = true;
+            return;
         }
 
         showRequiredLength = false;
 
-        
+
         V.EmpmasList = await _empmas._02SearchName(sval, V.pisdb!, V.conn!);
-        await ChildAction.InvokeAsync(); 
+        await ChildAction.InvokeAsync();
     }
 
 }
@@ -211,30 +203,35 @@
 <style>
     .c-222-selected {
         color: white;
-        border-radius: 2px;
-        padding: 5px;
-        background-color: gray;
+        padding: 8px 5px;
+        background-color: rgb(49, 134, 219);
+        cursor: pointer;
+        border-right: 1px solid #d9dde2;
     }
 
     .c-222-active {
         cursor: pointer;
-        color: rgb(46, 45, 25);
-        padding: 5px;
-        text-decoration: underline;
+        color: #2c2f33;
+        padding: 8px 5px;
+        background-color: #ffffff;
+        border-right: 1px solid #d9dde2;
     }
 
         .c-222-active:hover {
-            color: white;
-            background-color: darkkhaki;
-            text-decoration: none;
-            border-radius: 2px;
+            color: rgb(49, 134, 219);
+            background-color: #eaf1fb;
         }
 
     .c-222-disabled {
-        color: lightgray;
-        border-radius: 2px;
-        padding: 5px;
-        background-color: gray;
+        color: #ffffff;
+        padding: 8px 5px;
+        background-color: #b9c4cf;
+        border-right: 1px solid #d9dde2;
     }
 
+        .c-222-selected:last-child,
+        .c-222-active:last-child,
+        .c-222-disabled:last-child {
+            border-right: none;
+        }
 </style>
