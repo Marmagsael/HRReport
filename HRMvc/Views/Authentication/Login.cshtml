@@ -1,110 +1,173 @@
 @model HRMvc.Models.Authentication.LoginUiModel
 
 @{
-    Layout              = "~/Views/Shared/Authentication/_AuthenticationLayout.cshtml";
-    var coName          = ViewData["CoName"];
-    var exclusive       = ViewData["Exclusive"] as String;
-    string register     = "register";
-    if (exclusive       != "true") register = "registerOrdinary";
+    Layout = "~/Views/Shared/Authentication/_AuthenticationLayout.cshtml";
+    var coName = ViewData["CoName"];
+    var exclusive = ViewData["Exclusive"] as String;
+    string register = "register";
+    if (exclusive != "true") register = "registerOrdinary";
 
-    string? errorMsg    = ViewData["ErrorMsg"] as String;
+    string? errorMsg = ViewData["ErrorMsg"] as String;
 }
 
+<style>
+    .login-input {
+        border: 1px solid #d1d5db;
+        padding: .75rem .9rem;
+        border-radius: 4px;
+        font-size: .95rem;
+        background: #fff;
+        transition: all .15s ease;
+    }
+
+    .login-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+        outline: none;
+    }
+
+    .btn-login {
+        background: #2563eb;
+        padding: .75rem .9rem;
+        border: none;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: .95rem;
+        color: #fff;
+        transition: all .15s ease;
+    }
+
+    .btn-login:hover {
+        background: #1d4ed8;
+        color: #fff;
+    }
+</style>
 
 
 @*---- MAIN BODY ----*@
-<div class="position-relative bg-white w-100 h-100 d-flex overflow-hidden">
-    <div class="right  rounded col-12 col-lg-7 p-3 p-lg-4 d-flex flex-column align-items-center h-100 gap-5 ">
-        <div class="backdrop d-flex flex-column h-100">
-            <div class="border-bottom border-2 text-center w-100 p-1">
-                <h1 >@coName</h1>
-                <div class="bg-success mt-2" style="height:5px">&nbsp;</div>
+<div class="d-flex w-100 h-100 overflow-hidden bg-white">
+
+    @*==== LEFT : FORM PANEL ====*@
+    <div class="col-12 col-lg-7 d-flex flex-column p-4 p-lg-5">
+
+        @*---- WORDMARK ----*@
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center justify-content-center"
+                 style="width:44px; height:44px; background:#2563eb; border-radius:8px;">
+                <i class="fa-solid fa-building text-white fs-5"></i>
+            </div>
+            <div>
+                <div class="fw-bold" style="font-size:1.15rem; color:#111827; line-height:1.2;">@coName</div>
+                @*<div style="font-size:.75rem; color:#9ca3af; letter-spacing:.05em;">HR MANAGEMENT SYSTEM</div>*@
+            </div>
+        </div>
+
+        @*---- FORM ----*@
+        <div class="mx-auto w-100 my-auto" style="max-width:400px;">
+
+            <div class="mb-4">
+                <h2 class="fw-bold mb-2" style="font-size:1.75rem; color:#111827;">Welcome back</h2>
+                <p class="mb-0" style="color:#6b7280; font-size:.95rem;">Sign in to access your employee portal</p>
             </div>
 
-            <div class="d-flex flex-column justify-content-center align-items-center  w-100 h-100">
-
-                <div class="d-flex flex-column gap-5 form-width ">
-                    <div>
-                        <h2 class="page-title">Employee Portal Access</h2>
-                        <p class="body-text-lg mt-2">Enter your credentials below to access your account</p>
-                    </div>
-
-
-
-                    <form action="/login" method="post" class="d-flex gap-5 flex-column">
-                        <div>
-                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-                            @*---- EMPLOYEE NUMBER ----*@
-                            <div class="form-group d-md-flex">
-                                <label asp-for="EmpNumber" class="control-label flex-nowrap"></label>
-                                <div class="w-100">
-                                    <input asp-for="EmpNumber" class="form-control" />
-                                    <span asp-validation-for="EmpNumber" class="err-input-msg text-danger"></span>
-                                </div>
-                            </div>
-                            @*---- PASSWORD ----*@
-                            <div class="form-group d-md-flex">
-                                <label asp-for="Password" class="control-label"></label>
-                                <div class="w-100">
-                                    <input asp-for="Password" class="form-control" />
-                                    <span asp-validation-for="Password" class="err-input-msg text-danger"></span>
-                                </div>
-                            </div>
-
-                            @if(exclusive == "true")
-                            {
-                                @*---- COMPANY ----*@
-                                <div class="form-group d-md-flex">
-                                    <label asp-for="CompanyId" class="control-label"></label>
-                                    <div class="w-100">
-                                        <select asp-for="CompanyId" class="form-control">
-                                            <option value="MySqlConn">GSIA</option>
-                                            <option value="MySqlConnBF">Blueflame</option>
-                                            <option value="MySqlConnGIMEL">GIMEL</option>
-                                        </select>
-                                        <span asp-validation-for="CompanyId" class="err-input-msg text-danger"></span>
-                                    </div>
-                                </div>
-                            }
-
-                           
-                        </div>
-
-                        <div class="d-flex flex-column gap-3">
-                            @*---- LOGIN BUTTON ----*@
-                            <input type="submit" value="Login" class="btn b-btn-primary w-100" />
-                        </div>
-                    </form>
-                  
-
+            @if (!string.IsNullOrEmpty(errorMsg))
+            {
+                <div class="d-flex align-items-center gap-2 mb-3 px-3 py-2"
+                     style="background:#fef2f2; border:1px solid #fecaca; border-radius:4px; color:#b91c1c; font-size:.875rem;">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>@errorMsg</span>
                 </div>
-            </div>
+            }
 
-            <div class="mt-auto border rounded p-3" style="background:#e6f2ee">
-                <p class="small">
-                    <b>Disclaimer : </b>
-                    This commercial application contains proprietary and confidential information of <b>@coName</b> 
-                    Access is limited to authorized users only. Use of this system constitutes consent to monitoring and 
-                    compliance with applicable data protection and privacy laws.
-                </p>
-            </div>
+            <form id="loginForm" action="/login" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+
+                @*---- EMPLOYEE NUMBER ----*@
+                <div class="mb-3">
+                    <label asp-for="EmpNumber" class="form-label fw-semibold mb-2"
+                           style="font-size:.8rem; color:#374151;"></label>
+                    <input asp-for="EmpNumber" class="form-control login-input" placeholder="Enter employee number" />
+                    <span asp-validation-for="EmpNumber" class="err-input-msg text-danger small"></span>
+                </div>
+
+                @*---- PASSWORD ----*@
+                <div class="mb-3">
+                    <label asp-for="Password" class="form-label fw-semibold mb-2"
+                           style="font-size:.8rem; color:#374151;"></label>
+                    <input asp-for="Password" class="form-control login-input" placeholder="Enter password" />
+                    <span asp-validation-for="Password" class="err-input-msg text-danger small"></span>
+                </div>
+
+                @if (exclusive == "true")
+                {
+                    @*---- COMPANY ----*@
+                    <div class="mb-4">
+                        <label asp-for="CompanyId" class="form-label fw-semibold mb-2"
+                               style="font-size:.8rem; color:#374151;"></label>
+                        <select asp-for="CompanyId" class="form-select login-input">
+                            <option value="MySqlConn">GSIA</option>
+                            <option value="MySqlConnBF">Blueflame</option>
+                            <option value="MySqlConnGIMEL">GIMEL</option>
+                        </select>
+                        <span asp-validation-for="CompanyId" class="err-input-msg text-danger small"></span>
+                    </div>
+                }
+
+                @*---- LOGIN BUTTON ----*@
+                <button type="submit" class="btn btn-login w-100">
+                    Sign in <i class="fa-solid fa-arrow-right ms-1" style="font-size:.8rem;"></i>
+                </button>
+            </form>
+
+            @* @if (exclusive == "true") *@
+             @*{
+            //     <div class="d-flex align-items-center my-4">
+            //         <div class="flex-fill" style="height:1px; background:#e5e7eb;"></div>
+            //         <span class="px-3" style="font-size:.75rem; color:#9ca3af;">OR</span>
+            //         <div class="flex-fill" style="height:1px; background:#e5e7eb;"></div>
+            //     </div>
+
+            //     <p class="text-center mb-0" style="font-size:.875rem; color:#6b7280;">
+            //         Don't have an account?
+            //         <a href="/@register" class="fw-semibold text-decoration-none ms-1" style="color:#2563eb;">Create one</a>
+            //     </p>
+            // }*@
+
         </div>
+
+        @*---- DISCLAIMER ----*@
+        <p class="mb-0" style="font-size:.7rem; line-height:1.6; color:#9ca3af;">
+            <b style="color:#6b7280;">Disclaimer : </b>
+            This commercial application contains proprietary and confidential information of <b style="color:#6b7280;">@coName</b>
+            Access is limited to authorized users only. Use of this system constitutes consent to monitoring and
+            compliance with applicable data protection and privacy laws.
+        </p>
 
     </div>
 
-    <div class="left border border-left col-12 col-lg-5" style="padding-top: 95px; background:#047959;">
-        <div class="bg-white p-md-3 h-100" >
-            <h2 class="p-3 text-center">Business Solution Application</h2>
-            <div class="card rounded" >
-                <img src="~/images/login-bg.jpg" class="h-100 opacity-75" style="object-fit:cover">
+    @*==== RIGHT : IMAGE PANEL ====*@
+    <div class="col-lg-5 d-none d-lg-block position-relative">
+        <img src="~/images/login-bg.jpg" class="w-100 h-100" style="object-fit:cover;" alt="" />
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-end p-5"
+             style="background:linear-gradient(rgba(17,24,39,.25), rgba(17,24,39,.85));">
+
+            <div class="d-inline-flex align-items-center gap-2 mb-3 px-3 py-1 align-self-start"
+                 style="background:rgba(255,255,255,.15); border-radius:20px; backdrop-filter:blur(8px);">
+                <i class="fa-solid fa-shield-halved text-white" style="font-size:.75rem;"></i>
+                <span class="text-white" style="font-size:.75rem;">Secure access</span>
             </div>
+
+            <h3 class="text-white fw-bold mb-2">Business Solution Application</h3>
+            <p class="mb-0" style="color:rgba(255,255,255,.85); font-size:.95rem;">
+                Payroll, records, and reporting in one place
+            </p>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
- }
-
+}

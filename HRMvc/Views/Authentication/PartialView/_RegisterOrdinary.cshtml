@@ -3,69 +3,129 @@
     var coName = ViewData["CoName"];
     var errUserMsg = ViewData["errUserMsg"];
     var errEmailMsg = ViewData["errEmailMsg"];
+    var exclusive = ViewData["Exclusive"] as String;
 }
+
+<style>
+    .login-input {
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        padding: .75rem .9rem;
+        font-size: .95rem;
+        background: #fff;
+        transition: all .15s ease;
+    }
+
+        .login-input:focus,
+        .form-control.login-input:focus,
+        .form-select.login-input:focus {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12) !important;
+            outline: none;
+        }
+
+    .btn-login {
+        background: #2563eb;
+        border: none;
+        border-radius: 4px;
+        padding: .8rem;
+        font-weight: 600;
+        font-size: .95rem;
+        color: #fff;
+        transition: all .15s ease;
+    }
+
+        .btn-login:hover {
+            background: #1d4ed8;
+            color: #fff;
+        }
+
+    .form-label-sm {
+        font-size: .8rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: .5rem;
+    }
+</style>
+
 <div class="main-body-center-content">
+
     @*---- HEADER ----*@
     <div class="main-body-center-content-hdr">
-        <h1 class="page-title">Welcome to @coName </h1>
-        <p class="body-text-lg  mt-2">Please fill out all the fields to register an account with your username.</p>
+        <h1 class="page-title">Welcome to @coName</h1>
+        <p class="body-text-lg mt-2">Please fill out all the fields to register an account with your username.</p>
     </div>
 
     @*---- BODY ----*@
     <div class="main-body-center-content-body">
         <form action="registerOrdinary" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
             @*---- Username ----*@
-            <div class="form-group">
-                <label asp-for="Username" class="control-label"></label>
-                <input asp-for="Username" class="form-control" />
-                <span asp-validation-for="Username" class="err-input-msg text-danger"></span>
+            <div class="form-group mb-3">
+                <label asp-for="Username" class="form-label-sm d-block"></label>
+                <input asp-for="Username" class="form-control login-input" />
+                <span asp-validation-for="Username" class="err-input-msg text-danger small"></span>
                 @if (errUserMsg != null)
                 {
-                    <span class="text-danger">@errUserMsg</span>
+                    <span class="text-danger small">@errUserMsg</span>
                 }
             </div>
-
 
             @*---- Email Address ----*@
-            <div class="form-group">
-                <label asp-for="Email " class="control-label"></label>
-                <input asp-for="Email " class="form-control" type="email" />
-                <span asp-validation-for="Email" class="err-input-msg text-danger"></span>
+            <div class="form-group mb-3">
+                <label asp-for="Email" class="form-label-sm d-block"></label>
+                <input asp-for="Email" class="form-control login-input" type="email" />
+                <span asp-validation-for="Email" class="err-input-msg text-danger small"></span>
                 @if (errEmailMsg != null)
                 {
-                    <span class="err-input-msg text-danger">@errEmailMsg</span>
+                    <span class="err-input-msg text-danger small">@errEmailMsg</span>
                 }
             </div>
-        
-           
+
+            @if (exclusive == "true")
+            {
+                @*---- COMPANY ----*@
+                <div class="form-group mb-3">
+                    <label asp-for="CompanyId" class="form-label-sm d-block"></label>
+                    <select asp-for="CompanyId" class="form-select login-input">
+                        <option value="MySqlConn">GSIA</option>
+                        <option value="MySqlConnBF">Blueflame</option>
+                        <option value="MySqlConnGIMEL">GIMEL</option>
+                    </select>
+                    <span asp-validation-for="CompanyId" class="err-input-msg text-danger small"></span>
+                </div>
+            }
 
             @*---- PASSWORD ----*@
-            <div class="form-group">
-                <label asp-for="Password" class="control-label"></label>
-                <input asp-for="Password" class="form-control" type="password"/>
-                <span asp-validation-for="Password" class="err-input-msg text-danger"></span>
+            <div class="form-group mb-3">
+                <label asp-for="Password" class="form-label-sm d-block"></label>
+                <input asp-for="Password" class="form-control login-input" type="password" />
+                <span asp-validation-for="Password" class="err-input-msg text-danger small"></span>
             </div>
 
             @*---- Confirm Password ----*@
-            <div class="form-group">
-                <label asp-for="ConfirmPassword" class="control-label"></label>
-                <input asp-for="ConfirmPassword" class="form-control" type="password" />
-                <span asp-validation-for="ConfirmPassword" class="err-input-msg text-danger"></span>
+            <div class="form-group mb-4">
+                <label asp-for="ConfirmPassword" class="form-label-sm d-block"></label>
+                <input asp-for="ConfirmPassword" class="form-control login-input" type="password" />
+                <span asp-validation-for="ConfirmPassword" class="err-input-msg text-danger small"></span>
             </div>
 
             @*---- REGISTER BUTTON ----*@
             <div class="auth-primary-cta">
-                <input type="submit" value="Register" class="btn b-btn-primary w-100" />
+                <button type="submit" class="btn btn-login w-100">
+                    Register <i class="fa-solid fa-arrow-right ms-1" style="font-size:.8rem;"></i>
+                </button>
             </div>
         </form>
 
         @*---- LOGIN LINK ----*@
-        <div class="register-empno-link-wrapper">Already have an account? <a asp-controller="Authentication" asp-action="Login" class="link-primary">Login</a></div>
+        <div class="register-empno-link-wrapper text-center mt-3" style="font-size:.875rem; color:#6b7280;">
+            Already have an account?
+            <a asp-controller="Authentication" asp-action="Login" class="fw-semibold text-decoration-none ms-1" style="color:#2563eb;">Login</a>
+        </div>
     </div>
-   
-    
+
     @*---- FOOTER ----*@
     <div class="main-body-center-content-footer">© 2023 All Rights Reserved.</div>
 </div>
-
