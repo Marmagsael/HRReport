@@ -261,7 +261,10 @@ public class AuthenticationController : Controller
             await _empmas._01Empmas(empmas, mainPisSchema, conn); 
 
         }
-    
+        
+
+
+
         return userCreated;
 
     }
@@ -406,37 +409,6 @@ public class AuthenticationController : Controller
 
             return Redirect("12/102");
         }
-<<<<<<< HEAD
-
-        // -- Get User Company -------------------------------------------------------
-        var conn     = _config.GetSection("Schema:DefConn").Value.ToString();
-        var schema   = _config.GetSection("Schema:Main").Value.ToString();
-
-        var uc = await _02UserCompany(user, schema, conn);
-
-        // Create Schema and Tables  --------------------------------------------------------
-        _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
-
-
-        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
-        if (isExclusive == "true") { uc.ExclusiveCompany = login.CompanyId; }
-
-        await CreateClaims(user, uc);
-        await CreateCompany(user, uc, conn);    
-        
-        HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
-        HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
-        
-        if (uc.OldPis.Length <= 0) return Redirect("~/13");
-        var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
-        if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
-        
-        
-        
-        return Redirect("13");
-
-
-=======
         catch (MySqlException ex)
         {
             LoadLoginViewData();
@@ -449,7 +421,6 @@ public class AuthenticationController : Controller
             ViewData["ErrorMsg"] = "Something went wrong. Please try again.";
             return View("Login", login);
         }
->>>>>>> origin/td.22
     }
 
 
@@ -660,7 +631,6 @@ public class AuthenticationController : Controller
             {
                 // -- Fetch assign company to user --------------------------------
                 uc = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
-
             }
         }
 
