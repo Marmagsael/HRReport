@@ -631,8 +631,15 @@ public class AuthenticationController : Controller
             {
                 // -- Fetch assign company to user --------------------------------
                 uc = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
-
             }
+        }
+
+        // --- Fetch Assigned Old Pis and Old Pay ------------------------------------------------------
+        if (user.DefaultCoId > 0)
+        {
+            var res = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
+            if (uc.OldPis != null && uc.OldPis != "") uc.OldPis = res?.OldPis ?? "";
+            if (uc.OldPay != null && uc.OldPay != "") uc.OldPay = res?.OldPay ?? "";
         }
 
         return uc;
