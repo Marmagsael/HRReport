@@ -44,4 +44,8 @@ public class RegisterUiModel
     [Compare("Password")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
+    [Display(Name = "Company")]
+    [Required]
+    public string CompanyId { get; set; } = string.Empty;
+
 }
