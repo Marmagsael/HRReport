@@ -258,10 +258,7 @@ public class AuthenticationController : Controller
             await _empmas._01Empmas(empmas, mainPisSchema, conn); 
 
         }
-        
-
-
-
+    
         return userCreated;
 
     }
@@ -373,10 +370,7 @@ public class AuthenticationController : Controller
 
 
         string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
-        if (isExclusive == "true")
-        {
-            uc.ExclusiveCompany = login.CompanyId;
-        }
+        if (isExclusive == "true") { uc.ExclusiveCompany = login.CompanyId; }
 
         await CreateClaims(user, uc);
         await CreateCompany(user, uc, conn);    
@@ -597,6 +591,14 @@ public class AuthenticationController : Controller
                 uc = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
 
             }
+        }
+
+        // --- Fetch Assigned Old Pis and Old Pay ------------------------------------------------------
+        if (user.DefaultCoId > 0)
+        {
+            var res = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
+            if (uc.OldPis != null && uc.OldPis != "") uc.OldPis = res?.OldPis ?? "";
+            if (uc.OldPay != null && uc.OldPay != "") uc.OldPay = res?.OldPay ?? "";
         }
 
         return uc;
