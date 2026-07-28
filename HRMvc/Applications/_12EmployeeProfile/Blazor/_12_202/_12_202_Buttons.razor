@@ -43,7 +43,7 @@
 </div>
 
 @if(@msg != string.Empty) { <div class="p-3 text-danger">@msg</div> }
-
+@if(norecmsg != string.Empty) { <p class="text-muted text-center pt-5">@norecmsg</p>}
 
 
 
@@ -56,10 +56,16 @@
     [Parameter] public EventCallback        ChildAction     { get; set; } 
 
     string msg = string.Empty;
+    string norecmsg = string.Empty;
+
     List<string?>? tbltrans_trn = []; 
-    
+
     private async Task CreatePayslip()
     {
+        norecmsg = string.Empty;
+       
+        V.initialmsg = string.Empty;
+
         var oe    = V.OEmpmas.FirstOrDefault()??new();
         var uc = V.UserClaims;
         var year        = V?.Yr.ToString(); 
@@ -74,10 +80,16 @@
         var conn        = uc.Conn??"-";
 
         msg = $"Please wait, Loading payslip for TRN : {trn} ";
-        
+
         V.Tbltrans      = await _otbltran._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
         V.Tbltrandtls   = await _otbltrandtl._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
-        
+
+        if (!V.Tbltrans.Any())
+        {
+            norecmsg = " No records found for this period.";
+        }
+
+
         @* --- Paymainhdr ------------------------------------------------------------------- *@
         V.Paymainhdrs   = []; 
         if(V.Tbltrans.Count>0){
@@ -89,6 +101,7 @@
         }
         
         msg = string.Empty;
+       
         StateHasChanged();
 
 

@@ -32,9 +32,11 @@ public class RegisterOrdinaryUiModel
     public string? errUserMsg { get; set; } = string.Empty;
     public string? errEmailMsg { get; set; } = string.Empty;
 
-    
 
 
+    [Display(Name = "Company")]
+    [Required]
+    public string CompanyId { get; set; } = string.Empty;
 
 
 }
