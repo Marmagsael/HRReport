@@ -7,15 +7,25 @@
 
 
 <RadzenNotification />
-<div class="w-100 p-3 bg-lightgray ">
 
-    @* --- Employee Name ---------------- *@
+<div class="w-100 p-3 bg-lightgray">
+
     @if (V.Empmas?.EmpLastNm?.Length > 0)
     {
-        <div class="mb-3">
-            <div class="d-flex gap-4">
+        <div class="mb-3 d-flex align-items-center gap-4">
+            <button class="btn btn-link p-0 d-flex align-items-center"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#empmasFormContent"
+                    aria-expanded="true"
+                    aria-controls="empmasFormContent"
+                    style="color: #0066cc; text-decoration: none; cursor: pointer;">
+                <i class="fa-solid fa-chevron-down" style="font-size: 1.2rem; transition: transform 0.3s ease;"></i>
+            </button>
+
+            <div class="d-flex gap-4" style="flex: 1;">
                 <div>
-                    <div class="fw-bold border-bottom pb-1 fs-5 op-90 ">@V.Empmas.EmpLastNm &nbsp;</div>
+                    <div class="fw-bold border-bottom pb-1 fs-5 op-90">@V.Empmas.EmpLastNm &nbsp;</div>
                     <div class="text-uppercase text-muted fw-medium mt-1" style="font-size:.7rem; letter-spacing:.03em;">Last name</div>
                 </div>
                 <div>
@@ -34,73 +44,105 @@
         </div>
     }
 
-    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
-        <div class="d-flex gap-5">
-            @* --- Picture ------------- *@
-            <div class="d-flex align-items-center justify-content-center" style="width:180px;">
-                <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
-                     style="height:160px; width:160px;">
-                    <img class="img-fluid" alt="Employee image" src="images/employee.png" height="90" width="90">
-                </div>
-            </div>
-            @* --- Fields ------------- *@
-            <div class="flex-grow-1 mt-3">
-                @* --- System Id *@
-                <div class="d-flex align-items-center mb-2">
-                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                        <i class="fa-solid fa-fingerprint text-center field-icon txt-fcolor1" style="width:16px;"></i> System ID
-                    </div>
-                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas.UserId</div>
-                </div>
+    @* COLLAPSIBLE CONTENT - Picture & Form *@
+    <div class="collapse show" id="empmasFormContent">
 
-                @* --- Email Address *@
-                <div class="d-flex align-items-center mb-2">
-                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                        <i class="fa-solid fa-envelope text-center field-icon txt-fcolor1" style="width:16px;"></i> Email
+        <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+            <div class="d-flex gap-5">
+                @* --- Picture ------------- *@
+                <div class="d-flex align-items-center justify-content-center" style="width:180px;">
+                    <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
+                         style="height:160px; width:160px;">
+                        <img class="img-fluid" alt="Employee image" src="images/employee.png" height="90" width="90">
                     </div>
-                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.Email</div>
                 </div>
-
-                @* --- Emp Number *@
-                <div class="d-flex align-items-center mb-2">
-                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                        <i class="fa-solid fa-hashtag text-center field-icon txt-fcolor1" style="width:16px;"></i> Emp. no.
-                    </div>
-                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.EmpNumber</div>
-                </div>
-
-                @* --- Position *@
-                <div class="d-flex align-items-center mb-2">
-                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                        <i class="fa-solid fa-briefcase text-center field-icon txt-fcolor1" style="width:16px;"></i> Position
-                    </div>
-                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.PositionName</div>
-                </div>
-
-                @* --- Status *@
-                <div class="d-flex align-items-center mb-2">
-                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                        <i class="fa-solid fa-circle-info text-center field-icon txt-fcolor1" style="width:16px;"></i> Status
-                    </div>
-                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.EmpStatus</div>
-                </div>
-
-                @* --- Edit / Upload *@
-                @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
-                {
-                    <div class="d-flex align-items-center">
-                        <div style="width:130px;">&nbsp;</div>
-                        <div class="flex-grow-1 d-flex gap-3">
-                            <span class="msds-link small" role="button" @onclick="EditEmpmas">Edit</span>
-                            <span class="msds-link small" role="button">Upload image</span>
+                @* --- Fields ------------- *@
+                <div class="flex-grow-1 mt-3">
+                    @* --- System Id *@
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                            <i class="fa-solid fa-fingerprint text-center field-icon txt-fcolor1" style="width:16px;"></i> System ID
                         </div>
+                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas.UserId</div>
                     </div>
-                }
 
+                    @* --- Email Address *@
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                            <i class="fa-solid fa-envelope text-center field-icon txt-fcolor1" style="width:16px;"></i> Email
+                        </div>
+                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.Email</div>
+                    </div>
+
+                    @* --- Emp Number *@
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                            <i class="fa-solid fa-hashtag text-center field-icon txt-fcolor1" style="width:16px;"></i> Emp. no.
+                        </div>
+                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.EmpNumber</div>
+                    </div>
+
+                    @* --- Position *@
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                            <i class="fa-solid fa-briefcase text-center field-icon txt-fcolor1" style="width:16px;"></i> Position
+                        </div>
+                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.PositionName</div>
+                    </div>
+
+                    @* --- Status *@
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                            <i class="fa-solid fa-circle-info text-center field-icon txt-fcolor1" style="width:16px;"></i> Status
+                        </div>
+                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.EmpStatus</div>
+                    </div>
+
+                    @* --- Edit / Upload *@
+                    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+                    {
+                        <div class="d-flex align-items-center">
+                            <div style="width:130px;">&nbsp;</div>
+                            <div class="flex-grow-1 d-flex gap-3">
+                                <span class="msds-link small" role="button" @onclick="EditEmpmas">Edit</span>
+                                <span class="msds-link small" role="button">Upload image</span>
+                            </div>
+                        </div>
+                    }
+
+                </div>
             </div>
-        </div>
-    </RadzenTemplateForm>
+        </RadzenTemplateForm>
+
+    </div>
+
 </div>
+
+<style>
+    button[data-bs-toggle="collapse"] {
+        transition: all 0.3s ease;
+        color: #0066cc !important;
+    }
+
+        button[data-bs-toggle="collapse"]:hover {
+            color: #004999 !important;
+        }
+
+        button[data-bs-toggle="collapse"] i {
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        button[data-bs-toggle="collapse"].collapsed i {
+            transform: rotate(-90deg);
+        }
+
+    .collapse.collapsing {
+        transition: all 0.35s ease;
+    }
+</style>
+
+
 @inject NotificationService NotificationService
 @inject I_00MainDA _main;
 @inject IEmpmovementDataAccess _empMovement;
