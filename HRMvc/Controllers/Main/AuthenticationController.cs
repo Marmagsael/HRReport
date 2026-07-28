@@ -376,12 +376,7 @@ public class AuthenticationController : Controller
                 return View("Login", login);
             }
 
-            if (user.Domain.Trim().ToLower() != conn?.Trim().ToLower())
-            {
-                LoadLoginViewData();
-                ViewData["ErrorMsg"] = "You are not authorized to access this company.";
-                return View("Login", login);
-            }
+          
 
             // -- Get User Company -------------------------------------------------------
             var schema = _config.GetSection("Schema:Main").Value.ToString();

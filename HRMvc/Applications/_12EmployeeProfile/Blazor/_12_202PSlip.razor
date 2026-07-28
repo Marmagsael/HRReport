@@ -9,20 +9,24 @@
         <div class="card-header bg-white"><div class="mt-2"><h5>My Payslip</h5></div></div>
         
         <_12_202_Buttons V="@V" ChildAction="ChildActionHandler" />
-        
-        @if(V.Tbltrans != null && V.Tbltrans.Count > 0) {
 
-             var tbltrans_trn       = V.Tbltrans.Select(t=> t.Trn).Distinct().ToList(); 
-            foreach(var trn in tbltrans_trn)
+        @if (V.Tbltrans != null && V.Tbltrans.Count > 0)
+        {
+            var tbltrans_trn = V.Tbltrans.Select(t => t.Trn).Distinct().ToList();
+            foreach (var trn in tbltrans_trn)
             {
-                
-                List<GTbltranModel?>?       gTbltrans       = V.Tbltrans.Where(t=> t.Trn == trn).ToList();
-                List<GTbltrandtlModel?>?    gTbltrandtls    = V.Tbltrandtls.Where(t=> t.Trn == trn).ToList();
-                var pmhdr = V.Paymainhdrs.FirstOrDefault(p=> p.Trn == trn); 
+
+                List<GTbltranModel?>? gTbltrans = V.Tbltrans.Where(t => t.Trn == trn).ToList();
+                List<GTbltrandtlModel?>? gTbltrandtls = V.Tbltrandtls.Where(t => t.Trn == trn).ToList();
+                var pmhdr = V.Paymainhdrs.FirstOrDefault(p => p.Trn == trn);
                 <div class="bordered-bottom">
-                    <_12_202_Payslip_Details GTbltrans="@gTbltrans" GTbltrandtls="gTbltrandtls" GPaymainhdr="@(pmhdr??new())"   />   
+                    <_12_202_Payslip_Details GTbltrans="@gTbltrans" GTbltrandtls="@gTbltrandtls" GPaymainhdr="@(pmhdr ?? new())" />
                 </div>
             }
+        }
+        else
+        {
+            <p class="text-muted text-center pt-5">No records found for this period.</p>
         }
 
     </div>
