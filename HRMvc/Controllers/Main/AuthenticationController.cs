@@ -408,6 +408,7 @@ public class AuthenticationController : Controller
         {
             LoadLoginViewData();
             ViewData["ErrorMsg"] = "Cannot reach the server right now. Please try again shortly.";
+            Console.WriteLine(ex);
             return View("Login", login);
         }
         catch (Exception ex)
