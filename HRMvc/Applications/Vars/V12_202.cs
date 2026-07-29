@@ -23,5 +23,11 @@ public class V12_202
     public List<OEmpmasModel?>?     OEmpmas         { get; set; } = [];   
     public int?                      Yr              { get; set; } = DateTime.Now.Year;
     public int?                      Mo              { get; set; } = DateTime.Now.Month;   
-    public int?                      Prd             { get; set; } = 1;       
+    public int?                      Prd             { get; set; } = 1;
+
+
+    ///------------------------------------------------------------------------
+    public string initialmsg = "No payslip records yet. Select year, month, and period, then click \"Load Payslip\"";
+    public string loadingmsg = string.Empty;
+    public string nodatamsg = string.Empty;
 }
