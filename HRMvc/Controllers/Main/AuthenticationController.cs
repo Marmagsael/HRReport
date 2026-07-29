@@ -357,17 +357,8 @@ public class AuthenticationController : Controller
         try
         {
             string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
-            var conn = string.Empty;
-            if (isExclusive == "true")
-            {
-                conn = login?.CompanyId;
-            }
-            else
-            {
-                conn = _config.GetSection("Schema:DefConn").Value.ToString();
-            }
-
-            UsersModel? user = await _mainDA._02UsersLoginLoginName(login.EmpNumber, login.Password, "Main", conn);
+         
+            UsersModel? user = await _mainDA._02UsersLoginLoginName(login.EmpNumber, login.Password);
 
             if (user == null)
             {
@@ -376,14 +367,10 @@ public class AuthenticationController : Controller
                 return View("Login", login);
             }
 
-            if (user.Domain.Trim().ToLower() != conn?.Trim().ToLower())
-            {
-                LoadLoginViewData();
-                ViewData["ErrorMsg"] = "You are not authorized to access this company.";
-                return View("Login", login);
-            }
+
 
             // -- Get User Company -------------------------------------------------------
+            var conn = _config.GetSection("Schema:DefConn").Value.ToString();
             var schema = _config.GetSection("Schema:Main").Value.ToString();
             var uc = await _02UserCompany(user, schema, conn);
 
@@ -413,6 +400,7 @@ public class AuthenticationController : Controller
         {
             LoadLoginViewData();
             ViewData["ErrorMsg"] = "Cannot reach the server right now. Please try again shortly.";
+            Console.WriteLine(ex);
             return View("Login", login);
         }
         catch (Exception ex)
