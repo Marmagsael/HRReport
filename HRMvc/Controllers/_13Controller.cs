@@ -9,6 +9,12 @@ namespace HRMvc.Controllers
 
         private static readonly Dictionary<int, string> ReportViews = new()
         {
+            // Settings 
+            [102] = "_102_PayrollGroupManagement",
+
+
+
+
             // Transaction
             [502] = "_502_PayrollEntry",
             [503] = "_503_13thMonthEntry",
