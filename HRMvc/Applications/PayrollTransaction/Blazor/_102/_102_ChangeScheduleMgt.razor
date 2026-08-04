@@ -1,6 +1,7 @@
-@using HRApiLibrary.DataAccess._10_Pis
+﻿@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.DataAccess._90_Utils
 @using HRApiLibrary.Models._00_Main
 @using HRApiLibrary.Models._10_Pis
@@ -12,9 +13,15 @@
 @using HRMvc.Applications.PayrollTransaction.Blazor._102._102_CSM
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.TS
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052
+@using HRMvc.Applications._03Payroll.Views.BlazorPages._00_Utility
+
+
+@inject NotificationService _notify
 
 @inject DialogService _DialogService
 @inject NotificationService _NotificationService
+@inject IEmpmasInternalDataAccess _iempmas;
+
 
 <RadzenDialog />
 <RadzenNotification />
@@ -22,25 +29,54 @@
 <RadzenContextMenu />
 
 
-<div class="d-flex gap-1 p-1 border-bottom ">
+@* <div class="d-flex gap-1 p-1 border-bottom ">
     <div @onclick="ShowMyRequest"       class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+</div> *@
+
+<div class="card-header d-flex gap-2 p-2 justify-content-between align-items-center">
+    <div class="w-45">
+        <_00_PayrollgrpComponent Payrollgrps="@V.Payrollgrps" PayrollgrpChanged="PayrollgrpChanged" />
+    </div>
+
+
+    <div class="">
+        <RadzenButton Click="@ApplySchedule" ButtonStyle="ButtonStyle.Light" Text="Light"
+                      Class="card flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4">
+            <ChildContent>
+                <div class="d-flex gap-1 align-items-center justify-content-center">
+                    <span class="fw-semibold">
+                        <small>Apply Schedule to Employee(s)</small>
+                    </span>
+                </div>
+            </ChildContent>
+        </RadzenButton>
+    </div>
+   
 </div>
 
 
+<button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="NewEntry">
+    <div class="d-flex gap-1 align-items-center justify-content-center">
+        <span class="fw-semibold"><small>New Entry</small></span>
+    </div>
+</button>
+
+<div onclick="sample">
+    Click Me
+</div>
 
 <div class="card mt-1">
 
     <div class="d-flex gap-1 ">
-        <div class="w-40 mw-10" >
-          <_102_CSM_EmployeeList V="@V" ChildAction="@ChildAction"/>
+        <div class="w-30" >
+          <_102_CSM_EmployeeList V="@V" ChildAction="@ChildActionCatcher"/>
         </div>
-
 
         <div class="flex-grow-1">
             <table class="table table-sm table-hover">
                 <thead>
                     <tr>
-                        <th colspan="4" class="text-center bordered-right bg-light text-primary p-2">Current Schedule of [Employee]</th>
+                        <th colspan="4" class="text-center bordered-right bg-light text-primary p-2">Current Schedule of @V.SelectedEmployee</th>
                         <th colspan="4" class="text-center  text-primary p-2">New Schedule</th>
                     </tr>
                     <tr>
@@ -60,10 +96,10 @@
                 <tbody>
                     @* --- Monday --------------- *@
                     <tr>
-                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D2_dutytype)  ">Monday</td>
-                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D2_dutytype) ">@Dtl?.D2_dutytype</td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl?.D2_dutytype == "R" ? Dtl.D2_in : "-")  </td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D2_dutytype) ">@(Dtl?.D2_dutytype == "R" ? ((Dtl?.D2_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
+                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(V.CurrentAttendance.D2_dutytype)  ">Monday</td>
+                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(V.CurrentAttendance.D2_dutytype) ">@V.CurrentAttendance.D2_dutytype</td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D2_dutytype) ">@(V.CurrentAttendance.D2_dutytype == "R" ? V.CurrentAttendance.D2_in : "-")  </td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D2_dutytype) ">@(V.CurrentAttendance.D2_dutytype == "R" ? ((V.CurrentAttendance.D2_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
 
                         <td class="text-center">
                             <RadzenDropDown Data="@dutyTypes"
@@ -130,10 +166,10 @@
 
                     @* --- Tuesday --------------- *@
                     <tr>
-                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D3_dutytype)  ">Tuesday</td>
-                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D3_dutytype) ">@Dtl?.D3_dutytype</td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D3_dutytype) ">@(Dtl.D3_dutytype == "R" ? Dtl.D3_in : "-")  </td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D3_dutytype) ">@(Dtl.D3_dutytype == "R" ? ((Dtl?.D3_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
+                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(V.CurrentAttendance.D3_dutytype)  ">Tuesday</td>
+                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(V.CurrentAttendance.D3_dutytype) ">@V.CurrentAttendance.D3_dutytype</td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D3_dutytype) ">@(V.CurrentAttendance.D3_dutytype == "R" ? V.CurrentAttendance.D3_in : "-")  </td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D3_dutytype) ">@(V.CurrentAttendance.D3_dutytype == "R" ? ((V.CurrentAttendance.D3_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
 
                         <td class="text-center">
                             <RadzenDropDown Data="@dutyTypes"
@@ -200,10 +236,10 @@
 
                     @* --- Wednesday --------------- *@
                     <tr>
-                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D4_dutytype)  ">Wednesday</td>
-                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D4_dutytype) ">@Dtl?.D4_dutytype</td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D4_dutytype) ">@(Dtl.D4_dutytype == "R" ? Dtl.D4_in : "-")  </td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D4_dutytype) ">@(Dtl.D4_dutytype == "R" ? ((Dtl?.D4_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
+                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(V.CurrentAttendance.D4_dutytype)  ">Wednesday</td>
+                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(V.CurrentAttendance.D4_dutytype) ">@V.CurrentAttendance.D4_dutytype</td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D4_dutytype) ">@(V.CurrentAttendance.D4_dutytype == "R" ? V.CurrentAttendance.D4_in : "-")  </td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D4_dutytype) ">@(V.CurrentAttendance.D4_dutytype == "R" ? ((V.CurrentAttendance.D4_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
 
                         <td class="text-center">
                             <RadzenDropDown Data="@dutyTypes"
@@ -271,10 +307,10 @@
 
                     @* --- Thursday --------------- *@
                     <tr>
-                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D5_dutytype)  ">Thursday</td>
-                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D5_dutytype) ">@Dtl?.D5_dutytype</td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D5_dutytype) ">@(Dtl.D5_dutytype == "R" ? Dtl.D5_in : "-")  </td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D5_dutytype) ">@(Dtl.D5_dutytype == "R" ? ((Dtl?.D5_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
+                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(V.CurrentAttendance.D5_dutytype)  ">Thursday</td>
+                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(V.CurrentAttendance.D5_dutytype) ">@V.CurrentAttendance.D5_dutytype</td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D5_dutytype) ">@(V.CurrentAttendance.D5_dutytype == "R" ? V.CurrentAttendance.D5_in : "-")  </td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D5_dutytype) ">@(V.CurrentAttendance.D5_dutytype == "R" ? ((V.CurrentAttendance.D5_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
 
                         <td class="text-center">
                             <RadzenDropDown Data="@dutyTypes"
@@ -342,10 +378,10 @@
 
                     @* --- Friday --------------- *@
                     <tr>
-                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D6_dutytype)  ">Friday</td>
-                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D6_dutytype) ">@Dtl?.D6_dutytype</td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D6_dutytype) ">@(Dtl.D6_dutytype == "R" ? Dtl.D6_in : "-")  </td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D6_dutytype) ">@(Dtl.D6_dutytype == "R" ? ((Dtl?.D6_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
+                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(V.CurrentAttendance.D6_dutytype)  ">Friday</td>
+                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(V.CurrentAttendance.D6_dutytype) ">@V.CurrentAttendance.D6_dutytype</td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D6_dutytype) ">@(V.CurrentAttendance.D6_dutytype == "R" ? V.CurrentAttendance.D6_in : "-")  </td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D6_dutytype) ">@(V.CurrentAttendance.D6_dutytype == "R" ? ((V.CurrentAttendance.D6_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
 
                         <td class="text-center">
                             <RadzenDropDown Data="@dutyTypes"
@@ -413,10 +449,10 @@
 
                     @* --- Saturday --------------- *@
                     <tr>
-                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D7_dutytype)  ">Saturday</td>
-                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D7_dutytype) ">@Dtl?.D7_dutytype</td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D7_dutytype) ">@(Dtl.D7_dutytype == "R" ? Dtl.D7_in : "-")  </td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D7_dutytype) ">@(Dtl.D7_dutytype == "R" ? ((Dtl?.D7_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
+                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(V.CurrentAttendance.D7_dutytype)  ">Saturday</td>
+                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(V.CurrentAttendance.D7_dutytype) ">@V.CurrentAttendance.D7_dutytype</td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D7_dutytype) ">@(V.CurrentAttendance.D7_dutytype == "R" ? V.CurrentAttendance.D7_in : "-")  </td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D7_dutytype) ">@(V.CurrentAttendance.D7_dutytype == "R" ? ((V.CurrentAttendance.D7_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
 
                         <td class="text-center">
                             <RadzenDropDown Data="@dutyTypes"
@@ -484,10 +520,10 @@
 
                     @* --- Sunday --------------- *@
                     <tr>
-                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(Dtl?.D1_dutytype)  ">Sunday</td>
-                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(Dtl?.D1_dutytype) ">@Dtl?.D1_dutytype</td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D1_dutytype) ">@(Dtl.D1_dutytype == "R" ? Dtl.D1_in : "-")  </td>
-                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(Dtl?.D1_dutytype) ">@(Dtl.D1_dutytype == "R" ? ((Dtl?.D1_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
+                        <td class="bg-light p-2 align-middle fw-bold @dutyTypeCss(V.CurrentAttendance.D1_dutytype)  ">Sunday</td>
+                        <td class="bg-light p-2  align-middle text-center @dutyTypeCss(V.CurrentAttendance.D1_dutytype) ">@V.CurrentAttendance.D1_dutytype</td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D1_dutytype) ">@(V.CurrentAttendance.D1_dutytype == "R" ? V.CurrentAttendance.D1_in : "-")  </td>
+                        <td class="bg-light p-2 text-center  align-middle @dutyTypeCss(V.CurrentAttendance.D1_dutytype) ">@(V.CurrentAttendance.D1_dutytype == "R" ? ((V.CurrentAttendance.D1_hrslength ?? 0) / 100.00).ToString("0.#") + " H" : "-") </td>
 
                         <td class="text-center">
                             <RadzenDropDown Data="@dutyTypes"
@@ -561,7 +597,6 @@
             </table>
             <_102_CSM_Notes />
         </div>
-
     </div>
    
    
@@ -580,15 +615,194 @@
     [Parameter] public  UserClaimsModel?    Uc          { get; set; } = new();   
     [Parameter] public  EventCallback       Ec          { get; set; } 
     [Parameter] public  V102Model           V           { get; set; } = new();
+    [Parameter] public  EventCallback       ChildAction { get; set; }
+
 
     V12_102CS   Cs = new();
 
-
     string saveRemarks = string.Empty; 
-    AtttemplatereqhdrModel attTempReqHdr = new(); 
-    
-    
-    
+    AtttemplatereqhdrModel attTempReqHdr = new();
+
+
+    void sample()
+    {
+        Console.WriteLine("sample");
+    }
+    private void NewEntry()
+    {
+        Console.WriteLine("NewEntry");
+    }
+    async Task PayrollgrpChanged(int pgrpId)
+    {
+        try
+        {
+            if (pgrpId <= 0)
+            {
+                _notify.ShowWarning("Invalid Input", "Please select a valid payroll group");
+                return;
+            }
+
+            V.EmpmasList = [];
+            V.SelectedEmployees    = [];
+            V.SelectedPayrollGroup = pgrpId;
+
+            var result = await _iempmas._02ByPayrollGrpId(pgrpId, V.pisdb, V.conn);
+
+            if (result?.Any() == true)
+            {
+                V.EmpmasList = result;
+            }
+            else
+            {
+                 _notify.ShowInfo("No Data", "No employees found for this payroll group");
+            }
+        }
+        catch (Exception ex)
+        {
+             _notify.ShowError("Load Error", $"Failed to load employees: {ex.Message}");
+        }
+    }
+
+    private async Task ApplySchedule()
+    {
+        try
+        {
+            if (Cs.Atttemplatereqdtl == null)
+            {
+                 _notify.ShowError("No Data", "Schedule data is missing");
+                return;
+            }
+
+            if (V.SelectedEmployees == null || V.SelectedEmployees.Count == 0)
+            {
+                 _notify.ShowError("No Selection", "Please select at least one employee");
+                return;
+            }
+
+            var newSchedule = MapAttendanceRec(Cs.Atttemplatereqdtl);
+            if (newSchedule == null)
+            {
+                 _notify.ShowError("Error", "Failed to map schedule");
+                return;
+            }
+
+            int successCount = 0;
+            int skippedCount = 0;
+            List<string> failedEmployees = new();
+
+            foreach (var e in V.SelectedEmployees)
+            {
+                try
+                {
+                    if (e.SystemId == 0)
+                    {
+                        skippedCount++;
+                         _notify.ShowInfo("Skipped", $"Cannot update {e.Fullname} - no SystemId");
+                        continue;
+                    }
+
+                    newSchedule.EmpmasId = e.SystemId;
+                    await InsertUpdateSchedule(newSchedule);
+
+                    successCount++;
+                }
+                catch (Exception loopEx)
+                {
+                    skippedCount++;
+                    failedEmployees.Add($"{e.Fullname}: {loopEx.Message}");
+                }
+            }
+
+            string summary = $"Updated {successCount} employee(s)";
+
+            if (skippedCount > 0)
+                summary += $", {skippedCount} skipped";
+
+            if (successCount > 0)
+                 _notify.ShowSuccess("Success", summary);
+            else
+                 _notify.ShowWarning("No Updates", "No employees were updated");
+
+            if (failedEmployees.Count > 0)
+            {
+                string errorMsg = string.Join("\n", failedEmployees.Take(3));
+                if (failedEmployees.Count > 3)
+                    errorMsg += $"\n...and {failedEmployees.Count - 3} more";
+
+                 _notify.ShowError("Errors", errorMsg);
+            }
+
+            StateHasChanged();
+            await ChildActionCatcher();
+        }
+        catch (Exception ex)
+        {
+             _notify.ShowError("Critical Error", ex.Message);
+        }
+    }
+
+    private async Task InsertUpdateSchedule(AtttemplateModel schedule)
+    {
+        if (schedule == null)
+            throw new ArgumentNullException(nameof(schedule), "Schedule cannot be null");
+
+        try
+        {
+            var res = await _atttemplate._01(schedule, V.pisdb, V.conn);
+
+            if (res == null ) _notify.ShowError("Failed", "Failed to update the schedule");
+        }
+        catch (Exception ex)
+        {
+             _notify.ShowError("Failed", "Failed to update the schedule");
+        }
+    }
+
+    private AtttemplateModel MapAttendanceRec(AtttemplatereqdtlModel req)
+    {
+        if (req == null)
+        {
+            return new AtttemplateModel();
+        }
+
+        return new AtttemplateModel
+        {
+            EmpmasId = req.EmpmasId,
+            AttendancetypeId = req.AttendanceTypeId,
+            D1_in = req.D1_In,
+            D1_hrslength = req.D1_HrsLength,
+            D1_dutytype = req.D1_DutyType,
+            D2_in = req.D2_In,
+            D2_hrslength = req.D2_HrsLength,
+            D2_dutytype = req.D2_DutyType,
+            D3_in = req.D3_In,
+            D3_hrslength = req.D3_HrsLength,
+            D3_dutytype = req.D3_DutyType,
+            D4_in = req.D4_In,
+            D4_hrslength = req.D4_HrsLength,
+            D4_dutytype = req.D4_DutyType,
+            D5_in = req.D5_In,
+            D5_hrslength = req.D5_HrsLength,
+            D5_dutytype = req.D5_DutyType,
+            D6_in = req.D6_In,
+            D6_hrslength = req.D6_HrsLength,
+            D6_dutytype = req.D6_DutyType,
+            D7_in = req.D7_In,
+            D7_hrslength = req.D7_HrsLength,
+            D7_dutytype = req.D7_DutyType
+        };
+    }
+
+    private async Task ChildActionCatcher()
+    {
+        await ChildAction.InvokeAsync();
+    }
+
+
+
+
+
+
     protected override async Task OnInitializedAsync(){
         Cs.Atttemplatereqhdr = new();
         var res = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
@@ -603,14 +817,8 @@
         }
 
     }
-    
+
     RadzenDatePicker<DateTime?>? dateRequestedPicker;
-
-
-    async Task ChildAction()
-    {
-        if (V == null) return;
-    }
 
 
     void EcCatcher() {
@@ -810,8 +1018,6 @@
     List<TimedurationModel> timedurations = MsdsDataAccess._02HourDurations();      
     string? dutyTypeCss(string? dt) => dt=="RD" ? " text-danger " : "" ;
     AtttemplatereqdtlModel template_To_Request => AttTemplateReq_To_AttTemplate( Cs.Atttemplate  ) ; 
-    
-
     
     string? outRes(string? dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
 

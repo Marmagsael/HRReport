@@ -1,131 +1,69 @@
 ﻿@using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PisModules.Vars
+@using HRMvc.Applications.Vars
+@using Radzen
+@using Radzen.Blazor
 
-
-
- <div class="card-header d-flex gap-2 p-2">
-            <div class="w-125p p-2">Leave Group</div>
-            <div class="w-400p">
-            @*     <RadzenDropDown 
-                        Data="@V.Payrollgprs" 
-                        TextProperty="Name" 
-                        ValueProperty="Id" 
-                        @bind-Value="V.PayrollGrp.Id"
-                        Change="LvGrpChange" Placeholder="Leave Group" Style="width:100%"
-                        PopupStyle="min-height: 300px; max-height: 600px;  overflow-y: auto;" />*@
-            </div> 
+<div class="border rounded">
+    <div class="d-flex justify-content-between align-items-center p-2 bg-light border-bottom">
+        <div class="d-flex align-items-center gap-2">
+            <RadzenCheckBox @bind-Value="isAllSelected"
+                            Change="@((bool value) => OnSelectAll(value))" />
+            <h6 class="mb-0">Name</h6>
         </div>
-
-
-<div>
-    @if (!disableAction)
-    {
-        <div class="d-flex mt-1" style="border: 1px solid #d9dde2; border-radius: 4px; overflow:hidden; margin-bottom: 10px;">
-            <div class="@class1 flex-fill text-center" onclick="@(() => ChangeClass(1))">A-J</div>
-            <div class="@class2 flex-fill text-center" onclick="@(() => ChangeClass(2))">K-N</div>
-            <div class="@class3 flex-fill text-center" onclick="@(() => ChangeClass(3))">O-T</div>
-            <div class="@class4 flex-fill text-center" onclick="@(() => ChangeClass(4))">U-Z</div>
-            <div class="@class5 flex-fill text-center" onclick="@(() => ChangeClass(5))">Search</div>
-        </div>
-    }
-    else
-    {
-        <div class="d-flex mt-1" style="border: 1px solid #d9dde2; border-radius: 4px; overflow:hidden; margin-bottom: 10px;">
-            <div class="c-222-disabled flex-fill text-center">A-J</div>
-            <div class="c-222-disabled flex-fill text-center">K-N</div>
-            <div class="c-222-disabled flex-fill text-center">O-T</div>
-            <div class="c-222-disabled flex-fill text-center">U-Z</div>
-            <div class="c-222-disabled flex-fill text-center">Search</div>
-        </div>
-    }
-    @if (showSearch)
-    {
-        <div class="d-flex gap-2" style="margin-bottom: 10px;">
-            <div style="width: 70%;">
-                <input type="text" @oninput="@(() => StateHasChanged())" placeholder="Lastname" class="form-control">
-            </div>
-            <div style="width: 30%;">
-                <button onclick="@(() => SearchEmployee(skey))"  type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
-                    <div class="d-flex gap-1 align-items-center justify-content-center">
-                        <span class="fw-semibold"><small>Search</small></span>
-                    </div>
-                </button>
-            </div>
-
-
-                
-        </div>
-        @if (showRequiredLength)
-        {
-            <div class="text-danger w-100 p-1" style="font-size:small; border: 1px solid red; border-radius: 3px;">
-                Input not less than 3 character to proceed.
-            </div>
-        }
-    }
-    <div class="p-2 bg-lightgray" style="border:1px;">
-        <h6 class="mb-0">Name</h6>
     </div>
-    <div style="border:1px solid #d9dde2; height:calc(100vh - 260px); overflow-y:auto; overflow-x:hidden;">
+
+    <div class="border-bottom" style="height: calc(100vh - 260px); overflow-y: auto; overflow-x: hidden;">
         @if (V.EmpmasList?.Count > 0)
         {
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover mb-0">
                 <tbody>
                     @foreach (var e in V.EmpmasList!)
                     {
-                        if (e!.EmpNumber == V.SelectedEmpnumber)
-                        {
-                            <tr class="fw-bold" style="cursor:pointer; background-color:#eaf1fb; color:rgb(49, 134, 219) ;">
-                                <td>@e?.EmpLastNm, @e?.EmpFirstNm @e?.EmpMidNm - [@e?.EmpNumber]</td>
-                            </tr>
-                        }
-                        else
-                        {
-                            <tr style="cursor:pointer;">
-                                <td onclick="@(() => SelectEmpmas(e))">
-                                    @e?.EmpLastNm, @e?.EmpFirstNm @e?.EmpMidNm - [@e?.EmpNumber]
-                                </td>
-                            </tr>
-                        }
+                        <tr class="@(e.Sel ? "table-primary fw-bold" : "")" style="cursor: pointer;">
+                            <td style="width: 40px;" class="p-2">
+                                <RadzenCheckBox @bind-Value="e.Sel"
+                                                Change="@((bool value) => ToggleEmployee(e, value))" />
+                            </td>
+                            <td class="p-2">
+                                @e.Fullname - [@e?.EmpNumber]
+                            </td>
+                        </tr>
                     }
                 </tbody>
             </table>
         }
         else
         {
-            <div class="w-100 text-center" style="background-color:#eef0f2; color:#6c757d; border: 1px solid #d9dde2; padding:8px 0;">
+            <div class="w-100 text-center bg-light text-muted border p-2">
                 Record is empty.
             </div>
         }
     </div>
-    <div class="bg-lightgray" style="color:#2c2f33; padding: 5px 10px; font-size: small; border:1px solid #d9dde2; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;">
+
+    <!-- Footer -->
+    <div class="bg-light text-dark text-center p-2 border-top small rounded-bottom">
         Employee Listing
     </div>
 </div>
-@inject IOEmpmasDataAccess _empmas
-@inject I_00MainDA _main;
-@inject IEmpmovementDataAccess _empMovement;
 
+
+
+@inject IOEmpmasDataAccess _empmas
+@inject I_00MainDA _main
+@inject IEmpmovementDataAccess _empMovement
+@inject IAtttemplateDataAccess _atttemplate
+@inject NotificationService _notify
 
 @code {
-    string skey = "";
-
-    string class1 = "c-222-selected";
-    string class2 = "c-222-active";
-    string class3 = "c-222-active";
-    string class4 = "c-222-active";
-    string class5 = "c-222-active";
-
-    int selectedId = 0;
-
-    bool showSearch = false;
-    bool disableAction = false;
-    bool showRequiredLength = false;
-
+    int selectedCount = 0;
+    bool isAllSelected = false;
 
     [Parameter]
     public V102Model V { get; set; } = new();
@@ -133,123 +71,84 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    async void ChangeClass(int classNo)
+
+    private async Task OnSelectAll(bool isChecked)
     {
+        V.SelectedEmployee = string.Empty;
+        V.CurrentAttendance = new AtttemplateModel();
 
-        V.EmpmasList = new();
-        disableAction = true;
-        showRequiredLength = false;
-
-        class1 = "c-222-active";
-        class2 = "c-222-active";
-        class3 = "c-222-active";
-        class4 = "c-222-active";
-        class5 = "c-222-active";
-        showSearch = false;
-
-        switch (classNo)
+        foreach (var e in V.EmpmasList)
         {
-            case 1:
-                class1 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRange("A", "J", V.pisdb!, V.conn!);
-                break;
+            e.Sel = isChecked;
 
-
-            case 2:
-                class2 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRange("K", "N", V.pisdb!, V.conn!);
-                break;
-
-            case 3:
-                class3 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRange("O", "T", V.pisdb!, V.conn!);
-                break;
-
-            case 4:
-                class4 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRange("U", "Z", V.pisdb!, V.conn!);
-                break;
-
-            default:
-                break;
+            if (isChecked)
+            {
+                if (!V.SelectedEmployees.Contains(e))
+                    V.SelectedEmployees.Add(e);
+            }
+            else
+            {
+                V.SelectedEmployees.Remove(e);
+            }
         }
 
-        if (classNo == 5)
-        {
-            showSearch = true;
-            class5 = "c-222-selected";
-        }
+        isAllSelected = isChecked;
 
-        disableAction = false;
-
-        StateHasChanged();
-        await ChildAction.InvokeAsync();
-
-    }
-
-    async void SelectEmpmas(OEmpmasModel e)
-    {
-        V.SelectedEmpnumber = e.EmpNumber;
-        V.Action = "SelectEmpmas";
+        if (V.SelectedEmployees.Count > 0) await GetCurrentSchedule(V.SelectedEmployees.LastOrDefault());
         await ChildAction.InvokeAsync();
     }
 
-
-
-    async void SearchEmployee(string sval)
+    private async Task ToggleEmployee(EmpmasInternalModel employee, bool isChecked)
     {
-        V.EmpmasList = new();
+        V.SelectedEmployee = string.Empty;
+        V.CurrentAttendance = new AtttemplateModel();
 
-        if (sval.Length < 4)
+        employee.Sel = isChecked;
+
+        var unSelectedEmployee = V.EmpmasList.Count(e => e.Sel == false);
+        isAllSelected = unSelectedEmployee == 0;
+
+
+        if (isChecked)
         {
-            showRequiredLength = true;
-            return;
+            if (!V.SelectedEmployees.Contains(employee))
+                V.SelectedEmployees.Add(employee);
+        }
+        else
+        {
+            V.SelectedEmployees.Remove(employee);
         }
 
-        showRequiredLength = false;
-
-
-        V.EmpmasList = await _empmas._02SearchName(sval, V.pisdb!, V.conn!);
+        if (V.SelectedEmployees.Count > 0) await GetCurrentSchedule(V.SelectedEmployees.LastOrDefault());
         await ChildAction.InvokeAsync();
     }
 
+    private async Task GetCurrentSchedule(EmpmasInternalModel employee)
+    {
+        V.SelectedEmployee = string.Empty;
+        V.CurrentAttendance = new AtttemplateModel();
+
+
+        try
+        {
+            if (employee == null)
+            {
+                return;
+            }
+
+            var result = await _atttemplate._02(employee.SystemId, V.pisdb, V.conn);
+
+            if (result.EmpmasId > 0)
+            {
+                V.SelectedEmployee = employee.Fullname;
+                V.CurrentAttendance = result;
+                Console.WriteLine("res");
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
 }
-
-
-
-
-<style>
-    .c-222-selected {
-        color: white;
-        padding: 8px 5px;
-        background-color: rgb(49, 134, 219);
-        cursor: pointer;
-        border-right: 1px solid #d9dde2;
-    }
-
-    .c-222-active {
-        cursor: pointer;
-        color: #2c2f33;
-        padding: 8px 5px;
-        background-color: #ffffff;
-        border-right: 1px solid #d9dde2;
-    }
-
-        .c-222-active:hover {
-            color: rgb(49, 134, 219);
-            background-color: #eaf1fb;
-        }
-
-    .c-222-disabled {
-        color: #ffffff;
-        padding: 8px 5px;
-        background-color: #b9c4cf;
-        border-right: 1px solid #d9dde2;
-    }
-
-        .c-222-selected:last-child,
-        .c-222-active:last-child,
-        .c-222-disabled:last-child {
-            border-right: none;
-        }
-</style>
