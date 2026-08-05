@@ -26,7 +26,7 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         await _sql.ExecuteCmd(sql, new{ Id = id }, conn);
         
         sql = $@"SELECT * FROM {schema}.Payrollgrp where Id = @Id ";
-        res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, payrollgrp, conn);
+        res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
         
         return res.FirstOrDefault();
     }
@@ -110,7 +110,17 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         var data    = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { ClNumber=code  }, conn);
         return data;
     }
-    
+
+    public async Task<List<PayrollgrpModel?>?> _02ByName(string? name, string? schema, string? conn)
+    {
+        var sql = $@" SELECT * FROM {schema}.Payrollgrp WHERE UPPER(TRIM(Name)) = UPPER(TRIM(@Name)) ORDER BY Name;";
+
+        var data = await _sql.FetchData<PayrollgrpModel?, dynamic>( sql, new { Name = name?.Trim() }, conn);
+
+        return data;
+    }
+
+
     public async Task<PayrollgrpModel?> _03(int? id, PayrollgrpModel payrollgrp, string? schema, string? conn)
     {
         string? sql = $@"Update {schema}.Payrollgrp set 
