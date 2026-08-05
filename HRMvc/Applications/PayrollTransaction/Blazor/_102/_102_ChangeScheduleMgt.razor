@@ -17,10 +17,8 @@
 
 
 @inject NotificationService _notify
-
 @inject DialogService _DialogService
-@inject NotificationService _NotificationService
-@inject IEmpmasInternalDataAccess _iempmas;
+
 
 
 <RadzenDialog />
@@ -29,9 +27,7 @@
 <RadzenContextMenu />
 
 
-@* <div class="d-flex gap-1 p-1 border-bottom ">
-    <div @onclick="ShowMyRequest"       class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
-</div> *@
+
 
 <div class="card-header d-flex gap-2 p-2 justify-content-between align-items-center">
     <div class="w-45">
@@ -40,30 +36,17 @@
 
 
     <div class="">
-        <RadzenButton Click="@ApplySchedule" ButtonStyle="ButtonStyle.Light" Text="Light"
-                      Class="card flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4">
-            <ChildContent>
-                <div class="d-flex gap-1 align-items-center justify-content-center">
-                    <span class="fw-semibold">
-                        <small>Apply Schedule to Employee(s)</small>
-                    </span>
-                </div>
-            </ChildContent>
-        </RadzenButton>
+        <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="ApplySchedule">
+            <div class="d-flex gap-1 align-items-center justify-content-center">
+                <span class="fw-semibold"><small> Apply Schedule to Employee(s)</small></span>
+            </div>
+        </button>
     </div>
    
 </div>
 
 
-<button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="NewEntry">
-    <div class="d-flex gap-1 align-items-center justify-content-center">
-        <span class="fw-semibold"><small>New Entry</small></span>
-    </div>
-</button>
 
-<div onclick="sample">
-    Click Me
-</div>
 
 <div class="card mt-1">
 
@@ -608,7 +591,8 @@
 @inject IOEmpmasDataAccess              _empmas; 
 @inject IAtttemplatereqhdrDataAccess    _attTemplateReqhdr; 
 @inject IAtttemplatereqdtlDataAccess    _attTemplateReqdtl; 
-
+@inject IEmpmasInternalDataAccess       _iempmas;
+@inject IAtttemplatereqhistDataAccess   _iattTemplateReqHis;
 
 @code {
 
@@ -624,14 +608,7 @@
     AtttemplatereqhdrModel attTempReqHdr = new();
 
 
-    void sample()
-    {
-        Console.WriteLine("sample");
-    }
-    private void NewEntry()
-    {
-        Console.WriteLine("NewEntry");
-    }
+
     async Task PayrollgrpChanged(int pgrpId)
     {
         try
@@ -654,12 +631,12 @@
             }
             else
             {
-                 _notify.ShowInfo("No Data", "No employees found for this payroll group");
+                _notify.ShowInfo("No Data", "No employees found for this payroll group");
             }
         }
         catch (Exception ex)
         {
-             _notify.ShowError("Load Error", $"Failed to load employees: {ex.Message}");
+            _notify.ShowError("Load Error", $"Failed to load employees: {ex.Message}");
         }
     }
 
@@ -667,94 +644,135 @@
     {
         try
         {
-            if (Cs.Atttemplatereqdtl == null)
-            {
-                 _notify.ShowError("No Data", "Schedule data is missing");
-                return;
-            }
+            if (!ValidateApplySchedule()) return;
 
-            if (V.SelectedEmployees == null || V.SelectedEmployees.Count == 0)
-            {
-                 _notify.ShowError("No Selection", "Please select at least one employee");
-                return;
-            }
-
-            var newSchedule = MapAttendanceRec(Cs.Atttemplatereqdtl);
-            if (newSchedule == null)
-            {
-                 _notify.ShowError("Error", "Failed to map schedule");
-                return;
-            }
+            var schedule = MapAttendanceRec(Cs.Atttemplatereqdtl);
 
             int successCount = 0;
             int skippedCount = 0;
             List<string> failedEmployees = new();
 
-            foreach (var e in V.SelectedEmployees)
+            foreach (var employee in V.SelectedEmployees)
             {
-                try
-                {
-                    if (e.SystemId == 0)
-                    {
-                        skippedCount++;
-                         _notify.ShowInfo("Skipped", $"Cannot update {e.Fullname} - no SystemId");
-                        continue;
-                    }
-
-                    newSchedule.EmpmasId = e.SystemId;
-                    await InsertUpdateSchedule(newSchedule);
-
-                    successCount++;
-                }
-                catch (Exception loopEx)
+                if (employee.SystemId == 0)
                 {
                     skippedCount++;
-                    failedEmployees.Add($"{e.Fullname}: {loopEx.Message}");
+
+                    _notify.ShowInfo( "Employee Skipped",  $"{employee.Fullname} could not be updated because no System ID is assigned.");
+                    continue;
+                }
+
+                schedule.EmpmasId = employee.SystemId;
+
+                bool dbUpdated = await InsertUpdateSchedule(schedule);
+
+                if (dbUpdated)
+                {
+                    var attreqhistory = AssignValuesToRequestHistory(employee.SystemId, Uc.OempNumber);
+                    await _iattTemplateReqHis._01(attreqhistory, V.pisdb, V.conn);
+                    successCount++;
+                }
+                else
+                {
+                    skippedCount++;
+                    failedEmployees.Add(employee.Fullname);
                 }
             }
 
-            string summary = $"Updated {successCount} employee(s)";
-
-            if (skippedCount > 0)
-                summary += $", {skippedCount} skipped";
-
-            if (successCount > 0)
-                 _notify.ShowSuccess("Success", summary);
-            else
-                 _notify.ShowWarning("No Updates", "No employees were updated");
-
-            if (failedEmployees.Count > 0)
-            {
-                string errorMsg = string.Join("\n", failedEmployees.Take(3));
-                if (failedEmployees.Count > 3)
-                    errorMsg += $"\n...and {failedEmployees.Count - 3} more";
-
-                 _notify.ShowError("Errors", errorMsg);
-            }
+            ShowApplyScheduleSummary( successCount, skippedCount,failedEmployees);
 
             StateHasChanged();
             await ChildActionCatcher();
         }
         catch (Exception ex)
         {
-             _notify.ShowError("Critical Error", ex.Message);
+            _notify.ShowError(
+                "Unexpected Error",
+                $"An unexpected error occurred while updating employee schedules.{Environment.NewLine}{ex.Message}");
         }
     }
 
-    private async Task InsertUpdateSchedule(AtttemplateModel schedule)
+
+    private bool ValidateApplySchedule()
+    {
+        if (Cs.Atttemplatereqdtl == null)
+        {
+            _notify.ShowError(
+                "No Schedule",
+                "No schedule is available to apply.");
+            return false;
+        }
+
+        if (V.SelectedEmployees == null || !V.SelectedEmployees.Any())
+        {
+            _notify.ShowWarning(
+                "No Employees Selected",
+                "Please select at least one employee.");
+            return false;
+        }
+
+        return true;
+    }
+
+
+    private void ShowApplyScheduleSummary( int successCount,int skippedCount, List<string> failedEmployees)
+    {
+        if (successCount > 0)
+        {
+            string summary = $"Successfully updated schedules for {successCount} employee(s).";
+
+            if (skippedCount > 0)
+                summary += $" {skippedCount} employee(s) could not be updated.";
+
+            _notify.ShowSuccess("Schedule Update Completed", summary);
+        }
+        else
+        {
+            _notify.ShowWarning( "No Updates Applied",  "No employee schedules were updated.");
+        }
+
+        if (!failedEmployees.Any())  return;
+
+        string errorMsg = string.Join(" ", failedEmployees.Take(3));
+
+        if (failedEmployees.Count > 3)
+        {
+            errorMsg += $"...and {failedEmployees.Count - 3} more.";
+        }
+
+        _notify.ShowError( "Update Incomplete",  $"The following employee(s) could not be updated:\n{errorMsg}");
+    }
+
+
+
+    private AtttemplatereqhistModel AssignValuesToRequestHistory(int? userId, string approverEmpnumber)
+    {
+        return new AtttemplatereqhistModel()
+            {
+                AtttemplateReqHdrId = 0,
+                UserId = userId,
+                DActionTaken = DateTime.Now,
+                SetStatusTo = "C",
+                Empnumber_Approver = approverEmpnumber,
+                Remarks = "Manually Changed"
+            };
+    }
+
+
+    private async Task<bool> InsertUpdateSchedule(AtttemplateModel schedule)
     {
         if (schedule == null)
-            throw new ArgumentNullException(nameof(schedule), "Schedule cannot be null");
+            throw new ArgumentNullException(nameof(schedule));
 
         try
         {
             var res = await _atttemplate._01(schedule, V.pisdb, V.conn);
 
-            if (res == null ) _notify.ShowError("Failed", "Failed to update the schedule");
+            return res != null;
         }
-        catch (Exception ex)
+        catch
         {
-             _notify.ShowError("Failed", "Failed to update the schedule");
+            return false;
         }
     }
 

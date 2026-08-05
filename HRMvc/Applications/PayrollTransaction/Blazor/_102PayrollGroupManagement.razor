@@ -7,11 +7,15 @@
 @using HRMvc.Applications.PayrollTransaction.Blazor._102
 
 
-<div onclick="test">Test</div>
-<div class="card w-1080p">
-<BodyHdr pageTitle="Payroll Group Management"  />
+@inject NotificationService _notify
+@inject DialogService _DialogService
 
-    <div class="card-body p-0 pt-1">
+
+
+<div class="card w-1080p">
+    <BodyHdr pageTitle="Payroll Group Management"  />
+
+    <div class="card-body p-0">
         <div class="mb-tabs bordered-bottom-darkgreen ">
             <div onclick="@(() => TabClick(1))" class="mb-tab mb-a-blue @(tab == 1 ? "active" : "")">Payroll Group</div>
             <div onclick="@(() => TabClick(2))" class="mb-tab mb-a-blue @(tab == 2 ? "active" : "")">Payroll Group Assignment</div>
@@ -20,7 +24,7 @@
     </div>
 
 
-     @switch (tab) 
+        @switch (tab) 
     {
         case 1 : { <_102_PayrollGrp                 Uc="@Uc" /> break;  }
         case 2 : { <_102_PayrollGrpAssignment       Uc="@Uc" /> break;  }
@@ -28,8 +32,6 @@
 
         default: { break; }
     }
-
-
 
 </div>
 
@@ -42,10 +44,6 @@
 
     int tab = 1;
 
-    void test()
-    {
-        Console.WriteLine("TEST");
-    }
     protected override async Task OnInitializedAsync()
     {
         if (Uc == null) return;
@@ -66,8 +64,7 @@
         }
         catch (Exception)
         {
-
-            throw;
+            _notify.ShowError("Load Error", $"Failed to load payroll groups");
         }
     }
 
