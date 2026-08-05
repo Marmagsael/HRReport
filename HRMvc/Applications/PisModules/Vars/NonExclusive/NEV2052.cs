@@ -79,7 +79,7 @@ public class NEV2052
     public List<PositionModel?>?            Positions           { get; set; } = new();
     public List<EmploymenttypeModel?>?      Employmenttypes     { get; set; } = new();
 
-    public RadzenDataGrid<PisEmpmasModel?>? EmpmassGrid         { get; set; } = new();
+    public RadzenDataGrid<PisEmpmasModel>   EmpmassGrid         { get; set; } = new();
     public DataGridEditMode                 EditMode1           { get; set; } = DataGridEditMode.Single;
 
     public List<PisEmpmasModel?>?           EmpmassToInsert     { get; set; } = new();
@@ -87,15 +87,14 @@ public class NEV2052
 
     public List<EmpmovementModel?>?         EmpmovementList     { get; set; } = new();
 
-
-    public RadzenDataGrid<EmpmasEmploymentModel?>?          EmploymentGrid          = new();
-    public RadzenDataGrid<EmpmasEducateModel?>?             EducationGrid           = new();
-    public RadzenDataGrid<EmpmasFamilyModel?>?              FamilyGrid              = new();
-    public RadzenDataGrid<EmpmasEmergencyContactModel?>?    EmergencyContactGrid    = new();
-    public RadzenDataGrid<EmpmasRelativesModel?>?           RelativesGrid           = new();
-    public RadzenDataGrid<EmpmasTrainingModel?>?            TrainingGrid            = new();
-    public RadzenDataGrid<EmpmasCharRefModel?>?             ReferenceGrid           = new();
-    public RadzenDataGrid<EmpmasInsuranceModel?>?           InsuranceGrid           = new();
+public RadzenDataGrid<EmpmasEmploymentModel>?       EmploymentGrid         = new();
+public RadzenDataGrid<EmpmasEducateModel>?          EducationGrid          = new();
+public RadzenDataGrid<EmpmasFamilyModel>?           FamilyGrid             = new();
+public RadzenDataGrid<EmpmasEmergencyContactModel>? EmergencyContactGrid   = new();
+public RadzenDataGrid<EmpmasRelativesModel>?        RelativesGrid          = new();
+public RadzenDataGrid<EmpmasTrainingModel>?         TrainingGrid           = new();
+public RadzenDataGrid<EmpmasCharRefModel>?          ReferenceGrid          = new();
+public RadzenDataGrid<EmpmasInsuranceModel>?        InsuranceGrid          = new();
 
 
     public PisEmpmasModel   EmpmasToEditMapper(PisEmpmasModel source, PisEmpmasModel destination)
