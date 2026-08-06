@@ -81,8 +81,10 @@ public class _00MainDA : I_00MainDA
             uc.OpisDb               = claims.FirstOrDefault(c => c?.Type == "OldPis")?.Value;
             
             uc.EmpmasId             = 0;
-            var empmasId     = claims.FirstOrDefault(c => c?.Type == "EmpmasId")?.Value;
-            if(empmasId != null) uc.EmpmasId = int.Parse(empmasId);
+            var empmasId            = claims.FirstOrDefault(c => c?.Type == "EmpmasId")?.Value;
+            // if(empmasId != null)    uc.EmpmasId = int.Parse(empmasId);
+            
+            if (int.TryParse(empmasId, out int parsedEmpmasId)) uc.EmpmasId = parsedEmpmasId;
 
             uc.UserId = 0; 
             var userid      = claims.FirstOrDefault(c => c?.Type == "UserId")?.Value;

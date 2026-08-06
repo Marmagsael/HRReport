@@ -1,0 +1,94 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications.PayrollTransaction.Vars
+@using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp_Assignment
+
+@* @inject NotificationService _notify
+@inject DialogService _DialogService *@
+
+<CascadingValue Value="Uc" IsFixed="true">
+
+    <div class="card">
+
+        <div class="card-header d-flex gap-2 p-2">
+            <div class="w-125p p-2">Payroll Group</div>
+            <div class="w-400p">
+                <RadzenDropDown Data="@V.PayrollGrps"
+                                TextProperty="Name"
+                                ValueProperty="Id"
+                                @bind-Value="V.SelectedPayrollGroup"
+                                Change="PayrollGrpChange" Placeholder="Payroll Group" Style="width:100%"
+                                PopupStyle="min-height: 300px; max-height: 600px;  overflow-y: auto;" />
+            </div>
+        </div>
+
+        <div class="card-body vh-80min p-2 ">
+
+            <div class="d-flex gap-2 w-100">
+                @* --- Left Content ---------------------------------- *@
+                <div class="w-600p">
+
+                    <div class="d-flex bg-secondary p-2 bg-opacity-10 small fw-bold justify-content-between ">
+                        <div>Assigned Employees</div>
+                         <div @onclick="() => V.ShowAddMember = true" class="px-2 fw-normal text-primary cur-pointer  ">
+                            <i class="fa-solid fa-plus"></i>
+                        </div> 
+                    </div>
+
+                    @if (V.ShowAddMember)
+                    {
+                        <_102_PayrollGrpAssignment_AddMember V="V" ChildAction="CA_Catcher" />
+                    }
+
+                    <_102_PayrollGrpAssignment_Dtls V="V" ChildAction="CA_Catcher" />
+
+
+
+
+                </div>
+
+
+            </div>
+
+
+
+        </div>
+    </div>
+
+
+
+</CascadingValue>
+
+
+@inject IEmpmasgrpDataAccess _empmasgrp;
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    [Parameter] public V102Model V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    List<EmpmasgrpModel?>? empmasAssigned = [];
+    List<EmpmasInternalModel?>? sEmpmas = [];
+
+    string? enableAddMemberCSS => V.PayrollGrp.Id > 0 ? "" : " disabled-div ";
+
+    @* ==> Search Functions -------------------------------------------------------------- *@
+    List<EmpmasInternalModel?>? empmasUnAssigned => sEmpmas?
+    .Where(s => s != null && !(empmasAssigned?.Any(a => a?.EmpmasId == s.Id) ?? false))
+    .ToList();
+
+
+   
+    async Task PayrollGrpChange()
+    {
+        V.Empmasgrps = [];
+        var res = await _empmasgrp._02ByFldId("LeavegrpId", V.PayrollGrp.Id, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null) V.Empmasgrps = res!;
+
+
+
+    }
+
+    void CA_Catcher() { }
+
+
+}

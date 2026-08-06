@@ -1,22 +1,23 @@
-﻿using HRApiLibrary.Models._00_Main;
-using HRMvc.Models.Authentication;
-using HRMvc.Models.Main.LoginSignUp;
-using HRMvc.Models.Main;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication;
-using System.Security.Claims;
-using HRApiLibrary.DataAccess._00_Main;
-using HRMvc.DataAccess.Main;
-using HRApiLibrary.Models._00_MainPis;
-using HRApiLibrary.Models._10_Pis;
+﻿using HRApiLibrary.DataAccess._00_Main;
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._00_MainPis;
+using HRApiLibrary.Models._10_Pis;
+using HRMvc.DataAccess.Main;
+using HRMvc.Models.Authentication;
+using HRMvc.Models.Main;
+using HRMvc.Models.Main.LoginSignUp;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using MySql.Data.MySqlClient;
 using MySqlX.XDevAPI;
+using System.Security.Claims;
 
 namespace HRMvc.Controllers.Main;
 
@@ -100,6 +101,7 @@ public class AuthenticationController : Controller
     [HttpGet("register")]
     public IActionResult Register()
     {
+        ViewData["Exclusive"] = _config.GetSection("CompanyInfo:Exclusive").Value;
         ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
         return View();
     }
@@ -112,6 +114,7 @@ public class AuthenticationController : Controller
     [HttpGet("registerOrdinary")]
     public IActionResult RegisterOrdinary()
     {
+        ViewData["Exclusive"] = _config.GetSection("CompanyInfo:Exclusive").Value;
         ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
         return View();
     }
@@ -351,50 +354,71 @@ public class AuthenticationController : Controller
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginUiModel login)
     {
-
-        
-        UsersModel? user = await _mainDA._02UsersLoginLoginName(login.EmpNumber, login.Password);
-        
-        if (user == null)
+        try
         {
-            //return Ok("User is null");
-            ViewData["ErrorMsg"] = "Invalid username / password.";
-            return View("Login");
+            string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
+         
+            UsersModel? user = await _mainDA._02UsersLoginLoginName(login.EmpNumber, login.Password);
+
+            if (user == null)
+            {
+                LoadLoginViewData();
+                ViewData["ErrorMsg"] = "Invalid username / password.";
+                return View("Login", login);
+            }
+
+
+
+            // -- Get User Company -------------------------------------------------------
+            var conn = _config.GetSection("Schema:DefConn").Value.ToString();
+            var schema = _config.GetSection("Schema:Main").Value.ToString();
+            var uc = await _02UserCompany(user, schema, conn);
+
+            // Create Schema and Tables --------------------------------------------------
+            _01SchemaAndTables(uc?.PisSchema, conn);
+
+            if (isExclusive == "true")
+            {
+                uc.ExclusiveCompany = login.CompanyId;
+            }
+
+            await CreateClaims(user, uc);
+            await CreateCompany(user, uc, conn);
+
+            HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
+            HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
+
+            if (uc.OldPis.Length <= 0) return Redirect("~/13");
+
+            var empmas = await _oldEmpmas._02ByEmail(user.Email ?? "00000", uc.OldPis, conn ?? "");
+            if (empmas.Count > 0)
+                HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
+
+            return Redirect("12/102");
         }
-
-        // -- Get User Company -------------------------------------------------------
-        var conn     = _config.GetSection("Schema:DefConn").Value.ToString();
-        var schema   = _config.GetSection("Schema:Main").Value.ToString();
-
-        var uc = await _02UserCompany(user, schema, conn);
-
-        // Create Schema and Tables  --------------------------------------------------------
-        _01SchemaAndTables(uc?.PisSchema, conn); // Added By Judith .To create the pis table if it does not existS
-
-
-        string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
-        if (isExclusive == "true")
+        catch (MySqlException ex)
         {
-            uc.ExclusiveCompany = login.CompanyId;
+            LoadLoginViewData();
+            ViewData["ErrorMsg"] = "Cannot reach the server right now. Please try again shortly.";
+            Console.WriteLine(ex);
+            return View("Login", login);
         }
-
-        await CreateClaims(user, uc);
-        await CreateCompany(user, uc, conn);    
-        
-        HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
-        HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
-        
-        if (uc.OldPis.Length <= 0) return Redirect("~/13");
-        var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
-        if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
-        
-        
-        
-        return Redirect("13");
-
-
+        catch (Exception ex)
+        {
+            LoadLoginViewData();
+            ViewData["ErrorMsg"] = "Something went wrong. Please try again.";
+            return View("Login", login);
+        }
     }
-    
+
+
+    private void LoadLoginViewData()
+    {
+        ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
+        ViewData["Exclusive"] = _config.GetSection("CompanyInfo:Exclusive").Value;
+    }
+
+
     [HttpGet("changingclaims/{link}/{userid}")]
     public async Task<IActionResult> ChangingClaims(string link, string userid)
     {
@@ -595,8 +619,15 @@ public class AuthenticationController : Controller
             {
                 // -- Fetch assign company to user --------------------------------
                 uc = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
-
             }
+        }
+
+        // --- Fetch Assigned Old Pis and Old Pay ------------------------------------------------------
+        if (user.DefaultCoId > 0)
+        {
+            var res = await _mainDA._02UserCompany(user.DefaultCoId, schema, conn);
+            if (uc.OldPis != null && uc.OldPis != "") uc.OldPis = res?.OldPis ?? "";
+            if (uc.OldPay != null && uc.OldPay != "") uc.OldPay = res?.OldPay ?? "";
         }
 
         return uc;
@@ -662,7 +693,6 @@ public class AuthenticationController : Controller
         var acctgSchema     = prefix + "Acctg";
         var appSchema       = prefix + "App";
         var amsSchema       = prefix + "Ams";
-        var conn            = user.Domain;
         var coName          = uc?.CompanyName ?? "-";
         var email           = user.Email;
         
@@ -671,6 +701,7 @@ public class AuthenticationController : Controller
         var oldPay           = uc?.OldPay ?? "";
         var exclusiveCompany = uc?.ExclusiveCompany ?? "";
 
+        var conn            = user.Domain;
         var res = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
         
         if(res.Count > 0 ) 
@@ -695,6 +726,12 @@ public class AuthenticationController : Controller
         var defCoId                 = user.DefaultCoId.ToString() ?? "0";
         var isExclusiveCompany      = _config.GetSection("CompanyInfo:Exclusive").Value;
 
+        if (isExclusiveCompany == "true")
+        {
+            // conn = exclusiveCompany;
+        }
+
+
         var claims = new List<Claim>
         {
             new("UserId",               userId),
@@ -715,8 +752,7 @@ public class AuthenticationController : Controller
             new("OldPay",               oldPay  ?? "pay"),  
             
             new("IsExclusiveCompany",   isExclusiveCompany),
-            new("ExclusiveCompany",   exclusiveCompany) // For GSIA
-
+            new("ExclusiveCompany",    exclusiveCompany) // For GSIA
         }; 
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

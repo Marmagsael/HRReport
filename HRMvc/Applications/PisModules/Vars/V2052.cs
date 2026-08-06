@@ -83,16 +83,16 @@ public class V2052
     public List<EmpmovementModel?>?         EmpmovementList     { get; set; } = new();
 
 
-    public RadzenDataGrid<OEmployModel?>?                   EmploymentGrid          = new();
-    public RadzenDataGrid<EmpmasEducateModel?>?             EducationGrid           = new();
-    public RadzenDataGrid<OFamilyModel?>?                   FamilyGrid              = new();
-    public RadzenDataGrid<OParentModel?>?                   ParentGrid              = new();
-    public RadzenDataGrid<OChildrenModel?>?                 ChildrenGrid            = new();
-    public RadzenDataGrid<OEmergencModel?>?                 EmergencyContactGrid    = new();
-    public RadzenDataGrid<EmpmasRelativesModel?>?           RelativesGrid           = new();
-    public RadzenDataGrid<OTrainModel?>?                    TrainingGrid            = new();
-    public RadzenDataGrid<OReferModel?>?                    ReferenceGrid           = new();
-    public RadzenDataGrid<EmpmasInsuranceModel?>?           InsuranceGrid           = new();
+public RadzenDataGrid<OEmployModel>?             EmploymentGrid         = new();
+public RadzenDataGrid<EmpmasEducateModel>?       EducationGrid          = new();
+public RadzenDataGrid<OFamilyModel>?             FamilyGrid             = new();
+public RadzenDataGrid<OParentModel>?             ParentGrid             = new();
+public RadzenDataGrid<OChildrenModel>?           ChildrenGrid           = new();
+public RadzenDataGrid<OEmergencModel>?           EmergencyContactGrid   = new();
+public RadzenDataGrid<EmpmasRelativesModel>?     RelativesGrid          = new();
+public RadzenDataGrid<OTrainModel>?              TrainingGrid           = new();
+public RadzenDataGrid<OReferModel>?              ReferenceGrid          = new();
+public RadzenDataGrid<EmpmasInsuranceModel>?     InsuranceGrid          = new();
 
 
     public OEmpmasModel EmpmasToEditMapper(OEmpmasModel source, OEmpmasModel destination)

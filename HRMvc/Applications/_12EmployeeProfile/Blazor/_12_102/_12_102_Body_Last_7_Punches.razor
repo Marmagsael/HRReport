@@ -2,7 +2,7 @@
 @using Microsoft.AspNetCore.Mvc
 @using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime
 <div class="card w-100">
-    <_12_102_Cardhdr caption="Latest 7 Punches" /> 
+    <_12_102_Cardhdr caption="Latest 7 Punches" />
 
     <div class="card-body">
         <div class="d-flex border-top p-1 gap-1 txt-gray-25 fw-bold small">
@@ -15,24 +15,24 @@
 
         @foreach (var punch in V12_102.Attpunches1_7days)
         {
-            var timein  = punch?.PunchInDate == null ?  "-" : @punch.PunchInDate?.ToString("HH:mm:ss");
+            var timein = punch?.PunchInDate == null ? "-" : @punch.PunchInDate?.ToString("HH:mm:ss");
             var timeout = punch?.PunchOutDate == null || punch.PunchOutDate <= DateTime.Now.AddYears(-100) ? "-" : @punch.PunchOutDate?.ToString("HH:mm:ss");
-            
+
             @* --- Tardiness IN ----------------------- *@
-            double inTemplate      = 0.00;
-            DateTime    scheduledInTime = punch.PunchInDate?.Date ?? DateTime.MinValue;
-            double      punchIn_Hour    = 0.00;
-            double      punchIn_Min     = 0.00; 
-            int?         tardiness       = 0;
+            double inTemplate = 0.00;
+            DateTime scheduledInTime = punch.PunchInDate?.Date ?? DateTime.MinValue;
+            double punchIn_Hour = 0.00;
+            double punchIn_Min = 0.00;
+            int? tardiness = 0;
 
             if (punch?.PunchInDate != null && punch?.PunchT != null)
             {
-                inTemplate      = (double)punch.PunchT / 100.00; 
-                punchIn_Hour    = Math.Floor(inTemplate);
-                punchIn_Min     = (inTemplate - punchIn_Hour) * 100.00;
-                scheduledInTime = (punch.PunchInDate??DateTime.MinValue).Date
-                                        .AddHours(punchIn_Hour)
-                                        .AddMinutes(punchIn_Min); 
+                inTemplate = (double)punch.PunchT / 100.00;
+                punchIn_Hour = Math.Floor(inTemplate);
+                punchIn_Min = (inTemplate - punchIn_Hour) * 100.00;
+                scheduledInTime = (punch.PunchInDate ?? DateTime.MinValue).Date
+                .AddHours(punchIn_Hour)
+                .AddMinutes(punchIn_Min);
 
                 if (punch.PunchInDate > scheduledInTime && punch?.DutyTypeId == 1)
                 {
@@ -41,55 +41,52 @@
             }
 
             @* --- Tardiness Out ----------------------- *@
-            int? outTardiness       = 0;
+            int? outTardiness = 0;
             if (punch?.DutyTypeId == 1 &&
-                punch?.PunchOutDate  != null && 
-                punch?.PunchInDate   != null &&
-                (punch?.PunchOutDate  > DateTime.Now.AddYears(-2)) && 
-               (punch?.PunchT        == null ? 0 : punch.PunchT) > 0 && 
-               (punch?.SchedDuration == null ? 0 : punch.SchedDuration) > 0 ) 
+            punch?.PunchOutDate != null &&
+            punch?.PunchInDate != null &&
+            (punch?.PunchOutDate > DateTime.Now.AddYears(-2)) &&
+            (punch?.PunchT == null ? 0 : punch.PunchT) > 0 &&
+            (punch?.SchedDuration == null ? 0 : punch.SchedDuration) > 0)
             {
-                DateTime actualOut      = punch.PunchOutDate ?? DateTime.MinValue;
-
-                DateTime scheduleIn     = (punch.PunchInDate?.Date??DateTime.MinValue)
-                                          .AddHours(   punch.PunchT??0 / 100 )
-                                          .AddMinutes( punch.PunchT??0 % 100 );
-                DateTime scheduleOut    = scheduleIn
-                                          .AddHours( punch.SchedDuration??0 / 100 )
-                                          .AddMinutes( punch.SchedDuration??0 % 100 );
-
-                if (actualOut < scheduleOut)
+                DateTime actualOut = punch.PunchOutDate ?? DateTime.MinValue;
+                DateTime scheduleIn = (punch.PunchInDate?.Date ?? DateTime.MinValue)
+                .AddHours((punch.PunchT ?? 0) / 100)      // ✅ Added parentheses
+                .AddMinutes((punch.PunchT ?? 0) % 100);   // ✅ Added parentheses
+                DateTime scheduleOut = scheduleIn
+                .AddHours((punch.SchedDuration ?? 0) / 100)    // ✅ Added parentheses
+                .AddMinutes((punch.SchedDuration ?? 0) % 100); // ✅ Added parentheses
+                if (actualOut > scheduleOut)  // ✅ This checks if they LEFT LATE
                 {
-                    outTardiness = (int)Math.Floor((scheduleOut - actualOut).TotalMinutes);
-                    tardiness   += outTardiness;
+                    outTardiness = (int)Math.Floor((actualOut - scheduleOut).TotalMinutes);
+                    tardiness += outTardiness;
                 }
-
-                
-                
+               
             }
-            
+
             @* --- Company Duty Start -------------- *@
 
 
             @* --- Total ---------------------------------- *@
             double totHrs = 0.00;
-            if(punch?.PunchOutDate != null && punch?.PunchInDate != null && punch.PunchOutDate > punch.PunchInDate){
+            if (punch?.PunchOutDate != null && punch?.PunchInDate != null && punch.PunchOutDate > punch.PunchInDate)
+            {
                 totHrs = ((punch.PunchOutDate ?? DateTime.MinValue) - (punch.PunchInDate ?? DateTime.MinValue)).TotalHours;
             }
 
             @* --- Tardiness Out ----------------------- *@
 
             <div class="d-flex border-top p-1 gap-1 txt-gray-20">
-                <div class="w-25 bordered-right text-center"> 
-                    
+                <div class="w-25 bordered-right text-center">
+
                     <span class="fw-bold op-85 small">
                         @punch.PunchInDate?.ToString("MMM-dd")
-                    </span> 
+                    </span>
 
-                    <div class="@(punch?.DutyTypeId==1 ? "txt-fcolor1" : "text-danger") small op-75 ">
-                        @(punch?.DutyTypeId == 1 ? "Reg" : "RD") - 
+                    <div class="@(punch?.DutyTypeId == 1 ? "txt-fcolor1" : "text-danger") small op-75 ">
+                        @(punch?.DutyTypeId == 1 ? "Reg" : "RD") -
                         @(punch.PunchInDate?.ToString("ddd") ?? "-")
-                        
+
                     </div>
                 </div>
                 <div class="w-20 bordered-right d-flex justify-content-center align-items-center ">
@@ -99,15 +96,15 @@
                     @timeout
                 </div>
                 <div class="w-20 bordered-right d-flex justify-content-center align-items-center ">
-                    @(totHrs==0 ? "-" : totHrs.ToString("0.00")) 
+                    @(totHrs == 0 ? "-" : totHrs.ToString("0.00"))
                 </div>
                 <div class="w-20 d-flex justify-content-center align-items-center text-danger op-75">
-                    @(tardiness==0 ? "-" : tardiness.ToString() )
+                    @(tardiness == 0 ? "-" : tardiness.ToString())
                 </div>
             </div>
 
-                
-            
+
+
         }
     </div>
 </div>
@@ -116,6 +113,6 @@
 
 @code {
 
-    [Parameter] public V12_102?                 V12_102     { get; set; } = new();
+    [Parameter] public V12_102? V12_102 { get; set; } = new();
 
 }

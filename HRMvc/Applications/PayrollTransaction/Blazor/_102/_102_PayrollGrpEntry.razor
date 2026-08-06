@@ -1,0 +1,281 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.PayrollTransaction.Vars
+@using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp
+
+@inject NotificationService _notify
+@inject DialogService _DialogService
+
+
+<div class="card ">
+
+    <div class="card-body">
+        @if (!V.ShowDE)
+        {
+            <div class="w-100  p-2 border mt-1 mb-1">
+                <button @onclick="() => V.ShowDE = true" class="btn btn-primary btn-sm"> Add New </button>
+            </div>
+        }
+
+        @if (V.ShowDE)
+        {
+            <_102_PayrollGrp_DataEntry Uc="@Uc" V="@V" ChildAction="ChildActionCatcher" />
+        }
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light text-center">
+                    <tr>
+                        <th rowspan="2" class="align-middle" style="width:120px; border-bottom: none;">Code</th>
+                        <th rowspan="2" class="align-middle" style="width:200px; border-bottom: none;">Payroll Grp</th>
+                        <th rowspan="2" class="align-middle" style="width:120px; border-bottom: none;">Minimum Rate</th>
+                        <th colspan="4" class="align-middle" style="border-bottom: none;">Rate</th>
+                        <th rowspan="2" class="align-middle" style="width:100px; border-bottom: none;">Status</th>
+                        <th rowspan="2" class="align-middle" style="width:120px; border-bottom: none;">Action</th>
+                    </tr>
+                    <tr>
+                        <th style="width:120px;">Hour</th>
+                        <th style="width:120px;">Day</th>
+                        <th style="width:120px;">Month</th>
+                        <th style="width:120px;">Year</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var p in V.PayrollGrps)
+                    {
+                        <tr>
+                            <td>
+                                <RadzenTextBox @bind-Value="p.ClNumber"
+                                               Class="w-100"
+                                               Disabled
+                                               MaxLength="5" />
+                            </td>
+                            <td>
+                                <RadzenTextBox @bind-Value="p.Name"
+                                               Class="w-100"
+                                               Disabled="!p.IsEditable"
+                                               MaxLength="45"
+                                               Style="display:block" />
+                            </td>
+                            
+                            <td>
+                                <RadzenNumeric @bind-Value="p.MinMoRate"
+                                               Class="w-100"
+                                               Disabled="!p.IsEditable"
+                                               Format="#,##0.00"
+                                               ShowUpDown="false"
+                                               TextAlign="TextAlign.Right"
+                                               Min="0" />
+                            </td>
+
+                             <td>
+                                <RadzenNumeric @bind-Value="p.RatePerHr"
+                                               Class="w-100"
+                                               Disabled="!p.IsEditable"
+                                               Format="#,##0.00"
+                                               ShowUpDown="false"
+                                               TextAlign="TextAlign.Right"
+                                               Min="0" />
+                            </td>
+
+
+                            <td>
+                                <RadzenNumeric @bind-Value="p.RatePerDay"
+                                               Class="w-100"
+                                               Disabled="!p.IsEditable"
+                                               Format="#,##0.00"
+                                               ShowUpDown="false"
+                                               TextAlign="TextAlign.Right"
+                                               Min="0" />
+                            </td>
+                            <td>
+                                <RadzenNumeric @bind-Value="p.RatePerMonth"
+                                               Class="w-100"
+                                               Disabled="!p.IsEditable"
+                                               Format="#,##0.00"
+                                               ShowUpDown="false"
+                                               TextAlign="TextAlign.Right"
+                                               Min="0" />
+                            </td>
+                            <td>
+                                <RadzenNumeric @bind-Value="p.RatePerYr"
+                                               Class="w-100"
+                                               Disabled="!p.IsEditable"
+                                               Format="#,##0.00"
+                                               ShowUpDown="false"
+                                               TextAlign="TextAlign.Right"
+                                               Min="0" />
+                            </td>
+                            <td>
+                                <RadzenDropDown @bind-Value="p.Status"
+                                                Data="@V.PayrollGroupStatus"
+                                                TextProperty="Name"
+                                                ValueProperty="Code"
+                                                Disabled="!p.IsEditable"
+                                                Class="w-100" />
+                            </td>
+
+                            <td class="text-center">
+                                <div class="py-2 gap-1 d-flex">
+                                    @if (p.IsEditable)
+                                    {
+                                        <button @onclick="() => CancelEdit(p)" class="btn btn-sm txt mb-a-red">X</button>
+                                        <button @onclick="() => Update(p)" class="btn btn-sm txt mb-a-green">Save</button>
+                                    }
+                                    else
+                                    {
+                                        <button @onclick="() => Edit(p)" class="btn btn-sm txt mb-a-blue">Edit</button>
+                                        <button @onclick="() => Delete(p)" class="btn btn-sm txt mb-a-red">Delete</button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+   
+</div>
+
+@inject IPayrollgrpDataAccess _paygrp;
+
+@code {
+
+    [Parameter] public UserClaimsModel? Uc { get; set; } = new();
+    [Parameter] public V102Model V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+
+
+    private async Task ChildActionCatcher()
+    {
+        try
+        {
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred. Please contact your system administrator.");
+        }
+    }
+
+    private async Task Update(PayrollgrpModel rec)
+    {
+        V.ShowDE = false;
+
+        try
+        {
+            V.ErrorMsg = string.Empty;
+
+            int? id = rec.Id;
+            string? name = rec.Name;
+
+            bool exists = V.PayrollGrps.Any(p => (p.Name?.Trim().ToUpper() == name?.Trim().ToUpper()) && p.Id != id);
+
+            if (exists)
+            {
+                _notify.ShowError("Failed to update record", "Duplicate record found.");
+                return;
+            }
+
+            await _paygrp._03(id, rec, V.paydb, V.conn);
+            V.Action = "LoadPayrolLGroups";
+            await ChildAction.InvokeAsync();
+
+            rec.IsEditable = false;
+
+            _notify.ShowSuccess("Success", $"{rec.Name} has been updated.");
+
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred while updating. Please contact your system administrator.");
+            return;
+        }
+        
+    }
+
+    private void Edit(PayrollgrpModel rec)
+    {
+        V.ShowDE = false;
+        rec.IsEditable = true;
+    }
+
+    private async Task CancelEdit(PayrollgrpModel rec)
+    {
+        V.ShowDE = false;
+
+        try
+        {
+            V.ErrorMsg = string.Empty;
+
+            rec.IsEditable = false;
+            var id = rec.Id;
+            var result = await _paygrp._02(id, V.paydb, V.conn);
+
+            if (result != null && result.Id != 0)
+            {
+                V.PayrollGrps.Where(lv => lv.Id == id)
+                    .ToList()
+                    .ForEach(lv =>
+                    {
+                        lv.ClNumber = result.ClNumber;
+                        lv.Name = result.Name;
+                        lv.RatePerHr = result.RatePerHr;
+                        lv.RatePerDay = result.RatePerDay;
+                        lv.RatePerMonth = result.RatePerMonth;
+                        lv.RatePerYr = result.RatePerYr;
+                        lv.MinMoRate = result.MinMoRate;
+                        lv.Status = result.Status;
+                        lv.PayRateId = result.PayRateId;
+                    });
+
+                await ChildAction.InvokeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred reverting the changes. Please contact your system administrator.");
+        }
+    }
+
+    private async Task Delete(PayrollgrpModel rec)
+    {
+        V.ShowDE = false;
+
+        try
+        {
+            V.ErrorMsg = string.Empty;
+
+            var result = await _paygrp._02CheckToTblTran(rec.ClNumber, V.paydb, V.conn);
+            if (result.Count > 0)
+            {
+                var msg = "Unable to delete. Payroll group is already used in transaction.";
+                await _DialogService.Alert(msg, "Record Exists in transaction", new AlertOptions() { OkButtonText = "Exit" });
+                return;
+            }
+
+            var option = await _DialogService.Confirm("Delete " + rec.Name + "?", "Confirm Delete",
+                        new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+            if (option == true)
+            {
+                await _paygrp._04(rec.Id, V.paydb, Uc.Conn);
+                V.PayrollGrps.Remove(rec);
+                _notify.ShowSuccess("Success", $"{rec.Name} has been deleted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred while deleting the record. Please contact your system administrator.");
+        }
+    }
+}
+
+<style>
+    thead th {
+        border-bottom: 1px solid #dee2e6 !important;
+    }
+</style>
