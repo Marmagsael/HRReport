@@ -14,6 +14,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<EmpmasInternalModel?>?>       _02FilterByName(string? name, int? approverlvl, string? schema, string? conn);
         Task<List<EmpmasInternalModel?>?>       _02FilterByName(string? name, string? pisdb, string? paydb, string? conn);
         Task<List<EmpmasInternalModel?>?>       _02BySystemIds(int systemId, string schema, string conn);
+        Task<List<EmpmasInternalModel?>?>       _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn);
         Task<EmpmasInternalModel?>              _03(int? id, EmpmasInternalModel empmas, string? schema, string? conn);
         Task<EmpmasInternalModel?>              _03SystemId(int? systemId, string? schema, string? conn);
         Task<EmpmasInternalModel?>              _03SystemId(int? empmasId, int? systemId, string? schema, string? conn);

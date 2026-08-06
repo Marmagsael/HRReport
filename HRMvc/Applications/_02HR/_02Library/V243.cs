@@ -36,14 +36,14 @@ namespace HRMvc.Applications._02HR._02Library
 
         public List<DeprecModel?>?              QualifiedEmployeeList           { get; set; }   
         public List<DeprecModel?>?              QualifiedEmployeeListGrid       { get; set; }   
-        public RadzenDataGrid<DeprecModel?>?    QualifiedEmployeesGrid          { get; set; }
+        public RadzenDataGrid<DeprecModel>?     QualifiedEmployeesGrid          { get; set; }
         public DeprecModel?                     Employee                        { get; set; }
 
 
 
         public List<RempstatModel?>?            RempStatusList                  { get; set; }
         public List<RempstatModel?>?            RempStatusListGrid              { get; set; }
-        public RadzenDataGrid<RempstatModel?>?  RempStatusGrid                  { get; set; }
+        public RadzenDataGrid<RempstatModel>?   RempStatusGrid                  { get; set; }
 
         public DeviationModel?                  Deviation                        { get; set; }
 

@@ -1,0 +1,206 @@
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRMvc.Applications.PayrollTransaction.Vars
+@using HRApiLibrary.Models._20_Pay;
+
+@inject NotificationService _notify
+
+<div class="card p-0 mb-1 bordered">
+    <div class="card-header d-flex gap-1 justify-content-between align-items-center">
+        <div class="fw-bold">Payroll Group Entry</div>
+        <button @onclick="CloseDataEntry" class="btn btn-sm txt mb-a-green">Close</button>
+    </div>
+
+
+
+    <div class="card-body p-2">
+        <RadzenTemplateForm TItem="PayrollgrpModel" Data="@V.PayrollGrp" Submit="SaveDataEntry" @ref="form">
+            <div class="card-header bg-white d-flex gap-1 p-1">
+                <div>
+                    <button type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <span class="fw-semibold">
+                                <small> Save</small>
+                            </span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+
+            @* ---- Error Message *@
+            @if (!string.IsNullOrEmpty(errorMsg))
+            {
+                <div class="alert alert-danger mt-2" role="alert">
+                    @errorMsg
+                </div>
+            }
+
+            @* ---- Code *@
+            <div class="d-flex gap-1 mt-1">
+                <div class="p-2 @lblWd ">Code</div>
+                <div class="w-125p">
+                    <RadzenTextBox @bind-Value="@V.PayrollGrp.ClNumber" MaxLength="5" class="w-100" Name="Code" Disabled />
+                </div>
+            </div>
+
+            @* ---- Name *@
+            <div class="d-flex gap-1 mt-1">
+                <div class="p-2 @lblWd ">Payroll Group <span class="text-danger">*</span></div>
+                <div class="w-450p">
+                    <RadzenTextBox @bind-Value="@V.PayrollGrp.Name" MaxLength="45" class="w-100" Name="Name" Placeholder="Payroll Group" Style="display:block" />
+                    <RadzenRequiredValidator Text="Payroll Group is required" Component="Name" Popup="true" Style="position:absolute;" />
+                </div>
+            </div>
+
+            @* ---- Status *@
+            <div class="d-flex gap-1 mt-1">
+                <div class="p-2 @lblWd ">Status</div>
+                <div class="w-125p">
+                    <RadzenDropDown @bind-Value="@V.PayrollGrp.Status"
+                                    Data="@V.PayrollGroupStatus"
+                                    TextProperty="Name"
+                                    Disabled
+                                    ValueProperty="Code"
+                                    class="w-100" />
+                </div>
+            </div>
+
+            <div class="p-2">
+                <RadzenFieldset Text="Rate" class="mt-3">
+                   
+
+
+
+                    @* ---- Min Rate *@
+                    <div class="d-flex gap-1 mt-1">
+                        <div class="p-2 @lblWdM ">Minimum Rate</div>
+                        <div class="w-150p">
+                            <RadzenNumeric @bind-Value="@V.PayrollGrp.MinMoRate" Format="#,##0.00" TextAlign="TextAlign.Right" Min="0" class="w-100" />
+                        </div>
+                    </div>
+
+                    <hr/>
+                    @* ---- Rate Per Hr *@
+                    <div class="d-flex gap-1 mt-1">
+                        <div class="p-2 @lblWdM ">Rate Per Hour</div>
+                        <div class="w-150p">
+                            <RadzenNumeric @bind-Value="@V.PayrollGrp.RatePerHr" Format="#,##0.00" TextAlign="TextAlign.Right" Min="0" class="w-100" />
+                        </div>
+                    </div>
+
+                    @* ---- Rate Per Day *@
+                    <div class="d-flex gap-1 mt-1">
+                        <div class="p-2 @lblWdM ">Rate Per Day</div>
+                        <div class="w-150p">
+                            <RadzenNumeric @bind-Value="@V.PayrollGrp.RatePerDay" Format="#,##0.00" TextAlign="TextAlign.Right" Min="0" class="w-100" />
+                        </div>
+                    </div>
+
+                    @* ---- Rate Per Month *@
+                    <div class="d-flex gap-1 mt-1">
+                        <div class="p-2 @lblWdM ">Rate Per Month</div>
+                        <div class="w-150p">
+                            <RadzenNumeric @bind-Value="@V.PayrollGrp.RatePerMonth" Format="#,##0.00" TextAlign="TextAlign.Right" Min="0" class="w-100" />
+                        </div>
+                    </div>
+
+                    @* ---- Rate Per Year *@
+                    <div class="d-flex gap-1 mt-1">
+                        <div class="p-2 @lblWdM ">Rate Per Year</div>
+                        <div class="w-150p">
+                            <RadzenNumeric @bind-Value="@V.PayrollGrp.RatePerYr" Format="#,##0.00" TextAlign="TextAlign.Right" Min="0" class="w-100" />
+                        </div>
+                    </div>
+                </RadzenFieldset>
+            </div>
+
+        </RadzenTemplateForm>
+    </div>
+</div>
+
+@inject IPayrollgrpDataAccess _paygrp;
+
+@code {
+
+    [Parameter] public UserClaimsModel? Uc { get; set; } = new();
+    [Parameter] public V102Model V { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    private RadzenTemplateForm<PayrollgrpModel> form;
+
+    string? lblWd = "w-200p";
+    string? lblWdM = "w-180p";
+    string? errorMsg = string.Empty;
+
+
+    void CloseDataEntry()
+    {
+        V.ShowDE = false;
+        V.PayrollGrp = new PayrollgrpModel();
+        ChildAction.InvokeAsync();
+    }
+
+    private async Task SaveDataEntry()
+    {
+        Console.WriteLine("sAVE");
+        try
+        {
+            errorMsg = string.Empty;
+
+            if (!await ValidateEntry())
+                return;
+
+            if (V.PayrollGrp.Id == 0)
+            {
+                var result = await _paygrp._01(V.PayrollGrp, V.paydb, V.conn);
+
+                if (result != null && result.Id > 0)
+                {
+                    _notify.ShowSuccess("Success", $"{result.Name} has been saved.");
+                    await ChildAction.InvokeAsync();
+                }
+
+            }
+        }
+        catch (Exception ex)
+        {
+            string errorId = Guid.NewGuid().ToString();
+            _notify.ShowError("Error", $"An error occurred while saving. Please contact your system administrator.");
+            return;
+        }
+        finally
+        {
+
+            V.Action = "LoadPayrollGroups";
+            await ChildAction.InvokeAsync();
+            V.PayrollGrp = new PayrollgrpModel();
+        }
+    }
+    private async Task<bool> ValidateEntry()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(V.PayrollGrp.Name))
+            {
+                errorMsg = "Name is required";
+                return false;
+            }
+
+            var trimmedName = V.PayrollGrp.Name.Trim().ToUpper();
+            var res = await _paygrp._02ByName(trimmedName, V.paydb, V.conn);
+
+            if (res?.Any() == true)
+            {
+                errorMsg = "Payroll group already exists.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred while validating the entry. Please contact your system administrator.");
+            return false;
+        }
+    }
+}

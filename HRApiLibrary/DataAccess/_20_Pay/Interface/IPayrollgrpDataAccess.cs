@@ -9,6 +9,7 @@ namespace HRApiLibrary.DataAccess._20_Pay.Interface
         Task<List<PayrollgrpModel?>?>       _02(string? schema, string? conn);
         Task<List<PayrollgrpModel?>?>       _02Active(string? schema, string? conn);
         Task<List<PayrollgrpModel?>?>       _02ByCode(string? code, string? schema, string? conn); 
+        Task<List<PayrollgrpModel?>?>       _02ByName(string? name, string? schema, string? conn); 
         Task<List<TbltranModel?>?>          _02CheckToTblTran(string? clNumber, string? schema, string? conn);
         Task<List<PayrollgrpModel?>?>       _02Dashboard(string? schema, string? conn);
         Task<List<PayrollgrpModel?>?>       _02PayDashboard(string? paydb, string? pisdb, string? conn); 
