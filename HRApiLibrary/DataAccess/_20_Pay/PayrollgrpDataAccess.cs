@@ -1,5 +1,6 @@
 ﻿using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._20_Pay;
 
 namespace HRApiLibrary.DataAccess._20_Pay;
@@ -97,7 +98,15 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         var     data    = await _sql.FetchData<TbltranModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
         return data;
     }
-    
+
+    public async Task<List<DeprecModel?>?> _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn)
+    {
+        string? sql = $@"select  * from {schema}.deprec where payrollgrpId = @PayrollGrpId limit 1";
+        var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { PayrollGrpId = payrollgrpId }, conn);
+        return data;
+    }
+
+
     public async Task<List<PayrollgrpModel?>?> _02Active(string? schema, string? conn)
     {
         string? sql  = $@"select  * from {schema}.Payrollgrp where Left(Status,1) = 'A'  order by Name ";
