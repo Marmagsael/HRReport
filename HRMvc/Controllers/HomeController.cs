@@ -9,17 +9,28 @@ namespace HRMvc.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger)
+        private readonly IConfiguration _config;
+        public HomeController(ILogger<HomeController> logger, IConfiguration config)
         {
             _logger = logger;
+            _config = config;
         }
        
 
         public IActionResult Index()
         {
-            return View();
+            bool isCommercial = _config.GetSection("CompanyInfo:CommercialUse").Value == "true";
+
+            if (isCommercial)
+            {
+                return View("Enterprise");
+            }
+            else
+            {
+                return View();
+            }
         }
+
 
         public IActionResult Privacy()
         {
