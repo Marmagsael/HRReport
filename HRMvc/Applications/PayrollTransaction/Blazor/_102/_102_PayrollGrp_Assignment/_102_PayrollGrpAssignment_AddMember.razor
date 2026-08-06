@@ -12,13 +12,13 @@
             <div class="d-flex gap-2 w-100 bordered-bottom mb-1 py-1 ">
 
                 <div class="w-500p">
-                    <input @bind-value="searchName" @bind-value:event="oninput" type="text" class="form-control form-control-sm" placeholder="Search employee..." /> 
+                    @* <input @bind-value="searchName" @bind-value:event="oninput" type="text" class="form-control form-control-sm" placeholder="Search employee..." />  *@
                 </div>
 
                 <div class="d-flex gap-2 ">
-                     <button @onclick="SearchEmployee" class="btn btn-sm btn-primary w-100" disabled="@IsSearchDisabled">
+                    @*  <button @onclick="SearchEmployee" class="btn btn-sm btn-primary w-100" disabled="@IsSearchDisabled">
                         Search
-                    </button> 
+                    </button>  *@
                     <button @onclick="Close" class="btn btn-sm btn-danger w-100">
                         X
                     </button>
@@ -29,7 +29,7 @@
         }
 
         <div class="bg-secondary p-2 bg-opacity-10 small br-6">
-             @foreach (var emp in sEmpmasOutput)
+            @*  @foreach (var emp in sEmpmasOutput)
             {
                 <div class="d-flex w-100 p-1 ">
                     <div class="w-100 text-end">@emp?.Fullname</div>
@@ -37,7 +37,7 @@
                         <i class="fa-solid fa-plus"></i>
                     </div>
                 </div>
-            } 
+            }  *@
         </div>
     </div>
 </div>
@@ -55,13 +55,13 @@
 
 
 
-     List<EmpmasInternalModel?> sEmpmas = new();
-     List<EmpmasInternalModel?> sEmpmasOutput => sEmpmas.Where(se => se != null &&
-                                 !V.Empmasgrps.Any(eg => eg.EmpmasId == se?.Id)).ToList();
+     // List<EmpmasInternalModel?> sEmpmas = new();
+     // List<EmpmasInternalModel?> sEmpmasOutput => sEmpmas.Where(se => se != null &&
+     //                             !V.Empmasgrps.Any(eg => eg.EmpmasId == se?.Id)).ToList();
 
     string? _searchName = "";
-    string? searchName { get => _searchName; set { _searchName = value; sEmpmas = []; } }
-    bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Length < 3;
+    // string? searchName { get => _searchName; set { _searchName = value; sEmpmas = []; } }
+    // bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Length < 3;
 
 
 
@@ -69,33 +69,33 @@
     // --- existing method --------------------------------------------------------------
     async Task SearchEmployee()
     {
-        if (Uc is null) return;
-        sEmpmas = await _empmasInternal._02FilterByName(searchName, V.pisdb, V.conn);
+        // if (Uc is null) return;
+        // sEmpmas = await _empmasInternal._02FilterByName(searchName, V.pisdb, V.conn);
     }
 
     async Task Close()
     {
-         V.ShowAddMember = false;
-         searchName = "";
-         sEmpmas = [];
-         await ChildAction.InvokeAsync();
+         // V.ShowAddMember = false;
+         // searchName = "";
+         // sEmpmas = [];
+         // await ChildAction.InvokeAsync();
 
     }
 
     async Task AddEmployee(EmpmasInternalModel? emp)
     {
 
-         if (emp is null || Uc is null) return;
+        //  if (emp is null || Uc is null) return;
 
-         var newEmpmasgrp = new EmpmasgrpModel
-         { EmpmasId = emp.Id, LeavegrpId = V.PayrollGrp.Id };
+        //  var newEmpmasgrp = new EmpmasgrpModel
+        //  { EmpmasId = emp.Id, LeavegrpId = V.PayrollGrp.Id };
 
-         await _empmasgrp._01FromLvGrp(newEmpmasgrp, V.pisdb, V.conn);
+        //  await _empmasgrp._01FromLvGrp(newEmpmasgrp, V.pisdb, V.conn);
 
-        int? payrollGrp = V.PayrollGrp.Id;
-        var res = await _empmasgrp._02ByFldId("PayrollGrpId", payrollGrp, V.pisdb, V.conn);
-         if (res != null) V.Empmasgrps = res!;
-        await  ChildAction.InvokeAsync();
+        // int? payrollGrp = V.PayrollGrp.Id;
+        // var res = await _empmasgrp._02ByFldId("PayrollGrpId", payrollGrp, V.pisdb, V.conn);
+        //  if (res != null) V.Empmasgrps = res!;
+        // await  ChildAction.InvokeAsync();
 
     }
 }

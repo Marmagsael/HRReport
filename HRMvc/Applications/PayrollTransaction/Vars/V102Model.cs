@@ -19,18 +19,18 @@ public class V102Model
 
 
 
-    public List<PayrollgrpModel?>?      PayrollGrps { get; set; } = [];
-    public List<PayrateModel?>?         PayRates { get; set; } = [];
-    public PayrollgrpModel?             PayrollGrp { get; set; } = new PayrollgrpModel();
-    public List<EmpmasInternalModel?>?  EmpmasList { get; set; } = [];
-    public List<EmpmasgrpModel?>?       Empmasgrps { get; set; } = [];
+    public List<PayrollgrpModel?>?      PayrollGrps             { get; set; } = [];
+    public List<PayrateModel?>?         PayRates                { get; set; } = [];
+    public PayrollgrpModel?             PayrollGrp              { get; set; } = new PayrollgrpModel();
+    public List<EmpmasInternalModel?>?  EmpmasList              { get; set; } = [];
+    public List<DeprecModel?>?          EmpmasInDeprec          { get; set; } = [];
 
-    public int                          SelectedPayrollGroup { get; set; } = 0;
-    public List<EmpmasInternalModel>    SelectedEmployees { get; set; } = [];
-    public string                       SelectedEmployee { get; set; } = string.Empty;
+    public int                          SelectedPayrollGroup    { get; set; } = 0;
+    public List<EmpmasInternalModel>    SelectedEmployees       { get; set; } = [];
+    public string                       SelectedEmployee        { get; set; } = string.Empty;
 
 
-    public AtttemplateModel             CurrentAttendance { get; set; } = new();
+    public AtttemplateModel             CurrentAttendance       { get; set; } = new();
 
 
 
