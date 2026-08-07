@@ -1,0 +1,111 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications.PayrollTransaction.Vars
+@using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp_Assignment
+
+
+<CascadingValue Value="Uc" IsFixed="true">
+
+    <div class="card">
+
+         <div class="card-header d-flex gap-2 p-2">
+            <div class="w-125p p-2">Payroll Group</div>
+            <div class="w-400p">
+
+                <TelerikDropDownList Data="@V.PayrollGrps"
+                                     @bind-Value="V.SelectedPayrollGroup"
+                                     TextField="@nameof(V.PayrollGrp.Name)"
+                                     ValueField="@nameof(V.PayrollGrp.Id)"
+                                     Width="20em"
+                                     AdaptiveMode="@AdaptiveMode.Auto">
+
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Height="400px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+
+
+                
+                @* <RadzenDropDown Data="@V.PayrollGrps"
+                                TextProperty="Name"
+                                ValueProperty="Id"
+                                @bind-Value="V.SelectedPayrollGroup"
+                                Change="PayrollGrpChange" Placeholder="Payroll Group" Style="width:100%"
+                                PopupStyle="min-height: 300px; max-height: 600px;  overflow-y: auto;" /> *@
+
+
+            </div>
+        </div> 
+
+
+       
+
+
+        <div class="card-body vh-80min p-2 ">
+
+            <div class="d-flex gap-2 w-100">
+                @* --- Left Content ---------------------------------- *@
+                <div class="w-600p">
+
+                    <div class="d-flex bg-secondary p-2 bg-opacity-10 small fw-bold justify-content-between ">
+                        <div>Assigned Employees</div>
+                        <div @onclick="() => V.ShowAddMember = true" class="px-2 fw-normal text-primary cur-pointer @enableAddMemberCSS ">
+                            <i class="fa-solid fa-plus"></i>
+                        </div>
+                    </div>
+
+                    @if (V.ShowAddMember)
+                    {
+                        <_102_PayrollGrpAssignment_AddMember V="V" ChildAction="CA_Catcher" />
+                    }
+
+                    <_102_PayrollGrpAssignment_Dtls V="V" ChildAction="CA_Catcher" /> 
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div>
+        @foreach (var emp in V.Deprecs)
+        {
+            <div class="d-flex w-100 p-1 ">
+                <div class="w-100 text-end">@emp?.Empname</div>
+                <div class="w-100 text-end">@emp?.Payrollgrpid</div>
+            </div>
+        }
+    </div>
+ 
+
+</CascadingValue>
+
+@inject IDeprecDataAccess _deprec;
+@code {
+    [Parameter] public UserClaimsModel? Uc          { get; set; }
+    [Parameter] public V102Model V                  { get; set; } = new();
+    [Parameter] public EventCallback ChildAction    { get; set; }
+
+
+    List<EmpmasInternalModel?>? sEmpmas = [];
+    string? enableAddMemberCSS => V.SelectedPayrollGroup > 0 ? "" : " disabled-div ";
+
+
+
+    async Task PayrollGrpChange()
+    {
+        V.ShowAddMember = false;
+        V.Deprecs = [];
+        var res = await _deprec._02ByFieldId("PayrollgrpId", V.SelectedPayrollGroup, Uc.SchemaUserPis, Uc.Conn);
+        if (res.Any()) V.Deprecs = res!;
+        await ChildAction.InvokeAsync();
+
+
+    }
+
+    async Task CA_Catcher()
+    {
+        if (V.Action == "PayrollGrpChange") await PayrollGrpChange();
+        await ChildAction.InvokeAsync();    
+    }
+
+
+}

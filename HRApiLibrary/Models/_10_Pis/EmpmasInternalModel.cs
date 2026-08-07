@@ -27,8 +27,7 @@ public class EmpmasInternalModel
     public string?      PositionName    { get; set; } = string.Empty;
     public DateTime?    DateHired       { get; set; }   
     public DateTime?    Regref          { get; set; }   
-    public DateTime?    Separate        { get; set; }   
+    public DateTime?    Separate        { get; set; }
 
-    
 
 }

@@ -1,5 +1,6 @@
 ﻿using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._20_Pay;
 
 namespace HRApiLibrary.DataAccess._20_Pay;
@@ -15,8 +16,8 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
 
     public async Task<PayrollgrpModel?> _01(PayrollgrpModel payrollgrp, string? schema, string? conn)
     {
-        var sql = $@"Insert into {schema}.Payrollgrp (ClNumber,  Name,  RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
-                                                        (@ClNumber, @Name, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, 'A'); 
+        var sql = $@"Insert into {schema}.Payrollgrp (ClNumber,  Name, MinMoRate, RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
+                                                        (@ClNumber, @Name, @MinMoRate, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, 'A'); 
                         SELECT * FROM {schema}.Payrollgrp WHERE ID = (SELECT @@IDENTITY); ";
         var res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, payrollgrp, conn);
         
@@ -26,7 +27,7 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         await _sql.ExecuteCmd(sql, new{ Id = id }, conn);
         
         sql = $@"SELECT * FROM {schema}.Payrollgrp where Id = @Id ";
-        res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, payrollgrp, conn);
+        res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
         
         return res.FirstOrDefault();
     }
@@ -97,7 +98,15 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         var     data    = await _sql.FetchData<TbltranModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
         return data;
     }
-    
+
+    public async Task<List<DeprecModel?>?> _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn)
+    {
+        string? sql = $@"select  * from {schema}.deprec where payrollgrpId = @PayrollGrpId limit 1";
+        var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { PayrollGrpId = payrollgrpId }, conn);
+        return data;
+    }
+
+
     public async Task<List<PayrollgrpModel?>?> _02Active(string? schema, string? conn)
     {
         string? sql  = $@"select  * from {schema}.Payrollgrp where Left(Status,1) = 'A'  order by Name ";
@@ -110,7 +119,17 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
         var data    = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { ClNumber=code  }, conn);
         return data;
     }
-    
+
+    public async Task<List<PayrollgrpModel?>?> _02ByName(string? name, string? schema, string? conn)
+    {
+        var sql = $@" SELECT * FROM {schema}.Payrollgrp WHERE UPPER(TRIM(Name)) = UPPER(TRIM(@Name)) ORDER BY Name;";
+
+        var data = await _sql.FetchData<PayrollgrpModel?, dynamic>( sql, new { Name = name?.Trim() }, conn);
+
+        return data;
+    }
+
+
     public async Task<PayrollgrpModel?> _03(int? id, PayrollgrpModel payrollgrp, string? schema, string? conn)
     {
         string? sql = $@"Update {schema}.Payrollgrp set 
@@ -120,8 +139,8 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
                             RatePerDay      = @RatePerDay,  
                             RatePerMonth    = @RatePerMonth,  
                             RatePerYr       = @RatePerYr,  
-                            Status          = @Status, 
-                            PayRateId       = @PayRateId 
+                            MinMoRate       = @MinMoRate,  
+                            Status          = @Status
                         where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, payrollgrp, conn);
 
