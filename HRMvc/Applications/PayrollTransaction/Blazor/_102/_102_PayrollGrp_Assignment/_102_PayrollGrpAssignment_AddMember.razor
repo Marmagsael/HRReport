@@ -1,8 +1,8 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis
-@using HRApiLibrary.DataAccess._10_Pis.Interface
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications.PayrollTransaction.Vars
-@using OfficeOpenXml.Drawing.Chart
+
+@inject NotificationService _notify
 
 <div class="bordered-top ">
     <div class="card-body p-0 ">
@@ -12,13 +12,13 @@
             <div class="d-flex gap-2 w-100 bordered-bottom mb-1 py-1 ">
 
                 <div class="w-500p">
-                    @* <input @bind-value="searchName" @bind-value:event="oninput" type="text" class="form-control form-control-sm" placeholder="Search employee..." />  *@
+                    <input @bind-value="searchName" @bind-value:event="oninput" type="text" class="form-control form-control-sm" placeholder="Search employee..." />
                 </div>
 
                 <div class="d-flex gap-2 ">
-                    @*  <button @onclick="SearchEmployee" class="btn btn-sm btn-primary w-100" disabled="@IsSearchDisabled">
+                    <button @onclick="SearchEmployee" class="btn btn-sm btn-primary w-100" disabled="@IsSearchDisabled">
                         Search
-                    </button>  *@
+                    </button>
                     <button @onclick="Close" class="btn btn-sm btn-danger w-100">
                         X
                     </button>
@@ -29,7 +29,7 @@
         }
 
         <div class="bg-secondary p-2 bg-opacity-10 small br-6">
-            @*  @foreach (var emp in sEmpmasOutput)
+            @foreach (var emp in sEmpmasOutput)
             {
                 <div class="d-flex w-100 p-1 ">
                     <div class="w-100 text-end">@emp?.Fullname</div>
@@ -37,31 +37,32 @@
                         <i class="fa-solid fa-plus"></i>
                     </div>
                 </div>
-            }  *@
+            }
         </div>
+
+        
     </div>
 </div>
 
 
 
 @inject IEmpmasInternalDataAccess _empmasInternal;
-@inject IEmpmasgrpDataAccess _empmasgrp;
+@inject IDeprecDataAccess _deprec;
 
 @code {
 
-    [Parameter]    public UserClaimsModel     Uc   { get; set; } = new();
-    [Parameter]    public V102Model V { get; set; } = new();
-    [Parameter]    public EventCallback ChildAction { get; set; }
+    [CascadingParameter]    public UserClaimsModel? Uc { get; set; }
+    [Parameter]             public V102Model V { get; set; } = new();
+    [Parameter]             public EventCallback ChildAction { get; set; }
 
 
-
-     // List<EmpmasInternalModel?> sEmpmas = new();
-     // List<EmpmasInternalModel?> sEmpmasOutput => sEmpmas.Where(se => se != null &&
-     //                             !V.Empmasgrps.Any(eg => eg.EmpmasId == se?.Id)).ToList();
+    List<EmpmasInternalModel?> sEmpmas = new();
+    List<EmpmasInternalModel?> sEmpmasOutput => sEmpmas .Where(se => se != null &&!V.Deprecs.Any(eg => eg.EmpmasId == se?.Id )) .ToList();
 
     string? _searchName = "";
-    // string? searchName { get => _searchName; set { _searchName = value; sEmpmas = []; } }
-    // bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Length < 3;
+
+    string? searchName { get => _searchName; set { _searchName = value; sEmpmas = []; } }
+    bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Length < 3;
 
 
 
@@ -69,33 +70,45 @@
     // --- existing method --------------------------------------------------------------
     async Task SearchEmployee()
     {
-        // if (Uc is null) return;
-        // sEmpmas = await _empmasInternal._02FilterByName(searchName, V.pisdb, V.conn);
+        if (Uc is null) return;
+        try
+        {
+            sEmpmas = await _empmasInternal._02FilterByName(searchName, Uc.SchemaUserPis, Uc.Conn);
+            if (sEmpmas?.Count == 0)
+            {
+                _notify.ShowWarning("No Results", "No employees found matching your search.");
+            }
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred while searching for employees. Please try again.");
+        }
     }
 
     async Task Close()
     {
-         // V.ShowAddMember = false;
-         // searchName = "";
-         // sEmpmas = [];
-         // await ChildAction.InvokeAsync();
-
+            V.ShowAddMember = false;
+            searchName = "";
+            sEmpmas = [];
+            await ChildAction.InvokeAsync();
+      
     }
 
     async Task AddEmployee(EmpmasInternalModel? emp)
     {
+        if (emp is null || Uc is null) return;
+        try
+        {
+            var newDeprec = new DeprecModel { EmpmasId = emp.Id, Payrollgrpid = V.SelectedPayrollGroup };
+            await _deprec._01FromPayrollGrp(newDeprec, V.pisdb, V.conn);
 
-        //  if (emp is null || Uc is null) return;
-
-        //  var newEmpmasgrp = new EmpmasgrpModel
-        //  { EmpmasId = emp.Id, LeavegrpId = V.PayrollGrp.Id };
-
-        //  await _empmasgrp._01FromLvGrp(newEmpmasgrp, V.pisdb, V.conn);
-
-        // int? payrollGrp = V.PayrollGrp.Id;
-        // var res = await _empmasgrp._02ByFldId("PayrollGrpId", payrollGrp, V.pisdb, V.conn);
-        //  if (res != null) V.Empmasgrps = res!;
-        // await  ChildAction.InvokeAsync();
-
+            _notify.ShowSuccess("Success", "Employee added to payroll group successfully.");
+            V.Action = "PayrollGrpChange";
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred while adding the employee. Please try again.");
+        }
     }
-}
+} 

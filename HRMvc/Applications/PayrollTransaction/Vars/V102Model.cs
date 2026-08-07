@@ -15,6 +15,7 @@ public class V102Model
     public bool             ShowDE          { get; set; } = false;
     public string           ErrorMsg        { get; set; } = string.Empty;
     public bool             ShowAddMember   { get; set; } = false;
+    public bool             IsAllSelected   { get; set; } = false;
 
 
 
@@ -23,10 +24,10 @@ public class V102Model
     public List<PayrateModel?>?         PayRates                { get; set; } = [];
     public PayrollgrpModel?             PayrollGrp              { get; set; } = new PayrollgrpModel();
     public List<EmpmasInternalModel?>?  EmpmasList              { get; set; } = [];
-    public List<DeprecModel?>?          EmpmasInDeprec          { get; set; } = [];
+    public List<DeprecModel?>?          Deprecs                 { get; set; } = [];
 
     public int                          SelectedPayrollGroup    { get; set; } = 0;
-    public List<EmpmasInternalModel>    SelectedEmployees       { get; set; } = [];
+    public List<EmpmasInternalModel?>?  SelectedEmployees       { get; set; } = [];
     public string                       SelectedEmployee        { get; set; } = string.Empty;
 
 

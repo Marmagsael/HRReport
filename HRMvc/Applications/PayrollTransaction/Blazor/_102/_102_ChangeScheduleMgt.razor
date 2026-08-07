@@ -20,16 +20,26 @@
 @inject DialogService _DialogService
 
 
-<div class="card-header d-flex gap-2 p-2 justify-content-between align-items-center">
-    <div class="w-45">
-        <_00_PayrollgrpComponent Payrollgrps="@V.PayrollGrps" PayrollgrpChanged="PayrollgrpChanged" />
+<div class="card-header d-flex justify-content-between gap-2 p-2">
+    <div class="d-flex justify-content-start">
+        <div class="w-125p p-2">Payroll Group</div>
+        <div class="w-400p">
+            <RadzenDropDown Data="@V.PayrollGrps"
+                            TextProperty="Name"
+                            ValueProperty="Id"
+                            @bind-Value="V.SelectedPayrollGroup"
+                            Change="PayrollgrpChanged" Placeholder="Payroll Group" Style="width:100%"
+                            PopupStyle="min-height: 300px; max-height: 600px;  overflow-y: auto;" />
+        </div>
+
     </div>
+    
 
 
     <div class="">
         <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="ApplySchedule">
             <div class="d-flex gap-1 align-items-center justify-content-center">
-                <span class="fw-semibold"><small> Apply Schedule to Employee(s)</small></span>
+                <span class="fw-semibold"><small> Apply Schedule to Selected Employee(s)</small></span>
             </div>
         </button>
     </div>
@@ -39,7 +49,7 @@
 
 
 
-<div class="card mt-1">
+<div class="card-body p-2">
 
     <div class="d-flex gap-1 ">
         <div class="w-30" >
@@ -50,7 +60,14 @@
             <table class="table table-sm table-hover">
                 <thead>
                     <tr>
-                        <th colspan="4" class="text-center bordered-right bg-light text-primary p-2">Current Schedule of @V.SelectedEmployee</th>
+                        @if (!string.IsNullOrWhiteSpace(V.SelectedEmployee))
+                        {
+                            <th colspan="4" class="text-center bordered-right bg-light text-primary p-2"> Current Schedule of<br /> <span class="text-black-50">[ @V.SelectedEmployee ]</span> </th>
+                        }
+                        else
+                        {
+                            <th colspan="4" class="text-center bordered-right bg-light text-primary p-2">Current Schedule </th>
+                        }
                         <th colspan="4" class="text-center  text-primary p-2">New Schedule</th>
                     </tr>
                     <tr>
@@ -599,8 +616,10 @@
 
 
 
-    async Task PayrollgrpChanged(int pgrpId)
+    async Task PayrollgrpChanged()
     {
+
+        int pgrpId = V.SelectedPayrollGroup;
         try
         {
             if (pgrpId <= 0)
@@ -669,6 +688,14 @@
             }
 
             ShowApplyScheduleSummary(successCount, skippedCount, failedEmployees);
+            V.SelectedEmployee = string.Empty;
+
+            foreach (var e in V.EmpmasList)
+            {
+                e.Sel = false;
+            }
+            V.IsAllSelected = false;
+            await OnInitializedAsync();
 
             StateHasChanged();
             await ChildActionCatcher();

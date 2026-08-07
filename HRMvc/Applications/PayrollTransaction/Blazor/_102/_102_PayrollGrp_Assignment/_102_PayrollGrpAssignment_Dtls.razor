@@ -1,70 +1,82 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications.PayrollTransaction.Vars
-@using HRMvc.Views.BlazorPages._01MyProfile
+
 @inject DialogService _DialogService
-<RadzenDialog />
+@inject NotificationService _notify
+
 
 <div class="p-0 bordered ">
     <div class="card-header small fw-bold text-secondary">
         Employee List
     </div>
 
-    @* @if (V.Empmasgrps == null || V.Empmasgrps.Count == 0)
+    @if (V.Deprecs == null || V.Deprecs.Count == 0)
     {
         <div class="text-center text-secondary "> No assigned employee found. </div>
-    }  *@
+    }
 
 
     <div class="card-body p-0 @lockDtlsCss ">
         @{
             int i = 0;
         }
+        @foreach (DeprecModel emp in V.Deprecs)
+        {
+            i++;
+            string? cssClass = i % 2 == 0 ? "bg-light" : "bg-white";
 
-         @* @foreach (EmpmasgrpModel emp in V.Empmasgrps)
-            {
-                i++;
-                string? cssClass = i % 2 == 0 ? "bg-light" : "bg-white";
-
-                <div class="d-flex w-100 p-2 @cssClass ">
-                    <div class=" w-100 "> @emp?.EmpmasName</div>
-                    <div @onclick="() => Remove(emp)" class="txt mb-a-red px-2 cur-pointer ">
-                        <i class="fa-solid fa-xmark"></i>
-                    </div>
+            <div class="d-flex w-100 p-2 @cssClass ">
+                <div class=" w-100 "> @emp?.Empname</div>
+                <div @onclick="() => Remove(emp)" class="txt mb-a-red px-2 cur-pointer ">
+                    <i class="fa-solid fa-xmark"></i>
                 </div>
-            }  *@
+            </div>
+        }
     </div>
 </div>
 
-@inject IEmpmasgrpDataAccess _empmasgrp;
+
+
+
+@inject IDeprecDataAccess _deprec;
 
 @code {
-    [Parameter]    public UserClaimsModel     Uc   { get; set; } = new();
-    [Parameter]    public V102Model V { get; set; } = new();
-    [Parameter]    public EventCallback ChildAction { get; set; }
-
+    [CascadingParameter]    public UserClaimsModel? Uc { get; set; }
+    [Parameter]             public V102Model V { get; set; } = new();
+    [Parameter]             public EventCallback ChildAction { get; set; }
 
     string? lockDtlsCss => V.ShowAddMember ? " disabled-div-50 " : " ";
 
     @* --- Functions -------------------------------- *@
-    async Task Remove(EmpmasgrpModel emp)
+    async Task Remove(DeprecModel emp)
     {
-        // string? msg = $"Remove {emp.EmpmasName}?";
-        // var option = await _DialogService.Confirm(msg, "Confirm Delete",
-        //     new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        string? msg = $"Remove {emp.Empname}?";
+        var option = await _DialogService.Confirm(msg, "Confirm Delete",
+            new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (option != true) return;
 
-        // if (option != true) return;
+        try
+        {
+            var res = await _deprec._03ByField(emp.EmpmasId, "PayrollgrpId", 0, Uc.SchemaUserPis, Uc.Conn);
 
-        // await _empmasgrp._03RemoveLvgrp(emp.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
-        // var res = await _empmasgrp._02ByFldId("LeaveGrpId", V.Leavegrp.Id, Uc.SchemaUserPis, Uc.Conn);
-        // V.Empmasgrps = [];
-        // if (res.Count > 0) V.Empmasgrps = res!;
+            if (res.Payrollgrpid == 0)
+            {
+                _notify.ShowSuccess("Success", "Record removed successfully.");
 
-
-        @* var res = await _ded._03Stop(V.Dedmandatory?.Id ?? 0, V00.paydb!, V00.conn!);
-        V.Dedmandatorys = await _ded._02ByStatus("A", V00.paydb!, V00.conn!);
-        
-        StateHasChanged();
-        await ChildAction.InvokeAsync(); *@
+                V.Deprecs.Remove(emp);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                await _DialogService.Alert("Record not found", "Warning");
+            }
+        }
+       
+        catch (Exception ex)
+        {
+            _notify.ShowError("Error", "An error occurred while removing the employee from this payroll group. Please contact your system administrator.");
+            return;
+        }
     }
-}
+} 

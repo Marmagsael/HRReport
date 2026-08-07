@@ -1,7 +1,10 @@
-﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.Models._20_Pay
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp
+
+
 
 @inject NotificationService _notify
 @inject DialogService _DialogService
@@ -9,7 +12,7 @@
 
 <div class="card ">
 
-    <div class="card-body">
+    <div class="card-body p-2">
         @if (!V.ShowDE)
         {
             <div class="w-100  p-2 border mt-1 mb-1">
@@ -22,7 +25,20 @@
             <_102_PayrollGrp_DataEntry Uc="@Uc" V="@V" ChildAction="ChildActionCatcher" />
         }
 
-        <div class="table-responsive">
+       
+            <TelerikGrid Data="@V.PayrollGrps"
+                     Pageable="true"
+                     Sortable="true"
+                     FilterMode="@GridFilterMode.FilterRow"
+                     Width="100%">
+                <GridColumns>
+                    <GridColumn Field="@nameof(V.PayrollGrp.Id)" Width="100px" ShowFilterCellButtons=false />
+                    <GridColumn Field="@nameof(V.PayrollGrp.Name)" Title="Product Name" />
+                </GridColumns>
+            </TelerikGrid>
+
+
+        @* <div class="table-responsive">
             <table class="table table-bordered table-hover align-middle mb-0">
                 <thead class="table-light text-center">
                     <tr>
@@ -134,13 +150,14 @@
                     }
                 </tbody>
             </table>
-        </div>
+        </div> *@
     </div>
 
    
 </div>
 
 @inject IPayrollgrpDataAccess _paygrp;
+@inject IDeprecDataAccess _deprec;
 
 @code {
 
@@ -245,21 +262,17 @@
     private async Task Delete(PayrollgrpModel rec)
     {
         V.ShowDE = false;
-
         try
         {
             V.ErrorMsg = string.Empty;
-
             var result1 = await _paygrp._02CheckToTblTran(rec.ClNumber, V.paydb, V.conn);
-            var result2 = await _paygrp._02CheckToDeprec(rec.Id, V.paydb, V.conn);
-
-            if (result1.Count > 0)
+            var result2 = await _paygrp._02CheckToDeprec(rec.Id, V.pisdb, V.conn);
+            if (result1.Count > 0 || result2.Count > 0)
             {
                 var msg = "Unable to delete. Payroll group is already used in transaction.";
                 await _DialogService.Alert(msg, "Record Exists in transaction", new AlertOptions() { OkButtonText = "Exit" });
                 return;
             }
-
             var option = await _DialogService.Confirm("Delete " + rec.Name + "?", "Confirm Delete",
                         new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
             if (option == true)
@@ -271,7 +284,7 @@
         }
         catch (Exception ex)
         {
-            _notify.ShowError("Error", "An error occurred while deleting the record. Please contact your system administrator.");
+            _notify.ShowError("Error", "An error occurred while removing this payroll group. Please contact your system administrator.");
         }
     }
 }
