@@ -2,81 +2,153 @@
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications.PayrollTransaction.Vars
 
-@inject DialogService _DialogService
-@inject NotificationService _notify
+@inject IODeprecDataAccess _deprec
 
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="@NotificationHorizontalPosition.Right"
+                     VerticalPosition="@NotificationVerticalPosition.Top"
+                     AnimationType="@AnimationType.SlideLeft" />
 
-<div class="p-0 bordered ">
-    <div class="card-header small fw-bold text-secondary">
-        Employee List
-    </div>
+<div class="bordered">
 
-    @if (V.Deprecs == null || V.Deprecs.Count == 0)
-    {
-        <div class="text-center text-secondary "> No assigned employee found. </div>
-    }
+    <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
 
+        <div class="small fw-bold text-secondary">
+            Employee List
 
-    <div class="card-body p-0 @lockDtlsCss ">
-        @{
-            int i = 0;
-        }
-        @foreach (DeprecModel emp in V.Deprecs)
+            @if (SelectedEmployees.Any())
+            {
+                <span class="ms-2 badge bg-primary">
+                    @SelectedEmployees.Count() selected
+                </span>
+            }
+        </div>
+
+        @if (SelectedEmployees.Any())
         {
-            i++;
-            string? cssClass = i % 2 == 0 ? "bg-light" : "bg-white";
-
-            <div class="d-flex w-100 p-2 @cssClass ">
-                <div class=" w-100 "> @emp?.Empname</div>
-                <div @onclick="() => Remove(emp)" class="txt mb-a-red px-2 cur-pointer ">
-                    <i class="fa-solid fa-xmark"></i>
-                </div>
-            </div>
+            <TelerikButton OnClick="RemoveSelected"
+                           ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
+                           FillMode="@ThemeConstants.Button.FillMode.Clear"
+                           Size="@ThemeConstants.Button.Size.Small"
+                           Icon="@FontIcon.Trash"
+                           Title="Remove selected employees">
+            </TelerikButton>
         }
+
     </div>
+
+    <div class="@lockDtlsCss">
+
+        <TelerikGrid Data="@V.Deprecs"
+                     SelectionMode="@GridSelectionMode.Multiple"
+                     @bind-SelectedItems="@SelectedEmployees"
+                     Pageable="true"
+                     PageSize="10"
+                     FilterMode="@GridFilterMode.FilterMenu"
+                     Sortable="true"
+                     Resizable="true"
+                     Height="100%">
+
+            <GridColumns>
+
+                <GridCheckboxColumn SelectAll="true"
+                                    SelectAllMode="@GridSelectAllMode.Current"
+                                    Width="50px" />
+
+                <GridColumn Field="@nameof(ODeprecModel.EmpName)"
+                            Title="Employee Name" />
+
+            </GridColumns>
+
+            <NoDataTemplate>
+                <div class="text-center text-secondary p-3">
+                    No assigned employee found.
+                </div>
+            </NoDataTemplate>
+
+        </TelerikGrid>
+
+    </div>
+
 </div>
 
-
-
-
-@inject IDeprecDataAccess _deprec;
-
 @code {
-    [CascadingParameter]    public UserClaimsModel? Uc { get; set; }
-    [Parameter]             public V102Model V { get; set; } = new();
-    [Parameter]             public EventCallback ChildAction { get; set; }
 
-    string? lockDtlsCss => V.ShowAddMember ? " disabled-div-50 " : " ";
+    [CascadingParameter]
+    public UserClaimsModel? Uc { get; set; }
 
-    @* --- Functions -------------------------------- *@
-    async Task Remove(DeprecModel emp)
+    [CascadingParameter]
+    public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
+
+    private TelerikNotification? NotificationRef;
+
+    [Parameter]
+    public V102Model V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private IEnumerable<ODeprecModel> SelectedEmployees { get; set; }   = new List<ODeprecModel>();
+
+    private string lockDtlsCss =>  V.ShowAddMember ? "disabled-div-50" : "";
+
+    private async Task RemoveSelected()
     {
-        string? msg = $"Remove {emp.Empname}?";
-        var option = await _DialogService.Confirm(msg, "Confirm Delete",
-            new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
-        if (option != true) return;
+        var employees = SelectedEmployees.ToList();
+
+        if (!employees.Any())
+        {
+            return;
+        }
+
+        if (TelerikDialogs == null)
+        {
+            return;
+        }
+
+        string message = employees.Count == 1  ? $"Do you want to remove {employees[0].EmpName}?"  : $"Do you want to remove {employees.Count} selected employees?";
+        var confirmed = await TelerikDialogs.ConfirmAsync(  message, "Confirm Delete");
+
+        if (!confirmed)
+        {
+            return;
+        }
 
         try
         {
-            var res = await _deprec._03ByField(emp.EmpmasId, "PayrollgrpId", 0, Uc.SchemaUserPis, Uc.Conn);
-
-            if (res.Payrollgrpid == 0)
+            foreach (var employee in employees)
             {
-                _notify.ShowSuccess("Success", "Record removed successfully.");
+                await RemoveEmployee(employee);
+            }
 
-                V.Deprecs.Remove(emp);
-                await ChildAction.InvokeAsync();
-            }
-            else
-            {
-                await _DialogService.Alert("Record not found", "Warning");
-            }
+            SelectedEmployees = new List<ODeprecModel>();
+            NotificationRef?.Show(  employees.Count == 1 ? "Employee removed successfully."  : "Selected employees removed successfully.",  ThemeConstants.Notification.ThemeColor.Success);
+
+            await ChildAction.InvokeAsync();
         }
-       
         catch (Exception ex)
         {
-            _notify.ShowError("Error", "An error occurred while removing the employee from this payroll group. Please contact your system administrator.");
-            return;
+            NotificationRef?.Show(ex.Message,  ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-} 
+
+    private async Task RemoveEmployee(ODeprecModel emp)
+    {
+        if (string.IsNullOrWhiteSpace(emp.EmpNumber))
+        {
+            throw new Exception("Employee number is required.");
+        }
+
+
+
+        var updateEmp = new ODeprecModel
+        {
+            EmpNumber = emp.EmpNumber,
+            PayrollgrpId = 0
+        };
+
+        await _deprec._01PayrollGrp( updateEmp, V.pisdb,  V.conn);
+        V.Deprecs.Remove(emp);
+        Console.Write(emp.EmpName);
+    }
+}

@@ -2,6 +2,7 @@ using Google.Protobuf.WellKnownTypes;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._00_MainPis;
+using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._90_Utils;
 
@@ -108,7 +109,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 
     public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNames(string? name, string? schema, string? conn)
     {
-        name = name.Trim();
+        name = "%" + name.Trim() + "%";
         var flds = EmpmasFields(); 
         var sql = $@"select   {flds}, s.name EmpStatus, p.name PositionName, c.ClName 
                         from {schema}.Empmas e
@@ -119,6 +120,33 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      order by e.EmpLastNm, e.EmpFirstNm;";
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
         return data;    
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesNoPayGrpAssignment(string? name, string? schema, string? conn)
+    {
+        var sql = $@"SELECT CONCAT_WS(' ', NULLIF(TRIM(e.EmpLastNm), ''), NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), '')) AS Fullname, 
+                        e.EmpNumber
+                 FROM {schema}.Empmas e
+                 LEFT JOIN {schema}.deprec d ON d.empnumber = e.empnumber
+                 WHERE (e.EmpLastNm LIKE @Name OR e.EmpFirstNm LIKE @Name)
+                 AND (d.empnumber IS NULL OR d.payrollgrpId = 0)
+                 ORDER BY e.EmpLastNm, e.EmpFirstNm;";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"%{name?.Trim()}%" }, conn);
+        return data;
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn)
+    {
+        string? sql = $@"SELECT  e.EmpNumber, 
+                    CONCAT_WS(',', e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm) AS Fullname
+                    FROM {schema}.empmas e
+                    INNER JOIN {schema}.deprec d ON d.empmasId = e.Id
+                    WHERE d.payrollgrpId = @PayrollgrpId
+                    ORDER BY e.EmpLastNm;";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
+        return data;
     }
 
     public async Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
@@ -717,6 +745,8 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? maindb, string? newdb, string? conn);
     Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesNoPayGrpAssignment(string? name, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);
