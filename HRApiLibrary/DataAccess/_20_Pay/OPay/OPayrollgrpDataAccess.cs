@@ -1,9 +1,12 @@
 ﻿using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._20_Pay;
-
+using HRApiLibrary.Models._90_Utils;
 namespace HRApiLibrary.DataAccess._20_Pay.OPay;
 
+using HRApiLibrary.DataAccess._90_Utils;
+using Microsoft.AspNetCore.Http.Extensions;
+using System.Linq;
 public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
 {
 
@@ -48,6 +51,91 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
                         ORDER BY Name";
         var data = await _sql.FetchData<PayrollgrpModel, dynamic>( sql,new { }, conn );
         return data ?? new List<PayrollgrpModel>();
+    }
+
+
+    public async Task<GridResultModel<PayrollgrpModel>> _02Grid(
+      GridRequestModel request,
+      string schemapay,
+      string schemapis,
+      string conn)
+    {
+        var columns = new Dictionary<string, string>
+        {
+            ["Code"] = "p.Code",
+            ["Name"] = "p.Name",
+            ["ClNumber"] = "p.ClNumber",
+            ["RatePerHr"] = "p.RatePerHr",
+            ["RatePerDay"] = "p.RatePerDay",
+            ["RatePerMonth"] = "p.RatePerMonth",
+            ["RatePerYr"] = "p.RatePerYr",
+            ["MinMoRate"] = "p.MinMoRate",
+            ["Status"] = "p.Status",
+            ["Deployment"] = "c.Clname"
+        };
+
+        // SORTING
+        var sortColumn = columns.GetValueOrDefault(
+            request.SortField,
+            "p.Name");
+
+        var sortOrder =
+            request.SortDirection == "DESC"
+                ? "DESC"
+                : "ASC";
+
+        // PARAMETERS
+        var parameters = new Dictionary<string, object>
+        {
+            ["PageSize"] = request.PageSize,
+            ["Offset"] = request.Offset
+        };
+
+        // FILTERING
+        var where = GridHelperDataAccess.BuildWhere(
+            request.Filters,
+            columns,
+            parameters);
+
+        // RECORDS COUNT
+        string countSql = $@"
+        SELECT COUNT(*)
+        FROM {schemapay}.Payrollgrp p
+        LEFT JOIN {schemapis}.client c
+            ON c.clnumber = p.clnumber
+        {where}";
+
+        var totalResult =
+            await _sql.FetchData<int, dynamic>(
+                countSql,
+                parameters,
+                conn);
+
+        var total = totalResult?.FirstOrDefault() ?? 0;
+
+        // DATA
+        string sql = $@"
+        SELECT
+            p.*,
+            c.Clname AS Deployment
+        FROM {schemapay}.Payrollgrp p
+        LEFT JOIN {schemapis}.client c
+            ON c.clnumber = p.clnumber
+        {where}
+        ORDER BY {sortColumn} {sortOrder}
+        LIMIT @Offset, @PageSize";
+
+        var data =
+            await _sql.FetchData<PayrollgrpModel, dynamic>(
+                sql,
+                parameters,
+                conn);
+
+        return new GridResultModel<PayrollgrpModel>
+        {
+            Data = data ?? new List<PayrollgrpModel>(),
+            Total = total
+        };
     }
 
     public async Task<List<PayrollgrpModel>?> _02ByName(string name,  string schema, string conn)
@@ -95,12 +183,13 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
 
 public interface IOPayrollgrpDataAccess
 {
-    Task<PayrollgrpModel?> _01(PayrollgrpModel payrollgrp, string schema, string conn);
-    Task<PayrollgrpModel?> _02(int id, string schema, string conn);
-    Task<List<PayrollgrpModel>?> _02(string schemapay, string schemapis, string conn);
-    Task<List<PayrollgrpModel>?> _02ByName(string name, string schema, string conn);
-    Task<List<TbltranModel?>?> _02CheckToTblTran(string? clNumber, string? schema, string? conn);
-    Task<List<DeprecModel?>?> _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);
-    Task<PayrollgrpModel?> _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn);
-    Task<PayrollgrpModel?> _04(int? id, string schema, string conn);
+    Task<PayrollgrpModel?>                  _01(PayrollgrpModel payrollgrp, string schema, string conn);
+    Task<PayrollgrpModel?>                  _02(int id, string schema, string conn);
+    Task<List<PayrollgrpModel>?>             _02(string schemapay, string schemapis, string conn);
+    Task<List<PayrollgrpModel>?>            _02ByName(string name, string schema, string conn);
+    Task<List<TbltranModel?>?>              _02CheckToTblTran(string? clNumber, string? schema, string? conn);
+    Task<List<DeprecModel?>?>               _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);
+    Task<GridResultModel<PayrollgrpModel>> _02Grid(GridRequestModel request, string schemapay, string schemapis, string conn);
+    Task<PayrollgrpModel?>                  _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn);
+    Task<PayrollgrpModel?>                  _04(int? id, string schema, string conn);
 }

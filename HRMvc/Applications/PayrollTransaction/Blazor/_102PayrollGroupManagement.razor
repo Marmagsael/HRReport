@@ -10,88 +10,101 @@
 @inject IOClientDataAccess _clients
 
 
-    <TelerikRootComponent>
-        <TelerikNotification @ref="@NotificationRef"
-                             HorizontalPosition="@NotificationHorizontalPosition.Right"
-                             VerticalPosition="@NotificationVerticalPosition.Top"
-                             AnimationType="@AnimationType.SlideLeft" />
+<TelerikRootComponent>
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
 
 
 
-        <div class="position-relative">
 
-            
-            <TelerikLoaderContainer Visible="@v.IsLoading"
-                                    LoaderType="@LoaderType.ConvergingSpinner" />
-            <div class="card">
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+                <CascadingValue Value="@ChildAction">
 
-       
+                    <div class="position-relative">
 
-   
-                <BodyHdr pageTitle="Payroll Group Management" />
+                        <TelerikLoaderContainer Visible="@v.IsLoading"
+                                                LoaderType="@LoaderType.ConvergingSpinner" />
 
-                <div class="card-body p-0">
+                        <div class="card">
 
-                    <div class="mb-tabs bordered-bottom-darkgreen">
+                            <BodyHdr pageTitle="Payroll Group Management" />
 
-                        <div onclick="@(() => TabClick(1))"
-                             class="mb-tab mb-a-blue @(tab == 1 ? "active" : "")">
-                            Payroll Group
-                        </div>
 
-                        <div onclick="@(() => TabClick(2))"
-                             class="mb-tab mb-a-blue @(tab == 2 ? "active" : "")">
-                            Payroll Group Assignment
-                        </div>
+                            <div class="card-body p-0">
 
-                        <div onclick="@(() => TabClick(3))"
-                             class="mb-tab mb-a-blue @(tab == 3 ? "active" : "")">
-                            Change Schedule Assignment
+                                <div class="mb-tabs bordered-bottom-darkgreen">
+
+                                    <div onclick="@(() => TabClick(1))"
+                                            class="mb-tab mb-a-blue @(tab == 1 ? "active" : "")">
+                                        Payroll Group
+                                    </div>
+
+                                    <div onclick="@(() => TabClick(2))"
+                                            class="mb-tab mb-a-blue @(tab == 2 ? "active" : "")">
+                                        Payroll Group Assignment
+                                    </div>
+
+                                    <div onclick="@(() => TabClick(3))"
+                                            class="mb-tab mb-a-blue @(tab == 3 ? "active" : "")">
+                                        Change Schedule Assignment
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            @switch (tab)
+                            {
+                                case 1:
+
+                                    <_102_PayrollGrpEntry   />
+                                    break;
+
+
+                                case 2:
+
+                                    <_102_PayrollGrpAssignment />
+                                    break;
+
+
+                                case 3:
+
+                                    <_102_ChangeScheduleMgt/>
+                                    break;
+                            }
+
                         </div>
 
                     </div>
 
-                </div>
+                </CascadingValue>
+            </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
 
-                @switch (tab)
-                {
-                    case 1:
-                        <_102_PayrollGrpEntry Uc="@Uc"
-                                              V="@v"
-                                              ChildAction="ChilAction" />
-                        break;
+</TelerikRootComponent>
 
-                    case 2:
-                        <_102_PayrollGrpAssignment Uc="@Uc"
-                                                   V="@v"
-                                                   ChildAction="ChilAction" />
-                        break;
 
-                    case 3:
-                        <_102_ChangeScheduleMgt Uc="@Uc"
-                                                V="@v"
-                                                ChildAction="ChilAction" />
-                        break;
-                }
-
-            </div>
-        </div>
-
-    </TelerikRootComponent>
 @code {
+
+    private TelerikNotification? NotificationRef;
+
 
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
-
     private V102Model v { get; set; } = new();
-
     private int tab = 1;
 
-    private TelerikNotification? NotificationRef;
 
     protected override async Task OnInitializedAsync()
     {
         if (Uc == null) return;
+
 
         v.pisdb = Uc.OpisDb;
         v.paydb = Uc.OpayDb;
@@ -99,14 +112,14 @@
 
         v.IsLoading = true;
 
+
         try
         {
-            await LoadPayrollGroups();
             await LoadDeployments();
         }
         catch (Exception)
         {
-            NotificationRef?.Show( "Unable to load payroll group data.",ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show( "Unable to load payroll group data.",  ThemeConstants.Notification.ThemeColor.Error);
         }
         finally
         {
@@ -114,7 +127,9 @@
         }
     }
 
-    private async Task ChilAction()
+
+
+    private async Task ChildAction()
     {
         if (v.Action == "LoadPayrollGroups")
         {
@@ -122,23 +137,24 @@
         }
     }
 
+
+
     private async Task LoadPayrollGroups()
     {
         try
         {
-            var result = await _paygrps._02( v.paydb, v.pisdb, v.conn);
-            v.PayrollGrps = result ?? new List<PayrollgrpModel>();
+            var result = await _paygrps._02( v.paydb, v.pisdb,v.conn);
+            v.PayrollGrps =  result ?? new List<PayrollgrpModel>();
         }
         catch (Exception)
         {
-            NotificationRef?.Show(
-                "Failed to load payroll groups.",
-                ThemeConstants.Notification.ThemeColor.Error);
-
+            NotificationRef?.Show( "Failed to load payroll groups.", ThemeConstants.Notification.ThemeColor.Error);
             throw;
         }
     }
 
+
+   
     private async Task LoadDeployments()
     {
         try
@@ -149,23 +165,23 @@
                 "Inactive"
             };
 
-            var result = await _clients._02ByStatuses(statuses, v.pisdb, v.conn);
+
+            var result = await _clients._02ByStatuses(  statuses, v.pisdb, v.conn);
             v.Deployments = result!;
         }
         catch (Exception)
         {
-            NotificationRef?.Show(
-                "Failed to load deployments.",
-                ThemeConstants.Notification.ThemeColor.Error);
-
+            NotificationRef?.Show(  "Failed to load deployments.", ThemeConstants.Notification.ThemeColor.Error);
             throw;
         }
     }
 
+
+
     private void TabClick(int no)
     {
         tab = no;
+
         v.SelectedPayrollGroup = 0;
     }
 }
-
