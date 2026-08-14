@@ -73,42 +73,43 @@
         {
             <CardBody Class="bg-secondary bg-opacity-10 p-2">
 
-                <div class="k-font-size-sm text-secondary px-2 pb-1 text-end">
+                <div class="k-font-size-sm text-secondary px-2 pb-1">
 
-                    @V.EmployeesNoPayGrp.Count()  unassigned
+                    @V.EmployeesNoPayGrp.Count()
+                    unassigned
                     @(V.EmployeesNoPayGrp.Count() == 1 ? "match" : "matches")
 
                 </div>
 
 
-                <div style="max-height: 300px; overflow-y: auto;">
+                @foreach (var emp in V.EmployeesNoPayGrp)
+                {
+                    <div class="d-flex w-100 px-2 py-1 align-items-center gap-2">
 
-                    @foreach (var emp in V.EmployeesNoPayGrp)
-                    {
-                        <div class="d-flex w-100 px-2 py-1 align-items-center gap-2">
+                        <div class="flex-grow-1">
 
-                            <div class="flex-grow-1 text-end">
-
-                                <div class="">
-                                    @emp?.Fullname <span class="k-font-size-sm text-secondary k-font-weight-normal">[ @emp?.EmpNumber]</span>
-                                </div>
+                            <div class="k-font-weight-bold">
+                                @emp?.Fullname
                             </div>
 
-
-                            <TelerikButton OnClick="@(() => AddEmployee(emp))"
-                                           FillMode="@ThemeConstants.Button.FillMode.Flat"
-                                           ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
-                                           Size="@ThemeConstants.Button.Size.Small"
-                                           Class="flex-shrink-0">
-
-                                Add
-
-                            </TelerikButton>
+                            <div class="k-font-size-sm text-secondary">
+                                @emp?.EmpNumber
+                            </div>
 
                         </div>
-                    }
 
-                </div>
+
+                        <TelerikButton OnClick="@(() => AddEmployee(emp))"
+                                       FillMode="@ThemeConstants.Button.FillMode.Flat"
+                                       ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
+                                       Size="@ThemeConstants.Button.Size.Small">
+
+                            Add
+
+                        </TelerikButton>
+
+                    </div>
+                }
 
             </CardBody>
         }
@@ -168,7 +169,7 @@
     private string lastSearchTerm = "";
 
 
-    private bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Length < 3;
+    private bool IsSearchDisabled =>string.IsNullOrWhiteSpace(searchName) ||    searchName.Length < 3;
 
 
     private async Task OnSearchKeyDown(KeyboardEventArgs args)
@@ -178,6 +179,7 @@
             await SearchEmployee();
         }
     }
+
 
 
     private async Task SearchEmployee()
@@ -192,17 +194,17 @@
 
         try
         {
-            isSearching = true;
+            isSearching         = true;
             V.EmployeesNoPayGrp = [];
-            lastSearchTerm = search;
+            lastSearchTerm      = search;
 
 
-            var result = await _oempmas._02ByLNameAndFNamesNoPayGrpAssignment(search, V.pisdb, V.conn);
+            var result =  await _oempmas._02ByLNameAndFNamesNoPayGrpAssignment( search,    V.pisdb, V.conn);
             V.EmployeesNoPayGrp = result ?? [];
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show($"Couldn't load unassigned employees. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(  $"Couldn't load unassigned employees. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
         finally
         {
@@ -210,7 +212,6 @@
             hasSearched = true;
         }
     }
-
 
     private async Task Close()
     {
@@ -235,12 +236,12 @@
         try
         {
             // Check if employee is already assigned
-            var existing = await _deprec._02ByEmpnumber(emp.EmpNumber, V.pisdb, V.conn);
+            var existing =  await _deprec._02ByEmpnumber( emp.EmpNumber, V.pisdb, V.conn);
 
             if (existing != null &&
                 existing.PayrollgrpId != 0)
             {
-                NotificationRef?.Show($"{emp.EmpName} is already assigned to another payroll group.", ThemeConstants.Notification.ThemeColor.Warning);
+                NotificationRef?.Show( $"{emp.EmpName} is already assigned to another payroll group.", ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
 
@@ -252,7 +253,7 @@
             };
 
 
-            var result = await _deprec._01PayrollGrp(deprec, V.pisdb, V.conn);
+            var result =  await _deprec._01PayrollGrp(  deprec,  V.pisdb,  V.conn);
 
 
             if (result != null &&
@@ -260,16 +261,17 @@
             {
                 V.EmployeesNoPayGrp.Remove(emp);
                 await ChildAction.InvokeAsync();
-                NotificationRef?.Show($"{emp.EmpName} Added.", ThemeConstants.Notification.ThemeColor.Success);
+                NotificationRef?.Show( $"{emp.EmpName} Added.",ThemeConstants.Notification.ThemeColor.Success);
+
             }
             else
             {
-                NotificationRef?.Show($"{emp.EmpName} wasn't added. Try again.", ThemeConstants.Notification.ThemeColor.Error);
+                NotificationRef?.Show(  $"{emp.EmpName} wasn't added. Try again.", ThemeConstants.Notification.ThemeColor.Error);
             }
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show($"Couldn't add employee to this payroll group. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(  $"Couldn't add employee to this payroll group. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 

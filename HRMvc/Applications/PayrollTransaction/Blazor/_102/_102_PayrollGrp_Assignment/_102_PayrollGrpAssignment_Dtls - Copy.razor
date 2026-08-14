@@ -7,27 +7,24 @@
 
 @inject IODeprecDataAccess _deprec
 
-<div class="employee-list">
 
-    @*========= LIST HEADER : COUNT + BULK REMOVE ===========*@
+<div class="bordered">
+
     <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
 
-        <div class="d-flex align-items-center gap-2">
+        <div class="small fw-bold text-secondary">
 
-            <span class="small fw-bold text-secondary">Employee list</span>
+            Employee list
 
             @if (SelectedEmployees.Any())
             {
-                <TelerikBadge ThemeColor="@ThemeConstants.Badge.ThemeColor.Primary"
-                              Position="@BadgePosition.Inline"
-                              Rounded="@ThemeConstants.Badge.Rounded.Medium"
-                              Size="@ThemeConstants.Badge.Size.Small"
-                              FillMode="@ThemeConstants.Badge.FillMode.Solid">
+                <span class="ms-2 badge bg-primary">
                     @SelectedEmployees.Count() selected
-                </TelerikBadge>
+                </span>
             }
 
         </div>
+
 
         @if (SelectedEmployees.Any())
         {
@@ -36,62 +33,76 @@
                            FillMode="@ThemeConstants.Button.FillMode.Clear"
                            Size="@ThemeConstants.Button.Size.Small"
                            Icon="@FontIcon.Trash">
+
                 Remove selected
             </TelerikButton>
         }
 
     </div>
 
-    @*========= GRID ===========*@
+
     <TelerikGrid TItem="ODeprecModel"
                  @ref="DeprecGrid"
                  OnRead="@OnGridRead"
                  SelectionMode="@GridSelectionMode.Multiple"
                  @bind-SelectedItems="@SelectedEmployees"
                  Pageable="true"
-                 PageSize="11"
+                 PageSize="10"
                  FilterMode="@GridFilterMode.FilterMenu"
                  Sortable="true"
                  Resizable="true"
                  Navigable="true"
                  CustomKeyboardShortcuts="@GridCustomShortcuts"
-                 Width="100%"
-                 Height="calc(100vh - 370px)">
+                 Height="calc(100vh - 350px)">
 
         <GridColumns>
-
             <GridCheckboxColumn SelectAll="true"
                                 SelectAllMode="@GridSelectAllMode.Current"
                                 Width="50px" />
 
             <GridColumn Field="@nameof(ODeprecModel.EmpName)" Title="Employee name" />
-
         </GridColumns>
 
+
         <NoDataTemplate>
+
             <div class="text-center text-secondary p-3">
 
                 @if (V.SelectedPayrollGroup <= 0)
                 {
-                    <div>Select a payroll group to see assigned employees.</div>
+                    <div>
+                        Select a payroll group to see assigned employees.
+                    </div>
                 }
                 else if (HasActiveFilter)
                 {
-                    <div>No employees match the current filter.</div>
-                    <div class="k-font-size-sm">Clear the column filter to see everyone.</div>
+                    <div>
+                        No employees match the current filter.
+                    </div>
+
+                    <div class="k-font-size-sm">
+                        Clear the column filter to see everyone.
+                    </div>
                 }
                 else
                 {
-                    <div>No one assigned to this group yet</div>
-                    <div class="k-font-size-sm">Use the search above to add employees.</div>
+                    <div>
+                        No one assigned to this group yet
+                    </div>
+
+                    <div class="k-font-size-sm">
+                        Use the search above to add employees.
+                    </div>
                 }
 
             </div>
+
         </NoDataTemplate>
 
     </TelerikGrid>
 
 </div>
+
 
 @code {
 
@@ -113,7 +124,7 @@
     private TelerikGrid<ODeprecModel>? DeprecGrid;
     private IEnumerable<ODeprecModel> SelectedEmployees { get; set; } = new List<ODeprecModel>();
 
-    private bool HasActiveFilter => DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
+    private bool HasActiveFilter =>   DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
 
 
     private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
@@ -161,9 +172,13 @@
         var page = args.Request.Page > 0 ? args.Request.Page : 1;
         var offset = (page - 1) * pageSize;
 
+
+
         var sort = args.Request.Sorts.FirstOrDefault();
         var sortField = sort?.Member ?? nameof(ODeprecModel.EmpName);
         var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending ? "DESC" : "ASC";
+
+
 
         var filters = GridHelper.GetFilters(args);
 
@@ -193,10 +208,7 @@
 
     public async Task ResetGrid()
     {
-        if (DeprecGrid == null)
-        {
-            return;
-        }
+        if (DeprecGrid == null) return;
 
         var state = DeprecGrid.GetState();
         state.FilterDescriptors.Clear();
@@ -213,10 +225,16 @@
     {
         var employees = SelectedEmployees.ToList();
 
-        if (!employees.Any() || TelerikDialogs == null)
+        if (!employees.Any())
         {
             return;
         }
+
+        if (TelerikDialogs == null)
+        {
+            return;
+        }
+
 
         string message = employees.Count == 1
             ? $"Remove {employees[0].EmpName} ({employees[0].EmpNumber}) from this payroll group?"
@@ -224,12 +242,15 @@
 
         var confirmed = await TelerikDialogs.ConfirmAsync(message, "Confirm removal");
 
+
         if (!confirmed)
         {
             return;
         }
 
+
         var failed = new List<string>();
+
 
         foreach (var employee in employees)
         {
@@ -243,6 +264,7 @@
             }
         }
 
+
         SelectedEmployees = new List<ODeprecModel>();
 
         if (DeprecGrid != null)
@@ -254,6 +276,7 @@
         }
 
         await ChildAction.InvokeAsync();
+
 
         if (failed.Count == 0)
         {
@@ -279,21 +302,15 @@
             throw new Exception("Employee number is required.");
         }
 
+
         var updateEmp = new ODeprecModel
         {
             EmpNumber = emp.EmpNumber,
             PayrollgrpId = 0
         };
 
-        await _deprec._01PayrollGrp(updateEmp, V.pisdb, V.conn);
+
+        await _deprec._01PayrollGrp(updateEmp, V.pisdb,  V.conn);
     }
 
 }
-
-<style>
-
-    .employee-list {
-        width: 100%;
-    }
-
-</style>

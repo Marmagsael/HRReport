@@ -1,104 +1,60 @@
-﻿@using Blazorise
-@using HRApiLibrary.DataAccess._20_Pay.OPay
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRApiLibrary.Models._20_Pay
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PayrollTransaction.Blazor._102
-
 @inject IOPayrollgrpDataAccess _paygrps
 @inject IOClientDataAccess _clients
-
-
 <TelerikRootComponent>
-
     <TelerikNotification @ref="@NotificationRef"
                          HorizontalPosition="@NotificationHorizontalPosition.Right"
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
+
     <CascadingValue Value="@Uc">
         <CascadingValue Value="@v">
             <CascadingValue Value="@NotificationRef">
-
-                    <div class="position-relative">
-
-                        <TelerikLoaderContainer Visible="@v.IsLoading"
-                                                LoaderType="@LoaderType.ConvergingSpinner" />
-
-                        <div class="card">
-
-                            <BodyHdr pageTitle="Payroll Group Management" />
-
-                            <div class="card-body p-0">
-
-                                <div class="mb-tabs bordered-bottom-darkgreen">
-
-                                    <div @onclick="() => TabClick(1)"
-                                         class="mb-tab mb-a-blue @(tab == 1 ? "active" : "")">
-                                        Payroll Group
-                                    </div>
-
-                                    <div @onclick="() => TabClick(2)"
-                                         class="mb-tab mb-a-blue @(tab == 2 ? "active" : "")">
-                                        Payroll Group Assignment
-                                    </div>
-
-                                    <div @onclick="() => TabClick(3)"
-                                         class="mb-tab mb-a-blue @(tab == 3 ? "active" : "")">
-                                        Change Schedule Assignment
-                                    </div>
-
-                                </div>
-
-                            </div>
+                <TelerikLoaderContainer Visible="@v.IsLoading"
+                                        LoaderType="@LoaderType.ConvergingSpinner" />
+                <TelerikCard Height="100%">
+                    <CardHeader>
+                        <BodyHdr pageTitle="Payroll Group Management" />
+                    </CardHeader>
 
 
-                            @switch (tab)
-                            {
-                                case 1:
 
-                                    <_102_PayrollGrpEntry />
+                    <CardBody>
+                        <TelerikTabStrip ActiveTabId="@tab"  ActiveTabIdChanged="@OnTabChanged"  Height="100%">
 
-                                    break;
+                            <TabStripTab Id="grp" Title="Payroll Group">
+                                <_102_PayrollGrpEntry />
+                            </TabStripTab>
+
+                            <TabStripTab Id="assign" Title="Payroll Group Assignment">
+                                <_102_PayrollGrpAssignment ChildAction="ChildAction" />
+                            </TabStripTab>
+
+                            <TabStripTab Id="sched" Title="Change Schedule Assignment">
+                                <_102_ChangeScheduleMgt />
+                            </TabStripTab>
+
+                        </TelerikTabStrip>
+                    </CardBody>
 
 
-                                case 2:
-
-                                    <_102_PayrollGrpAssignment ChildAction="ChildAction"/>
-
-                                    break;
-
-
-                                case 3:
-
-                                    <_102_ChangeScheduleMgt />
-
-                                    break;
-                            }
-
-                        </div>
-
-                    </div>
-
+                </TelerikCard>
             </CascadingValue>
         </CascadingValue>
     </CascadingValue>
-
 </TelerikRootComponent>
-
-
 @code {
-
     private TelerikNotification? NotificationRef;
-
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
     private V102Model v { get; set; } = new();
-    private int tab = 1;
-
-
-
+    private string tab = "grp";
     protected override async Task OnInitializedAsync()
     {
         if (Uc == null) return;
@@ -106,86 +62,51 @@
         v.pisdb = Uc.OpisDb;
         v.paydb = Uc.OpayDb;
         v.conn = Uc.Conn;
-
         v.IsLoading = true;
+
 
         try
         {
             await LoadPayrollGroups();
-            // await LoadDeployments();
         }
         catch (Exception)
         {
-            NotificationRef?.Show(
-                "Unable to load payroll group data.",
-                ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show("Unable to load payroll group data.", ThemeConstants.Notification.ThemeColor.Error);
         }
         finally
         {
             v.IsLoading = false;
         }
     }
-
-
     private async Task ChildAction()
     {
         if (v.Action == "LoadPayrollGroups") await LoadPayrollGroups();
         v.Action = "";
     }
-
-
     private async Task LoadPayrollGroups()
     {
         try
         {
             var result = await _paygrps._02(v.paydb, v.conn);
-
             v.PayrollGrps = result ?? new List<PayrollgrpModel>();
         }
         catch (Exception)
         {
-            NotificationRef?.Show( "Failed to load payroll groups.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show("Failed to load payroll groups.", ThemeConstants.Notification.ThemeColor.Error);
             throw;
         }
     }
-
-
-
-    private async Task LoadDeployments()
+    private void OnTabChanged(string id)
     {
-        try
-        {
-            var statuses = new List<string>
-            {
-                "Active",
-                "Inactive"
-            };
-
-            var result = await _clients._02ByStatuses(
-                statuses,
-                v.pisdb,
-                v.conn);
-
-            v.Deployments = result ?? [];
-        }
-        catch (Exception)
-        {
-            NotificationRef?.Show(
-                "Failed to load deployments.",
-                ThemeConstants.Notification.ThemeColor.Error);
-
-            throw;
-        }
-    }
-
-
-    private void TabClick(int no)
-    {
-        if (tab == no)
-            return;
-
-        tab = no;
-
+        tab = id;
         v.SelectedPayrollGroup = 0;
     }
 }
+
+ <style>
+    .k-card-body,
+    .k-tabstrip,
+    .k-tabstrip-content {
+        min-height: 0;
+    }
+ </style>

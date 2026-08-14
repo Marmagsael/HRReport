@@ -9,238 +9,141 @@
 @inject IOPayrollgrpDataAccess _paygrp
 
 
-<TelerikNotification @ref="@NotificationRef"
-                     HorizontalPosition="@NotificationHorizontalPosition.Right"
-                     VerticalPosition="@NotificationVerticalPosition.Top"
-                     AnimationType="@AnimationType.SlideLeft" />
-
-<div class="card">
-    <div class="card-body p-2">
-
-        <TelerikGrid TItem="PayrollgrpModel"
-                     @ref="PayrollGrpGrid"
-                     OnRead="@OnGridRead"
-                     OnAdd="@OnGridAdd"
-                     OnCreate="@OnGridCreate"
-                     OnEdit="@OnGridEdit"
-                     OnUpdate="@OnGridUpdate"
-                     OnDelete="@OnGridDelete"
-                     OnCancel="@OnGridCancel"
-                     EditMode="@GridEditMode.Inline"
-                     ConfirmDelete="true"
-                     SelectionMode="@GridSelectionMode.Single"
-                     Navigable="true"
-                     CustomKeyboardShortcuts="@GridCustomShortcuts"
-                     Pageable="true"
-                     PageSize="20"
-                     Sortable="true"
-                     FilterMode="@GridFilterMode.FilterMenu"
-                     Height="calc(100vh - 150px)">
-
-            <GridSettings>
-
-                @*========= VALIDATOR  ===========*@
-                <GridValidationSettings>
-                    <ValidatorTemplate>
-                        <FluentValidator Validator="@GridFluentValidator" />
-                    </ValidatorTemplate>
-                </GridValidationSettings>
-
-            </GridSettings>
-
-
-            @*========= TOOLBAR  ===========*@
-            <GridToolBarTemplate>
-
-                <GridCommandButton Command="Add">  Add Payroll Group </GridCommandButton>
-
-                <GridToolBarSpacerTool />
-                <GridToolBarSearchBoxTool />
-
-            </GridToolBarTemplate>
-
-            <GridColumns>
-                <GridColumn Field="@nameof(PayrollgrpModel.Code)"
-                            Title="Code"
-                            Width="100px"
-                            Locked="true"
-                            Editable="false" />
-
-
-                <GridColumn Field="@nameof(PayrollgrpModel.Name)"
-                            Title="Payroll Group"
-                            Width="250px"
-                            Locked="true" />
-
-
-                @*========= DEPLOYMENT  ===========*@
-                <GridColumn Field="@nameof(PayrollgrpModel.Deployment)"
-                            Title="Deployment"
-                            Width="220px">
-
-                    <EditorTemplate Context="item">
-
-                        @{
-                            var pg = (PayrollgrpModel)item;
-                        }
-
-                        <TelerikDropDownList Data="@AvailableDeployments(pg)"
-                                             @bind-Value="pg.ClNumber"
-                                             @bind-Value:after="() => OnDeploymentChanged(pg)"
-                                             ValueField="@nameof(OClientModel.ClNumber)"
-                                             TextField="@nameof(OClientModel.ClName)"
-                                             Filterable="true"
-                                             FilterPlaceholder="Search deployment..."
-                                             Width="100%">
-
-                            <DropDownListSettings>
-
-                                <DropDownListPopupSettings Width="450px"
-                                                           Height="600px" />
-
-                            </DropDownListSettings>
-
-                        </TelerikDropDownList>
-
-                    </EditorTemplate>
-
-                </GridColumn>
-
-
-                @*========= RATES  ===========*@
-                <GridColumn Title="RATE"
-                            HeaderClass="header-center">
-
-                    <Columns>
-
-                        <GridColumn Field="@nameof(PayrollgrpModel.MinMoRate)"
-                                    Title="Min. Rate"
-                                    Width="110px"
-                                    TextAlign="@ColumnTextAlign.Right"
-                                    DisplayFormat="{0:N2}" />
-
-                        <GridColumn Field="@nameof(PayrollgrpModel.RatePerHr)"
-                                    Title="Hourly"
-                                    Width="100px"
-                                    TextAlign="@ColumnTextAlign.Right"
-                                    DisplayFormat="{0:N2}" />
-
-                        <GridColumn Field="@nameof(PayrollgrpModel.RatePerDay)"
-                                    Title="Daily"
-                                    Width="100px"
-                                    TextAlign="@ColumnTextAlign.Right"
-                                    DisplayFormat="{0:N2}" />
-
-                        <GridColumn Field="@nameof(PayrollgrpModel.RatePerMonth)"
-                                    Title="Monthly"
-                                    Width="110px"
-                                    TextAlign="@ColumnTextAlign.Right"
-                                    DisplayFormat="{0:N2}" />
-
-                        <GridColumn Field="@nameof(PayrollgrpModel.RatePerYr)"
-                                    Title="Yearly"
-                                    Width="100px"
-                                    TextAlign="@ColumnTextAlign.Right"
-                                    DisplayFormat="{0:N2}" />
-
-                    </Columns>
-
-                </GridColumn>
-
-
-
-                @*========= STATUS  ===========*@
-                <GridColumn Field="@nameof(PayrollgrpModel.Status)"
-                            Title="Status"
-                            Width="100px"
-                            TextAlign="@ColumnTextAlign.Center">
-
-                    <FilterMenuTemplate Context="context">
-
-                        <_01FilteCheckbox TItem="PayrollGroupStatusModel"
-                                          Context="context"
-                                          Items="@V.PayrollGroupStatus"
-                                          ValueSelector="@(x => x.Code)"
-                                          TextSelector="@(x => x.Name)"
-                                          Member="@nameof(PayrollgrpModel.Status)" />
-
-                    </FilterMenuTemplate>
-
-
-                    <Template Context="item">
-
-                        @{
-                            var pg = (PayrollgrpModel)item;
-
-                            var status = V.PayrollGroupStatus.FirstOrDefault(x => x.Code == pg.Status);
-                            var statusName = status?.Name ?? pg.Status;
-                            var statusColor = pg.Status == "A" ? ThemeConstants.Badge.ThemeColor.Success : ThemeConstants.Badge.ThemeColor.Error;
-                        }
-
-                        <div class="d-flex justify-content-center">
-
-                            <TelerikBadge ThemeColor="@statusColor"
-                                          Position="@BadgePosition.Inline"
-                                          Rounded="@ThemeConstants.Badge.Rounded.Medium"
-                                          Size="@ThemeConstants.Badge.Size.Small"
-                                          FillMode="@ThemeConstants.Badge.FillMode.Solid">
-
-                                @statusName
-
-                            </TelerikBadge>
-
-                        </div>
-
-                    </Template>
-
-
-                    <EditorTemplate Context="item">
-
-                        @{
-                            var pg = (PayrollgrpModel)item;
-                        }
-
-                        <TelerikDropDownList Data="@V.PayrollGroupStatus"
-                                             @bind-Value="pg.Status"
-                                             ValueField="@nameof(PayrollGroupStatusModel.Code)"
-                                             TextField="@nameof(PayrollGroupStatusModel.Name)"
-                                             Width="100%" />
-
-                    </EditorTemplate>
-
-                </GridColumn>
-
-
-                @*============= ACTIONS =============*@
-                <GridCommandColumn Width="180px"
-                                   Title="Action"
-                                   HeaderClass="header-center">
-
-                    <div class="d-flex justify-content-center gap-2">
-
-                        <GridCommandButton Command="Edit"> Edit </GridCommandButton>
-                        <GridCommandButton Command="Save" ShowInEdit="true"> Save </GridCommandButton>
-                        <GridCommandButton Command="Cancel" ShowInEdit="true"> Cancel  </GridCommandButton>
-                        <GridCommandButton Command="Delete"> Delete</GridCommandButton>
-                    </div>
-
-                </GridCommandColumn>
-            </GridColumns>
-
-
-
-            @*============= NO DATA =============*@
-            <NoDataTemplate>
-                <div class="text-center text-secondary p-4">
-                    No payroll groups found.
+<TelerikGrid TItem="PayrollgrpModel"
+             @ref="PayrollGrpGrid"
+             OnRead="@OnGridRead"
+             OnAdd="@OnGridAdd"
+             OnCreate="@OnGridCreate"
+             OnUpdate="@OnGridUpdate"
+             OnDelete="@OnGridDelete"
+             OnCancel="@OnGridCancel"
+             EditMode="@GridEditMode.Inline"
+             ConfirmDelete="true"
+             SelectionMode="@GridSelectionMode.Single"
+             Navigable="true"
+             CustomKeyboardShortcuts="@GridCustomShortcuts"
+             Pageable="true"
+             PageSize="10"
+             Sortable="true"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Height="calc(100vh - 200px)">
+
+    @*========= VALIDATOR ===========*@
+    <GridSettings>
+        <GridValidationSettings>
+            <ValidatorTemplate>
+                <FluentValidator Validator="@GridFluentValidator" />
+            </ValidatorTemplate>
+        </GridValidationSettings>
+    </GridSettings>
+
+    @*========= TOOLBAR ===========*@
+    <GridToolBarTemplate>
+        <GridCommandButton Command="Add">Add Payroll Group</GridCommandButton>
+        <GridToolBarSpacerTool />
+        <GridToolBarSearchBoxTool />
+    </GridToolBarTemplate>
+
+    <GridColumns>
+
+        <GridColumn Field="@nameof(PayrollgrpModel.Code)" Title="Code" Width="100px" Locked="true" Editable="false" />
+        <GridColumn Field="@nameof(PayrollgrpModel.Name)" Title="Payroll Group" Width="250px" Locked="true" />
+
+        @*========= DEPLOYMENT ===========*@
+        <GridColumn Field="@nameof(PayrollgrpModel.Deployment)" Title="Deployment" Width="220px">
+            <EditorTemplate Context="item">
+                @{
+                    var pg = (PayrollgrpModel)item;
+                }
+                <TelerikDropDownList Data="@AvailableDeployments(pg)"
+                                     @bind-Value="pg.ClNumber"
+                                     @bind-Value:after="() => OnDeploymentChanged(pg)"
+                                     ValueField="@nameof(OClientModel.ClNumber)"
+                                     TextField="@nameof(OClientModel.ClName)"
+                                     Filterable="true"
+                                     FilterPlaceholder="Search deployment..."
+                                     Width="100%">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Width="450px" Height="600px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </EditorTemplate>
+        </GridColumn>
+
+        @*========= RATES ===========*@
+        <GridColumn Title="RATE" HeaderClass="header-center">
+            <Columns>
+                <GridColumn Field="@nameof(PayrollgrpModel.MinMoRate)" Title="Min. Rate" Width="110px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerHr)" Title="Hourly" Width="100px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerDay)" Title="Daily" Width="100px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerMonth)" Title="Monthly" Width="110px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerYr)" Title="Yearly" Width="100px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+            </Columns>
+        </GridColumn>
+
+        @*========= STATUS ===========*@
+        <GridColumn Field="@nameof(PayrollgrpModel.Status)" Title="Status" Width="100px" TextAlign="@ColumnTextAlign.Center">
+
+            <FilterMenuTemplate Context="context">
+                <_01FilteCheckbox TItem="PayrollGroupStatusModel"
+                                  Context="context"
+                                  Items="@V.PayrollGroupStatus"
+                                  ValueSelector="@(x => x.Code)"
+                                  TextSelector="@(x => x.Name)"
+                                  Member="@nameof(PayrollgrpModel.Status)" />
+            </FilterMenuTemplate>
+
+            <Template Context="item">
+                @{
+                    var pg = (PayrollgrpModel)item;
+                    var status = V.PayrollGroupStatus.FirstOrDefault(x => x.Code == pg.Status);
+                    var statusName = status?.Name ?? pg.Status;
+                    var statusColor = pg.Status == "A" ? ThemeConstants.Badge.ThemeColor.Success : ThemeConstants.Badge.ThemeColor.Error;
+                }
+                <div class="d-flex justify-content-center">
+                    <TelerikBadge ThemeColor="@statusColor"
+                                  Position="@BadgePosition.Inline"
+                                  Rounded="@ThemeConstants.Badge.Rounded.Medium"
+                                  Size="@ThemeConstants.Badge.Size.Small"
+                                  FillMode="@ThemeConstants.Badge.FillMode.Solid">
+                        @statusName
+                    </TelerikBadge>
                 </div>
-            </NoDataTemplate>
+            </Template>
 
-        </TelerikGrid>
+            <EditorTemplate Context="item">
+                @{
+                    var pg = (PayrollgrpModel)item;
+                }
+                <TelerikDropDownList Data="@V.PayrollGroupStatus"
+                                     @bind-Value="pg.Status"
+                                     ValueField="@nameof(PayrollGroupStatusModel.Code)"
+                                     TextField="@nameof(PayrollGroupStatusModel.Name)"
+                                     Width="100%" />
+            </EditorTemplate>
 
-    </div>
-</div>
+        </GridColumn>
 
+        @*============= ACTIONS =============*@
+        <GridCommandColumn Width="180px" Title="Action" HeaderClass="header-center">
+            <div class="d-flex justify-content-center gap-2">
+                <GridCommandButton Command="Edit">Edit</GridCommandButton>
+                <GridCommandButton Command="Save" ShowInEdit="true">Save</GridCommandButton>
+                <GridCommandButton Command="Cancel" ShowInEdit="true">Cancel</GridCommandButton>
+                <GridCommandButton Command="Delete">Delete</GridCommandButton>
+            </div>
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    @*============= NO DATA =============*@
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No payroll groups found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
 
 @code {
 
@@ -254,11 +157,10 @@
     public TelerikNotification? NotificationRef { get; set; }
 
     [CascadingParameter]
-    public EventCallback ChildAction { get; set; }
-
-    [CascadingParameter]
     public DialogFactory? TelerikDialogs { get; set; }
 
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
 
 
     private readonly PayrollgrpValidator GridFluentValidator = new();
@@ -271,17 +173,10 @@
             [GridKeyboardScope.Common] =
                 new Dictionary<string, GridKeyboardCommand?>
                 {
-                    ["W"] = GridKeyboardCommand.NavigateUp,
-                    ["S"] = GridKeyboardCommand.NavigateDown,
-                    ["A"] = GridKeyboardCommand.NavigateLeft,
-                    ["D"] = GridKeyboardCommand.NavigateRight,
-
                     ["ArrowUp"] = GridKeyboardCommand.NavigateUp,
                     ["ArrowDown"] = GridKeyboardCommand.NavigateDown,
                     ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
                     ["ArrowRight"] = GridKeyboardCommand.NavigateRight
-
-
                 },
 
             [GridKeyboardScope.HeaderCell] =
@@ -298,7 +193,6 @@
                 }
 
         };
-
 
 
     private async Task OnGridRead(GridReadEventArgs args)
@@ -353,12 +247,6 @@
     }
 
 
-
-    private Task OnGridEdit(GridCommandEventArgs args)
-    {
-        return Task.CompletedTask;
-    }
-
     private async Task OnGridCreate(GridCommandEventArgs args)
     {
         try
@@ -382,7 +270,7 @@
             V.Action = "LoadPayrollGroups";
             await ChildAction.InvokeAsync();
 
-            await RefreshGrid();
+            RefreshGrid();
         }
         catch (Exception ex)
         {
@@ -390,7 +278,6 @@
             NotificationRef?.Show($"Unable to create payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-
 
 
     private async Task OnGridUpdate(GridCommandEventArgs args)
@@ -418,8 +305,7 @@
             V.Action = "LoadPayrollGroups";
             await ChildAction.InvokeAsync();
 
-
-            await RefreshGrid();
+            RefreshGrid();
         }
         catch (Exception ex)
         {
@@ -453,7 +339,7 @@
             V.Action = "LoadPayrollGroups";
             await ChildAction.InvokeAsync();
 
-            await RefreshGrid();
+            RefreshGrid();
         }
         catch (Exception ex)
         {
@@ -463,7 +349,7 @@
     }
 
 
-    private async Task RefreshGrid()
+    private void RefreshGrid()
     {
         if (PayrollGrpGrid == null)
         {
@@ -472,7 +358,6 @@
 
         PayrollGrpGrid.Rebind();
     }
-
 
 
     private async Task OnGridCancel(GridCommandEventArgs args)
@@ -491,7 +376,6 @@
     }
 
 
-
     private static void SetDefaults(PayrollgrpModel pg)
     {
         if (string.IsNullOrWhiteSpace(pg.Status))
@@ -501,17 +385,16 @@
     }
 
 
-
     private List<OClientModel> AvailableDeployments(PayrollgrpModel payrollGrp)
     {
-        return V.Deployments.Where(d => d.Status == "Active" || (  payrollGrp.Id > 0 &&  d.ClNumber?.Trim() ==  payrollGrp.ClNumber?.Trim()   ))  .ToList();
+        return V.Deployments.Where(d => d.Status == "Active" || (payrollGrp.Id > 0 && d.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim())).ToList();
     }
 
 
     private void OnDeploymentChanged(PayrollgrpModel payrollGrp)
     {
-        var deployment          = V.Deployments.FirstOrDefault(x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
-        payrollGrp.Deployment   = deployment?.ClName?.Trim() ?? string.Empty;
+        var deployment = V.Deployments.FirstOrDefault(x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
+        payrollGrp.Deployment = deployment?.ClName?.Trim() ?? string.Empty;
     }
 
 
@@ -575,4 +458,7 @@
         text-align: center;
     }
 
+  
+
 </style>
+
