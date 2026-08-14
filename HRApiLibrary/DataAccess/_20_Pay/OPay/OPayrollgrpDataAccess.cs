@@ -5,6 +5,7 @@ using HRApiLibrary.Models._90_Utils;
 namespace HRApiLibrary.DataAccess._20_Pay.OPay;
 
 using HRApiLibrary.DataAccess._90_Utils;
+using HRApiLibrary.Models._20_Pay.OPay;
 using Microsoft.AspNetCore.Http.Extensions;
 using System.Linq;
 public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
@@ -112,18 +113,26 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         return data ?? new List<PayrollgrpModel>();
     }
 
-    public async Task<List<TbltranModel?>?> _02CheckToTblTran(string? clNumber, string? schema, string? conn)
+    public async Task<List<OTbltranModel?>?> _02CheckToTblTran(string? code, string? schema, string? conn)
     {
-        Console.WriteLine($"{clNumber} {schema} {conn}");
-        string? sql = $@"select  * from {schema}.tbltran where right(trn,5) = @Code limit 1 ";
-        var data = await _sql.FetchData<TbltranModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
-        return data;
+        string? sql = $@"select  trn,
+                             acctNumber,
+                             empNumber,
+                             amount,
+                             if(dTimeStamp < '1000-01-01', null, dTimeStamp) as dTimeStamp,
+                             source,
+                             postedby
+                     from    {schema}.tbltran
+                     where   right(trn, 5) = @Code
+                     limit   1";
+
+        return await _sql.FetchData<OTbltranModel?, dynamic>(sql, new { Code = code }, conn);
     }
 
-    public async Task<List<DeprecModel?>?> _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn)
+    public async Task<List<ODeprecModel?>?> _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.deprec where payrollgrpId = @PayrollGrpId limit 1";
-        var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { PayrollGrpId = payrollgrpId }, conn);
+        var data = await _sql.FetchData<ODeprecModel?, dynamic>(sql, new { PayrollGrpId = payrollgrpId }, conn);
         return data;
     }
 
@@ -154,8 +163,8 @@ public interface IOPayrollgrpDataAccess
     Task<PayrollgrpModel?>                  _02(int id, string schema, string conn);
     Task<List<PayrollgrpModel>?>            _02(string schemapay, string conn);
     Task<List<PayrollgrpModel>?>            _02ByName(string name, string schema, string conn);
-    Task<List<TbltranModel?>?>              _02CheckToTblTran(string? clNumber, string? schema, string? conn);
-    Task<List<DeprecModel?>?>               _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);
+    Task<List<OTbltranModel?>?>             _02CheckToTblTran(string? clNumber, string? schema, string? conn);
+    Task<List<ODeprecModel?>?>              _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);
     Task<GridResultModel<PayrollgrpModel>> _02Grid(GridRequestModel request, string schemapay, string schemapis, string conn);
     Task<PayrollgrpModel?>                  _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn);
     Task<PayrollgrpModel?>                  _04(int? id, string schema, string conn);
