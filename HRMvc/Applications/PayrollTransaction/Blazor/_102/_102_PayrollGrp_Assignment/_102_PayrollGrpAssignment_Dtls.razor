@@ -1,20 +1,20 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+﻿@using System.ComponentModel
+@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._90_Utils
 @using HRMvc.Applications.PayrollTransaction.Vars
+@using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
 
 @inject IODeprecDataAccess _deprec
 
-<TelerikNotification @ref="@NotificationRef"
-                     HorizontalPosition="@NotificationHorizontalPosition.Right"
-                     VerticalPosition="@NotificationVerticalPosition.Top"
-                     AnimationType="@AnimationType.SlideLeft" />
 
 <div class="bordered">
 
     <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
 
         <div class="small fw-bold text-secondary">
-            Employee List
+
+            Employee list
 
             @if (SelectedEmployees.Any())
             {
@@ -22,55 +22,87 @@
                     @SelectedEmployees.Count() selected
                 </span>
             }
+
         </div>
+
 
         @if (SelectedEmployees.Any())
         {
-            <TelerikButton OnClick="RemoveSelected"
+            <TelerikButton OnClick="@RemoveSelected"
                            ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
                            FillMode="@ThemeConstants.Button.FillMode.Clear"
                            Size="@ThemeConstants.Button.Size.Small"
-                           Icon="@FontIcon.Trash"
-                           Title="Remove selected employees">
+                           Icon="@FontIcon.Trash">
+
+                Remove selected
             </TelerikButton>
         }
 
     </div>
 
-    <div class="@lockDtlsCss">
 
-        <TelerikGrid Data="@V.Deprecs"
-                     SelectionMode="@GridSelectionMode.Multiple"
-                     @bind-SelectedItems="@SelectedEmployees"
-                     Pageable="true"
-                     PageSize="10"
-                     FilterMode="@GridFilterMode.FilterMenu"
-                     Sortable="true"
-                     Resizable="true"
-                     Height="100%">
+    <TelerikGrid TItem="ODeprecModel"
+                 @ref="DeprecGrid"
+                 OnRead="@OnGridRead"
+                 SelectionMode="@GridSelectionMode.Multiple"
+                 @bind-SelectedItems="@SelectedEmployees"
+                 Pageable="true"
+                 PageSize="10"
+                 FilterMode="@GridFilterMode.FilterMenu"
+                 Sortable="true"
+                 Resizable="true"
+                 Navigable="true"
+                 CustomKeyboardShortcuts="@GridCustomShortcuts"
+                 Height="100%">
 
-            <GridColumns>
+        <GridColumns>
+            <GridCheckboxColumn SelectAll="true"
+                                SelectAllMode="@GridSelectAllMode.Current"
+                                Width="50px" />
 
-                <GridCheckboxColumn SelectAll="true"
-                                    SelectAllMode="@GridSelectAllMode.Current"
-                                    Width="50px" />
+            <GridColumn Field="@nameof(ODeprecModel.EmpName)" Title="Employee name" />
+        </GridColumns>
 
-                <GridColumn Field="@nameof(ODeprecModel.EmpName)"
-                            Title="Employee Name" />
 
-            </GridColumns>
+        <NoDataTemplate>
 
-            <NoDataTemplate>
-                <div class="text-center text-secondary p-3">
-                    No assigned employee found.
-                </div>
-            </NoDataTemplate>
+            <div class="text-center text-secondary p-3">
 
-        </TelerikGrid>
+                @if (V.SelectedPayrollGroup <= 0)
+                {
+                    <div>
+                        Select a payroll group to see its employees.
+                    </div>
+                }
+                else if (HasActiveFilter)
+                {
+                    <div>
+                        No employees match the current filter.
+                    </div>
 
-    </div>
+                    <div class="k-font-size-sm">
+                        Clear the column filter to see everyone.
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        No one assigned to this group yet
+                    </div>
+
+                    <div class="k-font-size-sm">
+                        Use the search above to add employees.
+                    </div>
+                }
+
+            </div>
+
+        </NoDataTemplate>
+
+    </TelerikGrid>
 
 </div>
+
 
 @code {
 
@@ -80,17 +112,115 @@
     [CascadingParameter]
     public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
 
-    private TelerikNotification? NotificationRef;
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
 
-    [Parameter]
+    [CascadingParameter]
     public V102Model V { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    private IEnumerable<ODeprecModel> SelectedEmployees { get; set; }   = new List<ODeprecModel>();
+    private TelerikGrid<ODeprecModel>? DeprecGrid;
+    private IEnumerable<ODeprecModel> SelectedEmployees { get; set; } = new List<ODeprecModel>();
 
-    private string lockDtlsCss =>  V.ShowAddMember ? "disabled-div-50" : "";
+    private bool HasActiveFilter =>
+        DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
+
+
+    private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
+        GridCustomShortcuts = new()
+        {
+            [GridKeyboardScope.Common] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["W"] = GridKeyboardCommand.NavigateUp,
+                    ["S"] = GridKeyboardCommand.NavigateDown,
+                    ["A"] = GridKeyboardCommand.NavigateLeft,
+                    ["D"] = GridKeyboardCommand.NavigateRight,
+
+                    ["ArrowUp"] = GridKeyboardCommand.NavigateUp,
+                    ["ArrowDown"] = GridKeyboardCommand.NavigateDown,
+                    ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
+                    ["ArrowRight"] = GridKeyboardCommand.NavigateRight
+                },
+
+            [GridKeyboardScope.HeaderCell] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["O"] = GridKeyboardCommand.SortColumn,
+                    ["Enter"] = GridKeyboardCommand.SortColumn
+                },
+
+            [GridKeyboardScope.DataCell] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["Enter"] = GridKeyboardCommand.Select
+                }
+        };
+
+
+    private async Task OnGridRead(GridReadEventArgs args)
+    {
+        if (V.SelectedPayrollGroup <= 0)
+        {
+            args.Data = new List<ODeprecModel>();
+            args.Total = 0;
+            return;
+        }
+
+        var pageSize = args.Request.PageSize > 0 ? args.Request.PageSize : 10;
+        var page = args.Request.Page > 0 ? args.Request.Page : 1;
+        var offset = (page - 1) * pageSize;
+
+
+
+        var sort = args.Request.Sorts.FirstOrDefault();
+        var sortField = sort?.Member ?? nameof(ODeprecModel.EmpName);
+        var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending ? "DESC" : "ASC";
+
+
+
+        var filters = GridHelper.GetFilters(args);
+
+        var request = new GridRequestModel
+        {
+            PageSize = pageSize,
+            Offset = offset,
+            SortField = sortField,
+            SortDirection = sortDirection,
+            Filters = filters
+        };
+
+        var result = await _deprec._02Grid(V.SelectedPayrollGroup, request, V.pisdb, V.conn);
+
+        args.Data = result.Data;
+        args.Total = result.Total;
+    }
+
+
+    public Task RefreshGrid()
+    {
+        DeprecGrid?.Rebind();
+
+        return Task.CompletedTask;
+    }
+
+
+    public async Task ResetGrid()
+    {
+        if (DeprecGrid == null) return;
+
+        var state = DeprecGrid.GetState();
+        state.FilterDescriptors.Clear();
+        state.SortDescriptors.Clear();
+        state.Page = 1;
+
+        SelectedEmployees = new List<ODeprecModel>();
+
+        await DeprecGrid.SetStateAsync(state);
+    }
+
 
     private async Task RemoveSelected()
     {
@@ -106,31 +236,65 @@
             return;
         }
 
-        string message = employees.Count == 1  ? $"Do you want to remove {employees[0].EmpName}?"  : $"Do you want to remove {employees.Count} selected employees?";
-        var confirmed = await TelerikDialogs.ConfirmAsync(  message, "Confirm Delete");
+
+        string message = employees.Count == 1
+            ? $"Remove {employees[0].EmpName} ({employees[0].EmpNumber}) from this payroll group?"
+            : $"Remove {employees.Count} selected employees from this payroll group?";
+
+        var confirmed = await TelerikDialogs.ConfirmAsync(message, "Confirm removal");
+
 
         if (!confirmed)
         {
             return;
         }
 
-        try
+
+        var failed = new List<string>();
+
+
+        foreach (var employee in employees)
         {
-            foreach (var employee in employees)
+            try
             {
                 await RemoveEmployee(employee);
             }
-
-            SelectedEmployees = new List<ODeprecModel>();
-            NotificationRef?.Show(  employees.Count == 1 ? "Employee removed successfully."  : "Selected employees removed successfully.",  ThemeConstants.Notification.ThemeColor.Success);
-
-            await ChildAction.InvokeAsync();
+            catch
+            {
+                failed.Add(employee.EmpName ?? employee.EmpNumber ?? "unknown");
+            }
         }
-        catch (Exception ex)
+
+
+        SelectedEmployees = new List<ODeprecModel>();
+
+        if (DeprecGrid != null)
         {
-            NotificationRef?.Show(ex.Message,  ThemeConstants.Notification.ThemeColor.Error);
+            var state = DeprecGrid.GetState();
+            state.Page = 1;
+
+            await DeprecGrid.SetStateAsync(state);
+        }
+
+        await ChildAction.InvokeAsync();
+
+
+        if (failed.Count == 0)
+        {
+            NotificationRef?.Show(
+                employees.Count == 1
+                    ? "Employee removed."
+                    : $"{employees.Count} employees removed.",
+                ThemeConstants.Notification.ThemeColor.Success);
+        }
+        else
+        {
+            NotificationRef?.Show(
+                $"Couldn't remove: {string.Join(", ", failed)}",
+                ThemeConstants.Notification.ThemeColor.Error);
         }
     }
+
 
     private async Task RemoveEmployee(ODeprecModel emp)
     {
@@ -140,15 +304,14 @@
         }
 
 
-
         var updateEmp = new ODeprecModel
         {
             EmpNumber = emp.EmpNumber,
             PayrollgrpId = 0
         };
 
-        await _deprec._01PayrollGrp( updateEmp, V.pisdb,  V.conn);
-        V.Deprecs.Remove(emp);
-        Console.Write(emp.EmpName);
+
+        await _deprec._01PayrollGrp(updateEmp, V.pisdb,  V.conn);
     }
+
 }

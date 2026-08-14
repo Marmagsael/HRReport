@@ -43,22 +43,15 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<PayrollgrpModel>?> _02(string schemapay, string schemapis, string conn)
+    public async Task<List<PayrollgrpModel>?> _02(string schemapay, string conn)
     {
-        string sql = $@" SELECT p.*, c.Clname Deployment
-                        FROM {schemapay}.Payrollgrp p
-                        LEFT JOIN {schemapis}.client c on c.clnumber = p.clnumber
-                        ORDER BY Name";
+        string sql = $@" SELECT p.* FROM {schemapay}.Payrollgrp p  ORDER BY Name";
         var data = await _sql.FetchData<PayrollgrpModel, dynamic>( sql,new { }, conn );
         return data ?? new List<PayrollgrpModel>();
     }
 
 
-    public async Task<GridResultModel<PayrollgrpModel>> _02Grid(
-      GridRequestModel request,
-      string schemapay,
-      string schemapis,
-      string conn)
+    public async Task<GridResultModel<PayrollgrpModel>> _02Grid( GridRequestModel request, string schemapay,  string schemapis, string conn)
     {
         var columns = new Dictionary<string, string>
         {
@@ -92,44 +85,18 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         };
 
         // FILTERING
-        var where = GridHelperDataAccess.BuildWhere(
-            request.Filters,
-            columns,
-            parameters);
+        var where = GridHelperDataAccess.BuildWhere( request.Filters,  columns,    parameters);
 
         // RECORDS COUNT
-        string countSql = $@"
-        SELECT COUNT(*)
-        FROM {schemapay}.Payrollgrp p
-        LEFT JOIN {schemapis}.client c
-            ON c.clnumber = p.clnumber
-        {where}";
+        string countSql = $@" SELECT COUNT(*)  FROM {schemapay}.Payrollgrp p LEFT JOIN {schemapis}.client c  ON c.clnumber = p.clnumber {where}";
 
-        var totalResult =
-            await _sql.FetchData<int, dynamic>(
-                countSql,
-                parameters,
-                conn);
-
-        var total = totalResult?.FirstOrDefault() ?? 0;
+        var totalResult = await _sql.FetchData<int, dynamic>(  countSql, parameters, conn);
+        var total       = totalResult?.FirstOrDefault() ?? 0;
 
         // DATA
-        string sql = $@"
-        SELECT
-            p.*,
-            c.Clname AS Deployment
-        FROM {schemapay}.Payrollgrp p
-        LEFT JOIN {schemapis}.client c
-            ON c.clnumber = p.clnumber
-        {where}
-        ORDER BY {sortColumn} {sortOrder}
-        LIMIT @Offset, @PageSize";
+        string sql = $@"  SELECT  p.*, c.Clname AS Deployment FROM {schemapay}.Payrollgrp p   LEFT JOIN {schemapis}.client c   ON c.clnumber = p.clnumber {where}  LIMIT @Offset, @PageSize";
 
-        var data =
-            await _sql.FetchData<PayrollgrpModel, dynamic>(
-                sql,
-                parameters,
-                conn);
+        var data =   await _sql.FetchData<PayrollgrpModel, dynamic>(    sql,   parameters,  conn);
 
         return new GridResultModel<PayrollgrpModel>
         {
@@ -148,7 +115,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
     public async Task<List<TbltranModel?>?> _02CheckToTblTran(string? clNumber, string? schema, string? conn)
     {
         Console.WriteLine($"{clNumber} {schema} {conn}");
-        string? sql = $@"select  * from {schema}.tbltran where right(trn,5) = @ClNumber limit 1 ";
+        string? sql = $@"select  * from {schema}.tbltran where right(trn,5) = @Code limit 1 ";
         var data = await _sql.FetchData<TbltranModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
         return data;
     }
@@ -185,7 +152,7 @@ public interface IOPayrollgrpDataAccess
 {
     Task<PayrollgrpModel?>                  _01(PayrollgrpModel payrollgrp, string schema, string conn);
     Task<PayrollgrpModel?>                  _02(int id, string schema, string conn);
-    Task<List<PayrollgrpModel>?>             _02(string schemapay, string schemapis, string conn);
+    Task<List<PayrollgrpModel>?>            _02(string schemapay, string conn);
     Task<List<PayrollgrpModel>?>            _02ByName(string name, string schema, string conn);
     Task<List<TbltranModel?>?>              _02CheckToTblTran(string? clNumber, string? schema, string? conn);
     Task<List<DeprecModel?>?>               _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);

@@ -16,7 +16,6 @@
     <TelerikCard Class="w-300px">
 
         <CardHeader Class="bg-secondary bg-opacity-10">
-
             <div class="d-flex align-items-center gap-3">
 
                 <label class="k-label">
@@ -42,13 +41,11 @@
                     </TelerikDropDownList>
 
                 </div>
-
             </div>
-
         </CardHeader>
 
-
         <CardBody>
+
 
             <TelerikCard Width="600px">
 
@@ -60,51 +57,34 @@
                             Assigned employees
                         </span>
 
+
                         <TelerikButton OnClick="@ToggleAddMember"
                                        Enabled="@(V.SelectedPayrollGroup > 0)"
                                        ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
                                        FillMode="@ThemeConstants.Button.FillMode.Clear"
                                        Size="@ThemeConstants.Button.Size.Small"
-                                       Icon="@(V.ShowAddMember
-                                                                                  ? FontIcon.ChevronUp
-                                                                                  : FontIcon.Plus)"
-                                       Title="@(V.ShowAddMember
-                                                                                  ? "Hide search"
-                                                                                  : "Add employee")" />
+                                       Icon="@(V.ShowAddMember ? FontIcon.ChevronUp : FontIcon.Plus)"
+                                       Title="@(V.ShowAddMember ? "Hide search" : "Add employee")" />
 
                     </div>
 
                 </CardHeader>
 
-
                 <CardBody>
 
-                    <div class="position-relative">
+                    @if (V.ShowAddMember)
+                    {
+                        <_102_PayrollGrpAssignment_AddMember ChildAction="CA_Catcher" />
+                    }
 
-                        @if (V.ShowAddMember)
-                        {
-                            <div class="position-absolute top-0 start-0 w-100"
-                                 style="z-index: 1000;">
-
-                                <_102_PayrollGrpAssignment_AddMember ChildAction="CA_Catcher" />
-
-                            </div>
-                        }
-
-
-                        <_102_PayrollGrpAssignment_Dtls @ref="AssignedEmployeesGrid"
-                                                        ChildAction="CA_Catcher" />
-
-                    </div>
+                    <_102_PayrollGrpAssignment_Dtls ChildAction="CA_Catcher" />
 
                 </CardBody>
-
             </TelerikCard>
 
         </CardBody>
 
     </TelerikCard>
-
 </div>
 
 @code {
@@ -124,7 +104,7 @@
     [CascadingParameter]
     public DialogFactory? TelerikDialogs { get; set; }
 
-    private _102_PayrollGrpAssignment_Dtls? AssignedEmployeesGrid;
+    private int AssignedCount => V.Deprecs?.Count ?? 0;
 
 
     private void ToggleAddMember()
@@ -137,33 +117,35 @@
     {
         try
         {
-            V.ShowAddMember = false;
-            V.EmployeesNoPayGrp = [];
+            ResetPayrollGroupData();
 
-            if (AssignedEmployeesGrid != null)
+            var result = await _deprec._02ByFieldId(  "PayrollgrpId",  V.SelectedPayrollGroup,  V.pisdb, V.conn);
+
+            if (result.Any())
             {
-                await AssignedEmployeesGrid.ResetGrid();
+                V.Deprecs = result?.ToList() ?? new List<ODeprecModel>();
             }
 
             await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show(  $"Couldn't load assigned employees. {ex.Message}",  ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show( $"Couldn't load assigned employees. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
+    }
+
+
+    private void ResetPayrollGroupData()
+    {
+        V.ShowAddMember = false;
+        V.Deprecs = [];
     }
 
 
 
     private async Task CA_Catcher()
     {
-        if (AssignedEmployeesGrid != null)
-        {
-            await AssignedEmployeesGrid.RefreshGrid();
-        }
-
+        if (V.Action == "PayrollGrpChange") await PayrollGrpChange();
         await ChildAction.InvokeAsync();
     }
-
-
 }

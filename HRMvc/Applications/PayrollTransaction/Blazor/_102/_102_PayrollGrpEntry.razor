@@ -26,6 +26,7 @@
                      OnUpdate="@OnGridUpdate"
                      OnDelete="@OnGridDelete"
                      OnCancel="@OnGridCancel"
+                     EditMode="@GridEditMode.Inline"
                      ConfirmDelete="true"
                      SelectionMode="@GridSelectionMode.Single"
                      Navigable="true"
@@ -171,9 +172,9 @@
                         @{
                             var pg = (PayrollgrpModel)item;
 
-                            var status      = V.PayrollGroupStatus.FirstOrDefault(x => x.Code == pg.Status);
-                            var statusName  = status?.Name ?? pg.Status;
-                            var statusColor = pg.Status == "A" ? ThemeConstants.Badge.ThemeColor.Success   : ThemeConstants.Badge.ThemeColor.Error;
+                            var status = V.PayrollGroupStatus.FirstOrDefault(x => x.Code == pg.Status);
+                            var statusName = status?.Name ?? pg.Status;
+                            var statusColor = pg.Status == "A" ? ThemeConstants.Badge.ThemeColor.Success : ThemeConstants.Badge.ThemeColor.Error;
                         }
 
                         <div class="d-flex justify-content-center">
@@ -261,7 +262,7 @@
 
 
     private readonly PayrollgrpValidator GridFluentValidator = new();
-    private  TelerikGrid<PayrollgrpModel>? PayrollGrpGrid;
+    private TelerikGrid<PayrollgrpModel>? PayrollGrpGrid;
 
 
     private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
@@ -280,7 +281,7 @@
                     ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
                     ["ArrowRight"] = GridKeyboardCommand.NavigateRight
 
-                    
+
                 },
 
             [GridKeyboardScope.HeaderCell] =
@@ -299,19 +300,19 @@
         };
 
 
-  
+
     private async Task OnGridRead(GridReadEventArgs args)
     {
-        var pageSize    = args.Request.PageSize > 0  ? args.Request.PageSize : 20;
-        var page        = args.Request.Page > 0 ? args.Request.Page : 1;
+        var pageSize = args.Request.PageSize > 0 ? args.Request.PageSize : 20;
+        var page = args.Request.Page > 0 ? args.Request.Page : 1;
 
-        var offset      = (page - 1) * pageSize;
+        var offset = (page - 1) * pageSize;
 
 
         // SORT ---------------------------------
-        var sort            = args.Request.Sorts.FirstOrDefault();
-        var sortField       = sort?.Member ?? nameof(PayrollgrpModel.Name);
-        var sortDirection   =  sort?.SortDirection == ListSortDirection.Descending ? "DESC"  : "ASC";
+        var sort = args.Request.Sorts.FirstOrDefault();
+        var sortField = sort?.Member ?? nameof(PayrollgrpModel.Name);
+        var sortDirection = sort?.SortDirection == ListSortDirection.Descending ? "DESC" : "ASC";
 
 
         // FILTER --------------------------------
@@ -319,32 +320,28 @@
 
         if (!filters.Any())
         {
-            filters.Add( new GridFilterModel
-                {
-                    Field           = nameof(PayrollgrpModel.Status),
-                    Operator        = "=",
-                    Value           = "A",
-                    LogicalOperator = "AND"
-                });
+            filters.Add(new GridFilterModel
+            {
+                Field = nameof(PayrollgrpModel.Status),
+                Operator = "=",
+                Value = "A",
+                LogicalOperator = "AND"
+            });
         }
 
-
         var request = new GridRequestModel
-            {
-                PageSize        = pageSize,
-                Offset          = offset,
-                SortField       = sortField,
-                SortDirection   = sortDirection,
-                Filters         = filters
-            };
+        {
+            PageSize = pageSize,
+            Offset = offset,
+            SortField = sortField,
+            SortDirection = sortDirection,
+            Filters = filters
+        };
 
+        var result = await _paygrp._02Grid(request, V.paydb, V.pisdb, V.conn);
 
-      
-
-        var result = await _paygrp._02Grid(  request,  V.paydb, V.pisdb,  V.conn);
-      
-        args.Data   = result.Data;
-        args.Total  = result.Total;
+        args.Data = result.Data;
+        args.Total = result.Total;
     }
 
 
@@ -356,7 +353,7 @@
     }
 
 
- 
+
     private Task OnGridEdit(GridCommandEventArgs args)
     {
         return Task.CompletedTask;
@@ -368,26 +365,29 @@
         {
             var pg = (PayrollgrpModel)args.Item;
             SetDefaults(pg);
-            
-            var exists = await _paygrp._02ByName(  pg.Name?.Trim(),  V.paydb,  V.conn);
+
+            var exists = await _paygrp._02ByName(pg.Name?.Trim(), V.paydb, V.conn);
 
             if (exists.Any())
             {
                 args.IsCancelled = true;
-                NotificationRef?.Show(   "Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
+                NotificationRef?.Show("Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
-          
 
-            await _paygrp._01( pg, V.paydb,   V.conn);
-            NotificationRef?.Show( "Payroll group created successfully.",  ThemeConstants.Notification.ThemeColor.Success);
-           
+
+            await _paygrp._01(pg, V.paydb, V.conn);
+            NotificationRef?.Show("Payroll group created successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            V.Action = "LoadPayrollGroups";
+            await ChildAction.InvokeAsync();
+
             await RefreshGrid();
         }
         catch (Exception ex)
         {
             args.IsCancelled = true;
-            NotificationRef?.Show( $"Unable to create payroll group: {ex.Message}",   ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Unable to create payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -399,21 +399,24 @@
         {
             var pg = (PayrollgrpModel)args.Item;
             SetDefaults(pg);
-           
-            var exists = await _paygrp._02ByName( pg.Name?.Trim(),  V.paydb, V.conn);
+
+            var exists = await _paygrp._02ByName(pg.Name?.Trim(), V.paydb, V.conn);
             var existing = exists.FirstOrDefault();
 
 
-            if (existing != null &&  existing.Id != pg.Id)
+            if (existing != null && existing.Id != pg.Id)
             {
                 args.IsCancelled = true;
-                NotificationRef?.Show( "Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
+                NotificationRef?.Show("Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
 
-            await _paygrp._03( pg.Id,  pg,  V.paydb,V.conn);
-            NotificationRef?.Show( "Payroll group updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await _paygrp._03(pg.Id, pg, V.paydb, V.conn);
+            NotificationRef?.Show("Payroll group updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            V.Action = "LoadPayrollGroups";
+            await ChildAction.InvokeAsync();
 
 
             await RefreshGrid();
@@ -421,7 +424,7 @@
         catch (Exception ex)
         {
             args.IsCancelled = true;
-            NotificationRef?.Show(   $"Update failed: {ex.Message}",   ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Update failed: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -432,27 +435,30 @@
         {
             var pg = (PayrollgrpModel)args.Item;
 
-            var tbltran = await _paygrp._02CheckToTblTran( pg.Code,V.paydb, V.conn);
-            var deprec  = await _paygrp._02CheckToDeprec( pg.Id,V.pisdb, V.conn);
+            var tbltran = await _paygrp._02CheckToTblTran(pg.Code, V.paydb, V.conn);
+            var deprec = await _paygrp._02CheckToDeprec(pg.Id, V.pisdb, V.conn);
 
             if (tbltran.Any() || deprec.Any())
             {
                 args.IsCancelled = true;
 
-                NotificationRef?.Show(  $"'{pg.Name}' cannot be deleted because it is already in use.", ThemeConstants.Notification.ThemeColor.Warning);
+                NotificationRef?.Show($"'{pg.Name}' cannot be deleted because it is already in use.", ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
 
 
-            await _paygrp._04( pg.Id, V.paydb, V.conn);
-            NotificationRef?.Show(  "Payroll group deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
-            
+            await _paygrp._04(pg.Id, V.paydb, V.conn);
+            NotificationRef?.Show("Payroll group deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            V.Action = "LoadPayrollGroups";
+            await ChildAction.InvokeAsync();
+
             await RefreshGrid();
         }
         catch (Exception ex)
         {
             args.IsCancelled = true;
-            NotificationRef?.Show(  $"Unable to delete payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Unable to delete payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -476,7 +482,7 @@
             return;
         }
 
-        var confirmed = await TelerikDialogs.ConfirmAsync("Do you want to discard your changes?" , "Discard Changes");
+        var confirmed = await TelerikDialogs.ConfirmAsync("Do you want to discard your changes?", "Discard Changes");
 
         if (!confirmed)
         {
@@ -485,7 +491,7 @@
     }
 
 
-  
+
     private static void SetDefaults(PayrollgrpModel pg)
     {
         if (string.IsNullOrWhiteSpace(pg.Status))
@@ -495,23 +501,17 @@
     }
 
 
-  
-    private List<OClientModel> AvailableDeployments( PayrollgrpModel payrollGrp)
+
+    private List<OClientModel> AvailableDeployments(PayrollgrpModel payrollGrp)
     {
-        return V.Deployments .Where(d => d.Status == "Active" ||
-                (
-                    payrollGrp.Id > 0 &&
-                    d.ClNumber?.Trim() ==
-                    payrollGrp.ClNumber?.Trim()
-                ))
-            .ToList();
+        return V.Deployments.Where(d => d.Status == "Active" || (  payrollGrp.Id > 0 &&  d.ClNumber?.Trim() ==  payrollGrp.ClNumber?.Trim()   ))  .ToList();
     }
 
 
     private void OnDeploymentChanged(PayrollgrpModel payrollGrp)
     {
-        var deployment =  V.Deployments.FirstOrDefault(  x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
-        payrollGrp.Deployment = deployment?.ClName?.Trim() ?? string.Empty;
+        var deployment          = V.Deployments.FirstOrDefault(x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
+        payrollGrp.Deployment   = deployment?.ClName?.Trim() ?? string.Empty;
     }
 
 

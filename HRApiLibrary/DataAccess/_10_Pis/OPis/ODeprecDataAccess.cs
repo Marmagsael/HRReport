@@ -1,5 +1,7 @@
-﻿using HRApiLibrary.DataAccess._90_Utils.Interface;
+﻿using HRApiLibrary.DataAccess._90_Utils;
+using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis;
+using HRApiLibrary.Models._90_Utils;
 
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
@@ -57,7 +59,7 @@ public class ODeprecDataAccess : IODeprecDataAccess
         return data.FirstOrDefault();
     }
 
-    public async Task<List<ODeprecModel?>?> _02ByFieldId(string? fieldName, int? fieldIdValue, string? schema, string? conn)
+    public async Task<List<ODeprecModel>?> _02ByFieldId(string? fieldName, int? fieldIdValue, string? schema, string? conn)
     {
 
         var allowedFields = new HashSet<string>
@@ -84,6 +86,61 @@ public class ODeprecDataAccess : IODeprecDataAccess
         return data;
     }
 
+    public async Task<GridResultModel<ODeprecModel>> _02Grid( int payrollgrpId, GridRequestModel request, string schema,   string conn)
+    {
+        var columns = new Dictionary<string, string>
+        {
+            ["EmpNumber"] = "d.EmpNumber",
+            ["EmpName"] = @"CONCAT( TRIM(COALESCE(e.EmpLastNm, '')),', ', TRIM(COALESCE(e.EmpFirstNm, '')),' ', TRIM(COALESCE(e.EmpMidNm, '')))"
+        };
+
+        // SORTING
+        var sortColumn = columns.GetValueOrDefault( request.SortField,  "e.EmpLastNm");
+        var sortOrder  = request.SortDirection == "DESC"   ? "DESC" : "ASC";
+
+        // PARAMETERS
+        var parameters = new Dictionary<string, object>
+        {
+            ["PayrollgrpId"] = payrollgrpId,
+            ["PageSize"] = request.PageSize,
+            ["Offset"] = request.Offset
+        };
+
+        // FILTERING
+        var where = GridHelperDataAccess.BuildWhere(request.Filters,  columns,  parameters);
+      
+
+        if (string.IsNullOrWhiteSpace(where))
+        {
+            where = "WHERE d.PayrollgrpId = @PayrollgrpId";
+        }
+        else
+        {
+            where += " AND d.PayrollgrpId = @PayrollgrpId";
+        }
+
+
+        // RECORDS COUNT
+        string countSql = $@" SELECT COUNT(*)  FROM {schema}.Deprec d   LEFT JOIN {schema}.Empmas e ON e.Empnumber = d.Empnumber {where}";
+        var totalResult = await _sql.FetchData<int, dynamic>( countSql, parameters, conn);
+        var total       = totalResult?.FirstOrDefault() ?? 0;
+
+        // DATA
+        string sql = $@"  SELECT d.EmpNumber, CONCAT( TRIM(COALESCE(e.EmpLastNm, '')), ', ',    TRIM(COALESCE(e.EmpFirstNm, '')), ' ', TRIM(COALESCE(e.EmpMidNm, '')) ) AS EmpName, d.PayrollgrpId
+                                FROM {schema}.Deprec d
+                                LEFT JOIN {schema}.Empmas e  ON e.Empnumber = d.Empnumber
+                                {where}
+                                ORDER BY {sortColumn} {sortOrder}
+                                LIMIT @Offset, @PageSize";
+
+        var data =  await _sql.FetchData<ODeprecModel, dynamic>( sql,parameters, conn);
+
+        return new GridResultModel<ODeprecModel>
+        {
+            Data = data ?? new List<ODeprecModel>(),
+            Total = total
+        };
+    }
 
 
     public async Task<ODeprecModel?> _03(int id, ODeprecModel deprec, string schema, string conn)
@@ -115,7 +172,8 @@ public interface IODeprecDataAccess
     Task<ODeprecModel?> _01PayrollGrp(ODeprecModel deprec, string? schema, string? conn);
     Task<ODeprecModel?> _02(int id, string schema, string conn);
     Task<ODeprecModel?> _02ByEmpnumber(string? empnumber, string? schema, string? conn);
-    Task<List<ODeprecModel?>?> _02ByFieldId(string? fieldName, int? fieldIdValue, string? schema, string? conn);
+    Task<List<ODeprecModel>?> _02ByFieldId(string? fieldName, int? fieldIdValue, string? schema, string? conn);
+    Task<GridResultModel<ODeprecModel>> _02Grid(int payrollgrpId, GridRequestModel request, string schema, string conn);
     Task<ODeprecModel?> _03(int id, ODeprecModel deprec, string schema, string conn);
     Task<ODeprecModel?> _04(int id, string schema, string conn);
 }
