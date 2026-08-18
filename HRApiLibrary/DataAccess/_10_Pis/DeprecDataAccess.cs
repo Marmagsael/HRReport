@@ -1,6 +1,8 @@
-﻿using HRApiLibrary.DataAccess._10_Pis.Interface;
+﻿using Blazorise;
+using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis;
+using Org.BouncyCastle.Ocsp;
 
 namespace HRApiLibrary.DataAccess._10_Pis;
 
@@ -36,6 +38,16 @@ public class DeprecDataAccess : IDeprecDataAccess
         return res.FirstOrDefault();
     }
 
+
+    public async Task _01FromPayrollGrp(DeprecModel deprec, string? schema, string? conn)
+    {
+        string? sql = $@"Insert into {schema}.Deprec 
+                        (EmpmasId,  PayrollgrpId ) values 
+                        (@EmpmasId, @PayrollgrpId) 
+                        on duplicate key update PayrollGrpId = @PayrollGrpId";
+        await _sql.ExecuteCmd<dynamic>(sql, deprec, conn);
+
+    }
 
     public async Task<DeprecModel?> _02(int? id, string? schema, string? conn)
     {
@@ -87,6 +99,8 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data.FirstOrDefault();
     }
 
+
+
     public async Task<List<DeprecModel?>?> _02ByEmpmasIds(List<int> empmasId, string? schema, string? conn)
     {
         string? sql = $@"select d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,   s.Name Empstatusname, 
@@ -130,6 +144,36 @@ public class DeprecDataAccess : IDeprecDataAccess
         var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
         return data;
     }
+
+    public async Task<List<DeprecModel?>?> _02ByFieldId(string? fieldName, int? fieldIdValue, string? schema, string? conn)
+    {
+
+        var allowedFields = new HashSet<string>
+            {
+                "EmpmasId", "DivId", "DepId", "SecId", "PositionId", "LeavegrpId",
+                "PayrollgrpId", "IdDeployment", "EmploymentTypeId", "EmpStatusId",
+                "IsOnDeviation", "IdDeviation", "IsOnDiciplinary", "IsOnInvestigation", "IdInvestigate"
+            };
+
+        if (!allowedFields.Contains(fieldName!))
+            throw new ArgumentException($"Invalid field name: {fieldName}");
+
+        string? sql = $@"SELECT d.*, 
+                                CONCAT(
+                                    TRIM(COALESCE(e.EmpLastNm, '')), ', ', 
+                                    TRIM(COALESCE(e.EmpFirstNm, '')), ' ', 
+                                    TRIM(COALESCE(e.EmpMidNm, ''))
+                                ) AS Empname
+                            FROM {schema}.Deprec d 
+                            LEFT JOIN {schema}.Empmas e ON e.Id = d.EmpmasId 
+                            WHERE d.{fieldName} = @FieldIdValue";
+
+        var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { FieldIdValue = fieldIdValue }, conn);
+        return data;
+    }
+
+
+
     public async Task<List<DeprecModel?>?> _02ByField(string? fieldName, string? schema, string? conn)
     {
         fieldName = fieldName.ToLower();
@@ -157,6 +201,7 @@ public class DeprecDataAccess : IDeprecDataAccess
         var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { }, conn);
         return data;
     }
+
 
     public async Task<DeprecModel?> _02DeviationDtlsByEmpmasId(int? empmasId , string? schema, string? conn)
     {
@@ -218,6 +263,26 @@ public class DeprecDataAccess : IDeprecDataAccess
                         where d.EmpmasId = @EmpmasId;";
 
         var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, deprec, conn);
+        return data?.FirstOrDefault();
+    }
+
+
+    public async Task<DeprecModel?> _03ByField(int? empmasId, string fieldName, int fieldValue, string? schema, string? conn)
+    {
+        var allowedFields = new HashSet<string>
+            {
+                "EmpmasId", "DivId", "DepId", "SecId", "PositionId", "LeavegrpId",
+                "PayrollgrpId", "IdDeployment", "EmploymentTypeId", "EmpStatusId",
+                "IsOnDeviation", "IdDeviation", "IsOnDiciplinary", "IsOnInvestigation", "IdInvestigate"
+            };
+
+        if (!allowedFields.Contains(fieldName))
+            throw new ArgumentException($"Invalid field name: {fieldName}");
+
+        string? sql = $@"UPDATE {schema}.Deprec SET {fieldName} = @FieldValue WHERE EmpmasId = @EmpmasId;
+                    SELECT d.* FROM {schema}.Deprec d WHERE d.EmpmasId = @EmpmasId;";
+
+        var data = await _sql.FetchData<DeprecModel?, dynamic>(sql, new { EmpmasId = empmasId, FieldValue = fieldValue }, conn);
         return data?.FirstOrDefault();
     }
 

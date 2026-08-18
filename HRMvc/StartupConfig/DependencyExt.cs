@@ -49,6 +49,7 @@ public static class DependencyExt
             });*/
         //builder.Services.AddSyncfusionBlazor();
         builder.Services.AddRadzenComponents();
+        builder.Services.AddTelerikBlazor(); 
 
         //--- Session ---------------------------
         builder.Services.AddDataProtection()
