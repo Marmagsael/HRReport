@@ -10,37 +10,32 @@
 <div class="employee-list">
 
     @*========= LIST HEADER : COUNT + BULK REMOVE ===========*@
-    <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+    @if (SelectedEmployees.Any())
+    {
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
 
-        <div class="d-flex align-items-center gap-2">
+                <TelerikBadge ThemeColor="@(SelectedEmployees.Any()
+                        ? ThemeConstants.Badge.ThemeColor.Primary
+                        : ThemeConstants.Badge.ThemeColor.Base)"
+                            Position="@BadgePosition.Inline"
+                            Rounded="@ThemeConstants.Badge.Rounded.Medium"
+                            Size="@ThemeConstants.Badge.Size.Small"
+                            FillMode="@ThemeConstants.Badge.FillMode.Solid">
+                @SelectedEmployees.Count() selected
+            </TelerikBadge>
 
-            <span class="small fw-bold text-secondary">Employee list</span>
-
-            @if (SelectedEmployees.Any())
-            {
-                <TelerikBadge ThemeColor="@ThemeConstants.Badge.ThemeColor.Primary"
-                              Position="@BadgePosition.Inline"
-                              Rounded="@ThemeConstants.Badge.Rounded.Medium"
-                              Size="@ThemeConstants.Badge.Size.Small"
-                              FillMode="@ThemeConstants.Badge.FillMode.Solid">
-                    @SelectedEmployees.Count() selected
-                </TelerikBadge>
-            }
+                <TelerikButton OnClick="@RemoveSelected"
+                                ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
+                                FillMode="@ThemeConstants.Button.FillMode.Clear"
+                                Size="@ThemeConstants.Button.Size.Small"
+                                Icon="@FontIcon.Trash"
+                                Enabled="@SelectedEmployees.Any()">
+                    Remove selected
+                </TelerikButton>
 
         </div>
-
-        @if (SelectedEmployees.Any())
-        {
-            <TelerikButton OnClick="@RemoveSelected"
-                           ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
-                           FillMode="@ThemeConstants.Button.FillMode.Clear"
-                           Size="@ThemeConstants.Button.Size.Small"
-                           Icon="@FontIcon.Trash">
-                Remove selected
-            </TelerikButton>
-        }
-
-    </div>
+    }
+           
 
     @*========= GRID ===========*@
     <TelerikGrid TItem="ODeprecModel"
@@ -83,7 +78,7 @@
                 else
                 {
                     <div>No one assigned to this group yet</div>
-                    <div class="k-font-size-sm">Use the search above to add employees.</div>
+                    <div class="k-font-size-sm">Click the '+' to add employees.</div>
                 }
 
             </div>

@@ -1,153 +1,191 @@
-﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+﻿@using System.ComponentModel
 @using HRApiLibrary.DataAccess._10_Pis.Interface
-@using HRApiLibrary.DataAccess._10_Pis.OPis
-@using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.Models._10_Pis
-@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.Models._90_Utils
 @using HRMvc.Applications.PayrollTransaction.Vars
-@using HRMvc.Applications.PisModules.Vars
-@using HRMvc.Applications.Vars
-@using Radzen
-@using Radzen.Blazor
+@using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
 
-<div class="border rounded">
-    <div class="d-flex justify-content-between align-items-center p-2 bg-light border-bottom">
-        <div class="d-flex align-items-center gap-2">
-            <RadzenCheckBox @bind-Value="V.IsAllSelected"
-                            Change="@((bool value) => OnSelectAll(value))" />
-            <h6 class="mb-0">Name</h6>
-        </div>
-    </div>
+@inject IODeprecDataAccess _deprec
 
-    <div class="border-bottom" style="height: calc(100vh - 260px); overflow-y: auto; overflow-x: hidden;">
-        @if (V.EmpmasList?.Count > 0)
-        {
-            <table class="table table-sm table-hover mb-0">
-                <tbody>
-                    @foreach (var e in V.EmpmasList!)
-                    {
-                        <tr class="@(e.Sel ? "table-primary fw-bold" : "")" style="cursor: pointer;">
-                            <td style="width: 40px;" class="p-2">
-                                <RadzenCheckBox @bind-Value="e.Sel"
-                                                Change="@((bool value) => ToggleEmployee(e, value))" />
-                            </td>
-                            <td class="p-2">
-                                @e.Fullname - [@e?.EmpNumber]
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <div class="w-100 text-center bg-light text-muted border p-2">
-                Record is empty.
+<div class="employee-list">
+
+
+    @*========= GRID ===========*@
+    <TelerikGrid TItem="ODeprecModel"
+                 @ref="DeprecGrid"
+                 OnRead="@OnGridRead"
+                 SelectionMode="@GridSelectionMode.Multiple"
+                 @bind-SelectedItems="@SelectedEmployees"
+                 Pageable="true"
+                 PageSize="11"
+                 FilterMode="@GridFilterMode.FilterMenu"
+                 Sortable="true"
+                 Resizable="true"
+                 Navigable="true"
+                 CustomKeyboardShortcuts="@GridCustomShortcuts"
+                 Width="100%"
+                 Height="calc(100vh - 350px)">
+
+        <GridColumns>
+
+            <GridCheckboxColumn SelectAll="true"
+                                SelectAllMode="@GridSelectAllMode.Current"
+                                Width="50px" />
+
+            <GridColumn Field="@nameof(ODeprecModel.EmpName)" Title="Employee name" />
+
+        </GridColumns>
+
+        <NoDataTemplate>
+            <div class="text-center text-secondary p-3">
+
+                @if (V.SelectedPayrollGroup <= 0)
+                {
+                    <div>Select a payroll group to see assigned employees.</div>
+                }
+                else if (HasActiveFilter)
+                {
+                    <div>No employees match the current filter.</div>
+                    <div class="k-font-size-sm">Clear the column filter to see everyone.</div>
+                }
+                else
+                {
+                    <div>No one assigned to this group yet</div>
+                    <div class="k-font-size-sm">Click the '+' to add employees.</div>
+                }
+
             </div>
-        }
-    </div>
+        </NoDataTemplate>
 
-    <!-- Footer -->
-    <div class="bg-light text-dark text-center p-2 border-top small rounded-bottom">
-        Employee Listing
-    </div>
+    </TelerikGrid>
+
 </div>
 
-
-
-@inject IOEmpmasDataAccess _empmas
-@inject I_00MainDA _main
-@inject IEmpmovementDataAccess _empMovement
-@inject IAtttemplateDataAccess _atttemplate
-@inject NotificationService _notify
-
 @code {
-    int selectedCount = 0;
 
-    [Parameter]
+    [CascadingParameter]
+    public UserClaimsModel? Uc { get; set; }
+
+    [CascadingParameter]
+    public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
     public V102Model V { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
+    private TelerikGrid<ODeprecModel>? DeprecGrid;
+    private IEnumerable<ODeprecModel> SelectedEmployees { get; set; } = new List<ODeprecModel>();
 
-    private async Task OnSelectAll(bool isChecked)
-    {
-        V.SelectedEmployee = string.Empty;
-        V.CurrentAttendance = new AtttemplateModel();
+    private bool HasActiveFilter => DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
 
-        foreach (var e in V.EmpmasList)
+
+    private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
+        GridCustomShortcuts = new()
         {
-            e.Sel = isChecked;
+            [GridKeyboardScope.Common] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["W"] = GridKeyboardCommand.NavigateUp,
+                    ["S"] = GridKeyboardCommand.NavigateDown,
+                    ["A"] = GridKeyboardCommand.NavigateLeft,
+                    ["D"] = GridKeyboardCommand.NavigateRight,
 
-            if (isChecked)
-            {
-                if (!V.SelectedEmployees.Contains(e))
-                    V.SelectedEmployees.Add(e);
-            }
-            else
-            {
-                V.SelectedEmployees.Remove(e);
-            }
+                    ["ArrowUp"] = GridKeyboardCommand.NavigateUp,
+                    ["ArrowDown"] = GridKeyboardCommand.NavigateDown,
+                    ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
+                    ["ArrowRight"] = GridKeyboardCommand.NavigateRight
+                },
+
+            [GridKeyboardScope.HeaderCell] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["O"] = GridKeyboardCommand.SortColumn,
+                    ["Enter"] = GridKeyboardCommand.SortColumn
+                },
+
+            [GridKeyboardScope.DataCell] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["Enter"] = GridKeyboardCommand.Select
+                }
+        };
+
+
+    private async Task OnGridRead(GridReadEventArgs args)
+    {
+        if (V.SelectedPayrollGroup <= 0)
+        {
+            args.Data = new List<ODeprecModel>();
+            args.Total = 0;
+            return;
         }
 
-        V.IsAllSelected = isChecked;
+        var pageSize = args.Request.PageSize > 0 ? args.Request.PageSize : 10;
+        var page = args.Request.Page > 0 ? args.Request.Page : 1;
+        var offset = (page - 1) * pageSize;
 
-        if (V.SelectedEmployees.Count > 0) await GetCurrentSchedule(V.SelectedEmployees.LastOrDefault());
-        await ChildAction.InvokeAsync();
-    }
+        var sort = args.Request.Sorts.FirstOrDefault();
+        var sortField = sort?.Member ?? nameof(ODeprecModel.EmpName);
+        var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending ? "DESC" : "ASC";
 
-    private async Task ToggleEmployee(OEmpmasModel employee, bool isChecked)
-    {
-        V.SelectedEmployee = string.Empty;
-        V.CurrentAttendance = new AtttemplateModel();
+        var filters = GridHelper.GetFilters(args);
 
-        employee.Sel = isChecked;
-
-        var unSelectedEmployee = V.EmpmasList.Count(e => e.Sel == false);
-        V.IsAllSelected = unSelectedEmployee == 0;
-
-
-        // if (isChecked)
-        // {
-        //     if (!V.SelectedEmployees.Contains(employee))
-        //         V.SelectedEmployees.Add(employee);
-        // }
-        // else
-        // {
-        //     V.SelectedEmployees.Remove(employee);
-        // }
-
-        if (V.SelectedEmployees.Count > 0) await GetCurrentSchedule(V.SelectedEmployees.LastOrDefault());
-        await ChildAction.InvokeAsync();
-    }
-
-    private async Task GetCurrentSchedule(OEmpmasModel employee)
-    {
-        V.SelectedEmployee = string.Empty;
-        V.CurrentAttendance = new AtttemplateModel();
-
-
-        try
+        var request = new GridRequestModel
         {
-            if (employee == null)
-            {
-                return;
-            }
+            PageSize = pageSize,
+            Offset = offset,
+            SortField = sortField,
+            SortDirection = sortDirection,
+            Filters = filters
+        };
 
-            // var result = await _atttemplate._02(employee.SystemId, V.pisdb, V.conn);
+        var result = await _deprec._02Grid(V.SelectedPayrollGroup, request, V.pisdb, V.conn);
 
-            // if (result.EmpmasId > 0)
-            // {
-            //     V.SelectedEmployee = employee.Fullname;
-            //     V.CurrentAttendance = result;
-            //     Console.WriteLine("res");
-            // }
-
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+        args.Data = result.Data;
+        args.Total = result.Total;
     }
+
+
+    public Task RefreshGrid()
+    {
+        DeprecGrid?.Rebind();
+
+        return Task.CompletedTask;
+    }
+
+
+    public async Task ResetGrid()
+    {
+        if (DeprecGrid == null)
+        {
+            return;
+        }
+
+        var state = DeprecGrid.GetState();
+        state.FilterDescriptors.Clear();
+        state.SortDescriptors.Clear();
+        state.Page = 1;
+
+        SelectedEmployees = new List<ODeprecModel>();
+
+        await DeprecGrid.SetStateAsync(state);
+    }
+
+
+ 
+    
+
 }
+
+<style>
+
+    .employee-list {
+        width: 100%;
+    }
+
+</style>
