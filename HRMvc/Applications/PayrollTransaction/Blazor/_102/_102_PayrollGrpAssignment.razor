@@ -4,133 +4,177 @@
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp_Assignment
 
-<TelerikNotification @ref="@NotificationRef"
-                     HorizontalPosition="@NotificationHorizontalPosition.Right"
-                     VerticalPosition="@NotificationVerticalPosition.Top"
-                     AnimationType="@AnimationType.SlideLeft" />
+@inject IODeprecDataAccess _deprec
 
-<div class="position-relative">
-    
+<div class="assignment-shell px-0 ms-0 me-auto">
 
+    @*=========  PAYROLL GROUP SELECTOR ===========*@
+    <TelerikCard Width="100%" Class="assignment-card">
 
-    <CascadingValue Value="Uc" IsFixed="true">
+        <CardHeader Class="bg-secondary bg-opacity-10">
+            <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3">
 
-        <TelerikCard>
+                <label for="paygrp" class="mb-0 fw-semibold text-nowrap">Payroll group</label>
 
-            <CardHeader class="bg-secondary bg-opacity-10">
-                <div class="d-flex align-items-center gap-3">
-                    <label class="k-label">
-                        Payroll Group
-                    </label>
-
-                    <div style="width: 400px;">
-                        <TelerikDropDownList Data="@V.PayrollGrps"
-                                             @bind-Value="V.SelectedPayrollGroup"
-                                             TextField="@nameof(PayrollgrpModel.Name)"
-                                             ValueField="@nameof(PayrollgrpModel.Id)"
-                                             Filterable="true"
-                                             FilterPlaceholder="Search payroll group..."
-                                             Width="100%"
-                                             OnChange="@PayrollGrpChange">
-
-                            <DropDownListSettings>
-                                <DropDownListPopupSettings Width="450px"
-                                                           Height="600px" />
-                            </DropDownListSettings>
-
-                        </TelerikDropDownList>
-                    </div>
-                </div>
-            </CardHeader>
-
-            <CardBody>
-
-                <div class="d-flex gap-2 w-100">
-
-                    <div class="w-600p">
-
-                        <TelerikCard>
-
-                            <CardHeader Class="bg-secondary bg-opacity-10">
-                                <div class="d-flex justify-content-between align-items-center w-100">
-
-                                    <span class="small fw-bold">
-                                        Assigned Employees
-                                    </span>
-
-                                    <TelerikButton OnClick="() => V.ShowAddMember = true"
-                                                   Class="@enableAddMemberCSS"
-                                                   ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
-                                                   FillMode="@ThemeConstants.Button.FillMode.Clear"
-                                                   Size="@ThemeConstants.Button.Size.Small"
-                                                   Icon="@FontIcon.Plus"
-                                                   Title="Add employee">
-                                    </TelerikButton>
-
-
-                                </div>
-                            </CardHeader>
-
-                            <CardBody>
-
-                                @if (V.ShowAddMember)
-                                {
-                                    <_102_PayrollGrpAssignment_AddMember V="V" ChildAction="CA_Catcher" />
-                                }
-
-                                <_102_PayrollGrpAssignment_Dtls V="V" ChildAction="CA_Catcher" />
-
-                            </CardBody>
-
-                        </TelerikCard>
-
-                    </div>
-
+                <div class="paygrp-picker">
+                    <TelerikDropDownList Id="paygrp"
+                                         Data="@V.PayrollGrps"
+                                         @bind-Value="V.SelectedPayrollGroup"
+                                         TextField="@nameof(PayrollgrpModel.Name)"
+                                         ValueField="@nameof(PayrollgrpModel.Id)"
+                                         Filterable="true"
+                                         FilterPlaceholder="Search payroll group..."
+                                         Width="100%"
+                                         OnChange="@PayrollGrpChange">
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Width="450px" Height="600px" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
                 </div>
 
-            </CardBody>
+            </div>
+        </CardHeader>
 
-        </TelerikCard>
+        <CardBody Class="assignment-outer-body p-2 p-md-3">
 
-    </CascadingValue>
+            @*========= ASSIGNED EMPLOYEES ===========*@
+            <TelerikCard Width="100%" Class="assignment-inner-card">
+
+                <CardHeader Class="bg-secondary bg-opacity-10">
+                    <div class="d-flex align-items-center gap-2">
+
+                        <span class="fw-semibold">Assigned employees</span>
+
+                        <div class="ms-auto">
+                            <TelerikButton OnClick="@ToggleAddMember"
+                                           Enabled="@(V.SelectedPayrollGroup > 0)"
+                                           ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
+                                           FillMode="@ThemeConstants.Button.FillMode.Clear"
+                                           Size="@ThemeConstants.Button.Size.Small"
+                                           Icon="@(V.ShowAddMember ? FontIcon.X : FontIcon.Plus)"
+                                           Title="@(V.ShowAddMember ? "Hide search" : "Add employee")" />
+                        </div>
+
+                    </div>
+                </CardHeader>
+
+                <CardBody Class="assignment-inner-body p-0">
+                    <div class="position-relative grid-host">
+
+                        <TelerikAnimationContainer @ref="AddMemberPanel"
+                                                   AnimationType="@AnimationType.SlideDown"
+                                                   Top="0"
+                                                   Left="0"
+                                                   Width="100%"
+                                                   Class="add-member-panel">
+                            <_102_PayrollGrpAssignment_AddMember ChildAction="CA_Catcher" />
+                        </TelerikAnimationContainer>
+
+                        <_102_PayrollGrpAssignment_Dtls @ref="AssignedEmployeesGrid"
+                                                        ChildAction="CA_Catcher" />
+
+                    </div>
+                </CardBody>
+
+            </TelerikCard>
+
+        </CardBody>
+
+    </TelerikCard>
 
 </div>
 
-
-@inject IODeprecDataAccess _deprec;
-
 @code {
-    [Parameter] public UserClaimsModel? Uc { get; set; }
 
-    [Parameter] public V102Model V { get; set; } = new();
+    [CascadingParameter]
+    public UserClaimsModel? Uc { get; set; }
 
-    [Parameter] public EventCallback ChildAction { get; set; }
+    [CascadingParameter]
+    public V102Model V { get; set; } = new();
 
-    List<EmpmasInternalModel?>? sEmpmas = [];
-    private TelerikNotification? NotificationRef;
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
 
-    string? enableAddMemberCSS =>  V.SelectedPayrollGroup > 0 ? "" : "disabled-div";
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
 
-    async Task PayrollGrpChange()
+    [CascadingParameter]
+    public DialogFactory? TelerikDialogs { get; set; }
+
+    private _102_PayrollGrpAssignment_Dtls? AssignedEmployeesGrid;
+    private TelerikAnimationContainer? AddMemberPanel;
+
+    private async Task ToggleAddMember()
     {
+        V.ShowAddMember = !V.ShowAddMember;
+
+        if (AddMemberPanel != null)
+        {
+            if (V.ShowAddMember)
+            {
+                await AddMemberPanel.ShowAsync();
+            }
+            else
+            {
+                await AddMemberPanel.HideAsync();
+            }
+        }
+    }
+
+    private async Task PayrollGrpChange()
+    {
+
+        return;
         try
         {
             V.ShowAddMember = false;
-            V.Deprecs = [];
-            var res = await _deprec._02ByFieldId("PayrollgrpId", V.SelectedPayrollGroup, V.pisdb, V.conn);
-            if (res.Any()) V.Deprecs = res!;
+
+            if (AddMemberPanel != null)
+            {
+                await AddMemberPanel.HideAsync();
+            }
+
+            V.EmployeesNoPayGrp = [];
+
+            if (AssignedEmployeesGrid != null)
+            {
+                await AssignedEmployeesGrid.ResetGrid();
+            }
+
             await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show($"Unable to load assigned employees. {ex}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Couldn't load assigned employees. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
-
-    async Task CA_Catcher()
+    private async Task CA_Catcher()
     {
-        if (V.Action == "PayrollGrpChange") await PayrollGrpChange();
+        if (AssignedEmployeesGrid != null)
+        {
+            await AssignedEmployeesGrid.RefreshGrid();
+        }
+
         await ChildAction.InvokeAsync();
     }
 }
+
+<style>
+
+    .paygrp-picker {
+        width: 100%;
+    }
+
+    @@media (min-width: 1200px) {
+        .assignment-outer-body {
+            max-width: 660px;
+        }
+
+        .paygrp-picker {
+            width: 450px;
+            flex: 0 0 450px;
+        }
+    }
+
+</style>
