@@ -209,7 +209,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
         builder.Services.AddScoped<IOClientDataAccess, OClientDataAccess>();
         builder.Services.AddScoped<IOEmpstatDataAccess, OEmpstatDataAccess>();
-        
+        builder.Services.AddScoped<IODeprecDataAccess, ODeprecDataAccess>();
         builder.Services.AddScoped<IOPisReportDataAccess, OPisReportDataAccess>();
 
 
@@ -220,6 +220,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOLoansDataAccess, OLoansDataAccess>();
         builder.Services.AddScoped<IOChartofacctDataAccess, OChartofacctDataAccess>();
         builder.Services.AddScoped<IOEmpportalDataAccess, OEmpportalDataAccess>();
+        builder.Services.AddScoped<IOPayrollgrpDataAccess, OPayrollgrpDataAccess>();
         
 
         //-- Pay Report --------------------------------------------------------------------

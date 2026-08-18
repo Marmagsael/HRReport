@@ -221,6 +221,7 @@ public class OEmpmasModel
     public string?  Reason                  { get; set; }
     public int?     CntNotMigrated          { get; set; } = 0;
     public double?  HeightInches            { get; set; }
+    public bool     Sel                     { get; set; } = false;
 
 
 }

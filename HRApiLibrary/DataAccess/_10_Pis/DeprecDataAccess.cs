@@ -99,6 +99,8 @@ public class DeprecDataAccess : IDeprecDataAccess
         return data.FirstOrDefault();
     }
 
+
+
     public async Task<List<DeprecModel?>?> _02ByEmpmasIds(List<int> empmasId, string? schema, string? conn)
     {
         string? sql = $@"select d.*, concat(trim(e.EmpLastNm),', ', trim(e.EmpFirstNm),' ', e.EmpMidNm) Empname, e.Empnumber,   s.Name Empstatusname, 

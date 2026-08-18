@@ -1,0 +1,90 @@
+﻿@using global::Telerik.DataSource
+
+@typeparam TItem
+
+@foreach (var item in Items)
+{
+    var value = ValueSelector(item);
+    var text = TextSelector(item);
+
+    <div class="d-flex align-items-center gap-2 mb-2">
+
+        <TelerikCheckBox TValue="bool"
+                         Value="@IsSelected(value)"
+                         ValueChanged="@((bool isChecked) => ChangeFilter(isChecked, value))" />
+
+        <span>@text</span>
+
+    </div>
+}
+
+@code {
+
+    [Parameter]
+    public FilterMenuTemplateContext Context { get; set; } = default!;
+
+    [Parameter]
+    public IEnumerable<TItem> Items { get; set; } = Enumerable.Empty<TItem>();
+
+    [Parameter]
+    public Func<TItem, string> ValueSelector { get; set; }= default!;
+
+    [Parameter]
+    public Func<TItem, string> TextSelector { get; set; }= default!;
+
+    [Parameter]
+    public string Member { get; set; } = string.Empty;
+
+
+    private bool IsSelected(string value)
+    {
+        return Context.FilterDescriptor.FilterDescriptors.OfType<Telerik.DataSource.FilterDescriptor>().Any(x =>
+                x.Member == Member &&
+                x.Operator == Telerik.DataSource.FilterOperator.IsEqualTo &&
+                x.Value?.ToString() == value);
+    }
+
+
+    private async Task ChangeFilter(
+        bool isChecked,
+        string value)
+    {
+        var filterDescriptor = Context.FilterDescriptor;
+
+        // Multiple checkbox selections use OR
+        filterDescriptor.LogicalOperator = FilterCompositionLogicalOperator.Or;
+
+
+        if (isChecked)
+        {
+            // Prevent duplicate filters
+            if (!IsSelected(value))
+            {
+                filterDescriptor.FilterDescriptors.Add(
+                    new Telerik.DataSource.FilterDescriptor
+                    {
+                        Member      = Member,
+                        MemberType  = typeof(string),
+                        Operator    = Telerik.DataSource.FilterOperator.IsEqualTo,
+                        Value       = value
+                    });
+            }
+        }
+        else
+        {
+            var existingFilter = filterDescriptor.FilterDescriptors
+                .OfType<Telerik.DataSource.FilterDescriptor>()
+                .FirstOrDefault(x =>
+                    x.Member == Member &&
+                    x.Operator == Telerik.DataSource.FilterOperator.IsEqualTo &&
+                    x.Value?.ToString() == value);
+
+            if (existingFilter != null)
+            {
+                filterDescriptor.FilterDescriptors.Remove(existingFilter);
+            }
+        }
+
+        // await Context.FilterAsync();
+    }
+}

@@ -1,296 +1,467 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-@using HRApiLibrary.DataAccess._20_Pay.Interface
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._10_Pis.OPis
 @using HRApiLibrary.Models._20_Pay
+@using HRApiLibrary.Models._90_Utils
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp
+@using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
+
+@inject IOPayrollgrpDataAccess _paygrp
 
 
+<TelerikGrid TItem="PayrollgrpModel"
+             @ref="PayrollGrpGrid"
+             OnRead="@OnGridRead"
+             OnAdd="@OnGridAdd"
+             OnCreate="@OnGridCreate"
+             OnUpdate="@OnGridUpdate"
+             OnDelete="@OnGridDelete"
+             OnCancel="@OnGridCancel"
+             EditMode="@GridEditMode.Inline"
+             ConfirmDelete="true"
+             SelectionMode="@GridSelectionMode.Single"
+             Navigable="true"
+             CustomKeyboardShortcuts="@GridCustomShortcuts"
+             Pageable="true"
+             PageSize="10"
+             Sortable="true"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Height="calc(100vh - 200px)">
 
-@inject NotificationService _notify
-@inject DialogService _DialogService
+    @*========= VALIDATOR ===========*@
+    <GridSettings>
+        <GridValidationSettings>
+            <ValidatorTemplate>
+                <FluentValidator Validator="@GridFluentValidator" />
+            </ValidatorTemplate>
+        </GridValidationSettings>
+    </GridSettings>
 
+    @*========= TOOLBAR ===========*@
+    <GridToolBarTemplate>
+        <GridCommandButton Command="Add">Add Payroll Group</GridCommandButton>
+        <GridToolBarSpacerTool />
+        <GridToolBarSearchBoxTool />
+    </GridToolBarTemplate>
 
-<div class="card ">
+    <GridColumns>
 
-    <div class="card-body p-2">
-        @if (!V.ShowDE)
-        {
-            <div class="w-100  p-2 border mt-1 mb-1">
-                <button @onclick="() => V.ShowDE = true" class="btn btn-primary btn-sm"> Add New </button>
+        <GridColumn Field="@nameof(PayrollgrpModel.Code)" Title="Code" Width="100px" Locked="true" Editable="false" />
+        <GridColumn Field="@nameof(PayrollgrpModel.Name)" Title="Payroll Group" Width="250px" Locked="true" />
+
+        @*========= DEPLOYMENT ===========*@
+        <GridColumn Field="@nameof(PayrollgrpModel.Deployment)" Title="Deployment" Width="220px">
+            <EditorTemplate Context="item">
+                @{
+                    var pg = (PayrollgrpModel)item;
+                }
+                <TelerikDropDownList Data="@AvailableDeployments(pg)"
+                                     @bind-Value="pg.ClNumber"
+                                     @bind-Value:after="() => OnDeploymentChanged(pg)"
+                                     ValueField="@nameof(OClientModel.ClNumber)"
+                                     TextField="@nameof(OClientModel.ClName)"
+                                     Filterable="true"
+                                     FilterPlaceholder="Search deployment..."
+                                     Width="100%">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Width="450px" Height="600px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </EditorTemplate>
+        </GridColumn>
+
+        @*========= RATES ===========*@
+        <GridColumn Title="RATE" HeaderClass="header-center">
+            <Columns>
+                <GridColumn Field="@nameof(PayrollgrpModel.MinMoRate)" Title="Min. Rate" Width="110px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerHr)" Title="Hourly" Width="100px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerDay)" Title="Daily" Width="100px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerMonth)" Title="Monthly" Width="110px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PayrollgrpModel.RatePerYr)" Title="Yearly" Width="100px" TextAlign="@ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+            </Columns>
+        </GridColumn>
+
+        @*========= STATUS ===========*@
+        <GridColumn Field="@nameof(PayrollgrpModel.Status)" Title="Status" Width="100px" TextAlign="@ColumnTextAlign.Center">
+
+            <FilterMenuTemplate Context="context">
+                <_01FilteCheckbox TItem="PayrollGroupStatusModel"
+                                  Context="context"
+                                  Items="@V.PayrollGroupStatus"
+                                  ValueSelector="@(x => x.Code)"
+                                  TextSelector="@(x => x.Name)"
+                                  Member="@nameof(PayrollgrpModel.Status)" />
+            </FilterMenuTemplate>
+
+            <Template Context="item">
+                @{
+                    var pg = (PayrollgrpModel)item;
+                    var status = V.PayrollGroupStatus.FirstOrDefault(x => x.Code == pg.Status);
+                    var statusName = status?.Name ?? pg.Status;
+                    var statusColor = pg.Status == "A" ? ThemeConstants.Badge.ThemeColor.Success : ThemeConstants.Badge.ThemeColor.Error;
+                }
+                <div class="d-flex justify-content-center">
+                    <TelerikBadge ThemeColor="@statusColor"
+                                  Position="@BadgePosition.Inline"
+                                  Rounded="@ThemeConstants.Badge.Rounded.Medium"
+                                  Size="@ThemeConstants.Badge.Size.Small"
+                                  FillMode="@ThemeConstants.Badge.FillMode.Solid">
+                        @statusName
+                    </TelerikBadge>
+                </div>
+            </Template>
+
+            <EditorTemplate Context="item">
+                @{
+                    var pg = (PayrollgrpModel)item;
+                }
+                <TelerikDropDownList Data="@V.PayrollGroupStatus"
+                                     @bind-Value="pg.Status"
+                                     ValueField="@nameof(PayrollGroupStatusModel.Code)"
+                                     TextField="@nameof(PayrollGroupStatusModel.Name)"
+                                     Width="100%" />
+            </EditorTemplate>
+
+        </GridColumn>
+
+        @*============= ACTIONS =============*@
+        <GridCommandColumn Width="180px" Title="Action" HeaderClass="header-center">
+            <div class="d-flex justify-content-center gap-2">
+                <GridCommandButton Command="Edit">Edit</GridCommandButton>
+                <GridCommandButton Command="Save" ShowInEdit="true">Save</GridCommandButton>
+                <GridCommandButton Command="Cancel" ShowInEdit="true">Cancel</GridCommandButton>
+                <GridCommandButton Command="Delete">Delete</GridCommandButton>
             </div>
-        }
+        </GridCommandColumn>
 
-        @if (V.ShowDE)
-        {
-            <_102_PayrollGrp_DataEntry Uc="@Uc" V="@V" ChildAction="ChildActionCatcher" />
-        }
+    </GridColumns>
 
-       
-            <TelerikGrid Data="@V.PayrollGrps"
-                     Pageable="true"
-                     Sortable="true"
-                     FilterMode="@GridFilterMode.FilterRow"
-                     Width="100%">
-                <GridColumns>
-                    <GridColumn Field="@nameof(V.PayrollGrp.Id)" Width="100px" ShowFilterCellButtons=false />
-                    <GridColumn Field="@nameof(V.PayrollGrp.Name)" Title="Product Name" />
-                </GridColumns>
-            </TelerikGrid>
+    @*============= NO DATA =============*@
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No payroll groups found.
+        </div>
+    </NoDataTemplate>
 
-
-        @* <div class="table-responsive">
-            <table class="table table-bordered table-hover align-middle mb-0">
-                <thead class="table-light text-center">
-                    <tr>
-                        <th rowspan="2" class="align-middle" style="width:120px; border-bottom: none;">Code</th>
-                        <th rowspan="2" class="align-middle" style="width:200px; border-bottom: none;">Payroll Grp</th>
-                        <th rowspan="2" class="align-middle" style="width:120px; border-bottom: none;">Minimum Rate</th>
-                        <th colspan="4" class="align-middle" style="border-bottom: none;">Rate</th>
-                        <th rowspan="2" class="align-middle" style="width:100px; border-bottom: none;">Status</th>
-                        <th rowspan="2" class="align-middle" style="width:120px; border-bottom: none;">Action</th>
-                    </tr>
-                    <tr>
-                        <th style="width:120px;">Hour</th>
-                        <th style="width:120px;">Day</th>
-                        <th style="width:120px;">Month</th>
-                        <th style="width:120px;">Year</th>
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @foreach (var p in V.PayrollGrps)
-                    {
-                        <tr>
-                            <td>
-                                <RadzenTextBox @bind-Value="p.ClNumber"
-                                               Class="w-100"
-                                               Disabled
-                                               MaxLength="5" />
-                            </td>
-                            <td>
-                                <RadzenTextBox @bind-Value="p.Name"
-                                               Class="w-100"
-                                               Disabled="!p.IsEditable"
-                                               MaxLength="45"
-                                               Style="display:block" />
-                            </td>
-                            
-                            <td>
-                                <RadzenNumeric @bind-Value="p.MinMoRate"
-                                               Class="w-100"
-                                               Disabled="!p.IsEditable"
-                                               Format="#,##0.00"
-                                               ShowUpDown="false"
-                                               TextAlign="TextAlign.Right"
-                                               Min="0" />
-                            </td>
-
-                             <td>
-                                <RadzenNumeric @bind-Value="p.RatePerHr"
-                                               Class="w-100"
-                                               Disabled="!p.IsEditable"
-                                               Format="#,##0.00"
-                                               ShowUpDown="false"
-                                               TextAlign="TextAlign.Right"
-                                               Min="0" />
-                            </td>
-
-
-                            <td>
-                                <RadzenNumeric @bind-Value="p.RatePerDay"
-                                               Class="w-100"
-                                               Disabled="!p.IsEditable"
-                                               Format="#,##0.00"
-                                               ShowUpDown="false"
-                                               TextAlign="TextAlign.Right"
-                                               Min="0" />
-                            </td>
-                            <td>
-                                <RadzenNumeric @bind-Value="p.RatePerMonth"
-                                               Class="w-100"
-                                               Disabled="!p.IsEditable"
-                                               Format="#,##0.00"
-                                               ShowUpDown="false"
-                                               TextAlign="TextAlign.Right"
-                                               Min="0" />
-                            </td>
-                            <td>
-                                <RadzenNumeric @bind-Value="p.RatePerYr"
-                                               Class="w-100"
-                                               Disabled="!p.IsEditable"
-                                               Format="#,##0.00"
-                                               ShowUpDown="false"
-                                               TextAlign="TextAlign.Right"
-                                               Min="0" />
-                            </td>
-                            <td>
-                                <RadzenDropDown @bind-Value="p.Status"
-                                                Data="@V.PayrollGroupStatus"
-                                                TextProperty="Name"
-                                                ValueProperty="Code"
-                                                Disabled="!p.IsEditable"
-                                                Class="w-100" />
-                            </td>
-
-                            <td class="text-center">
-                                <div class="py-2 gap-1 d-flex">
-                                    @if (p.IsEditable)
-                                    {
-                                        <button @onclick="() => CancelEdit(p)" class="btn btn-sm txt mb-a-red">X</button>
-                                        <button @onclick="() => Update(p)" class="btn btn-sm txt mb-a-green">Save</button>
-                                    }
-                                    else
-                                    {
-                                        <button @onclick="() => Edit(p)" class="btn btn-sm txt mb-a-blue">Edit</button>
-                                        <button @onclick="() => Delete(p)" class="btn btn-sm txt mb-a-red">Delete</button>
-                                    }
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div> *@
-    </div>
-
-   
-</div>
-
-@inject IPayrollgrpDataAccess _paygrp;
-@inject IDeprecDataAccess _deprec;
+</TelerikGrid>
 
 @code {
 
-    [Parameter] public UserClaimsModel? Uc { get; set; } = new();
-    [Parameter] public V102Model V { get; set; } = new();
-    [Parameter] public EventCallback ChildAction { get; set; }
+    [CascadingParameter]
+    public UserClaimsModel? Uc { get; set; }
+
+    [CascadingParameter]
+    public V102Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? TelerikDialogs { get; set; }
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
 
 
+    private readonly PayrollgrpValidator GridFluentValidator = new();
+    private TelerikGrid<PayrollgrpModel>? PayrollGrpGrid;
 
-    private async Task ChildActionCatcher()
+
+    private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
+        GridCustomShortcuts = new()
+        {
+            [GridKeyboardScope.Common] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["ArrowUp"] = GridKeyboardCommand.NavigateUp,
+                    ["ArrowDown"] = GridKeyboardCommand.NavigateDown,
+                    ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
+                    ["ArrowRight"] = GridKeyboardCommand.NavigateRight
+                },
+
+            [GridKeyboardScope.HeaderCell] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["O"] = GridKeyboardCommand.SortColumn,
+                    ["Enter"] = GridKeyboardCommand.SortColumn
+                },
+
+            [GridKeyboardScope.DataCell] =
+                new Dictionary<string, GridKeyboardCommand?>
+                {
+                    ["Enter"] = GridKeyboardCommand.Select
+                }
+
+        };
+
+
+    private async Task OnGridRead(GridReadEventArgs args)
     {
-        try
+        var pageSize = args.Request.PageSize > 0 ? args.Request.PageSize : 20;
+        var page = args.Request.Page > 0 ? args.Request.Page : 1;
+
+        var offset = (page - 1) * pageSize;
+
+
+        // SORT ---------------------------------
+        var sort = args.Request.Sorts.FirstOrDefault();
+        var sortField = sort?.Member ?? nameof(PayrollgrpModel.Name);
+        var sortDirection = sort?.SortDirection == ListSortDirection.Descending ? "DESC" : "ASC";
+
+
+        // FILTER --------------------------------
+        var filters = GridHelper.GetFilters(args);
+
+        if (!filters.Any())
         {
-            await ChildAction.InvokeAsync();
+            filters.Add(new GridFilterModel
+            {
+                Field = nameof(PayrollgrpModel.Status),
+                Operator = "=",
+                Value = "A",
+                LogicalOperator = "AND"
+            });
         }
-        catch (Exception ex)
+
+        var request = new GridRequestModel
         {
-            _notify.ShowError("Error", "An error occurred. Please contact your system administrator.");
-        }
+            PageSize = pageSize,
+            Offset = offset,
+            SortField = sortField,
+            SortDirection = sortDirection,
+            Filters = filters
+        };
+
+        var result = await _paygrp._02Grid(request, V.paydb, V.pisdb, V.conn);
+
+        args.Data = result.Data;
+        args.Total = result.Total;
     }
 
-    private async Task Update(PayrollgrpModel rec)
-    {
-        V.ShowDE = false;
 
+    private Task OnGridAdd(GridCommandEventArgs args)
+    {
+        var pg = (PayrollgrpModel)args.Item;
+        SetDefaults(pg);
+        return Task.CompletedTask;
+    }
+
+
+    private async Task OnGridCreate(GridCommandEventArgs args)
+    {
         try
         {
-            V.ErrorMsg = string.Empty;
+            var pg = (PayrollgrpModel)args.Item;
+            SetDefaults(pg);
 
-            int? id = rec.Id;
-            string? name = rec.Name;
+            var exists = await _paygrp._02ByName(pg.Name?.Trim(), V.paydb, V.conn);
 
-            bool exists = V.PayrollGrps.Any(p => (p.Name?.Trim().ToUpper() == name?.Trim().ToUpper()) && p.Id != id);
-
-            if (exists)
+            if (exists.Any())
             {
-                _notify.ShowError("Failed to update record", "Duplicate record found.");
+                args.IsCancelled = true;
+                NotificationRef?.Show("Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
-            await _paygrp._03(id, rec, V.paydb, V.conn);
-            V.Action = "LoadPayrolLGroups";
+
+            await _paygrp._01(pg, V.paydb, V.conn);
+            NotificationRef?.Show("Payroll group created successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            V.Action = "LoadPayrollGroups";
             await ChildAction.InvokeAsync();
 
-            rec.IsEditable = false;
-
-            _notify.ShowSuccess("Success", $"{rec.Name} has been updated.");
-
+            RefreshGrid();
         }
         catch (Exception ex)
         {
-            _notify.ShowError("Error", "An error occurred while updating. Please contact your system administrator.");
+            args.IsCancelled = true;
+            NotificationRef?.Show($"Unable to create payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private async Task OnGridUpdate(GridCommandEventArgs args)
+    {
+        try
+        {
+            var pg = (PayrollgrpModel)args.Item;
+            SetDefaults(pg);
+
+            var exists = await _paygrp._02ByName(pg.Name?.Trim(), V.paydb, V.conn);
+            var existing = exists.FirstOrDefault();
+
+
+            if (existing != null && existing.Id != pg.Id)
+            {
+                args.IsCancelled = true;
+                NotificationRef?.Show("Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+
+            await _paygrp._03(pg.Id, pg, V.paydb, V.conn);
+            NotificationRef?.Show("Payroll group updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            V.Action = "LoadPayrollGroups";
+            await ChildAction.InvokeAsync();
+
+            RefreshGrid();
+        }
+        catch (Exception ex)
+        {
+            args.IsCancelled = true;
+            NotificationRef?.Show($"Update failed: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private async Task OnGridDelete(GridCommandEventArgs args)
+    {
+        try
+        {
+            var pg = (PayrollgrpModel)args.Item;
+
+
+            Console.WriteLine($"PG {pg.Code}");
+            var tbltran = await _paygrp._02CheckToTblTran(pg.Code, V.paydb, V.conn);
+            var deprec = await _paygrp._02CheckToDeprec(pg.Id, V.pisdb, V.conn);
+
+
+            if (tbltran.Any() || deprec.Any())
+            {
+                args.IsCancelled = true;
+
+                NotificationRef?.Show($"'{pg.Name}' cannot be deleted because it is already in use.", ThemeConstants.Notification.ThemeColor.Warning);
+                return;
+            }
+
+
+            await _paygrp._04(pg.Id, V.paydb, V.conn);
+            NotificationRef?.Show("Payroll group deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            V.Action = "LoadPayrollGroups";
+            await ChildAction.InvokeAsync();
+
+            RefreshGrid();
+        }
+        catch (Exception ex)
+        {
+            args.IsCancelled = true;
+            NotificationRef?.Show($"Unable to delete payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private void RefreshGrid()
+    {
+        if (PayrollGrpGrid == null)
+        {
             return;
         }
-        
+
+        PayrollGrpGrid.Rebind();
     }
 
-    private void Edit(PayrollgrpModel rec)
-    {
-        V.ShowDE = false;
-        rec.IsEditable = true;
-    }
 
-    private async Task CancelEdit(PayrollgrpModel rec)
+    private async Task OnGridCancel(GridCommandEventArgs args)
     {
-        V.ShowDE = false;
-
-        try
+        if (TelerikDialogs == null)
         {
-            V.ErrorMsg = string.Empty;
-
-            rec.IsEditable = false;
-            var id = rec.Id;
-            var result = await _paygrp._02(id, V.paydb, V.conn);
-
-            if (result != null && result.Id != 0)
-            {
-                V.PayrollGrps.Where(lv => lv.Id == id)
-                    .ToList()
-                    .ForEach(lv =>
-                    {
-                        lv.ClNumber = result.ClNumber;
-                        lv.Name = result.Name;
-                        lv.RatePerHr = result.RatePerHr;
-                        lv.RatePerDay = result.RatePerDay;
-                        lv.RatePerMonth = result.RatePerMonth;
-                        lv.RatePerYr = result.RatePerYr;
-                        lv.MinMoRate = result.MinMoRate;
-                        lv.Status = result.Status;
-                        lv.PayRateId = result.PayRateId;
-                    });
-
-                await ChildAction.InvokeAsync();
-            }
+            return;
         }
-        catch (Exception ex)
+
+        var confirmed = await TelerikDialogs.ConfirmAsync("Do you want to discard your changes?", "Discard Changes");
+
+        if (!confirmed)
         {
-            _notify.ShowError("Error", "An error occurred reverting the changes. Please contact your system administrator.");
+            args.IsCancelled = true;
         }
     }
 
-    private async Task Delete(PayrollgrpModel rec)
+
+    private static void SetDefaults(PayrollgrpModel pg)
     {
-        V.ShowDE = false;
-        try
+        if (string.IsNullOrWhiteSpace(pg.Status))
         {
-            V.ErrorMsg = string.Empty;
-            var result1 = await _paygrp._02CheckToTblTran(rec.ClNumber, V.paydb, V.conn);
-            var result2 = await _paygrp._02CheckToDeprec(rec.Id, V.pisdb, V.conn);
-            if (result1.Count > 0 || result2.Count > 0)
-            {
-                var msg = "Unable to delete. Payroll group is already used in transaction.";
-                await _DialogService.Alert(msg, "Record Exists in transaction", new AlertOptions() { OkButtonText = "Exit" });
-                return;
-            }
-            var option = await _DialogService.Confirm("Delete " + rec.Name + "?", "Confirm Delete",
-                        new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
-            if (option == true)
-            {
-                await _paygrp._04(rec.Id, V.paydb, Uc.Conn);
-                V.PayrollGrps.Remove(rec);
-                _notify.ShowSuccess("Success", $"{rec.Name} has been deleted.");
-            }
+            pg.Status = "A";
         }
-        catch (Exception ex)
+    }
+
+
+    private List<OClientModel> AvailableDeployments(PayrollgrpModel payrollGrp)
+    {
+        return V.Deployments.Where(d => d.Status == "Active" || (payrollGrp.Id > 0 && d.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim())).ToList();
+    }
+
+
+    private void OnDeploymentChanged(PayrollgrpModel payrollGrp)
+    {
+        var deployment = V.Deployments.FirstOrDefault(x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
+        payrollGrp.Deployment = deployment?.ClName?.Trim() ?? string.Empty;
+    }
+
+
+    // =============================================================
+    // VALIDATION
+    // =============================================================
+
+    public class PayrollgrpValidator : AbstractValidator<PayrollgrpModel>
+    {
+        public PayrollgrpValidator()
         {
-            _notify.ShowError("Error", "An error occurred while removing this payroll group. Please contact your system administrator.");
+            RuleFor(x => x.Name)
+                .NotEmpty()
+                .WithMessage("Payroll Group is required.")
+                .MaximumLength(80)
+                .WithMessage(
+                    "Payroll Group cannot exceed 80 characters.");
+
+            RuleFor(x => x.ClNumber)
+                .NotEmpty()
+                .WithMessage("Deployment is required.")
+                .MaximumLength(5);
+
+            RuleFor(x => x.MinMoRate)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage(
+                    "Minimum rate cannot be negative.");
+
+            RuleFor(x => x.RatePerHr)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage(
+                    "Hourly rate cannot be negative.");
+
+            RuleFor(x => x.RatePerDay)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage(
+                    "Daily rate cannot be negative.");
+
+            RuleFor(x => x.RatePerMonth)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage(
+                    "Monthly rate cannot be negative.");
+
+            RuleFor(x => x.RatePerYr)
+                .GreaterThanOrEqualTo(0)
+                .WithMessage(
+                    "Yearly rate cannot be negative.");
+
+            RuleFor(x => x.Status)
+                .NotEmpty()
+                .WithMessage("Status is required.");
         }
     }
 }
 
+
 <style>
-    thead th {
-        border-bottom: 1px solid #dee2e6 !important;
+
+    .header-center .k-column-title {
+        width: 100%;
+        text-align: center;
     }
+
+  
+
 </style>
+

@@ -1,8 +1,8 @@
 ﻿using System.Security.Permissions;
 
-namespace HRApiLibrary.Models._20_Pay;
+namespace HRApiLibrary.Models._20_Pay.OPay;
 
-public class TbltranModel
+public class OTbltranModel
 {
     public string?       TRN             { get; set; }
     public int?          EmpmasId        { get; set; }
@@ -13,7 +13,7 @@ public class TbltranModel
     public int?          RateTypeId      { get; set; }
     public double?       Amount          { get; set; }
     public DateTime?     DTimeStamp      { get; set; }
-    public int?          Postedby        { get; set; }
+    public string?       Postedby        { get; set; }
     public string?       Source          { get; set; } = "-";
     public int?          RefId           { get; set; }
     
