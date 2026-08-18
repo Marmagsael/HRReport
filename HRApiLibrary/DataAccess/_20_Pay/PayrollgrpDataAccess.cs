@@ -16,8 +16,8 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
 
     public async Task<PayrollgrpModel?> _01(PayrollgrpModel payrollgrp, string? schema, string? conn)
     {
-        var sql = $@"Insert into {schema}.Payrollgrp (ClNumber,  Name, MinMoRate, RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
-                                                        (@ClNumber, @Name, @MinMoRate, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, 'A'); 
+        var sql = $@"Insert into {schema}.Payrollgrp (ClNumber,  Name, MinDailyRate, RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
+                                                        (@ClNumber, @Name, @MinDailyRate, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, 'A'); 
                         SELECT * FROM {schema}.Payrollgrp WHERE ID = (SELECT @@IDENTITY); ";
         var res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, payrollgrp, conn);
         
@@ -139,7 +139,7 @@ public class PayrollgrpDataAccess : IPayrollgrpDataAccess
                             RatePerDay      = @RatePerDay,  
                             RatePerMonth    = @RatePerMonth,  
                             RatePerYr       = @RatePerYr,  
-                            MinMoRate       = @MinMoRate,  
+                            MinDailyRate       = @MinDailyRate,  
                             Status          = @Status
                         where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, payrollgrp, conn);

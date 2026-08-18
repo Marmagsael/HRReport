@@ -20,8 +20,8 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
 
     public async Task<PayrollgrpModel?> _01(PayrollgrpModel payrollgrp, string schema, string conn)
     {
-        var sql = $@"Insert into {schema}.Payrollgrp (Code, ClNumber,  Name, MinMoRate, RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
-                                                        (@Code, @ClNumber, @Name, @MinMoRate, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, @Status); 
+        var sql = $@"Insert into {schema}.Payrollgrp (Code, ClNumber,  Name, MinDailyRate, RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
+                                                        (@Code, @ClNumber, @Name, @MinDailyRate, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, @Status); 
                         SELECT * FROM {schema}.Payrollgrp WHERE ID = (SELECT @@IDENTITY); ";
         var res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, payrollgrp, conn);
 
@@ -39,7 +39,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
 
     public async Task<PayrollgrpModel?> _02(int id, string schema, string conn)
     {
-        string sql = $@"select  Id, Code, ClNumber, Name, RatePerHr, RatePerDay, RatePerMonth, RatePerYr, MinMoRate, Status, PayRateId from {schema}.Payrollgrp where Id = @Id";
+        string sql = $@"select  Id, Code, ClNumber, Name, RatePerHr, RatePerDay, RatePerMonth, RatePerYr, MinDailyRate, Status, PayRateId from {schema}.Payrollgrp where Id = @Id";
         var data = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
@@ -63,7 +63,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
             ["RatePerDay"] = "p.RatePerDay",
             ["RatePerMonth"] = "p.RatePerMonth",
             ["RatePerYr"] = "p.RatePerYr",
-            ["MinMoRate"] = "p.MinMoRate",
+            ["MinDailyRate"] = "p.MinDailyRate",
             ["Status"] = "p.Status",
             ["Deployment"] = "c.Clname"
         };
@@ -108,7 +108,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
 
     public async Task<List<PayrollgrpModel>?> _02ByName(string name,  string schema, string conn)
     {
-        string sql = $@" SELECT Id, Code, ClNumber, Name, RatePerHr, RatePerDay, RatePerMonth, RatePerYr, MinMoRate, Status, PayRateId FROM {schema}.Payrollgrp  WHERE UPPER(TRIM(Name)) = UPPER(TRIM(@Name)) LIMIT 1";
+        string sql = $@" SELECT Id, Code, ClNumber, Name, RatePerHr, RatePerDay, RatePerMonth, RatePerYr, MinDailyRate, Status, PayRateId FROM {schema}.Payrollgrp  WHERE UPPER(TRIM(Name)) = UPPER(TRIM(@Name)) LIMIT 1";
         var data = await _sql.FetchData<PayrollgrpModel, dynamic>(sql, new { Name = name}, conn);
         return data ?? new List<PayrollgrpModel>();
     }
@@ -138,7 +138,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
 
     public async Task<PayrollgrpModel?> _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn)
     {
-        string sql = $@"Update {schema}.Payrollgrp set  ClNumber = @ClNumber, Name = @Name, RatePerHr = @RatePerHr, RatePerDay = @RatePerDay, RatePerMonth = @RatePerMonth, RatePerYr = @RatePerYr, MinMoRate = @MinMoRate, Status = @Status, PayRateId = @PayRateId where Id = @Id;";
+        string sql = $@"Update {schema}.Payrollgrp set  ClNumber = @ClNumber, Name = @Name, RatePerHr = @RatePerHr, RatePerDay = @RatePerDay, RatePerMonth = @RatePerMonth, RatePerYr = @RatePerYr, MinDailyRate = @MinDailyRate, Status = @Status, PayRateId = @PayRateId where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, payrollgrp, conn);
 
         sql = $@" select  * from {schema}.Payrollgrp x where x.Id = @Id ;";

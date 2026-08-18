@@ -10,7 +10,7 @@ public class PayrollgrpModel
     public double    RatePerDay       { get; set; }
     public double    RatePerMonth     { get; set; }
     public double    RatePerYr        { get; set; }
-    public double    MinMoRate        { get; set; }
+    public double    MinDailyRate        { get; set; }
     public string?   Status           { get; set; } = "A";
     public int?      PayRateId        { get; set; }
 
