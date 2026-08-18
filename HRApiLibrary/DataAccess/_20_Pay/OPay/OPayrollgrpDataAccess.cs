@@ -95,7 +95,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         var total       = totalResult?.FirstOrDefault() ?? 0;
 
         // DATA
-        string sql = $@"  SELECT  p.*, c.Clname AS Deployment FROM {schemapay}.Payrollgrp p   LEFT JOIN {schemapis}.client c   ON c.clnumber = p.clnumber {where}  LIMIT @Offset, @PageSize";
+        string sql = $@"  SELECT  p.*, c.Clname AS Deployment FROM {schemapay}.Payrollgrp p   LEFT JOIN {schemapis}.client c   ON c.clnumber = p.clnumber {where}  ORDER BY {sortColumn} {sortOrder}  LIMIT @Offset, @PageSize";
 
         var data =   await _sql.FetchData<PayrollgrpModel, dynamic>(    sql,   parameters,  conn);
 
