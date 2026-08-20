@@ -9,8 +9,6 @@
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PisModules.Vars
 @using HRMvc.Applications.Vars
-@using Radzen
-@using Radzen.Blazor
 @using HRMvc.Applications.PayrollTransaction.Blazor._102._102_CSM
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_102._12_102_Child.TS
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052
@@ -27,7 +25,7 @@
 <TelerikMediaQuery Media="(max-width: 1200px)"
                    OnChange="@((bool matches) => { IsNarrow = matches; StateHasChanged(); })" />
 
-<TelerikCard Class="@(IsMobile ? "csm-mobile" : "")">
+<TelerikCard Class="@(IsMobile ? "csm-mobile h-100 d-flex flex-column" : "h-100 d-flex flex-column")">
 
     <CardHeader class="bg-secondary bg-opacity-10">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
@@ -48,7 +46,7 @@
                                          Filterable="true"
                                          FilterPlaceholder="Search payroll group..."
                                          Width="100%"
-                                         OnChange="@PayrollgrpChange">
+                                         OnChange="@((object value) => PayrollgrpChange((int)value))">
 
                         <DropDownListSettings>
                             <DropDownListPopupSettings Width="450px"
@@ -75,29 +73,29 @@
         </div>
     </CardHeader>
 
-    <CardBody Class="@(IsMobile ? "p-1" : "")">
+    <CardBody Class="@(IsMobile ? "p-1 flex-grow-1 d-flex flex-column" : "flex-grow-1 d-flex flex-column")">
 
-        <div class="@(IsMobile ? "p-0" : "card-body p-0")">
+        <div class="@(IsMobile ? "p-0 flex-grow-1 d-flex flex-column" : "card-body p-0 flex-grow-1 d-flex flex-column")">
 
-            <div class="d-flex flex-column flex-md-row gap-1">
+            <div class="d-flex flex-column flex-md-row gap-1 flex-grow-1">
 
                 @*========= EMPLOYEE LIST ===========*@
                 @if (IsMobile)
                 {
                     <TelerikExpansionPanel Title="@EmployeeListTitle" @bind-Expanded="@EmployeeListExpanded">
                         <Content>
-                            <_102_CSM_EmployeeList ChildAction="@ChildActionCatcher" />
+                            <_102_CSM_EmployeeList @ref="EmployeeListRef" ChildAction="@ChildActionCatcher" />
                         </Content>
                     </TelerikExpansionPanel>
                 }
                 else
                 {
-                    <div class="w-30">
-                        <_102_CSM_EmployeeList ChildAction="@ChildActionCatcher" />
+                    <div class="w-30 d-flex flex-column">
+                        <_102_CSM_EmployeeList @ref="EmployeeListRef" ChildAction="@ChildActionCatcher" />
                     </div>
                 }
 
-                <div class="flex-grow-1 grid-col">
+                <div class="flex-grow-1 grid-col d-flex flex-column">
 
                     <TelerikGrid Data="@Days"
                                  TItem="DayRow"
@@ -107,121 +105,265 @@
 
                         <GridColumns>
 
-                            <GridColumn Field="@nameof(DayRow.Label)" Title="Day" Width="@(IsNarrow ? "130px" : "120px")">
+                            @* ================= DAY ================= *@
+                            <GridColumn Field="@nameof(DayRow.Label)"
+                                        Title="Day"
+                                        Width="@(IsNarrow ? "130px" : "120px")">
+
                                 <Template>
                                     @{
                                         var d = (DayRow)context;
                                     }
-                                    <div class="d-flex flex-column">
-                                        <span class="fw-bold @dutyTypeCss(d.CurDuty)">@d.Label</span>
+
+                                    <div class="d-flex flex-column justify-content-center">
+                                        <span class="k-font-weight-bold @dutyTypeCss(d.CurDuty)">
+                                            @d.Label
+                                        </span>
+
                                         @if (IsNarrow)
                                         {
-                                            <span class="text-secondary" style="font-size: 11px;">@CurrentSummary(d)</span>
+                                            <span class="k-color-subtle">
+                                                @CurrentSummary(d)
+                                            </span>
                                         }
                                     </div>
                                 </Template>
+
                             </GridColumn>
 
-                            @*========= CURRENT ===========*@
-                            <GridColumn Title="@CurrentScheduleTitle" HeaderClass="header-center" Visible="@(!IsNarrow)">
+
+                            @* ================= CURRENT SCHEDULE ================= *@
+                            <GridColumn Visible="@(!IsNarrow)"
+                                        HeaderClass="k-text-center">
+
+                                <HeaderTemplate>
+                                    <div class="hdr-center">
+                                        @if (string.IsNullOrWhiteSpace(V.SelectedEmployee))
+                                        {
+                                            <span class="k-color-primary k-font-weight-bold">
+                                                Current Schedule
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="k-color-primary k-font-weight-bold">
+                                                Current Schedule of
+                                            </span>
+
+                                            <span class="k-color-subtle k-font-weight-normal">
+                                                [ @V.SelectedEmployee ]
+                                            </span>
+                                        }
+                                    </div>
+                                </HeaderTemplate>
+
                                 <Columns>
-                                    <GridColumn Title="Duty Type" Width="110px" TextAlign="@ColumnTextAlign.Center">
+
+                                    @* Duty Type *@
+                                    <GridColumn Title="Duty Type"
+                                                Width="110px"
+                                                TextAlign="@ColumnTextAlign.Center"
+                                                HeaderClass="k-text-center">
+
+                                        <HeaderTemplate>
+                                            <div class="hdr-center">Duty Type</div>
+                                        </HeaderTemplate>
+
                                         <Template>
                                             @{
                                                 var d = (DayRow)context;
                                             }
-                                            <span class="@dutyTypeCss(d.CurDuty)">@d.CurDuty</span>
+
+                                            <span class="@dutyTypeCss(d.CurDuty)">
+                                                @d.CurDuty
+                                            </span>
                                         </Template>
+
                                     </GridColumn>
 
-                                    <GridColumn Title="IN" Width="110px" TextAlign="@ColumnTextAlign.Center">
+
+                                    @* IN *@
+                                    <GridColumn Title="IN"
+                                                Width="110px"
+                                                TextAlign="@ColumnTextAlign.Center"
+                                                HeaderClass="k-text-center">
+
+                                        <HeaderTemplate>
+                                            <div class="hdr-center">IN</div>
+                                        </HeaderTemplate>
+
                                         <Template>
                                             @{
                                                 var d = (DayRow)context;
                                             }
-                                            <span class="@dutyTypeCss(d.CurDuty)">@(d.CurDuty == "R" ? d.CurIn?.ToString() : "-")</span>
+
+                                            <span class="@dutyTypeCss(d.CurDuty)">
+                                                @(d.CurDuty == "R" ? d.CurIn?.ToString() : "-")
+                                            </span>
                                         </Template>
+
                                     </GridColumn>
 
-                                    <GridColumn Title="Duration" Width="110px" TextAlign="@ColumnTextAlign.Center">
+
+                                    @* Duration *@
+                                    <GridColumn Title="Duration"
+                                                Width="110px"
+                                                TextAlign="@ColumnTextAlign.Center"
+                                                HeaderClass="k-text-center">
+
+                                        <HeaderTemplate>
+                                            <div class="hdr-center">Duration</div>
+                                        </HeaderTemplate>
+
                                         <Template>
                                             @{
                                                 var d = (DayRow)context;
                                             }
-                                            <span class="@dutyTypeCss(d.CurDuty)">@(d.CurDuty == "R" ? ((d.CurHrs ?? 0) / 100.00).ToString("0.#") + " H" : "-")</span>
+                                            <span class="@dutyTypeCss(d.CurDuty)">
+                                                @(d.CurDuty == "R" ? ((d.CurHrs ?? 0) / 100.00).ToString("0.#") + " H" : "-")
+                                            </span>
                                         </Template>
+
                                     </GridColumn>
+
                                 </Columns>
+
                             </GridColumn>
 
-                            @*========= NEW ===========*@
-                            <GridColumn Title="New Schedule" HeaderClass="header-center">
+
+                            @* ================= NEW SCHEDULE ================= *@
+                            <GridColumn HeaderClass="k-text-center">
+
+                                <HeaderTemplate>
+                                    <div class="hdr-center">
+                                        <span class="k-color-primary k-font-weight-bold">
+                                            New Schedule
+                                        </span>
+                                    </div>
+                                </HeaderTemplate>
+
                                 <Columns>
-                                    <GridColumn Title="Duty Type" Width="@(IsNarrow ? "95px" : "120px")" TextAlign="@ColumnTextAlign.Center">
+
+                                    @* Duty Type *@
+                                    <GridColumn Title="Duty Type"
+                                                Width="@(IsNarrow ? "95px" : "120px")"
+                                                TextAlign="@ColumnTextAlign.Center"
+                                                HeaderClass="k-text-center">
+
+                                        <HeaderTemplate>
+                                            <div class="hdr-center">Duty Type</div>
+                                        </HeaderTemplate>
+
                                         <Template>
                                             @{
                                                 var d = (DayRow)context;
                                             }
-                                            <RadzenDropDown Data="@dutyTypes"
-                                                            @bind-Value="@d.ReqDuty"
-                                                            Change="@(() => { d.ReqIn = 0; d.ReqHrs = 0; })"
-                                                            Style="width:80px;"
-                                                            Placeholder="Select Duty Type" />
+
+                                            <div class="d-flex justify-content-center">
+                                                <RadzenDropDown Data="@dutyTypes"
+                                                                @bind-Value="@d.ReqDuty"
+                                                                Change="@(() => { d.ReqIn = 0; d.ReqHrs = 0; })"
+                                                                Placeholder="Select Duty Type"
+                                                                Style="width:80px;" />
+                                            </div>
                                         </Template>
+
                                     </GridColumn>
 
-                                    <GridColumn Title="IN" Width="@(IsNarrow ? "125px" : "150px")" TextAlign="@ColumnTextAlign.Center">
+
+                                    @* IN *@
+                                    <GridColumn Title="IN"
+                                                Width="@(IsNarrow ? "125px" : "150px")"
+                                                TextAlign="@ColumnTextAlign.Center"
+                                                HeaderClass="k-text-center">
+
+                                        <HeaderTemplate>
+                                            <div class="hdr-center">IN</div>
+                                        </HeaderTemplate>
+
                                         <Template>
                                             @{
                                                 var d = (DayRow)context;
                                             }
+
                                             @if (d.ReqDuty == "R")
                                             {
-                                                <RadzenDropDown Data="@timeOptions"
-                                                                TextProperty="Text"
-                                                                ValueProperty="Value"
-                                                                @bind-Value="@d.ReqIn"
-                                                                Placeholder="Select Time"
-                                                                Style="@(IsNarrow ? "width:110px" : "width:125px")" />
+                                                <div class="d-flex justify-content-center">
+                                                    <RadzenDropDown Data="@timeOptions"
+                                                                    TextProperty="Text"
+                                                                    ValueProperty="Value"
+                                                                    @bind-Value="@d.ReqIn"
+                                                                    Placeholder="Select Time"
+                                                                    Style="@(IsNarrow ? "width:110px" : "width:125px")" />
+                                                </div>
                                             }
                                             else
                                             {
                                                 <span>-</span>
                                             }
                                         </Template>
+
                                     </GridColumn>
 
-                                    <GridColumn Title="Duration" Width="@(IsNarrow ? "125px" : "150px")" TextAlign="@ColumnTextAlign.Center">
+
+                                    @* Duration *@
+                                    <GridColumn Title="Duration"
+                                                Width="@(IsNarrow ? "125px" : "150px")"
+                                                TextAlign="@ColumnTextAlign.Center"
+                                                HeaderClass="k-text-center">
+
+                                        <HeaderTemplate>
+                                            <div class="hdr-center">Duration</div>
+                                        </HeaderTemplate>
+
                                         <Template>
                                             @{
                                                 var d = (DayRow)context;
                                             }
+
                                             @if (d.ReqDuty == "R")
                                             {
-                                                <RadzenDropDown Data="@timedurations"
-                                                                TextProperty="Text"
-                                                                ValueProperty="Value"
-                                                                @bind-Value="@d.ReqHrs"
-                                                                Placeholder="Select Duration"
-                                                                Style="@(IsNarrow ? "width:110px;" : "width:125px;")"
-                                                                Class="center-dropdown" />
+                                                <div class="d-flex justify-content-center">
+                                                    <RadzenDropDown Data="@timedurations"
+                                                                    TextProperty="Text"
+                                                                    ValueProperty="Value"
+                                                                    @bind-Value="@d.ReqHrs"
+                                                                    Placeholder="Select Duration"
+                                                                    Style="@(IsNarrow ? "width:110px" : "width:125px")" />
+                                                </div>
                                             }
                                             else
                                             {
                                                 <span>-</span>
                                             }
                                         </Template>
+
                                     </GridColumn>
 
-                                    <GridColumn Title="OUT" Width="@(IsNarrow ? "90px" : "110px")" TextAlign="@ColumnTextAlign.Center">
+
+                                    @* OUT *@
+                                    <GridColumn Title="OUT"
+                                                Width="@(IsNarrow ? "90px" : "110px")"
+                                                TextAlign="@ColumnTextAlign.Center"
+                                                HeaderClass="k-text-center">
+
+                                        <HeaderTemplate>
+                                            <div class="hdr-center">OUT</div>
+                                        </HeaderTemplate>
+
                                         <Template>
                                             @{
                                                 var d = (DayRow)context;
                                             }
-                                            @(d.ReqDuty == "R" ? outRes(d.ReqDuty, d.ReqIn, d.ReqHrs) : "-")
+                                            <span>
+                                                @(d.ReqDuty == "R" ? outRes(d.ReqDuty, d.ReqIn, d.ReqHrs) : "-")
+                                            </span>
                                         </Template>
+
                                     </GridColumn>
+
                                 </Columns>
+
                             </GridColumn>
 
                         </GridColumns>
@@ -229,30 +371,30 @@
                     </TelerikGrid>
 
 
-                      @*========= APPLY BUTTON : MOBILE ONLY ===========*@
-                        @if (IsMobile)
-                        {
-                            <div class="apply-bar">
-                                <TelerikButton OnClick="@ApplySchedule"
-                                               Class="w-100"
-                                               ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
-                                               Size="@ThemeConstants.Button.Size.Small">
-                                    Apply schedule
-                                </TelerikButton>
-                            </div>
-                        }
+
+
+                    @*========= APPLY BUTTON : MOBILE ONLY ===========*@
+                    @if (IsMobile)
+                    {
+                        <div class="apply-bar">
+                            <TelerikButton OnClick="@ApplySchedule"
+                                           Class="w-100"
+                                           ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
+                                           Size="@ThemeConstants.Button.Size.Small">
+                                Apply schedule
+                            </TelerikButton>
+                        </div>
+                    }
 
                     <_102_CSM_Notes />
                 </div>
             </div>
 
-          
+
 
         </div>
     </CardBody>
 </TelerikCard>
-
-
 @inject IAtttemplateDataAccess _atttemplate;
 @inject IOEmpmasDataAccess _empmas;
 @inject IAtttemplatereqhdrDataAccess _attTemplateReqhdr;
@@ -261,6 +403,8 @@
 @inject IAtttemplatereqhistDataAccess _iattTemplateReqHis;
 
 @code {
+
+    @* ================= PARAMETERS / INJECTED ================= *@
 
     [CascadingParameter]
     public UserClaimsModel? Uc { get; set; }
@@ -277,36 +421,38 @@
     [CascadingParameter]
     public DialogFactory? TelerikDialogs { get; set; }
 
+    private _102_CSM_EmployeeList EmployeeListRef;
 
+
+    @* ================= FIELDS ================= *@
 
     V12_102CS Cs = new();
 
     string saveRemarks = string.Empty;
     AtttemplatereqhdrModel attTempReqHdr = new();
 
+    RadzenDatePicker<DateTime?>? dateRequestedPicker;
 
-    @* ================= RESPONSIVE ================= *@
+    private int previousPayrollGroup;
 
     private bool IsMobile;   // <=768px  : stacked layout, bottom button, tight padding
     private bool IsNarrow;   // <=1200px : hide current schedule columns
     private bool EmployeeListExpanded = true;
 
-    private string EmployeeListTitle =>
-        V.SelectedEmployees?.Any() == true
-            ? $"Employees ({V.SelectedEmployees.Count} selected)"
-            : "Select employees";
+    private List<DayRow> Days = new();
 
-    private string CurrentSummary(DayRow d)
-    {
-        if (d.CurDuty != "R") return $"Current: {d.CurDuty}";
+    List<string> dutyTypes = new() { "R", "RD", "RN" };
 
-        var hrs = ((d.CurHrs ?? 0) / 100.00).ToString("0.#");
-        var inTime = outSched("R", d.CurIn, 0);
-        return $"Current: {inTime} · {hrs} H";
-    }
+    List<TimeoptionModel> times = Enumerable.Range(0, 48).Select(i =>
+                                    {
+                                        var time = DateTime.Today.AddMinutes(i * 30);
+                                        return new TimeoptionModel { Value = i * 30, Text = time.ToString("hh:mm tt") };
+                                    }).ToList();
+    List<TimeoptionModel> timeOptions = MsdsDataAccess._02Hours();
+    List<TimedurationModel> timedurations = MsdsDataAccess._02HourDurations();
 
 
-    @* ================= DAY ROWS ================= *@
+    @* ================= DAY ROW MODEL ================= *@
 
     public class DayRow
     {
@@ -322,9 +468,90 @@
         public int? ReqHrs { get; set; }
     }
 
-    private List<DayRow> Days = new();
 
-    private string CurrentScheduleTitle => string.IsNullOrWhiteSpace(V.SelectedEmployee) ? "Current Schedule" : $"Current Schedule of [ {V.SelectedEmployee} ]";
+    @* ================= COMPUTED PROPERTIES ================= *@
+
+    private string EmployeeListTitle        => V.SelectedAssignedEmployees?.Any() == true  ? $"Employees ({V.SelectedAssignedEmployees.Count} selected)" : "Select employees";
+    private string CurrentScheduleTitle     => string.IsNullOrWhiteSpace(V.SelectedEmployee) ? "Current Schedule" : $"Current Schedule of [ {V.SelectedEmployee} ]";
+
+    bool IsCanSave => Cs.Atttemplatereqhdr != null &&
+                            Cs.Atttemplatereqhdr.Status is "N" or "S" &&
+                            Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue &&
+                            Cs.Atttemplatereqhdr.Effectivity > DateTime.MinValue &&
+                            Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
+    string? CanSave1 => IsCanSave ? " " : " disabled-div ";
+
+    bool IsCanSend => Cs.Atttemplatereqhdr != null &&
+                        Cs.Atttemplatereqhdr.Status is "S" &&
+                        Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue &&
+                        Cs.Atttemplatereqhdr.Effectivity?.Date >= DateTime.Now.Date &&
+                        saveRemarks == string.Empty &&
+                        Hdr.Id == attTempReqHdr.Id &&
+                        Hdr.Effectivity == attTempReqHdr.Effectivity &&
+                        Hdr.EmpNumber_Approver == attTempReqHdr.EmpNumber_Approver &&
+                        Hdr.Remarks == attTempReqHdr.Remarks &&
+                        Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
+    string? CanSend => IsCanSend ? " " : " disabled-div ";
+
+    bool IsCanCancel => Hdr.Status is "S";
+    string? CanCancel => IsCanCancel ? " " : " disabled-div ";
+
+    AtttemplateModel ctemp => Cs.Atttemplate ?? new AtttemplateModel();
+    AtttemplatereqhdrModel Hdr => Cs.Atttemplatereqhdr ?? new AtttemplatereqhdrModel();
+    AtttemplatereqdtlModel DtlReq => Cs.Atttemplatereqdtl ?? new AtttemplatereqdtlModel();
+    AtttemplateModel Dtl => Cs.Atttemplate ?? new AtttemplateModel();
+    List<AtttemplatereqdtlModel> Dtls => Cs.Atttemplatereqdtls ?? [];
+
+    AtttemplatereqdtlModel template_To_Request => AttTemplateReq_To_AttTemplate(Cs.Atttemplate);
+
+    bool IsRequest_Equal_To_Template => Dtl.D1_dutytype == DtlReq.D1_DutyType &&
+                                        Dtl.D2_dutytype == DtlReq.D2_DutyType &&
+                                        Dtl.D3_dutytype == DtlReq.D3_DutyType &&
+                                        Dtl.D4_dutytype == DtlReq.D4_DutyType &&
+                                        Dtl.D5_dutytype == DtlReq.D5_DutyType &&
+                                        Dtl.D6_dutytype == DtlReq.D6_DutyType &&
+                                        Dtl.D7_dutytype == DtlReq.D7_DutyType &&
+
+                                        Dtl.D1_hrslength == DtlReq.D1_HrsLength &&
+                                        Dtl.D2_hrslength == DtlReq.D2_HrsLength &&
+                                        Dtl.D3_hrslength == DtlReq.D3_HrsLength &&
+                                        Dtl.D4_hrslength == DtlReq.D4_HrsLength &&
+                                        Dtl.D5_hrslength == DtlReq.D5_HrsLength &&
+                                        Dtl.D6_hrslength == DtlReq.D6_HrsLength &&
+                                        Dtl.D7_hrslength == DtlReq.D7_HrsLength &&
+
+                                        Dtl.D1_in == DtlReq.D1_In &&
+                                        Dtl.D2_in == DtlReq.D2_In &&
+                                        Dtl.D3_in == DtlReq.D3_In &&
+                                        Dtl.D4_in == DtlReq.D4_In &&
+                                        Dtl.D5_in == DtlReq.D5_In &&
+                                        Dtl.D6_in == DtlReq.D6_In &&
+                                        Dtl.D7_in == DtlReq.D7_In;
+
+
+    @* ================= LIFECYCLE ================= *@
+
+    protected override async Task OnInitializedAsync()
+    {
+        Cs.Atttemplatereqhdr = new();
+        var res = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        if (res.Count > 0)
+        {
+            Cs.Atttemplate = res.FirstOrDefault() ?? new AtttemplateModel();
+            AtttemplateModel? re = res.FirstOrDefault();
+            Cs.Atttemplatereqdtl = AttTemplateReq_To_AttTemplate(re);
+        }
+        else
+        {
+            var res1 = _atttemplate._02NoSchedule(Uc.UserId);
+            Cs.Atttemplate = res1;
+        }
+
+        BuildDays();
+    }
+
+
+    @* ================= DAYS BUILDING ================= *@
 
     private void BuildDays()
     {
@@ -367,44 +594,68 @@
         }
     }
 
+    private string CurrentSummary(DayRow d)
+    {
+        if (d.CurDuty != "R") return $"Current: {d.CurDuty}";
 
-    async Task PayrollgrpChange()
+        var hrs = ((d.CurHrs ?? 0) / 100.00).ToString("0.#");
+        var inTime = outSched("R", d.CurIn, 0);
+        return $"Current: {inTime} · {hrs} H";
+    }
+
+
+    @* ================= PAYROLL GROUP / EMPLOYEE LOADING ================= *@
+
+    private async Task PayrollgrpChange(int value)
+    {
+        if (value == previousPayrollGroup)
+            return;
+
+        previousPayrollGroup = value;
+
+        V.SelectedPayrollGroup = value;
+        await LoadEmployeesForPayrollGroup(value);
+    }
+
+    private async Task LoadEmployeesForPayrollGroup(int pgrpId)
     {
 
-        int pgrpId = V.SelectedPayrollGroup;
         try
         {
             if (pgrpId <= 0)
             {
-                _notify.ShowWarning("Invalid Input", "Please select a valid payroll group");
+                NotificationRef?.Show($"Invalid Input. Please select a valid payroll group", ThemeConstants.Notification.ThemeColor.Warning);
+
                 return;
             }
 
-            V.EmpmasList = [];
-            V.SelectedEmployees = [];
-            V.SelectedPayrollGroup = pgrpId;
+            V.AssignedEmployees = [];
+            V.SelectedAssignedEmployees = [];
 
-            var result = await _empmas._02ByPayrollGrpId(pgrpId, V.pisdb, V.conn);
+            var result = await _empmas._02ByPayrollGrpId(pgrpId, Uc.SchemaMain, V.pisdb, V.conn);
 
             if (result?.Any() == true)
             {
-                V.EmpmasList = result!;
+                V.AssignedEmployees = result!;
             }
-            else
-            {
-                _notify.ShowInfo("No Data", "No employees found for this payroll group");
-            }
-
-            BuildDays();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _notify.ShowError("Error", "An error occurred. Please contact your system administrator.");
+            NotificationRef?.Show($"Couldn't load assigned employees.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
+
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task ChildActionCatcher()
+    {
+        BuildDays();
+        await ChildAction.InvokeAsync();
     }
 
 
-
+    @* ================= APPLY SCHEDULE ================= *@
 
     private async Task ApplySchedule()
     {
@@ -420,24 +671,25 @@
             int skippedCount = 0;
             List<string> failedEmployees = new();
 
-            foreach (var employee in V.SelectedEmployees)
-            {
-                // if (employee.SystemId == 0)
-                // {
-                //     skippedCount++;
-                //     _notify.ShowInfo("Employee Skipped", $"{employee.Fullname} could not be updated because no System ID is assigned.");
-                //     continue;
-                // }
 
-                // schedule.EmpmasId = employee.SystemId;
+            foreach (var employee in V.SelectedAssignedEmployees)
+            {
+                if (employee.UserId == 0)
+                {
+                    skippedCount++;
+                    NotificationRef?.Show($"Employee Skipped. {employee.Fullname} was skipped because no existing user record was found.", ThemeConstants.Notification.ThemeColor.Info);
+                    continue;
+                }
+
+                schedule.EmpmasId = employee.UserId;
 
                 bool dbUpdated = await InsertUpdateSchedule(schedule);
 
                 if (dbUpdated)
                 {
-                    // var attreqhistory = AssignValuesToRequestHistory(employee.SystemId, Uc.OempNumber);
-                    // await _iattTemplateReqHis._01(attreqhistory, V.pisdb, V.conn);
-                    // successCount++;
+                    var attreqhistory = AssignValuesToRequestHistory(employee.UserId, Uc.OempNumber);
+                    await _iattTemplateReqHis._01(attreqhistory, Uc.SchemaUserPis, V.conn);
+                    successCount++;
                 }
                 else
                 {
@@ -461,28 +713,29 @@
         }
         catch (Exception ex)
         {
-            _notify.ShowError("Error", "An error occurred. Please contact your system administrator.");
+            NotificationRef?.Show($"Couldn't apply the schedules to selected employees", ThemeConstants.Notification.ThemeColor.Error);
         }
-    }
 
+        await EmployeeListRef.UnselectAllEmployees();
+    }
 
     private bool ValidateApplySchedule()
     {
         if (Cs.Atttemplatereqdtl == null)
         {
-            _notify.ShowError("No Schedule", "No schedule is available to apply.");
+            NotificationRef?.Show($"No schedule is available to apply.", ThemeConstants.Notification.ThemeColor.Warning);
             return false;
         }
 
-        if (V.SelectedEmployees == null || !V.SelectedEmployees.Any())
+        if (V.SelectedAssignedEmployees == null || !V.SelectedAssignedEmployees.Any())
         {
-            _notify.ShowWarning("No Employees Selected", "Please select at least one employee.");
+            NotificationRef?.Show($"No Employees Selected. Please select at least one employee.", ThemeConstants.Notification.ThemeColor.Warning);
+
             return false;
         }
 
         return true;
     }
-
 
     private void ShowApplyScheduleSummary(int successCount, int skippedCount, List<string> failedEmployees)
     {
@@ -493,11 +746,13 @@
             if (skippedCount > 0)
                 summary += $" {skippedCount} employee(s) could not be updated.";
 
-            _notify.ShowSuccess("Schedule Update Completed", summary);
+            NotificationRef?.Show($"Schedule Update Completed. {summary}", ThemeConstants.Notification.ThemeColor.Success);
+
         }
         else
         {
-            _notify.ShowWarning("No Updates Applied", "No employee schedules were updated.");
+            NotificationRef?.Show($"No Updates Applied. No employee schedules were updated.", ThemeConstants.Notification.ThemeColor.Warning);
+
         }
 
         if (!failedEmployees.Any()) return;
@@ -509,24 +764,9 @@
             errorMsg += $", and {failedEmployees.Count - 3} more.";
         }
 
-        _notify.ShowError("Update Incomplete", $"The following employee(s) could not be updated: {errorMsg}");
+        NotificationRef?.Show($"Update Incomplete. The following employee(s) could not be updated", ThemeConstants.Notification.ThemeColor.Error);
+
     }
-
-
-
-    private AtttemplatereqhistModel AssignValuesToRequestHistory(int? userId, string approverEmpnumber)
-    {
-        return new AtttemplatereqhistModel()
-        {
-            AtttemplateReqHdrId = 0,
-            UserId = userId,
-            DActionTaken = DateTime.Now,
-            SetStatusTo = "C",
-            Empnumber_Approver = approverEmpnumber,
-            Remarks = "Manually Changed"
-        };
-    }
-
 
     private async Task<bool> InsertUpdateSchedule(AtttemplateModel schedule)
     {
@@ -535,86 +775,19 @@
 
         try
         {
-            var res = await _atttemplate._01(schedule, V.pisdb, V.conn);
+            var res = await _atttemplate._01(schedule, Uc.SchemaUserPis, V.conn);
             return res != null;
         }
         catch (Exception ex)
         {
-            _notify.ShowError("Error", "An error occurred inserting/updating the schedule. Please contact your system administrator.");
+            NotificationRef?.Show($"Couldn't insert/update the schedule.", ThemeConstants.Notification.ThemeColor.Error);
+
             return false;
         }
     }
 
-    private AtttemplateModel MapAttendanceRec(AtttemplatereqdtlModel req)
-    {
-        if (req == null)
-        {
-            return new AtttemplateModel();
-        }
 
-        return new AtttemplateModel
-        {
-            EmpmasId = req.EmpmasId,
-            AttendancetypeId = req.AttendanceTypeId,
-            D1_in = req.D1_In,
-            D1_hrslength = req.D1_HrsLength,
-            D1_dutytype = req.D1_DutyType,
-            D2_in = req.D2_In,
-            D2_hrslength = req.D2_HrsLength,
-            D2_dutytype = req.D2_DutyType,
-            D3_in = req.D3_In,
-            D3_hrslength = req.D3_HrsLength,
-            D3_dutytype = req.D3_DutyType,
-            D4_in = req.D4_In,
-            D4_hrslength = req.D4_HrsLength,
-            D4_dutytype = req.D4_DutyType,
-            D5_in = req.D5_In,
-            D5_hrslength = req.D5_HrsLength,
-            D5_dutytype = req.D5_DutyType,
-            D6_in = req.D6_In,
-            D6_hrslength = req.D6_HrsLength,
-            D6_dutytype = req.D6_DutyType,
-            D7_in = req.D7_In,
-            D7_hrslength = req.D7_HrsLength,
-            D7_dutytype = req.D7_DutyType
-        };
-    }
-
-
-    private async Task ChildActionCatcher()
-    {
-        BuildDays();
-        await ChildAction.InvokeAsync();
-    }
-
-
-
-    protected override async Task OnInitializedAsync()
-    {
-        Cs.Atttemplatereqhdr = new();
-        var res = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
-        if (res.Count > 0)
-        {
-            Cs.Atttemplate = res.FirstOrDefault() ?? new AtttemplateModel();
-            AtttemplateModel? re = res.FirstOrDefault();
-            Cs.Atttemplatereqdtl = AttTemplateReq_To_AttTemplate(re);
-        }
-        else
-        {
-            var res1 = _atttemplate._02NoSchedule(Uc.UserId);
-            Cs.Atttemplate = res1;
-        }
-
-        BuildDays();
-    }
-
-    RadzenDatePicker<DateTime?>? dateRequestedPicker;
-
-
-    void EcCatcher()
-    {
-
-    }
+    @* ================= REQUEST HEADER ACTIONS (New / Save / Send / Cancel / My Requests) ================= *@
 
     void New()
     {
@@ -623,6 +796,7 @@
         //Cs.Atttemplatereqdtl = AttTemplateReq_To_AttTemplate(Cs.Atttemplate);
         BuildDays();
     }
+
     async Task Save()
     {
         if (Hdr == null || Uc == null) return;
@@ -720,11 +894,13 @@
         Cs.ShowSendForApproval = true;
 
     }
+
     void ShowCancel()
     {
         Cs.ShowCancel = true;
 
     }
+
     async Task ShowMyRequest()
     {
         Cs.Atttemplatereqhdrs = [];
@@ -737,6 +913,7 @@
 
 
     }
+
     async Task FetchApprover()
     {
         Cs.Atttemplatereqhdr.ApproverName = "";
@@ -746,70 +923,33 @@
         if (emp != null) { Cs.Atttemplatereqhdr.ApproverName = emp.EmpName ?? ""; }
     }
 
-    bool IsCanSave => Cs.Atttemplatereqhdr != null &&
-                            Cs.Atttemplatereqhdr.Status is "N" or "S" &&
-                            Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue &&
-                            Cs.Atttemplatereqhdr.Effectivity > DateTime.MinValue &&
-                            Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
-    string? CanSave1 => IsCanSave ? " " : " disabled-div ";
+    private AtttemplatereqhistModel AssignValuesToRequestHistory(int? userId, string approverEmpnumber)
+    {
+        return new AtttemplatereqhistModel()
+        {
+            AtttemplateReqHdrId = 0,
+            UserId = userId,
+            DActionTaken = DateTime.Now,
+            SetStatusTo = "C",
+            Empnumber_Approver = approverEmpnumber,
+            Remarks = "Manually Changed"
+        };
+    }
 
-    bool IsCanSend => Cs.Atttemplatereqhdr != null &&
-                        Cs.Atttemplatereqhdr.Status is "S" &&
-                        Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue &&
-                        Cs.Atttemplatereqhdr.Effectivity?.Date >= DateTime.Now.Date &&
-                        saveRemarks == string.Empty &&
-                        Hdr.Id == attTempReqHdr.Id &&
-                        Hdr.Effectivity == attTempReqHdr.Effectivity &&
-                        Hdr.EmpNumber_Approver == attTempReqHdr.EmpNumber_Approver &&
-                        Hdr.Remarks == attTempReqHdr.Remarks &&
-                        Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
-    string? CanSend => IsCanSend ? " " : " disabled-div ";
 
-    bool IsCanCancel => Hdr.Status is "S";
-    string? CanCancel => IsCanCancel ? " " : " disabled-div ";
+    @* =================  HELPERS ================= *@
 
-    AtttemplateModel ctemp => Cs.Atttemplate ?? new AtttemplateModel();
-    AtttemplatereqhdrModel Hdr => Cs.Atttemplatereqhdr ?? new AtttemplatereqhdrModel();
-    AtttemplatereqdtlModel DtlReq => Cs.Atttemplatereqdtl ?? new AtttemplatereqdtlModel();
-    AtttemplateModel Dtl => Cs.Atttemplate ?? new AtttemplateModel();
-    List<AtttemplatereqdtlModel> Dtls => Cs.Atttemplatereqdtls ?? [];
-    List<string> dutyTypes = new() { "R", "RD", "RN" };
+    void EcCatcher()
+    {
+
+    }
 
     bool IsShowRequest(string? dutyType = "R") => dutyType == "R";
 
-    bool IsRequest_Equal_To_Template => Dtl.D1_dutytype == DtlReq.D1_DutyType &&
-                                        Dtl.D2_dutytype == DtlReq.D2_DutyType &&
-                                        Dtl.D3_dutytype == DtlReq.D3_DutyType &&
-                                        Dtl.D4_dutytype == DtlReq.D4_DutyType &&
-                                        Dtl.D5_dutytype == DtlReq.D5_DutyType &&
-                                        Dtl.D6_dutytype == DtlReq.D6_DutyType &&
-                                        Dtl.D7_dutytype == DtlReq.D7_DutyType &&
-
-                                        Dtl.D1_hrslength == DtlReq.D1_HrsLength &&
-                                        Dtl.D2_hrslength == DtlReq.D2_HrsLength &&
-                                        Dtl.D3_hrslength == DtlReq.D3_HrsLength &&
-                                        Dtl.D4_hrslength == DtlReq.D4_HrsLength &&
-                                        Dtl.D5_hrslength == DtlReq.D5_HrsLength &&
-                                        Dtl.D6_hrslength == DtlReq.D6_HrsLength &&
-                                        Dtl.D7_hrslength == DtlReq.D7_HrsLength &&
-
-                                        Dtl.D1_in == DtlReq.D1_In &&
-                                        Dtl.D2_in == DtlReq.D2_In &&
-                                        Dtl.D3_in == DtlReq.D3_In &&
-                                        Dtl.D4_in == DtlReq.D4_In &&
-                                        Dtl.D5_in == DtlReq.D5_In &&
-                                        Dtl.D6_in == DtlReq.D6_In &&
-                                        Dtl.D7_in == DtlReq.D7_In;
-
-    List<TimeoptionModel> times = Enumerable.Range(0, 48).Select(i =>
-                                    {
-                                        var time = DateTime.Today.AddMinutes(i * 30);
-                                        return new TimeoptionModel { Value = i * 30, Text = time.ToString("hh:mm tt") };
-                                    }).ToList();
-    List<TimeoptionModel> timeOptions = MsdsDataAccess._02Hours();
-    List<TimedurationModel> timedurations = MsdsDataAccess._02HourDurations();
     string? dutyTypeCss(string? dt) => dt == "RD" ? " text-danger " : "";
-    AtttemplatereqdtlModel template_To_Request => AttTemplateReq_To_AttTemplate(Cs.Atttemplate);
+
+
+    @* ================= TIME / DUTY HELPERS ================= *@
 
     string? outRes(string? dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
 
@@ -829,6 +969,44 @@
         dt = dt.AddHours(duration1);
 
         return dt.ToString("h:mm tt");
+    }
+
+
+    @* ================= MAPPING FUNCTIONS ================= *@
+
+    private AtttemplateModel MapAttendanceRec(AtttemplatereqdtlModel req)
+    {
+        if (req == null)
+        {
+            return new AtttemplateModel();
+        }
+
+        return new AtttemplateModel
+        {
+            EmpmasId = req.EmpmasId,
+            AttendancetypeId = req.AttendanceTypeId,
+            D1_in = req.D1_In,
+            D1_hrslength = req.D1_HrsLength,
+            D1_dutytype = req.D1_DutyType,
+            D2_in = req.D2_In,
+            D2_hrslength = req.D2_HrsLength,
+            D2_dutytype = req.D2_DutyType,
+            D3_in = req.D3_In,
+            D3_hrslength = req.D3_HrsLength,
+            D3_dutytype = req.D3_DutyType,
+            D4_in = req.D4_In,
+            D4_hrslength = req.D4_HrsLength,
+            D4_dutytype = req.D4_DutyType,
+            D5_in = req.D5_In,
+            D5_hrslength = req.D5_HrsLength,
+            D5_dutytype = req.D5_DutyType,
+            D6_in = req.D6_In,
+            D6_hrslength = req.D6_HrsLength,
+            D6_dutytype = req.D6_DutyType,
+            D7_in = req.D7_In,
+            D7_hrslength = req.D7_HrsLength,
+            D7_dutytype = req.D7_DutyType
+        };
     }
 
     AtttemplatereqdtlModel AttTemplateReq_To_AttTemplate(AtttemplateModel at)
@@ -869,10 +1047,10 @@
 
     }
 }
-
 <style>
 
-    /* grid column : allow shrinking + horizontal scroll */
+    /* ================= GRID ================= */
+
     .grid-col {
         min-width: 0;
         overflow-x: auto;
@@ -883,7 +1061,9 @@
             overflow-x: auto;
         }
 
-    /* payroll group picker */
+
+    /* ================= PAYROLL GROUP ================= */
+
     .paygrp-picker {
         width: 100%;
     }
@@ -895,18 +1075,22 @@
         }
     }
 
-    /* mobile apply bar */
+
+    /* ================= MOBILE APPLY BUTTON ================= */
+
     .apply-bar {
         position: sticky;
         bottom: 0;
         z-index: 10;
         padding: 8px 0;
         margin-top: 8px;
-        background: #fff;
-        border-top: 1px solid rgba(0,0,0,.1);
+        background: var(--kendo-color-surface, #fff);
+        border-top: 1px solid var(--kendo-color-border, rgba(0, 0, 0, .1));
     }
 
-    /* ===== MOBILE : tighter padding ===== */
+
+    /* ================= MOBILE ================= */
+
     @@media (max-width: 768px) {
 
         .csm-mobile .k-card-header {
@@ -927,21 +1111,24 @@
         }
     }
 
-    /* center group header title */
-    .header-center .k-column-title {
+
+    /* ================= HEADER CENTERING (Current Schedule / New Schedule / Duty Type / IN / Duration / OUT) ================= */
+
+    .grid-col ::deep .k-grid-header .k-cell-inner {
+        justify-content: center !important;
+    }
+
+        .grid-col ::deep .k-grid-header .k-cell-inner .k-link,
+        .grid-col ::deep .k-grid-header .k-cell-inner .k-column-title {
+            justify-content: center !important;
+            text-align: center !important;
+            width: 100%;
+        }
+
+    .grid-col ::deep .hdr-center {
         width: 100%;
         text-align: center;
-    }
-
-    /* center selected value */
-    .center-dropdown .rz-dropdown-label {
-        text-align: center !important;
-        width: 100%;
-    }
-
-    /* center dropdown popup items */
-    .rz-dropdown-items-wrapper .rz-dropdown-item {
-        text-align: center !important;
+        display: block;
     }
 
 </style>

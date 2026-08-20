@@ -136,14 +136,15 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
-    public async Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn)
+    public async Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn)
     {
-        string? sql = $@"SELECT  e.EmpNumber, 
-                    CONCAT_WS(',', e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm) AS Fullname
-                    FROM {schema}.empmas e
-                    INNER JOIN {schema}.deprec d ON d.empmasId = e.Id
-                    WHERE d.payrollgrpId = @PayrollgrpId
-                    ORDER BY e.EmpLastNm;";
+        string? sql = $@"SELECT  u.Id UserId, e.EmpNumber, 
+                        CONCAT_WS(',', e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm) AS Fullname
+                        FROM {pisschema}.empmas e
+                        INNER JOIN {pisschema}.deprec d ON d.empnumber = e.empnumber
+                        LEFT JOIN {mainschema}.users u on u.loginname = e.empnumber
+                        WHERE d.payrollgrpId = @PayrollgrpId
+                        ORDER BY e.EmpLastNm;";
 
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
         return data;
@@ -746,7 +747,7 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
     Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesNoPayGrpAssignment(string? name, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn);
     Task<List<OEmpmasModel?>?>  _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);

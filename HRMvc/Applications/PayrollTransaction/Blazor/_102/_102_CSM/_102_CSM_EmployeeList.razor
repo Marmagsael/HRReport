@@ -1,30 +1,26 @@
 ﻿@using System.ComponentModel
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._10_Pis.OPis
 @using HRApiLibrary.Models._90_Utils
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
 
-@inject IODeprecDataAccess _deprec
-
-<div class="employee-list">
-
-
-    @*========= GRID ===========*@
-    <TelerikGrid TItem="ODeprecModel"
-                 @ref="DeprecGrid"
-                 OnRead="@OnGridRead"
+<div class="employee-list h-100 d-flex flex-column">
+    <TelerikGrid TItem="OEmpmasModel"
+                 @ref="EmployeeAssignedGrid"
+                 Data="@V.AssignedEmployees"
                  SelectionMode="@GridSelectionMode.Multiple"
-                 @bind-SelectedItems="@SelectedEmployees"
+                 SelectedItems="@V.SelectedAssignedEmployees"
+                 SelectedItemsChanged="@OnSelectedEmployeesChanged"
                  Pageable="true"
                  PageSize="11"
                  FilterMode="@GridFilterMode.FilterMenu"
                  Sortable="true"
                  Resizable="true"
                  Navigable="true"
-                 CustomKeyboardShortcuts="@GridCustomShortcuts"
                  Width="100%"
-                 Height="calc(100vh - 350px)">
+                 Height="100%">
 
         <GridColumns>
 
@@ -32,11 +28,13 @@
                                 SelectAllMode="@GridSelectAllMode.Current"
                                 Width="50px" />
 
-            <GridColumn Field="@nameof(ODeprecModel.EmpName)" Title="Employee name" />
+            <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
+                        Title="Employee Name" />
 
         </GridColumns>
 
         <NoDataTemplate>
+
             <div class="text-center text-secondary p-3">
 
                 @if (V.SelectedPayrollGroup <= 0)
@@ -46,20 +44,25 @@
                 else if (HasActiveFilter)
                 {
                     <div>No employees match the current filter.</div>
-                    <div class="k-font-size-sm">Clear the column filter to see everyone.</div>
+
+                    <div class="k-font-size-sm">
+                        Clear the column filter to see everyone.
+                    </div>
                 }
                 else
                 {
-                    <div>No one assigned to this group yet</div>
-                    <div class="k-font-size-sm">Click the '+' to add employees.</div>
+                    <div>No one is assigned to this group yet.</div>
                 }
 
             </div>
+
         </NoDataTemplate>
 
     </TelerikGrid>
 
 </div>
+
+@inject IAtttemplateDataAccess _atttemplate
 
 @code {
 
@@ -78,108 +81,88 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    private TelerikGrid<ODeprecModel>? DeprecGrid;
-    private IEnumerable<ODeprecModel> SelectedEmployees { get; set; } = new List<ODeprecModel>();
+    private TelerikGrid<OEmpmasModel>? EmployeeAssignedGrid;
 
-    private bool HasActiveFilter => DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
-
-
-    private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
-        GridCustomShortcuts = new()
-        {
-            [GridKeyboardScope.Common] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["W"] = GridKeyboardCommand.NavigateUp,
-                    ["S"] = GridKeyboardCommand.NavigateDown,
-                    ["A"] = GridKeyboardCommand.NavigateLeft,
-                    ["D"] = GridKeyboardCommand.NavigateRight,
-
-                    ["ArrowUp"] = GridKeyboardCommand.NavigateUp,
-                    ["ArrowDown"] = GridKeyboardCommand.NavigateDown,
-                    ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
-                    ["ArrowRight"] = GridKeyboardCommand.NavigateRight
-                },
-
-            [GridKeyboardScope.HeaderCell] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["O"] = GridKeyboardCommand.SortColumn,
-                    ["Enter"] = GridKeyboardCommand.SortColumn
-                },
-
-            [GridKeyboardScope.DataCell] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["Enter"] = GridKeyboardCommand.Select
-                }
-        };
+    private bool HasActiveFilter => EmployeeAssignedGrid?.GetState().FilterDescriptors?.Any() == true;
 
 
-    private async Task OnGridRead(GridReadEventArgs args)
+    private async Task OnSelectedEmployeesChanged(IEnumerable<OEmpmasModel> employees)
     {
-        if (V.SelectedPayrollGroup <= 0)
+        var lastEmployee = string.Empty;
+
+        try
         {
-            args.Data = new List<ODeprecModel>();
-            args.Total = 0;
-            return;
+            V.SelectedAssignedEmployees     = employees?.ToList() ?? [];
+
+            V.SelectedEmployee              = string.Empty;
+            V.CurrentAttendance             = new AtttemplateModel();
+
+            if (V.SelectedAssignedEmployees.Count == 0)
+            {
+                await ChildAction.InvokeAsync();
+                return;
+            }
+
+            var employee = V.SelectedAssignedEmployees.LastOrDefault();
+
+            if (employee == null)
+            {
+                await ChildAction.InvokeAsync();
+                return;
+            }
+
+            lastEmployee = employee.Fullname ?? "-";
+
+            var result = await _atttemplate._02(  employee.UserId,   Uc.SchemaUserPis,   V.conn);
+            if (result != null && result.EmpmasId > 0)
+            {
+                V.SelectedEmployee = employee.Fullname;
+                V.CurrentAttendance = result;
+            }
+
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show(
+                $"Couldn't get the current schedule of {lastEmployee}",
+                ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    public async Task UnselectAllEmployees()
+    {
+        V.SelectedAssignedEmployees = [];
+
+        if (EmployeeAssignedGrid != null)
+        {
+            // Get current grid state
+            var state = EmployeeAssignedGrid.GetState();
+
+            // Clear selected rows
+            state.SelectedItems = [];
+
+            // Apply the state
+            await EmployeeAssignedGrid.SetStateAsync(state);
         }
 
-        var pageSize = args.Request.PageSize > 0 ? args.Request.PageSize : 10;
-        var page = args.Request.Page > 0 ? args.Request.Page : 1;
-        var offset = (page - 1) * pageSize;
-
-        var sort = args.Request.Sorts.FirstOrDefault();
-        var sortField = sort?.Member ?? nameof(ODeprecModel.EmpName);
-        var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending ? "DESC" : "ASC";
-
-        var filters = GridHelper.GetFilters(args);
-
-        var request = new GridRequestModel
-        {
-            PageSize = pageSize,
-            Offset = offset,
-            SortField = sortField,
-            SortDirection = sortDirection,
-            Filters = filters
-        };
-
-        var result = await _deprec._02Grid(V.SelectedPayrollGroup, request, V.pisdb, V.conn);
-
-        args.Data = result.Data;
-        args.Total = result.Total;
+        V.SelectedEmployee = string.Empty;
+        V.CurrentAttendance = new AtttemplateModel();
     }
 
-
-    public Task RefreshGrid()
-    {
-        DeprecGrid?.Rebind();
-
-        return Task.CompletedTask;
-    }
 
 
     public async Task ResetGrid()
     {
-        if (DeprecGrid == null)
+        V.SelectedEmployees = [];
+        V.SelectedEmployee = string.Empty;
+        V.CurrentAttendance = new AtttemplateModel();
+
+        if (EmployeeAssignedGrid != null)
         {
-            return;
+            await EmployeeAssignedGrid.SetStateAsync(  new GridState<OEmpmasModel>());
         }
-
-        var state = DeprecGrid.GetState();
-        state.FilterDescriptors.Clear();
-        state.SortDescriptors.Clear();
-        state.Page = 1;
-
-        SelectedEmployees = new List<ODeprecModel>();
-
-        await DeprecGrid.SetStateAsync(state);
     }
-
-
- 
-    
-
 }
 
 <style>
