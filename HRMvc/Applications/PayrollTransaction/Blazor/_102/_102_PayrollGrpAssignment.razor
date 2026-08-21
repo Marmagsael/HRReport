@@ -1,20 +1,15 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-@using HRApiLibrary.Models._10_Pis
+﻿@using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Models._20_Pay
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp_Assignment
 
-@inject IODeprecDataAccess _deprec
-
 <div class="assignment-shell px-0 ms-0 me-auto">
-
-    @*=========  PAYROLL GROUP SELECTOR ===========*@
     <TelerikCard Class="h-100 d-flex flex-column">
-
         <CardHeader Class="bg-secondary bg-opacity-10">
             <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3">
-
-                <label for="paygrp" class="mb-0 fw-semibold text-nowrap">Payroll group</label>
+                <label for="paygrp" class="mb-0 fw-semibold text-nowrap">
+                    Payroll group
+                </label>
 
                 <div class="paygrp-picker">
                     <TelerikDropDownList Id="paygrp"
@@ -27,23 +22,21 @@
                                          Width="100%"
                                          OnChange="@PayrollGrpChange">
                         <DropDownListSettings>
-                            <DropDownListPopupSettings Width="450px" Height="600px" />
+                            <DropDownListPopupSettings Width="450px"
+                                                       Height="600px" />
                         </DropDownListSettings>
                     </TelerikDropDownList>
                 </div>
-
             </div>
         </CardHeader>
 
         <CardBody Class="assignment-outer-body p-2 p-md-3">
-
-            @*========= ASSIGNED EMPLOYEES ===========*@
             <TelerikCard Width="100%" Class="assignment-inner-card h-100">
-
                 <CardHeader Class="bg-secondary bg-opacity-10">
                     <div class="d-flex align-items-center gap-2">
-
-                        <span class="fw-semibold">Assigned employees</span>
+                        <span class="fw-semibold">
+                            Assigned employees
+                        </span>
 
                         <div class="ms-auto">
                             <TelerikButton OnClick="@ToggleAddMember"
@@ -54,13 +47,11 @@
                                            Icon="@(V.ShowAddMember ? FontIcon.X : FontIcon.Plus)"
                                            Title="@(V.ShowAddMember ? "Hide search" : "Add employee")" />
                         </div>
-
                     </div>
                 </CardHeader>
 
                 <CardBody Class="assignment-inner-body p-0">
                     <div class="position-relative grid-host">
-
                         <TelerikAnimationContainer @ref="AddMemberPanel"
                                                    AnimationType="@AnimationType.SlideDown"
                                                    Top="0"
@@ -72,23 +63,14 @@
 
                         <_102_PayrollGrpAssignment_Dtls @ref="AssignedEmployeesGrid"
                                                         ChildAction="CA_Catcher" />
-
                     </div>
                 </CardBody>
-
             </TelerikCard>
-
         </CardBody>
-
     </TelerikCard>
-
 </div>
 
 @code {
-
-    [CascadingParameter]
-    public UserClaimsModel? Uc { get; set; }
-
     [CascadingParameter]
     public V102Model V { get; set; } = new();
 
@@ -98,9 +80,6 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    [CascadingParameter]
-    public DialogFactory? TelerikDialogs { get; set; }
-
     private _102_PayrollGrpAssignment_Dtls? AssignedEmployeesGrid;
     private TelerikAnimationContainer? AddMemberPanel;
 
@@ -108,61 +87,49 @@
     {
         V.ShowAddMember = !V.ShowAddMember;
 
-        if (AddMemberPanel != null)
-        {
-            if (V.ShowAddMember)
-            {
-                await AddMemberPanel.ShowAsync();
-            }
-            else
-            {
-                await AddMemberPanel.HideAsync();
-            }
-        }
+        if (AddMemberPanel == null)
+            return;
+
+        if (V.ShowAddMember)
+            await AddMemberPanel.ShowAsync();
+        else
+            await AddMemberPanel.HideAsync();
     }
 
     private async Task PayrollGrpChange()
     {
-
         try
         {
             V.ShowAddMember = false;
 
             if (AddMemberPanel != null)
-            {
                 await AddMemberPanel.HideAsync();
-            }
-
-
 
             V.EmployeesNoPayGrp = [];
 
             if (AssignedEmployeesGrid != null)
-            {
                 await AssignedEmployeesGrid.ResetGrid();
-            }
 
             await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show($"Couldn't load assigned employees. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(
+                $"Couldn't load assigned employees. {ex.Message}",
+                ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
     private async Task CA_Catcher()
     {
         if (AssignedEmployeesGrid != null)
-        {
             await AssignedEmployeesGrid.RefreshGrid();
-        }
 
         await ChildAction.InvokeAsync();
     }
 }
 
 <style>
-
     .paygrp-picker {
         width: 100%;
     }
@@ -177,5 +144,4 @@
             flex: 0 0 450px;
         }
     }
-
 </style>

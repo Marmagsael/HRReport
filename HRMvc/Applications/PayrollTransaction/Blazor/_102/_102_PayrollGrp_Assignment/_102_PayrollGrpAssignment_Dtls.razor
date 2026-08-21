@@ -7,64 +7,53 @@
 @inject IODeprecDataAccess _deprec
 
 <div class="employee-list">
-
-    @*========= LIST HEADER : COUNT + BULK REMOVE ===========*@
     @if (SelectedEmployees.Any())
     {
         <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-
-                <TelerikBadge ThemeColor="@(SelectedEmployees.Any()
-                        ? ThemeConstants.Badge.ThemeColor.Primary
-                        : ThemeConstants.Badge.ThemeColor.Base)"
-                            Position="@BadgePosition.Inline"
-                            Rounded="@ThemeConstants.Badge.Rounded.Medium"
-                            Size="@ThemeConstants.Badge.Size.Small"
-                            FillMode="@ThemeConstants.Badge.FillMode.Solid">
-                @SelectedEmployees.Count() selected
+            <TelerikBadge ThemeColor="@ThemeConstants.Badge.ThemeColor.Primary"
+                          Position="@BadgePosition.Inline"
+                          Rounded="@ThemeConstants.Badge.Rounded.Medium"
+                          Size="@ThemeConstants.Badge.Size.Small"
+                          FillMode="@ThemeConstants.Badge.FillMode.Solid">
+                @SelectedEmployees.Count selected
             </TelerikBadge>
 
-                <TelerikButton OnClick="@RemoveSelected"
-                                ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
-                                FillMode="@ThemeConstants.Button.FillMode.Clear"
-                                Size="@ThemeConstants.Button.Size.Small"
-                                Icon="@FontIcon.Trash"
-                                Enabled="@SelectedEmployees.Any()">
-                    Remove selected
-                </TelerikButton>
-
+            <TelerikButton OnClick="@RemoveSelected"
+                           ThemeColor="@ThemeConstants.Button.ThemeColor.Error"
+                           FillMode="@ThemeConstants.Button.FillMode.Clear"
+                           Size="@ThemeConstants.Button.Size.Small"
+                           Icon="@FontIcon.Trash">
+                Remove selected
+            </TelerikButton>
         </div>
     }
-           
 
-    @*========= GRID ===========*@
     <TelerikGrid TItem="ODeprecModel"
                  @ref="DeprecGrid"
                  OnRead="@OnGridRead"
                  SelectionMode="@GridSelectionMode.Multiple"
-                 @bind-SelectedItems="@SelectedEmployees"
+                 SelectedItems="@SelectedEmployees"
+                 SelectedItemsChanged="@OnSelectedEmployeesChanged"
                  Pageable="true"
                  PageSize="11"
                  FilterMode="@GridFilterMode.FilterMenu"
                  Sortable="true"
                  Resizable="true"
                  Navigable="true"
-                 CustomKeyboardShortcuts="@GridCustomShortcuts"
                  Width="100%"
                  Height="100%">
 
         <GridColumns>
-
             <GridCheckboxColumn SelectAll="true"
                                 SelectAllMode="@GridSelectAllMode.Current"
                                 Width="50px" />
 
-            <GridColumn Field="@nameof(ODeprecModel.EmpName)" Title="Employee name" />
-
+            <GridColumn Field="@nameof(ODeprecModel.EmpName)"
+                        Title="Employee name" />
         </GridColumns>
 
         <NoDataTemplate>
             <div class="text-center text-secondary p-3">
-
                 @if (V.SelectedPayrollGroup <= 0)
                 {
                     <div>Select a payroll group to see assigned employees.</div>
@@ -76,22 +65,15 @@
                 }
                 else
                 {
-                    <div>No one assigned to this group yet</div>
+                    <div>No one assigned to this group yet.</div>
                     <div class="k-font-size-sm">Click the '+' to add employees.</div>
                 }
-
             </div>
         </NoDataTemplate>
-
     </TelerikGrid>
-
 </div>
 
 @code {
-
-    [CascadingParameter]
-    public UserClaimsModel? Uc { get; set; }
-
     [CascadingParameter]
     public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
 
@@ -105,37 +87,17 @@
     public EventCallback ChildAction { get; set; }
 
     private TelerikGrid<ODeprecModel>? DeprecGrid;
-    private IEnumerable<ODeprecModel> SelectedEmployees { get; set; } = new List<ODeprecModel>();
 
-    private bool HasActiveFilter => DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
+    private List<ODeprecModel> SelectedEmployees { get; set; } = new();
 
+    private bool HasActiveFilter =>
+        DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
 
-    private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
-        GridCustomShortcuts = new()
-        {
-            [GridKeyboardScope.Common] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["ArrowUp"] = GridKeyboardCommand.NavigateUp,
-                    ["ArrowDown"] = GridKeyboardCommand.NavigateDown,
-                    ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
-                    ["ArrowRight"] = GridKeyboardCommand.NavigateRight
-                },
-
-            [GridKeyboardScope.HeaderCell] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["O"] = GridKeyboardCommand.SortColumn,
-                    ["Enter"] = GridKeyboardCommand.SortColumn
-                },
-
-            [GridKeyboardScope.DataCell] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["Enter"] = GridKeyboardCommand.Select
-                }
-        };
-
+    private Task OnSelectedEmployeesChanged(IEnumerable<ODeprecModel> employees)
+    {
+        SelectedEmployees = employees?.ToList() ?? new List<ODeprecModel>();
+        return Task.CompletedTask;
+    }
 
     private async Task OnGridRead(GridReadEventArgs args)
     {
@@ -146,89 +108,93 @@
             return;
         }
 
-        var pageSize = args.Request.PageSize > 0 ? args.Request.PageSize : 10;
-        var page = args.Request.Page > 0 ? args.Request.Page : 1;
-        var offset = (page - 1) * pageSize;
+        var pageSize = args.Request.PageSize > 0
+            ? args.Request.PageSize
+            : 10;
+
+        var page = args.Request.Page > 0
+            ? args.Request.Page
+            : 1;
 
         var sort = args.Request.Sorts.FirstOrDefault();
-        var sortField = sort?.Member ?? nameof(ODeprecModel.EmpName);
-        var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending ? "DESC" : "ASC";
-
-        var filters = GridHelper.GetFilters(args);
 
         var request = new GridRequestModel
         {
             PageSize = pageSize,
-            Offset = offset,
-            SortField = sortField,
-            SortDirection = sortDirection,
-            Filters = filters
+            Offset = (page - 1) * pageSize,
+            SortField = sort?.Member ?? nameof(ODeprecModel.EmpName),
+            SortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending
+                ? "DESC"
+                : "ASC",
+            Filters = GridHelper.GetFilters(args)
         };
 
-        var result = await _deprec._02Grid(V.SelectedPayrollGroup, request, V.pisdb, V.conn);
+        var result = await _deprec._02Grid(
+            V.SelectedPayrollGroup,
+            request,
+            V.pisdb,
+            V.conn);
 
-        args.Data = result.Data;
-        args.Total = result.Total;
+        args.Data = result?.Data ?? new List<ODeprecModel>();
+        args.Total = result?.Total ?? 0;
     }
-
 
     public Task RefreshGrid()
     {
         DeprecGrid?.Rebind();
-
         return Task.CompletedTask;
     }
 
-
     public async Task ResetGrid()
     {
+        SelectedEmployees = new List<ODeprecModel>();
+
         if (DeprecGrid == null)
-        {
             return;
-        }
 
         var state = DeprecGrid.GetState();
         state.FilterDescriptors.Clear();
         state.SortDescriptors.Clear();
         state.Page = 1;
-
-        SelectedEmployees = new List<ODeprecModel>();
+        state.SelectedItems = new List<ODeprecModel>();
 
         await DeprecGrid.SetStateAsync(state);
     }
-
 
     private async Task RemoveSelected()
     {
         var employees = SelectedEmployees.ToList();
 
         if (!employees.Any() || TelerikDialogs == null)
-        {
             return;
-        }
 
-        string message = employees.Count == 1
+        var message = employees.Count == 1
             ? $"Remove {employees[0].EmpName} ({employees[0].EmpNumber}) from this payroll group?"
             : $"Remove {employees.Count} selected employees from this payroll group?";
 
-        var confirmed = await TelerikDialogs.ConfirmAsync(message, "Confirm removal");
+        var confirmed = await TelerikDialogs.ConfirmAsync(
+            message,
+            "Confirm removal");
 
         if (!confirmed)
-        {
             return;
-        }
 
         var failed = new List<string>();
+        var removedCount = 0;
 
         foreach (var employee in employees)
         {
             try
             {
                 await RemoveEmployee(employee);
+                removedCount++;
             }
             catch
             {
-                failed.Add(employee.EmpName ?? employee.EmpNumber ?? "unknown");
+                failed.Add(
+                    employee.EmpName
+                    ?? employee.EmpNumber
+                    ?? "unknown");
             }
         }
 
@@ -238,19 +204,26 @@
         {
             var state = DeprecGrid.GetState();
             state.Page = 1;
-
+            state.SelectedItems = new List<ODeprecModel>();
             await DeprecGrid.SetStateAsync(state);
         }
 
-        await ChildAction.InvokeAsync();
+        if (removedCount > 0)
+            await ChildAction.InvokeAsync();
 
         if (failed.Count == 0)
         {
             NotificationRef?.Show(
-                employees.Count == 1
+                removedCount == 1
                     ? "Employee removed."
-                    : $"{employees.Count} employees removed.",
+                    : $"{removedCount} employees removed.",
                 ThemeConstants.Notification.ThemeColor.Success);
+        }
+        else if (removedCount > 0)
+        {
+            NotificationRef?.Show(
+                $"{removedCount} removed. Couldn't remove: {string.Join(", ", failed)}",
+                ThemeConstants.Notification.ThemeColor.Warning);
         }
         else
         {
@@ -260,13 +233,10 @@
         }
     }
 
-
     private async Task RemoveEmployee(ODeprecModel emp)
     {
         if (string.IsNullOrWhiteSpace(emp.EmpNumber))
-        {
             throw new Exception("Employee number is required.");
-        }
 
         var updateEmp = new ODeprecModel
         {
@@ -274,15 +244,18 @@
             PayrollgrpId = 0
         };
 
-        await _deprec._01PayrollGrp(updateEmp, V.pisdb, V.conn);
-    }
+        var result = await _deprec._01PayrollGrp(
+            updateEmp,
+            V.pisdb,
+            V.conn);
 
+        if (result == null)
+            throw new Exception($"Failed to remove {emp.EmpName}.");
+    }
 }
 
 <style>
-
     .employee-list {
         width: 100%;
     }
-
 </style>

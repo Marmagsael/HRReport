@@ -1,10 +1,9 @@
-﻿@using System.ComponentModel
-@using HRApiLibrary.DataAccess._10_Pis.Interface
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Models._10_Pis.OPis
-@using HRApiLibrary.Models._90_Utils
 @using HRMvc.Applications.PayrollTransaction.Vars
-@using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
+
+@inject IAtttemplateDataAccess _atttemplate
 
 <div class="employee-list h-100 d-flex flex-column">
     <TelerikGrid TItem="OEmpmasModel"
@@ -21,22 +20,15 @@
                  Navigable="true"
                  Width="100%"
                  Height="100%">
-
         <GridColumns>
-
             <GridCheckboxColumn SelectAll="true"
                                 SelectAllMode="@GridSelectAllMode.Current"
                                 Width="50px" />
-
             <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
                         Title="Employee Name" />
-
         </GridColumns>
-
         <NoDataTemplate>
-
             <div class="text-center text-secondary p-3">
-
                 @if (V.SelectedPayrollGroup <= 0)
                 {
                     <div>Select a payroll group to see assigned employees.</div>
@@ -44,33 +36,20 @@
                 else if (HasActiveFilter)
                 {
                     <div>No employees match the current filter.</div>
-
-                    <div class="k-font-size-sm">
-                        Clear the column filter to see everyone.
-                    </div>
+                    <div class="k-font-size-sm">Clear the column filter to see everyone.</div>
                 }
                 else
                 {
                     <div>No one is assigned to this group yet.</div>
                 }
-
             </div>
-
         </NoDataTemplate>
-
     </TelerikGrid>
-
 </div>
 
-@inject IAtttemplateDataAccess _atttemplate
-
 @code {
-
     [CascadingParameter]
     public UserClaimsModel? Uc { get; set; }
-
-    [CascadingParameter]
-    public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
 
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
@@ -83,8 +62,8 @@
 
     private TelerikGrid<OEmpmasModel>? EmployeeAssignedGrid;
 
-    private bool HasActiveFilter => EmployeeAssignedGrid?.GetState().FilterDescriptors?.Any() == true;
-
+    private bool HasActiveFilter =>
+        EmployeeAssignedGrid?.GetState().FilterDescriptors?.Any() == true;
 
     private async Task OnSelectedEmployeesChanged(IEnumerable<OEmpmasModel> employees)
     {
@@ -92,10 +71,9 @@
 
         try
         {
-            V.SelectedAssignedEmployees     = employees?.ToList() ?? [];
-
-            V.SelectedEmployee              = string.Empty;
-            V.CurrentAttendance             = new AtttemplateModel();
+            V.SelectedAssignedEmployees = employees?.ToList() ?? [];
+            V.SelectedEmployee = string.Empty;
+            V.CurrentAttendance = new AtttemplateModel();
 
             if (V.SelectedAssignedEmployees.Count == 0)
             {
@@ -113,7 +91,19 @@
 
             lastEmployee = employee.Fullname ?? "-";
 
-            var result = await _atttemplate._02(  employee.UserId,   Uc.SchemaUserPis,   V.conn);
+            if (Uc == null)
+            {
+                NotificationRef?.Show(
+                    "User information is unavailable.",
+                    ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            var result = await _atttemplate._02(
+                employee.UserId,
+                Uc.SchemaUserPis,
+                V.conn);
+
             if (result != null && result.EmpmasId > 0)
             {
                 V.SelectedEmployee = employee.Fullname;
@@ -122,7 +112,7 @@
 
             await ChildAction.InvokeAsync();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             NotificationRef?.Show(
                 $"Couldn't get the current schedule of {lastEmployee}",
@@ -136,39 +126,32 @@
 
         if (EmployeeAssignedGrid != null)
         {
-            // Get current grid state
             var state = EmployeeAssignedGrid.GetState();
-
-            // Clear selected rows
             state.SelectedItems = [];
-
-            // Apply the state
             await EmployeeAssignedGrid.SetStateAsync(state);
         }
 
         V.SelectedEmployee = string.Empty;
         V.CurrentAttendance = new AtttemplateModel();
+        await ChildAction.InvokeAsync();
     }
-
-
 
     public async Task ResetGrid()
     {
-        V.SelectedEmployees = [];
+        V.SelectedAssignedEmployees = [];
         V.SelectedEmployee = string.Empty;
         V.CurrentAttendance = new AtttemplateModel();
 
         if (EmployeeAssignedGrid != null)
         {
-            await EmployeeAssignedGrid.SetStateAsync(  new GridState<OEmpmasModel>());
+            await EmployeeAssignedGrid.SetStateAsync(
+                new GridState<OEmpmasModel>());
         }
     }
 }
 
 <style>
-
     .employee-list {
         width: 100%;
     }
-
 </style>

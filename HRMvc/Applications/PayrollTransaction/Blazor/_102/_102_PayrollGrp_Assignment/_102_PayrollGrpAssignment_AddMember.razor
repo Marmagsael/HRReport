@@ -6,32 +6,23 @@
 @inject IOEmpmasDataAccess _oempmas
 @inject IODeprecDataAccess _deprec
 
-
 <TelerikNotification @ref="@NotificationRef"
                      HorizontalPosition="@NotificationHorizontalPosition.Right"
                      VerticalPosition="@NotificationVerticalPosition.Top"
                      AnimationType="@AnimationType.SlideLeft" />
 
-
 @if (V.ShowAddMember)
 {
     <TelerikCard Class="mb-2">
-
         <CardBody Class="p-2">
-
             <div class="d-flex gap-2 align-items-center">
-
                 <div class="flex-grow-1" @onkeydown="OnSearchKeyDown">
-
                     <TelerikTextBox @bind-Value="searchName"
                                     Placeholder="Search employee..."
                                     Class="w-100" />
-
                 </div>
 
-
                 <div class="d-flex gap-1">
-
                     <TelerikButton OnClick="@SearchEmployee"
                                    ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
                                    Size="@ThemeConstants.Button.Size.Small"
@@ -45,11 +36,8 @@
                                    Size="@ThemeConstants.Button.Size.Small"
                                    Icon="@FontIcon.X"
                                    Title="Close search" />
-
                 </div>
-
             </div>
-
 
             @if (IsSearchDisabled && !string.IsNullOrEmpty(searchName))
             {
@@ -57,103 +45,73 @@
                     Type at least 3 characters.
                 </div>
             }
-
         </CardBody>
-
 
         @if (isSearching)
         {
             <CardBody Class="bg-secondary bg-opacity-10 p-3 text-center text-secondary k-font-size-sm">
-
                 Searching...
-
             </CardBody>
         }
         else if (V.EmployeesNoPayGrp.Any())
         {
             <CardBody Class="bg-secondary bg-opacity-10 p-2">
-
                 <div class="k-font-size-sm text-secondary px-2 pb-1 text-end">
-
-                    @V.EmployeesNoPayGrp.Count()  unassigned
-                    @(V.EmployeesNoPayGrp.Count() == 1 ? "match" : "matches")
-
+                    @V.EmployeesNoPayGrp.Count() @(V.EmployeesNoPayGrp.Count() == 1 ? "match" : "matches")
                 </div>
 
-
                 <div style="max-height: 300px; overflow-y: auto;">
-
                     @foreach (var emp in V.EmployeesNoPayGrp)
                     {
                         <div class="d-flex w-100 px-2 py-1 align-items-center gap-2">
-
                             <div class="flex-grow-1 text-end">
-
-                                <div class="">
-                                    @emp?.Fullname <span class="k-font-size-sm text-secondary k-font-weight-normal">[ @emp?.EmpNumber]</span>
+                                <div>
+                                    @emp?.Fullname
+                                    <span class="k-font-size-sm text-secondary k-font-weight-normal">
+                                        [ @emp?.EmpNumber ]
+                                    </span>
                                 </div>
                             </div>
-
 
                             <TelerikButton OnClick="@(() => AddEmployee(emp))"
                                            FillMode="@ThemeConstants.Button.FillMode.Flat"
                                            ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
                                            Size="@ThemeConstants.Button.Size.Small"
                                            Class="flex-shrink-0">
-
                                 Add
-
                             </TelerikButton>
-
                         </div>
                     }
-
                 </div>
-
             </CardBody>
         }
         else if (hasSearched)
         {
             <CardBody Class="bg-secondary bg-opacity-10 p-3 text-center text-secondary k-font-size-sm">
-
                 No unassigned employee matches "@lastSearchTerm".
-
             </CardBody>
         }
-
     </TelerikCard>
 }
 
-
 @code {
-
     [CascadingParameter]
     public UserClaimsModel? Uc { get; set; }
-
 
     [CascadingParameter]
     public V102Model V { get; set; } = new();
 
-
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
-
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-
-    [CascadingParameter]
-    public DialogFactory? TelerikDialogs { get; set; }
-
-
     private string? _searchName = "";
-
 
     private string? searchName
     {
         get => _searchName;
-
         set
         {
             _searchName = value;
@@ -162,13 +120,11 @@
         }
     }
 
-
     private bool isSearching;
     private bool hasSearched;
     private string lastSearchTerm = "";
 
-
-    private bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Length < 3;
+    private bool IsSearchDisabled => string.IsNullOrWhiteSpace(searchName) || searchName.Trim().Length < 3;
 
 
     private async Task OnSearchKeyDown(KeyboardEventArgs args)
@@ -179,30 +135,32 @@
         }
     }
 
-
     private async Task SearchEmployee()
     {
         var search = searchName?.Trim();
 
         if (string.IsNullOrWhiteSpace(search))
-        {
             return;
-        }
-
 
         try
         {
             isSearching = true;
-            V.EmployeesNoPayGrp = [];
+            V.EmployeesNoPayGrp = new List<OEmpmasModel>();
             lastSearchTerm = search;
 
+            var result = await _oempmas._02ByLNameAndFNamesNoPayGrpAssignment(
+                search,
+                V.pisdb,
+                V.conn);
 
-            var result = await _oempmas._02ByLNameAndFNamesNoPayGrpAssignment(search, V.pisdb, V.conn);
-            V.EmployeesNoPayGrp = result ?? [];
+            V.EmployeesNoPayGrp =
+                result ?? new List<OEmpmasModel>();
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show($"Couldn't load unassigned employees. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(
+                $"Couldn't load unassigned employees. {ex.Message}",
+                ThemeConstants.Notification.ThemeColor.Error);
         }
         finally
         {
@@ -210,7 +168,6 @@
             hasSearched = true;
         }
     }
-
 
     private async Task Close()
     {
@@ -222,28 +179,26 @@
         await ChildAction.InvokeAsync();
     }
 
-
     private async Task AddEmployee(OEmpmasModel emp)
     {
-        if (emp is null ||
-            string.IsNullOrWhiteSpace(emp.EmpNumber))
-        {
+        if (string.IsNullOrWhiteSpace(emp.EmpNumber))
             return;
-        }
-
 
         try
         {
-            // Check if employee is already assigned
-            var existing = await _deprec._02ByEmpnumber(emp.EmpNumber, V.pisdb, V.conn);
+            var existing = await _deprec._02ByEmpnumber(
+                emp.EmpNumber,
+                V.pisdb,
+                V.conn);
 
-            if (existing != null &&
-                existing.PayrollgrpId != 0)
+            if (existing != null && existing.PayrollgrpId != 0)
             {
-                NotificationRef?.Show($"{emp.EmpName} is already assigned to another payroll group.", ThemeConstants.Notification.ThemeColor.Warning);
+                NotificationRef?.Show(
+                    $"{emp.EmpName} is already assigned to another payroll group.",
+                    ThemeConstants.Notification.ThemeColor.Warning);
+
                 return;
             }
-
 
             var deprec = new ODeprecModel
             {
@@ -251,26 +206,32 @@
                 PayrollgrpId = V.SelectedPayrollGroup
             };
 
+            var result = await _deprec._01PayrollGrp(
+                deprec,
+                V.pisdb,
+                V.conn);
 
-            var result = await _deprec._01PayrollGrp(deprec, V.pisdb, V.conn);
-
-
-            if (result != null &&
-                !string.IsNullOrWhiteSpace(result.EmpNumber))
+            if (result != null && !string.IsNullOrWhiteSpace(result.EmpNumber))
             {
                 V.EmployeesNoPayGrp.Remove(emp);
                 await ChildAction.InvokeAsync();
-                NotificationRef?.Show($"{emp.EmpName} Added.", ThemeConstants.Notification.ThemeColor.Success);
+
+                NotificationRef?.Show(
+                    $"{emp.EmpName} Added.",
+                    ThemeConstants.Notification.ThemeColor.Success);
             }
             else
             {
-                NotificationRef?.Show($"{emp.EmpName} wasn't added. Try again.", ThemeConstants.Notification.ThemeColor.Error);
+                NotificationRef?.Show(
+                    $"{emp.EmpName} wasn't added. Try again.",
+                    ThemeConstants.Notification.ThemeColor.Error);
             }
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show($"Couldn't add employee to this payroll group. {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(
+                $"Couldn't add employee to this payroll group. {ex.Message}",
+                ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-
 }

@@ -2,31 +2,32 @@
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRApiLibrary.Models._20_Pay
 @using HRMvc.Applications.PayrollTransaction.Vars
-@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PayrollTransaction.Blazor._102
+
 @inject IOPayrollgrpDataAccess _paygrps
 @inject IOClientDataAccess _clients
+
 <TelerikRootComponent>
     <TelerikNotification @ref="@NotificationRef"
                          HorizontalPosition="@NotificationHorizontalPosition.Right"
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
-
     <CascadingValue Value="@Uc">
         <CascadingValue Value="@v">
             <CascadingValue Value="@NotificationRef">
                 <TelerikLoaderContainer Visible="@v.IsLoading"
                                         LoaderType="@LoaderType.ConvergingSpinner" />
+
                 <TelerikCard Height="100%">
                     <CardHeader>
                         <span class="k-font-weight-bold">Payroll Group Management</span>
                     </CardHeader>
 
-
-
                     <CardBody>
-                        <TelerikTabStrip ActiveTabId="@tab"  ActiveTabIdChanged="@OnTabChanged"  Height="100%">
+                        <TelerikTabStrip ActiveTabId="@tab"
+                                         ActiveTabIdChanged="@OnTabChanged"
+                                         Height="100%">
 
                             <TabStripTab Id="grp" Title="Payroll Group">
                                 <_102_PayrollGrpEntry />
@@ -37,44 +38,36 @@
                             </TabStripTab>
 
                             <TabStripTab Id="sched" Title="Change Schedule Assignment">
-                                <_102_ChangeScheduleMgt  />
+                                <_102_ChangeScheduleMgt />
                             </TabStripTab>
 
                         </TelerikTabStrip>
                     </CardBody>
-
-
                 </TelerikCard>
             </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 </TelerikRootComponent>
+
 @code {
-    private TelerikNotification? NotificationRef;
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
+
+    private TelerikNotification? NotificationRef;
     private V102Model v { get; set; } = new();
     private string tab = "grp";
 
-
     protected override async Task OnInitializedAsync()
     {
-        if (Uc == null) return;
-
         v.pisdb = Uc.OpisDb;
         v.paydb = Uc.OpayDb;
         v.conn = Uc.Conn;
         v.IsLoading = true;
 
-
         try
         {
             await LoadPayrollGroups();
             await LoadDeployments();
-        }
-        catch (Exception)
-        {
-            throw;
         }
         finally
         {
@@ -82,53 +75,42 @@
         }
     }
 
-
     private async Task ChildAction()
     {
-        if (v.Action == "LoadPayrollGroups") await LoadPayrollGroups();
+        if (v.Action == "LoadPayrollGroups")  await LoadPayrollGroups();
+
         v.Action = "";
     }
-
 
     private async Task LoadPayrollGroups()
     {
         try
         {
             var result = await _paygrps._02(v.paydb, v.conn);
-            v.PayrollGrps = result ?? new List<PayrollgrpModel>();
+            v.PayrollGrps = result ?? [];
         }
-        catch (Exception)
+        catch
         {
-            NotificationRef?.Show("Failed to load payroll groups.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show( "Failed to load payroll groups.",ThemeConstants.Notification.ThemeColor.Error);
             throw;
         }
     }
 
-     private async Task LoadDeployments()
- {
-     try
-     {
-         var statuses = new List<string>
-         {
-             "Active",
-             "Inactive"
-         };
+    private async Task LoadDeployments()
+    {
+        try
+        {
+            var statuses = new List<string> { "Active", "Inactive" };
 
-         var result = await _clients._02ByStatuses(
-             statuses,
-             v.pisdb,
-             v.conn);
-
-         v.Deployments = result ?? [];
-     }
-     catch (Exception)
-     {
-         NotificationRef?.Show(  "Failed to load deployments.",  ThemeConstants.Notification.ThemeColor.Error);
-
-         throw;
-     }
- }
-
+            var result = await _clients._02ByStatuses( statuses, v.pisdb,  v.conn);
+            v.Deployments = result ?? [];
+        }
+        catch
+        {
+            NotificationRef?.Show( "Failed to load deployments.", ThemeConstants.Notification.ThemeColor.Error);
+            throw;
+        }
+    }
 
     private void OnTabChanged(string id)
     {
@@ -137,10 +119,10 @@
     }
 }
 
- <style>
+<style>
     .k-card-body,
     .k-tabstrip,
     .k-tabstrip-content {
         min-height: 0;
     }
- </style>
+</style>
