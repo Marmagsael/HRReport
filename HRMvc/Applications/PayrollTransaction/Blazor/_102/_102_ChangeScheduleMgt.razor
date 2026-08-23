@@ -25,14 +25,31 @@
 <TelerikMediaQuery Media="(max-width: 1200px)"
                    OnChange="@((bool matches) => { IsNarrow = matches; StateHasChanged(); })" />
 
+
 <TelerikCard Class="@(IsMobile ? "csm-mobile h-100 d-flex flex-column" : "h-100 d-flex flex-column")">
 
-    <CardHeader class="bg-secondary bg-opacity-10">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch align-items-md-center gap-3">
-            <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3">
-                <label class="k-label text-nowrap">Payroll group</label>
 
-                <div class="paygrp-picker">
+    <CardHeader class="bg-secondary bg-opacity-10">
+
+        <div class="d-flex flex-column flex-md-row
+                    justify-content-between
+                    align-items-stretch align-items-md-center
+                    gap-3">
+
+            @* ====================================================
+               PAYROLL GROUP SECTION
+               ==================================================== *@
+            <div class="d-flex flex-column flex-md-row
+                        align-items-stretch align-items-md-center
+                        gap-2 gap-md-3">
+
+                <label class="k-label text-nowrap">
+                    Payroll group
+                </label>
+
+                @* Payroll Group Dropdown *@
+                <div class="paygrp-picker w-100 w-md-auto">
+
                     <TelerikDropDownList Data="@V.PayrollGrps"
                                          @bind-Value="V.SelectedPayrollGroup"
                                          TextField="@nameof(PayrollgrpModel.Name)"
@@ -41,49 +58,93 @@
                                          FilterPlaceholder="Search payroll group..."
                                          Width="100%"
                                          OnChange="@((object value) => PayrollgrpChange((int)value))">
+
                         <DropDownListSettings>
-                            <DropDownListPopupSettings Width="450px" Height="600px" />
+                            <DropDownListPopupSettings Width="450px"
+                                                       Height="600px" />
                         </DropDownListSettings>
+
                     </TelerikDropDownList>
+
                 </div>
             </div>
 
+
+            @* ====================================================
+               DESKTOP APPLY SCHEDULE BUTTON
+               ==================================================== *@
             @if (!IsMobile)
             {
                 <div>
+
                     <TelerikButton OnClick="@ApplySchedule"
                                    Class="w-100"
                                    ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
                                    Size="@ThemeConstants.Button.Size.Small">
+
                         Apply schedule to selected employee(s)
+
                     </TelerikButton>
+
                 </div>
             }
+
         </div>
+
     </CardHeader>
 
-    <CardBody Class="@(IsMobile ? "p-1 flex-grow-1 d-flex flex-column" : "flex-grow-1 d-flex flex-column")">
-        <div class="@(IsMobile ? "p-0 flex-grow-1 d-flex flex-column" : "card-body p-0 flex-grow-1 d-flex flex-column")">
+
+    <CardBody Class="@(IsMobile
+                      ? "p-1 flex-grow-1 d-flex flex-column"
+                      : "flex-grow-1 d-flex flex-column")">
+
+        <div class="@(IsMobile
+                         ? "p-0 flex-grow-1 d-flex flex-column"
+                         : "card-body p-0 flex-grow-1 d-flex flex-column")">
+
             <div class="d-flex flex-column flex-md-row gap-1 flex-grow-1">
 
+
+                @* =================================================
+                   EMPLOYEE LIST
+                   ================================================= *@
                 @if (IsMobile)
                 {
-                    <TelerikExpansionPanel Title="@EmployeeListTitle" @bind-Expanded="@EmployeeListExpanded">
+                    <TelerikExpansionPanel Title="@EmployeeListTitle"
+                                           @bind-Expanded="@EmployeeListExpanded">
+
                         <Content>
+
                             <_102_CSM_EmployeeList @ref="EmployeeListRef"
                                                    ChildAction="@ChildActionCatcher" />
+
                         </Content>
+
                     </TelerikExpansionPanel>
                 }
                 else
                 {
                     <div class="w-30 d-flex flex-column">
+
                         <_102_CSM_EmployeeList @ref="EmployeeListRef"
                                                ChildAction="@ChildActionCatcher" />
+
                     </div>
                 }
 
+
+                @* =================================================
+                   SCHEDULE GRID AREA
+                   ================================================= *@
                 <div class="flex-grow-1 grid-col d-flex flex-column">
+
+
+                    @* =============================================
+                       WEEKLY SCHEDULE GRID
+                       - Displays each day
+                       - Shows Current Schedule
+                       - Allows New Schedule input
+                       ============================================= *@
                     <TelerikGrid Data="@Days"
                                  TItem="DayRow"
                                  Sortable="false"
@@ -92,32 +153,51 @@
 
                         <GridColumns>
 
+
+                            @* =========================================
+                               DAY COLUMN
+                               ========================================= *@
                             <GridColumn Field="@nameof(DayRow.Label)"
                                         Title="Day"
                                         Width="@(IsNarrow ? "130px" : "120px")">
+
                                 <Template>
+
                                     @{
                                         var d = (DayRow)context;
                                     }
 
                                     <div class="d-flex flex-column justify-content-center">
+
                                         <span class="k-font-weight-bold @dutyTypeCss(d.CurDuty)">
                                             @d.Label
                                         </span>
 
                                         @if (IsNarrow)
                                         {
-                                            <span class="k-color-subtle">@CurrentSummary(d)</span>
+                                            <span class="k-color-subtle">
+                                                @CurrentSummary(d)
+                                            </span>
                                         }
+
                                     </div>
+
                                 </Template>
+
                             </GridColumn>
 
+
+                            @* =========================================
+                               CURRENT SCHEDULE
+                               - Displays the employee's existing schedule
+                               ========================================= *@
                             <GridColumn Visible="@(!IsNarrow)"
                                         HeaderClass="k-text-center">
 
                                 <HeaderTemplate>
+
                                     <div class="hdr-center">
+
                                         @if (string.IsNullOrWhiteSpace(V.SelectedEmployee))
                                         {
                                             <span class="k-color-primary k-font-weight-bold">
@@ -129,24 +209,36 @@
                                             <span class="k-color-primary k-font-weight-bold">
                                                 Current Schedule of
                                             </span>
+
                                             <span class="k-color-subtle k-font-weight-normal">
                                                 [ @V.SelectedEmployee ]
                                             </span>
                                         }
+
                                     </div>
+
                                 </HeaderTemplate>
+
 
                                 <Columns>
 
+
+                                    @* =====================================
+                                       CURRENT DUTY TYPE
+                                       ===================================== *@
                                     <GridColumn Title="Duty Type"
                                                 Width="110px"
                                                 TextAlign="@ColumnTextAlign.Center"
                                                 HeaderClass="k-text-center">
+
                                         <HeaderTemplate>
-                                            <div class="hdr-center">Duty Type</div>
+                                            <div class="hdr-center">
+                                                Duty Type
+                                            </div>
                                         </HeaderTemplate>
 
                                         <Template>
+
                                             @{
                                                 var d = (DayRow)context;
                                             }
@@ -154,96 +246,147 @@
                                             <span class="@dutyTypeCss(d.CurDuty)">
                                                 @d.CurDuty
                                             </span>
+
                                         </Template>
+
                                     </GridColumn>
 
+
+                                    @* =====================================
+                                       CURRENT IN TIME
+                                       ===================================== *@
                                     <GridColumn Title="IN"
                                                 Width="110px"
                                                 TextAlign="@ColumnTextAlign.Center"
                                                 HeaderClass="k-text-center">
+
                                         <HeaderTemplate>
-                                            <div class="hdr-center">IN</div>
+                                            <div class="hdr-center">
+                                                IN
+                                            </div>
                                         </HeaderTemplate>
 
                                         <Template>
+
                                             @{
                                                 var d = (DayRow)context;
                                             }
 
                                             <span class="@dutyTypeCss(d.CurDuty)">
-                                                @(d.CurDuty == "R" ? d.CurIn?.ToString() : "-")
+                                                @(d.CurDuty == "R" ? d.CurIn?.ToString()       : "-")
                                             </span>
+
                                         </Template>
+
                                     </GridColumn>
 
+
+                                    @* =====================================
+                                       CURRENT DURATION
+                                       ===================================== *@
                                     <GridColumn Title="Duration"
                                                 Width="110px"
                                                 TextAlign="@ColumnTextAlign.Center"
                                                 HeaderClass="k-text-center">
+
                                         <HeaderTemplate>
-                                            <div class="hdr-center">Duration</div>
+                                            <div class="hdr-center">
+                                                Duration
+                                            </div>
                                         </HeaderTemplate>
 
                                         <Template>
+
                                             @{
                                                 var d = (DayRow)context;
                                             }
 
                                             <span class="@dutyTypeCss(d.CurDuty)">
-                                                @(d.CurDuty == "R"
-                                                                                                ? ((d.CurHrs ?? 0) / 100.00).ToString("0.#") + " H"
-                                                                                                : "-")
+                                                @(d.CurDuty == "R"? ((d.CurHrs ?? 0) / 100.00).ToString("0.#") + " H"  : "-")
                                             </span>
+
                                         </Template>
+
                                     </GridColumn>
 
                                 </Columns>
+
                             </GridColumn>
 
+
+                            @* =========================================
+                               NEW SCHEDULE
+                               - User selects the new schedule
+                               ========================================= *@
                             <GridColumn HeaderClass="k-text-center">
 
                                 <HeaderTemplate>
+
                                     <div class="hdr-center">
+
                                         <span class="k-color-primary k-font-weight-bold">
                                             New Schedule
                                         </span>
+
                                     </div>
+
                                 </HeaderTemplate>
+
 
                                 <Columns>
 
+
+                                    @* =====================================
+                                       NEW DUTY TYPE
+                                       ===================================== *@
                                     <GridColumn Title="Duty Type"
                                                 Width="@(IsNarrow ? "95px" : "120px")"
                                                 TextAlign="@ColumnTextAlign.Center"
                                                 HeaderClass="k-text-center">
+
                                         <HeaderTemplate>
-                                            <div class="hdr-center">Duty Type</div>
+                                            <div class="hdr-center">
+                                                Duty Type
+                                            </div>
                                         </HeaderTemplate>
 
                                         <Template>
+
                                             @{
                                                 var d = (DayRow)context;
                                             }
 
                                             <div class="d-flex justify-content-center">
+
                                                 <RadzenDropDown Data="@dutyTypes"
                                                                 @bind-Value="@d.ReqDuty"
                                                                 Change="@(() => { d.ReqIn = 0; d.ReqHrs = 0; })"
                                                                 Placeholder="Select Duty Type"
                                                                 Style="width:80px;" />
+
                                             </div>
+
                                         </Template>
+
                                     </GridColumn>
 
+
+                                    @* =====================================
+                                       NEW IN TIME
+                                       ===================================== *@
                                     <GridColumn Title="IN"
                                                 Width="@(IsNarrow ? "125px" : "150px")"
                                                 TextAlign="@ColumnTextAlign.Center"
                                                 HeaderClass="k-text-center">
+
                                         <HeaderTemplate>
-                                            <div class="hdr-center">IN</div>
+                                            <div class="hdr-center">
+                                                IN
+                                            </div>
                                         </HeaderTemplate>
 
                                         <Template>
+
                                             @{
                                                 var d = (DayRow)context;
                                             }
@@ -251,30 +394,44 @@
                                             @if (d.ReqDuty == "R")
                                             {
                                                 <div class="d-flex justify-content-center">
+
                                                     <RadzenDropDown Data="@timeOptions"
                                                                     TextProperty="Text"
                                                                     ValueProperty="Value"
                                                                     @bind-Value="@d.ReqIn"
                                                                     Placeholder="Select Time"
-                                                                    Style="@(IsNarrow ? "width:110px" : "width:125px")" />
-                                                </div>
-                                            }
+                                                                    Style="@(IsNarrow
+                                                                                                                                            ? "width:110px"
+                                                                                                                                            : "width:125px")" />
+
+                                            </div>
+                                                                                        }
                                             else
                                             {
                                                 <span>-</span>
                                             }
+
                                         </Template>
+
                                     </GridColumn>
 
+
+                                    @* =====================================
+                                       NEW DURATION
+                                       ===================================== *@
                                     <GridColumn Title="Duration"
                                                 Width="@(IsNarrow ? "125px" : "150px")"
                                                 TextAlign="@ColumnTextAlign.Center"
                                                 HeaderClass="k-text-center">
+
                                         <HeaderTemplate>
-                                            <div class="hdr-center">Duration</div>
+                                            <div class="hdr-center">
+                                                Duration
+                                            </div>
                                         </HeaderTemplate>
 
                                         <Template>
+
                                             @{
                                                 var d = (DayRow)context;
                                             }
@@ -282,67 +439,104 @@
                                             @if (d.ReqDuty == "R")
                                             {
                                                 <div class="d-flex justify-content-center">
+
                                                     <RadzenDropDown Data="@timedurations"
                                                                     TextProperty="Text"
                                                                     ValueProperty="Value"
                                                                     @bind-Value="@d.ReqHrs"
                                                                     Placeholder="Select Duration"
-                                                                    Style="@(IsNarrow ? "width:110px" : "width:125px")" />
-                                                </div>
-                                            }
+                                                                    Style="@(IsNarrow
+                                                                                                                                            ? "width:110px"
+                                                                                                                                            : "width:125px")" />
+
+                                            </div>
+                                                                                        }
                                             else
                                             {
                                                 <span>-</span>
                                             }
+
                                         </Template>
+
                                     </GridColumn>
 
+
+                                    @* =====================================
+                                       NEW OUT TIME
+                                       ===================================== *@
                                     <GridColumn Title="OUT"
                                                 Width="@(IsNarrow ? "90px" : "110px")"
                                                 TextAlign="@ColumnTextAlign.Center"
                                                 HeaderClass="k-text-center">
+
                                         <HeaderTemplate>
-                                            <div class="hdr-center">OUT</div>
+                                            <div class="hdr-center">
+                                                OUT
+                                            </div>
                                         </HeaderTemplate>
 
                                         <Template>
+
                                             @{
                                                 var d = (DayRow)context;
                                             }
 
                                             <span>
                                                 @(d.ReqDuty == "R"
-                                                                                                ? outRes(d.ReqDuty, d.ReqIn, d.ReqHrs)
+                                                                                                ? outRes(
+                                                                                                d.ReqDuty,
+                                                                                                d.ReqIn,
+                                                                                                d.ReqHrs)
                                                                                                 : "-")
                                             </span>
+
                                         </Template>
+
                                     </GridColumn>
 
                                 </Columns>
+
                             </GridColumn>
 
                         </GridColumns>
+
                     </TelerikGrid>
 
+
+                    @* =================================================
+                       MOBILE APPLY SCHEDULE BUTTON
+                       ================================================= *@
                     @if (IsMobile)
                     {
                         <div class="apply-bar">
+
                             <TelerikButton OnClick="@ApplySchedule"
                                            Class="w-100"
                                            ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
                                            Size="@ThemeConstants.Button.Size.Small">
+
                                 Apply schedule
+
                             </TelerikButton>
+
                         </div>
                     }
 
-                    <_102_CSM_Notes />
-                </div>
-            </div>
-        </div>
-    </CardBody>
-</TelerikCard>
 
+                    @* =================================================
+                       NOTES SECTION
+                       ================================================= *@
+                    <_102_CSM_Notes />
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </CardBody>
+
+</TelerikCard>
 @code {
     [CascadingParameter]
     public UserClaimsModel? Uc { get; set; }
@@ -425,6 +619,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+
         Cs.Atttemplatereqhdr = new();
 
         var res = await _atttemplate._02s(
@@ -442,6 +637,7 @@
             Cs.Atttemplate = _atttemplate._02NoSchedule(Uc.UserId);
         }
 
+        await PayrollgrpChange(previousPayrollGroup);
         BuildDays();
     }
 
@@ -449,6 +645,8 @@
     {
         var c = V.CurrentAttendance ?? new AtttemplateModel();
         var r = DtlReq;
+
+
 
         Days = new()
         {
@@ -538,28 +736,22 @@
 
     private async Task LoadEmployeesForPayrollGroup(int pgrpId)
     {
+        V.AssignedEmployees = [];
         try
         {
             if (pgrpId <= 0)
             {
-                NotificationRef?.Show(
-                    "Invalid Input. Please select a valid payroll group",
-                    ThemeConstants.Notification.ThemeColor.Warning);
-
+                NotificationRef?.Show(  "Invalid Input. Please select a valid payroll group",  ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
 
             V.AssignedEmployees = [];
             V.SelectedAssignedEmployees = [];
 
-            var result = await _empmas._02ByPayrollGrpId(
-                pgrpId,
-                Uc.SchemaMain,
-                V.pisdb,
-                V.conn);
+            var result = await _empmas._02ByPayrollGrpId(   pgrpId,  Uc.SchemaMain, V.pisdb,  V.conn);
 
-            if (result?.Any() == true)
-                V.AssignedEmployees = result;
+            if (result?.Any() == true)  V.AssignedEmployees = result ?? [];
+             
         }
         catch
         {
@@ -639,8 +831,6 @@
 
             foreach (var e in V.EmpmasList)
                 e.Sel = false;
-
-            V.IsAllSelected = false;
 
             await OnInitializedAsync();
 

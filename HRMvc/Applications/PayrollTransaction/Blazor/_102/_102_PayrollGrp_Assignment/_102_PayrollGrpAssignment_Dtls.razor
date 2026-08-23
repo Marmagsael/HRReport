@@ -6,14 +6,18 @@
 
 @inject IODeprecDataAccess _deprec
 
-<div class="w-100 h-100">
+<div class="w-100 h-100 d-flex flex-column">
 
     @* =========================================================
        SELECTED EMPLOYEES ACTION BAR
+
+       This appears only when at least one employee is selected.
+       flex-shrink-0 prevents the action bar from affecting the
+       Grid's ability to display its pager.
        ========================================================= *@
     @if (SelectedEmployees.Any())
     {
-        <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+        <div class="d-flex justify-content-between align-items-center p-2 border-bottom flex-shrink-0">
 
             <TelerikBadge ThemeColor="@ThemeConstants.Badge.ThemeColor.Primary"
                           Position="@BadgePosition.Inline"
@@ -46,28 +50,46 @@
                  SelectedItems="@SelectedEmployees"
                  SelectedItemsChanged="@OnSelectedEmployeesChanged"
                  Pageable="true"
-                 PageSize="11"
+                 @bind-PageSize="@PageSize"
                  FilterMode="@GridFilterMode.FilterMenu"
                  Sortable="true"
                  Resizable="true"
                  Navigable="true"
                  Width="100%"
-                 Height="100%">
+                 Class="flex-grow-1">
+
+        @* =====================================================
+           GRID PAGER
+           ===================================================== *@
+        <GridSettings>
+
+            <GridPagerSettings PageSizes="@PageSizes" />
+
+        </GridSettings>
+
 
         <GridColumns>
 
             @* =================================================
-               CHECKBOX SELECTION
-               - Selects the current row
-               - Select All selects the current page
+               CHECKBOX COLUMN
+
+               IMPORTANT:
+
+               - Clicking the checkbox itself is handled by
+                 Telerik.
+               - Clicking the employee name/row is handled by
+                 OnRowClick.
+               - Both selection methods are supported.
                ================================================= *@
             <GridCheckboxColumn SelectAll="true"
-                                SelectAllMode="@GridSelectAllMode.Current"
+                                SelectAllMode="@GridSelectAllMode.All"
                                 Width="50px" />
 
             @* =================================================
                EMPLOYEE NAME
-               - Clicking anywhere on the row toggles selection
+
+               Clicking this cell triggers OnRowClick because
+               the Grid handles the row click.
                ================================================= *@
             <GridColumn Field="@nameof(ODeprecModel.EmpName)"
                         Title="Employee name" />
@@ -75,9 +97,9 @@
         </GridColumns>
 
 
-        @* =====================================================
+        @* =========================================================
            NO DATA MESSAGE
-           ===================================================== *@
+           ========================================================= *@
         <NoDataTemplate>
 
             <div class="text-center text-secondary p-3">
@@ -123,153 +145,344 @@
     [CascadingParameter]
     public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
 
+
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
 
+
     [CascadingParameter]
     public V102Model V { get; set; } = new();
+
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
 
-    @* =========================================================
-       GRID REFERENCE
-       ========================================================= *@
     private TelerikGrid<ODeprecModel>? DeprecGrid;
 
 
     @* =========================================================
        SELECTED EMPLOYEES
+
+       This is the collection used by the component to keep
+       track of all selected employees.
+
+       Example:
+
+       A selected
+       B selected
+       C selected
+
+       Clicking B again removes only B.
        ========================================================= *@
     private List<ODeprecModel> SelectedEmployees { get; set; } = new();
 
 
     @* =========================================================
-       CHECK IF GRID HAS ACTIVE FILTER
+       ROW CLICK SELECTION FLAG
+
+       When the employee name/row is clicked, Telerik will also
+       perform its own selection processing.
+
+       We use this flag to ignore ONLY that automatic
+       SelectedItemsChanged event.
+
+       Checkbox selection is NOT ignored.
+
+       This allows both mechanisms to work:
+       
+       1. Row/name click
+       2. Checkbox click
+       ========================================================= *@
+    private bool IgnoreNextSelectionChanged { get; set; }
+
+
+    @* =========================================================
+       DYNAMIC PAGE SIZE
+       ========================================================= *@
+    private int PageSize { get; set; } = 25;
+
+
+    @* =========================================================
+       AVAILABLE PAGE SIZES
+       ========================================================= *@
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100
+    };
+
+
+    @* =========================================================
+       CHECK IF GRID HAS AN ACTIVE FILTER
        ========================================================= *@
     private bool HasActiveFilter =>
         DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
 
 
     @* =========================================================
-       ROW CLICK SELECTION
+       ROW CLICK
 
-       Behavior:
+       This provides custom multiple selection behavior.
 
-       Click Employee A
-       -> A selected
+       Telerik's normal multiple row selection can require
+       Ctrl + Click.
 
-       Click Employee B
-       -> A + B selected
+       We do NOT want that.
 
-       Click Employee C
-       -> A + B + C selected
+       Our behavior is:
 
-       Click Employee B again
-       -> A + C selected
+       Click A
+           -> A selected
 
-       This prevents normal Telerik row selection from replacing
-       the existing selection.
+       Click B
+           -> A + B selected
+
+       Click C
+           -> A + B + C selected
+
+       Click B again
+           -> A + C selected
+
+
+       IMPORTANT:
+
+       This method is for ROW/EMPLOYEE NAME clicks.
+
+       Clicking the actual checkbox uses Telerik's normal
+       checkbox selection mechanism.
        ========================================================= *@
     private void OnRowClick(GridRowClickEventArgs args)
     {
-        var employee = (ODeprecModel)args.Item;
+        var employee =
+            (ODeprecModel)args.Item;
 
-        var alreadySelected = SelectedEmployees.Any(
-            x => x.EmpNumber == employee.EmpNumber);
+
+        var alreadySelected =
+            SelectedEmployees.Any(
+                x => x.EmpNumber == employee.EmpNumber);
+
+
+        @* =====================================================
+           IGNORE TELERIK'S AUTOMATIC SELECTION EVENT
+
+           OnRowClick happens before Telerik completes its
+           normal selection process.
+
+           We handle the selection ourselves below.
+
+           Therefore the next SelectedItemsChanged event
+           generated by this row click must be ignored.
+           ===================================================== *@
+        IgnoreNextSelectionChanged = true;
+
 
         if (alreadySelected)
         {
-            SelectedEmployees = SelectedEmployees
-                .Where(x => x.EmpNumber != employee.EmpNumber)
-                .ToList();
+            @* =============================================
+               REMOVE ONLY THE CLICKED EMPLOYEE
+               ============================================= *@
+
+            SelectedEmployees =
+                SelectedEmployees
+                    .Where(x =>
+                        x.EmpNumber != employee.EmpNumber)
+                    .ToList();
         }
         else
         {
-            SelectedEmployees = SelectedEmployees
-                .Concat(new[] { employee })
-                .ToList();
+            @* =============================================
+               ADD ONLY THE CLICKED EMPLOYEE
+
+               Existing selections remain untouched.
+               ============================================= *@
+
+            SelectedEmployees =
+                SelectedEmployees
+                    .Concat(new[] { employee })
+                    .ToList();
         }
 
+
+        @* Force the Grid to render the updated selection. *@
         args.ShouldRender = true;
     }
 
 
     @* =========================================================
-       TELERIK SELECTION CHANGE
+       TELERIK SELECTION CHANGED
 
-       Intentionally does not modify SelectedEmployees.
+       This method handles CHECKBOX selection.
 
-       Row selection is handled by OnRowClick.
-       This prevents Telerik's normal row-selection behavior
-       from replacing our multiple selection.
+       There are two possible sources:
+
+       A. Employee row/name click
+          -> Ignore the next event because OnRowClick already
+             handled the selection.
+
+       B. Actual checkbox click
+          -> Accept Telerik's selection.
+
+       This allows:
+
+       - individual checkbox selection
+       - individual checkbox deselection
+       - multiple checkbox selection
+       - Select All
+       - Unselect All
        ========================================================= *@
-    private Task OnSelectedEmployeesChanged(
+    private void OnSelectedEmployeesChanged(
         IEnumerable<ODeprecModel> employees)
     {
-        return Task.CompletedTask;
+        @* =====================================================
+           ROW CLICK EVENT
+
+           Ignore Telerik's automatic selection because
+           OnRowClick already updated SelectedEmployees.
+           ===================================================== *@
+        if (IgnoreNextSelectionChanged)
+        {
+            IgnoreNextSelectionChanged = false;
+
+            return;
+        }
+
+
+        @* =====================================================
+           CHECKBOX EVENT
+
+           This includes:
+
+           - clicking an individual checkbox
+           - clicking multiple checkboxes
+           - Select All
+           - Unselect All
+           ===================================================== *@
+        SelectedEmployees =
+            employees.ToList();
     }
 
 
     @* =========================================================
-       LOAD GRID DATA
+       GRID READ
+
+       Handles:
+
+       - Server-side paging
+       - Dynamic page size
+       - Sorting
+       - Filtering
+       - Database loading
        ========================================================= *@
-    private async Task OnGridRead(GridReadEventArgs args)
+    private async Task OnGridRead(
+        GridReadEventArgs args)
     {
         if (V.SelectedPayrollGroup <= 0)
         {
-            args.Data = new List<ODeprecModel>();
+            args.Data =
+                new List<ODeprecModel>();
+
             args.Total = 0;
 
             return;
         }
 
 
-        var pageSize = args.Request.PageSize > 0
-            ? args.Request.PageSize
-            : 10;
+        @* =====================================================
+           GET PAGE SIZE FROM TELERIK
+           ===================================================== *@
+        var pageSize =
+            args.Request.PageSize;
 
 
-        var page = args.Request.Page > 0
-            ? args.Request.Page
-            : 1;
-
-
-        var sort = args.Request.Sorts.FirstOrDefault();
-
-
-        var request = new GridRequestModel
+        @* =====================================================
+           FALLBACK TO CURRENT PAGE SIZE
+           ===================================================== *@
+        if (pageSize <= 0)
         {
-            PageSize = pageSize,
-
-            Offset = (page - 1) * pageSize,
-
-            SortField = sort?.Member
-                ?? nameof(ODeprecModel.EmpName),
-
-            SortDirection =
-                sort?.SortDirection ==
-                Telerik.DataSource.ListSortDirection.Descending
-                    ? "DESC"
-                    : "ASC",
-
-            Filters = GridHelper.GetFilters(args)
-        };
+            pageSize =
+                PageSize;
+        }
 
 
-        var result = await _deprec._02Grid(
-            V.SelectedPayrollGroup,
-            request,
-            V.pisdb,
-            V.conn);
+        @* =====================================================
+           SAVE CURRENT PAGE SIZE
+           ===================================================== *@
+        PageSize =
+            pageSize;
 
 
+        @* =====================================================
+           GET CURRENT PAGE
+           ===================================================== *@
+        var page =
+            args.Request.Page > 0
+                ? args.Request.Page
+                : 1;
+
+
+        @* =====================================================
+           GET SORT
+           ===================================================== *@
+        var sort =
+            args.Request.Sorts
+                .FirstOrDefault();
+
+
+        @* =====================================================
+           BUILD DATABASE REQUEST
+           ===================================================== *@
+        var request =
+            new GridRequestModel
+            {
+                PageSize =
+                    pageSize,
+
+                Offset =
+                    (page - 1) * pageSize,
+
+                SortField =
+                    sort?.Member
+                    ?? nameof(ODeprecModel.EmpName),
+
+                SortDirection =
+                    sort?.SortDirection ==
+                    Telerik.DataSource.ListSortDirection.Descending
+                        ? "DESC"
+                        : "ASC",
+
+                Filters =
+                    GridHelper.GetFilters(args)
+            };
+
+
+        @* =====================================================
+           LOAD DATA
+           ===================================================== *@
+        var result =
+            await _deprec._02Grid(
+                V.SelectedPayrollGroup,
+                request,
+                V.pisdb,
+                V.conn);
+
+
+        @* =====================================================
+           SET GRID DATA
+           ===================================================== *@
         args.Data =
             result?.Data
             ?? new List<ODeprecModel>();
 
 
+        @* =====================================================
+           SET TOTAL RECORD COUNT
+
+           Telerik uses this value to calculate the number
+           of pages in the pager.
+           ===================================================== *@
         args.Total =
             result?.Total
             ?? 0;
@@ -292,23 +505,36 @@
        ========================================================= *@
     public async Task ResetGrid()
     {
+        @* Clear our selected employees. *@
         SelectedEmployees =
             new List<ODeprecModel>();
+
+
+        @* Reset selection event handling. *@
+        IgnoreNextSelectionChanged = false;
 
 
         if (DeprecGrid == null)
             return;
 
 
-        var state = DeprecGrid.GetState();
+        var state =
+            DeprecGrid.GetState();
 
 
+        @* Clear filters. *@
         state.FilterDescriptors.Clear();
 
+
+        @* Clear sorting. *@
         state.SortDescriptors.Clear();
 
+
+        @* Return to first page. *@
         state.Page = 1;
 
+
+        @* Clear Telerik selection. *@
         state.SelectedItems =
             new List<ODeprecModel>();
 
@@ -354,6 +580,9 @@
         var removedCount = 0;
 
 
+        @* =====================================================
+           REMOVE EACH SELECTED EMPLOYEE
+           ===================================================== *@
         foreach (var employee in employees)
         {
             try
@@ -372,11 +601,20 @@
         }
 
 
-        @* Clear selected employees after removal *@
+        @* =====================================================
+           CLEAR SELECTED EMPLOYEES
+           ===================================================== *@
         SelectedEmployees =
             new List<ODeprecModel>();
 
 
+        @* Reset selection event handling. *@
+        IgnoreNextSelectionChanged = false;
+
+
+        @* =====================================================
+           CLEAR TELERIK GRID SELECTION
+           ===================================================== *@
         if (DeprecGrid != null)
         {
             var state =
@@ -394,7 +632,9 @@
         }
 
 
-        @* Notify parent to refresh related data *@
+        @* =====================================================
+           NOTIFY PARENT
+           ===================================================== *@
         if (removedCount > 0)
         {
             await ChildAction.InvokeAsync();
@@ -443,7 +683,8 @@
     private async Task RemoveEmployee(
         ODeprecModel emp)
     {
-        if (string.IsNullOrWhiteSpace(emp.EmpNumber))
+        if (string.IsNullOrWhiteSpace(
+                emp.EmpNumber))
         {
             throw new Exception(
                 "Employee number is required.");
@@ -453,9 +694,11 @@
         var updateEmp =
             new ODeprecModel
             {
-                EmpNumber = emp.EmpNumber,
+                EmpNumber =
+                    emp.EmpNumber,
 
-                PayrollgrpId = 0
+                PayrollgrpId =
+                    0
             };
 
 

@@ -6,11 +6,17 @@
 @inject IAtttemplateDataAccess _atttemplate
 
 <div class="employee-list h-100 d-flex flex-column">
+
+    @* =========================================================
+       ASSIGNED EMPLOYEES GRID
+       ========================================================= *@
     <TelerikGrid TItem="OEmpmasModel"
                  @ref="EmployeeAssignedGrid"
                  Data="@V.AssignedEmployees"
+                 OnRowClick="@OnRowClick"
+                 OnRowRender="@OnRowRender"
                  SelectionMode="@GridSelectionMode.Multiple"
-                 SelectedItems="@V.SelectedAssignedEmployees"
+                 SelectedItems="@SelectedEmployees"
                  SelectedItemsChanged="@OnSelectedEmployeesChanged"
                  Pageable="true"
                  PageSize="11"
@@ -19,100 +25,497 @@
                  Resizable="true"
                  Navigable="true"
                  Width="100%"
-                 Height="100%">
+                 Class="flex-grow-1">
+
         <GridColumns>
+
+            @* =================================================
+               CHECKBOX COLUMN
+
+               Direct checkbox clicks are handled by Telerik.
+
+               Row/name clicks are handled by OnRowClick.
+
+               Both selection methods work independently.
+               ================================================= *@
             <GridCheckboxColumn SelectAll="true"
                                 SelectAllMode="@GridSelectAllMode.Current"
                                 Width="50px" />
+
+
+            @* =================================================
+               EMPLOYEE NAME
+               ================================================= *@
             <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
-                        Title="Employee Name" />
+                        Title="Employee Name">
+
+                <Template>
+
+                    @{
+                        var employee = (OEmpmasModel)context;
+                    }
+
+                    <div class="employee-name-cell">
+
+                        <div>
+                            @employee.Fullname
+                        </div>
+
+                        @if (employee.UserId == 0)
+                        {
+                            <div class="no-login-message">
+                                User has no login credentials yet
+                            </div>
+                        }
+
+                    </div>
+
+                </Template>
+
+            </GridColumn>
+
         </GridColumns>
+
+
+        @* =========================================================
+           NO DATA MESSAGE
+           ========================================================= *@
         <NoDataTemplate>
+
             <div class="text-center text-secondary p-3">
+
                 @if (V.SelectedPayrollGroup <= 0)
                 {
-                    <div>Select a payroll group to see assigned employees.</div>
+                    <div>
+                        Select a payroll group to see assigned employees.
+                    </div>
                 }
                 else if (HasActiveFilter)
                 {
-                    <div>No employees match the current filter.</div>
-                    <div class="k-font-size-sm">Clear the column filter to see everyone.</div>
+                    <div>
+                        No employees match the current filter.
+                    </div>
+
+                    <div class="k-font-size-sm">
+                        Clear the column filter to see everyone.
+                    </div>
                 }
                 else
                 {
-                    <div>No one is assigned to this group yet.</div>
+                    <div>
+                        No one is assigned to this group yet.
+                    </div>
                 }
+
             </div>
+
         </NoDataTemplate>
+
     </TelerikGrid>
+
 </div>
 
+
 @code {
+
     [CascadingParameter]
     public UserClaimsModel? Uc { get; set; }
+
 
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
 
+
     [CascadingParameter]
     public V102Model V { get; set; } = new();
+
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
+
     private TelerikGrid<OEmpmasModel>? EmployeeAssignedGrid;
 
-    private bool HasActiveFilter =>
-        EmployeeAssignedGrid?.GetState().FilterDescriptors?.Any() == true;
 
-    private async Task OnSelectedEmployeesChanged(IEnumerable<OEmpmasModel> employees)
+    @* =========================================================
+       SELECTED EMPLOYEES
+
+       This is our main selection collection.
+
+       Row clicks modify this collection manually.
+
+       Checkbox clicks are synchronized through
+       OnSelectedEmployeesChanged.
+       ========================================================= *@
+    private List<OEmpmasModel> SelectedEmployees { get; set; } = new();
+
+
+    @* =========================================================
+       SELECTION EVENT CONTROL
+
+       When the employee name/row is clicked, OnRowClick handles
+       the selection manually.
+
+       Telerik may then raise SelectedItemsChanged for the same
+       row click.
+
+       We ignore ONLY that automatic event.
+
+       Actual checkbox clicks are still processed normally.
+
+       This allows:
+
+       - Row click multiple selection
+       - Checkbox multiple selection
+       - Select All
+       - Unselect All
+       ========================================================= *@
+    private bool IgnoreNextSelectionChanged { get; set; }
+
+
+    @* =========================================================
+       CHECK IF GRID HAS AN ACTIVE FILTER
+       ========================================================= *@
+    private bool HasActiveFilter =>
+        EmployeeAssignedGrid?.GetState()
+            .FilterDescriptors?.Any() == true;
+
+
+    @* =========================================================
+       ROW RENDER
+
+       Employees without login credentials remain disabled.
+
+       UserId <= 0:
+       - visually disabled
+       - cannot be selected by row click
+       - cannot be selected through normal row interaction
+       ========================================================= *@
+    private void OnRowRender(
+        GridRowRenderEventArgs args)
     {
-        var lastEmployee = string.Empty;
+        var employee =
+            (OEmpmasModel)args.Item;
+
+
+        if (employee.UserId <= 0)
+        {
+            args.Class =
+                "row-disabled";
+        }
+    }
+
+
+    @* =========================================================
+       ROW CLICK
+
+       Custom multiple selection behavior.
+
+       Example:
+
+       Click A
+           -> A
+
+       Click B
+           -> A + B
+
+       Click C
+           -> A + B + C
+
+       Click B again
+           -> A + C
+
+       Existing selections are never automatically replaced.
+
+       UserId <= 0 employees cannot be selected.
+       ========================================================= *@
+    private async Task OnRowClick(
+        GridRowClickEventArgs args)
+    {
+        var employee =
+            (OEmpmasModel)args.Item;
+
+
+        @* =====================================================
+           DO NOT ALLOW EMPLOYEES WITHOUT LOGIN
+           ===================================================== *@
+        if (employee.UserId <= 0)
+        {
+            args.ShouldRender = false;
+
+            return;
+        }
+
+
+        @* =====================================================
+           CHECK WHETHER EMPLOYEE IS ALREADY SELECTED
+           ===================================================== *@
+        var alreadySelected =
+            SelectedEmployees.Any(
+                x => x.UserId == employee.UserId);
+
+
+        @* =====================================================
+           IGNORE TELERIK'S AUTOMATIC SELECTION EVENT
+
+           We are manually controlling this row click.
+           ===================================================== *@
+        IgnoreNextSelectionChanged = true;
+
+
+        if (alreadySelected)
+        {
+            @* =============================================
+               REMOVE ONLY THIS EMPLOYEE
+               ============================================= *@
+
+            SelectedEmployees =
+                SelectedEmployees
+                    .Where(x =>
+                        x.UserId != employee.UserId)
+                    .ToList();
+        }
+        else
+        {
+            @* =============================================
+               ADD ONLY THIS EMPLOYEE
+
+               Previous selections remain.
+               ============================================= *@
+
+            SelectedEmployees =
+                SelectedEmployees
+                    .Concat(new[] { employee })
+                    .ToList();
+        }
+
+
+        @* =====================================================
+           PROCESS CURRENT SELECTION
+
+           The last selected employee becomes the employee
+           whose attendance schedule is displayed.
+           ===================================================== *@
+        await ProcessSelectedEmployees();
+
+
+        @* =====================================================
+           FORCE GRID TO RENDER UPDATED CHECKBOXES
+           ===================================================== *@
+        args.ShouldRender = true;
+    }
+
+
+    @* =========================================================
+       TELERIK SELECTION CHANGED
+
+       This handles direct checkbox interaction.
+
+       There are two cases:
+
+       1. The event came from OnRowClick.
+          Ignore it because OnRowClick already updated
+          SelectedEmployees.
+
+       2. The event came from a checkbox.
+          Accept Telerik's selection.
+
+       This keeps:
+
+       - individual checkbox selection
+       - multiple checkbox selection
+       - Select All
+       - Unselect All
+
+       working normally.
+       ========================================================= *@
+    private async Task OnSelectedEmployeesChanged(
+        IEnumerable<OEmpmasModel> employees)
+    {
+        @* =====================================================
+           IGNORE AUTOMATIC EVENT FROM ROW CLICK
+           ===================================================== *@
+        if (IgnoreNextSelectionChanged)
+        {
+            IgnoreNextSelectionChanged = false;
+
+            return;
+        }
+
+
+        @* =====================================================
+           CHECKBOX SELECTION
+
+           Only allow employees with valid UserId.
+           ===================================================== *@
+        SelectedEmployees =
+            employees
+                .Where(x => x.UserId > 0)
+                .ToList();
+
+
+        @* =====================================================
+           PROCESS CHECKBOX SELECTION
+           ===================================================== *@
+        await ProcessSelectedEmployees();
+    }
+
+
+    @* =========================================================
+       PROCESS SELECTED EMPLOYEES
+
+       The LAST selected employee is used to load the current
+       attendance schedule.
+
+       Multiple employees can remain selected.
+       ========================================================= *@
+    private async Task ProcessSelectedEmployees()
+    {
+        var lastEmployee =
+            string.Empty;
+
 
         try
         {
-            V.SelectedAssignedEmployees = employees?.ToList() ?? [];
-            V.SelectedEmployee = string.Empty;
-            V.CurrentAttendance = new AtttemplateModel();
+            var selectedEmployees =
+                SelectedEmployees
+                    .Where(x => x.UserId > 0)
+                    .ToList();
 
-            if (V.SelectedAssignedEmployees.Count == 0)
+
+            @* =================================================
+               CLEAR CURRENT EMPLOYEE/SCHEDULE
+               ================================================= *@
+            V.SelectedEmployee =
+                string.Empty;
+
+            V.CurrentAttendance =
+                new AtttemplateModel();
+
+
+            @* =================================================
+               NO EMPLOYEES SELECTED
+               ================================================= *@
+            if (!selectedEmployees.Any())
             {
                 await ChildAction.InvokeAsync();
+
                 return;
             }
 
-            var employee = V.SelectedAssignedEmployees.LastOrDefault();
+
+            @* =================================================
+               GET LAST SELECTED EMPLOYEE
+               ================================================= *@
+            var employee =
+                selectedEmployees.LastOrDefault();
+
 
             if (employee == null)
             {
                 await ChildAction.InvokeAsync();
+
                 return;
             }
 
-            lastEmployee = employee.Fullname ?? "-";
 
+            lastEmployee =
+                employee.Fullname
+                ?? "-";
+
+
+            @* =================================================
+               USER CLAIMS VALIDATION
+               ================================================= *@
             if (Uc == null)
             {
                 NotificationRef?.Show(
                     "User information is unavailable.",
                     ThemeConstants.Notification.ThemeColor.Error);
+
                 return;
             }
 
-            var result = await _atttemplate._02(
-                employee.UserId,
-                Uc.SchemaUserPis,
-                V.conn);
 
-            if (result != null && result.EmpmasId > 0)
+            @* =================================================
+               GET CURRENT ATTENDANCE TEMPLATE
+               ================================================= *@
+            var result =
+                await _atttemplate._02(
+                    employee.UserId,
+                    Uc.SchemaUserPis,
+                    V.conn);
+
+
+            @* =================================================
+               DEFAULT ATTENDANCE TEMPLATE
+               ================================================= *@
+            var schedule =
+                new AtttemplateModel
+                {
+                    EmpmasId = 0,
+
+                    AttendancetypeId = 0,
+
+                    D1_in = 0,
+                    D1_hrslength = 0,
+                    D1_dutytype = "-",
+
+                    D2_in = 0,
+                    D2_hrslength = 0,
+                    D2_dutytype = "-",
+
+                    D3_in = 0,
+                    D3_hrslength = 0,
+                    D3_dutytype = "-",
+
+                    D4_in = 0,
+                    D4_hrslength = 0,
+                    D4_dutytype = "-",
+
+                    D5_in = 0,
+                    D5_hrslength = 0,
+                    D5_dutytype = "-",
+
+                    D6_in = 0,
+                    D6_hrslength = 0,
+                    D6_dutytype = "-",
+
+                    D7_in = 0,
+                    D7_hrslength = 0,
+                    D7_dutytype = "-",
+
+                    Attendancetype = "-"
+                };
+
+
+            @* =================================================
+               USE DATABASE RESULT WHEN AVAILABLE
+               ================================================= *@
+            if (result != null &&
+                result.EmpmasId > 0)
             {
-                V.SelectedEmployee = employee.Fullname;
-                V.CurrentAttendance = result;
+                schedule =
+                    result;
             }
 
+
+            @* =================================================
+               UPDATE SHARED STATE
+               ================================================= *@
+            V.SelectedEmployee =
+                employee.Fullname;
+
+            V.CurrentAttendance =
+                schedule;
+
+
+            @* =================================================
+               NOTIFY PARENT
+               ================================================= *@
             await ChildAction.InvokeAsync();
         }
-        catch (Exception)
+        catch
         {
             NotificationRef?.Show(
                 $"Couldn't get the current schedule of {lastEmployee}",
@@ -120,38 +523,98 @@
         }
     }
 
-    public async Task UnselectAllEmployees()
-    {
-        V.SelectedAssignedEmployees = [];
 
-        if (EmployeeAssignedGrid != null)
-        {
-            var state = EmployeeAssignedGrid.GetState();
-            state.SelectedItems = [];
-            await EmployeeAssignedGrid.SetStateAsync(state);
-        }
-
-        V.SelectedEmployee = string.Empty;
-        V.CurrentAttendance = new AtttemplateModel();
-        await ChildAction.InvokeAsync();
-    }
-
+    @* =========================================================
+       RESET GRID
+       ========================================================= *@
     public async Task ResetGrid()
     {
-        V.SelectedAssignedEmployees = [];
-        V.SelectedEmployee = string.Empty;
-        V.CurrentAttendance = new AtttemplateModel();
+        @* Clear selected employees. *@
+        SelectedEmployees =
+            new List<OEmpmasModel>();
 
-        if (EmployeeAssignedGrid != null)
-        {
-            await EmployeeAssignedGrid.SetStateAsync(
-                new GridState<OEmpmasModel>());
-        }
+
+        @* Reset selection event control. *@
+        IgnoreNextSelectionChanged =
+            false;
+
+
+        @* Clear selected employee state. *@
+        V.SelectedEmployee =
+            string.Empty;
+
+
+        V.CurrentAttendance =
+            new AtttemplateModel();
+
+
+        if (EmployeeAssignedGrid == null)
+            return;
+
+
+        var state =
+            EmployeeAssignedGrid.GetState();
+
+
+        @* Clear filters. *@
+        state.FilterDescriptors.Clear();
+
+
+        @* Clear sorting. *@
+        state.SortDescriptors.Clear();
+
+
+        @* Return to first page. *@
+        state.Page = 1;
+
+
+        @* Clear Telerik selection. *@
+        state.SelectedItems =
+            new List<OEmpmasModel>();
+
+
+        await EmployeeAssignedGrid.SetStateAsync(state);
     }
+
+
+    @* =========================================================
+       UNSELECT ALL EMPLOYEES
+
+       Kept as a separate public method because your parent
+       component may already call this method.
+       ========================================================= *@
+    public async Task UnselectAllEmployees()
+    {
+        await ResetGrid();
+    }
+
 }
 
+
 <style>
+
     .employee-list {
         width: 100%;
     }
+
+
+    .employee-name-cell {
+        width: 100%;
+        cursor: pointer;
+        user-select: none;
+    }
+
+
+    .no-login-message {
+        font-size: 11px;
+        color: #999;
+    }
+
+
+    .row-disabled {
+        pointer-events: none;
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
 </style>
