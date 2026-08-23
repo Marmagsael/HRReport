@@ -139,7 +139,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn)
     {
         string? sql = $@"SELECT  u.Id AS UserId, e.EmpNumber, 
-                        CONCAT_WS(',', e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm) AS Fullname
+                        CONCAT_WS(' ', NULLIF(TRIM(e.EmpLastNm), ''), NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), '')) AS Fullname
                         FROM {pisschema}.empmas e
                         INNER JOIN {pisschema}.deprec d ON d.empnumber = e.empnumber
                         LEFT JOIN {mainschema}.users u on u.loginname = e.empnumber

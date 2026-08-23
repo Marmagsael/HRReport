@@ -8,7 +8,7 @@
     <TelerikCard Class="w-100 h-100 d-flex flex-column">
 
 
-        <CardHeader Class="bg-secondary bg-opacity-10">
+        <CardHeader Class="bg-secondary bg-opacity-10 p-2">
 
             <div class="d-flex flex-column flex-md-row
                         align-items-stretch align-items-md-center
@@ -22,33 +22,33 @@
             @* =================================================
                PAYROLL GROUP DROPDOWN
                 ================================================= *@
-            <div class="paygrp-picker w-100 w-md-auto">
+                <div class="paygrp-picker w-100 w-md-auto">
 
-                <TelerikDropDownList Id="paygrp"
-                                     Data="@V.PayrollGrps"
-                                     @bind-Value="V.SelectedPayrollGroup"
-                                     TextField="@nameof(PayrollgrpModel.Name)"
-                                     ValueField="@nameof(PayrollgrpModel.Id)"
-                                     Filterable="true"
-                                     FilterPlaceholder="Search payroll group..."
-                                     Width="100%"
-                                     OnChange="@PayrollGrpChange">
+                    <TelerikDropDownList Id="paygrp"
+                                         Data="@V.PayrollGrps"
+                                         @bind-Value="V.SelectedPayrollGroup"
+                                         TextField="@nameof(PayrollgrpModel.Name)"
+                                         ValueField="@nameof(PayrollgrpModel.Id)"
+                                         Filterable="true"
+                                         FilterPlaceholder="Search payroll group..."
+                                         Width="100%"
+                                         OnChange="@PayrollGrpChange">
 
-                    <DropDownListSettings>
-                        <DropDownListPopupSettings Width="450px"
-                                                   Height="600px" />
-                    </DropDownListSettings>
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Width="450px"
+                                                       Height="600px" />
+                        </DropDownListSettings>
 
-                </TelerikDropDownList>
+                    </TelerikDropDownList>
 
-            </div>
+                </div>
 
             </div>
 
         </CardHeader>
 
 
-        <CardBody Class="assignment-outer-body p-2 p-md-3 w-100">
+        <CardBody Class="assignment-outer-body p-1 p-lg-2 p-md-3 w-100">
 
 
          
@@ -84,16 +84,14 @@
                 </CardHeader>
 
 
-                @* =================================================
-                   GRID AREA
-                   ================================================= *@
+               
                 <CardBody Class="assignment-inner-body p-0 w-100 h-100">
 
                     <div class="position-relative grid-host w-100 h-100">
 
 
                         @* =================================================
-                           ADD EMPLOYEE PANEL
+                           ADD EMPLOYEE 
                            ================================================= *@
                         <TelerikAnimationContainer @ref="AddMemberPanel"
                                                    AnimationType="@AnimationType.SlideDown"
@@ -108,7 +106,7 @@
 
 
                         @* =================================================
-                           ASSIGNED EMPLOYEES TELERIK GRID
+                            GRID
                            ================================================= *@
                         <_102_PayrollGrpAssignment_Dtls @ref="AssignedEmployeesGrid"
                                                         ChildAction="CA_Catcher" />
@@ -136,17 +134,16 @@
     private _102_PayrollGrpAssignment_Dtls? AssignedEmployeesGrid;
     private TelerikAnimationContainer? AddMemberPanel;
 
+
+
     private async Task ToggleAddMember()
     {
         V.ShowAddMember = !V.ShowAddMember;
 
-        if (AddMemberPanel == null)
-            return;
+        if (AddMemberPanel == null)  return;
 
-        if (V.ShowAddMember)
-            await AddMemberPanel.ShowAsync();
-        else
-            await AddMemberPanel.HideAsync();
+        if (V.ShowAddMember) await AddMemberPanel.ShowAsync();
+        else await AddMemberPanel.HideAsync();
     }
 
     private async Task PayrollGrpChange()
@@ -155,28 +152,23 @@
         {
             V.ShowAddMember = false;
 
-            if (AddMemberPanel != null)
-                await AddMemberPanel.HideAsync();
+            if (AddMemberPanel != null) await AddMemberPanel.HideAsync();
 
             V.EmployeesNoPayGrp = [];
 
-            if (AssignedEmployeesGrid != null)
-                await AssignedEmployeesGrid.ResetGrid();
+            if (AssignedEmployeesGrid != null)  await AssignedEmployeesGrid.ResetGrid();
 
             await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show(
-                $"Couldn't load assigned employees. {ex.Message}",
-                ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(  $"Couldn't load assigned employees. {ex.Message}",ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
     private async Task CA_Catcher()
     {
-        if (AssignedEmployeesGrid != null)
-            await AssignedEmployeesGrid.RefreshGrid();
+        if (AssignedEmployeesGrid != null) await AssignedEmployeesGrid.RefreshGrid();
 
         await ChildAction.InvokeAsync();
     }

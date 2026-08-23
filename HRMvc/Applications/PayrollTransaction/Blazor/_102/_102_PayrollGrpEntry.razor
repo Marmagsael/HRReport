@@ -381,9 +381,6 @@
     };
 
     private TelerikGrid<PayrollgrpModel>? PayrollGrpGrid;
-
-
-
     private readonly PayrollgrpValidator GridFluentValidator = new();
 
 
@@ -397,19 +394,13 @@
 
         PageSize = pageSize;
 
-        var page = args.Request.Page > 0
-            ? args.Request.Page
-            : 1;
+        var page = args.Request.Page > 0  ? args.Request.Page  : 1;
 
         var offset = (page - 1) * pageSize;
 
-        var sort = args.Request.Sorts.FirstOrDefault();
-
-        var sortField = sort?.Member
-            ?? nameof(PayrollgrpModel.Name);
-
-        var sortDirection = sort?.SortDirection ==
-                            Telerik.DataSource.ListSortDirection.Descending
+        var sort            = args.Request.Sorts.FirstOrDefault();
+        var sortField       = sort?.Member  ?? nameof(PayrollgrpModel.Name);
+        var sortDirection   = sort?.SortDirection ==  Telerik.DataSource.ListSortDirection.Descending
             ? "DESC"
             : "ASC";
 
@@ -435,11 +426,7 @@
             Filters = filters
         };
 
-        var result = await _paygrp._02Grid(
-            request,
-            V.paydb,
-            V.pisdb,
-            V.conn);
+        var result = await _paygrp._02Grid(  request,  V.paydb, V.pisdb, V.conn);
 
         args.Data = result.Data;
         args.Total = result.Total;
@@ -473,22 +460,15 @@
             if (exists.Any())
             {
                 args.IsCancelled = true;
-
-                NotificationRef?.Show(
-                    "Payroll group name already exists.",
-                    ThemeConstants.Notification.ThemeColor.Error);
-
+                NotificationRef?.Show( "Payroll group name already exists.",ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
             await _paygrp._01(pg, V.paydb, V.conn);
 
-            NotificationRef?.Show(
-                "Payroll group created successfully.",
-                ThemeConstants.Notification.ThemeColor.Success);
-
+            NotificationRef?.Show( "Payroll group created successfully.",   ThemeConstants.Notification.ThemeColor.Success);
+           
             V.Action = "LoadPayrollGroups";
-
             await ChildAction.InvokeAsync();
 
             RefreshGrid();
@@ -497,9 +477,7 @@
         {
             args.IsCancelled = true;
 
-            NotificationRef?.Show(
-                $"Unable to create payroll group: {ex.Message}",
-                ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(   $"Unable to create payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -513,34 +491,20 @@
 
             SetDefaults(pg);
 
-            var exists = await _paygrp._02ByName(
-                pg.Name?.Trim(),
-                V.paydb,
-                V.conn);
-
+            var exists = await _paygrp._02ByName(  pg.Name?.Trim(), V.paydb, V.conn);
             var existing = exists.FirstOrDefault();
 
             if (existing != null && existing.Id != pg.Id)
             {
                 args.IsCancelled = true;
 
-                NotificationRef?.Show(
-                    "Payroll group name already exists.",
-                    ThemeConstants.Notification.ThemeColor.Error);
-
+                NotificationRef?.Show( "Payroll group name already exists.",  ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
-            await _paygrp._03(
-                pg.Id,
-                pg,
-                V.paydb,
-                V.conn);
+            await _paygrp._03( pg.Id, pg,V.paydb,  V.conn);
 
-            NotificationRef?.Show(
-                "Payroll group updated successfully.",
-                ThemeConstants.Notification.ThemeColor.Success);
-
+            NotificationRef?.Show( "Payroll group updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
             V.Action = "LoadPayrollGroups";
 
             await ChildAction.InvokeAsync();
@@ -550,10 +514,7 @@
         catch (Exception ex)
         {
             args.IsCancelled = true;
-
-            NotificationRef?.Show(
-                $"Update failed: {ex.Message}",
-                ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(  $"Update failed: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -570,42 +531,22 @@
             {
                 args.IsCancelled = true;
 
-                NotificationRef?.Show(
-                    "Invalid payroll group.",
-                    ThemeConstants.Notification.ThemeColor.Error);
-
+                NotificationRef?.Show( "Invalid payroll group.",  ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
-            var tbltran = await _paygrp._02CheckToTblTran(
-                pg.Code,
-                V.paydb,
-                V.conn);
-
-            var deprec = await _paygrp._02CheckToDeprec(
-                pg.Id,
-                V.pisdb,
-                V.conn);
+            var tbltran = await _paygrp._02CheckToTblTran(   pg.Code,  V.paydb,  V.conn);
+            var deprec = await _paygrp._02CheckToDeprec( pg.Id,   V.pisdb,  V.conn);
 
             if (tbltran?.Any() == true || deprec?.Any() == true)
             {
                 args.IsCancelled = true;
-
-                NotificationRef?.Show(
-                    $"'{pg.Name}' cannot be deleted because it is already in use.",
-                    ThemeConstants.Notification.ThemeColor.Warning);
-
+                NotificationRef?.Show( $"'{pg.Name}' cannot be deleted because it is already in use.",  ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
 
-            await _paygrp._04(
-                pg.Id,
-                V.paydb,
-                V.conn);
-
-            NotificationRef?.Show(
-                $"Payroll group '{pg.Name}' was deleted successfully.",
-                ThemeConstants.Notification.ThemeColor.Success);
+            await _paygrp._04(  pg.Id,  V.paydb,  V.conn);
+            NotificationRef?.Show( $"Payroll group '{pg.Name}' was deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
 
             V.Action = "LoadPayrollGroups";
 
@@ -617,9 +558,7 @@
         {
             args.IsCancelled = true;
 
-            NotificationRef?.Show(
-                $"Unable to delete payroll group: {ex.Message}",
-                ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(   $"Unable to delete payroll group: {ex.Message}",  ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -673,17 +612,12 @@
 
     private void OnDeploymentChanged(PayrollgrpModel payrollGrp)
     {
-        var deployment = V.Deployments.FirstOrDefault(
-            x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
+        var deployment = V.Deployments.FirstOrDefault(   x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
 
-        payrollGrp.Deployment =
-            deployment?.ClName?.Trim() ?? string.Empty;
+        payrollGrp.Deployment = deployment?.ClName?.Trim() ?? string.Empty;
     }
 
 
-    @* ============================== *@
-    @* Payroll Group Validator        *@
-    @* ============================== *@
 
     public class PayrollgrpValidator : AbstractValidator<PayrollgrpModel>
     {
@@ -722,6 +656,25 @@
                 .WithMessage("Status is required.");
         }
     }
+
+
+
+
+    public async Task ResetGrid()
+    {
+        if (PayrollGrpGrid == null) return;
+
+        V.SelectedPayrollGroup = 0;
+        var state = PayrollGrpGrid.GetState();
+        state.FilterDescriptors.Clear();
+        state.SortDescriptors.Clear();
+        state.Page = 1;
+        state.SelectedItems = new List<PayrollgrpModel>();
+        await PayrollGrpGrid.SetStateAsync(state);
+    }
+
+
+   
 }
 
 
