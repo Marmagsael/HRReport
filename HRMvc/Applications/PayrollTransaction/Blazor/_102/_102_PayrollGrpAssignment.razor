@@ -3,72 +3,125 @@
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PayrollTransaction.Blazor._102._102_PayrollGrp_Assignment
 
-<div class="assignment-shell px-0 ms-0 me-auto">
-    <TelerikCard Class="h-100 d-flex flex-column">
+
+
+    <TelerikCard Class="w-100 h-100 d-flex flex-column">
+
+
         <CardHeader Class="bg-secondary bg-opacity-10">
-            <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3">
-                <label for="paygrp" class="mb-0 fw-semibold text-nowrap">
+
+            <div class="d-flex flex-column flex-md-row
+                        align-items-stretch align-items-md-center
+                        gap-2 gap-md-3 w-100">
+
+                <label for="paygrp"
+                       class="mb-0 fw-semibold text-nowrap">
                     Payroll group
                 </label>
 
-                <div class="paygrp-picker">
-                    <TelerikDropDownList Id="paygrp"
-                                         Data="@V.PayrollGrps"
-                                         @bind-Value="V.SelectedPayrollGroup"
-                                         TextField="@nameof(PayrollgrpModel.Name)"
-                                         ValueField="@nameof(PayrollgrpModel.Id)"
-                                         Filterable="true"
-                                         FilterPlaceholder="Search payroll group..."
-                                         Width="100%"
-                                         OnChange="@PayrollGrpChange">
-                        <DropDownListSettings>
-                            <DropDownListPopupSettings Width="450px"
-                                                       Height="600px" />
-                        </DropDownListSettings>
-                    </TelerikDropDownList>
-                </div>
+            @* =================================================
+               PAYROLL GROUP DROPDOWN
+                ================================================= *@
+            <div class="paygrp-picker w-100 w-md-auto">
+
+                <TelerikDropDownList Id="paygrp"
+                                     Data="@V.PayrollGrps"
+                                     @bind-Value="V.SelectedPayrollGroup"
+                                     TextField="@nameof(PayrollgrpModel.Name)"
+                                     ValueField="@nameof(PayrollgrpModel.Id)"
+                                     Filterable="true"
+                                     FilterPlaceholder="Search payroll group..."
+                                     Width="100%"
+                                     OnChange="@PayrollGrpChange">
+
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Width="450px"
+                                                   Height="600px" />
+                    </DropDownListSettings>
+
+                </TelerikDropDownList>
+
             </div>
+
+            </div>
+
         </CardHeader>
 
-        <CardBody Class="assignment-outer-body p-2 p-md-3">
-            <TelerikCard Width="100%" Class="assignment-inner-card h-100">
+
+        <CardBody Class="assignment-outer-body p-2 p-md-3 w-100">
+
+
+         
+            <TelerikCard Width="100%"  Class="assignment-inner-card h-100 w-100">
                 <CardHeader Class="bg-secondary bg-opacity-10">
-                    <div class="d-flex align-items-center gap-2">
+
+                    <div class="d-flex align-items-center gap-2 w-100">
+
                         <span class="fw-semibold">
                             Assigned employees
                         </span>
 
+
+                        @* =================================================
+                          ADD EMPLOYEE BUTTON
+                           ================================================= *@
                         <div class="ms-auto">
+
                             <TelerikButton OnClick="@ToggleAddMember"
                                            Enabled="@(V.SelectedPayrollGroup > 0)"
                                            ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
                                            FillMode="@ThemeConstants.Button.FillMode.Clear"
                                            Size="@ThemeConstants.Button.Size.Small"
                                            Icon="@(V.ShowAddMember ? FontIcon.X : FontIcon.Plus)"
-                                           Title="@(V.ShowAddMember ? "Hide search" : "Add employee")" />
+                                           Title="@(V.ShowAddMember
+                                                                                          ? "Hide search"
+                                                                                          : "Add employee")" />
+
                         </div>
+
                     </div>
+
                 </CardHeader>
 
-                <CardBody Class="assignment-inner-body p-0">
-                    <div class="position-relative grid-host">
+
+                @* =================================================
+                   GRID AREA
+                   ================================================= *@
+                <CardBody Class="assignment-inner-body p-0 w-100 h-100">
+
+                    <div class="position-relative grid-host w-100 h-100">
+
+
+                        @* =================================================
+                           ADD EMPLOYEE PANEL
+                           ================================================= *@
                         <TelerikAnimationContainer @ref="AddMemberPanel"
                                                    AnimationType="@AnimationType.SlideDown"
                                                    Top="0"
                                                    Left="0"
                                                    Width="100%"
                                                    Class="add-member-panel">
+
                             <_102_PayrollGrpAssignment_AddMember ChildAction="CA_Catcher" />
+
                         </TelerikAnimationContainer>
 
+
+                        @* =================================================
+                           ASSIGNED EMPLOYEES TELERIK GRID
+                           ================================================= *@
                         <_102_PayrollGrpAssignment_Dtls @ref="AssignedEmployeesGrid"
                                                         ChildAction="CA_Catcher" />
+
                     </div>
+
                 </CardBody>
+
             </TelerikCard>
+
         </CardBody>
+
     </TelerikCard>
-</div>
 
 @code {
     [CascadingParameter]
@@ -128,13 +181,13 @@
         await ChildAction.InvokeAsync();
     }
 }
-
 <style>
+
     .paygrp-picker {
         width: 100%;
     }
-
     @@media (min-width: 1200px) {
+
         .assignment-outer-body {
             max-width: 660px;
         }

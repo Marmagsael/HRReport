@@ -6,10 +6,15 @@
 
 @inject IODeprecDataAccess _deprec
 
-<div class="employee-list">
+<div class="w-100 h-100">
+
+    @* =========================================================
+       SELECTED EMPLOYEES ACTION BAR
+       ========================================================= *@
     @if (SelectedEmployees.Any())
     {
         <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+
             <TelerikBadge ThemeColor="@ThemeConstants.Badge.ThemeColor.Primary"
                           Position="@BadgePosition.Inline"
                           Rounded="@ThemeConstants.Badge.Rounded.Medium"
@@ -25,12 +30,18 @@
                            Icon="@FontIcon.Trash">
                 Remove selected
             </TelerikButton>
+
         </div>
     }
 
+
+    @* =========================================================
+       ASSIGNED EMPLOYEES GRID
+       ========================================================= *@
     <TelerikGrid TItem="ODeprecModel"
                  @ref="DeprecGrid"
                  OnRead="@OnGridRead"
+                 OnRowClick="@OnRowClick"
                  SelectionMode="@GridSelectionMode.Multiple"
                  SelectedItems="@SelectedEmployees"
                  SelectedItemsChanged="@OnSelectedEmployeesChanged"
@@ -44,36 +55,71 @@
                  Height="100%">
 
         <GridColumns>
+
+            @* =================================================
+               CHECKBOX SELECTION
+               - Selects the current row
+               - Select All selects the current page
+               ================================================= *@
             <GridCheckboxColumn SelectAll="true"
                                 SelectAllMode="@GridSelectAllMode.Current"
                                 Width="50px" />
 
+            @* =================================================
+               EMPLOYEE NAME
+               - Clicking anywhere on the row toggles selection
+               ================================================= *@
             <GridColumn Field="@nameof(ODeprecModel.EmpName)"
                         Title="Employee name" />
+
         </GridColumns>
 
+
+        @* =====================================================
+           NO DATA MESSAGE
+           ===================================================== *@
         <NoDataTemplate>
+
             <div class="text-center text-secondary p-3">
+
                 @if (V.SelectedPayrollGroup <= 0)
                 {
-                    <div>Select a payroll group to see assigned employees.</div>
+                    <div>
+                        Select a payroll group to see assigned employees.
+                    </div>
                 }
                 else if (HasActiveFilter)
                 {
-                    <div>No employees match the current filter.</div>
-                    <div class="k-font-size-sm">Clear the column filter to see everyone.</div>
+                    <div>
+                        No employees match the current filter.
+                    </div>
+
+                    <div class="k-font-size-sm">
+                        Clear the column filter to see everyone.
+                    </div>
                 }
                 else
                 {
-                    <div>No one assigned to this group yet.</div>
-                    <div class="k-font-size-sm">Click the '+' to add employees.</div>
+                    <div>
+                        No one assigned to this group yet.
+                    </div>
+
+                    <div class="k-font-size-sm">
+                        Click the '+' to add employees.
+                    </div>
                 }
+
             </div>
+
         </NoDataTemplate>
+
     </TelerikGrid>
+
 </div>
 
+
 @code {
+
     [CascadingParameter]
     public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
 
@@ -86,48 +132,131 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
+
+    @* =========================================================
+       GRID REFERENCE
+       ========================================================= *@
     private TelerikGrid<ODeprecModel>? DeprecGrid;
 
+
+    @* =========================================================
+       SELECTED EMPLOYEES
+       ========================================================= *@
     private List<ODeprecModel> SelectedEmployees { get; set; } = new();
 
+
+    @* =========================================================
+       CHECK IF GRID HAS ACTIVE FILTER
+       ========================================================= *@
     private bool HasActiveFilter =>
         DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
 
-    private Task OnSelectedEmployeesChanged(IEnumerable<ODeprecModel> employees)
+
+    @* =========================================================
+       ROW CLICK SELECTION
+
+       Behavior:
+
+       Click Employee A
+       -> A selected
+
+       Click Employee B
+       -> A + B selected
+
+       Click Employee C
+       -> A + B + C selected
+
+       Click Employee B again
+       -> A + C selected
+
+       This prevents normal Telerik row selection from replacing
+       the existing selection.
+       ========================================================= *@
+    private void OnRowClick(GridRowClickEventArgs args)
     {
-        SelectedEmployees = employees?.ToList() ?? new List<ODeprecModel>();
+        var employee = (ODeprecModel)args.Item;
+
+        var alreadySelected = SelectedEmployees.Any(
+            x => x.EmpNumber == employee.EmpNumber);
+
+        if (alreadySelected)
+        {
+            SelectedEmployees = SelectedEmployees
+                .Where(x => x.EmpNumber != employee.EmpNumber)
+                .ToList();
+        }
+        else
+        {
+            SelectedEmployees = SelectedEmployees
+                .Concat(new[] { employee })
+                .ToList();
+        }
+
+        args.ShouldRender = true;
+    }
+
+
+    @* =========================================================
+       TELERIK SELECTION CHANGE
+
+       Intentionally does not modify SelectedEmployees.
+
+       Row selection is handled by OnRowClick.
+       This prevents Telerik's normal row-selection behavior
+       from replacing our multiple selection.
+       ========================================================= *@
+    private Task OnSelectedEmployeesChanged(
+        IEnumerable<ODeprecModel> employees)
+    {
         return Task.CompletedTask;
     }
 
+
+    @* =========================================================
+       LOAD GRID DATA
+       ========================================================= *@
     private async Task OnGridRead(GridReadEventArgs args)
     {
         if (V.SelectedPayrollGroup <= 0)
         {
             args.Data = new List<ODeprecModel>();
             args.Total = 0;
+
             return;
         }
+
 
         var pageSize = args.Request.PageSize > 0
             ? args.Request.PageSize
             : 10;
 
+
         var page = args.Request.Page > 0
             ? args.Request.Page
             : 1;
 
+
         var sort = args.Request.Sorts.FirstOrDefault();
+
 
         var request = new GridRequestModel
         {
             PageSize = pageSize,
+
             Offset = (page - 1) * pageSize,
-            SortField = sort?.Member ?? nameof(ODeprecModel.EmpName),
-            SortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending
-                ? "DESC"
-                : "ASC",
+
+            SortField = sort?.Member
+                ?? nameof(ODeprecModel.EmpName),
+
+            SortDirection =
+                sort?.SortDirection ==
+                Telerik.DataSource.ListSortDirection.Descending
+                    ? "DESC"
+                    : "ASC",
+
             Filters = GridHelper.GetFilters(args)
         };
+
 
         var result = await _deprec._02Grid(
             V.SelectedPayrollGroup,
@@ -135,58 +264,102 @@
             V.pisdb,
             V.conn);
 
-        args.Data = result?.Data ?? new List<ODeprecModel>();
-        args.Total = result?.Total ?? 0;
+
+        args.Data =
+            result?.Data
+            ?? new List<ODeprecModel>();
+
+
+        args.Total =
+            result?.Total
+            ?? 0;
     }
 
+
+    @* =========================================================
+       REFRESH GRID
+       ========================================================= *@
     public Task RefreshGrid()
     {
         DeprecGrid?.Rebind();
+
         return Task.CompletedTask;
     }
 
+
+    @* =========================================================
+       RESET GRID
+       ========================================================= *@
     public async Task ResetGrid()
     {
-        SelectedEmployees = new List<ODeprecModel>();
+        SelectedEmployees =
+            new List<ODeprecModel>();
+
 
         if (DeprecGrid == null)
             return;
 
+
         var state = DeprecGrid.GetState();
+
+
         state.FilterDescriptors.Clear();
+
         state.SortDescriptors.Clear();
+
         state.Page = 1;
-        state.SelectedItems = new List<ODeprecModel>();
+
+        state.SelectedItems =
+            new List<ODeprecModel>();
+
 
         await DeprecGrid.SetStateAsync(state);
     }
 
+
+    @* =========================================================
+       REMOVE SELECTED EMPLOYEES
+       ========================================================= *@
     private async Task RemoveSelected()
     {
-        var employees = SelectedEmployees.ToList();
+        var employees =
+            SelectedEmployees.ToList();
 
-        if (!employees.Any() || TelerikDialogs == null)
+
+        if (!employees.Any() ||
+            TelerikDialogs == null)
             return;
 
-        var message = employees.Count == 1
-            ? $"Remove {employees[0].EmpName} ({employees[0].EmpNumber}) from this payroll group?"
-            : $"Remove {employees.Count} selected employees from this payroll group?";
 
-        var confirmed = await TelerikDialogs.ConfirmAsync(
-            message,
-            "Confirm removal");
+        var message =
+            employees.Count == 1
+                ? $"Remove {employees[0].EmpName} ({employees[0].EmpNumber}) from this payroll group?"
+                : $"Remove {employees.Count} selected employees from this payroll group?";
+
+
+        var confirmed =
+            await TelerikDialogs.ConfirmAsync(
+                message,
+                "Confirm removal");
+
 
         if (!confirmed)
             return;
 
-        var failed = new List<string>();
+
+        var failed =
+            new List<string>();
+
+
         var removedCount = 0;
+
 
         foreach (var employee in employees)
         {
             try
             {
                 await RemoveEmployee(employee);
+
                 removedCount++;
             }
             catch
@@ -198,19 +371,39 @@
             }
         }
 
-        SelectedEmployees = new List<ODeprecModel>();
+
+        @* Clear selected employees after removal *@
+        SelectedEmployees =
+            new List<ODeprecModel>();
+
 
         if (DeprecGrid != null)
         {
-            var state = DeprecGrid.GetState();
+            var state =
+                DeprecGrid.GetState();
+
+
             state.Page = 1;
-            state.SelectedItems = new List<ODeprecModel>();
+
+
+            state.SelectedItems =
+                new List<ODeprecModel>();
+
+
             await DeprecGrid.SetStateAsync(state);
         }
 
-        if (removedCount > 0)
-            await ChildAction.InvokeAsync();
 
+        @* Notify parent to refresh related data *@
+        if (removedCount > 0)
+        {
+            await ChildAction.InvokeAsync();
+        }
+
+
+        @* =====================================================
+           SUCCESS
+           ===================================================== *@
         if (failed.Count == 0)
         {
             NotificationRef?.Show(
@@ -219,12 +412,22 @@
                     : $"{removedCount} employees removed.",
                 ThemeConstants.Notification.ThemeColor.Success);
         }
+
+
+        @* =====================================================
+           PARTIAL SUCCESS
+           ===================================================== *@
         else if (removedCount > 0)
         {
             NotificationRef?.Show(
                 $"{removedCount} removed. Couldn't remove: {string.Join(", ", failed)}",
                 ThemeConstants.Notification.ThemeColor.Warning);
         }
+
+
+        @* =====================================================
+           COMPLETE FAILURE
+           ===================================================== *@
         else
         {
             NotificationRef?.Show(
@@ -233,29 +436,44 @@
         }
     }
 
-    private async Task RemoveEmployee(ODeprecModel emp)
+
+    @* =========================================================
+       REMOVE ONE EMPLOYEE
+       ========================================================= *@
+    private async Task RemoveEmployee(
+        ODeprecModel emp)
     {
         if (string.IsNullOrWhiteSpace(emp.EmpNumber))
-            throw new Exception("Employee number is required.");
-
-        var updateEmp = new ODeprecModel
         {
-            EmpNumber = emp.EmpNumber,
-            PayrollgrpId = 0
-        };
+            throw new Exception(
+                "Employee number is required.");
+        }
 
-        var result = await _deprec._01PayrollGrp(
-            updateEmp,
-            V.pisdb,
-            V.conn);
+
+        var updateEmp =
+            new ODeprecModel
+            {
+                EmpNumber = emp.EmpNumber,
+
+                PayrollgrpId = 0
+            };
+
+
+        var result =
+            await _deprec._01PayrollGrp(
+                updateEmp,
+                V.pisdb,
+                V.conn);
+
 
         if (result == null)
-            throw new Exception($"Failed to remove {emp.EmpName}.");
+        {
+            throw new Exception(
+                $"Failed to remove {emp.EmpName}.");
+        }
     }
 }
 
+
 <style>
-    .employee-list {
-        width: 100%;
-    }
 </style>

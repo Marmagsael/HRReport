@@ -9,6 +9,8 @@
 
 @inject IOPayrollgrpDataAccess _paygrp
 
+
+
 <TelerikGrid TItem="PayrollgrpModel"
              @ref="PayrollGrpGrid"
              OnRead="@OnGridRead"
@@ -25,7 +27,11 @@
              @bind-PageSize="@PageSize"
              Sortable="true"
              FilterMode="@GridFilterMode.FilterMenu"
-             Height="calc(100vh - 200px)">
+             Height="100%">
+
+    @* ============================== *@
+    @* Grid Settings                  *@
+    @* ============================== *@
 
     <GridSettings>
         <GridValidationSettings>
@@ -33,8 +39,14 @@
                 <FluentValidator Validator="@GridFluentValidator" />
             </ValidatorTemplate>
         </GridValidationSettings>
+
         <GridPagerSettings PageSizes="@PageSizes" />
     </GridSettings>
+
+
+    @* ============================== *@
+    @* Grid Toolbar                   *@
+    @* ============================== *@
 
     <GridToolBarTemplate>
         <GridCommandButton Command="Add">
@@ -42,21 +54,39 @@
         </GridCommandButton>
     </GridToolBarTemplate>
 
+
+
     <GridColumns>
+
+        @* ============================== *@
+        @* Code                           *@
+        @* ============================== *@
+
         <GridColumn Field="@nameof(PayrollgrpModel.Code)"
                     Title="Code"
                     Width="100px"
                     Locked="true"
                     Editable="false" />
 
+
+        @* ============================== *@
+        @* Payroll Group                  *@
+        @* ============================== *@
+
         <GridColumn Field="@nameof(PayrollgrpModel.Name)"
                     Title="Payroll Group"
                     Width="250px"
                     Locked="true" />
 
+
+        @* ============================== *@
+        @* Deployment                     *@
+        @* ============================== *@
+
         <GridColumn Field="@nameof(PayrollgrpModel.Deployment)"
                     Title="Deployment"
                     Width="220px">
+
             <EditorTemplate Context="item">
                 @{
                     var pg = (PayrollgrpModel)item;
@@ -76,42 +106,150 @@
                     </DropDownListSettings>
                 </TelerikDropDownList>
             </EditorTemplate>
+
         </GridColumn>
+
+
+        @* ============================== *@
+        @* RATE                           *@
+        @* ============================== *@
 
         <GridColumn Title="RATE"
                     HeaderClass="header-center">
             <Columns>
+
+                @* ============================== *@
+                @* Minimum daily rate              *@
+                @* ============================== *@
+
                 <GridColumn Field="@nameof(PayrollgrpModel.MinDailyRate)"
-                            Title="Min. Rate"
-                            Width="110px"
+                            Title="Min. Daily Rate"
+                            Width="100px"
                             TextAlign="@ColumnTextAlign.Right"
-                            DisplayFormat="{0:N2}" />
+                            DisplayFormat="{0:N2}">
+
+                    <EditorTemplate Context="item">
+                        @{
+                            var pg = (PayrollgrpModel)item;
+                        }
+
+                        <TelerikNumericTextBox @bind-Value="pg.MinDailyRate"
+                                               Width="100%"
+                                               Decimals="2"
+                                               Format="N2"
+                                               Arrows="false"
+                                               Spinners="false" />
+                    </EditorTemplate>
+
+                </GridColumn>
+
+
+                @* ============================== *@
+                @* Hourly rate                    *@
+                @* ============================== *@
 
                 <GridColumn Field="@nameof(PayrollgrpModel.RatePerHr)"
                             Title="Hourly"
                             Width="100px"
                             TextAlign="@ColumnTextAlign.Right"
-                            DisplayFormat="{0:N2}" />
+                            DisplayFormat="{0:N2}">
+
+                    <EditorTemplate Context="item">
+                        @{
+                            var pg = (PayrollgrpModel)item;
+                        }
+
+                        <TelerikNumericTextBox @bind-Value="pg.RatePerHr"
+                                               Width="100%"
+                                               Decimals="2"
+                                               Format="N2"
+                                               Arrows="false" />
+                    </EditorTemplate>
+
+                </GridColumn>
+
+
+                @* ============================== *@
+                @* Daily rate                     *@
+                @* ============================== *@
 
                 <GridColumn Field="@nameof(PayrollgrpModel.RatePerDay)"
                             Title="Daily"
                             Width="100px"
                             TextAlign="@ColumnTextAlign.Right"
-                            DisplayFormat="{0:N2}" />
+                            DisplayFormat="{0:N2}">
+
+                    <EditorTemplate Context="item">
+                        @{
+                            var pg = (PayrollgrpModel)item;
+                        }
+
+                        <TelerikNumericTextBox @bind-Value="pg.RatePerDay"
+                                               Width="100%"
+                                               Decimals="2"
+                                               Format="N2"
+                                               Arrows="false" />
+                    </EditorTemplate>
+
+                </GridColumn>
+
+
+                @* ============================== *@
+                @* Monthly rate                   *@
+                @* ============================== *@
 
                 <GridColumn Field="@nameof(PayrollgrpModel.RatePerMonth)"
                             Title="Monthly"
                             Width="110px"
                             TextAlign="@ColumnTextAlign.Right"
-                            DisplayFormat="{0:N2}" />
+                            DisplayFormat="{0:N2}">
+
+                    <EditorTemplate Context="item">
+                        @{
+                            var pg = (PayrollgrpModel)item;
+                        }
+
+                        <TelerikNumericTextBox @bind-Value="pg.RatePerMonth"
+                                               Width="100%"
+                                               Decimals="2"
+                                               Format="N2"
+                                               Arrows="false" />
+                    </EditorTemplate>
+
+                </GridColumn>
+
+
+                @* ============================== *@
+                @* Yearly rate                    *@
+                @* ============================== *@
 
                 <GridColumn Field="@nameof(PayrollgrpModel.RatePerYr)"
                             Title="Yearly"
                             Width="100px"
                             TextAlign="@ColumnTextAlign.Right"
-                            DisplayFormat="{0:N2}" />
+                            DisplayFormat="{0:N2}">
+
+                    <EditorTemplate Context="item">
+                        @{
+                            var pg = (PayrollgrpModel)item;
+                        }
+
+                        <TelerikNumericTextBox @bind-Value="pg.RatePerYr"
+                                               Width="100%"
+                                               Decimals="2"
+                                               Format="N2"
+                                               Arrows="false" />
+                    </EditorTemplate>
+
+                </GridColumn>
+
             </Columns>
         </GridColumn>
+
+
+        @* ============================== *@
+        @* Status                         *@
+        @* ============================== *@
 
         <GridColumn Field="@nameof(PayrollgrpModel.Status)"
                     Title="Status"
@@ -159,12 +297,20 @@
                                      TextField="@nameof(PayrollGroupStatusModel.Name)"
                                      Width="100%" />
             </EditorTemplate>
+
         </GridColumn>
+
+
+        @* ============================== *@
+        @* Action                         *@
+        @* ============================== *@
 
         <GridCommandColumn Width="180px"
                            Title="Action"
                            HeaderClass="header-center">
+
             <div class="d-flex justify-content-center gap-2">
+
                 <GridCommandButton Command="Edit">
                     Edit
                 </GridCommandButton>
@@ -182,18 +328,29 @@
                 <GridCommandButton Command="Delete">
                     Delete
                 </GridCommandButton>
+
             </div>
         </GridCommandColumn>
+
     </GridColumns>
+
+
+    @* ============================== *@
+    @* No Data                        *@
+    @* ============================== *@
 
     <NoDataTemplate>
         <div class="text-center text-secondary p-4">
             No payroll groups found.
         </div>
     </NoDataTemplate>
+
 </TelerikGrid>
 
+
+
 @code {
+
     [CascadingParameter]
     public UserClaimsModel? Uc { get; set; }
 
@@ -203,11 +360,14 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
 
+
     [CascadingParameter]
     public DialogFactory? TelerikDialogs { get; set; }
 
+
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
 
     private int PageSize { get; set; } = 25;
 
@@ -222,7 +382,11 @@
 
     private TelerikGrid<PayrollgrpModel>? PayrollGrpGrid;
 
+
+
     private readonly PayrollgrpValidator GridFluentValidator = new();
+
+
 
     private async Task OnGridRead(GridReadEventArgs args)
     {
@@ -281,6 +445,8 @@
         args.Total = result.Total;
     }
 
+
+
     private Task OnGridAdd(GridCommandEventArgs args)
     {
         if (args.Item is PayrollgrpModel pg)
@@ -288,6 +454,8 @@
 
         return Task.CompletedTask;
     }
+
+
 
     private async Task OnGridCreate(GridCommandEventArgs args)
     {
@@ -313,10 +481,7 @@
                 return;
             }
 
-            await _paygrp._01(
-                pg,
-                V.paydb,
-                V.conn);
+            await _paygrp._01(pg, V.paydb, V.conn);
 
             NotificationRef?.Show(
                 "Payroll group created successfully.",
@@ -337,6 +502,8 @@
                 ThemeConstants.Notification.ThemeColor.Error);
         }
     }
+
+
 
     private async Task OnGridUpdate(GridCommandEventArgs args)
     {
@@ -390,11 +557,25 @@
         }
     }
 
+
+
+
     private async Task OnGridDelete(GridCommandEventArgs args)
     {
         try
         {
-            var pg = (PayrollgrpModel)args.Item;
+            var pg = args.Item as PayrollgrpModel;
+
+            if (pg == null)
+            {
+                args.IsCancelled = true;
+
+                NotificationRef?.Show(
+                    "Invalid payroll group.",
+                    ThemeConstants.Notification.ThemeColor.Error);
+
+                return;
+            }
 
             var tbltran = await _paygrp._02CheckToTblTran(
                 pg.Code,
@@ -406,7 +587,7 @@
                 V.pisdb,
                 V.conn);
 
-            if (tbltran.Any() || deprec.Any())
+            if (tbltran?.Any() == true || deprec?.Any() == true)
             {
                 args.IsCancelled = true;
 
@@ -423,14 +604,14 @@
                 V.conn);
 
             NotificationRef?.Show(
-                "Payroll group deleted successfully.",
+                $"Payroll group '{pg.Name}' was deleted successfully.",
                 ThemeConstants.Notification.ThemeColor.Success);
 
             V.Action = "LoadPayrollGroups";
 
-            await ChildAction.InvokeAsync();
-
             RefreshGrid();
+
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
@@ -441,6 +622,8 @@
                 ThemeConstants.Notification.ThemeColor.Error);
         }
     }
+
+
 
     private async Task OnGridCancel(GridCommandEventArgs args)
     {
@@ -455,10 +638,17 @@
             args.IsCancelled = true;
     }
 
+
+
     private void RefreshGrid()
     {
-        PayrollGrpGrid?.Rebind();
+        if (PayrollGrpGrid != null)
+        {
+            PayrollGrpGrid.Rebind();
+        }
     }
+
+
 
     private static void SetDefaults(PayrollgrpModel pg)
     {
@@ -466,7 +656,10 @@
             pg.Status = "A";
     }
 
-    private List<OClientModel> AvailableDeployments(PayrollgrpModel payrollGrp)
+
+
+    private List<OClientModel> AvailableDeployments(
+        PayrollgrpModel payrollGrp)
     {
         return V.Deployments
             .Where(d =>
@@ -476,18 +669,27 @@
             .ToList();
     }
 
+
+
     private void OnDeploymentChanged(PayrollgrpModel payrollGrp)
     {
         var deployment = V.Deployments.FirstOrDefault(
             x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
 
-        payrollGrp.Deployment = deployment?.ClName?.Trim() ?? string.Empty;
+        payrollGrp.Deployment =
+            deployment?.ClName?.Trim() ?? string.Empty;
     }
+
+
+    @* ============================== *@
+    @* Payroll Group Validator        *@
+    @* ============================== *@
 
     public class PayrollgrpValidator : AbstractValidator<PayrollgrpModel>
     {
         public PayrollgrpValidator()
         {
+
             RuleFor(x => x.Name)
                 .NotEmpty()
                 .WithMessage("Payroll Group is required.")
@@ -514,12 +716,16 @@
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("Yearly rate cannot be negative.");
 
+
             RuleFor(x => x.Status)
                 .NotEmpty()
                 .WithMessage("Status is required.");
         }
     }
 }
+
+
+
 
 <style>
     .header-center .k-column-title {
