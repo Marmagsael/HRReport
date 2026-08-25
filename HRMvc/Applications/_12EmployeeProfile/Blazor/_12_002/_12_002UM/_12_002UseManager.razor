@@ -1,0 +1,119 @@
+﻿
+@using HRMvc.Applications._00GeneralComponents.FormComponents
+@using HRMvc.Applications._12EmployeeProfile.Vars
+
+<TelerikCard Class="w-100 h-100">
+
+
+    @* =================================================
+         DROPDOWN
+        ================================================= *@
+    <CardHeader Class="bg-secondary bg-opacity-10 p-2">
+
+        <TelerikStackLayout Orientation="StackLayoutOrientation.Vertical"
+                            Spacing="12px"
+                            Class="w-100">
+
+            <!-- Employee / User Name -->
+            <FormField Label="User">
+
+                <TelerikDropDownList TItem="UsersModel"
+                                     TValue="string"
+                                     Data="@V.Users"
+                                     @bind-Value="@V.SelectedUser"
+                                     TextField="@nameof(UsersModel.AFullName)"
+                                     ValueField="@nameof(UsersModel.LoginName)"
+                                     Filterable="true"
+                                     FilterPlaceholder="Search user name..."
+                                     Width="100%">
+
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Width="450px"
+                                                   Height="600px" />
+                    </DropDownListSettings>
+
+                </TelerikDropDownList>
+
+            </FormField>
+
+
+            <!-- Menus -->
+            <FormField Label="Menu">
+
+                <TelerikDropDownList TItem="MenuTypeModel"
+                                     TValue="string"
+                                     Data="@V.MenuTypes"
+                                     @bind-Value="@V.SelectedMenu"
+                                     TextField="@nameof(MenuTypeModel.Name)"
+                                     ValueField="@nameof(MenuTypeModel.Code)"
+                                     Filterable="true"
+                                     FilterPlaceholder="Search menu type..."
+                                     Width="100%">
+
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Width="450px"
+                                                   Height="600px" />
+                    </DropDownListSettings>
+
+                </TelerikDropDownList>
+
+            </FormField>
+
+        </TelerikStackLayout>
+
+    </CardHeader>
+
+
+
+
+
+   
+
+</TelerikCard>
+
+
+@code {
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V12_002Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification NotificationRef ;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if(V.UcLoaded == false) return;
+
+        await LoadUsers();
+        await LoadMenuType();
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            var result = await _user._02(v.OPisdb, v.Maindb, v.Conn);
+            if (result.Any())
+            {
+                v.Users = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to load users", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private async Task LoadMenuType()
+    {
+        v.MenuTypes = new List<MenuTypeModel?>()
+        {
+            new(){Code = "pis", Name="Pis"},
+            new(){Code = "pau", Name="Pay"},
+            new(){Code = "main", Name="Main"}
+        };
+    }
+}

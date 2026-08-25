@@ -62,6 +62,16 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
+
+    // Retrieves employees with existing login credentials for the User Access module (added by Judith)
+    public async Task<List<UsersModel?>> _02( string? pisschema, string? mainschema = "Main", string? connName = "MySqlConn")
+    {
+        string? sql = $@" select u.Loginname,   CONCAT_WS(' ',  CONCAT(TRIM(EMPLASTNM), ','), TRIM(EMPFIRSTNM),  TRIM(EMPMIDNM)) AS AFULLNAME,  from {mainschema}.Users u 
+                            INNER JOIN {pisschema}.empmas e on e.loginname = u.empnumber";
+        var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { }, connName);
+        return data;
+    }
+
     public async Task<UsersModel?> _03(int? id, UsersModel user, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@"Update {schema}.users set 

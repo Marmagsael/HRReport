@@ -1,0 +1,89 @@
+﻿<div class="app-form-field @OrientationClass">
+
+    <label class="app-form-field-label">
+        @Label
+    </label>
+
+    <div class="app-form-field-control">
+        @ChildContent
+    </div>
+
+</div>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public FormFieldOrientation Orientation { get; set; } = FormFieldOrientation.Horizontal;
+
+    private string OrientationClass => Orientation == FormFieldOrientation.Vertical
+        ? "app-form-field-vertical"
+        : "app-form-field-horizontal";
+
+    public enum FormFieldOrientation
+    {
+        Horizontal,
+        Vertical
+    }
+}
+
+<style>
+    .app-form-field {
+        width: 100%;
+    }
+
+    .app-form-field-horizontal,
+    .app-form-field-vertical {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+    }
+
+    .app-form-field-label {
+        margin: 0;
+        font-weight: 400;
+    }
+
+    .app-form-field-control {
+        width: 100%;
+        min-width: 0;
+        flex: 1;
+    }
+
+    /* =========================================================
+    Tablet / Medium+
+    ========================================================= */
+
+    @@media (min-width: 768px) {
+
+        .app-form-field-horizontal {
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .app-form-field-horizontal .app-form-field-label {
+                min-width: 100px;
+            }
+
+            .app-form-field-horizontal .app-form-field-control {
+                flex: 1 1 0;
+            }
+    }
+
+    /* =========================================================
+    Large Screen
+    ========================================================= */
+
+    @@media (min-width: 1200px) {
+
+        .app-form-field-horizontal .app-form-field-control {
+            flex: 0 0 450px;
+        }
+    }
+</style>
