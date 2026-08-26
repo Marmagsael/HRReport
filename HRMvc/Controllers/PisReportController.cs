@@ -24,12 +24,13 @@ public class PisReportController : Controller
     private static readonly Dictionary<string, string> TransactionViews = new()
     {
         ["2302"] = "_2302_StatusMgt",
-        ["2303"] = "_2303_Deployment",
-        ["2304"] = "_2304_Deviation",
-        ["2305"] = "_2305_DisciplinaryAction",
-        ["2306"] = "_2306_Reinstatement",
-        ["2307"] = "_2307_ChangeDeployment",
-        ["2308"] = "_2308_GroupRecall",
+        ["2303"] = "_2303_RTU",
+        ["2304"] = "_2304_GroupRecallOrder",
+        ["2305"] = "_2305_RecallOrder",
+        ["2306"] = "_2306_LeaveTransaction",
+        ["2307"] = "_2307_SpecialDutyOrder",
+        ["2308"] = "_2308_AssignmentOrder",
+        ["2309"] = "_2309_DeviationPenalty",
     };
 
 

@@ -23,7 +23,7 @@ namespace HRMvc.Controllers
             ["205"] = "_12_205_PagibigRemittance",
             ["206"] = "_12_206_LoanObligation",
             ["302"] = "_12_302_LeaveApproval",
-
+          
             
         };
 
