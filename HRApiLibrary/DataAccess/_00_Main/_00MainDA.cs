@@ -42,6 +42,7 @@ public class _00MainDA : I_00MainDA
         {
             SchemaMain      = _config.GetSection("Schema:Main").Value,
             SchemaMainPis   = _config.GetSection("Schema:MainPis").Value,
+            SchemaMainPay   = _config.GetSection("Schema:MainPay").Value,
             Conn            = _config.GetSection("Schema:DefConn").Value,
             ConnNoDb        = _config.GetSection("Schema:DefConnNoDb").Value
         };

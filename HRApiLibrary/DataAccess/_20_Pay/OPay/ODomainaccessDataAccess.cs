@@ -16,10 +16,10 @@ public class ODomainaccessDataAccess : IODomainaccessDataAccess
 
     public async Task<ODomainaccessModel?> _01(ODomainaccessModel domainaccess, string schema, string conn)
     {
-        string sql = $@"Insert into {schema}.Domainaccess (iduserAccess, username, idsysmenu, module) values (@iduserAccess, @username, @idsysmenu, @module)";
+        string sql = $@"Insert into {schema}.Domainaccess ( username, idsysmenu, module) values ( @username, @idsysmenu, @module)";
         await _sql.ExecuteCmd<dynamic>(sql, domainaccess, conn);
 
-        sql = $@"SELECT * FROM {schema}.Domainaccess WHERE ID = (SELECT @@IDENTITY)";
+        sql = $@"SELECT * FROM {schema}.Domainaccess WHERE IduserAccess = (SELECT @@IDENTITY)";
 
         var res = await _sql.FetchData<ODomainaccessModel?, dynamic>(sql, new { }, conn);
 
@@ -35,6 +35,13 @@ public class ODomainaccessDataAccess : IODomainaccessDataAccess
     }
 
 
+    public async Task<List<ODomainaccessModel?>?> _02ByUserName_Module(string username, string module, string schema, string conn)
+    {
+        string sql = $@"select  iduserAccess, username, idsysmenu, module from {schema}.Domainaccess where LOWER(TRIM(Username)) = @Username AND LOWER(TRIM(Module)) = @Module";
+        var data = await _sql.FetchData<ODomainaccessModel?, dynamic>(sql, new { UserName = username, Module = module }, conn);
+        return data;
+    }
+
     public async Task<ODomainaccessModel?> _03(int id, ODomainaccessModel domainaccess, string schema, string conn)
     {
         string sql = $@"Update {schema}.Domainaccess set iduserAccess = @iduserAccess, username = @username, idsysmenu = @idsysmenu, module = @module where Id = @Id;";
@@ -47,19 +54,31 @@ public class ODomainaccessDataAccess : IODomainaccessDataAccess
 
     public async Task<ODomainaccessModel?> _04(int id, string schema, string conn)
     {
-        string sql = $@"Delete from {schema}.Domainaccess where Id = @Id;";
+        string sql = $@"Delete from {schema}.Domainaccess where IduserAccess = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
-        sql = $@" select  * from {schema}.Domainaccess x where x.Id = @Id ;";
+        sql = $@" select  * from {schema}.Domainaccess x where x.iduserAccess = @Id ;";
         var data = await _sql.FetchData<ODomainaccessModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
+
+    public async Task<ODomainaccessModel?> _04ByUserName_Idsysmenu_Module(ODomainaccessModel domainaccess, string schema, string conn)
+    {
+        string sql = $@"Delete from {schema}.Domainaccess where  Username = @username AND Idsysmenu = @idsysmenu AND Module = @module;";
+        await _sql.ExecuteCmd<dynamic>(sql, domainaccess, conn);
+
+        sql = $@" select  * from {schema}.Domainaccess x where x.iduserAccess = @Id ;";
+        var data = await _sql.FetchData<ODomainaccessModel?, dynamic>(sql, new { Id = domainaccess.IduserAccess }, conn);
+        return data?.FirstOrDefault();
+    }
 }
     public interface IODomainaccessDataAccess
     {
         Task<ODomainaccessModel?> _01(ODomainaccessModel domainaccess, string schema, string conn);
         Task<ODomainaccessModel?> _02(int id, string schema, string conn);
+        Task<List<ODomainaccessModel?>?> _02ByUserName_Module(string username, string module, string schema, string conn);
         Task<ODomainaccessModel?> _03(int id, ODomainaccessModel domainaccess, string schema, string conn);
         Task<ODomainaccessModel?> _04(int id, string schema, string conn);
+        Task<ODomainaccessModel?> _04ByUserName_Idsysmenu_Module(ODomainaccessModel domainaccess, string schema, string conn);
     }

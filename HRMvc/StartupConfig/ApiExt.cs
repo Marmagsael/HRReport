@@ -47,6 +47,7 @@ public static class ApiExt
         builder.Services.AddScoped<I_00UsersAccess, _00UsersAccess>();
         builder.Services.AddScoped<I_00MainDA, _00MainDA>();
         builder.Services.AddScoped<ISystemuserDataAccess, SystemuserDataAccess>();
+        builder.Services.AddScoped<IMenuDataAccess, MenuDataAccess>();
 
 
         //-- MainPis ---------------------------------------------------------------------

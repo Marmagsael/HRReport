@@ -2,11 +2,11 @@
 {
     public class ODomainaccessModel
     {
-        public string? IduserAccess { get; set; }
+        public int? IduserAccess { get; set; }
 
         public string? Username { get; set; }
 
-        public string? Idsysmenu { get; set; }
+        public int? Idsysmenu { get; set; }
 
         public string? Module { get; set; }
     }

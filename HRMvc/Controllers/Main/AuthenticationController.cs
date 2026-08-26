@@ -702,7 +702,7 @@ public class AuthenticationController : Controller
         var exclusiveCompany = uc?.ExclusiveCompany ?? "";
 
         var conn            = user.Domain;
-        var res = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
+        var res             = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
         
         if(res.Count > 0 ) 
         {
