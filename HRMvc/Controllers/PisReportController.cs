@@ -14,10 +14,20 @@ public class PisReportController : Controller
         
     };
 
-    // Data Entry
-    private static readonly Dictionary<string, string> DataEntryViews = new()
+    // Record Management
+    private static readonly Dictionary<string, string> RecordMgtViews = new()
     {
         ["2052"] = "_2052_EmployeeEntry"
+    };
+
+    // Inventory Management
+    private static readonly Dictionary<string, string> InventoryMgtViews = new()
+    {
+        ["2402"] = "_2402_ItemsEntry",
+        ["2403"] = "_2403_EquipmentEntry",
+        ["2404"] = "_2404_EquipmentSummary",
+        ["2405"] = "_2405_QuickDeployment",
+        ["2406"] = "_2406_MemorandumReceipt",
     };
 
     // Transaction Views 
@@ -78,7 +88,7 @@ public class PisReportController : Controller
 
         if (ManagementViews.TryGetValue(key, out var mgmtView)) return View($"~/Applications/PisModules/Views/Pages/{mgmtView}.cshtml");
 
-        if (DataEntryViews.TryGetValue(key, out var deView)) return View($"~/Applications/PisModules/Views/Pages/{deView}.cshtml");
+        if (RecordMgtViews.TryGetValue(key, out var deView)) return View($"~/Applications/PisModules/Views/Pages/{deView}.cshtml");
         
         if (TransactionViews.TryGetValue(key, out var trntView)) return View($"~/Applications/PisModules/Views/Pages/{trntView}.cshtml");
                                                                              
