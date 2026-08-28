@@ -1,5 +1,4 @@
-﻿@using FluentValidation
-@using HRApiLibrary.DataAccess._20_Pay.OPay
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRApiLibrary.Models._20_Pay
 @using HRApiLibrary.Models._90_Utils
@@ -36,7 +35,6 @@
     <GridSettings>
         <GridValidationSettings>
             <ValidatorTemplate>
-                <FluentValidator Validator="@GridFluentValidator" />
             </ValidatorTemplate>
         </GridValidationSettings>
 
@@ -381,7 +379,6 @@
     };
 
     private TelerikGrid<PayrollgrpModel>? PayrollGrpGrid;
-    private readonly PayrollgrpValidator GridFluentValidator = new();
 
 
 
@@ -535,17 +532,18 @@
                 return;
             }
 
-            var tbltran = await _paygrp._02CheckToTblTran(   pg.Code,  V.paydb,  V.conn);
-            var deprec = await _paygrp._02CheckToDeprec( pg.Id,   V.pisdb,  V.conn);
+            var hasTblTran = await _paygrp._02CheckToTblTran(pg.Code,V.paydb,V.conn);
+            var deprec = await _paygrp._02CheckToDeprec( pg.Id, V.pisdb, V.conn);
 
-            if (tbltran?.Any() == true || deprec?.Any() == true)
+            if (hasTblTran || deprec?.Any() == true)
             {
                 args.IsCancelled = true;
-                NotificationRef?.Show( $"'{pg.Name}' cannot be deleted because it is already in use.",  ThemeConstants.Notification.ThemeColor.Warning);
+
+                NotificationRef?.Show( $"'{pg.Name}' cannot be deleted because it is already in use.", ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
 
-            await _paygrp._04(  pg.Id,  V.paydb,  V.conn);
+            await _paygrp._04( pg.Id, V.paydb,V.conn);
             NotificationRef?.Show( $"Payroll group '{pg.Name}' was deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
 
             V.Action = "LoadPayrollGroups";
@@ -619,43 +617,6 @@
 
 
 
-    public class PayrollgrpValidator : AbstractValidator<PayrollgrpModel>
-    {
-        public PayrollgrpValidator()
-        {
-
-            RuleFor(x => x.Name)
-                .NotEmpty()
-                .WithMessage("Payroll Group is required.")
-                .MaximumLength(80)
-                .WithMessage("Payroll Group cannot exceed 80 characters.");
-
-            RuleFor(x => x.MinDailyRate)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("Minimum rate cannot be negative.");
-
-            RuleFor(x => x.RatePerHr)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("Hourly rate cannot be negative.");
-
-            RuleFor(x => x.RatePerDay)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("Daily rate cannot be negative.");
-
-            RuleFor(x => x.RatePerMonth)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("Monthly rate cannot be negative.");
-
-            RuleFor(x => x.RatePerYr)
-                .GreaterThanOrEqualTo(0)
-                .WithMessage("Yearly rate cannot be negative.");
-
-
-            RuleFor(x => x.Status)
-                .NotEmpty()
-                .WithMessage("Status is required.");
-        }
-    }
 
 
 

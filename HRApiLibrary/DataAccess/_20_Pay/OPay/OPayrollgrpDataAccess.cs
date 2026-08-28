@@ -113,21 +113,14 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         return data ?? new List<PayrollgrpModel>();
     }
 
-    public async Task<List<OTbltranModel?>?> _02CheckToTblTran(string? code, string? schema, string? conn)
+    public async Task<bool> _02CheckToTblTran( string? code,string? schema, string? conn)
     {
-        string? sql = $@"select  trn,
-                             acctNumber,
-                             empNumber,
-                             amount,
-                             if(dTimeStamp < '1000-01-01', null, dTimeStamp) as dTimeStamp,
-                             source,
-                             postedby
-                     from    {schema}.tbltran
-                     where   right(trn, 5) = @Code
-                     limit   1";
+        string sql = $@" SELECT 1 FROM {schema}.tbltran WHERE RIGHT(trn, 5) = @Code LIMIT 1";
 
-        return await _sql.FetchData<OTbltranModel?, dynamic>(sql, new { Code = code }, conn);
+        var data = await _sql.FetchData<int, dynamic>( sql, new { Code = code }, conn);
+        return data?.Any() == true;
     }
+
 
     public async Task<List<ODeprecModel?>?> _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn)
     {
@@ -163,7 +156,7 @@ public interface IOPayrollgrpDataAccess
     Task<PayrollgrpModel?>                  _02(int id, string schema, string conn);
     Task<List<PayrollgrpModel>?>            _02(string schemapay, string conn);
     Task<List<PayrollgrpModel>?>            _02ByName(string name, string schema, string conn);
-    Task<List<OTbltranModel?>?>             _02CheckToTblTran(string? clNumber, string? schema, string? conn);
+    Task<bool>                              _02CheckToTblTran(string? code, string? schema, string? conn);
     Task<List<ODeprecModel?>?>              _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);
     Task<GridResultModel<PayrollgrpModel>> _02Grid(GridRequestModel request, string schemapay, string schemapis, string conn);
     Task<PayrollgrpModel?>                  _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn);
