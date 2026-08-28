@@ -122,11 +122,12 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
     }
 
 
-    public async Task<List<ODeprecModel?>?> _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn)
+    public async Task<bool> _02CheckToDeprec( int? payrollgrpId, string? schema, string? conn)
     {
-        string? sql = $@"select  * from {schema}.deprec where payrollgrpId = @PayrollGrpId limit 1";
-        var data = await _sql.FetchData<ODeprecModel?, dynamic>(sql, new { PayrollGrpId = payrollgrpId }, conn);
-        return data;
+        string sql = $@" SELECT 1 FROM {schema}.deprec WHERE payrollgrpId = @PayrollGrpId LIMIT 1";
+
+        var data = await _sql.FetchData<int, dynamic>(  sql,new { PayrollGrpId = payrollgrpId }, conn);
+        return data?.Any() == true;
     }
 
     public async Task<PayrollgrpModel?> _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn)
@@ -157,7 +158,7 @@ public interface IOPayrollgrpDataAccess
     Task<List<PayrollgrpModel>?>            _02(string schemapay, string conn);
     Task<List<PayrollgrpModel>?>            _02ByName(string name, string schema, string conn);
     Task<bool>                              _02CheckToTblTran(string? code, string? schema, string? conn);
-    Task<List<ODeprecModel?>?>              _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);
+    Task<bool>                              _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);
     Task<GridResultModel<PayrollgrpModel>> _02Grid(GridRequestModel request, string schemapay, string schemapis, string conn);
     Task<PayrollgrpModel?>                  _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn);
     Task<PayrollgrpModel?>                  _04(int? id, string schema, string conn);
