@@ -1,138 +1,117 @@
-﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
-@using HRApiLibrary.Models._10_Pis
-@using HRApiLibrary.Models._10_Pis.OPis
-@using HRApiLibrary.Models._20_Pay
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRMvc.Applications.PayrollTransaction.Blazor._103
+@using HRMvc.Applications.PayrollTransaction.Blazor._103._103_UA
+@using HRMvc.Applications.PayrollTransaction.Blazor._103._103_UM
 @using HRMvc.Applications.PayrollTransaction.Vars
-@using HRMvc.Applications.PayrollTransaction.Blazor._102
 
-@inject IOPayrollgrpDataAccess _paygrps
-@inject IOClientDataAccess _clients
 
 <TelerikRootComponent>
+
+
+    @* =================================================
+         NOTIFICATION
+        ================================================= *@
     <TelerikNotification @ref="@NotificationRef"
                          HorizontalPosition="@NotificationHorizontalPosition.Right"
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
-    <CascadingValue Value="@Uc">
-        <CascadingValue Value="@v">
-            <CascadingValue Value="@NotificationRef">
-                <TelerikLoaderContainer Visible="@v.IsLoading"
-                                        LoaderType="@LoaderType.ConvergingSpinner" />
 
-                <TelerikCard Height="100%">
-                    <CardHeader>
-                        <span class="k-font-weight-bold">Payroll Group Management</span>
-                    </CardHeader>
+    <CascadingValue Value="@v">
+        <CascadingValue Value="@NotificationRef">
 
-                    <CardBody>
-                        <TelerikTabStrip ActiveTabId="@tab"
-                                         ActiveTabIdChanged="@OnTabChanged"
-                                         Height="calc(100vh - 120px)">
+            @* =================================================
+             MODULE TITLE
+            ================================================= *@
+            <TelerikCard Height="100%">
+                <CardHeader>
+                    <h2 class="k-font-weight-bold  k-font-size-md">User Management</h2>
+                </CardHeader>
 
-                            <TabStripTab Id="grp" Title="Payroll Group">
-                                <_102_PayrollGrpEntry ChildAction="ChildAction" />
-                            </TabStripTab>
 
-                            <TabStripTab Id="assign" Title="Payroll Group Assignment">
-                                <_102_PayrollGrpAssignment ChildAction="ChildAction" />
-                            </TabStripTab>
 
-                            <TabStripTab Id="sched" Title="Change Schedule Assignment">
-                                <_102_ChangeScheduleMgt ChildAction="ChildAction" />
-                            </TabStripTab>
+                <CardBody>
+                    <TelerikTabStrip ActiveTabId="@tab"
+                                     ActiveTabIdChanged="@OnTabChanged"
+                                     Height="calc(100vh - 120px)">
 
-                        </TelerikTabStrip>
-                    </CardBody>
-                </TelerikCard>
-            </CascadingValue>
+                        @* =================================================
+                            PASSWORD TAB
+                        ================================================= *@
+                        <TabStripTab Id="usermanager" Title="User Manager">
+                            <_103_UserManager  />
+                        </TabStripTab>
+
+
+                        @* =================================================
+                            USER ACCESS TAB
+                        ================================================= *@
+                        <TabStripTab Id="useraccess" Title="User Access">
+                            <_103_UserAccess @ref="UserAccessRef" ChildAction="@ChilAction" />
+                        </TabStripTab>
+
+
+                    </TelerikTabStrip>
+                </CardBody>
+            </TelerikCard>
         </CascadingValue>
     </CascadingValue>
+
+
+
+
 </TelerikRootComponent>
 
-@code {
-    [Parameter]
-    public UserClaimsModel Uc { get; set; } = new();
+@inject I_00UsersAccess _user
 
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    private V103Model v = new();
     private TelerikNotification? NotificationRef;
-    private V102Model v { get; set; } = new();
-    private string tab = "grp";
+    private string tab = "useraccess";
+
+    private _103_UserAccess? UserAccessRef;
 
     protected override async Task OnInitializedAsync()
     {
-        v.pisdb = Uc.OpisDb;
-        v.paydb = Uc.OpayDb;
-        v.conn = Uc.Conn;
-        v.IsLoading = true;
+        if (Uc?.Conn == null || Uc.OpisDb == null ||
+             Uc.OpayDb == null || Uc.SchemaMain == null ||
+             Uc.SchemaMainPis == null || Uc.SchemaMainPay == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
 
-        try
-        {
-            await LoadPayrollGroups();
-            await LoadDeployments();
-        }
-        finally
-        {
-            v.IsLoading = false;
-        }
+        v.OPisdb = Uc.OpisDb;
+        v.OPaydb = Uc.OpayDb;
+        v.Maindb = Uc.SchemaMain;
+        v.Mainpisdb = Uc.SchemaMainPis;
+        v.Mainpaydb = Uc.SchemaMainPay;
+        v.Conn = Uc.Conn;
+
+        v.UcLoaded = true;
     }
 
-    private async Task ChildAction()
-    {
-        if (v.Action == "LoadPayrollGroups")  await LoadPayrollGroups();
-
-        v.Action = "";
-    }
-
-    private async Task LoadPayrollGroups()
-    {
-        try
-        {
-            var result = await _paygrps._02(v.paydb, v.conn);
-            v.PayrollGrps = result.Where(p => p.Status == "A").ToList() ?? [];
-        }
-        catch
-        {
-            NotificationRef?.Show( "Failed to load payroll groups.",ThemeConstants.Notification.ThemeColor.Error);
-            throw;
-        }
-    }
-
-    private async Task LoadDeployments()
-    {
-        try
-        {
-            var statuses = new List<string> { "Active", "Inactive" };
-
-            var result = await _clients._02ByStatuses( statuses, v.pisdb,  v.conn);
-            v.Deployments = result ?? [];
-        }
-        catch
-        {
-            NotificationRef?.Show( "Failed to load deployments.", ThemeConstants.Notification.ThemeColor.Error);
-            throw;
-        }
-    }
-
-    private void OnTabChanged(string id)
+    private async Task OnTabChanged(string id)
     {
         tab = id;
 
-        if(id == "sched")
+        if (id == "usermanager")
         {
-            v.SelectedPayrollGroup = 0;
-            v.SelectedAssignedEmployees = [];
-            v.AssignedEmployees = [];
-            v.SelectedEmployee = string.Empty;
-            v.CurrentAttendance = new AtttemplateModel();
+
         }
-     
+
+
+        if (id == "useraccess" && UserAccessRef != null)
+        {
+            await UserAccessRef.ResetTab();
+        }
+    }
+
+    private async Task ChilAction()
+    {
+
     }
 }
-
-<style>
-    .k-card-body,
-    .k-tabstrip,
-    .k-tabstrip-content {
-        min-height: 0;
-    }
-</style>

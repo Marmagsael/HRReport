@@ -9,7 +9,7 @@ namespace HRMvc.Controllers
         private static readonly Dictionary<string, string> ReportViews = new()
         {
             // Standard
-            ["002"] = "_12_002_PasswordAndSecurity",
+            ["002"] = "_12_002_Password",
             ["003"] = "_12_003_MyEngagement",
             ["004"] = "_12_004_PayrollSettings",
             // ["010"] = "_12_010_Logout",
