@@ -16,19 +16,6 @@ public class PayrollgrpModel
 
     //---------------------------------------------------------
     public bool      Show                { get; set; } = false;
-    public bool      IsEditable          { get; set; } = false;
+    public string?   Deployment          { get; set; }
 
-    // --- Payroll Details -----------------------------------
-    public int?      EmpCount            { get; set; } = 0;
-    public string?   PayStatus            { get; set; } = string.Empty;
-    public string?   S1                  { get; set; } = string.Empty;
-    public string?   Deployment          { get; set; } = string.Empty;
-
-    // ---------------------------------------------------
-    public Guid       ClientKey         { get; set; } = Guid.NewGuid();
-    public bool       IsDeleted          { get; set; }
-    public bool       IsChanged          { get; set; }
-    public bool       IsNew              { get; set; }
-    public bool       HasUnsavedChanges  => IsDeleted || IsChanged || IsNew;
-    public List<string> ChangedFields   { get; set; } = new();
 }
