@@ -21,15 +21,15 @@ public class V102Model
 
 
 
-    public List<PayrollgrpModel>?       PayrollGrps                { get; set; } = [];
-    public List<OClientModel>?          Deployments                { get; set; } = [];
+    public List<PayrollgrpModel?>?       PayrollGrps                { get; set; } = [];
+    public List<OClientModel?>?         Deployments                { get; set; } = [];
     public PayrollgrpModel?             PayrollGrp                 { get; set; } = new PayrollgrpModel();
 
 
-    public List<OEmpmasModel>?          EmpmasList                 { get; set; } = [];
-    public List<OEmpmasModel>?          AssignedEmployees          { get; set; } = [];
-    public List<OEmpmasModel>?          SelectedAssignedEmployees  { get; set; } = [];
-    public List<OEmpmasModel?>?         EmployeesNoPayGrp          { get; set; } = [];
+    public List<OEmpmasModel>          EmpmasList                 { get; set; } = [];
+    public List<OEmpmasModel?>?        AssignedEmployees          { get; set; } = [];
+    public List<OEmpmasModel>          SelectedAssignedEmployees  { get; set; } = [];
+    public List<OEmpmasModel?>?        EmployeesNoPayGrp          { get; set; } = [];
 
     public int                          SelectedPayrollGroup       { get; set; } = 0;
     public List<OEmpmasModel>?          SelectedEmployees          { get; set; } = [];

@@ -149,7 +149,7 @@
         null
     };
 
-    private List<OEmpmasModel> SelectedEmployees { get; set; } = new();
+    private List<OEmpmasModel?> SelectedEmployees { get; set; } = new();
 
     private bool IgnoreNextSelectionChanged { get; set; }
 
@@ -198,7 +198,7 @@
 
     }
 
-    private async Task OnSelectedEmployeesChanged(IEnumerable<OEmpmasModel> employees)
+    private async Task OnSelectedEmployeesChanged(IEnumerable<OEmpmasModel?> employees)
     {
         if (IgnoreNextSelectionChanged)
         {
@@ -206,9 +206,11 @@
             return;
         }
 
-        SelectedEmployees = employees
-            .Where(x => x.UserId > 0)
-            .ToList();
+        if (employees.Any())
+        {
+            SelectedEmployees = employees.Where(x => x.UserId > 0).ToList();
+        }
+    
 
         await ProcessSelectedEmployees();
     }
@@ -315,7 +317,7 @@
 
     public async Task ResetGrid()
     {
-        SelectedEmployees = new List<OEmpmasModel>();
+        SelectedEmployees = [];
         IgnoreNextSelectionChanged = false;
         CurrentPage = 1;
 

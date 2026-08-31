@@ -1,0 +1,218 @@
+﻿
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
+
+
+@inject IOPisUsrDataAccess _usr
+
+<div style="height:60vh">
+    <TelerikGrid TItem="OPisUsrModel"
+                 @ref="UserGrid"
+                 OnRead="@OnGridRead"
+                 SelectionMode="@GridSelectionMode.Single"
+                 Navigable="true"
+                 Pageable="true"
+                 @bind-PageSize="@PageSize"
+                 Sortable="true"
+                 FilterMode="@GridFilterMode.FilterMenu"
+                 Height="100%">
+
+        <GridSettings>
+            <GridPagerSettings PageSizes="@PageSizes" />
+        </GridSettings>
+
+        <GridColumns>
+
+            <GridColumn Field="@nameof(OPisUsrModel.LogName)"
+                        Title="Username"
+                        Width="80px" />
+
+            <GridColumn Field="@nameof(OPisUsrModel.UserName)"
+                        Title="Full Name"
+                        Width="200px" />
+
+            <GridColumn Field="@nameof(OPisUsrModel.Status)"
+                        Title="Status"
+                        Width="50px"
+                        TextAlign="@ColumnTextAlign.Center"
+                        HeaderClass="header-center">
+
+                <FilterMenuTemplate Context="context">
+
+                    <_01FilterCheckbox TItem="StatusModel"
+                                       Context="context"
+                                       Items="@StatusList.Statuses"
+                                       ValueSelector="@(x => x.Code)"
+                                       TextSelector="@(x => x.Name)"
+                                       Member="@nameof(OPisUsrModel.Status)" />
+
+                </FilterMenuTemplate>
+
+                <Template Context="item">
+                    @{
+                        var user = (OPisUsrModel)item;
+
+                        var isActive = user.Status == "A";
+
+                        var statusName = isActive
+                        ? "Active"
+                        : "Inactive";
+
+                        var statusColor = isActive
+                        ? ThemeConstants.Badge.ThemeColor.Success
+                        : ThemeConstants.Badge.ThemeColor.Error;
+                    }
+
+                    <div class="d-flex justify-content-center">
+                        <TelerikBadge ThemeColor="@statusColor"
+                                      Position="@BadgePosition.Inline"
+                                      Rounded="@ThemeConstants.Badge.Rounded.Medium"
+                                      Size="@ThemeConstants.Badge.Size.Small"
+                                      FillMode="@ThemeConstants.Badge.FillMode.Solid">
+                            @statusName
+                        </TelerikBadge>
+                    </div>
+                </Template>
+
+            </GridColumn>
+
+            <GridCommandColumn Width="50px"
+                           Title="Action"
+                           HeaderClass="header-center"
+            >
+
+                <div class="d-flex justify-content-center gap-2">
+                    <GridCommandButton OnClick="@EditUserAccess">
+                        Edit
+                    </GridCommandButton>
+                </div>
+
+            </GridCommandColumn>
+
+        </GridColumns>
+
+    </TelerikGrid>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2002Model V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+    private TelerikGrid<OPisUsrModel>? UserGrid;
+
+
+    private async Task OnGridRead(GridReadEventArgs args)
+    {
+        // =========================================================
+        // PAGE
+        // =========================================================
+
+        var pageSize = args.Request.PageSize;
+
+        if (pageSize <= 0)
+            pageSize = PageSize;
+
+        PageSize = pageSize;
+
+        var page = args.Request.Page > 0
+            ? args.Request.Page
+            : 1;
+
+        var offset = (page - 1) * pageSize;
+
+
+        // =========================================================
+        // SORT
+        // =========================================================
+
+        var sort = args.Request.Sorts.FirstOrDefault();
+
+        var sortField = sort?.Member
+            ?? nameof(OPisUsrModel.UserName);
+
+        var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending
+                ? "DESC"
+                : "ASC";
+
+
+        // =========================================================
+        // FILTER
+        // =========================================================
+
+        var filters = GridHelper.GetFilters(args);
+
+        if (!filters.Any())
+        {
+            filters.Add(new GridFilterModel
+            {
+                Field = nameof(OPisUsrModel.Status),
+                Operator = "=",
+                Value = "A",
+                LogicalOperator = "AND"
+            });
+        }
+       
+
+
+        // =========================================================
+        // REQUEST
+        // =========================================================
+
+        var request = new GridRequestModel
+        {
+            PageSize = pageSize,
+            Offset = offset,
+            SortField = sortField,
+            SortDirection = sortDirection,
+            Filters = filters
+        };
+
+
+
+
+        var result = await _usr._02Grid(  request,  V.OPisdb,  V.Conn);
+        args.Data = result.Data;
+        args.Total = result.Total;
+    }
+
+
+    private async Task EditUserAccess(GridCommandEventArgs args)
+    {
+        var user = args.Item as OPisUsrModel;
+
+        if (user is null)   return;
+
+        V.SelectedUser  = user;
+        V.ShowUserList  = false;
+        V.Action        = "EditUserAccess";
+        await ChildAction.InvokeAsync();
+    }
+
+}
+
+
+<style>
+    .header-center .k-column-title {
+        width: 100%;
+        text-align: center;
+    }
+</style>

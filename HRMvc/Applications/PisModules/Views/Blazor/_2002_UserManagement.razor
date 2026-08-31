@@ -1,9 +1,115 @@
-@using HRMvc.Applications._00GeneralComponents
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRMvc.Applications.PisModules.Views.Blazor._2002._2002_UA
+@using HRMvc.Applications.PisModules.Views.Blazor._2002._2002_UM
 
-<_00UnderDevelopment Module="User Management"/>
+<TelerikRootComponent>
 
 
-@code{
-    [Parameter]
-    public UserClaimsModel Uc { get; set; } = new();
+    @* =================================================
+         NOTIFICATION
+        ================================================= *@
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+
+    <CascadingValue Value="@v">
+        <CascadingValue Value="@NotificationRef">
+
+            @* =================================================
+             MODULE TITLE
+            ================================================= *@
+            <TelerikCard Height="100%">
+                <CardHeader>
+                    <h2 class="k-font-weight-bold  k-font-size-md">User Management</h2>
+                </CardHeader>
+
+
+
+                <CardBody>
+                    <TelerikTabStrip ActiveTabId="@tab"
+                                     ActiveTabIdChanged="@OnTabChanged"
+                                     Height="calc(100vh - 120px)">
+
+                        @* =================================================
+                           USER MANAGER TAB
+                        ================================================= *@
+                        <TabStripTab Id="usermanager" Title="User Manager">
+                            <_2002_UserManager />
+                        </TabStripTab>
+
+
+                        @* =================================================
+                            USER ACCESS TAB
+                        ================================================= *@
+                        <TabStripTab Id="useraccess" Title="User Access">
+                            <_2002_UserAccess @ref="UserAccessRef" ChildAction="@ChilAction" />
+                        </TabStripTab>
+
+
+                    </TelerikTabStrip>
+                </CardBody>
+            </TelerikCard>
+        </CascadingValue>
+    </CascadingValue>
+
+
+
+
+</TelerikRootComponent>
+
+@inject I_00UsersAccess _user
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    private V2002Model v = new();
+    private TelerikNotification? NotificationRef;
+    private string tab = "useraccess";
+
+    private _2002_UserAccess? UserAccessRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.OpisDb == null || Uc.SchemaMain == null || Uc.SchemaMainPis == null )
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        v.OPisdb        = Uc.OpisDb;
+        v.Maindb        = Uc.SchemaMain;
+        v.Mainpisdb     = Uc.SchemaMainPis;
+        v.Module        = "pis";
+        v.Conn          = Uc.Conn;
+
+        v.UcLoaded = true;
+    }
+
+    private async Task OnTabChanged(string id)
+    {
+        tab = id;
+
+        if (id == "usermanager")
+        {
+
+        }
+
+
+        if (id == "useraccess" && UserAccessRef != null)
+        {
+            await UserAccessRef.ResetTab();
+        }
+    }
+
+
+
+    private async Task ChilAction()
+    {
+    }
+
+
+
 }

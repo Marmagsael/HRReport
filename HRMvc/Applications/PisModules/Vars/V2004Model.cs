@@ -19,9 +19,9 @@ namespace HRMvc.Applications.PisModules.Vars
 
 
 
-        public List<PayrollgrpModel?>?   PayrollGrps                 { get; set; } = [];
+        public List<PayrollgrpModel?>?    PayrollGrps                 { get; set; } = [];
         public List<OEmpmasModel?>?      EmpmasList                  { get; set; } = [];
-        public List<OEmpmasModel?>?       SelectedAssignedEmployees   { get; set; } = new();
+        public List<OEmpmasModel?>       SelectedAssignedEmployees   { get; set; } = new();
         public List<OEmpmasModel?>?       AssignedEmployees           { get; set; } = new();
 
 

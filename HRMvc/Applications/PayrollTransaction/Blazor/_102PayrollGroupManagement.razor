@@ -85,7 +85,10 @@
         try
         {
             var result = await _paygrps._02(v.paydb, v.conn);
-            v.PayrollGrps = result.Where(p => p.Status == "A").ToList() ?? [];
+            if (result.Any())
+            {
+                v.PayrollGrps = result.Where(p => p.Status == "A").ToList();
+            }
         }
         catch
         {
@@ -101,7 +104,7 @@
             var statuses = new List<string> { "Active", "Inactive" };
 
             var result = await _clients._02ByStatuses( statuses, v.pisdb,  v.conn);
-            v.Deployments = result ?? [];
+            v.Deployments = result;
         }
         catch
         {

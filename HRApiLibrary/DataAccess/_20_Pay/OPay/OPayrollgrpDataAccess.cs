@@ -44,7 +44,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         return data?.FirstOrDefault();
     }
 
-    public async Task<List<PayrollgrpModel>?> _02(string schemapay, string conn)
+    public async Task<List<PayrollgrpModel?>?> _02(string schemapay, string conn)
     {
         string sql = $@" SELECT p.* FROM {schemapay}.Payrollgrp p  ORDER BY Name";
         var data = await _sql.FetchData<PayrollgrpModel, dynamic>( sql,new { }, conn );
@@ -155,7 +155,7 @@ public interface IOPayrollgrpDataAccess
 {
     Task<PayrollgrpModel?>                  _01(PayrollgrpModel payrollgrp, string schema, string conn);
     Task<PayrollgrpModel?>                  _02(int id, string schema, string conn);
-    Task<List<PayrollgrpModel>?>            _02(string schemapay, string conn);
+    Task<List<PayrollgrpModel?>?>            _02(string schemapay, string conn);
     Task<List<PayrollgrpModel>?>            _02ByName(string name, string schema, string conn);
     Task<bool>                              _02CheckToTblTran(string? code, string? schema, string? conn);
     Task<bool>                              _02CheckToDeprec(int? payrollgrpId, string? schema, string? conn);

@@ -6,11 +6,10 @@ namespace HRMvc.Applications.PayrollTransaction.Vars;
 
 public class V103Model
 {
-    public string? OPisdb                    { get; set; } = string.Empty;
     public string? OPaydb                    { get; set; } = string.Empty;
     public string? Maindb                    { get; set; } = string.Empty;
-    public string? Mainpisdb                 { get; set; } = string.Empty;
     public string? Mainpaydb                 { get; set; } = string.Empty;
+    public string? Module                    { get; set; } = string.Empty;
 
 
 
