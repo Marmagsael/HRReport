@@ -74,7 +74,19 @@
         <GridColumn Field="@nameof(PayrollgrpModel.Name)"
                     Title="Payroll Group"
                     Width="250px"
-                    Locked="true" />
+                    Locked="true">
+
+            <EditorTemplate Context="item">
+                @{
+                    var pg = (PayrollgrpModel)item;
+                }
+
+                <TelerikTextBox @bind-Value="pg.Name"
+                                Width="100%" />
+                @ErrorFor(nameof(PayrollgrpModel.Name))
+            </EditorTemplate>
+
+        </GridColumn>
 
 
         @* ============================== *@
@@ -103,6 +115,7 @@
                                                    Height="600px" />
                     </DropDownListSettings>
                 </TelerikDropDownList>
+                @ErrorFor(nameof(PayrollgrpModel.ClNumber))
             </EditorTemplate>
 
         </GridColumn>
@@ -135,8 +148,8 @@
                                                Width="100%"
                                                Decimals="2"
                                                Format="N2"
-                                               Arrows="false"
-                                                />
+                                               Arrows="false" />
+                        @ErrorFor(nameof(PayrollgrpModel.MinDailyRate))
                     </EditorTemplate>
 
                 </GridColumn>
@@ -162,6 +175,7 @@
                                                Decimals="2"
                                                Format="N2"
                                                Arrows="false" />
+                        @ErrorFor(nameof(PayrollgrpModel.RatePerHr))
                     </EditorTemplate>
 
                 </GridColumn>
@@ -187,6 +201,7 @@
                                                Decimals="2"
                                                Format="N2"
                                                Arrows="false" />
+                        @ErrorFor(nameof(PayrollgrpModel.RatePerDay))
                     </EditorTemplate>
 
                 </GridColumn>
@@ -212,6 +227,7 @@
                                                Decimals="2"
                                                Format="N2"
                                                Arrows="false" />
+                        @ErrorFor(nameof(PayrollgrpModel.RatePerMonth))
                     </EditorTemplate>
 
                 </GridColumn>
@@ -237,6 +253,7 @@
                                                Decimals="2"
                                                Format="N2"
                                                Arrows="false" />
+                        @ErrorFor(nameof(PayrollgrpModel.RatePerYr))
                     </EditorTemplate>
 
                 </GridColumn>
@@ -256,11 +273,11 @@
 
             <FilterMenuTemplate Context="context">
                 <_01FilterCheckbox TItem="PayrollGroupStatusModel"
-                                  Context="context"
-                                  Items="@V.PayrollGroupStatus"
-                                  ValueSelector="@(x => x.Code)"
-                                  TextSelector="@(x => x.Name)"
-                                  Member="@nameof(PayrollgrpModel.Status)" />
+                                   Context="context"
+                                   Items="@V.PayrollGroupStatus"
+                                   ValueSelector="@(x => x.Code)"
+                                   TextSelector="@(x => x.Name)"
+                                   Member="@nameof(PayrollgrpModel.Status)" />
             </FilterMenuTemplate>
 
             <Template Context="item">
@@ -294,6 +311,7 @@
                                      ValueField="@nameof(PayrollGroupStatusModel.Code)"
                                      TextField="@nameof(PayrollGroupStatusModel.Name)"
                                      Width="100%" />
+                @ErrorFor(nameof(PayrollgrpModel.Status))
             </EditorTemplate>
 
         </GridColumn>
@@ -381,6 +399,59 @@
     private TelerikGrid<PayrollgrpModel>? PayrollGrpGrid;
 
 
+    // ==============================
+    // Field-level validation errors
+    // ==============================
+
+    private Dictionary<string, string> FieldErrors { get; set; } = new();
+
+
+    private bool TryValidate(PayrollgrpModel pg)
+    {
+        FieldErrors = new Dictionary<string, string>();
+
+        if (string.IsNullOrWhiteSpace(pg.Name))
+            FieldErrors[nameof(PayrollgrpModel.Name)] = "Payroll group name is required.";
+
+        if (string.IsNullOrWhiteSpace(pg.ClNumber))
+            FieldErrors[nameof(PayrollgrpModel.ClNumber)] = "Deployment is required.";
+
+        if (pg.MinDailyRate < 0)
+            FieldErrors[nameof(PayrollgrpModel.MinDailyRate)] = "Cannot be negative.";
+
+        if (pg.RatePerHr < 0)
+            FieldErrors[nameof(PayrollgrpModel.RatePerHr)] = "Cannot be negative.";
+
+        if (pg.RatePerDay < 0)
+            FieldErrors[nameof(PayrollgrpModel.RatePerDay)] = "Cannot be negative.";
+
+        if (pg.RatePerMonth < 0)
+            FieldErrors[nameof(PayrollgrpModel.RatePerMonth)] = "Cannot be negative.";
+
+        if (pg.RatePerYr < 0)
+            FieldErrors[nameof(PayrollgrpModel.RatePerYr)] = "Cannot be negative.";
+
+        return FieldErrors.Count == 0;
+    }
+
+
+    private string? GetError(string field) =>
+        FieldErrors.TryGetValue(field, out var msg) ? msg : null;
+
+
+    private RenderFragment ErrorFor(string field) => builder =>
+    {
+        var msg = GetError(field);
+        if (!string.IsNullOrEmpty(msg))
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "class", "field-error");
+            builder.AddContent(2, msg);
+            builder.CloseElement();
+        }
+    };
+
+
 
     private async Task OnGridRead(GridReadEventArgs args)
     {
@@ -391,13 +462,13 @@
 
         PageSize = pageSize;
 
-        var page = args.Request.Page > 0  ? args.Request.Page  : 1;
+        var page = args.Request.Page > 0 ? args.Request.Page : 1;
 
         var offset = (page - 1) * pageSize;
 
-        var sort            = args.Request.Sorts.FirstOrDefault();
-        var sortField       = sort?.Member  ?? nameof(PayrollgrpModel.Name);
-        var sortDirection   = sort?.SortDirection ==  Telerik.DataSource.ListSortDirection.Descending
+        var sort = args.Request.Sorts.FirstOrDefault();
+        var sortField = sort?.Member ?? nameof(PayrollgrpModel.Name);
+        var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending
             ? "DESC"
             : "ASC";
 
@@ -423,7 +494,7 @@
             Filters = filters
         };
 
-        var result = await _paygrp._02Grid(  request,  V.paydb, V.pisdb, V.conn);
+        var result = await _paygrp._02Grid(request, V.paydb, V.pisdb, V.conn);
 
         args.Data = result.Data;
         args.Total = result.Total;
@@ -433,6 +504,8 @@
 
     private Task OnGridAdd(GridCommandEventArgs args)
     {
+        FieldErrors = new Dictionary<string, string>();
+
         if (args.Item is PayrollgrpModel pg)
             SetDefaults(pg);
 
@@ -449,6 +522,13 @@
 
             SetDefaults(pg);
 
+            if (!TryValidate(pg))
+            {
+                args.IsCancelled = true;
+                NotificationRef?.Show("Please fix the highlighted fields.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
             var exists = await _paygrp._02ByName(
                 pg.Name?.Trim(),
                 V.paydb,
@@ -457,14 +537,17 @@
             if (exists.Any())
             {
                 args.IsCancelled = true;
-                NotificationRef?.Show( "Payroll group name already exists.",ThemeConstants.Notification.ThemeColor.Error);
+                FieldErrors[nameof(PayrollgrpModel.Name)] = "Payroll group name already exists.";
+                NotificationRef?.Show("Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
             await _paygrp._01(pg, V.paydb, V.conn);
 
-            NotificationRef?.Show( "Payroll group created successfully.",   ThemeConstants.Notification.ThemeColor.Success);
-           
+            FieldErrors = new Dictionary<string, string>();
+
+            NotificationRef?.Show("Payroll group created successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
             V.Action = "LoadPayrollGroups";
             await ChildAction.InvokeAsync();
 
@@ -474,7 +557,7 @@
         {
             args.IsCancelled = true;
 
-            NotificationRef?.Show(   $"Unable to create payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Unable to create payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -488,20 +571,30 @@
 
             SetDefaults(pg);
 
-            var exists = await _paygrp._02ByName(  pg.Name?.Trim(), V.paydb, V.conn);
+            if (!TryValidate(pg))
+            {
+                args.IsCancelled = true;
+                NotificationRef?.Show("Please fix the highlighted fields.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            var exists = await _paygrp._02ByName(pg.Name?.Trim(), V.paydb, V.conn);
             var existing = exists.FirstOrDefault();
 
             if (existing != null && existing.Id != pg.Id)
             {
                 args.IsCancelled = true;
 
-                NotificationRef?.Show( "Payroll group name already exists.",  ThemeConstants.Notification.ThemeColor.Error);
+                FieldErrors[nameof(PayrollgrpModel.Name)] = "Payroll group name already exists.";
+                NotificationRef?.Show("Payroll group name already exists.", ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
-            await _paygrp._03( pg.Id, pg,V.paydb,  V.conn);
+            await _paygrp._03(pg.Id, pg, V.paydb, V.conn);
 
-            NotificationRef?.Show( "Payroll group updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            FieldErrors = new Dictionary<string, string>();
+
+            NotificationRef?.Show("Payroll group updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
             V.Action = "LoadPayrollGroups";
 
             await ChildAction.InvokeAsync();
@@ -511,7 +604,7 @@
         catch (Exception ex)
         {
             args.IsCancelled = true;
-            NotificationRef?.Show(  $"Update failed: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Update failed: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -528,22 +621,22 @@
             {
                 args.IsCancelled = true;
 
-                NotificationRef?.Show( "Invalid payroll group.",  ThemeConstants.Notification.ThemeColor.Error);
+                NotificationRef?.Show("Invalid payroll group.", ThemeConstants.Notification.ThemeColor.Error);
                 return;
             }
 
-            var hasTblTran = await _paygrp._02CheckToTblTran( pg.Code, V.paydb, V.conn);
-            var hasDeprec = await _paygrp._02CheckToDeprec(pg.Id,V.pisdb,V.conn);
+            var hasTblTran = await _paygrp._02CheckToTblTran(pg.Code, V.paydb, V.conn);
+            var hasDeprec = await _paygrp._02CheckToDeprec(pg.Id, V.pisdb, V.conn);
 
             if (hasTblTran || hasDeprec)
             {
                 args.IsCancelled = true;
-                NotificationRef?.Show( $"'{pg.Name}' cannot be deleted because it is already in use.", ThemeConstants.Notification.ThemeColor.Warning);
+                NotificationRef?.Show($"'{pg.Name}' cannot be deleted because it is already in use.", ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
 
-            await _paygrp._04( pg.Id, V.paydb,V.conn);
-            NotificationRef?.Show( $"Payroll group '{pg.Name}' was deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await _paygrp._04(pg.Id, V.paydb, V.conn);
+            NotificationRef?.Show($"Payroll group '{pg.Name}' was deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
 
             V.Action = "LoadPayrollGroups";
 
@@ -555,7 +648,7 @@
         {
             args.IsCancelled = true;
 
-            NotificationRef?.Show(   $"Unable to delete payroll group: {ex.Message}",  ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Unable to delete payroll group: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -571,7 +664,13 @@
             "Discard Changes");
 
         if (!confirmed)
+        {
             args.IsCancelled = true;
+        }
+        else
+        {
+            FieldErrors = new Dictionary<string, string>();
+        }
     }
 
 
@@ -609,7 +708,7 @@
 
     private void OnDeploymentChanged(PayrollgrpModel payrollGrp)
     {
-        var deployment = V.Deployments.FirstOrDefault(   x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
+        var deployment = V.Deployments.FirstOrDefault(x => x.ClNumber?.Trim() == payrollGrp.ClNumber?.Trim());
 
         payrollGrp.Deployment = deployment?.ClName?.Trim() ?? string.Empty;
     }
@@ -625,6 +724,7 @@
         if (PayrollGrpGrid == null) return;
 
         V.SelectedPayrollGroup = 0;
+        FieldErrors = new Dictionary<string, string>();
         var state = PayrollGrpGrid.GetState();
         state.FilterDescriptors.Clear();
         state.SortDescriptors.Clear();
@@ -634,7 +734,7 @@
     }
 
 
-   
+
 }
 
 
@@ -644,5 +744,12 @@
     .header-center .k-column-title {
         width: 100%;
         text-align: center;
+    }
+
+    .field-error {
+        color: var(--kendo-color-error, #dc3545);
+        font-size: 0.75rem;
+        margin-top: 2px;
+        line-height: 1.2;
     }
 </style>
