@@ -40,7 +40,6 @@ public class MenuDataAccess : IMenuDataAccess
     public async Task<List<MenuModel?>?> _02ByType(string type, string schema, string conn)
     {
         string sql = $@" SELECT Id, Type, IdParent, Indent, Icon, DispText, Action, Odr FROM {schema}.Menu WHERE LOWER(Type) LIKE CONCAT(LOWER(@Type), '%')";
-
         var data = await _sql.FetchData<MenuModel?, dynamic>(sql, new { Type = type }, conn);
         return data;
     }

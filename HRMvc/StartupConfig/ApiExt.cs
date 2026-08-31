@@ -223,6 +223,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOEmpportalDataAccess, OEmpportalDataAccess>();
         builder.Services.AddScoped<IOPayrollgrpDataAccess, OPayrollgrpDataAccess>();
         builder.Services.AddScoped<IODomainaccessDataAccess, ODomainaccessDataAccess>();
+        builder.Services.AddScoped<IOUsrDataAccess, OUsrDataAccess>();
         
 
 
