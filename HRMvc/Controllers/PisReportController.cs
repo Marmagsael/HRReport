@@ -10,6 +10,7 @@ public class PisReportController : Controller
     {
         ["2002"] = "_2002_UserManagement",
         ["2003"] = "_2003_TimeOffSettings",
+        ["2004"] = "_2004_EmpAttendanceSettings",
         
         
     };

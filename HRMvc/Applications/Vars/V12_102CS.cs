@@ -7,7 +7,7 @@ public class V12_102CS
     public AtttemplateModel                 Atttemplate             { get; set; } = new();
     public List<AtttemplateModel>           Atttemplates            { get; set; } = [];
     public AtttemplatereqhdrModel           Atttemplatereqhdr       { get; set; } = new();
-    public List<AtttemplatereqhdrModel>     Atttemplatereqhdrs      { get; set; } = [];
+    public List<AtttemplatereqhdrModel?>    Atttemplatereqhdrs      { get; set; } = [];
     public AtttemplatereqdtlModel           Atttemplatereqdtl       { get; set; } = new();
     public List<AtttemplatereqdtlModel>     Atttemplatereqdtls      { get; set; } = [];
 

@@ -1,0 +1,921 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.PisModules.Views.Blazor._2004._2004_CSM
+
+@inject DialogService _DialogService
+@inject IAtttemplateDataAccess _atttemplate
+@inject IOEmpmasDataAccess _empmas
+@inject IAtttemplatereqhdrDataAccess _attTemplateReqhdr
+@inject IAtttemplatereqdtlDataAccess _attTemplateReqdtl
+@inject IAtttemplatereqhistDataAccess _iattTemplateReqHis
+
+<TelerikMediaQuery Media="(max-width: 768px)" OnChange="@((bool matches) => { IsMobile = matches; StateHasChanged(); })" />
+<TelerikMediaQuery Media="(max-width: 991.98px)" OnChange="@((bool matches) => { IsNarrow = matches; StateHasChanged(); })" />
+
+<TelerikCard Class="csm-card d-flex flex-column w-100 h-100">
+
+    <!-- HEADER -->
+    <CardHeader class="bg-secondary bg-opacity-10 flex-shrink-0 p-2">
+        <div class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-lg-between gap-2 gap-lg-3 w-100">
+
+            <!-- PAYROLL GROUP DROPDOWN -->
+            <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 flex-grow-1 min-w-0">
+                <label for="paygrp" class="mb-0 fw-semibold text-nowrap">Payroll group</label>
+
+                <div class="paygrp-picker">
+                    <TelerikDropDownList Data="@V.PayrollGrps" @bind-Value="V.SelectedPayrollGroup" TextField="@nameof(PayrollgrpModel.Name)" ValueField="@nameof(PayrollgrpModel.Id)" Filterable="true" FilterPlaceholder="Search payroll group..." Width="100%" OnChange="@((object value) => PayrollgrpChange((int)value))">
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Width="450px" Height="600px" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+                </div>
+            </div>
+
+            <!-- DESKTOP APPLY BUTTON -->
+            @if (!IsNarrow)
+            {
+                <div class="apply-desktop flex-shrink-0">
+                    <TelerikButton OnClick="@ApplySchedule" ThemeColor="@ThemeConstants.Button.ThemeColor.Primary" Size="@ThemeConstants.Button.Size.Small">Apply schedule to selected employee(s)</TelerikButton>
+                </div>
+            }
+        </div>
+    </CardHeader>
+
+    <CardBody Class="csm-card-body flex-grow-1 min-h-0 p-1 p-lg-2 overflow-auto">
+        <div class="d-flex flex-column flex-lg-row gap-2 w-100 h-100 min-h-0">
+
+            <!-- EMPLOYEE LIST -->
+            @if (IsNarrow)
+            {
+                <div class="flex-shrink-0 w-100 mb-3">
+                    <TelerikExpansionPanel Title="@EmployeeListTitle" @bind-Expanded="@EmployeeListExpanded">
+                        <Content>
+                            <div class="w-100 overflow-auto employee-list-mobile">
+                                <_2004_CSM_EmployeeList @ref="EmployeeListRef" ChildAction="@ChildActionCatcher" />
+                            </div>
+                        </Content>
+                    </TelerikExpansionPanel>
+                </div>
+            }
+            else
+            {
+                <div class="employee-list-host flex-shrink-0 h-100">
+                    <_2004_CSM_EmployeeList @ref="EmployeeListRef" ChildAction="@ChildActionCatcher" />
+                </div>
+            }
+
+            <!-- RIGHT SIDE / SCHEDULE -->
+            <div class="schedule-host flex-grow-1 min-h-0 h-100 d-flex flex-column overflow-auto">
+
+                @* <div class="schedule-section-title fw-semibold mb-2 flex-shrink-0">
+                    Select schedule
+                </div> *@
+
+
+                <!-- WEEKLY SCHEDULE GRID -->
+                <div class="schedule-grid-wrapper w-100 flex-shrink-0">
+                    <TelerikGrid Data="@Days" TItem="DayRow" Sortable="false" Pageable="false" Width="100%" Class="schedule-grid overflow-auto">
+                        <GridColumns>
+
+                            <!-- DAY -->
+                            <GridColumn Field="@nameof(DayRow.Label)" Title="Day" Width="@(IsNarrow ? "130px" : "120px")">
+                                <Template>
+                                    @{
+                                        var d = (DayRow)context;
+                                    }
+                                    <div class="d-flex flex-column justify-content-center min-h-0">
+                                        <span class="k-font-weight-bold @dutyTypeCss(d.CurDuty)">@d.Label</span>
+                                        @if (IsNarrow)
+                                        {
+                                            <span class="k-color-subtle">@CurrentSummary(d)</span>
+                                        }
+                                    </div>
+                                </Template>
+                            </GridColumn>
+
+                            <!-- CURRENT SCHEDULE -->
+                            <GridColumn Visible="@(!IsNarrow)" HeaderClass="k-text-center">
+                                <HeaderTemplate>
+                                    <div class="w-100 text-center">
+                                        @if (string.IsNullOrWhiteSpace(V.SelectedEmployee))
+                                        {
+                                            <span class="k-color-primary k-font-weight-bold">Current Schedule</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="k-color-primary k-font-weight-bold">Current Schedule of</span>
+                                            <span class="k-color-subtle k-font-weight-normal">[ @V.SelectedEmployee ]</span>
+                                        }
+                                    </div>
+                                </HeaderTemplate>
+
+                                <Columns>
+                                    <!-- CURRENT DUTY TYPE -->
+                                    <GridColumn Title="Duty Type" Width="110px" TextAlign="@ColumnTextAlign.Center" HeaderClass="k-text-center">
+                                        <HeaderTemplate><div class="w-100 text-center">Duty Type</div></HeaderTemplate>
+                                        <Template>
+                                            @{
+                                                var d = (DayRow)context;
+                                            }
+                                            <span class="@dutyTypeCss(d.CurDuty)">@d.CurDuty</span>
+                                        </Template>
+                                    </GridColumn>
+
+                                    <!-- CURRENT IN -->
+                                    <GridColumn Title="IN" Width="110px" TextAlign="@ColumnTextAlign.Center" HeaderClass="k-text-center">
+                                        <HeaderTemplate><div class="w-100 text-center">IN</div></HeaderTemplate>
+                                        <Template>
+                                            @{
+                                                var d = (DayRow)context;
+                                            }
+                                            <span class="@dutyTypeCss(d.CurDuty)">@(d.CurDuty == "R" ? d.CurIn?.ToString() : "-")</span>
+                                        </Template>
+                                    </GridColumn>
+
+                                    <!-- CURRENT DURATION -->
+                                    <GridColumn Title="Duration" Width="110px" TextAlign="@ColumnTextAlign.Center" HeaderClass="k-text-center">
+                                        <HeaderTemplate><div class="w-100 text-center">Duration</div></HeaderTemplate>
+                                        <Template>
+                                            @{
+                                                var d = (DayRow)context;
+                                            }
+                                            <span class="@dutyTypeCss(d.CurDuty)">@(d.CurDuty == "R" ? ((d.CurHrs ?? 0) / 100.00).ToString("0.#") + " H" : "-")</span>
+                                        </Template>
+                                    </GridColumn>
+                                </Columns>
+                            </GridColumn>
+
+                            <!-- NEW SCHEDULE -->
+                            <GridColumn HeaderClass="k-text-center">
+                                <HeaderTemplate><div class="w-100 text-center"><span class="k-color-primary k-font-weight-bold">New Schedule</span></div></HeaderTemplate>
+
+                                <Columns>
+                                    <!-- NEW DUTY TYPE -->
+                                    <GridColumn Title="Duty Type" Width="@(IsNarrow ? "95px" : "120px")" TextAlign="@ColumnTextAlign.Center" HeaderClass="k-text-center">
+                                        <HeaderTemplate><div class="w-100 text-center">Duty Type</div></HeaderTemplate>
+                                        <Template>
+                                            @{
+                                                var d = (DayRow)context;
+                                            }
+                                            <div class="d-flex justify-content-center">
+                                                <RadzenDropDown Data="@dutyTypes" @bind-Value="@d.ReqDuty" Change="@(() => { d.ReqIn = 0; d.ReqHrs = 0; })" Placeholder="Select Duty Type" Style="width:80px;" />
+                                            </div>
+                                        </Template>
+                                    </GridColumn>
+
+                                    <!-- NEW IN -->
+                                    <GridColumn Title="IN" Width="@(IsNarrow ? "125px" : "150px")" TextAlign="@ColumnTextAlign.Center" HeaderClass="k-text-center">
+                                        <HeaderTemplate><div class="w-100 text-center">IN</div></HeaderTemplate>
+                                        <Template>
+                                            @{
+                                                var d = (DayRow)context;
+                                            }
+                                            @if (d.ReqDuty == "R")
+                                            {
+                                                <div class="d-flex justify-content-center">
+                                                    <RadzenDropDown Data="@timeOptions" TextProperty="Text" ValueProperty="Value" @bind-Value="@d.ReqIn" Placeholder="Select Time" Style="@(IsNarrow ? "width:110px" : "width:125px")" />
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span>-</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+
+                                    <!-- NEW DURATION -->
+                                    <GridColumn Title="Duration" Width="@(IsNarrow ? "125px" : "150px")" TextAlign="@ColumnTextAlign.Center" HeaderClass="k-text-center">
+                                        <HeaderTemplate><div class="w-100 text-center">Duration</div></HeaderTemplate>
+                                        <Template>
+                                            @{
+                                                var d = (DayRow)context;
+                                            }
+                                            @if (d.ReqDuty == "R")
+                                            {
+                                                <div class="d-flex justify-content-center">
+                                                    <RadzenDropDown Data="@timedurations" TextProperty="Text" ValueProperty="Value" @bind-Value="@d.ReqHrs" Placeholder="Select Duration" Style="@(IsNarrow ? "width:110px" : "width:125px")" />
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <span>-</span>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+
+                                    <!-- NEW OUT -->
+                                    <GridColumn Title="OUT" Width="@(IsNarrow ? "90px" : "110px")" TextAlign="@ColumnTextAlign.Center" HeaderClass="k-text-center">
+                                        <HeaderTemplate><div class="w-100 text-center">OUT</div></HeaderTemplate>
+                                        <Template>
+                                            @{
+                                                var d = (DayRow)context;
+                                            }
+                                            <span>@(d.ReqDuty == "R" ? outRes(d.ReqDuty, d.ReqIn, d.ReqHrs) : "-")</span>
+                                        </Template>
+                                    </GridColumn>
+                                </Columns>
+                            </GridColumn>
+
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
+
+                <!-- NOTES -->
+                <div class="notes-host flex-grow-1 min-h-0 overflow-auto">
+                    <_2004_CSM_Notes />
+                </div>
+            </div>
+
+            <!-- NARROW / MOBILE APPLY BUTTON -->
+            @if (IsNarrow)
+            {
+                <div class="flex-shrink-0 mt-2 py-2 border-top apply-bar">
+                    <TelerikButton OnClick="@ApplySchedule" Class="w-100" ThemeColor="@ThemeConstants.Button.ThemeColor.Primary" Size="@ThemeConstants.Button.Size.Small">Apply schedule</TelerikButton>
+                </div>
+            }
+        </div>
+    </CardBody>
+</TelerikCard>
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel? Uc { get; set; }
+    [CascadingParameter] public V2004Model V { get; set; } = new();
+    [CascadingParameter] public TelerikNotification? NotificationRef { get; set; }
+    [Parameter] public EventCallback ChildAction { get; set; }
+    [CascadingParameter] public DialogFactory? TelerikDialogs { get; set; }
+
+    private _2004_CSM_EmployeeList EmployeeListRef;
+    V12_102CS Cs = new();
+    string saveRemarks = string.Empty;
+    AtttemplatereqhdrModel attTempReqHdr = new();
+    private int previousPayrollGroup;
+    private bool IsMobile;
+    private bool IsNarrow;
+    private bool EmployeeListExpanded = true;
+    private List<DayRow> Days = new();
+    List<string> dutyTypes = new() { "R", "RD", "RN" };
+    List<TimeoptionModel> timeOptions = MsdsDataAccess._02Hours();
+    List<TimedurationModel> timedurations = MsdsDataAccess._02HourDurations();
+
+    public class DayRow
+    {
+        public string Label { get; set; } = "";
+        public int DayIndex { get; set; }
+        public string? CurDuty { get; set; }
+        public int? CurIn { get; set; }
+        public int? CurHrs { get; set; }
+        public string? ReqDuty { get; set; }
+        public int? ReqIn { get; set; }
+        public int? ReqHrs { get; set; }
+    }
+
+    private string EmployeeListTitle => V.SelectedAssignedEmployees?.Any() == true ? $"Employees ({V.SelectedAssignedEmployees.Count} selected)" : "Select employees";
+
+    bool IsCanSave => Cs.Atttemplatereqhdr != null && Cs.Atttemplatereqhdr.Status is "N" or "S" && Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue && Cs.Atttemplatereqhdr.Effectivity > DateTime.MinValue && Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
+
+    bool IsCanSend => Cs.Atttemplatereqhdr != null && Cs.Atttemplatereqhdr.Status is "S" && Cs.Atttemplatereqhdr.DateRequested > DateTime.MinValue && Cs.Atttemplatereqhdr.Effectivity?.Date >= DateTime.Now.Date && saveRemarks == string.Empty && Hdr.Id == attTempReqHdr.Id && Hdr.Effectivity == attTempReqHdr.Effectivity && Hdr.EmpNumber_Approver == attTempReqHdr.EmpNumber_Approver && Hdr.Remarks == attTempReqHdr.Remarks && Cs.Atttemplatereqhdr.EmpNumber_Approver.Any();
+
+    bool IsCanCancel => Hdr.Status is "S";
+
+    AtttemplatereqhdrModel Hdr => Cs.Atttemplatereqhdr ?? new AtttemplatereqhdrModel();
+    AtttemplatereqdtlModel DtlReq => Cs.Atttemplatereqdtl ?? new AtttemplatereqdtlModel();
+    AtttemplateModel Dtl => Cs.Atttemplate ?? new AtttemplateModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Cs.Atttemplatereqhdr = new();
+
+        var res = await _atttemplate._02s(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+
+        if (res.Count > 0)
+        {
+            Cs.Atttemplate = res.FirstOrDefault() ?? new AtttemplateModel();
+            Cs.Atttemplatereqdtl = AttTemplateReq_To_AttTemplate(res.FirstOrDefault());
+        }
+        else
+        {
+            Cs.Atttemplate = _atttemplate._02NoSchedule(Uc.UserId);
+        }
+
+        await PayrollgrpChange(previousPayrollGroup);
+        BuildDays();
+    }
+
+    private void BuildDays()
+    {
+        var c = V.CurrentAttendance ?? new AtttemplateModel();
+        var r = DtlReq;
+
+        Days = new()
+        {
+            new() { Label = "Monday", DayIndex = 2, CurDuty = c.D2_dutytype, CurIn = c.D2_in, CurHrs = c.D2_hrslength, ReqDuty = r.D2_DutyType, ReqIn = r.D2_In, ReqHrs = r.D2_HrsLength },
+            new() { Label = "Tuesday", DayIndex = 3, CurDuty = c.D3_dutytype, CurIn = c.D3_in, CurHrs = c.D3_hrslength, ReqDuty = r.D3_DutyType, ReqIn = r.D3_In, ReqHrs = r.D3_HrsLength },
+            new() { Label = "Wednesday", DayIndex = 4, CurDuty = c.D4_dutytype, CurIn = c.D4_in, CurHrs = c.D4_hrslength, ReqDuty = r.D4_DutyType, ReqIn = r.D4_In, ReqHrs = r.D4_HrsLength },
+            new() { Label = "Thursday", DayIndex = 5, CurDuty = c.D5_dutytype, CurIn = c.D5_in, CurHrs = c.D5_hrslength, ReqDuty = r.D5_DutyType, ReqIn = r.D5_In, ReqHrs = r.D5_HrsLength },
+            new() { Label = "Friday", DayIndex = 6, CurDuty = c.D6_dutytype, CurIn = c.D6_in, CurHrs = c.D6_hrslength, ReqDuty = r.D6_DutyType, ReqIn = r.D6_In, ReqHrs = r.D6_HrsLength },
+            new() { Label = "Saturday", DayIndex = 7, CurDuty = c.D7_dutytype, CurIn = c.D7_in, CurHrs = c.D7_hrslength, ReqDuty = r.D7_DutyType, ReqIn = r.D7_In, ReqHrs = r.D7_HrsLength },
+            new() { Label = "Sunday", DayIndex = 1, CurDuty = c.D1_dutytype, CurIn = c.D1_in, CurHrs = c.D1_hrslength, ReqDuty = r.D1_DutyType, ReqIn = r.D1_In, ReqHrs = r.D1_HrsLength }
+        };
+    }
+
+    private void ApplyDaysToModel()
+    {
+        var r = Cs.Atttemplatereqdtl;
+        if (r == null) return;
+
+        foreach (var d in Days)
+        {
+            bool isReg = d.ReqDuty == "R";
+            int? pin = isReg ? d.ReqIn : 0;
+            int? hrs = isReg ? d.ReqHrs : 0;
+
+            switch (d.DayIndex)
+            {
+                case 1: r.D1_DutyType = d.ReqDuty; r.D1_In = pin; r.D1_HrsLength = hrs; break;
+                case 2: r.D2_DutyType = d.ReqDuty; r.D2_In = pin; r.D2_HrsLength = hrs; break;
+                case 3: r.D3_DutyType = d.ReqDuty; r.D3_In = pin; r.D3_HrsLength = hrs; break;
+                case 4: r.D4_DutyType = d.ReqDuty; r.D4_In = pin; r.D4_HrsLength = hrs; break;
+                case 5: r.D5_DutyType = d.ReqDuty; r.D5_In = pin; r.D5_HrsLength = hrs; break;
+                case 6: r.D6_DutyType = d.ReqDuty; r.D6_In = pin; r.D6_HrsLength = hrs; break;
+                case 7: r.D7_DutyType = d.ReqDuty; r.D7_In = pin; r.D7_HrsLength = hrs; break;
+            }
+        }
+    }
+
+    private string CurrentSummary(DayRow d)
+    {
+        if (d.CurDuty != "R") return $"Current: {d.CurDuty}";
+        var hrs = ((d.CurHrs ?? 0) / 100.00).ToString("0.#");
+        var inTime = outSched("R", d.CurIn, 0);
+        return $"Current: {inTime} · {hrs} H";
+    }
+
+    private async Task PayrollgrpChange(int value)
+    {
+        if (value == previousPayrollGroup) return;
+        previousPayrollGroup = value;
+        V.SelectedPayrollGroup = value;
+        await LoadEmployeesForPayrollGroup(value);
+    }
+
+    private async Task LoadEmployeesForPayrollGroup(int pgrpId)
+    {
+        V.AssignedEmployees = [];
+
+        try
+        {
+            if (pgrpId <= 0)
+            {
+                NotificationRef?.Show("Invalid Input. Please select a valid payroll group", ThemeConstants.Notification.ThemeColor.Warning);
+                return;
+            }
+
+            V.AssignedEmployees = [];
+            V.SelectedAssignedEmployees = [];
+
+            var result = await _empmas._02ByPayrollGrpId(pgrpId, Uc.SchemaMain, V.pisdb, V.conn);
+
+            if (result?.Any() == true) V.AssignedEmployees = result;
+        }
+        catch
+        {
+            NotificationRef?.Show("Couldn't load assigned employees.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task ChildActionCatcher()
+    {
+        BuildDays();
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task ApplySchedule()
+    {
+        try
+        {
+            ApplyDaysToModel();
+
+            if (!ValidateApplySchedule()) return;
+
+            var schedule = MapAttendanceRec(Cs.Atttemplatereqdtl);
+            int successCount = 0;
+            int skippedCount = 0;
+            List<string> failedEmployees = new();
+
+            foreach (var employee in V.SelectedAssignedEmployees)
+            {
+                if (employee.UserId == 0)
+                {
+                    skippedCount++;
+                    NotificationRef?.Show($"Employee Skipped. {employee.Fullname} was skipped because no existing user record was found.", ThemeConstants.Notification.ThemeColor.Info);
+                    continue;
+                }
+
+                schedule.EmpmasId = employee.UserId;
+                bool dbUpdated = await InsertUpdateSchedule(schedule);
+
+                if (dbUpdated)
+                {
+                    var attreqhistory = AssignValuesToRequestHistory(employee.UserId, Uc.OempNumber);
+                    await _iattTemplateReqHis._01(attreqhistory, Uc.SchemaUserPis, V.conn);
+                    successCount++;
+                }
+                else
+                {
+                    skippedCount++;
+                    failedEmployees.Add(employee.Fullname);
+                }
+            }
+
+            ShowApplyScheduleSummary(successCount, skippedCount, failedEmployees);
+
+            V.SelectedEmployee = string.Empty;
+            foreach (var e in V.EmpmasList) e.Sel = false;
+
+            await OnInitializedAsync();
+            StateHasChanged();
+            await ChildActionCatcher();
+        }
+        catch
+        {
+            NotificationRef?.Show("Couldn't apply the schedules to selected employees", ThemeConstants.Notification.ThemeColor.Error);
+        }
+
+        await EmployeeListRef.UnselectAllEmployees();
+    }
+
+    private bool ValidateApplySchedule()
+    {
+        if (Cs.Atttemplatereqdtl == null)
+        {
+            NotificationRef?.Show("No schedule is available to apply.", ThemeConstants.Notification.ThemeColor.Warning);
+            return false;
+        }
+
+        if (V.SelectedAssignedEmployees == null || !V.SelectedAssignedEmployees.Any())
+        {
+            NotificationRef?.Show("No Employees Selected. Please select at least one employee.", ThemeConstants.Notification.ThemeColor.Warning);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ShowApplyScheduleSummary(int successCount, int skippedCount, List<string> failedEmployees)
+    {
+        if (successCount > 0)
+        {
+            string summary = $"Successfully updated schedules for {successCount} employee(s).";
+            if (skippedCount > 0) summary += $" {skippedCount} employee(s) could not be updated.";
+            NotificationRef?.Show($"Schedule Update Completed. {summary}", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        else
+        {
+            NotificationRef?.Show("No Updates Applied. No employee schedules were updated.", ThemeConstants.Notification.ThemeColor.Warning);
+        }
+
+        if (!failedEmployees.Any()) return;
+
+        string errorMsg = string.Join(", ", failedEmployees.Take(3));
+        if (failedEmployees.Count > 3) errorMsg += $", and {failedEmployees.Count - 3} more.";
+
+        NotificationRef?.Show("Update Incomplete. The following employee(s) could not be updated", ThemeConstants.Notification.ThemeColor.Error);
+    }
+
+    private async Task<bool> InsertUpdateSchedule(AtttemplateModel schedule)
+    {
+        if (schedule == null) throw new ArgumentNullException(nameof(schedule));
+
+        try
+        {
+            var res = await _atttemplate._01(schedule, Uc.SchemaUserPis, V.conn);
+            return res != null;
+        }
+        catch
+        {
+            NotificationRef?.Show("Couldn't insert/update the schedule.", ThemeConstants.Notification.ThemeColor.Error);
+            return false;
+        }
+    }
+
+    void New()
+    {
+        Cs.Atttemplatereqhdr = new();
+        Cs.Atttemplatereqdtl = new();
+        BuildDays();
+    }
+
+    async Task Save()
+    {
+        if (Hdr == null || Uc == null) return;
+
+        DateTime effectivity = Hdr.Effectivity ?? DateTime.MinValue;
+
+        List<AtttemplatereqhdrModel?>? res = await _attTemplateReqhdr._02ByUserId_ByEffectivity(Uc.UserId, effectivity, Uc.SchemaUserPis, Uc.Conn);
+
+        if (Hdr.Id == 0)
+        {
+            if (res != null && res.Count > 0)
+            {
+                saveRemarks = "Invalid Effectivity date.";
+                await _DialogService.Alert("Unable to proceed. A saved request with the same effectivity date already exists.", "Existing Request", new AlertOptions { OkButtonText = "OK" });
+                return;
+            }
+
+            AtttemplatereqhdrModel? h = Cs.Atttemplatereqhdr;
+            h.UserId = Uc.UserId;
+            h.EmpNumber = Uc.OempNumber;
+            h.Status = "S";
+
+            AtttemplatereqhdrModel reshdr = await _attTemplateReqhdr._01_02(Hdr, Uc.SchemaUserPis, Uc.Conn);
+            Cs.Atttemplatereqhdr = reshdr;
+
+            AtttemplatereqdtlModel? d = Cs.Atttemplatereqdtl;
+            d.AtttemplateReqHdrId = reshdr.Id;
+            d.EmpmasId = Uc.UserId;
+            d.AttendanceTypeId = 1;
+
+            ApplyDaysToModel();
+
+            await _attTemplateReqdtl._01(DtlReq, Uc.SchemaUserPis, Uc.Conn);
+
+            List<AtttemplatereqdtlModel?>? resd = await _attTemplateReqdtl._02ByAtttemplateReqHdrId(reshdr?.Id ?? 0, Uc.SchemaUserPis, Uc.Conn);
+            Cs.Atttemplatereqdtl = resd.FirstOrDefault() ?? new();
+
+            BuildDays();
+        }
+
+        if (Hdr.Id > 0)
+        {
+            var r = res.FirstOrDefault();
+
+            if (r?.Id is not null && r.Id != Hdr.Id)
+            {
+                await _DialogService.Alert("Unable to update. A saved request with the same effectivity date already exists.", "Existing Request", new AlertOptions { OkButtonText = "OK" });
+
+                var res1 = await _attTemplateReqhdr._02s(Hdr.Id, Uc.SchemaUserPis, Uc.Conn);
+                Cs.Atttemplatereqhdr = res1.FirstOrDefault() ?? new();
+                saveRemarks = "Invalid Effectivity date.";
+                return;
+            }
+
+            await _attTemplateReqhdr._03(Hdr, Uc.SchemaUserPis, Uc.Conn);
+
+            List<AtttemplatereqhdrModel?>? resh = await _attTemplateReqhdr._02s(Hdr.Id ?? 0, Uc.SchemaUserPis, Uc.Conn);
+            Cs.Atttemplatereqhdr = resh.FirstOrDefault() ?? new();
+
+            ApplyDaysToModel();
+
+            await _attTemplateReqdtl._03ByAtttemplateReqHdrId(Hdr?.Id ?? 0, DtlReq, Uc.SchemaUserPis, Uc.Conn);
+
+            List<AtttemplatereqdtlModel?>? resd = await _attTemplateReqdtl._02ByAtttemplateReqHdrId(Hdr?.Id ?? 0, Uc.SchemaUserPis, Uc.Conn);
+            Cs.Atttemplatereqdtl = resd.FirstOrDefault() ?? new();
+
+            BuildDays();
+        }
+
+        saveRemarks = string.Empty;
+        await FetchApprover();
+
+        var obj = new MsdsDataAccess();
+        AtttemplatereqhdrModel x = (AtttemplatereqhdrModel)obj.ObjectMapper(Hdr, attTempReqHdr);
+        attTempReqHdr = x;
+    }
+
+    async Task ShowSendForApproval()
+    {
+        if (Hdr.Effectivity == null || Hdr.Effectivity?.Date < DateTime.Now.Date)
+        {
+            await _DialogService.Alert("Effectivity date is not valid.", "Invalid Date", new AlertOptions { OkButtonText = "OK" });
+            return;
+        }
+
+        Cs.ShowSendForApproval = true;
+    }
+
+    void ShowCancel() => Cs.ShowCancel = true;
+
+    async Task ShowMyRequest()
+    {
+        Cs.Atttemplatereqhdrs = [];
+
+        var res = await _attTemplateReqhdr._02ByUserIds(Uc.UserId, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn) ?? [];
+        if (res.Any()) Cs.Atttemplatereqhdrs = res;
+
+        attTempReqHdr = new();
+        Cs.ShowMyReqquest = true;
+    }
+
+    async Task FetchApprover()
+    {
+        Cs.Atttemplatereqhdr.ApproverName = "";
+        if (string.IsNullOrWhiteSpace(Hdr.EmpNumber_Approver)) return;
+
+        var res = await _empmas._02(Hdr.EmpNumber_Approver, Uc.OpisDb, Uc.Conn);
+        var emp = res.FirstOrDefault();
+        if (emp != null) Cs.Atttemplatereqhdr.ApproverName = emp.EmpName ?? "";
+    }
+
+    private AtttemplatereqhistModel AssignValuesToRequestHistory(int? userId, string approverEmpnumber)
+    {
+        return new AtttemplatereqhistModel { AtttemplateReqHdrId = 0, UserId = userId, DActionTaken = DateTime.Now, SetStatusTo = "C", Empnumber_Approver = approverEmpnumber, Remarks = "Manually Changed" };
+    }
+
+    string? dutyTypeCss(string? dt) => dt == "RD" ? "text-danger" : "";
+
+    string? outRes(string? dutyType, int? pin, int? duration) => outSched(dutyType, pin, duration);
+
+    string? outSched(string? dutyType, int? pin, int? duration)
+    {
+        if (dutyType == null || pin == null) return "-";
+
+        double duration1 = (duration ?? 0) / 100.0;
+        int hr = pin.Value / 100;
+        int min = pin.Value % 100;
+
+        DateTime dt = new DateTime(2000, 1, 1, hr, min, 0);
+        dt = dt.AddHours(duration1);
+
+        return dt.ToString("h:mm tt");
+    }
+
+    private AtttemplateModel MapAttendanceRec(AtttemplatereqdtlModel req)
+    {
+        if (req == null) return new AtttemplateModel();
+
+        return new AtttemplateModel
+        {
+            EmpmasId = req.EmpmasId,
+            AttendancetypeId = req.AttendanceTypeId,
+            D1_in = req.D1_In,
+            D1_hrslength = req.D1_HrsLength,
+            D1_dutytype = req.D1_DutyType,
+            D2_in = req.D2_In,
+            D2_hrslength = req.D2_HrsLength,
+            D2_dutytype = req.D2_DutyType,
+            D3_in = req.D3_In,
+            D3_hrslength = req.D3_HrsLength,
+            D3_dutytype = req.D3_DutyType,
+            D4_in = req.D4_In,
+            D4_hrslength = req.D4_HrsLength,
+            D4_dutytype = req.D4_DutyType,
+            D5_in = req.D5_In,
+            D5_hrslength = req.D5_HrsLength,
+            D5_dutytype = req.D5_DutyType,
+            D6_in = req.D6_In,
+            D6_hrslength = req.D6_HrsLength,
+            D6_dutytype = req.D6_DutyType,
+            D7_in = req.D7_In,
+            D7_hrslength = req.D7_HrsLength,
+            D7_dutytype = req.D7_DutyType
+        };
+    }
+
+    AtttemplatereqdtlModel AttTemplateReq_To_AttTemplate(AtttemplateModel at)
+    {
+        AtttemplatereqdtlModel atreq = new()
+        {
+            Id = 0,
+            AtttemplateReqHdrId = Hdr.Id,
+            EmpmasId = at.EmpmasId,
+            AttendanceTypeId = at.AttendancetypeId,
+            D1_In = at.D1_in,
+            D2_In = at.D2_in,
+            D3_In = at.D3_in,
+            D4_In = at.D4_in,
+            D5_In = at.D5_in,
+            D6_In = at.D6_in,
+            D7_In = at.D7_in,
+            D1_HrsLength = at.D1_hrslength,
+            D2_HrsLength = at.D2_hrslength,
+            D3_HrsLength = at.D3_hrslength,
+            D4_HrsLength = at.D4_hrslength,
+            D5_HrsLength = at.D5_hrslength,
+            D6_HrsLength = at.D6_hrslength,
+            D7_HrsLength = at.D7_hrslength,
+            D1_DutyType = at.D1_dutytype ?? string.Empty,
+            D2_DutyType = at.D2_dutytype ?? string.Empty,
+            D3_DutyType = at.D3_dutytype ?? string.Empty,
+            D4_DutyType = at.D4_dutytype ?? string.Empty,
+            D5_DutyType = at.D5_dutytype ?? string.Empty,
+            D6_DutyType = at.D6_dutytype ?? string.Empty,
+            D7_DutyType = at.D7_dutytype ?? string.Empty
+        };
+
+        return atreq;
+    }
+}
+
+<style>
+    .csm-card {
+        min-height: 0 !important;
+        max-height: 100%;
+    }
+
+    .csm-card-body {
+        height: 0;
+        min-height: 0 !important;
+    }
+
+    .paygrp-picker {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .apply-desktop {
+        flex-shrink: 0;
+    }
+
+    .apply-bar {
+        background: var(--kendo-color-surface, #fff);
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        padding-top: 12px; 
+    }
+
+    .employee-list-mobile {
+        max-height: 35vh;
+    }
+
+    .employee-list-host {
+        width: 100%;
+        min-width: 240px;
+    }
+
+    .schedule-host {
+        min-width: 0;
+    }
+
+    .schedule-grid-wrapper {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+        .schedule-grid-wrapper .k-grid {
+            min-width: 680px;
+        }
+
+    .csm-card .k-grid-header .k-cell-inner {
+        justify-content: center !important;
+    }
+
+    .csm-card .k-grid-header .k-link, .csm-card .k-grid-header .k-column-title {
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100%;
+    }
+
+    .csm-card .k-grid td, .csm-card .k-grid th {
+        padding: 4px 6px !important;
+    }
+
+    .csm-card .k-expander-content {
+        padding: 4px !important;
+    }
+
+    .min-h-0 {
+        min-height: 0 !important;
+    }
+
+    @@media (min-width: 992px) {
+        .employee-mobile-wrapper {
+            display: none;
+        }
+
+        .employee-list-host {
+            height: 100%;
+            width: 32%;
+            min-width: 220px;
+        }
+
+        .apply-bar {
+            display: none;
+        }
+
+        .paygrp-picker {
+            width: 450px;
+            flex: 0 0 450px;
+        }
+
+        .apply-desktop {
+            display: block;
+        }
+    }
+
+    @@media (min-width: 769px) and (max-width: 991.98px) {
+        .csm-card-body {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+        .schedule-host {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            flex: none !important;
+        }
+
+        .schedule-grid-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+
+        .schedule-section-title {
+            display:none;
+        }
+            .schedule-grid-wrapper .k-grid {
+                min-width: 680px;
+            }
+
+        .notes-host {
+            height: auto !important;
+            min-height: 300px;
+            overflow: visible !important;
+            flex: none !important;
+        }
+
+        .paygrp-picker {
+            width: 100%;
+        }
+
+        .apply-desktop {
+            display: none;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .csm-card {
+            height: auto !important;
+            max-height: none !important;
+        }
+
+        .csm-card-body {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+            .csm-card-body > .d-flex {
+                height: auto !important;
+                min-height: 0 !important;
+            }
+
+        .employee-list-mobile {
+            max-height: 35vh;
+            overflow-y: auto;
+        }
+
+        .schedule-host {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            flex: none !important;
+        }
+
+        .schedule-grid-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: visible;
+            flex-shrink: 0;
+        }
+
+        .schedule-section-title {
+            color: var(--kendo-color-primary, #0d6efd);
+            font-size: 1rem;
+        }
+
+            .schedule-grid-wrapper .k-grid {
+                min-width: 680px;
+            }
+
+        .notes-host {
+            height: auto !important;
+            min-height: 300px;
+            overflow: visible !important;
+            flex: none !important;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .employee-list-mobile {
+            max-height: 30vh;
+        }
+
+        .schedule-grid-wrapper .k-grid {
+            min-width: 680px;
+        }
+    }
+</style>

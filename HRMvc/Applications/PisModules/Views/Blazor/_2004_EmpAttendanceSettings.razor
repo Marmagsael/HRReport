@@ -1,0 +1,146 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications.PisModules.Views.Blazor._2004
+
+@inject IOPayrollgrpDataAccess _paygrps
+<TelerikRootComponent>
+
+   @*  <TelerikLoader Visible="@v.IsLoading"
+                   Size="@ThemeConstants.Loader.Size.Large"
+                   ThemeColor="@ThemeConstants.Loader.ThemeColor.Tertiary"
+                   Type="@LoaderType.ConvergingSpinner" />
+ *@
+
+    @* =================================================
+         NOTIFICATION
+        ================================================= *@
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+
+                @* =================================================
+                 MODULE TITLE
+                ================================================= *@
+                <TelerikCard Height="100%">
+                    <CardHeader>
+                        <h2 class="k-font-weight-bold  k-font-size-md">Attendance Management</h2>
+                    </CardHeader>
+
+
+
+                    <CardBody>
+                        <TelerikTabStrip ActiveTabId="@tab"
+                                         ActiveTabIdChanged="@OnTabChanged"
+                                         Height="calc(100vh - 120px)">
+
+                            @* =================================================
+                                ADVANCE SCHEDULING
+                            ================================================= *@
+                            <TabStripTab Id="advancescheduling" Title="Advance Scheduling">
+                            </TabStripTab>
+
+
+                            @* =================================================
+                              MANUAL EDITING
+                            ================================================= *@
+                            <TabStripTab Id="manualediting" Title="Manual Editing">
+                            </TabStripTab>
+
+                            @* =================================================
+                              MANUAL EDITING
+                            ================================================= *@
+                            <TabStripTab Id="changeschedule" Title="Change Schedule">
+                                    <_2004_ChangeScheduleMgt ChildAction="ChilAction"/>
+                            </TabStripTab>
+
+
+                        </TelerikTabStrip>
+                    </CardBody>
+                </TelerikCard>
+            </CascadingValue>
+        </CascadingValue>
+    </CascadingValue>
+
+
+
+</TelerikRootComponent>
+
+
+
+@code {
+    [Parameter] public UserClaimsModel Uc {get; set; } = new();
+
+    private V2004Model v = new();
+    private TelerikNotification NotificationRef;
+
+    private string tab = "changeschedule";
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+
+        v.pisdb = Uc.OpisDb;
+        v.paydb = Uc.OpayDb;
+        v.conn = Uc.Conn;
+        v.IsLoading = true;
+
+        try
+        {
+            await LoadPayrollGroups();
+        }
+        finally
+        {
+            v.IsLoading = false;
+        }
+    }
+
+
+    private async Task OnTabChanged(string id)
+    {
+        tab = id;
+
+        if (id == "advancescheduling")
+        {
+
+        }
+
+
+        if (id == "manualediting" )
+        {
+            
+        }
+
+        if (id == "changeschedule")
+        {
+            v.SelectedPayrollGroup      = 0;
+            v.SelectedAssignedEmployees = [];
+            v.AssignedEmployees         = [];
+            v.SelectedEmployee          = string.Empty;
+            v.CurrentAttendance         = new AtttemplateModel();
+        }
+    }
+
+    private async Task LoadPayrollGroups()
+    {
+        try
+        {
+            var result = await _paygrps._02(v.paydb, v.conn);
+            v.PayrollGrps = result.Where(p => p.Status == "A").ToList() ?? [];
+        }
+        catch
+        {
+            NotificationRef?.Show("Failed to load payroll groups.", ThemeConstants.Notification.ThemeColor.Error);
+            throw;
+        }
+    }
+
+    private async Task ChilAction()
+    {
+    }
+}
