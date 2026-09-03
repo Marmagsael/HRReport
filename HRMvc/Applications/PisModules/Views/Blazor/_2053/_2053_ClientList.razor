@@ -1,0 +1,159 @@
+﻿@*--- USER FORM MODAL ---*@
+@if (V.ShowClientForm == true)
+{
+    <_00Modal ModuleCaption="@ClientFormCaption" ChildAction="() => V.ShowClientForm = false">
+
+        <Content>
+            <_2053_ClientForm />
+        </Content>
+
+    </_00Modal>
+}
+
+
+
+<TelerikGrid TItem="OClientModel"
+             SelectionMode="@GridSelectionMode.Single"
+             Navigable="true"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             Sortable="true"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Height="100%">
+
+
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+
+    @* --- CREATE CLIENT BUTTON --- *@
+    <GridToolBarTemplate>
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <button class="card p-2 text-center h-35p mb-btn mb-btn-blue"
+                    @onclick="@(() => OpenFormModal(new OClientModel()))">
+                Create User
+            </button>
+
+            <div class="d-flex gap-2">
+                <button class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                    Print Listing
+                </button>
+
+                <button class="card p-2 text-center h-35p mb-btn mb-btn-gray px-3">
+                    DOLE Report
+                </button>
+            </div>
+        </div>
+    </GridToolBarTemplate>
+
+
+
+    <GridColumns>
+
+        @* --- CODE --- *@
+        <GridColumn Field="@nameof(OClientModel.ClNumber)"
+                    Title="Code"
+                    Width="80px" />
+
+        @* --- NAME --- *@
+        <GridColumn Field="@nameof(OClientModel.ClName)"
+                    Title="Name"
+                    Width="200px" />
+
+        @* --- AREA --- *@
+        <GridColumn Field="@nameof(OClientModel.AreaCode)"
+                    Title="Area"
+                    Width="120px" />
+
+        @* --- MOTHER UNIT --- *@
+        <GridColumn Field="@nameof(OClientModel.ParentCd)"
+                    Title="Mother Unit"
+                    Width="180px" />
+
+        @* --- Status --- *@
+        <GridColumn Field="@nameof(OClientModel.Status)"
+                    Title="Status"
+                    Width="80px" />
+
+
+        @* --- Acttions --- *@
+        <GridCommandColumn Title="Action"
+                           Width="80px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+
+                @{
+                    var client = (OClientModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+                    @* ---  EDIT BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => OpenFormModal(client))">
+                        Edit
+                    </button>
+
+                    @* ---  ACCESS BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => Delete(client))">
+                        Access
+                    </button>
+                </div>
+            </Template>
+        </GridCommandColumn>
+
+
+    </GridColumns>
+
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No clients found.
+        </div>
+    </NoDataTemplate>
+
+
+</TelerikGrid>
+
+
+@code {
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2053Model V { get; set; } = new();
+
+
+    private int PageSize { get; set; } = 25;
+    private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
+
+
+    private string ClientFormCaption = "Add Client";
+
+
+
+
+    private void OpenFormModal(OClientModel client)
+    {
+        V.Client = new OClientModel();
+
+        ClientFormCaption = "Add Client";
+
+        if (!string.IsNullOrWhiteSpace(client.ClNumber)){
+            ClientFormCaption = "Edit Client";
+            V.Client = client;
+        }
+
+        V.ShowClientForm = true;
+    }
+
+
+
+    private void Delete(OClientModel client)
+    {
+
+    }
+}
