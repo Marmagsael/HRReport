@@ -1,4 +1,4 @@
-@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2002._2002_UA
 @using HRMvc.Applications.PisModules.Views.Blazor._2002._2002_UM
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
@@ -6,76 +6,54 @@
 <TelerikRootComponent>
     <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
 
-    <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
-            <TelerikCard Height="100%">
-
-                <CardHeader>
-                    <h2 class="k-font-weight-bold  k-font-size-md">User Management</h2>
-                </CardHeader>
-
-
-                <CardBody>
-                    <TelerikTabStrip ActiveTabId="@tab" ActiveTabIdChanged="@OnTabChanged" Height="calc(100vh - 120px)">
-
-                        @* =================================================
-                           USER MANAGER TAB
-                        ================================================= *@
-                        <TabStripTab Id="usermanager" Title="User Manager">
-                            <_2002_UserManager ChildAction="@ChilAction" />
-                        </TabStripTab>
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+                <div class="card r-container  h-100 d-flex flex-column" ">
+                    @*--- HEADER ---*@
+                    <BodyHdr pageTitle="User Management" />
 
 
-                        @* =================================================
-                            USER ACCESS TAB
-                        ================================================= *@
-                        <TabStripTab Id="useraccess" Title="User Access">
-                            <_2002_UserAccess @ref="UserAccessRef" ChildAction="@ChilAction" />
-                        </TabStripTab>
-                    </TelerikTabStrip>
-                </CardBody>
-            </TelerikCard>
+                    <CardBody>
+                        <TelerikTabStrip ActiveTabId="@tab" ActiveTabIdChanged="@OnTabChanged" Height="calc(100vh - 120px)">
+
+                            @*--- USER MANAGER TAB ---*@
+                            <TabStripTab Id="usermanager" Title="User Manager">
+                                <_2002_UserManager ChildAction="@ChilAction" />
+                            </TabStripTab>
+
+
+                            @*--- USER ACCESS TAB ---*@
+                            <TabStripTab Id="useraccess" Title="User Access">
+                                <_2002_UserAccess @ref="UserAccessRef" ChildAction="@ChilAction" />
+                            </TabStripTab>
+                        </TelerikTabStrip>
+                    </CardBody>
+                </div>
+
+
+             
+
+
+                
+            </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 </TelerikRootComponent>
 
-@inject IOPisUsrDataAccess _usr
+
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     private V2002Model v = new();
     private TelerikNotification? NotificationRef;
+
+
     private string tab = "usermanager";
     private _2002_UserAccess? UserAccessRef;
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (Uc?.Conn == null || Uc.OpisDb == null || Uc.SchemaMain == null || Uc.SchemaMainPis == null)
-        {
-            v.UcLoaded = false;
-            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-            return;
-        }
 
-        v.OPisdb = Uc.OpisDb; v.Maindb = Uc.SchemaMain; v.Mainpisdb = Uc.SchemaMainPis; v.Module = "pis"; v.Conn = Uc.Conn;
-
-        await LoadUsers();
-        v.UcLoaded = true;
-    }
-
-    private async Task LoadUsers()
-    {
-        try
-        {
-            var res = await _usr._02(v.OPisdb, v.Conn);
-            if (res.Any()) { v.Users = res; }
-        }
-        catch (Exception)
-        {
-            NotificationRef?.Show("Unable To Load Users", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
 
     private async Task OnTabChanged(string id)
     {
@@ -89,9 +67,3 @@
     }
 }
 
-<style>
-    .header-center .k-column-title {
-        width: 100%;
-        text-align: center;
-    }
-</style>

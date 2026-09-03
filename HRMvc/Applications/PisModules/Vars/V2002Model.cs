@@ -16,7 +16,8 @@ namespace HRMvc.Applications.PisModules.Vars
         public bool? IsLoading      { get; set; } = true;
         public bool? UcLoaded       { get; set; } = false;
         public bool? ShowUserList   { get; set; } = false;
-        public bool? ShowFormModal  { get; set; } = false;
+        public bool? ShowUserForm   { get; set; } = false;
+        public bool? ShowUserAccess { get; set; } = false;
 
 
         public OPisUsrModel?    SelectedUser                { get; set; }
@@ -31,6 +32,17 @@ namespace HRMvc.Applications.PisModules.Vars
         public OPisUsrModel?            User                { get; set; } = new();
         public List<MenuModel?>?        SystemMenus         { get; set; } = [];
         public List<MenuModel?>?        DtlsMenus           { get; set; } = [];
+
+
+        //Toggle Control
+        public bool ShowOldPassword                 { get; set; } = false;
+        public bool ShowNewPassword                 { get; set; } = false;
+        public bool ShowVerifyPassword              { get; set; } = false;
+
+        //Error Message 
+        public string OldPasswordErrorMsg           { get; set; } = string.Empty;
+        public string NewPasswordErrorMsg           { get; set; } = string.Empty;
+        public string VerificationPasswordErrorMsg  { get; set; } = string.Empty;
     }
 
    

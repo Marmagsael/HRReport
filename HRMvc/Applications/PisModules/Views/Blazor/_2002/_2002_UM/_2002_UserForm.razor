@@ -2,238 +2,202 @@
 
 <div style="max-height:60vh">
 
-    <EditForm Model="@V.User" OnSubmit="@HandleSubmit">
+    <EditForm Model="@V.User"
+              OnSubmit="@SaveUserInfo"
+              class="h-100 d-flex flex-column">
 
-        @* ==============================
-           ACTION
-           ============================== *@
-        <CActionPanel>
-            <TelerikButton Icon="@SvgIcon.Save"
-                           ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
-                           FillMode="@ThemeConstants.Button.FillMode.Solid"
-                           ButtonType="@Telerik.Blazor.ButtonType.Submit"
-                           TabIndex="6">
-                Save
-            </TelerikButton>
-        </CActionPanel>
+        @* --- Change Password Button --- *@
+        <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
 
-        <div class="ps-md-4">
-            @* ==============================
-               LOGIN NAME
-               ============================== *@
-            <CFieldItem Label="Login Name" Id="loginname">
-                <TelerikTextBox @bind-Value="@V.User.LogName"
-                                Class="form-full"
-                                Rounded="@ThemeConstants.TextBox.Rounded.Large"
-                                FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                ReadOnly
-                                AutoComplete="off">
-                </TelerikTextBox>
-            </CFieldItem>
+            <button class="card p-2 text-center h-35p mb-btn mb-btn-blue"
+                    type="submit"
+                    tabindex="5">
+               Save
+            </button>
 
-            @* ==============================
-               USER NAME
-               ============================== *@
-            <CFieldItem Label="User Name" Id="username">
-                <TelerikTextBox @bind-Value="@V.User.UserName"
-                                Class="form-full"
-                                Rounded="@ThemeConstants.TextBox.Rounded.Large"
-                                FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                ReadOnly
-                                AutoComplete="off">
-                </TelerikTextBox>
-            </CFieldItem>
-
-            @* ==============================
-               OLD PASSWORD
-               ============================== *@
-            <CFieldItem Label="Password" Id="oldpassword">
-                <TelerikTextBox @bind-Value="@V.User.Password"
-                                Class="@FieldClass(nameof(OPisUsrModel.Password))"
-                                Rounded="@ThemeConstants.TextBox.Rounded.Large"
-                                FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                Password="@(!ShowOldPassword)"
-                                Placeholder="Enter current password"
-                                AutoComplete="current-password"
-                                MaxLength="60"
-                                TabIndex="3">
-
-                    <TextBoxSuffixTemplate>
-                        <TelerikSvgIcon Icon="@(ShowOldPassword? SvgIcon.EyeSlash: SvgIcon.Eye)"
-                                        Size="@ThemeConstants.SvgIcon.Size.Small"
-                                        @onclick="@ToggleOldPassword" />
-                    </TextBoxSuffixTemplate>
-
-                </TelerikTextBox>
-
-                <CFieldError Field="@nameof(OPisUsrModel.Password)"
-                             Errors="@FieldErrors" />
-            </CFieldItem>
+        </div>
 
 
-            @* ==============================
-               VERIFY PASSWORD
-               ============================== *@
-            <CFieldItem Label="Verify Password" Id="verifypassword">
-                <TelerikTextBox @bind-Value="@V.User.VerifyPassword"
-                                Class="@FieldClass(nameof(OPisUsrModel.VerifyPassword))"
-                                Rounded="@ThemeConstants.TextBox.Rounded.Large"
-                                FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                Password="@(!ShowVerifyPassword)"
-                                Placeholder="Re-enter new password"
-                                AutoComplete="new-password"
-                                MaxLength="60"
-                                TabIndex="5">
+        <div class="px-2 ps-md-3 pt-3  ">
 
-                    <TextBoxSuffixTemplate>
-                        <TelerikSvgIcon Icon="@(ShowVerifyPassword? SvgIcon.EyeSlash: SvgIcon.Eye)"
-                                        Size="@ThemeConstants.SvgIcon.Size.Small"
-                                        @onclick="@ToggleVerifyPassword" />
-                    </TextBoxSuffixTemplate>
+            @* --- Login Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
 
-                </TelerikTextBox>
+                <label class="fw-normal w-180p">
+                    Login Name
+                </label>
 
-                <CFieldError Field="@nameof(OPisUsrModel.VerifyPassword)"
-                             Errors="@FieldErrors" />
-            </CFieldItem>
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.LogName"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    ReadOnly
+                                    TabIndex="1"
+                                    AutoComplete="off">
+
+                      
+
+                    </TelerikTextBox>
+
+                </div>
+
+            </div>
+
+
+            @* --- User Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    User Name
+                </label>
+
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.UserName"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    ReadOnly
+                                    TabIndex="2"
+                                    AutoComplete="off">
+
+                       
+
+                    </TelerikTextBox>
+
+                </div>
+
+            </div>
+
+
+            @* --- Old Password --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Old Password
+                </label>
+
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.Password"
+                                    Password="!V.ShowOldPassword"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="3"
+                                    AutoComplete="off"
+                                    Class="@(string.IsNullOrWhiteSpace(V.OldPasswordErrorMsg) ? "" : "k-invalid")">
+
+                        <TextBoxSuffixTemplate>
+                            <TelerikFontIcon Icon="@(V.ShowOldPassword? FontIcon.Eye: FontIcon.EyeSlash)"
+                                             Size="@ThemeConstants.FontIcon.Size.Small"
+                                             @onclick="() => V.ShowOldPassword = !V.ShowOldPassword" />
+                        </TextBoxSuffixTemplate>
+
+                    </TelerikTextBox>
+
+                    @if (!string.IsNullOrWhiteSpace(V.OldPasswordErrorMsg))
+                    {
+                        <div class="txt-red small">
+                            @V.OldPasswordErrorMsg
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+
+      
+
+
+            @* --- Verify Password --- *@
+            <div class="d-flex flex-column flex-md-row">
+
+                <label class="fw-normal w-180p">
+                    Verify Password
+                </label>
+
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.VerifyPassword"
+                                    Password="!V.ShowVerifyPassword"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="4"
+                                    AutoComplete="off"
+                                    Class="@(string.IsNullOrWhiteSpace(V.VerificationPasswordErrorMsg) ? "" : "k-invalid")">
+
+                        <TextBoxSuffixTemplate>
+                            <TelerikFontIcon Icon="@(V.ShowVerifyPassword? FontIcon.Eye: FontIcon.EyeSlash)"
+                                             Size="@ThemeConstants.FontIcon.Size.Small"
+                                             @onclick="() => V.ShowVerifyPassword = !V.ShowVerifyPassword" />
+                        </TextBoxSuffixTemplate>
+
+                    </TelerikTextBox>
+
+                    @if (!string.IsNullOrWhiteSpace(V.VerificationPasswordErrorMsg))
+                    {
+                        <div class="txt-red small">
+                            @V.VerificationPasswordErrorMsg
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
         </div>
 
     </EditForm>
+
 
 </div>
 
 
 @code {
+
     [CascadingParameter]
-    public V2002Model V { get; set; } = new();
+    public UserClaimsModel Uc   { get; set; } = new();
+
+
+    [CascadingParameter]
+    public V2002Model V         { get; set; } = new();
 
     [CascadingParameter]
     public TelerikNotification NotificationRef { get; set; }
 
-    private Dictionary<string, string> FieldErrors { get; set; } = new();
-
-    private bool ShowOldPassword = false;
-    private bool ShowNewPassword = false;
-    private bool ShowVerifyPassword = false;
-
-    private void ToggleOldPassword()
+    private bool IsFormValid()
     {
-        ShowOldPassword = !ShowOldPassword;
-    }
+        var isnull = false;
 
-    private void ToggleNewPassword()
-    {
-        ShowNewPassword = !ShowNewPassword;
-    }
-
-    private void ToggleVerifyPassword()
-    {
-        ShowVerifyPassword = !ShowVerifyPassword;
-    }
-
-    private bool IsFieldInvalid(string field)
-    {
-        return FieldErrors.ContainsKey(field);
-    }
-
-    private string FieldClass(string field)
-    {
-        return IsFieldInvalid(field)
-            ? "cfield-invalid"
-            : "form-full";
-    }
-
-    private bool TryValidate(OPisUsrModel usr)
-    {
-        FieldErrors = new Dictionary<string, string>();
-
-        // Current password
-        if (string.IsNullOrWhiteSpace(usr.Password))
+        if (string.IsNullOrWhiteSpace(V.User.Password))
         {
-            FieldErrors[nameof(OPisUsrModel.Password)] =
-                "Current password is required.";
+            V.OldPasswordErrorMsg = "Old password is required";
+            isnull = true;
         }
 
-        // New password
-        if (string.IsNullOrWhiteSpace(usr.NewPassword))
+        if (string.IsNullOrWhiteSpace(V.User.VerifyPassword))
         {
-            FieldErrors[nameof(OPisUsrModel.NewPassword)] =
-                "New password is required.";
+            V.VerificationPasswordErrorMsg = "Verify password is required";
+            isnull = true;
         }
 
-        // Verify password
-        if (string.IsNullOrWhiteSpace(usr.VerifyPassword))
-        {
-            FieldErrors[nameof(OPisUsrModel.VerifyPassword)] =
-                "Verify password is required.";
-        }
 
-        // Stop if required fields are missing
-        if (FieldErrors.Count > 0)
+        if (isnull) return false;
+
+
+        if (V.User.Password != V.User.VerifyPassword)
         {
+            V.VerificationPasswordErrorMsg = "Passwords do not match";
             return false;
         }
 
-        // New password must match verification
-        if (usr.NewPassword != usr.VerifyPassword)
-        {
-            FieldErrors[nameof(OPisUsrModel.VerifyPassword)] =
-                "Passwords do not match.";
-        }
-
-        // New password must be different from current password
-        if (usr.NewPassword == usr.Password)
-        {
-            FieldErrors[nameof(OPisUsrModel.NewPassword)] =
-                "New password must be different from current password.";
-        }
-
-        return FieldErrors.Count == 0;
+        return true;
     }
 
-    private async Task HandleSubmit()
+
+    private async Task SaveUserInfo()
     {
-        if (!TryValidate(V.User))
-        {
-            NotificationRef?.Show(
-                "Please correct the errors before continuing.",
-                ThemeConstants.Notification.ThemeColor.Error);
-
-            return;
-        }
-
-        try
-        {
-            V.IsLoading = true;
-
-            // TODO:
-            // Call the API here to actually change the password.
-
-            NotificationRef?.Show(
-                "Password changed successfully.",
-                ThemeConstants.Notification.ThemeColor.Success);
-
-            FieldErrors.Clear();
-
-            // Clear password values
-            V.User.Password = string.Empty;
-            V.User.NewPassword = string.Empty;
-            V.User.VerifyPassword = string.Empty;
-
-            // Hide passwords again
-            ShowOldPassword = false;
-            ShowNewPassword = false;
-            ShowVerifyPassword = false;
-        }
-        catch (Exception)
-        {
-            NotificationRef?.Show(
-                "Unable to change password. Please try again.",
-                ThemeConstants.Notification.ThemeColor.Error);
-        }
-        finally
-        {
-            V.IsLoading = false;
-        }
+        if (!IsFormValid()) return;
     }
 }

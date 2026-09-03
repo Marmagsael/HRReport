@@ -9,7 +9,7 @@
 
         public string? Password             { get; set; }
 
-        public string? Status               { get; set; }
+        public string? Status               { get; set; } = "A";
 
         public string? withInsuranceAccess  { get; set; }
 
@@ -19,6 +19,8 @@
         //---------------------------------------------
         public string? NewPassword          { get; set; }
         public string? VerifyPassword       { get; set; }
+
+        public string StatusName =>  Status == "A" ? "Active" : "Disabled";
 
     }
 }
