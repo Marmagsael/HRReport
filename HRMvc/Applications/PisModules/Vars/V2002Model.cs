@@ -16,19 +16,21 @@ namespace HRMvc.Applications.PisModules.Vars
         public bool? IsLoading      { get; set; } = true;
         public bool? UcLoaded       { get; set; } = false;
         public bool? ShowUserList   { get; set; } = false;
+        public bool? ShowFormModal  { get; set; } = false;
 
 
-        public OPisUsrModel? SelectedUser   { get; set; }
-        public string? SelectedUserFullName { get; set; }
-        public string? SelectedMenu         { get; set; } = string.Empty;
+        public OPisUsrModel?    SelectedUser                { get; set; }
+        public string?          SelectedUserFullName        { get; set; }
+        public string?          SelectedMenu                { get; set; } = string.Empty;
 
 
         public IEnumerable<MenuModel?> SelectedSystemMenu   { get; set; } = new List<MenuModel>();
         public IEnumerable<MenuModel?> SelectedDtlsMenu     { get; set; } = new List<MenuModel>();
 
-        public List<UsersModel> Users           { get; set; } = [];
-        public List<MenuModel?>? SystemMenus    { get; set; } = [];
-        public List<MenuModel?>? DtlsMenus      { get; set; } = [];
+        public List<OPisUsrModel?>?     Users               { get; set; } = [];
+        public OPisUsrModel?            User                { get; set; } = new();
+        public List<MenuModel?>?        SystemMenus         { get; set; } = [];
+        public List<MenuModel?>?        DtlsMenus           { get; set; } = [];
     }
 
    

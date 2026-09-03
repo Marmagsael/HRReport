@@ -1,9 +1,9 @@
 ﻿<TelerikMediaQuery Media="(max-width: 767px)"
-                   OnChange="@((bool matches) => IsMobile = matches)" />
+                   OnChange="@OnMediaQueryChanged" />
 
 <TelerikStackLayout Orientation="@(IsMobile
-                                                            ? StackLayoutOrientation.Vertical
-                                                            : StackLayoutOrientation.Horizontal)"
+                        ? StackLayoutOrientation.Vertical
+                        : StackLayoutOrientation.Horizontal)"
                     VerticalAlign="@StackLayoutVerticalAlign.Center"
                     Spacing="8px"
                     Class="@($"cform-field mb-3 {Class}")">
@@ -33,16 +33,27 @@
 
     [Parameter]
     public string? Class { get; set; }
+
+    private void OnMediaQueryChanged(bool matches)
+    {
+        IsMobile = matches;
+    }
 }
 
 <style>
-    /* =========================
-    BASE
-    ========================= */
+    /* =========================================================
+           FORM FIELD
+           ========================================================= */
 
     .cform-field {
         width: 100%;
+        min-width: 0;
     }
+
+
+    /* =========================================================
+           LABEL
+           ========================================================= */
 
     .cform-label {
         width: 150px;
@@ -50,12 +61,42 @@
         flex: 0 0 150px;
         font-size: 1em;
         font-weight: 500;
+        margin: 0;
     }
+
+
+    /* =========================================================
+           CONTROL
+           ========================================================= */
 
     .cform-control {
+        width: 100%;
         min-width: 0;
+        flex: 1 1 auto;
     }
 
+        /*
+           Make Telerik inputs inside the control
+           use the available width.
+        */
+
+        .cform-control .form-full {
+            width: 100% !important;
+        }
+
+        .cform-control .k-input,
+        .cform-control .k-textbox,
+        .cform-control .k-picker,
+        .cform-control .k-dropdownlist,
+        .cform-control .k-multiselect,
+        .cform-control .k-combobox {
+            max-width: 100%;
+        }
+
+
+    /* =========================================================
+           VALIDATION
+           ========================================================= */
 
     .cfield-invalid,
     .cfield-invalid.k-input,
@@ -64,31 +105,43 @@
         border-color: #dc3545 !important;
     }
 
-    .cfield-invalid:focus-within {
-        box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.15) !important;
-    }
+        .cfield-invalid:focus-within {
+            box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.15) !important;
+        }
 
-    /* =========================
-    MOBILE
-    ========================= */
+
+    /* =========================================================
+           MOBILE
+           ========================================================= */
 
     @@media (max-width: 767px) {
+
+        .cform-field {
+            width: 100%;
+        }
 
         .cform-label {
             width: 100%;
             min-width: 0;
             flex: none;
+            margin-bottom: 2px;
         }
 
         .cform-control {
             width: 100%;
+            min-width: 0;
+            flex: none;
         }
+
+            .cform-control .form-full {
+                width: 100% !important;
+            }
     }
 
 
-    /* =========================
-    TABLET
-    ========================= */
+    /* =========================================================
+           TABLET
+           ========================================================= */
 
     @@media (min-width: 768px) and (max-width: 991px) {
 
@@ -97,12 +150,18 @@
             min-width: 120px;
             flex: 0 0 120px;
         }
+
+        .cform-control {
+            width: 100%;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
     }
 
 
-    /* =========================
-    DESKTOP
-    ========================= */
+    /* =========================================================
+           DESKTOP
+           ========================================================= */
 
     @@media (min-width: 992px) and (max-width: 1199px) {
 
@@ -111,12 +170,18 @@
             min-width: 130px;
             flex: 0 0 130px;
         }
+
+        .cform-control {
+            width: 100%;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
     }
 
 
-    /* =========================
-    LARGE DESKTOP
-    ========================= */
+    /* =========================================================
+           LARGE DESKTOP
+           ========================================================= */
 
     @@media (min-width: 1200px) {
 
@@ -124,6 +189,12 @@
             width: 150px;
             min-width: 150px;
             flex: 0 0 150px;
+        }
+
+        .cform-control {
+            width: 100%;
+            min-width: 0;
+            flex: 1 1 auto;
         }
     }
 </style>

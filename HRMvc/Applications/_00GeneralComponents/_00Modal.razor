@@ -1,22 +1,32 @@
-﻿
-<div class="msds-modal" >
-    <div class="msds-modal-content " style="max-width: 1180px;">
-        <div class="modal-content  bg-opacity-75">
-            <div class="modal-header  bg-opacity-75">
-                <h1 class="modal-title fs-5" >@ModuleCaption</h1>
-                <button type="button" class="btn-close" @onclick="@(()=>ShowHideModal(false))" data-bs-dismiss="modal" aria-label="Close"></button>
+﻿<div class="msds-modal">
+    <div class="msds-modal-content"
+         style="@($"max-width: {(!string.IsNullOrEmpty(ModalWidth) ? ModalWidth : "1180px")}; width: {ModalWidth};")"
+
+
+        <div class="modal-content bg-opacity-75">
+
+            <div class="modal-header bg-opacity-75">
+                <h1 class="modal-title fs-5">@ModuleCaption</h1>
+
+                <button type="button"
+                        class="btn-close"
+                        @onclick="@(() => ShowHideModal(false))"
+                        data-bs-dismiss="modal"
+                        aria-label="Close">
+                </button>
             </div>
 
-            <div class="modal-body" >
-                
-                @Content 
-               
+            <div class="modal-body">
+                @Content
             </div>
 
-            <div class="modal-footer p-0 ">
-                <button type="button" class="btn btn-secondary" @onclick="@(()=>ShowHideModal(false))"
-                    data-bs-dismiss="modal">Close</button>
-                
+            <div class="modal-footer p-0">
+                <button type="button"
+                        class="btn btn-secondary"
+                        @onclick="@(() => ShowHideModal(false))"
+                        data-bs-dismiss="modal">
+                    Close
+                </button>
             </div>
 
         </div>
@@ -24,21 +34,20 @@
 </div>
 
 @code {
+    [Parameter]
+    public EventCallback<bool> ChildAction { get; set; }
 
-    [Parameter] public EventCallback<bool>      ChildAction     { get; set; } 
-    [Parameter] public RenderFragment?          Content         { get; set; }
-    [Parameter] public string?                  ModuleCaption   { get; set; }   = "Module Caption"; 
-    [Parameter] public string?                  ModalWidth   { get; set; }      = " "; 
-    
+    [Parameter]
+    public RenderFragment? Content { get; set; }
 
-    async void ShowHideModal(bool action){
+    [Parameter]
+    public string? ModuleCaption { get; set; } = "Module Caption";
 
-        if(action==false)
-        {
-           
+    [Parameter]
+    public string ModalWidth { get; set; } = "auto";
 
-        }
-        await ChildAction.InvokeAsync(action); 
+    private async Task ShowHideModal(bool action)
+    {
+        await ChildAction.InvokeAsync(action);
     }
-
 }

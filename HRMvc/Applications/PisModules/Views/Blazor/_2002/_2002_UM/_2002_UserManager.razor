@@ -1,11 +1,279 @@
-﻿@using HRMvc.Applications._00GeneralComponents
+﻿@using HRApiLibrary.Models._90_Utils
+@using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
+@using HRMvc.Applications._00GeneralComponents.FormComponents
 
-<_00UnderDevelopment Module="User Manager" />
+
+<TelerikMediaQuery Media="(max-width: 575px)" OnChange="@((bool value) => IsMobile = value)" />
+<TelerikMediaQuery Media="(min-width: 576px) and (max-width: 991px)" OnChange="@((bool value) => IsTablet = value)" />
+<TelerikMediaQuery Media="(min-width: 992px) and (max-width: 1199px)" OnChange="@((bool value) => IsDesktop = value)" />
+<TelerikMediaQuery Media="(min-width: 1200px) and (max-width: 1399px)" OnChange="@((bool value) => IsXL = value)" />
+<TelerikMediaQuery Media="(min-width: 1400px)" OnChange="@((bool value) => IsXXL = value)" />
+
+
+@* =====================================================
+    MODAL
+    ===================================================== *@
+
+@if (V.ShowFormModal == true)
+{
+    <_00Modal ModuleCaption="@modalCaption"
+              ModalWidth="@GetModalWidth()"
+              ChildAction="() => V.ShowFormModal = false">
+
+        <Content>
+            <_2002_UserForm />
+        </Content>
+
+    </_00Modal>
+}
+
+
+@* =====================================================
+    GRID
+    ===================================================== *@
+
+<div class="col-12 col-lg-10 col-xxl-8 h-100">
+
+    <TelerikGrid Data="@V.Users"
+                 TItem="OPisUsrModel"
+                 Sortable="true"
+                 Navigable="true"
+                 SelectionMode="GridSelectionMode.Single"
+                 FilterMode="@GridFilterMode.FilterMenu"
+                 @bind-PageSize="@PageSize"
+                 Pageable="true"
+                 Height="100%">
+
+        <GridSettings>
+            <GridPagerSettings PageSizes="@PageSizes" />
+        </GridSettings>
+
+
+        <GridToolBarTemplate>
+
+            <GridCommandButton OnClick="@(() => OpenFormModal(new OPisUsrModel()))">
+                Create User
+            </GridCommandButton>
+
+        </GridToolBarTemplate>
+
+
+        <GridColumns>
+
+            <GridColumn Field="@nameof(OPisUsrModel.LogName)"
+                        Title="Login Name"
+                        Width="100px" />
+
+            <GridColumn Field="@nameof(OPisUsrModel.UserName)"
+                        Title="User Name"
+                        Width="220px" />
+
+
+            <GridColumn Field="@nameof(OPisUsrModel.Status)"
+                        Title="Status"
+                        Width="80px"
+                        HeaderClass="header-center"
+                        TextAlign="@ColumnTextAlign.Center">
+
+                <FilterMenuTemplate Context="context">
+
+                    <_01FilterCheckbox TItem="StatusModel"
+                                       Context="context"
+                                       Items="@UserStatusList.Statuses"
+                                       ValueSelector="@(x => x.Code)"
+                                       TextSelector="@(x => x.Name)"
+                                       Member="@nameof(OPisUsrModel.Status)" />
+
+                </FilterMenuTemplate>
+
+
+                <Template Context="item">
+
+                    @{
+                        var user = (OPisUsrModel)item;
+
+                        var status = UserStatusList.Statuses
+                        .FirstOrDefault(x => x.Code == user.Status);
+
+                        var statusName = status?.Name ?? user.Status;
+
+                        var statusColor = user.Status == "A"
+                        ? ThemeConstants.Badge.ThemeColor.Success
+                        : ThemeConstants.Badge.ThemeColor.Error;
+                    }
+
+                    <div class="d-flex justify-content-center">
+
+                        <TelerikBadge ThemeColor="@statusColor"
+                                      Position="@BadgePosition.Inline"
+                                      Rounded="@ThemeConstants.Badge.Rounded.Medium"
+                                      Size="@ThemeConstants.Badge.Size.Small"
+                                      FillMode="@ThemeConstants.Badge.FillMode.Solid">
+
+                            @statusName
+
+                        </TelerikBadge>
+
+                    </div>
+
+                </Template>
+
+            </GridColumn>
+
+
+            @* =================================================
+                ACTIONS
+                ================================================= *@
+
+            <GridCommandColumn Width="150px"
+                               Title="Action"
+                               HeaderClass="header-center">
+
+                <Template Context="item">
+
+                    @{
+                        var usr = (OPisUsrModel)item;
+                    }
+
+                    <div class="d-flex justify-content-center gap-2">
+
+                        <GridCommandButton Icon="@SvgIcon.Pencil"
+                                           OnClick="@(() => OpenFormModal(usr))">
+                            Edit
+                        </GridCommandButton>
+
+                        <GridCommandButton Icon="@SvgIcon.Lock"
+                                           OnClick="@(() => OpenAccessModal(usr))">
+                            Access
+                        </GridCommandButton>
+
+                        <TelerikDropDownButton Icon="@SvgIcon.MoreVertical">
+
+                            <DropDownButtonItems>
+
+                                <DropDownButtonItem Icon="@SvgIcon.Check"
+                                                    OnClick="@(() => EnableUser(usr))">
+                                    Enable
+                                </DropDownButtonItem>
+
+                                <DropDownButtonItem Icon="@SvgIcon.Cancel"
+                                                    OnClick="@(() => DisableUser(usr))">
+                                    Disable
+                                </DropDownButtonItem>
+
+                                <DropDownButtonItem Icon="@SvgIcon.Trash"
+                                                    OnClick="@(() => DeleteUser(usr))">
+                                    Delete
+                                </DropDownButtonItem>
+
+                            </DropDownButtonItems>
+
+                        </TelerikDropDownButton>
+
+                    </div>
+
+                </Template>
+
+            </GridCommandColumn>
+
+        </GridColumns>
+
+
+
+        <NoDataTemplate>
+
+            <div class="text-center text-secondary p-4">
+                No users found.
+            </div>
+
+        </NoDataTemplate>
+
+    </TelerikGrid>
+
+</div>
+
 
 @code {
-    [CascadingParameter]
-    public UserClaimsModel Uc { get; set; } = new();
+
 
     [CascadingParameter]
     public V2002Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification NotificationRef { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+    private string modalCaption = "Create User";
+
+
+    private bool IsMobile { get; set; }
+
+    private bool IsTablet { get; set; }
+
+    private bool IsDesktop { get; set; }
+
+    private bool IsXL { get; set; }
+
+    private bool IsXXL { get; set; }
+
+
+    private string GetModalWidth()
+    {
+        if (IsMobile) return "98vw";
+        if (IsTablet) return "60vw";
+        if (IsDesktop)  return "50vw";
+        if (IsXL)  return "45vw";
+        if (IsXXL) return "35vw";
+
+        return "95vw";
+    }
+
+
+
+
+
+
+    private void OpenFormModal(OPisUsrModel usr)
+    {
+        modalCaption = string.IsNullOrWhiteSpace(usr.LogName)
+            ? "Create User"
+            : "Edit User Information";
+
+        V.ShowFormModal = true;
+    }
+
+
+    private Task OpenAccessModal(OPisUsrModel usr)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task EnableUser(OPisUsrModel usr)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task DisableUser(OPisUsrModel usr)
+    {
+        return Task.CompletedTask;
+    }
+
+    private Task DeleteUser(OPisUsrModel usr)
+    {
+        return Task.CompletedTask;
+    }
+
 }

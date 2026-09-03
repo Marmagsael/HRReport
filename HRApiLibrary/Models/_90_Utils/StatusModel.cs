@@ -14,4 +14,13 @@
             new StatusModel { Name = "Inactive", Code = "I" }
         };
     }
+
+    public static class UserStatusList
+    {
+        public static List<StatusModel> Statuses { get; } = new()
+        {
+            new StatusModel { Name = "Active", Code = "A" },
+            new StatusModel { Name = "Inactive", Code = "D" }
+        };
+    }
 }

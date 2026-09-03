@@ -2,6 +2,7 @@
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._90_Utils;
+using System.Threading.Tasks;
 
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
@@ -34,6 +35,13 @@ public class OPisUsrDataAccess : IOPisUsrDataAccess
         string sql = $@"select  LogName, UserName, Password, status, withInsuranceAccess, Email from {schema}.Usr where Id = @Id";
         var data = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
+    }
+
+    public async Task<List<OPisUsrModel?>?> _02( string schema, string conn)
+    {
+        string sql = $@"select  LogName, UserName, Password, status, withInsuranceAccess, Email from {schema}.Usr";
+        var data = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { }, conn);
+        return data;
     }
 
     public async Task<GridResultModel<OPisUsrModel>> _02Grid(GridRequestModel request, string schemapay, string conn)
@@ -105,6 +113,7 @@ public interface IOPisUsrDataAccess
 {
     Task<OPisUsrModel?> _01(OPisUsrModel usr, string schema, string conn);
     Task<OPisUsrModel?> _02(int id, string schema, string conn);
+    Task<List<OPisUsrModel?>?> _02(string schema, string conn);
     Task<GridResultModel<OPisUsrModel>> _02Grid(GridRequestModel request, string schemapay, string conn);
     Task<OPisUsrModel?> _03(int id, OPisUsrModel usr, string schema, string conn);
     Task<OPisUsrModel?> _04(int id, string schema, string conn);
