@@ -19,7 +19,7 @@ public class PisReportController : Controller
     private static readonly Dictionary<string, string> RecordMgtViews = new()
     {
         ["2052"] = "_2052_EmployeeEntry",
-        ["2053"] = "_2053_ClientEntry",
+        ["2053"] = "_2053_DeploymentEntry",
         ["2054"] = "_2054_InsuranceEntry",
         ["2055"] = "_2055_PositionEntry",
         ["2056"] = "_2056_LeaveTypeEntry",
