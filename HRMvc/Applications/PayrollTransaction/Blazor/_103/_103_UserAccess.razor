@@ -1,12 +1,14 @@
 ﻿@using HRApiLibrary.DataAccess._00_Main.Interface
-@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay.OPay
 @using HRMvc.Applications._00GeneralComponents.FormComponents
 @using Telerik.SvgIcons
+@using HRMvc.Applications.PayrollTransaction.Vars;
 
 
 @inject I_00UsersAccess _user
 @inject IMenuDataAccess _menu
-@inject IOPisDomainaccessDataAccess _domainaccess
+@inject IODomainaccessDataAccess _domainaccess
 
 <TelerikStackLayout Orientation="StackLayoutOrientation.Vertical"
                     Spacing="12px">
@@ -23,7 +25,7 @@
 
             <div class="col-12">
 
-                <TelerikTextBox @bind-Value="@V.User.UserName"
+                <TelerikTextBox @bind-Value="@V.User.FullName"
                                 Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                 FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                 ReadOnly
@@ -155,7 +157,7 @@
 
 @code {
     [CascadingParameter]
-    public V2002Model V { get; set; } = new();
+    public V103Model V { get; set; } = new();
 
     [CascadingParameter]
     public TelerikNotification NotificationRef { get; set; }
@@ -186,7 +188,7 @@
     {
         try
         {
-            var result = await _menu._02ByType("shdr", V.Mainpisdb, V.Conn);
+            var result = await _menu._02ByType("shdr", V.Mainpaydb, V.Conn);
 
             V.SystemMenus = result ?? [];
         }
@@ -226,12 +228,13 @@
 
         try
         {
-            var result = await _menu._02ByIdParent(idparent, V.Mainpisdb, V.Conn);
+            var result = await _menu._02ByIdParent(idparent, V.Mainpaydb, V.Conn);
 
             V.DtlsMenus = result ?? [];
 
-            var access = await _domainaccess._02ByUserName_Module(V.User.LogName, V.Module, V.OPisdb, V.Conn) ?? [];
-            var accessMenuIds = access.Where(a => a.Idsysmenu.HasValue).Select(a => a.Idsysmenu!.Value).ToHashSet();
+            var access = await _domainaccess._02ByUserName_Module(V.User.UserName, V.Module, V.OPaydb, V.Conn) ?? [];
+            var accessMenuIds = access .Where(a => a.Idsysmenu.HasValue).Select(a => a.Idsysmenu.Value).ToList();
+
 
             V.SelectedDtlsMenu = V.DtlsMenus.Where(m => m.Id.HasValue && accessMenuIds.Contains(m.Id.Value)).ToList();
             previousDtlsSelections = V.SelectedDtlsMenu.ToList();
@@ -250,7 +253,7 @@
 
     private async Task DtlsMenuSelectionChanged(IEnumerable<MenuModel?> selectedItems)
     {
-        if (string.IsNullOrWhiteSpace(V.User.LogName))
+        if (string.IsNullOrWhiteSpace(V.User.UserName))
         {
             V.SelectedDtlsMenu = previousDtlsSelections.ToList();
 
@@ -314,21 +317,21 @@
 
     private async Task<bool> InsertDtlsMenu(List<MenuModel?> data)
     {
-        if (string.IsNullOrWhiteSpace(V.User.LogName))
+        if (string.IsNullOrWhiteSpace(V.User.UserName))
             return false;
 
         try
         {
             foreach (var menu in data)
             {
-                var domainaccess = new OPisDomainaccessModel()
+                var domainaccess = new ODomainaccessModel()
                 {
-                    Username = V.User.LogName,
+                    Username = V.User.UserName,
                     Idsysmenu = menu.Id,
                     Module = V.Module
                 };
 
-                await _domainaccess._01(domainaccess, V.OPisdb, V.Conn);
+                await _domainaccess._01(domainaccess, V.OPaydb, V.Conn);
             }
 
             return true;
@@ -342,21 +345,21 @@
 
     private async Task<bool> RemoveDtlsMenu(List<MenuModel?> data)
     {
-        if (string.IsNullOrWhiteSpace(V.User.LogName))
+        if (string.IsNullOrWhiteSpace(V.User.UserName))
             return false;
 
         try
         {
             foreach (var menu in data)
             {
-                var domainaccess = new OPisDomainaccessModel()
+                var domainaccess = new ODomainaccessModel()
                 {
-                    Username = V.User.LogName,
+                    Username = V.User.UserName,
                     Idsysmenu = menu.Id,
                     Module = V.Module
                 };
 
-                await _domainaccess._04ByUserName_Idsysmenu_Module(domainaccess, V.OPisdb, V.Conn);
+                await _domainaccess._04ByUserName_Idsysmenu_Module(domainaccess, V.OPaydb, V.Conn);
             }
 
             return true;

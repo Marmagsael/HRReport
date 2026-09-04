@@ -4,10 +4,10 @@
 @*--- USER FORM MODAL ---*@
 @if (V.ShowUserForm == true)
 {
-    <_00Modal ModuleCaption="@UserFormCaption" ChildAction="() => V.ShowUserForm = false" ModalWidth="65vh">
+    <_00Modal ModuleCaption="@ModalCaption" ChildAction="() => V.ShowUserForm = false" ModalWidth="65vh">
 
         <Content>
-            <_2002_UserForm   />
+            <_2002_UserEntryForm   />
         </Content>
 
     </_00Modal>
@@ -18,10 +18,10 @@
 @*--- USER ACCESS MODAL ---*@
 @if (V.ShowUserAccess == true)
 {
-    <_00Modal ModuleCaption="@UserFormCaption" ChildAction="() => V.ShowUserAccess = false" >
+    <_00Modal ModuleCaption="@ModalCaption" ChildAction="() => V.ShowUserAccess = false" >
 
         <Content>
-            <_2002_UserAccessV1 @ref="UserAccessModuleRef" />
+            <_2002_UserAccess @ref="UserAccessModuleRef" />
         </Content>
 
     </_00Modal>
@@ -37,7 +37,7 @@
              Pageable="true"
              @bind-PageSize="@PageSize"
              @ref="@UserGridRef"
-             Height="100%">
+             Height="calc(100vh - 90px)">
 
     <GridSettings>
         <GridPagerSettings PageSizes="@PageSizes" />
@@ -150,6 +150,8 @@
         </div>
     </NoDataTemplate>
 </TelerikGrid>
+
+
 @inject IOPisUsrDataAccess _usr
 
 
@@ -174,9 +176,9 @@
     private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
 
     private TelerikGrid<OPisUsrModel> UserGridRef;
-    private  _2002_UserAccessV1 UserAccessModuleRef;
+    private _2002_UserAccess  UserAccessModuleRef;
 
-    private string UserFormCaption = "Add User";
+    private string ModalCaption = "Add User";
 
 
 
@@ -190,7 +192,11 @@
             return;
         }
 
-        V.OPisdb = Uc.OpisDb; V.Maindb = Uc.SchemaMain; V.Mainpisdb = Uc.SchemaMainPis; V.Module = "pis"; V.Conn = Uc.Conn;
+        V.OPisdb    = Uc.OpisDb; 
+        V.Maindb    = Uc.SchemaMain; 
+        V.Mainpisdb = Uc.SchemaMainPis; 
+        V.Module    = "pis"; 
+        V.Conn      = Uc.Conn;
 
         await LoadUsers();
         await SetInitialFilter();
@@ -237,12 +243,12 @@
     private void OpenFormModal(OPisUsrModel usr)
     {
         V.User = new OPisUsrModel();
-        UserFormCaption = "Add User";
+        ModalCaption = "Add User";
 
         if (!string.IsNullOrWhiteSpace(usr.LogName))
         {
             V.User = usr;
-            UserFormCaption = "Edit User";
+            ModalCaption = "Edit User";
 
         }
 
@@ -256,7 +262,7 @@
         V.User = new OPisUsrModel();
 
         V.User = usr;
-        UserFormCaption = "Select User Access";
+        ModalCaption = "Select User Access";
 
         if (UserAccessModuleRef != null)
         {

@@ -39,7 +39,7 @@ public class OPisUsrDataAccess : IOPisUsrDataAccess
 
     public async Task<List<OPisUsrModel?>?> _02( string schema, string conn)
     {
-        string sql = $@"select  LogName, UserName, Password, status, withInsuranceAccess, Email from {schema}.Usr";
+        string sql = $@"select  LogName, UserName, Password, status, withInsuranceAccess, Email from {schema}.Usr Order BY UserName";
         var data = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { }, conn);
         return data;
     }

@@ -1,0 +1,291 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay;
+@using HRApiLibrary.Models._20_Pay.OPay;
+@using HRMvc.Applications.PayrollTransaction.Vars;
+
+
+@*--- USER FORM MODAL ---*@
+@if (V.ShowUserForm == true)
+{
+    <_00Modal ModuleCaption="@ModalCaption" ChildAction="() => V.ShowUserForm = false" ModalWidth="65vh">
+
+        <Content>
+            <_103_UserEntryForm   />
+        </Content>
+
+    </_00Modal>
+}
+
+
+
+@*--- USER ACCESS MODAL ---*@
+@if (V.ShowUserAccess == true)
+{
+    <_00Modal ModuleCaption="@ModalCaption" ChildAction="() => V.ShowUserAccess = false" >
+
+        <Content>
+            <_103_UserAccess @ref="UserAccessModuleRef" />
+        </Content>
+
+    </_00Modal>
+}
+
+
+<TelerikGrid Data="@V.Users"
+             TItem="OUsrModel"
+             Sortable="true"
+             Navigable="true"
+             SelectionMode="GridSelectionMode.Single"
+             FilterMode="GridFilterMode.FilterMenu"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             @ref="@UserGridRef"
+             Height="calc(100vh - 90px)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+
+    @* --- CREATE USER BUTTON --- *@
+    <GridToolBarTemplate>
+        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" 
+                        @onclick="@(() => OpenFormModal(new OUsrModel()))">
+            Add User
+        </button>
+    </GridToolBarTemplate>
+
+    <GridColumns>
+
+        @* --- LOGIN NAME --- *@
+        <GridColumn Field="@nameof(OUsrModel.UserName)"
+                    Title="Login Name"
+                    Width="150px" />
+
+        @* --- USER NAME --- *@
+        <GridColumn Field="@nameof(OUsrModel.FullName)"
+                    Title="User Name"
+                    Width="200px" />
+
+        @* --- STATUS  --- *@
+        <GridColumn Field="@nameof(OUsrModel.StatusName)"
+                    Title="Status"
+                    Width="140px">
+
+            <Template Context="item" >
+                @{
+                    var user = (OUsrModel)item;
+                }
+
+                  <div class="d-flex justify-content-center">
+                    @if (user.Stat_ == "1")
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Disabled</span>
+                    }
+                </div>
+            </Template>
+
+        </GridColumn>
+
+
+        <GridCommandColumn Title="Action"
+                           Width="180px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+
+                @{
+                    var usr = (OUsrModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+                    @* ---  EDIT BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => OpenFormModal(usr))">
+                        Edit
+                    </button>
+
+                    @* ---  ACCESS BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => OpenAccessModal(usr))">
+                        Access
+                    </button>
+
+                    <TelerikDropDownButton Icon="@FontIcon.MoreVertical"
+                                           Class="card p-2 text-center h-35p mb-btn mb-btn-blue">
+
+                        <DropDownButtonItems>
+                            @* ---  ENABLE BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => EnableUser(usr))">
+                                Enable
+                            </DropDownButtonItem>
+
+                            @* ---  DISBALE BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => DisableUser(usr))">
+                                Disable
+                            </DropDownButtonItem>
+
+                            @* ---  DELETE BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => DeleteUser(usr))">
+                                Delete
+                            </DropDownButtonItem>
+
+                        </DropDownButtonItems>
+
+                    </TelerikDropDownButton>
+
+                </div>
+            </Template>
+
+        </GridCommandColumn>
+
+
+    </GridColumns>
+
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No users found.
+        </div>
+    </NoDataTemplate>
+</TelerikGrid>
+
+
+@inject IOUsrDataAccess _usr;
+
+@code {
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+
+    [CascadingParameter]
+    public V103Model V { get; set; } = new();
+
+
+    [CascadingParameter]
+    public TelerikNotification NotificationRef { get; set; } 
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+
+    private int PageSize { get; set; } = 25;
+    private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
+
+    private TelerikGrid<OUsrModel> UserGridRef;
+    private _103_UserAccess  UserAccessModuleRef;
+
+    private string ModalCaption = "Add User";
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.OpayDb == null || Uc.SchemaMain == null || Uc.SchemaMainPay == null)
+        {
+            V.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        V.OPaydb    = Uc.OpayDb; 
+        V.Maindb    = Uc.SchemaMain; 
+        V.Mainpaydb = Uc.SchemaMainPay; 
+        V.Module    = "pay"; 
+        V.Conn      = Uc.Conn;
+
+        await LoadUsers();
+        await SetInitialFilter();
+        V.UcLoaded = true;
+    }
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            var res = await _usr._02(V.OPaydb, V.Conn);
+            if (res.Any()) { V.Users = res; }
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable To Load Users", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task SetInitialFilter()
+    {
+        var state = UserGridRef.GetState();
+
+        state.FilterDescriptors = new List<IFilterDescriptor>
+        {
+            new Telerik.DataSource.FilterDescriptor
+            {
+                Member = nameof(OUsrModel.StatusName),
+                Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+                Value = "Active"
+            }
+        };
+
+        await UserGridRef.SetStateAsync(state);
+    }
+
+
+
+
+
+
+    private void OpenFormModal(OUsrModel usr)
+    {
+        V.User = new OUsrModel();
+        ModalCaption = "Add User";
+
+        if (!string.IsNullOrWhiteSpace(usr.UserName))
+        {
+            V.User = usr;
+            ModalCaption = "Edit User";
+
+        }
+
+        V.ShowUserForm = true;
+
+
+    }
+
+    private async Task OpenAccessModal(OUsrModel usr)
+    {
+        V.User = new OUsrModel();
+
+        V.User = usr;
+        ModalCaption = "Select User Access";
+
+        if (UserAccessModuleRef != null)
+        {
+            await UserAccessModuleRef.ResetTab();
+        }
+        V.ShowUserAccess = true;
+
+
+    }
+
+    private void EnableUser(OUsrModel usr)
+    {
+
+    }
+
+    private void DisableUser(OUsrModel usr)
+    {
+
+    }
+
+    private void DeleteUser(OUsrModel usr)
+    {
+
+    }
+}

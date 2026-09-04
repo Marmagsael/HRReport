@@ -1,0 +1,204 @@
+﻿@using HRMvc.Applications._00GeneralComponents.FormComponents
+@using HRMvc.Applications.PayrollTransaction.Vars;
+
+<div style="max-height:60vh">
+
+    <EditForm Model="@V.User"
+              OnSubmit="@SaveUserInfo"
+              class="h-100 d-flex flex-column">
+
+        @* --- Save Button --- *@
+        <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    type="submit"
+                    tabindex="5">
+               Save
+            </button>
+
+        </div>
+
+
+        <div class="px-2 ps-md-3 pt-3  ">
+
+            @* --- Login Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Login Name
+                </label>
+
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.UserName"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    ReadOnly
+                                    TabIndex="1"
+                                    AutoComplete="off">
+
+                      
+
+                    </TelerikTextBox>
+
+                </div>
+
+            </div>
+
+
+            @* --- User Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    User Name
+                </label>
+
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.FullName"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    ReadOnly
+                                    TabIndex="2"
+                                    AutoComplete="off">
+
+                       
+
+                    </TelerikTextBox>
+
+                </div>
+
+            </div>
+
+
+            @* --- Old Password --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Old Password
+                </label>
+
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.Pwrd"
+                                    Password="!V.ShowOldPassword"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="3"
+                                    AutoComplete="off"
+                                    Class="@(string.IsNullOrWhiteSpace(V.OldPasswordErrorMsg) ? "" : "k-invalid")">
+
+                        <TextBoxSuffixTemplate>
+                            <TelerikFontIcon Icon="@(V.ShowOldPassword? FontIcon.Eye: FontIcon.EyeSlash)"
+                                             Size="@ThemeConstants.FontIcon.Size.Small"
+                                             @onclick="() => V.ShowOldPassword = !V.ShowOldPassword" />
+                        </TextBoxSuffixTemplate>
+
+                    </TelerikTextBox>
+
+                    @if (!string.IsNullOrWhiteSpace(V.OldPasswordErrorMsg))
+                    {
+                        <div class="txt-red small">
+                            @V.OldPasswordErrorMsg
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+
+      
+
+
+            @* --- Verify Password --- *@
+            <div class="d-flex flex-column flex-md-row">
+
+                <label class="fw-normal w-180p">
+                    Verify Password
+                </label>
+
+                <div class="col-12 col-md-8  ">
+
+                    <TelerikTextBox @bind-Value="@V.User.VerifyPassword"
+                                    Password="!V.ShowVerifyPassword"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="4"
+                                    AutoComplete="off"
+                                    Class="@(string.IsNullOrWhiteSpace(V.VerificationPasswordErrorMsg) ? "" : "k-invalid")">
+
+                        <TextBoxSuffixTemplate>
+                            <TelerikFontIcon Icon="@(V.ShowVerifyPassword? FontIcon.Eye: FontIcon.EyeSlash)"
+                                             Size="@ThemeConstants.FontIcon.Size.Small"
+                                             @onclick="() => V.ShowVerifyPassword = !V.ShowVerifyPassword" />
+                        </TextBoxSuffixTemplate>
+
+                    </TelerikTextBox>
+
+                    @if (!string.IsNullOrWhiteSpace(V.VerificationPasswordErrorMsg))
+                    {
+                        <div class="txt-red small">
+                            @V.VerificationPasswordErrorMsg
+                        </div>
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </EditForm>
+
+
+</div>
+
+
+@code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc   { get; set; } = new();
+
+
+    [CascadingParameter]
+    public V103Model V         { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification NotificationRef { get; set; }
+
+    private bool IsFormValid()
+    {
+        var isnull = false;
+
+        if (string.IsNullOrWhiteSpace(V.User.Pwrd))
+        {
+            V.OldPasswordErrorMsg = "Old password is required";
+            isnull = true;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.User.VerifyPassword))
+        {
+            V.VerificationPasswordErrorMsg = "Verify password is required";
+            isnull = true;
+        }
+
+
+        if (isnull) return false;
+
+
+        if (V.User.Pwrd != V.User.VerifyPassword)
+        {
+            V.VerificationPasswordErrorMsg = "Passwords do not match";
+            return false;
+        }
+
+        return true;
+    }
+
+
+    private async Task SaveUserInfo()
+    {
+        if (!IsFormValid()) return;
+    }
+}
