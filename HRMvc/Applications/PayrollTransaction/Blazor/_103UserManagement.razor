@@ -1,21 +1,43 @@
 ﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PayrollTransaction.Vars
 @using HRMvc.Applications.PayrollTransaction.Blazor._103
+@using HRApiLibrary.DataAccess._20_Pay.OPay;
+
 
 <TelerikRootComponent>
     <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
 
-    <CascadingValue Value="@Uc">
-        <CascadingValue Value="@v">
-            <CascadingValue Value="@NotificationRef">
-                <_00BT_FullW HdrCaption="User Management">
-                    <Details>
+    <CascadingValue Value="@v">
+        <CascadingValue Value="@NotificationRef">
+            <_00BT_FullW HdrCaption="User Management">
+                <Details>
 
-                        <_103_UserManagerList ChildAction="@ChilAction" />
 
-                    </Details>
-                </_00BT_FullW>
-            </CascadingValue>
+                    @*--- USER FORM MODAL ---*@
+                    @if (v.ShowUserEntryModal == true)
+                    {
+                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserEntryModal = false" ModalWidth="65vh">
+                            <Content>
+                                <_103_UserEntryForm />
+                            </Content>
+                        </_00Modal>
+                    }
+
+                    @*--- USER ACCESS MODAL ---*@
+                    @if (v.ShowUserAccessModal == true)
+                    {
+                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserAccessModal = false">
+                            <Content>
+                                <_103_UserAccess @ref="UserAccessModuleRef" />
+                            </Content>
+                        </_00Modal>
+                    }
+
+                    @*--- USER GRID ---*@
+                    <_103_UserManagerList ChildAction="@ChilAction" @ref="UserGridRef" />
+
+                </Details>
+            </_00BT_FullW>
         </CascadingValue>
     </CascadingValue>
 </TelerikRootComponent>
@@ -24,6 +46,7 @@
 
 
 
+@inject IOUsrDataAccess _usr
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
@@ -31,9 +54,65 @@
     private V103Model v = new();
     private TelerikNotification? NotificationRef;
 
+    private _103_UserManagerList UserGridRef;
+    private _103_UserAccess UserAccessModuleRef;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.OpayDb == null || Uc.SchemaMain == null || Uc.SchemaMainPay == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        v.OPaydb    = Uc.OpayDb;
+        v.Maindb    = Uc.SchemaMain;
+        v.Mainpaydb = Uc.SchemaMainPay;
+        v.Module    = "pay";
+        v.Conn      = Uc.Conn;
+
+        await LoadUsers();
+        if (UserGridRef != null) await UserGridRef.SetInitialFilter();
+
+        v.UcLoaded = true;
+    }
+
+
+
+    private async Task LoadUsers()
+    {
+        try
+        {
+            var res = await _usr._02(v.OPaydb, v.Conn);
+            if (res.Any()) { v.Users = res; }
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable To Load Users", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
 
     private async Task ChilAction()
     {
+
+        if (v.Action == "OpenUserAccessModal") await OpenUserAccessModal();
+    }
+
+
+
+
+    private async Task OpenUserAccessModal()
+    {
+
+        if (UserAccessModuleRef != null)
+        {
+            await UserAccessModuleRef.ResetTab();
+
+
+        }
     }
 }
 

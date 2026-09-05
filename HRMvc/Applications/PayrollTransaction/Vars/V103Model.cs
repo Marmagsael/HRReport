@@ -6,42 +6,45 @@ namespace HRMvc.Applications.PayrollTransaction.Vars;
 
 public class V103Model
 {
-         public string? OPaydb       { get; set; } = string.Empty;
+        public string? OPaydb       { get; set; } = string.Empty;
         public string? Maindb       { get; set; } = string.Empty;
         public string? Mainpaydb    { get; set; } = string.Empty;
         public string? Conn         { get; set; } = string.Empty;
         public string? Module       { get; set; } = string.Empty;
 
 
-        public string? Action       { get; set; } = string.Empty;
-        public bool? IsLoading      { get; set; } = true;
-        public bool? UcLoaded       { get; set; } = false;
-        public bool? ShowUserList   { get; set; } = false;
-        public bool? ShowUserForm   { get; set; } = false;
-        public bool? ShowUserAccess { get; set; } = false;
+
+        public string?                  Action                              { get; set; } = string.Empty;
+        public bool?                    IsLoading                           { get; set; } = true;
+        public bool?                    UcLoaded                            { get; set; } = false;
 
 
-        public OUsrModel?       SelectedUser                { get; set; }
-        public string?          SelectedUserFullName        { get; set; }
-        public string?          SelectedMenu                { get; set; } = string.Empty;
+        public string?                  ModalCaption                        { get; set; } = string.Empty;
+        public bool?                    ShowUserEntryModal                  { get; set; } = false;
+        public bool?                    ShowUserAccessModal                 { get; set; } = false;
 
 
-        public IEnumerable<MenuModel?> SelectedSystemMenu   { get; set; } = new List<MenuModel>();
-        public IEnumerable<MenuModel?> SelectedDtlsMenu     { get; set; } = new List<MenuModel>();
+        public string?                  SelectedMenu                         { get; set; } = string.Empty;
 
-        public List<OUsrModel?>?        Users               { get; set; } = [];
-        public OUsrModel?               User                { get; set; } = new();
-        public List<MenuModel?>?        SystemMenus         { get; set; } = [];
-        public List<MenuModel?>?        DtlsMenus           { get; set; } = [];
+
+        public IEnumerable<MenuModel?>  SelectedSystemMenu                   { get; set; } = new List<MenuModel>();
+        public IEnumerable<MenuModel?>  SelectedDtlsMenu                     { get; set; } = new List<MenuModel>();
+
+        public List<OUsrModel?>?        Users                                { get; set; } = [];
+        public OUsrModel?               User                                 { get; set; } = new();
+        public List<MenuModel?>?        SystemMenus                          { get; set; } = [];
+        public List<MenuModel?>?        DtlsMenus                            { get; set; } = [];
 
 
         //Toggle Control
-        public bool ShowOldPassword                 { get; set; } = false;
-        public bool ShowNewPassword                 { get; set; } = false;
-        public bool ShowVerifyPassword              { get; set; } = false;
+        public bool                     ShowOldPassword                      { get; set; } = false;
+        public bool                     ShowNewPassword                      { get; set; } = false;
+        public bool                     ShowVerifyPassword                   { get; set; } = false;
 
         //Error Message 
-        public string OldPasswordErrorMsg           { get; set; } = string.Empty;
-        public string NewPasswordErrorMsg           { get; set; } = string.Empty;
-        public string VerificationPasswordErrorMsg  { get; set; } = string.Empty;
+        public string                   OldPasswordErrorMsg                  { get; set; } = string.Empty;
+        public string                   NewPasswordErrorMsg                  { get; set; } = string.Empty;
+        public string                   VerificationPasswordErrorMsg         { get; set; } = string.Empty;
     }
+
+   

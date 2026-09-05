@@ -1,31 +1,7 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
 
 
-@*--- USER FORM MODAL ---*@
-@if (V.ShowUserForm == true)
-{
-    <_00Modal ModuleCaption="@ModalCaption" ChildAction="() => V.ShowUserForm = false" ModalWidth="65vh">
 
-        <Content>
-            <_2002_UserEntryForm   />
-        </Content>
-
-    </_00Modal>
-}
-
-
-
-@*--- USER ACCESS MODAL ---*@
-@if (V.ShowUserAccess == true)
-{
-    <_00Modal ModuleCaption="@ModalCaption" ChildAction="() => V.ShowUserAccess = false" >
-
-        <Content>
-            <_2002_UserAccess @ref="UserAccessModuleRef" />
-        </Content>
-
-    </_00Modal>
-}
 
 
 <TelerikGrid Data="@V.Users"
@@ -47,7 +23,7 @@
     @* --- CREATE USER BUTTON --- *@
     <GridToolBarTemplate>
         <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" 
-                        @onclick="@(() => OpenFormModal(new OPisUsrModel()))">
+                        @onclick="@(() => OpenUserEntryModal(new OPisUsrModel()))">
             Add User
         </button>
     </GridToolBarTemplate>
@@ -67,7 +43,8 @@
         @* --- STATUS  --- *@
         <GridColumn Field="@nameof(OPisUsrModel.StatusName)"
                     Title="Status"
-                    Width="140px">
+                    Width="140px"
+                    HeaderClass="text-center">
 
             <Template Context="item" >
                 @{
@@ -89,9 +66,13 @@
         </GridColumn>
 
 
+
+
+
         <GridCommandColumn Title="Action"
                            Width="180px"
-                           HeaderClass="text-center">
+                           HeaderClass="text-center"
+                           >
 
             <Template Context="item">
 
@@ -102,13 +83,13 @@
                 <div class="d-flex justify-content-center gap-2">
                     @* ---  EDIT BUTTON --- *@
                     <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="@(() => OpenFormModal(usr))">
+                            @onclick="@(() => OpenUserEntryModal(usr))">
                         Edit
                     </button>
 
                     @* ---  ACCESS BUTTON --- *@
                     <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="@(() => OpenAccessModal(usr))">
+                            @onclick="@(() => OpenUserAccessModal(usr))">
                         Access
                     </button>
 
@@ -137,10 +118,7 @@
 
                 </div>
             </Template>
-
         </GridCommandColumn>
-
-
     </GridColumns>
 
 
@@ -157,68 +135,23 @@
 
 @code {
     [CascadingParameter]
-    public UserClaimsModel Uc { get; set; } = new();
-
-
-    [CascadingParameter]
     public V2002Model V { get; set; } = new();
 
-
     [CascadingParameter]
-    public TelerikNotification NotificationRef { get; set; } 
+    public TelerikNotification  NotificationRef { get; set; } 
 
     [Parameter]
-    public EventCallback ChildAction { get; set; }
-
-
+    public EventCallback        ChildAction     { get; set; }
 
     private int PageSize { get; set; } = 25;
-    private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
+    private List<int?>  PageSizes = new()   { 25, 50, 75, 100, null };
 
     private TelerikGrid<OPisUsrModel> UserGridRef;
-    private _2002_UserAccess  UserAccessModuleRef;
-
-    private string ModalCaption = "Add User";
 
 
 
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (Uc?.Conn == null || Uc.OpisDb == null || Uc.SchemaMain == null || Uc.SchemaMainPis == null)
-        {
-            V.UcLoaded = false;
-            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-            return;
-        }
-
-        V.OPisdb    = Uc.OpisDb; 
-        V.Maindb    = Uc.SchemaMain; 
-        V.Mainpisdb = Uc.SchemaMainPis; 
-        V.Module    = "pis"; 
-        V.Conn      = Uc.Conn;
-
-        await LoadUsers();
-        await SetInitialFilter();
-        V.UcLoaded = true;
-    }
-
-    private async Task LoadUsers()
-    {
-        try
-        {
-            var res = await _usr._02(V.OPisdb, V.Conn);
-            if (res.Any()) { V.Users = res; }
-        }
-        catch (Exception)
-        {
-            NotificationRef?.Show("Unable To Load Users", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
-
-
-
-    private async Task SetInitialFilter()
+    public async Task SetInitialFilter()
     {
         var state = UserGridRef.GetState();
 
@@ -238,39 +171,40 @@
 
 
 
-
-
-    private void OpenFormModal(OPisUsrModel usr)
+    private async Task OpenUserEntryModal(OPisUsrModel usr)
     {
-        V.User = new OPisUsrModel();
-        ModalCaption = "Add User";
+        V.ShowUserAccessModal = false;
 
-        if (!string.IsNullOrWhiteSpace(usr.LogName))
+        V.User = new OPisUsrModel();
+        V.ModalCaption = "Add User";
+
+        if (!string.IsNullOrWhiteSpace(usr.UserName))
         {
             V.User = usr;
-            ModalCaption = "Edit User";
-
+            V.ModalCaption = "Edit User";
         }
 
-        V.ShowUserForm = true;
-
+        V.ShowUserEntryModal = true;
+        await ChildAction.InvokeAsync();
 
     }
+     
 
-    private async Task OpenAccessModal(OPisUsrModel usr)
+
+
+    private async Task OpenUserAccessModal(OPisUsrModel usr)
     {
+        V.ShowUserEntryModal = false;
+
         V.User = new OPisUsrModel();
 
         V.User = usr;
-        ModalCaption = "Select User Access";
+        V.ModalCaption = "Select User Access";
 
-        if (UserAccessModuleRef != null)
-        {
-            await UserAccessModuleRef.ResetTab();
-        }
-        V.ShowUserAccess = true;
+        V.ShowUserAccessModal = true;
 
-
+        V.Action = "OpenUserAccessModal";
+        await ChildAction.InvokeAsync();
     }
 
     private void EnableUser(OPisUsrModel usr)
