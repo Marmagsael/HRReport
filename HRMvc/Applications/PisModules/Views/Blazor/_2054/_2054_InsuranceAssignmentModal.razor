@@ -1,5 +1,223 @@
-﻿<h3>_2054_InsuranceForm</h3>
+﻿<TelerikGrid TItem="OInsuranceAssignmentModel"
+             Data="@InsuranceEmployees"
+             Groupable="false"
+             OnStateInit="@OnGridStateInit"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Sortable="true"
+             Resizable="true"
+             Navigable="true"
+             Width="100%"
+             Height="calc(100vh - 400px)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+
+    <GridToolBarTemplate>
+
+        <div class="d-flex justify-content-between align-items-start gap-3 w-100">
+
+            <div class="flex-grow-1">
+
+                @* --- Insurance Type --- *@
+                <div class="d-flex flex-column flex-md-row mb-2">
+
+                    <label class="fw-normal w-180p">
+                        Insurance Type
+                    </label>
+
+                    <div class="col-12 col-md-2">
+
+                        <TelerikDropDownList Data="@V.InsuranceTypes"
+                                             @bind-Value="@V.Insurance.InsuranceType"
+                                             Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                             FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
+                                             TabIndex="1"
+                                             Width="100%">
+                        </TelerikDropDownList>
+
+                    </div>
+
+                </div>
+
+
+                @* --- Policy No --- *@
+                <div class="d-flex flex-column flex-md-row mb-2">
+
+                    <label class="fw-normal w-180p">
+                        Policy No
+                    </label>
+
+                    <div class="col-12 col-md-6">
+
+                        <TelerikDropDownList Data="@V.Policies"
+                                             @bind-Value="@V.SelectedPolicyNo"
+                                             Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                             FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
+                                             TabIndex="2"
+                                             Width="100%">
+                        </TelerikDropDownList>
+
+                    </div>
+
+                </div>
+
+
+                @* --- Insurance Name --- *@
+                <div class="d-flex flex-column flex-md-row mb-2">
+
+                    <label class="fw-normal w-180p">
+                        Insurance
+                    </label>
+
+                    <div class="col-12 col-md-6">
+
+                        <TelerikTextBox @bind-Value="@V.Insurance.Name"
+                                        Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                        FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                        TabIndex="-1"
+                                        ReadOnly="true"
+                                        Width="100%">
+                        </TelerikTextBox>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+           @* Apply Button *@
+            <div class="d-flex align-items-start pt-1">
+
+                <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" >
+                   Apply to Selected
+                </button>
+
+            </div>
+
+        </div>
+
+    </GridToolBarTemplate>
+
+    <GridColumns>
+
+        <GridCheckboxColumn SelectAll="true"
+                            SelectAllMode="@GridSelectAllMode.All"
+                            Width="50px" />
+
+
+       
+        <GridColumn Field="@nameof(OInsuranceAssignmentModel.EmpName)"
+                    Title="Employee Name" />
+
+        <GridColumn Field="@nameof(OInsuranceAssignmentModel.PolicyNo)"
+                    Title="Assignment"
+                    Visible="false">
+
+            <GroupHeaderTemplate Context="group">
+
+                @{
+                    var policyNo = group.Value?.ToString();
+                }
+
+                @if (string.IsNullOrWhiteSpace(policyNo))
+                {
+                    <span class="fw-bold">
+                        Not Assigned
+                    </span>
+                }
+                else
+                {
+                    <span class="fw-bold">
+                        @policyNo
+                    </span>
+                }
+
+            </GroupHeaderTemplate>
+
+        </GridColumn>
+
+    </GridColumns>
+
+</TelerikGrid>
+
 
 @code {
+
+    [CascadingParameter]
+    public V2054Model V { get; set; } = new();
+
+
+    private int PageSize { get; set; } = 25;
+    private List<int?> PageSizes = new() { 25, 50,  75, 100, null  };
+
+
+    private List<OInsuranceAssignmentModel> InsuranceEmployees = new()
+    {
+        new()
+        {
+            EmpNumber = "00001",
+            EmpName = "Employee  1",
+            PolicyNo = ""
+        },
+
+        new()
+        {
+            EmpNumber = "00002",
+            EmpName = "Employee  2",
+            PolicyNo = "Policy 1"
+        },
+
+        new()
+        {
+            EmpNumber = "00003",
+            EmpName = "Employee  3",
+            PolicyNo = "Policy 1"
+        },
+
+        new()
+        {
+            EmpNumber = "00004",
+            EmpName = "Employee  4",
+            PolicyNo = "Policy 2"
+        },
+
+        new()
+        {
+            EmpNumber = "00005",
+            EmpName = "Employee  5",
+            PolicyNo = "Policy 2"
+        }
+    };
+
+
+    private void OnGridStateInit(
+        GridStateEventArgs<OInsuranceAssignmentModel> args)
+    {
+        args.GridState.GroupDescriptors =
+            new List<Telerik.DataSource.GroupDescriptor>
+            {
+                new Telerik.DataSource.GroupDescriptor
+                {
+                    Member = nameof(OInsuranceAssignmentModel.PolicyNo),
+                    MemberType = typeof(string),
+                    SortDirection = Telerik.DataSource.ListSortDirection.Ascending
+                }
+            };
+    }
+
+
+    public class OInsuranceAssignmentModel
+    {
+        public string EmpNumber { get; set; } = "";
+
+        public string EmpName { get; set; } = "";
+
+        public string PolicyNo { get; set; } = "";
+    }
 
 }

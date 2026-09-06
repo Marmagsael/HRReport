@@ -1,73 +1,116 @@
-﻿    <TelerikGrid TItem="OEmpmasModel"
-                 SelectionMode="@GridSelectionMode.Single"
-                 Navigable="true"
-                 Pageable="true"
-                 @bind-PageSize="@PageSize"
-                 Sortable="true"
-                 FilterMode="@GridFilterMode.FilterMenu"
-                 Height="100%">
+﻿<TelerikGrid TItem="OInsuranceModel"
+             SelectionMode="@GridSelectionMode.Single"
+             Navigable="true"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             Sortable="true"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Height="calc(100vh - 90px)">
 
-        <GridSettings>
-            <GridPagerSettings PageSizes="@PageSizes" />
-        </GridSettings>
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
 
+    @* --- CREATE USER BUTTON --- *@
+    <GridToolBarTemplate>
 
-        <GridColumns>
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    @onclick="@(() => OpenInsuranceEntryModal(new OInsuranceModel()))">
+                Add Insurance
+            </button>
 
-            @* --- EMPLOYEE NO. --- *@
-            <GridColumn Field="@nameof(OEmpmasModel.EmpNumber)"
-                        Title="Code"
-                        Width="80px" />
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => OpenInsuranceAssignmentModal())">
+                Insurance Assignment
+            </button>
+        </div>
 
-            @* --- NAME --- *@
-            <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
-                        Title="Name"
-                        Width="200px" />
-
-
-            @* --- Status --- *@
-            <GridColumn Field="@nameof(OEmpmasModel.EmpStatus)"
-                        Title="Status"
-                        Width="80px" />
+    </GridToolBarTemplate>
 
 
-            @* --- Acttions --- *@
-            <GridCommandColumn Title="Action"
-                               Width="80px"
-                               HeaderClass="text-center">
+    <GridColumns>
 
-                <Template Context="item">
+        @* --- INSURANCE NAME --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.Name)"
+                    Title="Name"
+                    Width="150px" />
 
-                    @{
-                        var client = (OClientModel)item;
-                    }
+        @* --- INSURANCE TYPE --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.InsuranceType)"
+                    Title="Insurance Type"
+                    Width="150px" />
 
-                    <div class="d-flex justify-content-center gap-2">
-                        @* ---  EDIT BUTTON --- *@
-                        <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                               >
-                            Edit
-                        </button>
+        @* --- POLICY NO. --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.PolicyNo)"
+                    Title="Policy No."
+                    Width="150px" />
 
-                       
-                    </div>
-                </Template>
-            </GridCommandColumn>
+        @* --- FACE VALUE --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.FaceValue)"
+                    Title="Face Value"
+                    Width="120px"
+                    DisplayFormat="{0:N2}" />
 
+        @* --- PREMIUMS --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.Premiums)"
+                    Title="Premiums"
+                    Width="120px"
+                    DisplayFormat="{0:N2}" />
 
-        </GridColumns>
+        @* --- INSURANCE EXPIRY --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.InsExpire)"
+                    Title="Insurance Expiry"
+                    Width="130px" />
 
+        @* --- ACTIONS --- *@
+        <GridCommandColumn Title="Action"
+                           Width="100px"
+                           HeaderClass="text-center">
 
-        <NoDataTemplate>
-            <div class="text-center text-secondary p-4">
-                No clients found.
-            </div>
-        </NoDataTemplate>
+            <Template Context="item">
 
-    </TelerikGrid>
+                @{
+                    var insurance = (OInsuranceModel)item;
+                }
 
+                <div class="d-flex justify-content-center gap-2">
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => OpenInsuranceEntryModal(insurance))">
+                        Edit
+                    </button>
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                        Delete
+                    </button>
+
+                </div>
+
+            </Template>
+
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No insurance records found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
 
 @code {
+    [CascadingParameter]
+    public V2054Model V { get; set; } = new();
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
     private int PageSize { get; set; } = 25;
 
     private List<int?> PageSizes = new()
@@ -78,4 +121,27 @@
         100,
         null
     };
+
+    private async Task OpenInsuranceEntryModal(OInsuranceModel rec)
+    {
+        V.Insurance = new OInsuranceModel();
+        V.ModalCaption = "Add Insurance";
+
+        if(rec.Id != 0)
+        {
+            V.ModalCaption = "Edit Insurance";
+            V.Insurance = rec;
+        }
+
+        V.ShowInsuranceEntryModal = true;
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task OpenInsuranceAssignmentModal()
+    {
+        V.ModalCaption = "Insurance Assignment";
+        V.ShowInsuranceAssignmentModal = true;
+        await ChildAction.InvokeAsync();
+    }
 }
+
