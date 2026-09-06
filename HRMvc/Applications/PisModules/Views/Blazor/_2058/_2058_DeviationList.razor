@@ -1,0 +1,124 @@
+﻿<TelerikGrid TItem="ODevdataModel"
+             SelectionMode="@GridSelectionMode.Single"
+             Navigable="true"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             Sortable="true"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Height="calc(100vh - 90px)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+    @* --- CREATE USER BUTTON --- *@
+    <GridToolBarTemplate>
+
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    @onclick="@(() => OpenEntryModal(new ODevdataModel()))">
+                Add Deviation
+            </button>
+
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray">
+                Print Listing
+            </button>
+        </div>
+
+    </GridToolBarTemplate>
+
+
+    <GridColumns>
+
+        @* --- Code --- *@
+        <GridColumn Field="@nameof(ODevdataModel.Dev_No)"
+                    Title="Code"
+                    Width="150px" />
+
+        @* --- Name --- *@
+        <GridColumn Field="@nameof(ODevdataModel.Dev_Name)"
+                    Title="Description"
+                    Width="150px" />
+
+
+
+      
+
+        @* --- ACTIONS --- *@
+        <GridCommandColumn Title="Action"
+                           Width="100px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+
+                @{
+                    var rec = (ODevdataModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => OpenEntryModal(rec))">
+                        Edit
+                    </button>
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                        Delete
+                    </button>
+
+                </div>
+
+            </Template>
+
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No deviation records found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
+
+@code {
+    [CascadingParameter]
+    public V2058Model V { get; set; } = new();
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+    private async Task OpenEntryModal(ODevdataModel rec)
+    {
+        V.Deviation = new ODevdataModel();
+        V.ModalCaption = "Add Deviation";
+
+        if (!string.IsNullOrWhiteSpace(rec.Dev_No))
+        {
+            V.ModalCaption = "Edit Deviation";
+            V.Deviation = rec;
+        }
+
+        V.ShowEntryModal = true;
+        await ChildAction.InvokeAsync();
+    }
+
+  
+}
+
