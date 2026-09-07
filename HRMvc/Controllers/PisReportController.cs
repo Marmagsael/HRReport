@@ -9,25 +9,60 @@ public class PisReportController : Controller
     private static readonly Dictionary<string, string> ManagementViews = new()
     {
         ["2002"] = "_2002_UserManagement",
-        ["2003"] = "_2003_TimeOffSettings"
+        ["2003"] = "_2003_TimeOffSettings",
+        ["2004"] = "_2004_EmpAttendanceSettings",
+        
+        
     };
 
-    // Data Entry
-    private static readonly Dictionary<string, string> DataEntryViews = new()
+    // Record Management
+    private static readonly Dictionary<string, string> RecordMgtViews = new()
     {
-        ["2052"] = "_2052_EmployeeEntry"
+        ["2052"] = "_2052_EmployeeEntry",
+        ["2053"] = "_2053_ClientEntry",
+        ["2054"] = "_2054_InsuranceEntry",
+        ["2055"] = "_2055_PositionEntry",
+        ["2056"] = "_2056_LeaveTypeEntry",
+        ["2057"] = "_2057_PenaltyTypeEntry",
+        ["2058"] = "_2058_DeviationTypeEntry",
+        ["2059"] = "_2059_AreaCodeEntry",
+        ["2060"] = "_2060_ProvincialCode",
+        ["2061"] = "_2061_MetroManilaCode",
+        ["2062"] = "_2062_EmployeeStatus",
+        ["2063"] = "_2063_CivilStatus",
+        ["2064"] = "_2064_EmployeeArchiving",
+
+        ["2302"] = "_2302_StatusMgt",
+        ["2303"] = "_2303_ReturnToUnit",
+        ["2304"] = "_2304_GroupRecallOrder",
+        ["2305"] = "_2305_RecallOrderEntry",
+        ["2306"] = "_2306_LeaveTransactionEntry",
+        ["2307"] = "_2307_SpecialDutyOrder",
+        ["2308"] = "_2308_AssignmentOrderEntry",
+        ["2309"] = "_2309_DeviationPenalty",
+    };
+
+    // Inventory Management
+    private static readonly Dictionary<string, string> InventoryMgtViews = new()
+    {
+        ["2402"] = "_2402_ItemsEntry",
+        ["2403"] = "_2403_EquipmentEntry",
+        ["2404"] = "_2404_EquipmentSummary",
+        ["2405"] = "_2405_QuickDeployment",
+        ["2406"] = "_2406_MemorandumReceipt",
     };
 
     // Transaction Views 
     private static readonly Dictionary<string, string> TransactionViews = new()
     {
         ["2302"] = "_2302_StatusMgt",
-        ["2303"] = "_2303_Deployment",
-        ["2304"] = "_2304_Deviation",
-        ["2305"] = "_2305_DisciplinaryAction",
-        ["2306"] = "_2306_Reinstatement",
-        ["2307"] = "_2307_ChangeDeployment",
-        ["2308"] = "_2308_GroupRecall",
+        ["2303"] = "_2303_RTU",
+        ["2304"] = "_2304_GroupRecallOrder",
+        ["2305"] = "_2305_RecallOrder",
+        ["2306"] = "_2306_LeaveTransaction",
+        ["2307"] = "_2307_SpecialDutyOrder",
+        ["2308"] = "_2308_AssignmentOrder",
+        ["2309"] = "_2309_DeviationPenalty",
     };
 
 
@@ -75,7 +110,7 @@ public class PisReportController : Controller
 
         if (ManagementViews.TryGetValue(key, out var mgmtView)) return View($"~/Applications/PisModules/Views/Pages/{mgmtView}.cshtml");
 
-        if (DataEntryViews.TryGetValue(key, out var deView)) return View($"~/Applications/PisModules/Views/Pages/{deView}.cshtml");
+        if (RecordMgtViews.TryGetValue(key, out var deView)) return View($"~/Applications/PisModules/Views/Pages/{deView}.cshtml");
         
         if (TransactionViews.TryGetValue(key, out var trntView)) return View($"~/Applications/PisModules/Views/Pages/{trntView}.cshtml");
                                                                              

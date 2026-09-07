@@ -1,0 +1,148 @@
+@using System.Net.Http
+@using HRApiLibrary.Models._00_Main
+@using Microsoft.JSInterop
+@using Radzen
+@using Radzen.Blazor
+
+@page "/payroll-entry"
+@inject NotificationService NotificationService
+@inject IJSRuntime JSRuntime
+
+<style>
+    .compact-grid table th,
+    .compact-grid table td {
+        padding: 0 !important;
+    }
+
+    .compact-grid .rz-datatable-data td,
+    .compact-grid .rz-grid-table td {
+        padding: 0 !important;
+    }
+
+    .compact-grid .rz-grid-table td,
+    .compact-grid .rz-grid-table th {
+        padding: 0 !important;
+    }
+
+    table th,
+    table td {
+        padding: 0 !important;
+    }
+</style>
+
+
+<h3>Desktop Payroll Entry with Working Keyboard Nav</h3>
+
+<div id="payrollGridContainer" style="outline: none;">
+    <RadzenDataGrid @ref="grid" Data="@payrollList" TItem="PayrollItem" KeyProperty="Id" AllowVirtualization="true"
+                    AllowColumnResize="true">
+        <Columns>
+            <RadzenDataGridColumn TItem="PayrollItem" Property="EmployeeName" Title="Name" Width="75150px" Frozen="true"
+                                  CssClass="p-1" />
+
+            <RadzenDataGridColumn TItem="PayrollItem" Property="Department" Title="Department" Width="100px">
+                <Template Context="item">
+
+                    <RadzenTextBox Value="@item.Department" ValueChanged="@((string val) => OnDeptChanged(item, val))"
+                                   Style="width: 100%; border: none; box-shadow: none;" />
+
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="PayrollItem" Property="BasicSalary" Title="Basic Salary" Width="70px">
+                <Template Context="item">
+                    <RadzenNumeric Value="@item.BasicSalary"
+                                   ValueChanged="@((decimal val) => OnSalaryChanged(item, val))"
+                                   Style="width: 100%; border: none; box-shadow: none;" TextAlign="TextAlign.Right"
+                                   ShowUpDown="false" Step="0" />
+
+                </Template>
+            </RadzenDataGridColumn>
+
+            <RadzenDataGridColumn TItem="PayrollItem" Property="NetPay" Title="Net Pay" FormatString="{0:C}"
+                                  Width="150px" Frozen="true" FrozenPosition="FrozenColumnPosition.Right" />
+        </Columns>
+    </RadzenDataGrid>
+</div>
+
+@if (editedItems.Any())
+{
+    <div style="margin-top: 10px;">
+        <RadzenButton Text="Save Batch" ButtonStyle="ButtonStyle.Success" Click="@SaveBatch" />
+        <span style="margin-left: 10px; color: gray;">(@editedItems.Count modified rows)</span>
+    </div>
+}
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    private RadzenDataGrid<PayrollItem> grid;
+    private IQueryable<PayrollItem> payrollList;
+    private HashSet<PayrollItem> editedItems = new();
+
+    protected override void OnInitialized()
+    {
+        var list = new List<PayrollItem>();
+        for (int i = 1; i <= 100; i++)
+        {
+            list.Add(new PayrollItem
+            {
+                Id = i,
+                EmployeeName = $"Employee {i}",
+                Department = "Operations",
+                BasicSalary = 15000 + (i * 10),
+                NetPay = 14000 + (i * 10)
+            });
+        }
+        payrollList = list.AsQueryable();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("attachGridKeyboardNav", "payrollGridContainer");
+        }
+    }
+
+    private void OnNameChanged(PayrollItem item, string value)
+    {
+        item.EmployeeName = value;
+        TrackChange(item);
+    }
+
+    private void OnDeptChanged(PayrollItem item, string value)
+    {
+        item.Department = value;
+        TrackChange(item);
+    }
+
+    private void OnSalaryChanged(PayrollItem item, decimal value)
+    {
+        item.BasicSalary = value;
+        TrackChange(item);
+    }
+
+    private void TrackChange(PayrollItem item)
+    {
+        if (!editedItems.Contains(item))
+        {
+            editedItems.Add(item);
+        }
+    }
+
+    private void SaveBatch()
+    {
+        NotificationService.Notify(NotificationSeverity.Success, "Saved", $"{editedItems.Count} rows saved!");
+        editedItems.Clear();
+    }
+
+    public class PayrollItem
+    {
+        public int Id { get; set; }
+        public string EmployeeName { get; set; }
+        public string Department { get; set; }
+        public decimal BasicSalary { get; set; }
+        public decimal NetPay { get; set; }
+    }
+}

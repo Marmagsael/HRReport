@@ -47,6 +47,7 @@ public static class ApiExt
         builder.Services.AddScoped<I_00UsersAccess, _00UsersAccess>();
         builder.Services.AddScoped<I_00MainDA, _00MainDA>();
         builder.Services.AddScoped<ISystemuserDataAccess, SystemuserDataAccess>();
+        builder.Services.AddScoped<IMenuDataAccess, MenuDataAccess>();
 
 
         //-- MainPis ---------------------------------------------------------------------
@@ -209,8 +210,10 @@ public static class ApiExt
         builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
         builder.Services.AddScoped<IOClientDataAccess, OClientDataAccess>();
         builder.Services.AddScoped<IOEmpstatDataAccess, OEmpstatDataAccess>();
-        
+        builder.Services.AddScoped<IODeprecDataAccess, ODeprecDataAccess>();
         builder.Services.AddScoped<IOPisReportDataAccess, OPisReportDataAccess>();
+        builder.Services.AddScoped<IOPisDomainaccessDataAccess, OPisDomainaccessDataAccess>();
+        builder.Services.AddScoped<IOPisUsrDataAccess, OPisUsrDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------
@@ -220,7 +223,11 @@ public static class ApiExt
         builder.Services.AddScoped<IOLoansDataAccess, OLoansDataAccess>();
         builder.Services.AddScoped<IOChartofacctDataAccess, OChartofacctDataAccess>();
         builder.Services.AddScoped<IOEmpportalDataAccess, OEmpportalDataAccess>();
+        builder.Services.AddScoped<IOPayrollgrpDataAccess, OPayrollgrpDataAccess>();
+        builder.Services.AddScoped<IODomainaccessDataAccess, ODomainaccessDataAccess>();
+        builder.Services.AddScoped<IOUsrDataAccess, OUsrDataAccess>();
         
+
 
         //-- Pay Report --------------------------------------------------------------------
         builder.Services.AddScoped<IReportDataAccess, ReportDataAccess>();

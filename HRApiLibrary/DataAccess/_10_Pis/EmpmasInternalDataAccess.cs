@@ -126,6 +126,19 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
         return data;
     }
 
+    public async Task<List<EmpmasInternalModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn)
+    {
+        string? sql = $@"SELECT  e.Id EmpmasId, e.SystemId, e.EmpNumber, 
+                    CONCAT_WS(',', e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm) AS Fullname
+                    FROM {schema}.empmas e
+                    INNER JOIN {schema}.deprec d ON d.empmasId = e.Id
+                    WHERE d.payrollgrpId = @PayrollgrpId
+                    ORDER BY e.EmpLastNm;";
+
+        var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
+        return data;
+    }
+
 
 
     public async Task<EmpmasInternalModel?> _03(int? id, EmpmasInternalModel empmas, string? schema, string? conn)

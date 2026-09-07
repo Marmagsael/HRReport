@@ -18,17 +18,17 @@ namespace HRMvc.Applications._02HR._02Library
 
         public PisEmpmasModel?                      Empmas                          { get; set; } = new();
         public List<PisEmpmasModel?>?               EmpmasListGrid                  { get; set; } = new();
-        public RadzenDataGrid<PisEmpmasModel?>?     EmpmasGrid                      { get; set; }
+        public RadzenDataGrid<PisEmpmasModel>?      EmpmasGrid                      { get; set; }
 
 
 
         public DeprecModel                          DeviatedEmployee                { get; set; } = new();
         public List<DeprecModel?>?                  DeviationLineUp                 { get; set; } = new();
-        public RadzenDataGrid<DeprecModel?>?        DeviationLineUpGrid             { get; set; }        
+        public RadzenDataGrid<DeprecModel>?         DeviationLineUpGrid             { get; set; }        
         
         public DeprecModel                          InvestigatedEmployee            { get; set; } = new();
         public List<DeprecModel?>?                  InvestigationLineUp             { get; set; } = new();
-        public RadzenDataGrid<DeprecModel?>?        InvestigationLineUpGrid         { get; set; }
+        public RadzenDataGrid<DeprecModel>?         InvestigationLineUpGrid         { get; set; }
 
 
         public DeprecModel?                         Deprec                          { get; set; } = new();
@@ -40,13 +40,13 @@ namespace HRMvc.Applications._02HR._02Library
         public TrandeviationapprovalhistoryModel?   TrandeviationHistory            { get; set; } = new();
 
         public List<DeviationModel?>?               AllegationsHistoryList          { get; set; } = new();
-        public RadzenDataGrid<DeviationModel?>?     AllegationGrid                  { get; set; }
+        public RadzenDataGrid<DeviationModel>?      AllegationGrid                  { get; set; }
 
         public DeviationModel?                      Deviation                       { get; set; }
         public EmpblockpostModel?                   EmployeeBlockPost               { get; set; }
 
         public List<RempstatModel?>?                StatusListGrid                  { get; set; } = new();
-        public RadzenDataGrid<RempstatModel?>?      StatusGrid                      { get; set; }
+        public RadzenDataGrid<RempstatModel>?       StatusGrid                      { get; set; }
 
 
         // ***********************************************************
@@ -85,7 +85,7 @@ namespace HRMvc.Applications._02HR._02Library
 
         public List<RempstatModel?>?            ExoRempStatusList           { get; set; } = new();
         public List<RempstatModel?>?            ExoRempStatusListGrid       { get; set; } = new();
-        public RadzenDataGrid<RempstatModel?>?  ExoRempStatusGrid           { get; set; }
+        public RadzenDataGrid<RempstatModel>?   ExoRempStatusGrid           { get; set; }
 
 
         // ***********************************************************
@@ -104,7 +104,7 @@ namespace HRMvc.Applications._02HR._02Library
         public TraninvestigateapprovalModel?    TranInvestigateAppr         { get; set; } = new();
         public List<RempstatModel?>?            InvRempStatusList           { get; set; } = new();
         public List<RempstatModel?>?            InvRempStatusListGrid       { get; set; } = new();
-        public RadzenDataGrid<RempstatModel?>?  InvRempStatusGrid           { get; set; }
+        public RadzenDataGrid<RempstatModel>?   InvRempStatusGrid           { get; set; }
 
     }
 }

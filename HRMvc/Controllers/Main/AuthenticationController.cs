@@ -702,7 +702,7 @@ public class AuthenticationController : Controller
         var exclusiveCompany = uc?.ExclusiveCompany ?? "";
 
         var conn            = user.Domain;
-        var res = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
+        var res             = await _empmasInternal._02BySystemIds(user?.Id??00, uc?.PisSchema ?? "", conn??"");
         
         if(res.Count > 0 ) 
         {
@@ -752,7 +752,7 @@ public class AuthenticationController : Controller
             new("OldPay",               oldPay  ?? "pay"),  
             
             new("IsExclusiveCompany",   isExclusiveCompany),
-             new("ExclusiveCompany",    exclusiveCompany) // For GSIA
+            new("ExclusiveCompany",    exclusiveCompany) // For GSIA
         }; 
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

@@ -50,22 +50,18 @@
             (punch?.SchedDuration == null ? 0 : punch.SchedDuration) > 0)
             {
                 DateTime actualOut = punch.PunchOutDate ?? DateTime.MinValue;
-
                 DateTime scheduleIn = (punch.PunchInDate?.Date ?? DateTime.MinValue)
-                .AddHours(punch.PunchT ?? 0 / 100)
-                .AddMinutes(punch.PunchT ?? 0 % 100);
+                .AddHours((punch.PunchT ?? 0) / 100)      // ✅ Added parentheses
+                .AddMinutes((punch.PunchT ?? 0) % 100);   // ✅ Added parentheses
                 DateTime scheduleOut = scheduleIn
-                .AddHours(punch.SchedDuration ?? 0 / 100)
-                .AddMinutes(punch.SchedDuration ?? 0 % 100);
-
-                if (actualOut < scheduleOut)
+                .AddHours((punch.SchedDuration ?? 0) / 100)    // ✅ Added parentheses
+                .AddMinutes((punch.SchedDuration ?? 0) % 100); // ✅ Added parentheses
+                if (actualOut < scheduleOut)  
                 {
                     outTardiness = (int)Math.Floor((scheduleOut - actualOut).TotalMinutes);
                     tardiness += outTardiness;
                 }
-
-
-
+               
             }
 
             @* --- Company Duty Start -------------- *@

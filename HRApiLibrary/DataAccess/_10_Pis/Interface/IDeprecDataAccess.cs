@@ -5,6 +5,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
     public interface IDeprecDataAccess
     {
         Task<DeprecModel?>              _01(DeprecModel deprec, string? schema, string? conn);
+        Task                            _01FromPayrollGrp(DeprecModel deprec, string? schema, string? conn);
         Task<DeprecModel?>              _02(int? id, string? schema, string? conn);
         Task<DeprecModel?>              _02(int? id, string? schema, string? payschema, string? conn);
         Task<DeprecModel?>              _02ByEmpnumber(string? empnumber, string? schema, string? conn);
@@ -13,7 +14,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<List<DeprecModel?>?>       _02_ByPayrollgrpIds(int? payrollgrpId, string? schema, string? conn);
         Task<DeprecModel?>              _02DeviationDtlsByEmpmasId(int? empmasId, string? schema, string? conn);
         Task<List<DeprecModel?>?>       _02ByField(string? fieldName, string? schema, string? conn);
+        Task<List<DeprecModel?>?>       _02ByFieldId(string? fieldName, int? fieldIdValue, string? schema, string? conn);
         Task<DeprecModel?>              _03(DeprecModel deprec, string? schema, string? conn);
+        Task<DeprecModel?>              _03ByField(int? empmasId, string fieldName, int fieldValue, string? schema, string? conn);
         Task<DeprecModel?>              _04(int? empmasid, string? schema, string? conn);
     }
 }

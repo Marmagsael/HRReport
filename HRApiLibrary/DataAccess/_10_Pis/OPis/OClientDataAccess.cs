@@ -66,7 +66,7 @@ public class OClientDataAccess : IOClientDataAccess
                             ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
                             ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
                             ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) 
-                        where  Status = @Status ";
+                        where  Status in @Status ";
         _sql.ExecuteCmd<dynamic>(sql, new { Status = statuses }, conn);
 
         sql = $@"select  * from {schema}.Client where Status in @Status order by ClName ";
@@ -111,6 +111,7 @@ public interface IOClientDataAccess
     Task _01(OClientModel client, string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByStatuss(string? status, string? schema, string? conn);
+    Task<List<OClientModel?>?> _02ByStatuses(List<string> statuses, string? schema, string? conn);
     Task<OClientModel?> _03(OClientModel client, string? schema, string? conn);
     Task<OClientModel?> _04(string? clNumber, string? schema, string? conn);
 }

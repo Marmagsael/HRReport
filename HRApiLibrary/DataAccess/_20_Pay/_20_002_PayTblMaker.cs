@@ -557,7 +557,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         RatePerDay      DOUBLE(12,4)        DEFAULT 0,
                         RatePerMonth    DOUBLE(12,4)        DEFAULT 0,
                         RatePerYr       DOUBLE(12,4)        DEFAULT 0,
-                        MinMoRate       DOUBLE(12,4)        DEFAULT 0,
+                        MinDailyRate       DOUBLE(12,4)        DEFAULT 0,
                         Status          Char(1)             Default 'A',
                         PayRateId       int                 DEFAULT 0,
                         PRIMARY KEY(`Id`)) ENGINE = InnoDB;";
@@ -582,7 +582,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         if (res.Count < 10)
         {
             var sql1 =
-                $@"ALTER TABLE {schema}.`payrollgrp` ADD COLUMN `MinMoRate` DOUBLE(12,4) DEFAULT 0 AFTER `RatePerYr`;";
+                $@"ALTER TABLE {schema}.`payrollgrp` ADD COLUMN `MinDailyRate` DOUBLE(12,4) DEFAULT 0 AFTER `RatePerYr`;";
             await _sql.ExecuteCmd(sql1, new { }, connName);
         }
     }

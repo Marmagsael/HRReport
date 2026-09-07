@@ -47,7 +47,7 @@ public class V245
 
     public List<PisEmpmasModel?>?           EmpmasList                  { get; set; } = new();
     public List<PisEmpmasModel?>?           EmpmasListGrid              { get; set; } = new();
-    public RadzenDataGrid<PisEmpmasModel?>? EmpmasGrid                  { get; set; }
+    public RadzenDataGrid<PisEmpmasModel>?  EmpmasGrid                  { get; set; }
 
     public bool                             InitDeployment              { get; set; } = false;
     public bool                             InitDeviation               { get; set; } = false;
@@ -73,7 +73,7 @@ public class V245
 
     public List<RempstatModel?>?            RempStatusList              { get; set; }
     public List<RempstatModel?>?            RempStatusListGrid          { get; set; }
-    public RadzenDataGrid<RempstatModel?>?  RempStatusGrid              { get; set; }
+    public RadzenDataGrid<RempstatModel>?   RempStatusGrid              { get; set; }
     public List<Rempstat_baseModel?>?       DefaultStatusList           { get; set; }
     public EmptranmovementModel?            EmpTranmovement            { get; set; }
 }

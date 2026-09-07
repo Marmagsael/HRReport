@@ -47,7 +47,7 @@ public class V242
 
     public List<PisEmpmasModel?>?       EmpmasList                  { get; set; } = new();
     public List<PisEmpmasModel?>?       EmpmasListGrid              { get; set; } = new();
-    public RadzenDataGrid<PisEmpmasModel?>? EmpmasGrid              { get; set; }
+    public RadzenDataGrid<PisEmpmasModel>? EmpmasGrid              { get; set; }
     
     public bool                         InitDeployment              { get; set; } = false; 
     public bool                         InitDeviation               { get; set; } = false; 
@@ -61,7 +61,7 @@ public class V242
     //Added By Judith
     public TrandeploymentModel           Trandeployment                { get; set; } = new() { };
     public TrandeploymentapprovalModel   TrandepApproval               { get; set; } = new() { };
-    public List<EmpblockpostModel?>?       EmpblockpostList              { get; set; } = new() { };
+    public List<EmpblockpostModel?>?     EmpblockpostList              { get; set; } = new() { };
 
 
     public bool                         SaveDisabled                { get; set; } = false;
@@ -74,7 +74,7 @@ public class V242
 
     public List<RempstatModel?>?                RempStatusList          { get; set; }
     public List<RempstatModel?>?                RempStatusListGrid      { get; set; }
-    public RadzenDataGrid<RempstatModel?>?      RempStatusGrid          { get; set; }
+    public RadzenDataGrid<RempstatModel>?       RempStatusGrid          { get; set; }
     public List<Rempstat_baseModel?>?           DefaultStatusList       { get; set; }
     public EmptranmovementDataAccess?           EmpTranmovement       { get; set; }
 }

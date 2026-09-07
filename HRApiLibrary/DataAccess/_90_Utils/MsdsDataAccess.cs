@@ -30,13 +30,13 @@ public class MsdsDataAccess : IMsdsDataAccess
 
         var message = new MimeMessage();
         // Sender's email 
-        message.From.Add(new MailboxAddress("MSDS", email.SenderEmail));
+        message.From.Add(new MailboxAddress("MSDS", email?.SenderEmail!));
         //message.ReplyTo.Add(new MailboxAddress(hrName, hrEmail));
 
 
         // Recipient's email 
-        message.To.Add(MailboxAddress.Parse(email.RecipientEmail));
-        message.Subject = email.Subject;
+        message.To.Add(MailboxAddress.Parse(email?.RecipientEmail!));
+        message.Subject = email?.Subject!;
         var bodyBuilder = new BodyBuilder { };
 
 

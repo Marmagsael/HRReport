@@ -10,6 +10,7 @@ public class UserClaimsModel
     public string?                  DefCompanyId            { get; set; } = string.Empty;
     public string?                  SchemaMain              { get; set; } = string.Empty;
     public string?                  SchemaMainPis           { get; set; } = string.Empty;
+    public string?                  SchemaMainPay           { get; set; } = string.Empty;
     public string?                  SchemaUserPis           { get; set; } = string.Empty;
     public string?                  SchemaUserPay           { get; set; } = string.Empty;
     public string?                  SchemaUserAms           { get; set; } = string.Empty;

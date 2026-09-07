@@ -4,17 +4,17 @@ namespace HRApiLibrary.Models._20_Pay;
 
 public class TbltranModel
 {
-    public string?      TRN             { get; set; }
+    public string?       TRN             { get; set; }
     public int?          EmpmasId        { get; set; }
-    public string?      EmpNumber       { get; set; }
-    public string?      AcctNumber      { get; set; }
-    public double       Qty             { get; set; }
-    public double       Rate            { get; set; }
+    public string?       EmpNumber       { get; set; }
+    public string?       AcctNumber      { get; set; }
+    public double        Qty             { get; set; }
+    public double        Rate            { get; set; }
     public int?          RateTypeId      { get; set; }
-    public double       Amount          { get; set; }
-    public DateTime     DTimeStamp      { get; set; }
+    public double?       Amount          { get; set; }
+    public DateTime?     DTimeStamp      { get; set; }
     public int?          Postedby        { get; set; }
-    public string?      Source          { get; set; } = "-";
+    public string?       Source          { get; set; } = "-";
     public int?          RefId           { get; set; }
     
     //-----------------------------------------------------
