@@ -31,5 +31,12 @@
         public string? MoERepAccess { get; set; }
 
         public string? Email { get; set; }
+
+         //---------------------------------------------
+        public string? NewPassword          { get; set; }
+        public string? VerifyPassword       { get; set; }
+
+        public string StatusName => Stat_ == "1" ? "Active" : "Disabled";
+
     }
 }

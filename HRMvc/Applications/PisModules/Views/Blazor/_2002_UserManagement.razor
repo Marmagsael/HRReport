@@ -1,115 +1,116 @@
-@using HRApiLibrary.DataAccess._00_Main.Interface
-@using HRMvc.Applications.PisModules.Views.Blazor._2002._2002_UA
-@using HRMvc.Applications.PisModules.Views.Blazor._2002._2002_UM
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using HRMvc.Applications.PisModules.Views.Blazor._2002
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
 
 <TelerikRootComponent>
-
-
-    @* =================================================
-         NOTIFICATION
-        ================================================= *@
-    <TelerikNotification @ref="@NotificationRef"
-                         HorizontalPosition="@NotificationHorizontalPosition.Right"
-                         VerticalPosition="@NotificationVerticalPosition.Top"
-                         AnimationType="@AnimationType.SlideLeft" />
-
+    <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
 
     <CascadingValue Value="@v">
         <CascadingValue Value="@NotificationRef">
-
-            @* =================================================
-             MODULE TITLE
-            ================================================= *@
-            <TelerikCard Height="100%">
-                <CardHeader>
-                    <h2 class="k-font-weight-bold  k-font-size-md">User Management</h2>
-                </CardHeader>
+            <_00BT_FullW HdrCaption="User Management">
+                <Details>
 
 
+                    @*--- USER FORM MODAL ---*@
+                    @if (v.ShowUserEntryModal == true)
+                    {
+                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserEntryModal = false" ModalWidth="65vh">
+                            <Content>
+                                <_2002_UserEntryForm />
+                            </Content>
+                        </_00Modal>
+                    }
 
-                <CardBody>
-                    <TelerikTabStrip ActiveTabId="@tab"
-                                     ActiveTabIdChanged="@OnTabChanged"
-                                     Height="calc(100vh - 120px)">
+                    @*--- USER ACCESS MODAL ---*@
+                    @if (v.ShowUserAccessModal == true)
+                    {
+                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserAccessModal = false">
+                            <Content>
+                                <_2002_UserAccess @ref="UserAccessModuleRef" />
+                            </Content>
+                        </_00Modal>
+                    }
 
-                        @* =================================================
-                           USER MANAGER TAB
-                        ================================================= *@
-                        <TabStripTab Id="usermanager" Title="User Manager">
-                            <_2002_UserManager />
-                        </TabStripTab>
+                    @*---  GRID ---*@
+                    <_2002_UserManagerList ChildAction="@ChilAction" @ref="UserGridRef" />
 
-
-                        @* =================================================
-                            USER ACCESS TAB
-                        ================================================= *@
-                        <TabStripTab Id="useraccess" Title="User Access">
-                            <_2002_UserAccess @ref="UserAccessRef" ChildAction="@ChilAction" />
-                        </TabStripTab>
-
-
-                    </TelerikTabStrip>
-                </CardBody>
-            </TelerikCard>
+                </Details>
+            </_00BT_FullW>
         </CascadingValue>
     </CascadingValue>
-
-
-
-
 </TelerikRootComponent>
 
-@inject I_00UsersAccess _user
+
+
+
+
+@inject IOPisUsrDataAccess _usr
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     private V2002Model v = new();
     private TelerikNotification? NotificationRef;
-    private string tab = "useraccess";
 
-    private _2002_UserAccess? UserAccessRef;
+    private _2002_UserManagerList UserGridRef;
+    private _2002_UserAccess UserAccessModuleRef;
+
 
     protected override async Task OnInitializedAsync()
     {
-        if (Uc?.Conn == null || Uc.OpisDb == null || Uc.SchemaMain == null || Uc.SchemaMainPis == null )
+        if (Uc?.Conn == null || Uc.OpisDb == null || Uc.SchemaMain == null || Uc.SchemaMainPis == null)
         {
             v.UcLoaded = false;
             NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
-        v.OPisdb        = Uc.OpisDb;
-        v.Maindb        = Uc.SchemaMain;
-        v.Mainpisdb     = Uc.SchemaMainPis;
-        v.Module        = "pis";
-        v.Conn          = Uc.Conn;
+        v.OPisdb    = Uc.OpisDb;
+        v.Maindb    = Uc.SchemaMain;
+        v.Mainpisdb = Uc.SchemaMainPis;
+        v.Module    = "pis";
+        v.Conn      = Uc.Conn;
+
+        await LoadUsers();
+        if (UserGridRef != null) await UserGridRef.SetInitialFilter();
 
         v.UcLoaded = true;
     }
 
-    private async Task OnTabChanged(string id)
+
+
+    private async Task LoadUsers()
     {
-        tab = id;
-
-        if (id == "usermanager")
+        try
         {
-
+            var res = await _usr._02(v.OPisdb, v.Conn);
+            if (res.Any()) { v.Users = res; }
         }
-
-
-        if (id == "useraccess" && UserAccessRef != null)
+        catch (Exception)
         {
-            await UserAccessRef.ResetTab();
+            NotificationRef?.Show("Unable To Load Users", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-
 
 
     private async Task ChilAction()
     {
+
+        if (v.Action == "OpenUserAccessModal") await OpenUserAccessModal();
     }
 
 
 
+
+    private async Task OpenUserAccessModal()
+    {
+
+        if (UserAccessModuleRef != null)
+        {
+            await UserAccessModuleRef.ResetTab();
+
+
+        }
+    }
 }
+

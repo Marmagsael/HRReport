@@ -1,0 +1,224 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+
+
+
+
+<TelerikGrid Data="@V.Users"
+             TItem="OPisUsrModel"
+             Sortable="true"
+             Navigable="true"
+             SelectionMode="GridSelectionMode.Single"
+             FilterMode="GridFilterMode.FilterMenu"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             @ref="@UserGridRef"
+             Height="calc(100vh - 90px)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+
+    @* --- CREATE USER BUTTON --- *@
+    <GridToolBarTemplate>
+        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" 
+                        @onclick="@(() => OpenUserEntryModal(new OPisUsrModel()))">
+            Add User
+        </button>
+    </GridToolBarTemplate>
+
+    <GridColumns>
+
+        @* --- LOGIN NAME --- *@
+        <GridColumn Field="@nameof(OPisUsrModel.LogName)"
+                    Title="Login Name"
+                    Width="150px" />
+
+        @* --- USER NAME --- *@
+        <GridColumn Field="@nameof(OPisUsrModel.UserName)"
+                    Title="User Name"
+                    Width="200px" />
+
+        @* --- STATUS  --- *@
+        <GridColumn Field="@nameof(OPisUsrModel.StatusName)"
+                    Title="Status"
+                    Width="140px"
+                    HeaderClass="text-center">
+
+            <Template Context="item" >
+                @{
+                    var user = (OPisUsrModel)item;
+                }
+
+                  <div class="d-flex justify-content-center">
+                    @if (user.Status == "A")
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Disabled</span>
+                    }
+                </div>
+            </Template>
+
+        </GridColumn>
+
+
+
+
+
+        <GridCommandColumn Title="Action"
+                           Width="180px"
+                           HeaderClass="text-center"
+                           >
+
+            <Template Context="item">
+
+                @{
+                    var usr = (OPisUsrModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+                    @* ---  EDIT BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => OpenUserEntryModal(usr))">
+                        Edit
+                    </button>
+
+                    @* ---  ACCESS BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => OpenUserAccessModal(usr))">
+                        Access
+                    </button>
+
+                    <TelerikDropDownButton Icon="@FontIcon.MoreVertical"
+                                           Class="card p-2 text-center h-35p mb-btn mb-btn-blue">
+
+                        <DropDownButtonItems>
+                            @* ---  ENABLE BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => EnableUser(usr))">
+                                Enable
+                            </DropDownButtonItem>
+
+                            @* ---  DISBALE BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => DisableUser(usr))">
+                                Disable
+                            </DropDownButtonItem>
+
+                            @* ---  DELETE BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => DeleteUser(usr))">
+                                Delete
+                            </DropDownButtonItem>
+
+                        </DropDownButtonItems>
+
+                    </TelerikDropDownButton>
+
+                </div>
+            </Template>
+        </GridCommandColumn>
+    </GridColumns>
+
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No users found.
+        </div>
+    </NoDataTemplate>
+</TelerikGrid>
+
+
+@inject IOPisUsrDataAccess _usr
+
+
+@code {
+    [CascadingParameter]
+    public V2002Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification  NotificationRef { get; set; } 
+
+    [Parameter]
+    public EventCallback        ChildAction     { get; set; }
+
+    private int PageSize { get; set; } = 25;
+    private List<int?>  PageSizes = new()   { 25, 50, 75, 100, null };
+
+    private TelerikGrid<OPisUsrModel> UserGridRef;
+
+
+
+
+    public async Task SetInitialFilter()
+    {
+        var state = UserGridRef.GetState();
+
+        state.FilterDescriptors = new List<IFilterDescriptor>
+        {
+            new Telerik.DataSource.FilterDescriptor
+            {
+                Member = nameof(OPisUsrModel.StatusName),
+                Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+                Value = "Active"
+            }
+        };
+
+        await UserGridRef.SetStateAsync(state);
+    }
+
+
+
+
+    private async Task OpenUserEntryModal(OPisUsrModel usr)
+    {
+        V.ShowUserAccessModal = false;
+
+        V.User = new OPisUsrModel();
+        V.ModalCaption = "Add User";
+
+        if (!string.IsNullOrWhiteSpace(usr.UserName))
+        {
+            V.User = usr;
+            V.ModalCaption = "Edit User";
+        }
+
+        V.ShowUserEntryModal = true;
+        await ChildAction.InvokeAsync();
+
+    }
+     
+
+
+
+    private async Task OpenUserAccessModal(OPisUsrModel usr)
+    {
+        V.ShowUserEntryModal = false;
+
+        V.User = new OPisUsrModel();
+
+        V.User = usr;
+        V.ModalCaption = "Select User Access";
+
+        V.ShowUserAccessModal = true;
+
+        V.Action = "OpenUserAccessModal";
+        await ChildAction.InvokeAsync();
+    }
+
+    private void EnableUser(OPisUsrModel usr)
+    {
+
+    }
+
+    private void DisableUser(OPisUsrModel usr)
+    {
+
+    }
+
+    private void DeleteUser(OPisUsrModel usr)
+    {
+
+    }
+}

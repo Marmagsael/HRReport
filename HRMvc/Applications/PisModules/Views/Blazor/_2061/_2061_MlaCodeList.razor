@@ -1,0 +1,122 @@
+﻿<TelerikGrid TItem="OMlacodeModel"
+             SelectionMode="@GridSelectionMode.Single"
+             Navigable="true"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             Sortable="true"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Height="calc(100vh - 90px)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+    @* --- CREATE USER BUTTON --- *@
+    <GridToolBarTemplate>
+
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    @onclick="@(() => OpenEntryModal(new OMlacodeModel()))">
+                Add Manila Code
+            </button>
+
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray">
+                Print Listing
+            </button>
+        </div>
+
+    </GridToolBarTemplate>
+
+
+    <GridColumns>
+
+        @* --- Code --- *@
+        <GridColumn Field="@nameof(OMlacodeModel.Code)"
+                    Title="Code"
+                    Width="150px" />
+
+        @* --- Name --- *@
+        <GridColumn Field="@nameof(OMlacodeModel.Name)"
+                    Title="Description"
+                    Width="150px" />
+
+
+
+        @* --- ACTIONS --- *@
+        <GridCommandColumn Title="Action"
+                           Width="100px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+
+                @{
+                    var rec = (OMlacodeModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => OpenEntryModal(rec))">
+                        Edit
+                    </button>
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                        Delete
+                    </button>
+
+                </div>
+
+            </Template>
+
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No manila code records found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
+
+@code {
+    [CascadingParameter]
+    public V2061Model V { get; set; } = new();
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+    private async Task OpenEntryModal(OMlacodeModel rec)
+    {
+        V.MlaCode = new OMlacodeModel();
+        V.ModalCaption = "Add Manila Code";
+
+        if (!string.IsNullOrWhiteSpace(rec.Code))
+        {
+            V.ModalCaption = "Edit Manila Code";
+            V.MlaCode = rec;
+        }
+
+        V.ShowEntryModal = true;
+        await ChildAction.InvokeAsync();
+    }
+
+  
+}
+
