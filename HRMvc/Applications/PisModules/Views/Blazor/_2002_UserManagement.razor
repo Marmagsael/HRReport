@@ -2,49 +2,51 @@
 @using HRMvc.Applications.PisModules.Views.Blazor._2002
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 
+
 <TelerikRootComponent>
     <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
 
-    <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
-            <_00BT_FullW HdrCaption="User Management">
-                <Details>
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
 
-                    @*--- USER FORM MODAL ---*@
-                    @if (v.ShowUserEntryModal == true)
-                    {
-                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserEntryModal = false" ModalWidth="65vh">
-                            <Content>
-                                <_2002_UserEntryForm />
-                            </Content>
-                        </_00Modal>
-                    }
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+                <_00BT_FullW HdrCaption="User Management">
+                    <Details>
+                        @*--- USER FORM MODAL ---*@
+                        @if (v.ShowUserEntryModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserEntryModal = false">
+                                <Content>
+                                     <_2002_UserListForm ChildAction="@ChilAction" /> 
+                                </Content>
+                            </_00Modal>
+                        }
 
-                    @*--- USER ACCESS MODAL ---*@
-                    @if (v.ShowUserAccessModal == true)
-                    {
-                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserAccessModal = false">
-                            <Content>
-                                <_2002_UserAccess @ref="UserAccessModuleRef" />
-                            </Content>
-                        </_00Modal>
-                    }
+                        @*--- USER ACCESS MODAL ---*@
+                        @if (v.ShowUserAccessModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserAccessModal = false">
+                                <Content>
+                                    <_2002_UserAccess @ref="UserAccessRef" />
+                                </Content>
+                            </_00Modal>
+                        }
 
-                    @*---  GRID ---*@
-                    <_2002_UserManagerList ChildAction="@ChilAction" @ref="UserGridRef" />
+                        @*--- GRID ---*@
+                        <_2002_UserManagerList ChildAction="@ChilAction" @ref="UserListGridRef" />
 
-                </Details>
-            </_00BT_FullW>
+                    </Details>
+                </_00BT_FullW>
+            </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 </TelerikRootComponent>
 
 
-
-
-
-@inject IOPisUsrDataAccess _usr
+@inject IOEmpmasDataAccess _empmas
+@inject IOPisDomainusrDataAccess _usr
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
@@ -52,8 +54,8 @@
     private V2002Model v = new();
     private TelerikNotification? NotificationRef;
 
-    private _2002_UserManagerList UserGridRef;
-    private _2002_UserAccess UserAccessModuleRef;
+    private _2002_UserManagerList   UserListGridRef;
+    private _2002_UserAccess        UserAccessRef;
 
 
     protected override async Task OnInitializedAsync()
@@ -65,52 +67,53 @@
             return;
         }
 
-        v.OPisdb    = Uc.OpisDb;
-        v.Maindb    = Uc.SchemaMain;
-        v.Mainpisdb = Uc.SchemaMainPis;
-        v.Module    = "pis";
-        v.Conn      = Uc.Conn;
+        v.OPisdb        = Uc.OpisDb;
+        v.Maindb        = Uc.SchemaMain;
+        v.Mainpisdb     = Uc.SchemaMainPis;
+        v.Module        = "pis";
+        v.Conn          = Uc.Conn;
 
         await LoadUsers();
-        if (UserGridRef != null) await UserGridRef.SetInitialFilter();
+
+        if (UserListGridRef != null) await UserListGridRef.SetInitialFilter();
 
         v.UcLoaded = true;
     }
 
 
-
     private async Task LoadUsers()
     {
+        v.IsLoading = true;
+
         try
         {
             var res = await _usr._02(v.OPisdb, v.Conn);
-            if (res.Any()) { v.Users = res; }
+
+            if (res.Any())
+            {
+                v.Users = res;
+            }
         }
         catch (Exception)
         {
             NotificationRef?.Show("Unable To Load Users", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
         }
     }
 
 
     private async Task ChilAction()
     {
+        if (v.Action == "RebindUserListGrid")   if (UserListGridRef != null) UserListGridRef.RebindGrid();
+        if (v.Action == "ResetUserAccessGrid")  if (UserAccessRef != null) await UserAccessRef.ResetGrid();
 
-        if (v.Action == "OpenUserAccessModal") await OpenUserAccessModal();
     }
 
 
-
-
-    private async Task OpenUserAccessModal()
-    {
-
-        if (UserAccessModuleRef != null)
-        {
-            await UserAccessModuleRef.ResetTab();
-
-
-        }
-    }
+ 
 }
+
 

@@ -213,6 +213,7 @@ public static class ApiExt
         builder.Services.AddScoped<IODeprecDataAccess, ODeprecDataAccess>();
         builder.Services.AddScoped<IOPisReportDataAccess, OPisReportDataAccess>();
         builder.Services.AddScoped<IOPisDomainaccessDataAccess, OPisDomainaccessDataAccess>();
+        builder.Services.AddScoped<IOPisDomainusrDataAccess, OPisDomainusrDataAccess>();
         builder.Services.AddScoped<IOPisUsrDataAccess, OPisUsrDataAccess>();
         builder.Services.AddScoped<IOInsuranceDataAccess, OInsuranceDataAccess>();
 

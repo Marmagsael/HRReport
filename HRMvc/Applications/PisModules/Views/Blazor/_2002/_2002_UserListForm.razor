@@ -1,0 +1,249 @@
+﻿@using HRMvc.Applications._00GeneralComponents.FormComponents
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOEmpmasDataAccess _empmas
+@inject IOPisDomainusrDataAccess _usr
+
+
+<TelerikGrid Data="@V.Employees"
+             TItem="OEmpmasModel"
+             Sortable="true"
+             Navigable="true"
+             SelectionMode="GridSelectionMode.Single"
+             FilterMode="GridFilterMode.FilterMenu"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             @ref="@EmpmasGridRef"
+             Height="calc(100vh - 40vh)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+    <GridToolBarTemplate>
+        <div class="d-flex gap-2 flex-column flex-md-row mb-2 w-100">
+
+            <div class="col-12 col-md-6 col-lg-4">
+                <TelerikTextBox @bind-Value="@EmployeeName"
+                                Width="100%"
+                                TabIndex="1"
+                                Placeholder="Enter employee name" />
+            </div>
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    type="button"
+                    tabindex="2"
+                    disabled="@V.IsLoading"
+                    @onclick="GetEmployee">
+
+                Search Employee
+
+            </button>
+
+        </div>
+    </GridToolBarTemplate>
+
+    <GridColumns>
+
+        <GridColumn Field="@nameof(OEmpmasModel.EmpNumber)"
+                    Title="Employee No." />
+
+        <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
+                    Title="Employee Name" />
+
+        <GridColumn Field="@nameof(OEmpmasModel.EmpStatus)"
+                    Title="Status"
+                    Width="150px"
+                    HeaderClass="text-center">
+
+            <Template Context="item">
+                @{
+                    var emp = (OEmpmasModel)item;
+                    var status = emp.EmpStatus?.ToUpper().Trim();
+                }
+
+                <div class="d-flex justify-content-center">
+
+                    @if (status == "ACTIVE" )
+                    {
+                        <span class="badge bg-success">
+                            Active
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">
+                            @status
+                        </span>
+                    }
+
+                </div>
+            </Template>
+
+        </GridColumn>
+
+        <GridCommandColumn Title="Action"
+                           Width="180px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+                @{
+                    var employee = (OEmpmasModel)item;
+                }
+
+                <div class="d-flex justify-content-center">
+
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                            type="button"
+                            tabindex="3"
+                            disabled="@V.IsLoading"
+                            @onclick="() => AddEmployee(employee)">
+
+                        Add
+
+                    </button>
+
+                </div>
+
+            </Template>
+
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No employees found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
+
+@code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2002Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification NotificationRef { get; set; }
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes { get; set; } =
+        new() { 25, 50, 75, 100, null };
+
+    private string EmployeeName { get; set; } = string.Empty;
+
+    private TelerikGrid<OEmpmasModel>? EmpmasGridRef;
+
+
+
+    private async Task GetEmployee()
+    {
+        var empname = EmployeeName.Trim();
+
+        if (empname.Length < 3)
+        {
+            NotificationRef?.Show("Enter at least 3 characters.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        if (V.IsLoading)
+            return;
+
+        V. IsLoading = true;
+
+        try
+        {
+            V.Employees = [];
+            var res = await _empmas._02ByLNameAndFNamesNoUserAccess(empname.ToUpperInvariant(), V.OPisdb, V.Conn);
+            if (res.Any())
+            {
+                V.Employees = res;
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show("Unable to search employees.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            V.IsLoading = false;
+        }
+    }
+
+
+    private async Task AddEmployee(OEmpmasModel employee)
+    {
+        if (employee is null) return;
+
+        if (V.IsLoading) return;
+
+        if (string.IsNullOrWhiteSpace(employee.EmpNumber))
+        {
+            NotificationRef?.Show("Invalid employee number.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        if (Uc.UserId == 0)
+        {
+            NotificationRef?.Show("Unable to identify the current user.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        V.IsLoading = true;
+
+        try
+        {
+            var existingUser = await _usr._02(employee.EmpNumber, V.OPisdb, V.Conn);
+            if (existingUser != null && !string.IsNullOrWhiteSpace(existingUser.Empnumber) )
+            {
+                NotificationRef?.Show( "Employee is already added as a user.", ThemeConstants.Notification.ThemeColor.Warning);
+                return;
+            }
+
+            var userrec = new OPisDomainusrModel
+            {
+                Empnumber   = employee.EmpNumber,
+                Status      = "A",
+                CreatedBy   = Uc.UserId
+            };
+
+            var res = await _usr._01(userrec, V.OPisdb, V.Conn);
+
+            if (res != null && !string.IsNullOrWhiteSpace(res.Empnumber))
+            {
+
+                res.FullName = employee.Fullname;
+
+                V.Users.Insert(0, res);
+                V.Action = "RebindUserListGrid";
+                await ChildAction.InvokeAsync();
+
+                NotificationRef?.Show($"{employee.Fullname} was added successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to add employee.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show($"Unable to add employee {ex}.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            V.IsLoading = false;
+            await ChildAction.InvokeAsync();
+        }
+    }
+}
+
+

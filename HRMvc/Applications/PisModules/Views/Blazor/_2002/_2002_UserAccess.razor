@@ -3,27 +3,24 @@
 @using HRMvc.Applications._00GeneralComponents.FormComponents
 @using Telerik.SvgIcons
 
-
-@inject I_00UsersAccess _user
 @inject IMenuDataAccess _menu
 @inject IOPisDomainaccessDataAccess _domainaccess
 
 <TelerikStackLayout Orientation="StackLayoutOrientation.Vertical"
                     Spacing="12px">
 
-
     @* --- Change Password Button --- *@
     <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
 
-        <div class="d-flex flex-column flex-md-row ">
+        <div class="d-flex flex-column flex-md-row">
 
             <label class="fw-normal w-180p">
-               User Name
+                User Name
             </label>
 
             <div class="col-12">
 
-                <TelerikTextBox @bind-Value="@V.User.UserName"
+                <TelerikTextBox @bind-Value="@V.User.FullName"
                                 Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                 FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                 ReadOnly
@@ -37,123 +34,126 @@
 
     </div>
 
-        <TelerikStackLayout Orientation="StackLayoutOrientation.Horizontal"
-                            Spacing="12px"
-                            Width="100%">
+    <TelerikStackLayout Orientation="StackLayoutOrientation.Horizontal"
+                        Spacing="12px"
+                        Width="100%">
 
+        @* =================================================
+           SYSTEM MENU
+           ================================================= *@
 
-            @* =================================================
-                SYSTEM MENU
-                ================================================= *@
+        <TelerikCard Width="50%" Class="h-100">
 
-            <TelerikCard Width="50%" Class="h-100">
+            <CardHeader>
 
-                <CardHeader>
+                <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
+                                ThemeColor="primary" />
 
-                    <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
-                                    ThemeColor="primary" />
+                <span class="fw-medium ms-2">
+                    System Menu
+                </span>
 
-                    <span class="fw-medium ms-2">
-                        System Menu
-                    </span>
+            </CardHeader>
 
-                </CardHeader>
+            <CardBody Class="p-0">
 
-                <CardBody Class="p-0">
+                <TelerikGrid @ref="@SystemMenuGridRef"
+                             TItem="MenuModel"
+                             Data="@V.SystemMenus"
+                             Height="500px"
+                             Pageable="true"
+                             Sortable="true"
+                             FilterMode="@GridFilterMode.FilterMenu"
+                             Resizable="true"
+                             Reorderable="true"
+                             Navigable="true"
+                             SelectionMode="@GridSelectionMode.Single"
+                             SelectedItems="@V.SelectedSystemMenu"
+                             SelectedItemsChanged="@SystemMenuSelectionChanged">
 
-                    <TelerikGrid @ref="@SystemMenuGridRef"
-                                 TItem="MenuModel"
-                                 Data="@V.SystemMenus"
-                                 Height="500px"
-                                 Pageable="true"
-                                 Sortable="true"
-                                 FilterMode="@GridFilterMode.FilterMenu"
-                                 Resizable="true"
-                                 Reorderable="true"
-                                 Navigable="true"
-                                 SelectionMode="@GridSelectionMode.Single"
-                                 SelectedItems="@V.SelectedSystemMenu"
-                                 SelectedItemsChanged="@SystemMenuSelectionChanged">
+                    <GridColumns>
 
-                        <GridColumns>
+                        <GridCheckboxColumn Width="50px"
+                                            Resizable="false"
+                                            SelectAll="false" />
 
-                            <GridCheckboxColumn Width="50px"
-                                                Resizable="false"
-                                                SelectAll="false" />
+                        <GridColumn Field="@nameof(MenuModel.DispText)"
+                                    Title="Menu" />
 
-                            <GridColumn Field="@nameof(MenuModel.DispText)"
-                                        Title="Menu" />
+                    </GridColumns>
 
-                        </GridColumns>
+                </TelerikGrid>
 
-                    </TelerikGrid>
+            </CardBody>
 
-                </CardBody>
+        </TelerikCard>
 
-            </TelerikCard>
+        @* =================================================
+           SUB MENU
+           ================================================= *@
 
+        <TelerikCard Width="50%" Class="h-100">
 
-            @* =================================================
-                SUB MENU
-                ================================================= *@
+            <CardHeader>
 
-            <TelerikCard Width="50%" Class="h-100">
+                <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
+                                ThemeColor="primary" />
 
-                <CardHeader>
+                <span class="fw-medium ms-2">
+                    Sub Menu
+                </span>
 
-                    <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
-                                    ThemeColor="primary" />
+            </CardHeader>
 
-                    <span class="fw-medium ms-2">
-                        Sub Menu
-                    </span>
+            <CardBody Class="p-0">
 
-                </CardHeader>
+                <TelerikGrid @ref="@DtlsMenuGridRef"
+                             TItem="MenuModel"
+                             Data="@V.DtlsMenus"
+                             Height="500px"
+                             Pageable="true"
+                             Sortable="true"
+                             FilterMode="@GridFilterMode.FilterMenu"
+                             Resizable="true"
+                             Reorderable="true"
+                             Navigable="true"
+                             SelectionMode="@GridSelectionMode.Multiple"
+                             SelectedItems="@V.SelectedDtlsMenu"
+                             SelectedItemsChanged="@DtlsMenuSelectionChanged"
+                             @bind-PageSize="@PageSize">
 
-                <CardBody Class="p-0">
+                    <GridSettings>
 
-                    <TelerikGrid @ref="@DtlsMenuGridRef"
-                                 TItem="MenuModel"
-                                 Data="@V.DtlsMenus"
-                                 Height="500px"
-                                 Pageable="true"
-                                 Sortable="true"
-                                 FilterMode="@GridFilterMode.FilterMenu"
-                                 Resizable="true"
-                                 Reorderable="true"
-                                 Navigable="true"
-                                 SelectionMode="@GridSelectionMode.Multiple"
-                                 SelectedItems="@V.SelectedDtlsMenu"
-                                 SelectedItemsChanged="@DtlsMenuSelectionChanged"
-                                 @bind-PageSize="@PageSize">
+                        <GridPagerSettings PageSizes="@PageSizes" />
 
-                <GridSettings>
-                    <GridPagerSettings PageSizes="@PageSizes" />
-                </GridSettings>
+                    </GridSettings>
 
-                        <GridColumns>
+                    <GridColumns>
 
-                            <GridCheckboxColumn Width="50px"
-                                                Resizable="false" />
+                        <GridCheckboxColumn Width="50px"
+                                            Resizable="false" />
 
-                            <GridColumn Field="@nameof(MenuModel.DispText)"
-                                        Title="Menu" />
+                        <GridColumn Field="@nameof(MenuModel.DispText)"
+                                    Title="Menu" />
 
-                        </GridColumns>
+                    </GridColumns>
 
-                    </TelerikGrid>
+                </TelerikGrid>
 
-                </CardBody>
+            </CardBody>
 
-            </TelerikCard>
+        </TelerikCard>
 
-        </TelerikStackLayout>
-
+    </TelerikStackLayout>
 
 </TelerikStackLayout>
 
 
 @code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
     [CascadingParameter]
     public V2002Model V { get; set; } = new();
 
@@ -169,6 +169,7 @@
     private List<MenuModel?> previousDtlsSelections = [];
 
     private int PageSize { get; set; } = 25;
+
     private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
 
 
@@ -181,59 +182,68 @@
     }
 
 
-
     private async Task LoadSystemMenu()
     {
+        V.SystemMenus = [];
+
         try
         {
-            var result = await _menu._02ByType("shdr", V.Mainpisdb, V.Conn);
+            var res = await _menu._02ByType("shdr", V.Mainpisdb, V.Conn);
 
-            V.SystemMenus = result ?? [];
+            if (res.Any())
+            {
+                V.SystemMenus = res;
+            }
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show("Unable to load system menu. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show(
+                "Unable to load system menu. Please try again.",
+                ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
 
-
-
     private async Task SystemMenuSelectionChanged(IEnumerable<MenuModel> selectedItems)
     {
-        V.SelectedSystemMenu = selectedItems?.ToList() ?? [];
-
+        V.SelectedSystemMenu = selectedItems.ToList();
         V.DtlsMenus = [];
         V.SelectedDtlsMenu = [];
-
         previousDtlsSelections = [];
 
         await ResetDtlsMenuGrid();
 
         var selectedMenu = V.SelectedSystemMenu.FirstOrDefault();
 
-        if (selectedMenu?.Id is int id)
-        {
-            await LoadDetailsMenu(id);
-        }
+        await LoadDetailsMenu(selectedMenu?.Id);
     }
 
 
-    private async Task LoadDetailsMenu(int idparent)
+    private async Task LoadDetailsMenu(int? idparent)
     {
-        if (string.IsNullOrWhiteSpace(V.User.UserName))
+        if (string.IsNullOrWhiteSpace(V.User.Empnumber))
             return;
 
         try
         {
-            var result = await _menu._02ByIdParent(idparent, V.Mainpisdb, V.Conn);
+            var result = await _menu._02ByIdParent( idparent,V.Mainpisdb, V.Conn);
 
-            V.DtlsMenus = result ?? [];
+            if (result.Any())
+            {
+                V.DtlsMenus = result;
+            }
 
-            var access = await _domainaccess._02ByUserName_Module(V.User.LogName, V.Module, V.OPisdb, V.Conn) ?? [];
-            var accessMenuIds = access.Where(a => a.Idsysmenu.HasValue).Select(a => a.Idsysmenu!.Value).ToList();
+            var access = await _domainaccess._02ByUserName_Module( V.User.Empnumber, V.Module,  V.OPisdb, V.Conn);
 
-            V.SelectedDtlsMenu = V.DtlsMenus.Where(m => m.Id.HasValue && accessMenuIds.Contains(m.Id.Value)).ToList();
+            var userAccessMenuIds = access
+                .Where(a => a.Idsysmenu.HasValue)
+                .Select(a => a.Idsysmenu!.Value)
+                .ToList();
+
+            V.SelectedDtlsMenu = V.DtlsMenus
+                .Where(m => m.Id.HasValue && userAccessMenuIds.Contains(m.Id.Value))
+                .ToList();
+
             previousDtlsSelections = V.SelectedDtlsMenu.ToList();
         }
         catch (Exception ex)
@@ -242,79 +252,76 @@
             V.SelectedDtlsMenu = [];
             previousDtlsSelections = [];
 
-            NotificationRef?.Show("Unable to load sub menus. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show( "Unable to load sub menus. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
 
-
     private async Task DtlsMenuSelectionChanged(IEnumerable<MenuModel?> selectedItems)
     {
-        if (string.IsNullOrWhiteSpace(V.User.LogName))
+        if (string.IsNullOrWhiteSpace(V.User.Empnumber))
         {
             V.SelectedDtlsMenu = previousDtlsSelections.ToList();
 
-            NotificationRef?.Show("Unable to assign access. Please select a user first.", ThemeConstants.Notification.ThemeColor.Warning);
+            NotificationRef?.Show( "Unable to assign access. Please select a user first.", ThemeConstants.Notification.ThemeColor.Warning);
 
             return;
         }
 
         var newSelections = selectedItems?.ToList();
 
-        var toInsert = newSelections
-            .Where(n => !previousDtlsSelections.Any(o => o.Id == n.Id))
-            .ToList();
-
-        var toRemove =  previousDtlsSelections
-            .Where(o => !newSelections.Any(n => n.Id == o.Id))
-            .ToList();
-
+        var toInsert = newSelections.Where(n => !previousDtlsSelections.Any(o => o.Id == n.Id)) .ToList();
+        var toRemove = previousDtlsSelections .Where(o => !newSelections.Any(n => n.Id == o.Id)) .ToList();
 
         if (!toInsert.Any() && !toRemove.Any())
         {
             V.SelectedDtlsMenu = newSelections;
-            return;
-        }
-
-
-        var insertSuccess = true;
-
-        if (toInsert.Any())
-        {
-            insertSuccess = await InsertDtlsMenu(toInsert);
-        }
-
-
-        var removeSuccess = true;
-
-        if (toRemove.Any())
-        {
-            removeSuccess = await RemoveDtlsMenu(toRemove);
-        }
-
-
-        // SUCCESS --
-        if (insertSuccess && removeSuccess)
-        {
-            V.SelectedDtlsMenu = newSelections;
-            previousDtlsSelections = newSelections.ToList();
-
-            NotificationRef?.Show("User access has been updated.", ThemeConstants.Notification.ThemeColor.Success);
 
             return;
         }
 
+        try
+        {
+            var insertSuccess = true;
 
-        // FAILURE --
-        V.SelectedDtlsMenu = previousDtlsSelections.ToList();
-        await ResetDtlsMenuGrid();
-        NotificationRef?.Show("Unable to update user access. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            if (toInsert.Any())
+            {
+                insertSuccess = await InsertDtlsMenu(toInsert);
+            }
+
+            var removeSuccess = true;
+
+            if (toRemove.Any())
+            {
+                removeSuccess = await RemoveDtlsMenu(toRemove);
+            }
+
+            if (insertSuccess && removeSuccess)
+            {
+                V.SelectedDtlsMenu = newSelections;
+                previousDtlsSelections = newSelections.ToList();
+
+                NotificationRef?.Show( "User access has been updated.", ThemeConstants.Notification.ThemeColor.Success);
+
+                return;
+            }
+
+            V.SelectedDtlsMenu = previousDtlsSelections.ToList();
+
+            await ResetDtlsMenuGrid();
+
+            NotificationRef?.Show( "Unable to update user access. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show( "Unable to update user access. Please try again.",ThemeConstants.Notification.ThemeColor.Error);
+        }
     }
 
 
     private async Task<bool> InsertDtlsMenu(List<MenuModel?> data)
     {
-        if (string.IsNullOrWhiteSpace(V.User.LogName))
+        if (string.IsNullOrWhiteSpace(V.User.Empnumber))
             return false;
 
         try
@@ -323,9 +330,9 @@
             {
                 var domainaccess = new OPisDomainaccessModel()
                 {
-                    Username = V.User.LogName,
-                    Idsysmenu = menu.Id,
-                    Module = V.Module
+                    Username    = V.User.Empnumber,
+                    Idsysmenu   = menu.Id,
+                    Module      = V.Module
                 };
 
                 await _domainaccess._01(domainaccess, V.OPisdb, V.Conn);
@@ -342,7 +349,7 @@
 
     private async Task<bool> RemoveDtlsMenu(List<MenuModel?> data)
     {
-        if (string.IsNullOrWhiteSpace(V.User.LogName))
+        if (string.IsNullOrWhiteSpace(V.User.Empnumber))
             return false;
 
         try
@@ -351,12 +358,12 @@
             {
                 var domainaccess = new OPisDomainaccessModel()
                 {
-                    Username = V.User.LogName,
-                    Idsysmenu = menu.Id,
-                    Module = V.Module
+                    Username    = V.User.Empnumber,
+                    Idsysmenu   = menu.Id,
+                    Module      = V.Module
                 };
 
-                await _domainaccess._04ByUserName_Idsysmenu_Module(domainaccess, V.OPisdb, V.Conn);
+                await _domainaccess._04ByUserName_Idsysmenu_Module( domainaccess, V.OPisdb, V.Conn);
             }
 
             return true;
@@ -368,16 +375,13 @@
     }
 
 
-
-
     private void ClearMenuState()
     {
-        V.SystemMenus = [];
-        V.DtlsMenus = [];
-        V.SelectedSystemMenu = [];
-        V.SelectedDtlsMenu = [];
+        V.DtlsMenus             = [];
+        V.SelectedSystemMenu    = [];
+        V.SelectedDtlsMenu      = [];
 
-        previousDtlsSelections = [];
+        previousDtlsSelections  = [];
     }
 
 
@@ -396,7 +400,6 @@
     }
 
 
-
     private async Task ResetDtlsMenuGrid()
     {
         if (DtlsMenuGridRef == null)
@@ -412,16 +415,11 @@
     }
 
 
-    public async Task ResetTab()
+    public async Task ResetGrid()
     {
-        V.SelectedMenu = string.Empty;
-
         ClearMenuState();
 
         await ResetSystemMenuGrid();
         await ResetDtlsMenuGrid();
     }
 }
-
-
-
