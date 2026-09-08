@@ -1,28 +1,30 @@
-﻿@using HRApiLibrary.DataAccess._20_Pay.OPay;
-@using HRApiLibrary.Models._20_Pay.OPay;
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay.OPay
 @using HRMvc.Applications.PayrollTransaction.Vars;
+
+@inject IODomainusrDataAccess _usr
 
 
 <TelerikGrid Data="@V.Users"
-             TItem="OUsrModel"
+             TItem="ODomainusrModel"
              Sortable="true"
              Navigable="true"
              SelectionMode="GridSelectionMode.Single"
              FilterMode="GridFilterMode.FilterMenu"
              Pageable="true"
-             @bind-PageSize="@PageSize"
+             @bind-PageSize="@V.PageSize"
              @ref="@UserGridRef"
              Height="calc(100vh - 90px)">
 
     <GridSettings>
-        <GridPagerSettings PageSizes="@PageSizes" />
+        <GridPagerSettings PageSizes="@V.PageSizes" />
     </GridSettings>
 
 
     @* --- CREATE USER BUTTON --- *@
     <GridToolBarTemplate>
         <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" 
-                        @onclick="@(() => OpenUserEntryModal(new OUsrModel()))">
+                        @onclick="@(() => OpenUserEntryModal(new ODomainusrModel()))">
             Add User
         </button>
     </GridToolBarTemplate>
@@ -30,27 +32,29 @@
     <GridColumns>
 
         @* --- LOGIN NAME --- *@
-        <GridColumn Field="@nameof(OUsrModel.UserName)"
-                    Title="Login Name"
-                    Width="150px" />
+        <GridColumn Field="@nameof(ODomainusrModel.Empnumber)"
+                    Title="Employee No."
+                    Width="100px" />
 
         @* --- USER NAME --- *@
-        <GridColumn Field="@nameof(OUsrModel.FullName)"
-                    Title="User Name"
-                    Width="200px" />
+        <GridColumn Field="@nameof(ODomainusrModel.FullName)"
+                    Title="Name"
+                    Width="220px"
+                    Resizable/>
 
         @* --- STATUS  --- *@
-        <GridColumn Field="@nameof(OUsrModel.StatusName)"
+         <GridColumn Field="@nameof(ODomainusrModel.StatusName)"
                     Title="Status"
-                    Width="140px">
+                    Width="100px"
+                    HeaderClass="text-center">
 
             <Template Context="item" >
                 @{
-                    var user = (OUsrModel)item;
+                    var user = (ODomainusrModel)item;
                 }
 
                   <div class="d-flex justify-content-center">
-                    @if (user.Stat_ == "1")
+                    @if (user.Status == "A")
                     {
                         <span class="badge bg-success">Active</span>
                     }
@@ -61,36 +65,81 @@
                 </div>
             </Template>
 
-        </GridColumn>
+        </GridColumn> 
+
+
+
 
 
         <GridCommandColumn Title="Action"
-                           Width="180px"
+                           Width="100px"
                            HeaderClass="text-center">
 
             <Template Context="item">
-
                 @{
-                    var usr = (OUsrModel)item;
+                    var usr = (ODomainusrModel)item;
                 }
 
-                <div class="d-flex justify-content-center gap-2">
-                    @* ---  EDIT BUTTON --- *@
-                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="@(() => OpenUserEntryModal(usr))">
-                        Edit
-                    </button>
+                
+                @* ---- FOR DESKTOP -----*@
+                <div class="d-none d-md-block">
+                    <div class="d-flex justify-content-center gap-2">
 
-                    @* ---  ACCESS BUTTON --- *@
-                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="@(() => OpenUserAccessModal(usr))">
-                        Access
-                    </button>
+                        @* ---  ACCESS BUTTON --- *@
+                        <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                                @onclick="@(() => OpenUserAccessModal(usr))">
+                            Access
+                        </button>
 
-                    <TelerikDropDownButton Icon="@FontIcon.MoreVertical"
+                        @* ---  DELETE BUTTON --- *@
+                        <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                                @onclick="@(() => DeleteUser(usr))">
+                            Delete
+                        </button>
+
+                        <TelerikDropDownButton Icon="@FontIcon.MoreVertical"
+                                               Class="card p-2 text-center h-35p mb-btn mb-btn-blue">
+
+                            <DropDownButtonItems>
+                                @* ---  ENABLE BUTTON --- *@
+                                <DropDownButtonItem OnClick="@(() => EnableUser(usr))">
+                                    Enable
+                                </DropDownButtonItem>
+
+                                @* ---  DISBALE BUTTON --- *@
+                                <DropDownButtonItem OnClick="@(() => DisableUser(usr))">
+                                    Disable
+                                </DropDownButtonItem>
+
+
+                            </DropDownButtonItems>
+
+                        </TelerikDropDownButton>
+
+                    </div>
+                </div>
+               
+
+                @* ---- FOR MOBILE -----*@
+                <div class="d-block d-md-none">
+                    <TelerikDropDownButton Icon="@FontIcon.MoreHorizontal"
                                            Class="card p-2 text-center h-35p mb-btn mb-btn-blue">
 
                         <DropDownButtonItems>
+
+
+                            @* ---  ACCESS BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => OpenUserAccessModal(usr))">
+                                Access
+                            </DropDownButtonItem>
+
+
+                            @* ---  DELETE BUTTON --- *@
+                            <DropDownButtonItem OnClick="@(() => DeleteUser(usr))">
+                                Delete
+                            </DropDownButtonItem>
+
+
                             @* ---  ENABLE BUTTON --- *@
                             <DropDownButtonItem OnClick="@(() => EnableUser(usr))">
                                 Enable
@@ -101,21 +150,13 @@
                                 Disable
                             </DropDownButtonItem>
 
-                            @* ---  DELETE BUTTON --- *@
-                            <DropDownButtonItem OnClick="@(() => DeleteUser(usr))">
-                                Delete
-                            </DropDownButtonItem>
 
                         </DropDownButtonItems>
 
                     </TelerikDropDownButton>
-
                 </div>
             </Template>
-
         </GridCommandColumn>
-
-
     </GridColumns>
 
 
@@ -127,22 +168,28 @@
 </TelerikGrid>
 
 
-@inject IOUsrDataAccess _usr;
 
 @code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+
     [CascadingParameter]
     public V103Model V { get; set; } = new();
 
     [CascadingParameter]
-    public TelerikNotification NotificationRef { get; set; }
+    public TelerikNotification?  NotificationRef { get; set; } 
+
+    [CascadingParameter]
+    public DialogFactory?        DialogsRef      { get; set; }
 
     [Parameter]
-    public EventCallback ChildAction { get; set; }
+    public EventCallback        ChildAction      { get; set; }
 
-    private int PageSize { get; set; } = 25;
-    private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
 
-    private TelerikGrid<OUsrModel> UserGridRef;
+
+    private TelerikGrid<ODomainusrModel> UserGridRef;
 
 
 
@@ -155,7 +202,7 @@
         {
             new Telerik.DataSource.FilterDescriptor
             {
-                Member = nameof(OUsrModel.StatusName),
+                Member = nameof(ODomainusrModel.StatusName),
                 Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
                 Value = "Active"
             }
@@ -167,20 +214,12 @@
 
 
 
-    private async Task OpenUserEntryModal(OUsrModel usr)
+    private async Task OpenUserEntryModal(ODomainusrModel usr)
     {
-        V.ShowUserAccessModal = false;
+        V.Employees = [];
 
-        V.User = new OUsrModel();
-        V.ModalCaption = "Add User";
-
-        if (!string.IsNullOrWhiteSpace(usr.UserName))
-        {
-            V.User = usr;
-            V.ModalCaption = "Edit User";
-        }
-
-        V.ShowUserEntryModal = true;
+        V.ModalCaption          = "Add User";
+        V.ShowUserEntryModal    = true;
         await ChildAction.InvokeAsync();
 
     }
@@ -188,33 +227,115 @@
 
 
 
-    private async Task OpenUserAccessModal(OUsrModel usr)
+    private async Task OpenUserAccessModal(ODomainusrModel usr)
     {
-        V.ShowUserEntryModal = false;
-
-        V.User = new OUsrModel();
-
         V.User = usr;
-        V.ModalCaption = "Select User Access";
-
-        V.ShowUserAccessModal = true;
-
-        V.Action = "OpenUserAccessModal";
+        V.ModalCaption          = "User Access Management ";
+        V.ShowUserAccessModal   = true;
+        V.Action                = "ResetUserAccessGrid";
         await ChildAction.InvokeAsync();
     }
 
-    private void EnableUser(OUsrModel usr)
+    private async Task EnableUser(ODomainusrModel usr)
     {
 
+        if(usr.Status == "A") return;
+
+        var confirmed = await DialogsRef.ConfirmAsync( $"Are you sure you want to enable '{usr.FullName}'?", "Confirm Enable User");
+        if (!confirmed) return;
+
+
+        try
+        {
+            var res = await _usr._03StatusOnly(usr.Empnumber, "A", V.OPaydb, V.Conn);
+            if (res != null && res.Status == "A")
+            {
+                usr.Status      = res.Status;   
+                
+                RebindGrid();
+                NotificationRef.Show("User status was updated successfully", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update user status", ThemeConstants.Notification.ThemeColor.Error);
+            }
+
+
+        }
+        catch (Exception)
+        {
+
+            NotificationRef.Show("Unable to update user status", ThemeConstants.Notification.ThemeColor.Error);
+        }
     }
 
-    private void DisableUser(OUsrModel usr)
+    private async Task DisableUser(ODomainusrModel usr)
     {
 
+
+        if (usr.Status == "D") return;
+
+
+        var confirmed = await DialogsRef.ConfirmAsync( $"Are you sure you want to disable '{usr.FullName}'?", "Confirm Disable User");
+        if (!confirmed) return;
+
+        try
+        {
+            var res = await _usr._03StatusOnly(usr.Empnumber, "D", V.OPaydb, V.Conn);
+            if (res != null && res.Status == "D")
+            {
+                usr.Status = res.Status;
+
+                RebindGrid();
+                NotificationRef.Show("User status was updated successfully", ThemeConstants.Notification.ThemeColor.Success);
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update user status", ThemeConstants.Notification.ThemeColor.Error);
+            }
+
+
+        }
+        catch (Exception)
+        {
+
+            NotificationRef.Show("Unable to update user status", ThemeConstants.Notification.ThemeColor.Error);
+        }
     }
 
-    private void DeleteUser(OUsrModel usr)
+    private async Task DeleteUser(ODomainusrModel usr)
     {
 
+
+        var confirmed = await DialogsRef?.ConfirmAsync( $"Are you sure you want to delete user '{usr.FullName}'?", "Confirm User Deletion");
+        if (!confirmed) return;
+
+
+        try
+        {
+            var res = await _usr._04(usr.Empnumber, V.OPaydb, V.Conn);
+
+            if (res == null)
+            {
+                V.Users.Remove(usr);
+                RebindGrid();
+                NotificationRef?.Show("User has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to delete user", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable to delete user", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    public void RebindGrid()
+    {
+        UserGridRef.Rebind();
     }
 }

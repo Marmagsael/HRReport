@@ -9,161 +9,172 @@
 @inject IMenuDataAccess _menu
 @inject IOPisDomainaccessDataAccess _domainaccess
 
+<div class="vh-max vh60">
+    <TelerikStackLayout Orientation="StackLayoutOrientation.Vertical"
+                        Spacing="12px">
 
-<TelerikStackLayout Orientation="StackLayoutOrientation.Vertical"
-                    Spacing="12px">
+        <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
 
-    <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
+            <div class="d-flex flex-column flex-md-row">
 
-        <div class="d-flex flex-column flex-md-row">
+                <label class="fw-normal w-180p">
+                    User Name
+                </label>
 
-            <label class="fw-normal w-180p">
-                User Name
-            </label>
+                <div class="col-12">
 
-            <div class="col-12">
+                    <TelerikTextBox @bind-Value="@V.User.FullName"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    ReadOnly
+                                    TabIndex="1"
+                                    AutoComplete="off">
+                    </TelerikTextBox>
 
-                <TelerikTextBox @bind-Value="@V.User.FullName"
-                                Rounded="@ThemeConstants.TextBox.Rounded.Large"
-                                FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                ReadOnly
-                                TabIndex="1"
-                                AutoComplete="off">
-                </TelerikTextBox>
+                </div>
 
             </div>
 
         </div>
 
-    </div>
+
+        <TelerikStackLayout Orientation="StackLayoutOrientation.Horizontal"
+                            Spacing="12px"
+                            Width="100%"
+                            Height="100%">
 
 
-    <TelerikStackLayout Orientation="StackLayoutOrientation.Horizontal"
-                        Spacing="12px"
-                        Width="100%">
-
-
-        @* =================================================
+            @* =================================================
            SYSTEM MENU
            ================================================= *@
 
-        <TelerikCard Width="50%" Class="h-100">
+            <TelerikCard Width="50%" Class="h-100">
 
-            <CardHeader>
+                <CardHeader>
 
-                <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
-                                ThemeColor="primary" />
+                    <div class="d-flex  justify-content-between align-items-center">
+                        <div>
+                            <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
+                                            ThemeColor="primary" />
 
-                <span class="fw-medium ms-2">
-                    System Menu
-                </span>
+                            <span class="fw-medium ms-2">
+                                System Menu
+                            </span>
+                        </div>
 
-            </CardHeader>
+                        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue invisible ">
+                           &nbsp;
+                        </button>
+                    </div>
 
-            <CardBody Class="p-0">
+                </CardHeader>
 
-                <TelerikGrid @ref="@SystemMenuGridRef"
-                             TItem="MenuModel"
-                             Data="@V.SystemMenus"
-                             Height="500px"
-                             Pageable="true"
-                             Sortable="true"
-                             FilterMode="@GridFilterMode.FilterMenu"
-                             Resizable="true"
-                             Reorderable="true"
-                             Navigable="true"
-                             SelectionMode="@GridSelectionMode.Single"
-                             SelectedItems="@V.SelectedSystemMenu"
-                             SelectedItemsChanged="@SystemMenuSelectionChanged">
+                <CardBody Class="p-0">
 
-                    <GridColumns>
+                    <TelerikGrid @ref="@SystemMenuGridRef"
+                                 TItem="MenuModel"
+                                 Data="@V.SystemMenus"
+                                 Height="400px"
+                                 Pageable="true"
+                                 Sortable="true"
+                                 FilterMode="@GridFilterMode.FilterMenu"
+                                 Resizable="true"
+                                 Reorderable="true"
+                                 Navigable="true"
+                                 SelectionMode="@GridSelectionMode.Single"
+                                 SelectedItems="@V.SelectedSystemMenu"
+                                 SelectedItemsChanged="@SystemMenuSelectionChanged">
 
-                        <GridCheckboxColumn Width="50px"
-                                            Resizable="false"
-                                            SelectAll="false" />
+                        <GridColumns>
 
-                        <GridColumn Field="@nameof(MenuModel.DispText)"
-                                    Title="Menu" />
+                            <GridCheckboxColumn Width="50px"
+                                                Resizable="false"
+                                                SelectAll="false" />
 
-                    </GridColumns>
+                            <GridColumn Field="@nameof(MenuModel.DispText)"
+                                        Title="Menu" />
 
-                </TelerikGrid>
+                        </GridColumns>
 
-            </CardBody>
+                    </TelerikGrid>
 
-        </TelerikCard>
+                </CardBody>
+
+            </TelerikCard>
 
 
-        @* =================================================
+            @* =================================================
            SUB MENU
            ================================================= *@
 
-        <TelerikCard Width="50%" Class="h-100">
+            <TelerikCard Width="50%" Class="h-100">
 
-            <CardHeader>
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
-                                        ThemeColor="primary" />
+                <CardHeader>
+                    <div class="d-flex  justify-content-between  align-items-center">
+                        <div>
+                            <TelerikSvgIcon Icon="@SvgIcon.AggregateFields"
+                                            ThemeColor="primary" />
 
-                        <span class="fw-medium ms-2">
-                            Sub Menu
-                        </span>
+                            <span class="fw-medium ms-2">
+                                Sub Menu
+                            </span>
+                        </div>
+
+                        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                                @onclick="@(() => ApplyChanges())">
+                                Apply Access 
+                        </button>
                     </div>
 
-                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
-                            @onclick="@(() => ApplyChanges())">
-                        Apply Selected Access to User
-                    </button>
-                </div>
-                
-               
 
-            </CardHeader>
 
-            <CardBody Class="p-0">
+                </CardHeader>
 
-                <TelerikGrid @ref="@DtlsMenuGridRef"
-                             TItem="MenuModel"
-                             Data="@V.DtlsMenus"
-                             Height="500px"
-                             Pageable="true"
-                             Sortable="true"
-                             FilterMode="@GridFilterMode.FilterMenu"
-                             Resizable="true"
-                             Reorderable="true"
-                             Navigable="true"
-                             SelectionMode="@GridSelectionMode.Multiple"
-                             SelectedItems="@V.SelectedDtlsMenu"
-                             SelectedItemsChanged="@DtlsMenuSelectionChanged"
-                             OnRowClick="@OnRowClick"
-                             @bind-PageSize="@PageSize">
+                <CardBody Class="p-0">
 
-                    <GridSettings>
-                        <GridPagerSettings PageSizes="@PageSizes" />
-                    </GridSettings>
+                    <TelerikGrid @ref="@DtlsMenuGridRef"
+                                 TItem="MenuModel"
+                                 Data="@V.DtlsMenus"
+                                 Height="400px"
+                                 Pageable="true"
+                                 Sortable="true"
+                                 FilterMode="@GridFilterMode.FilterMenu"
+                                 Resizable="true"
+                                 Reorderable="true"
+                                 Navigable="true"
+                                 SelectionMode="@GridSelectionMode.Multiple"
+                                 SelectedItems="@V.SelectedDtlsMenu"
+                                 SelectedItemsChanged="@DtlsMenuSelectionChanged"
+                                 OnRowClick="@OnRowClick"
+                                 @bind-PageSize="@PageSize">
 
-                    <GridColumns>
+                        <GridSettings>
+                            <GridPagerSettings PageSizes="@PageSizes" />
+                        </GridSettings>
 
-                        <GridCheckboxColumn Width="50px"
-                                            Resizable="false"
-                                            SelectAll="true"
-                                            SelectAllMode="@GridSelectAllMode.All" />
+                        <GridColumns>
 
-                        <GridColumn Field="@nameof(MenuModel.DispText)"
-                                    Title="Menu" />
+                            <GridCheckboxColumn Width="50px"
+                                                Resizable="false"
+                                                SelectAll="true"
+                                                SelectAllMode="@GridSelectAllMode.All" />
 
-                    </GridColumns>
+                            <GridColumn Field="@nameof(MenuModel.DispText)"
+                                        Title="Menu" />
 
-                </TelerikGrid>
+                        </GridColumns>
 
-            </CardBody>
+                    </TelerikGrid>
 
-        </TelerikCard>
+                </CardBody>
+
+            </TelerikCard>
+
+        </TelerikStackLayout>
 
     </TelerikStackLayout>
 
-</TelerikStackLayout>
+</div>
 
 
 @code {

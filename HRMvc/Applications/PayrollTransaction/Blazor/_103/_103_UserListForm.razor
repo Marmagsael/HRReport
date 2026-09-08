@@ -1,8 +1,12 @@
-﻿@using HRMvc.Applications._00GeneralComponents.FormComponents
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
 @using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.Models._20_Pay.OPay
+
+@using HRMvc.Applications.PayrollTransaction.Vars;
 
 @inject IOEmpmasDataAccess _empmas
-@inject IOPisDomainusrDataAccess _usr
+@inject IODomainusrDataAccess _usr
 
 
 <TelerikGrid Data="@V.Employees"
@@ -125,7 +129,7 @@
     public UserClaimsModel Uc { get; set; } = new();
 
     [CascadingParameter]
-    public V2002Model V { get; set; } = new();
+    public V103Model V { get; set; } = new();
 
     [CascadingParameter]
     public TelerikNotification NotificationRef { get; set; }
@@ -201,21 +205,21 @@
 
         try
         {
-            var existingUser = await _usr._02(employee.EmpNumber, V.OPisdb, V.Conn);
+            var existingUser = await _usr._02(employee.EmpNumber, V.OPaydb, V.Conn);
             if (existingUser != null && !string.IsNullOrWhiteSpace(existingUser.Empnumber) )
             {
                 NotificationRef?.Show( "Employee is already added as a user.", ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
 
-            var userrec = new OPisDomainusrModel
+            var userrec = new ODomainusrModel
             {
                 Empnumber   = employee.EmpNumber,
                 Status      = "A",
                 CreatedBy   = Uc.UserId
             };
 
-            var res = await _usr._01(userrec, V.OPisdb, V.Conn);
+            var res = await _usr._01(userrec, V.OPaydb, V.Conn);
 
             if (res != null && !string.IsNullOrWhiteSpace(res.Empnumber))
             {
