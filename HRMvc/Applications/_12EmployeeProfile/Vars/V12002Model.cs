@@ -1,12 +1,11 @@
-﻿using HRApiLibrary.Models._10_Pis.OPis;
+﻿using HRApiLibrary.Models._00_Main;
 
 namespace HRMvc.Applications._12EmployeeProfile.Vars
 {
     public class V12002Model
     {
         public bool             IsLoading   { get; set; }
-
-        public OPisUsrModel?    User        { get; set; } = new();
+        public UsersModel?      User        { get; set; } = new();
 
 
         //Toggle Control

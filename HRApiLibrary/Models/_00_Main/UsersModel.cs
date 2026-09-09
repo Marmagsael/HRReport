@@ -19,5 +19,9 @@ public class UsersModel
     public string?      OldPay       { get; set; } = "";
     public string?      Empnumber    { get; set; } = "";
 
-        
+    public string?      NewPassword      { get; set; } = "";
+    public string?      VerifyPassword   { get; set; } = "";
+
+
+
 }
