@@ -1,19 +1,59 @@
 ﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2053;
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
+@using HRApiLibrary.DataAccess._20_Pay.Interface;
 
+@inject IOClientDataAccess _client;
+@inject IClientstatusDataAccess _clientstatus;
+@inject IOAreaDataAccess _area;
+@inject IOPisReportDataAccess _pisRep;
 
 <TelerikRootComponent>
     <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
 
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
     <CascadingValue Value="@Uc">
         <CascadingValue Value="@v">
-            <CascadingValue Value="@NotificationRef">
-                <_00BT_FullW HdrCaption="Deployment Entry">
-                    <Details>
-                        <_2053_DeploymentList />
-                    </Details>
-                </_00BT_FullW>
+            <CascadingValue Value="@rv">
+                <CascadingValue Value="@NotificationRef">
+                    <_00BT_FullW HdrCaption="Deployment Entry">
+                        <Details>
+
+                            @*--- REPORT ---*@
+                            <_02BTRep Rv="rv" ChildAction="ChildAction" />
+
+
+                            @*--- ENTRY FORM MODAL ---*@
+                            @if (v.ShowEntryModal == true)
+                            {
+                                <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false">
+
+                                    <Content>
+                                        <_2053_DeploymentEntryModal ChildAction="ChildAction" />
+                                    </Content>
+
+                                </_00Modal>
+                            }
+
+                            @*--- DOLE REPORT MODAL ---*@
+                            @if (v.ShowDOLEReportModal == true)
+                            {
+                               
+                                <_2053_DeploymentDOLEReportModal ChildAction="ChildAction" />
+                                 
+                            }
+
+                            @if (v.ShowDOLEReportModal == false)
+                            {
+                                @*--- GRID ---*@
+                                <_2053_DeploymentList ChildAction="ChildAction" />
+                            }
+
+                         
+                        </Details>
+                    </_00BT_FullW>
+                </CascadingValue>
             </CascadingValue>
         </CascadingValue>
     </CascadingValue>
@@ -26,5 +66,117 @@
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     private V2053Model v = new();
+    V00_RepVars rv = new();
     private TelerikNotification? NotificationRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        v.IsLoading = true;
+
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            NotificationRef.Show("Something went wrong.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        await LoadClients();
+        await LoadClientStatus();
+        await LoadAreas();
+
+
+        // ReportElement ---------
+        InitializeReport();
+        await LoadCompanyInfo();
+
+
+
+        v.IsLoading = false;
+
+    }
+
+
+
+
+
+    private async Task LoadClients()
+    {
+        try
+        {
+
+            var res = await _client._02(Uc.OpisDb, Uc.Conn);
+            if (res.Any())
+            {
+                v.Clients = res;
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef.Show("Unable to load options for mother client drop down.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadClientStatus()
+    {
+        try
+        {
+            var res = await _clientstatus._02(Uc.OpisDb, Uc.Conn);
+            if (res.Any())
+            {
+                v.ClientStatus = res;
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef.Show("Unable to load options for status drop down.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private async Task LoadAreas()
+    {
+        try
+        {
+            var res = await _area._02(Uc.OpisDb, Uc.Conn);
+            if (res.Any())
+            {
+                v.Areas = res;
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef.Show("Unable to load options for status drop down.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task ChildAction()
+    {
+
+    }
+
+
+    private void InitializeReport()
+    {
+        rv.MCaption = "";
+        rv.RefreshToken = 20530000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
 }

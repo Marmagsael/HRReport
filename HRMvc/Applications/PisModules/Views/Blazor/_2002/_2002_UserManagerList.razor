@@ -4,6 +4,7 @@
 
 <TelerikGrid Data="@V.Users"
              TItem="OPisDomainusrModel"
+             OnStateInit="@OnGridStateInit"
              Sortable="true"
              Navigable="true"
              SelectionMode="GridSelectionMode.Single"
@@ -45,19 +46,18 @@
                     Width="100px"
                     HeaderClass="text-center">
 
-            <Template Context="item" >
+            <Template Context="item">
                 @{
                     var user = (OPisDomainusrModel)item;
+                    var status = user?.Status?.ToUpper().Trim();
                 }
 
-                  <div class="d-flex justify-content-center">
-                    @if (user.Status == "A")
+                <div class="d-flex justify-content-center">
+                    @if (!string.IsNullOrEmpty(status))
                     {
-                        <span class="badge bg-success">Active</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-secondary">Disabled</span>
+                        <span class="badge @(status == "A" ? "bg-success" : "bg-danger")">
+                            @(status == "A" ? "Active" : "Disabled")
+                        </span>
                     }
                 </div>
             </Template>
@@ -192,11 +192,9 @@
 
 
 
-    public async Task SetInitialFilter()
+    private void OnGridStateInit(GridStateEventArgs<OPisDomainusrModel> args)
     {
-        var state = UserGridRef.GetState();
-
-        state.FilterDescriptors = new List<IFilterDescriptor>
+        args.GridState.FilterDescriptors = new List<IFilterDescriptor>
         {
             new Telerik.DataSource.FilterDescriptor
             {
@@ -206,10 +204,7 @@
             }
         };
 
-        await UserGridRef.SetStateAsync(state);
     }
-
-
 
 
     private async Task OpenUserEntryModal(OPisDomainusrModel usr)

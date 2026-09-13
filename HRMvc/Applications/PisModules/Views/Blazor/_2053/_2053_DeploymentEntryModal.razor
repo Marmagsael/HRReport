@@ -1,13 +1,16 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis;
+@inject IOClientDataAccess _client;
 
-    <EditForm Model="@V.Client" OnSubmit="@SaveClient" class="h-100 d-flex flex-column">
+
+<div style="max-height:60vh">
+    <EditForm Model="@V.Client" OnSubmit="@SaveRecord" class="h-100 d-flex flex-column">
 
         @* --- Save Button --- *@
         <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="1">
+                    tabindex="12">
                 Save
             </button>
 
@@ -20,18 +23,29 @@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Mother Unit 
+                    Mother Unit
                 </label>
 
                 <div class="col-12 col-md-8  ">
 
-                    <TelerikDropDownList Data="DropDownListData"
-                                         TextField="MyTextField"
-                                         ValueField="MyValueField"
+                    <TelerikDropDownList Data="@V.Clients"
+                                         TextField="ClName"
+                                         ValueField="ClNumber"
                                          @bind-Value="@V.Client.ParentCd"
                                          DefaultText="Select an item..."
                                          Filterable="true"
-                                         TabIndex="2" />
+                                         TabIndex="1">
+
+                        <ItemTemplate Context="client">
+                            @client.ClName  <span class="text-muted">[@client.Status]</span>
+                        </ItemTemplate>
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+
+                    </TelerikDropDownList>
+
 
                 </div>
 
@@ -50,8 +64,10 @@
                     <TelerikTextBox @bind-Value="@V.Client.ClNumber"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    MaxLength="5"
                                     ReadOnly
-                                    TabIndex="3" />
+                                    Enabled="false"
+                                    TabIndex="-1" />
 
                 </div>
 
@@ -65,13 +81,19 @@
                     Deployment Name
                 </label>
 
-                <div class="col-12 col-md-4  ">
+                <div class="col-12 col-md-8 ">
 
                     <TelerikTextBox @bind-Value="@V.Client.ClName"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    ReadOnly
-                                    TabIndex="4" />
+                                    MaxLength="60"
+                                    TabIndex="2"
+                                    Class="@(string.IsNullOrWhiteSpace(V.DeploymentNameErrorMsg) ? "" : "k-invalid")"/>
+
+                    @if (!string.IsNullOrWhiteSpace(V.DeploymentNameErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DeploymentNameErrorMsg</div>
+                    }
 
                 </div>
 
@@ -87,9 +109,9 @@
 
                 <div class="col-12 col-md-8  ">
                     <TelerikTextArea @bind-Value="@V.Client.Addr1"
-                                     MaxLength="200"
+                                     MaxLength="150"
                                      Rows="5"
-                                     TabIndex="5" />
+                                     TabIndex="3" />
 
                 </div>
 
@@ -104,11 +126,20 @@
                 </label>
 
                 <div class="col-12 col-md-4  ">
-                    <TelerikTextBox @bind-Value="@V.Client.AreaCode"
-                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
-                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    ReadOnly
-                                    TabIndex="6" />
+                    <TelerikDropDownList Data="@V.Areas"
+                                         TextField="AreaName"
+                                         ValueField="AreaCode"
+                                         @bind-Value="@V.Client.AreaCode"
+                                         DefaultText="Select an item..."
+                                         Filterable="true"
+                                         TabIndex="4">
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+
+
+                    </TelerikDropDownList>
 
                 </div>
 
@@ -126,8 +157,8 @@
                     <TelerikTextBox @bind-Value="@V.Client.Tel1"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    ReadOnly
-                                    TabIndex="7" />
+                                    MaxLength="10"
+                                    TabIndex="5" />
 
                 </div>
 
@@ -144,8 +175,8 @@
                     <TelerikTextBox @bind-Value="@V.Client.FaxNo"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    ReadOnly
-                                    TabIndex="8" />
+                                    MaxLength="10"
+                                    TabIndex="6" />
 
                 </div>
 
@@ -162,8 +193,8 @@
                     <TelerikTextBox @bind-Value="@V.Client.Contact"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    ReadOnly
-                                    TabIndex="9" />
+                                    MaxLength="25"
+                                    TabIndex="7" />
 
                 </div>
 
@@ -177,10 +208,10 @@
                 </label>
 
                 <div class="col-12 col-md-4  ">
-                    <TelerikDateInput @bind-Value="@V.Client.ContEnd"
-                                      Format="dd MMMM yyyy"
-                                      Width="200px"
-                                      TabIndex="10" />
+                    <TelerikDatePicker @bind-Value="@V.Client.ContEnd"
+                                       Format="dd MMMM yyyy"
+                                       Width="200px"
+                                       TabIndex="8" />
 
                 </div>
 
@@ -194,10 +225,10 @@
                 </label>
 
                 <div class="col-12 col-md-4  ">
-                    <TelerikDateInput @bind-Value="@V.Client.ContExp"
-                                      Format="dd MMMM yyyy"
-                                      Width="200px"
-                                      TabIndex="11" />
+                    <TelerikDatePicker @bind-Value="@V.Client.ContExp"
+                                       Format="dd MMMM yyyy"
+                                       Width="200px"
+                                       TabIndex="9" />
 
                 </div>
 
@@ -212,9 +243,9 @@
 
                 <div class="col-12 col-md-8  ">
                     <TelerikTextArea @bind-Value="@V.Client.Remarks"
-                                     MaxLength="200"
+                                     MaxLength="254"
                                      Rows="5"
-                                     TabIndex="12" />
+                                     TabIndex="10" />
 
                 </div>
 
@@ -228,13 +259,20 @@
                 </label>
 
                 <div class="col-12 col-md-4  ">
-                    <TelerikDropDownList Data="DropDownListData"
-                                         TextField="MyTextField"
-                                         ValueField="MyValueField"
-                                         @bind-Value="@V.Client.ParentCd"
+                    <TelerikDropDownList Data="@V.ClientStatus"
+                                         TextField="ClStatus"
+                                         ValueField="ClStatus"
+                                         @bind-Value="@V.Client.Status"
                                          DefaultText="Select an item..."
                                          Filterable="true"
-                                         TabIndex="13" />
+                                         TabIndex="11">
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+
+
+                    </TelerikDropDownList>
 
                 </div>
 
@@ -243,7 +281,6 @@
         </div>
 
     </EditForm>
-
 </div>
 
 @code {
@@ -251,26 +288,94 @@
     public UserClaimsModel Uc { get; set; } = new();
 
     [CascadingParameter]
-    private V2053Model V { get; set; } = new();
+    public V2053Model V { get; set; } = new();
 
     [CascadingParameter]
-    private TelerikNotification? NotificationRef { get; set; }
+    public TelerikNotification? NotificationRef { get; set; }
 
 
 
-    // Dummy ---
-    private List<DropDownListItem> DropDownListData { get; set; } = [];
-    private int SelectedValue { get; set; }
 
-    public class DropDownListItem
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+
+
+
+    private async Task SaveRecord()
     {
-        public int MyValueField { get; set; }
-        public string MyTextField { get; set; }
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        //update ----
+        if (!string.IsNullOrWhiteSpace(V.Client.ClNumber))
+        {
+            await UpdateRecord();
+        }
+
+
+        //insert ---
+        await InsertRecord();
+
+    }
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            // Validate if CLName already exist
+
+            var res = await _client._03(V.Client, Uc.OpisDb, Uc.Conn);
+            if(res is not null)
+            {
+                V.Action = "RefreshDeploymentGrid";
+                NotificationRef.Show("Deployment was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef.Show("Unable to update deployment.", ThemeConstants.Notification.ThemeColor.Error);
+
+        }
     }
 
 
-    private void SaveClient()
+    private async Task InsertRecord()
     {
+        try
+        {
+            // Validate if CLName already exist
+            // How to create clnumber?
+            await _client._01(V.Client, Uc.OpisDb, Uc.Conn);
+            
+            V.Action = "RefreshDeploymentGrid";
+            NotificationRef.Show("Deployment was inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception)
+        {
+            NotificationRef.Show("Unable to insert deployment.", ThemeConstants.Notification.ThemeColor.Error);
 
+        }
     }
+
+
+    private bool IsFormValid()
+    {
+        if (string.IsNullOrWhiteSpace(V.Client.ClName))
+        {
+            V.DeploymentNameErrorMsg = "Deployment name is required";
+            return false;
+        }
+        return true;
+    }
+
+    private void ResetErrorMessage()
+    {
+        V.DeploymentNameErrorMsg = string.Empty;
+    }
+
 }

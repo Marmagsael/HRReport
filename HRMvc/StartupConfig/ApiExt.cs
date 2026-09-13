@@ -209,13 +209,15 @@ public static class ApiExt
         //-- Old Pis -----------------------------------------------------------------------
         builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
         builder.Services.AddScoped<IOClientDataAccess, OClientDataAccess>();
+        builder.Services.AddScoped<IClientstatusDataAccess, ClientstatusDataAccess>();
         builder.Services.AddScoped<IOEmpstatDataAccess, OEmpstatDataAccess>();
         builder.Services.AddScoped<IODeprecDataAccess, ODeprecDataAccess>();
         builder.Services.AddScoped<IOPisReportDataAccess, OPisReportDataAccess>();
-        builder.Services.AddScoped<IOPisDomainaccessDataAccess, HRApiLibrary.DataAccess._10_Pis.OPis.OPisDomainaccessDataAccess>();
+        builder.Services.AddScoped<IOPisDomainaccessDataAccess, OPisDomainaccessDataAccess>();
         builder.Services.AddScoped<IOPisDomainusrDataAccess, OPisDomainusrDataAccess>();
-        builder.Services.AddScoped<IOPisUsrDataAccess, HRApiLibrary.DataAccess._10_Pis.OPis.OPisUsrDataAccess>();
+        builder.Services.AddScoped<IOPisUsrDataAccess, OPisUsrDataAccess>();
         builder.Services.AddScoped<IOInsuranceDataAccess, OInsuranceDataAccess>();
+        builder.Services.AddScoped<IOAreaDataAccess, OAreaDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------
@@ -226,9 +228,9 @@ public static class ApiExt
         builder.Services.AddScoped<IOChartofacctDataAccess, OChartofacctDataAccess>();
         builder.Services.AddScoped<IOEmpportalDataAccess, OEmpportalDataAccess>();
         builder.Services.AddScoped<IOPayrollgrpDataAccess, OPayrollgrpDataAccess>();
-        builder.Services.AddScoped<IODomainaccessDataAccess, HRApiLibrary.DataAccess._20_Pay.OPay.ODomainaccessDataAccess>();
+        builder.Services.AddScoped<IODomainaccessDataAccess, ODomainaccessDataAccess>();
         builder.Services.AddScoped<IODomainusrDataAccess, ODomainusrDataAccess>();
-        builder.Services.AddScoped<IOUsrDataAccess, HRApiLibrary.DataAccess._20_Pay.OPay.OUsrDataAccess>();
+        builder.Services.AddScoped<IOUsrDataAccess, OUsrDataAccess>();
         
 
 

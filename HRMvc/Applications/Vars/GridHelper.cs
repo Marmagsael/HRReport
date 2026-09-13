@@ -1,5 +1,6 @@
 ﻿using HRApiLibrary.Models._90_Utils;
 using Telerik.Blazor.Components;
+using Telerik.DataSource;
 
 namespace HRMvc.Applications.Vars
 {
@@ -11,40 +12,35 @@ namespace HRMvc.Applications.Vars
 
             foreach (var item in args.Request.Filters)
             {
-                if (item is Telerik.DataSource.FilterDescriptor filter)
-                {
-                    filters.Add(new GridFilterModel
-                    {
-                        Field = filter.Member,
-                        Operator = GetOperator(filter.Operator),
-                        Value = filter.Value?.ToString() ?? "",
-                        LogicalOperator = "AND"
-                    });
-
-                   
-                }
-
-                else if (item is Telerik.DataSource.CompositeFilterDescriptor composite)
-                {
-
-                    var logicalOperator = composite.LogicalOperator == Telerik.DataSource.FilterCompositionLogicalOperator.Or ? "OR"  : "AND";
-                    foreach (var child in composite.FilterDescriptors)
-                    {
-                        if (child is Telerik.DataSource.FilterDescriptor childFilter)
-                        {
-                            filters.Add(new GridFilterModel
-                            {
-                                Field = childFilter.Member,
-                                Operator = GetOperator(childFilter.Operator),
-                                Value = childFilter.Value?.ToString() ?? "",
-                                LogicalOperator = logicalOperator
-                            });
-                        }
-                    }
-                }
+                AddFilter(item, "AND", filters);
             }
 
             return filters;
+        }
+
+
+        private static void AddFilter(IFilterDescriptor item, string logicalOperator, List<GridFilterModel> filters)
+        {
+            if (item is Telerik.DataSource.FilterDescriptor filter)
+            {
+                filters.Add(new GridFilterModel
+                {
+                    Field = filter.Member,
+                    Operator = GetOperator(filter.Operator),
+                    Value = filter.Value?.ToString() ?? "",
+                    LogicalOperator = logicalOperator,
+                });
+            }
+
+            else if (item is Telerik.DataSource.CompositeFilterDescriptor composite)
+            {
+                var op = composite.LogicalOperator == Telerik.DataSource.FilterCompositionLogicalOperator.Or ? "OR" : "AND";
+
+                foreach (var child in composite.FilterDescriptors)
+                {
+                    AddFilter(child, op, filters);
+                }
+            }
         }
 
 
@@ -62,6 +58,10 @@ namespace HRMvc.Applications.Vars
                 Telerik.DataSource.FilterOperator.EndsWith => "ENDS",
                 Telerik.DataSource.FilterOperator.Contains => "CONTAINS",
                 Telerik.DataSource.FilterOperator.DoesNotContain => "NOT CONTAINS",
+                Telerik.DataSource.FilterOperator.IsNull => "IS NULL",
+                Telerik.DataSource.FilterOperator.IsNotNull => "IS NOT NULL",
+                Telerik.DataSource.FilterOperator.IsEmpty => "IS EMPTY",
+                Telerik.DataSource.FilterOperator.IsNotEmpty => "IS NOT EMPTY",
                 _ => "CONTAINS"
             };
         }

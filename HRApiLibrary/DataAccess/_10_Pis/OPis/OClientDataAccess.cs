@@ -1,5 +1,7 @@
+using HRApiLibrary.DataAccess._90_Utils;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis.OPis;
+using HRApiLibrary.Models._90_Utils;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
@@ -60,6 +62,22 @@ public class OClientDataAccess : IOClientDataAccess
     }
 
 
+    public async Task<List<OClientModel?>?> _02( string? schema, string? conn)
+    {
+        string? sql = $@"update {schema}.Client set 
+                            ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
+                            ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
+                            ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) ";
+        _sql.ExecuteCmd<dynamic>(sql, new {  }, conn);
+
+        sql = $@"select  * from {schema}.Client  order by ClName ";
+        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new {  }, conn);
+        return data;
+    }
+
+
+
+
     public async Task<List<OClientModel?>?> _02ByStatuses(List<string> statuses, string? schema, string? conn)
     {
         string? sql = $@"update {schema}.Client set 
@@ -72,6 +90,163 @@ public class OClientDataAccess : IOClientDataAccess
         sql = $@"select  * from {schema}.Client where Status in @Status order by ClName ";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = statuses }, conn);
         return data;
+    }
+
+
+    public async Task<GridResultModel<OClientModel>> _02Grid(  GridRequestModel request, string schema,string conn)
+    {
+
+        string? sql = $@"update {schema}.Client set 
+                            ContStart   = if(ContStart  < '1800-01-01', '1900-01-01', ContStart), 
+                            ContEnd     = if(ContEnd    < '1800-01-01', '1900-01-01', ContEnd), 
+                            ContExp     = if(ContExp    < '1800-01-01', '1900-01-01', ContExp) ";
+        _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+
+
+
+        var columns = new Dictionary<string, string>
+        {
+            ["ClNumber"]    = "c.ClNumber",
+            ["ClName"]      = "c.ClName",
+            ["AreaName"]    = "a.AreaName",
+            ["ParentName"]  = "p.ClName",
+            ["Status"]      = "c.Status",
+            ["Addr1"]       = "c.Addr1",
+            ["ContStart"]   = "c.ContStart",
+            ["ContEnd"]     = "c.ContEnd",
+        };
+
+        // SORTING
+        var sortColumn = columns.GetValueOrDefault(
+            request.SortField,
+            "c.ClName"
+        );
+
+        var sortOrder = request.SortDirection == "DESC"
+            ? "DESC"
+            : "ASC";
+
+        // PARAMETERS
+        var parameters = new Dictionary<string, object>
+        {
+            ["PageSize"] = request.PageSize,
+            ["Offset"] = request.Offset
+        };
+
+        // FILTERING
+        var where = GridHelperDataAccess.BuildWhere(
+            request.Filters,
+            columns,
+            parameters
+        );
+
+       
+
+        // COUNT
+        string countSql = $@" SELECT COUNT(*) FROM {schema}.Client c
+                        LEFT JOIN {schema}.Area a ON a.AreaCode = c.AreaCode
+                        LEFT JOIN {schema}.Client p ON p.ClNumber = c.ParentCd
+                        {where}";
+
+        var totalResult = await _sql.FetchData<int, dynamic>( countSql, parameters, conn );
+        var total = totalResult?.FirstOrDefault() ?? 0;
+
+        // DATA
+        string sql1 = $@" SELECT c.*, COALESCE(a.AreaName, '-') AS AreaName,p.ClName AS ParentName
+                        FROM {schema}.Client c
+                        LEFT JOIN {schema}.Area a ON a.AreaCode = c.AreaCode
+                        LEFT JOIN {schema}.Client p ON p.ClNumber = c.ParentCd
+                        {where}
+                        ORDER BY {sortColumn} {sortOrder}
+                        LIMIT @Offset, @PageSize";
+
+        var data = await _sql.FetchData<OClientModel, dynamic>( sql1,parameters,conn);
+
+        return new GridResultModel<OClientModel>
+        {
+            Data = data ?? new List<OClientModel>(),
+            Total = total
+        };
+    }
+
+
+    public async Task<GridResultModel<OClientModel>> _02GridWithEmpmas(GridRequestModel request, string schema, string conn)
+    {
+
+
+        var columns = new Dictionary<string, string>
+        {
+            ["ClNumber"]    = "c.ClNumber",
+            ["ClName"]      = "c.ClName",
+            ["AreaName"]    = "a.AreaName",
+            ["ParentName"]  = "p.ClName",
+            ["Status"]      = "c.Status",
+            ["Addr1"]       = "c.Addr1",
+            ["ContStart"]   = "c.ContStart",
+            ["ContEnd"]     = "c.ContEnd",
+        };
+
+        // SORTING
+        var sortColumn = columns.GetValueOrDefault(
+            request.SortField,
+            "c.ClName"
+        );
+
+        var sortOrder = request.SortDirection == "DESC"
+            ? "DESC"
+            : "ASC";
+
+        // PARAMETERS
+        var parameters = new Dictionary<string, object>
+        {
+            ["PageSize"] = request.PageSize,
+            ["Offset"] = request.Offset
+        };
+
+        // FILTERING
+        var where = GridHelperDataAccess.BuildWhere(
+            request.Filters,
+            columns,
+            parameters
+        );
+
+
+
+        // COUNT
+        string countSql = $@" SELECT COUNT(DISTINCT c.ClNumber) FROM {schema}.Client c
+                                LEFT JOIN {schema}.Empmas e ON e.Client_ = c.ClNumber
+                                LEFT JOIN {schema}.Position p ON p.Code = e.Position_
+                                {where}";
+
+
+        var totalResult = await _sql.FetchData<int, dynamic>(countSql, parameters, conn);
+        var total = totalResult?.FirstOrDefault() ?? 0;
+
+        // DATA
+
+
+        string sql1 = $@" SELECT   c.clnumber,
+                        c.clname,'Security Services' Job,
+                        GROUP_CONCAT(DISTINCT p.name SEPARATOR ' / ') AS PersonnelPositions,
+                        SUM(IF(e.sex_ = 'M', 1, 0)) AS MaleCnt,
+                        SUM(IF(e.sex_ = 'F', 1, 0)) AS FemaleCnt,
+                        SUM(IF(e.sex_ = '' OR e.sex_ IS NULL, 1, 0)) AS OthersCnt, c.ContStart, c.ContEnd
+                        FROM {schema}.Client c
+                            LEFT JOIN {schema}.Empmas e  ON e.Client_ = c.ClNumber
+                            LEFT JOIN {schema}.Position p  ON p.Code = e.Position_
+                            {where}
+                            GROUP BY c.ClNumber, c.ClName
+                            ORDER BY {sortColumn} {sortOrder}
+                            LIMIT @Offset, @PageSize";
+
+
+        var data = await _sql.FetchData<OClientModel, dynamic>(sql1, parameters, conn);
+
+        return new GridResultModel<OClientModel>
+        {
+            Data = data ?? new List<OClientModel>(),
+            Total = total
+        };
     }
 
 
@@ -109,9 +284,12 @@ public class OClientDataAccess : IOClientDataAccess
 public interface IOClientDataAccess
 {
     Task _01(OClientModel client, string? schema, string? conn);
+    Task<List<OClientModel?>?> _02(string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByStatuss(string? status, string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByStatuses(List<string> statuses, string? schema, string? conn);
+    Task<GridResultModel<OClientModel>> _02Grid(GridRequestModel request, string schema, string conn);
+    Task<GridResultModel<OClientModel>> _02GridWithEmpmas(GridRequestModel request, string schema, string conn);
     Task<OClientModel?> _03(OClientModel client, string? schema, string? conn);
     Task<OClientModel?> _04(string? clNumber, string? schema, string? conn);
 }
