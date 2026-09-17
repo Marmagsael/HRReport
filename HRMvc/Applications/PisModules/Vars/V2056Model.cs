@@ -14,7 +14,8 @@ namespace HRMvc.Applications.PisModules.Vars
         public bool         ShowEntryModal                  { get; set; } = false;
 
 
-        public OPositionModel? Position                     { get; set; } = new();
+        public OLevtblModel? LeaveType                      { get; set; } = new();
+        public List<OLevtblModel?>? LeaveTypes              { get; set; } = new();
 
 
        

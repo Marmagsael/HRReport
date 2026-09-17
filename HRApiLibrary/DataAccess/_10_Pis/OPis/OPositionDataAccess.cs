@@ -1,6 +1,9 @@
 ﻿using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._10_Pis.OPis;
+using System.Xml.Linq;
+
+namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
 public class OPositionDataAccess : IOPositionDataAccess
 {
@@ -14,14 +17,14 @@ public class OPositionDataAccess : IOPositionDataAccess
 
     public async Task<OPositionModel?> _01(OPositionModel position, string schema, string conn)
     {
-        string sql = $@"Insert into {schema}.Position (CODE, NAME, ISGUARD, sort) values (@CODE, @NAME, @ISGUARD, @sort)";
+        string sql = $@"Insert into {schema}.Position (CODE, NAME, ISGUARD, sort) values (@Code, @Name, @IsGuard, @Sort)";
         await _sql.ExecuteCmd<dynamic>(sql, position, conn);
 
-        sql = $@"SELECT * FROM {schema}.Position WHERE ID = (SELECT @@IDENTITY)";
+        sql = $@"SELECT * FROM {schema}.Position WHERE Code = @Code";
 
-        var res = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { }, conn);
+        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { position.Code}, conn);
 
-        return res.FirstOrDefault();
+        return data?.FirstOrDefault();
     }
 
 
@@ -39,24 +42,42 @@ public class OPositionDataAccess : IOPositionDataAccess
         return data;
     }
 
-
-    public async Task<OPositionModel?> _03(int id, OPositionModel position, string schema, string conn)
+    public async Task<List<OPositionModel?>?> _02(string code, string name, string schema, string conn)
     {
-        string sql = $@"Update {schema}.Position set CODE = @CODE, NAME = @NAME, ISGUARD = @ISGUARD, sort = @sort where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, position, conn);
+        string sql = $@"SELECT * FROM {schema}.Position  WHERE TRIM(UPPER(CODE)) = @Code  OR TRIM(UPPER(Name)) = @Name ORDER BY Name";
 
-        sql = $@" select  * from {schema}.Position x where x.Id = @Id ;";
-        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code, Name = name}, conn);
+        return data;
+    }
+    public async Task<OPositionModel?> _03(string code, OPositionModel position, string schema, string conn)
+    {
+        var parameters = new
+        {
+            oldCode = code,
+            position.Code,
+            position.Name,
+            position.Isguard,
+            position.Sort
+        };
+
+        string sql = $@"UPDATE {schema}.Position 
+                     SET CODE = @Code, NAME = @Name, ISGUARD = @Isguard, sort = @Sort 
+                     WHERE CODE = @oldCode;";
+
+        await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+
+        sql = $@"SELECT * FROM {schema}.Position x WHERE x.Code = @Code;";
+        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { position.Code }, conn);
         return data?.FirstOrDefault();
     }
 
-    public async Task<OPositionModel?> _04(int id, string schema, string conn)
+    public async Task<OPositionModel?> _04(string code, string schema, string conn)
     {
-        string sql = $@"Delete from {schema}.Position where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+        string sql = $@"Delete from {schema}.Position where Code = @Code;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Code = code }, conn);
 
-        sql = $@" select  * from {schema}.Position x where x.Id = @Id ;";
-        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Id = id }, conn);
+        sql = $@" select  * from {schema}.Position x where x.Code = @Code ;";
+        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code }, conn);
         return data?.FirstOrDefault();
     }
 }
@@ -65,7 +86,8 @@ public interface IOPositionDataAccess
 {
     Task<OPositionModel?> _01(OPositionModel position, string schema, string conn);
     Task<OPositionModel?> _02(int id, string schema, string conn);
+    Task<List<OPositionModel?>?> _02(string code, string name, string schema, string conn);
     Task<List<OPositionModel?>?> _02(string schema, string conn);
-    Task<OPositionModel?> _03(int id, OPositionModel position, string schema, string conn);
-    Task<OPositionModel?> _04(int id, string schema, string conn);
+    Task<OPositionModel?> _03(string code, OPositionModel position, string schema, string conn);
+    Task<OPositionModel?> _04(string code, string schema, string conn);
 }

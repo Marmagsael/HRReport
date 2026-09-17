@@ -4,8 +4,8 @@ namespace HRMvc.Applications._12EmployeeProfile.Vars
 {
     public class V12002Model
     {
-        public bool             IsLoading   { get; set; }
-        public UsersModel?      User        { get; set; } = new();
+        public bool             IsLoading           { get; set; }
+        public UsersModel?      User                { get; set; } = new();
 
 
         //Toggle Control

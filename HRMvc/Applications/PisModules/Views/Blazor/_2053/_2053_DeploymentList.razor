@@ -150,6 +150,9 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
 
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
 
     private TelerikGrid<OClientModel>? ClientGrid;
 
@@ -246,9 +249,20 @@
     }
 
 
-    private void Delete(OClientModel client)
+    private async Task Delete(OClientModel client)
     {
+        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{client.ClName} record'?", "Confirm Deployment Deletion");
+        if (!confirmed) return;
 
+
+        try
+        {
+           
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable to delete deployment", ThemeConstants.Notification.ThemeColor.Error);
+        }
     }
 
     private async Task GenerateDeploymentList()

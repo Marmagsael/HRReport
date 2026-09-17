@@ -1,4 +1,8 @@
-﻿<TelerikGrid TItem="OPositionModel"
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+<TelerikGrid TItem="OPositionModel"
+             Data="V.Positions"
+             @ref="@PositionGridRef"
              SelectionMode="@GridSelectionMode.Single"
              Navigable="true"
              Pageable="true"
@@ -21,7 +25,8 @@
             </button>
 
 
-            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => GenerateReport())">
                 Print Listing
             </button>
         </div>
@@ -34,17 +39,42 @@
         @* --- Code --- *@
         <GridColumn Field="@nameof(OPositionModel.Code)"
                     Title="Code"
-                    Width="150px" />
+                    Width="80px" />
 
         @* --- Name --- *@
         <GridColumn Field="@nameof(OPositionModel.Name)"
                     Title="Description"
-                    Width="150px" />
+                    Width="200px" />
 
         @* --- Is Guard --- *@
         <GridColumn Field="@nameof(OPositionModel.Isguard)"
                     Title="Is Guard"
-                    Width="150px" />
+                    Width="80px">
+
+            <FilterMenuTemplate Context="filterContext">
+                <TelerikDropDownList Data="@V.GuardOptions"
+                                     TextField="@nameof(V2055Model.GuardOption.Text)"
+                                     ValueField="@nameof(V2055Model.GuardOption.Value)"
+                                     Value="@SelectedIsGuardFilter"
+                                     ValueChanged="@((string val) => OnGuardFilterChanged(val, filterContext))"
+                                     DefaultText="Select...">
+                </TelerikDropDownList>
+            </FilterMenuTemplate>
+
+            <Template Context="item">
+                @{
+                    var isGuard = ((OPositionModel)item).Isguard;
+                }
+                <div class="d-flex justify-content-center">
+                    @if (!string.IsNullOrEmpty(isGuard))
+                    {
+                        <span class="badge @(isGuard == "1" ? "bg-success" : "bg-secondary")">
+                            @(isGuard == "1" ? "Yes" : "No")
+                        </span>
+                    }
+                </div>
+            </Template>
+        </GridColumn>
 
         @* --- ACTIONS --- *@
         <GridCommandColumn Title="Action"
@@ -66,7 +96,8 @@
                     </button>
 
                     <button type="button"
-                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => Delete(rec))">
                         Delete
                     </button>
 
@@ -86,13 +117,25 @@
 
 </TelerikGrid>
 
+@inject IOPositionDataAccess _position;
 @code {
     [CascadingParameter]
     public V2055Model V { get; set; } = new();
 
+    [CascadingParameter]
+    V00_RepVars Rv { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private TelerikGrid<OPositionModel> PositionGridRef;
 
     private int PageSize { get; set; } = 25;
 
@@ -107,19 +150,118 @@
 
     private async Task OpenEntryModal(OPositionModel rec)
     {
+        V.CodeErrorMsg              = string.Empty;
+        V.DescriptionNameErrorMsg   = string.Empty;
+
         V.Position = new OPositionModel();
+        V.PositionOriginalState = null;
+
         V.ModalCaption = "Add Position";
 
         if (!string.IsNullOrWhiteSpace(rec.Code))
         {
             V.ModalCaption = "Edit Position";
-            V.Position = rec;
+            V.Position = MapRecord(rec);
+            V.PositionOriginalState = MapRecord(rec);
         }
 
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
     }
 
+    private async Task Delete(OPositionModel rec)
+    {
+        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Position Deletion");
+        if (!confirmed) return;
+
+
+        try
+        {
+
+            //Add Validation --------------------------------
+
+            var res = await _position._04(rec.Code, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                V.Positions.Remove(rec);
+                RebindGrid();
+                NotificationRef?.Show("Position has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to delete postion", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show("Unable to delete position", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+
+
+    private OPositionModel MapRecord(OPositionModel rec)
+    {
+        return new OPositionModel
+        {
+            Code = rec.Code,
+            Name = rec.Name,
+            Isguard = rec.Isguard,
+            Sort = rec.Sort
+        };
+    }
+
+    private async Task GenerateReport()
+    {
+        if (!V.Positions.Any()) { return; }
+
+
+        V.RepDtls = V.Positions;
+
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Position Listing";
+        Rv.RelativePath = "Reports/_01Pis/J_2055_PE.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
+        await ChildAction.InvokeAsync();
+    }
+
+    // Custom Filter ----------------------------------------------------------------
+
+    private string? SelectedIsGuardFilter;
+
+
+    private void OnGuardFilterChanged(string value, FilterMenuTemplateContext filterContext)
+    {
+        SelectedIsGuardFilter = value;
+
+        filterContext.FilterDescriptor.FilterDescriptors.Clear();
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            filterContext.FilterDescriptor.FilterDescriptors.Add(new Telerik.DataSource.FilterDescriptor
+            {
+                Member = nameof(OPositionModel.Isguard),
+                Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+                Value = value
+            });
+        }
+    }
+
+    public void RebindGrid()
+    {
+        PositionGridRef.Rebind();
+    }
   
 }
 

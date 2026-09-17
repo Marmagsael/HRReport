@@ -9,8 +9,14 @@ namespace HRMvc.Applications.PisModules.Vars
         public string?      Maindb                          { get; set; } = string.Empty;
         public string?      Mainpisdb                       { get; set; } = string.Empty;
         public string?      Conn                            { get; set; } = string.Empty;
-        
-        
+
+
+
+        public string?      Action                          { get; set; } = string.Empty;
+        public bool         IsLoading                       { get; set; } = true;
+        public bool?        UcLoaded                        { get; set; } = false;
+
+
         public string?      ModalCaption                    { get; set; } = string.Empty;
         public bool         ShowInsuranceEntryModal         { get; set; } = false;
         public bool         ShowInsuranceAssignmentModal    { get; set; } = false;
@@ -21,16 +27,16 @@ namespace HRMvc.Applications.PisModules.Vars
         public List<OInsuranceModel?>?    Insurances        { get; set; } = new();
         public List<OEmpmasModel?>?       OEmpmass          { get; set; } = new();
 
-        public string? SelectedPolicyNo         { get; set; } = string.Empty;
+        public string? SelectedPolicyNo                     { get; set; } = string.Empty;
 
-        public List<string> InsuranceTypes      { get; set; } = new()
+        public List<string> InsuranceTypes                  { get; set; } = new()
         {
             "Life",
             "Accident"
         };
 
 
-        public List<string> Policies            { get; set; } = new()
+        public List<string> Policies                        { get; set; } = new()
         {
             "Policy 1",
             "Policy 2"

@@ -1,4 +1,6 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.Position"
               OnValidSubmit="@SaveRecord"
@@ -30,8 +32,14 @@
                     <TelerikTextBox @bind-Value="@V.Position.Code"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox>
+                                    TabIndex="1"
+                                    MaxLength="5"
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
 
                 </div>
 
@@ -50,8 +58,15 @@
                     <TelerikTextBox @bind-Value="@V.Position.Name"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox>
+                                    TabIndex="2"
+                                    MaxLength="25" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionNameErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DescriptionNameErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DescriptionNameErrorMsg</div>
+                    }
+
 
                 </div>
 
@@ -90,13 +105,145 @@
     </EditForm>
 </div>
 
+@inject IOPositionDataAccess _position;
 @code{
     [CascadingParameter]
     public V2055Model V { get; set; } = new();
 
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
 
-    private void SaveRecord()
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _position._02(V.Position.Code.Trim().ToUpper(), V.Position.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+            bool codeExists = existingRecord.Any(c => c.Code == V.Position?.Code && (string.IsNullOrWhiteSpace(V.PositionOriginalState?.Code) || c.Code != V.PositionOriginalState?.Code));
+            bool nameExists = existingRecord.Any(n => n.Name == V.Position?.Name && (string.IsNullOrWhiteSpace(V.PositionOriginalState?.Name) || n.Name != V.PositionOriginalState?.Name));
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.DescriptionNameErrorMsg = "Position already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+        }
+
+        if (V.PositionOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _position._01(V.Position, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.Positions.Insert(0, res);
+                V.Position = new OPositionModel();
+
+                V.Action = "RefreshPositionGrid";
+                NotificationRef.Show("Position was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to insert position.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to insert position.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _position._03(V.PositionOriginalState.Code, V.Position, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.PositionOriginalState = new OPositionModel
+                {
+                    Code        = res.Code,
+                    Name        = res.Name,
+                    Isguard     = res.Isguard,
+                    Sort        = res.Sort
+                };
+
+
+                V.Action = "LoadPositions";
+                NotificationRef.Show("Position was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.Position.Code))
+        {
+            V.CodeErrorMsg = "Position code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Position.Name))
+        {
+            V.DescriptionNameErrorMsg = "Position name required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg              = string.Empty;
+        V.DescriptionNameErrorMsg   = string.Empty;
     }
 }
