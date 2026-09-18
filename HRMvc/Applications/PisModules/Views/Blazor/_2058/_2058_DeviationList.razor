@@ -1,4 +1,12 @@
-﻿<TelerikGrid TItem="ODevdataModel"
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IODevdataDataAccess _deviation
+
+
+<TelerikGrid TItem="ODevdataModel"
+             Data="V.Deviations"
+             @ref="DeviationTypeGridRef"
              SelectionMode="@GridSelectionMode.Single"
              Navigable="true"
              Pageable="true"
@@ -21,7 +29,8 @@
             </button>
 
 
-            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => GenerateReport())">
                 Print Listing
             </button>
         </div>
@@ -31,15 +40,15 @@
 
     <GridColumns>
 
-        @* --- Code --- *@
+        @* --- Dev_No --- *@
         <GridColumn Field="@nameof(ODevdataModel.Dev_No)"
-                    Title="Code"
-                    Width="150px" />
+                    Title="Dev. No."
+                    Width="80px" />
 
-        @* --- Name --- *@
+        @* --- Dev_Name --- *@
         <GridColumn Field="@nameof(ODevdataModel.Dev_Name)"
                     Title="Description"
-                    Width="150px" />
+                    Width="200px" />
 
 
 
@@ -65,7 +74,8 @@
                     </button>
 
                     <button type="button"
-                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray" 
+                            @onclick="(() => Delete(rec))">
                         Delete
                     </button>
 
@@ -79,7 +89,7 @@
 
     <NoDataTemplate>
         <div class="text-center text-secondary p-4">
-            No deviation records found.
+            No deviation type records found.
         </div>
     </NoDataTemplate>
 
@@ -89,9 +99,20 @@
     [CascadingParameter]
     public V2058Model V { get; set; } = new();
 
+    [CascadingParameter]
+    V00_RepVars Rv { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private TelerikGrid<ODevdataModel> DeviationTypeGridRef;
 
     private int PageSize { get; set; } = 25;
 
@@ -106,19 +127,96 @@
 
     private async Task OpenEntryModal(ODevdataModel rec)
     {
+        V.DevNoErrorMsg = string.Empty;
+        V.DevNameErrorMsg = string.Empty;
+
+
         V.Deviation = new ODevdataModel();
-        V.ModalCaption = "Add Deviation";
+        V.DeviationOriginalState = null;
+
+
+        V.ModalCaption = "Add Deviation Type";
 
         if (!string.IsNullOrWhiteSpace(rec.Dev_No))
         {
-            V.ModalCaption = "Edit Deviation";
-            V.Deviation = rec;
+            V.ModalCaption = "Edit Deviation Type";
+            V.Deviation = MapRecord(rec);
+            V.DeviationOriginalState = MapRecord(rec);
         }
 
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
     }
 
+    private async Task Delete(ODevdataModel rec)
+    {
+        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Dev_Name}' record?", "Confirm Deviation Type Deletion");
+        if (!confirmed) return;
+
+
+        try
+        {
+
+            //Add Validation --------------------------------
+
+            var res = await _deviation._04(rec.Dev_No, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                V.Deviations.Remove(rec);
+                RebindGrid();
+                NotificationRef?.Show("Deviation type has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to delete deviation type", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show("Unable to delete deviation type", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+
+
+    private ODevdataModel MapRecord(ODevdataModel rec)
+    {
+        return new ODevdataModel
+        {
+            Dev_No = rec.Dev_No,
+            Dev_Name = rec.Dev_Name,
+        };
+    }
+
+    private async Task GenerateReport()
+    {
+        if (!V.Deviations.Any()) { return; }
+
+
+        V.RepDtls = V.Deviations!;
+
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Position Listing";
+        Rv.RelativePath = "Reports/_01Pis/J_2058_DTE.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
+        await ChildAction.InvokeAsync();
+    }
+
+    public void RebindGrid()
+    {
+        DeviationTypeGridRef.Rebind();
+    }
   
 }
 

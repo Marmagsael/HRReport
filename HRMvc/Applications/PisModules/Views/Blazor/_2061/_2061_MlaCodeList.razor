@@ -1,4 +1,12 @@
-﻿<TelerikGrid TItem="OMlacodeModel"
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOMlacodeDataAccess _mla
+@inject IOPisReportDataAccess _pisRep;
+
+<TelerikGrid TItem="OMlacodeModel"
+             Data="V.MlaCodes"
+             @ref="MlaGridRef"
              SelectionMode="@GridSelectionMode.Single"
              Navigable="true"
              Pageable="true"
@@ -17,11 +25,12 @@
         <div class="d-flex justify-content-between align-items-center w-100">
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     @onclick="@(() => OpenEntryModal(new OMlacodeModel()))">
-                Add Manila Code
+                Add Metro Manila Code
             </button>
 
 
-            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => GenerateReport())">
                 Print Listing
             </button>
         </div>
@@ -34,18 +43,18 @@
         @* --- Code --- *@
         <GridColumn Field="@nameof(OMlacodeModel.Code)"
                     Title="Code"
-                    Width="150px" />
+                    Width="80px" />
 
         @* --- Name --- *@
         <GridColumn Field="@nameof(OMlacodeModel.Name)"
-                    Title="Description"
-                    Width="150px" />
+                    Title="Location"
+                    Width="200px" />
 
 
 
         @* --- ACTIONS --- *@
         <GridCommandColumn Title="Action"
-                           Width="100px"
+                           Width="80px"
                            HeaderClass="text-center">
 
             <Template Context="item">
@@ -63,7 +72,8 @@
                     </button>
 
                     <button type="button"
-                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => Delete(rec))">
                         Delete
                     </button>
 
@@ -88,8 +98,20 @@
     public V2061Model V { get; set; } = new();
 
 
+    [CascadingParameter]
+    V00_RepVars Rv { get; set; } = new();
+
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private TelerikGrid<OMlacodeModel> MlaGridRef;
 
     private int PageSize { get; set; } = 25;
 
@@ -104,19 +126,97 @@
 
     private async Task OpenEntryModal(OMlacodeModel rec)
     {
+        V.CodeErrorMsg = string.Empty;
+        V.LocationErrorMsg = string.Empty;
+
+
         V.MlaCode = new OMlacodeModel();
-        V.ModalCaption = "Add Manila Code";
+        V.MlaOriginalState = null;
+
+
+        V.ModalCaption = "Add Metro Manila Area Code";
 
         if (!string.IsNullOrWhiteSpace(rec.Code))
         {
-            V.ModalCaption = "Edit Manila Code";
-            V.MlaCode = rec;
+            V.ModalCaption = "Edit Metro Manila Area Code";
+            V.MlaCode = MapRecord(rec);
+            V.MlaOriginalState = MapRecord(rec);
         }
 
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
     }
 
-  
+    private async Task Delete(OMlacodeModel rec)
+    {
+        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Metro Manila Area Code Deletion");
+        if (!confirmed) return;
+
+
+        try
+        {
+
+            //Add Validation --------------------------------
+
+            var res = await _mla._04(rec.Code, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                V.MlaCodes.Remove(rec);
+                RebindGrid();
+                NotificationRef?.Show("Metro Manila area code has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to delete Metro Manila area code", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show("Unable to delete Metro Manila area code ", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+
+
+    private OMlacodeModel MapRecord(OMlacodeModel rec)
+    {
+        return new OMlacodeModel
+        {
+            Code = rec.Code,
+            Name = rec.Name,
+        };
+    }
+
+    private async Task GenerateReport()
+    {
+        if (!V.MlaCodes.Any()) { return; }
+
+
+        V.RepDtls = V.MlaCodes!;
+
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Metro Metro Manila Code Listing";
+        Rv.RelativePath = "Reports/_01Pis/J_2061_MC.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
+        await ChildAction.InvokeAsync();
+    }
+
+    public void RebindGrid()
+    {
+        MlaGridRef.Rebind();
+    }
+
 }
+
 

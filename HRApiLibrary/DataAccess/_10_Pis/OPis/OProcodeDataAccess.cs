@@ -17,9 +17,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string? sql = $@"Insert into {schema}.Procode (CODE, NAME) values (@CODE, @NAME)";
             await _sql.ExecuteCmd<dynamic>(sql, procode, conn);
 
-            sql = $@"SELECT * FROM {schema}.Procode WHERE ID = (SELECT @@IDENTITY)";
+            sql = $@"SELECT * FROM {schema}.Procode  WHERE TRIM(UPPER(Code)) = @Code";
 
-            var res = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = procode.Code?.Trim().ToUpper() }, conn);
 
             return res.FirstOrDefault();
         }
@@ -27,29 +27,48 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<List<OProcodeModel?>?> _02( string? schema, string? conn)
         {
-            string? sql = $@"select  CODE, NAME from {schema}.Procode ";
+            string? sql = $@"select  CODE, NAME from {schema}.Procode ORDER BY Name ";
             var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new {  }, conn);
             return data;
         }
 
-
-        public async Task<OProcodeModel?> _03(int? id, OProcodeModel procode, string? schema, string? conn)
+        public async Task<List<OProcodeModel?>?> _02(string code, string name, string schema, string conn)
         {
-            string? sql = $@"Update {schema}.Procode set CODE = @CODE, NAME = @NAME where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, procode, conn);
+            string sql = $@"SELECT * FROM {schema}.Procode  WHERE TRIM(UPPER(Code)) = @Code  OR TRIM(UPPER(Name)) = @Name";
 
-            sql = $@" select  * from {schema}.Procode x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
+            return data;
+        }
+
+
+        public async Task<OProcodeModel?> _03(string code, OProcodeModel prov, string schema, string conn)
+        {
+            var parameters = new
+            {
+                oldCode = code,
+                prov.Code,
+                prov.Name,
+            };
+
+            string sql = $@"UPDATE {schema}.Procode  SET Code = @Code, Name = @Name WHERE TRIM(UPPER(Code)) = @oldCode;";
+
+            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+
+            sql = $@"SELECT * FROM {schema}.Procode x WHERE TRIM(UPPER(x.Code)) = @Code;";
+
+            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = prov.Code?.Trim().ToUpper() }, conn);
             return data?.FirstOrDefault();
         }
 
-        public async Task<OProcodeModel?> _04(int? id, string? schema, string? conn)
-        {
-            string? sql = $@"Delete from {schema}.Procode where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+       
 
-            sql = $@" select  * from {schema}.Procode x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Id = id }, conn);
+        public async Task<OProcodeModel?> _04(string? code, string? schema, string? conn)
+        {
+            string? sql = $@"Delete from {schema}.Procode WHERE TRIM(UPPER(Code)) = @Code;";
+            await _sql.ExecuteCmd<dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
+
+            sql = $@" select  * from {schema}.Procode x WHERE TRIM(UPPER(x.Code)) = @Code ;";
+            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
             return data?.FirstOrDefault();
         }
     }
@@ -59,6 +78,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
     {
         Task<OProcodeModel?> _01(OProcodeModel procode, string? schema, string? conn);
         Task<List<OProcodeModel?>?> _02( string? schema, string? conn);
-        Task<OProcodeModel?> _03(int? id, OProcodeModel procode, string? schema, string? conn);
-        Task<OProcodeModel?> _04(int? id, string? schema, string? conn);
+        Task<List<OProcodeModel?>?> _02(string code, string name, string schema, string conn);
+        Task<OProcodeModel?> _03(string code, OProcodeModel prov, string schema, string conn);
+        Task<OProcodeModel?> _04(string? code, string? schema, string? conn);
     }

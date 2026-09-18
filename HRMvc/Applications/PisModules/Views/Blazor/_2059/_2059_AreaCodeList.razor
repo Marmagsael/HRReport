@@ -1,4 +1,13 @@
-﻿<TelerikGrid TItem="OAreaModel"
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOAreaDataAccess _ac
+@inject IOPisReportDataAccess _pisRep;
+
+
+<TelerikGrid TItem="OAreaModel"
+             Data="V.Areas"
+             @ref="AreaGridRef"
              SelectionMode="@GridSelectionMode.Single"
              Navigable="true"
              Pageable="true"
@@ -21,7 +30,8 @@
             </button>
 
 
-            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => GenerateReport())">
                 Print Listing
             </button>
         </div>
@@ -34,18 +44,18 @@
         @* --- Code --- *@
         <GridColumn Field="@nameof(OAreaModel.AreaCode)"
                     Title="Code"
-                    Width="150px" />
+                    Width="80px" />
 
         @* --- Name --- *@
         <GridColumn Field="@nameof(OAreaModel.AreaName)"
-                    Title="Description"
-                    Width="150px" />
+                    Title="Location"
+                    Width="200px" />
 
 
 
         @* --- ACTIONS --- *@
         <GridCommandColumn Title="Action"
-                           Width="100px"
+                           Width="80px"
                            HeaderClass="text-center">
 
             <Template Context="item">
@@ -63,7 +73,8 @@
                     </button>
 
                     <button type="button"
-                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => Delete(rec))">
                         Delete
                     </button>
 
@@ -88,8 +99,20 @@
     public V2059Model V { get; set; } = new();
 
 
+    [CascadingParameter]
+    V00_RepVars Rv { get; set; } = new();
+
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private TelerikGrid<OAreaModel> AreaGridRef;
 
     private int PageSize { get; set; } = 25;
 
@@ -104,19 +127,98 @@
 
     private async Task OpenEntryModal(OAreaModel rec)
     {
+        V.CodeErrorMsg = string.Empty;
+        V.LocationErrorMsg = string.Empty;
+
+
         V.Area = new OAreaModel();
+        V.AreaOriginalState = null;
+
+
         V.ModalCaption = "Add Area Code";
 
         if (!string.IsNullOrWhiteSpace(rec.AreaCode))
         {
             V.ModalCaption = "Edit Area Code";
-            V.Area = rec;
+            V.Area = MapRecord(rec);
+            V.AreaOriginalState = MapRecord(rec);
         }
 
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
     }
 
-  
+    private async Task Delete(OAreaModel rec)
+    {
+        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.AreaName}' record?", "Confirm Area Code Deletion");
+        if (!confirmed) return;
+
+
+        try
+        {
+
+            //Add Validation --------------------------------
+
+            var res = await _ac._04(rec.AreaCode, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                V.Areas.Remove(rec);
+                RebindGrid();
+                NotificationRef?.Show("Area code has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to delete area code", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to delete area code ", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+
+
+    private OAreaModel MapRecord(OAreaModel rec)
+    {
+        return new OAreaModel
+        {
+            AreaCode = rec.AreaCode,
+            AreaName = rec.AreaName,
+        };
+    }
+
+    private async Task GenerateReport()
+    {
+        if (!V.Areas.Any()) { return; }
+
+
+        V.RepDtls = V.Areas!;
+
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Area Code Listing";
+        Rv.RelativePath = "Reports/_01Pis/J_2059_AC.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
+        await ChildAction.InvokeAsync();
+    }
+
+    public void RebindGrid()
+    {
+        AreaGridRef.Rebind();
+    }
+
 }
+
 

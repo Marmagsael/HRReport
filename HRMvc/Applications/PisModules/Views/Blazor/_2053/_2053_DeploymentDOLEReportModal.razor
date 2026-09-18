@@ -1,0 +1,368 @@
+﻿@using HRApiLibrary.Models._90_Utils
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+@inject IOClientDataAccess _client;
+
+
+<div style="height:calc(100vh - 200px); position:relative; min-height:0;">
+    <_02BTModal MCaption="@Rv.MCaption" ShowModal="V.ShowDOLEReportModal" ChildAction="CloseReportModal">
+        <Details>
+
+            @if (Rv.ShowReport)
+            {
+                <IframeReportRenderer DataSource="@Rv.ReportData"
+                                      ReportRelativePath="@Rv.RelativePath"
+                                      OutputFormat="@Rv.SelectedFormat"
+                                      Parameters="@Rv.ReportParams"
+                                      AutoGenerate="@(Rv.ReportData?.Any() == true)"
+                                      RefreshToken="@Rv.RefreshToken" />
+            }
+            else
+            {
+
+                @* --- Save Button --- *@
+                <div class="p-2 bordered-bottom d-flex gap-2 bg-lightgray flex-shrink-0">
+
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                            type="submit"
+                            tabindex="12"
+                            onclick="@(() => GatherData())">
+                        Gather Data
+                    </button>
+
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                            type="submit"
+                            tabindex="12"
+                            @onclick="@(() => GenerateDOLEDeploymentReport())">
+                        To Excel
+                    </button>
+
+                </div>
+
+
+                <TelerikGrid OnRead="@OnGridRead"
+                             OnStateInit="@OnGridStateInit"
+                             TItem="OClientModel"
+                             @ref="@ClientReportGridRef"
+                             Pageable="true"
+                             Sortable="true"
+                             FilterMode="@GridFilterMode.FilterMenu"
+                             Resizable="true"
+                             Reorderable="true"
+                             Navigable="true"
+                             SelectionMode="@GridSelectionMode.Multiple"
+                             SelectedItems="@V.SelectedDeployments"
+                             SelectedItemsChanged="@DeploymentSelectionChanged"
+                             OnRowClick="@OnRowClick"
+                             @bind-PageSize="@PageSize"
+                             Height="calc(100vh - 200px)">
+
+                    <GridSettings>
+                        <GridPagerSettings PageSizes="@PageSizes" />
+                    </GridSettings>
+
+                    <GridColumns>
+
+                        <GridCheckboxColumn Width="50px"
+                                            Resizable="false"
+                                            SelectAll="true"
+                                            SelectAllMode="@GridSelectAllMode.All" />
+
+                        <GridColumn Field="@nameof(OClientModel.ClName)"
+                                    Title="Deployment"
+                                    Width="180px" />
+
+                        @* --- STATUS  --- *@
+                        <GridColumn Field="@nameof(OClientModel.Status)"
+                                    Title="Status"
+                                    Width="100px"
+                                    HeaderClass="text-center">
+
+                            <Template Context="item">
+                                @{
+                                    var user = (OClientModel)item;
+                                    var status = user.Status?.Trim().ToUpper();
+                                }
+
+                                <div class="d-flex justify-content-center">
+                                    @if (!string.IsNullOrEmpty(status))
+                                    {
+                                        <span class="badge @(status == "ACTIVE" ? "bg-success" : status == "INACTIVE" ? "bg-danger" : "bg-secondary")">
+                                            @status
+                                        </span>
+                                    }
+                                </div>
+                            </Template>
+
+                        </GridColumn>
+
+                        <GridColumn Field="@nameof(OClientModel.Addr1)"
+                                    Title="Address"
+                                    Width="180px" />
+
+                        <GridColumn Field="@nameof(OClientModel.Job)"
+                                    Title="Job"
+                                    Filterable="false"
+                                    Sortable="false"
+                                    Width="100px" />
+
+                        <GridColumn Field="@nameof(OClientModel.PersonnelPositions)"
+                                    Title="Personnel Positions"
+                                    Filterable="false"
+                                    Sortable="false"
+                                    Width="150px" />
+
+                        <GridColumn Title="Head Count"
+                                    HeaderClass="header-center">
+
+                            <Columns>
+                                <GridColumn Field="@nameof(OClientModel.MaleCnt)"
+                                            Title="Male "
+                                            Filterable="false"
+                                            Sortable="false"
+                                            Width="80px" />
+
+                                <GridColumn Field="@nameof(OClientModel.FemaleCnt)"
+                                            Title="Female "
+                                            Filterable="false"
+                                            Sortable="false"
+                                            Width="80px" />
+
+
+                                <GridColumn Field="@nameof(OClientModel.OthersCnt)"
+                                            Title="Other "
+                                            Filterable="false"
+                                            Sortable="false"
+                                            Width="80px" />
+                            </Columns>
+                        </GridColumn>
+
+                        <GridColumn Title="Contract Duration"
+                                    HeaderClass="header-center">
+
+                            <Columns>
+                                <GridColumn Field="@nameof(OClientModel.ContStart)"
+                                            Title="Start"
+                                            DisplayFormat="{0:MM/dd/yyyy}"
+                                            Width="100px" />
+
+
+                                <GridColumn Field="@nameof(OClientModel.ContEnd)"
+                                            Title=" End"
+                                            DisplayFormat="{0:MM/dd/yyyy}"
+                                            Width="100px" />
+
+                            </Columns>
+                        </GridColumn>
+
+                    </GridColumns>
+
+                </TelerikGrid>
+            }
+
+        </Details>
+    </_02BTModal>
+
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2053Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public V00_RepVars Rv { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+    private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
+
+    private TelerikGrid<OClientModel>? ClientReportGridRef;
+    private bool IsRowClickSelection { get; set; }
+
+    private bool withEmpmasData = false;
+
+
+    private void OnGridStateInit(GridStateEventArgs<OClientModel> args)
+    {
+        args.GridState.FilterDescriptors = new List<IFilterDescriptor>
+        {
+            new Telerik.DataSource.FilterDescriptor
+            {
+                Member = nameof(OClientModel.Status),
+                Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+                Value = "Active"
+            }
+        };
+
+        args.GridState.SortDescriptors = new List<Telerik.DataSource.SortDescriptor>
+        {
+            new Telerik.DataSource.SortDescriptor
+            {
+                Member = nameof(OClientModel.ClName),
+                SortDirection = Telerik.DataSource.ListSortDirection.Ascending
+            }
+        };
+    }
+
+
+
+    private async Task OnGridRead(GridReadEventArgs args)
+    {
+
+
+        V.IsLoading = true;
+
+        args.Data = new List<OClientModel>();
+        args.Total = 0;
+
+        var pageSize = args.Request.PageSize;
+
+        if (pageSize <= 0)
+            pageSize = PageSize;
+
+        PageSize = pageSize;
+
+        var page = args.Request.Page > 0 ? args.Request.Page : 1;
+        var sort = args.Request.Sorts.FirstOrDefault();
+
+        var request = new GridRequestModel
+        {
+            PageSize = pageSize,
+            Offset = (page - 1) * pageSize,
+            SortField = sort?.Member ?? nameof(OClientModel.ClName),
+            SortDirection = sort?.SortDirection == ListSortDirection.Descending ? "DESC" : "ASC",
+            Filters = GridHelper.GetFilters(args)
+        };
+
+        try
+        {
+
+            GridResultModel<OClientModel> result = new GridResultModel<OClientModel>();
+            if (!withEmpmasData)
+            {
+                result = await _client._02Grid(request, Uc.OpisDb, Uc.Conn);
+            }
+            else
+            {
+                result = await _client._02GridWithEmpmas(request, Uc.OpisDb, Uc.Conn);
+            }
+
+            args.Data = result?.Data ?? new List<OClientModel>();
+            args.Total = result?.Total ?? 0;
+
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load deployment records.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+
+        V.IsLoading = false;
+        await ChildAction.InvokeAsync();
+
+    }
+
+
+    private void OnRowClick(GridRowClickEventArgs args)
+    {
+        var deployment = (OClientModel)args.Item;
+
+        var selectedRecord = V.SelectedDeployments.ToList();
+        var alreadySelected = selectedRecord.Any(x => x.ClNumber == deployment.ClNumber);
+
+        IsRowClickSelection = true;
+
+        if (alreadySelected)
+        {
+            selectedRecord.RemoveAll(x => x.ClNumber == deployment.ClNumber);
+        }
+        else
+        {
+            selectedRecord.Add(deployment);
+        }
+
+        V.SelectedDeployments = selectedRecord;
+
+        args.ShouldRender = true;
+    }
+
+    private void DeploymentSelectionChanged(IEnumerable<OClientModel?> selectedItems)
+    {
+        if (IsRowClickSelection)
+        {
+            IsRowClickSelection = false;
+            return;
+        }
+
+        V.SelectedDeployments = selectedItems?.ToList() ?? [];
+    }
+
+
+    private async Task GatherData()
+    {
+        withEmpmasData = true;
+        if (ClientReportGridRef != null)
+        {
+            ClientReportGridRef.Rebind();
+        }
+    }
+
+
+    private async Task GenerateDOLEDeploymentReport()
+    {
+      
+
+        if (!V.Clients.Any()) { return; }
+
+        V.RepDtls = new List<OClientModel>();
+
+
+        if (!V.SelectedDeployments.Any())
+        {
+            NotificationRef.Show("Select a record to export to Excel.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        V.RepDtls = V.SelectedDeployments!;
+
+        Rv.MCaption = "Personnel Reporting";
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Personnel Reporting";
+        Rv.RelativePath = "Reports/_01Pis/J_2053_DE_DOLE.trdp";
+        Rv.SelectedFormat = "XLSX";
+
+        Rv.ShowReport = true;
+        if (Rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2000);
+            Rv.ShowReport = false;
+            NotificationRef.Show("The Excel file has been generated successfully. Please check your browser's downloads.", ThemeConstants.Notification.ThemeColor.Success);
+
+        }
+
+        V.SelectedDeployments = new List<OClientModel>();
+    }
+
+    private async Task CloseReportModal()
+    {
+        Rv.ShowReport = false;
+        V.ShowDOLEReportModal = false;
+
+        await ChildAction.InvokeAsync();
+    }
+}

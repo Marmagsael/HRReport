@@ -1,4 +1,10 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IODevdataDataAccess _deviation
+
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.Deviation"
               OnValidSubmit="@SaveRecord"
@@ -9,7 +15,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="4">
+                    tabindex="3">
                 Save
             </button>
 
@@ -18,11 +24,11 @@
          <div class="px-2 ps-md-3 pt-3">
             
              
-             @* --- Code Name --- *@
+             @* --- DevNo Name --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Code
+                    Dev. No.
                 </label>
 
                 <div class="col-12 col-md-4">
@@ -30,15 +36,20 @@
                     <TelerikTextBox @bind-Value="@V.Deviation.Dev_No"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox>
+                                    TabIndex="1"
+                                    MaxLength="10"
+                                    Class="@(string.IsNullOrWhiteSpace(V.DevNoErrorMsg) ? "" : "k-invalid")" />
 
+                        @if (!string.IsNullOrWhiteSpace(V.DevNoErrorMsg))
+                        {
+                            <div class="txt-red small">@V.DevNoErrorMsg</div>
+                        }
                 </div>
 
             </div>
 
 
-            @* --- Description --- *@
+            @* --- DevName --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
@@ -50,8 +61,13 @@
                     <TelerikTextBox @bind-Value="@V.Deviation.Dev_Name"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox>
+                                    MaxLength="40"
+                                    TabIndex="2" Class="@(string.IsNullOrWhiteSpace(V.DevNameErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DevNameErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DevNameErrorMsg</div>
+                    }
 
                 </div>
 
@@ -67,9 +83,161 @@
     [CascadingParameter]
     public V2058Model V { get; set; } = new();
 
-    
-    private void SaveRecord()
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _deviation._02(V.Deviation.Dev_No.Trim().ToUpper(), V.Deviation.Dev_Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+
+            V.Deviation.Dev_No      = V.Deviation.Dev_No.Trim().ToUpper();
+            V.Deviation.Dev_Name    = V.Deviation.Dev_Name.Trim().ToUpper();
+
+            if (V.DeviationOriginalState != null)
+            {
+                V.DeviationOriginalState.Dev_No     = V.DeviationOriginalState.Dev_No?.Trim().ToUpper();
+                V.DeviationOriginalState.Dev_Name   = V.DeviationOriginalState.Dev_Name?.Trim().ToUpper();
+            }
+
+            foreach (var e in existingRecord)
+            {
+                e.Dev_No = e.Dev_No?.Trim().ToUpper();
+                e.Dev_Name = e.Dev_Name?.Trim().ToUpper();
+            }
+
+
+
+
+            bool codeExists = existingRecord.Any(c => c.Dev_No == V.Deviation?.Dev_No && (string.IsNullOrWhiteSpace(V.DeviationOriginalState?.Dev_No) || c.Dev_No != V.DeviationOriginalState?.Dev_No));
+            bool nameExists = existingRecord.Any(n => n.Dev_Name == V.Deviation?.Dev_Name && (string.IsNullOrWhiteSpace(V.DeviationOriginalState?.Dev_Name) || n.Dev_Name != V.DeviationOriginalState?.Dev_Name));
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.DevNoErrorMsg = "Deviation number already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.DevNameErrorMsg = "Deviation type already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+        }
+
+        if (V.DeviationOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _deviation._01(V.Deviation, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.Deviations.Insert(0, res);
+                V.Deviation = new ODevdataModel();
+
+                V.Action = "RefreshDeviationGrid";
+                NotificationRef.Show("Deviation was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to save deviation type.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to save deviation type.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _deviation._03(V.DeviationOriginalState.Dev_No, V.Deviation, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.DeviationOriginalState = new ODevdataModel
+                {
+                    Dev_No = res.Dev_No,
+                    Dev_Name = res.Dev_Name,
+                };
+
+
+                V.Action = "LoadDeviations";
+                NotificationRef.Show("Deviation was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.Deviation.Dev_No))
+        {
+            V.DevNoErrorMsg = "Deviation number is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Deviation.Dev_Name))
+        {
+            V.DevNameErrorMsg = "Deviation name is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.DevNoErrorMsg = string.Empty;
+        V.DevNameErrorMsg = string.Empty;
     }
 }

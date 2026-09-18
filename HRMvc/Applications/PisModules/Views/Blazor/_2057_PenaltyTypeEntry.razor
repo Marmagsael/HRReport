@@ -1,5 +1,10 @@
 ﻿@using HRMvc.Applications._00GeneralComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2057
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOPenaltyDataAccess _penalty;
+@inject IOPisReportDataAccess _pisRep;
 
 <TelerikRootComponent>
 
@@ -8,32 +13,40 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
     <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+        <CascadingValue Value="@rv">
+            <CascadingValue Value="@NotificationRef">
 
-            <_00BT_FullW HdrCaption="Penalty Type Entry">
+                <_00BT_FullW HdrCaption="Penalty Type Entry">
 
-                <Details>
-
-
-
-                    @if (v.ShowEntryModal == true)
-                    {
-                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
-                            <Content>
-                                <_2057_PenaltyTypeEntryModal />
-                            </Content>
-                        </_00Modal>
-                    }
+                    <Details>
 
 
+                        @*--- REPORT ---*@
+                        <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
-                    @*---  Grid ---*@
-                    <_2057_PenaltyTypeList ChildAction="ChildAction" />
-                </Details>
 
-            </_00BT_FullW>
+                        @*--- ENTRY ---*@
+                        @if (v.ShowEntryModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
+                                <Content>
+                                    <_2057_PenaltyTypeEntryModal ChildAction="ChildAction" />
+                                </Content>
+                            </_00Modal>
+                        }
 
+
+
+                        @*---  GRID ---*@
+                        <_2057_PenaltyTypeList ChildAction="ChildAction" @ref="PenaltyTypeGridRef" />
+                    </Details>
+
+                </_00BT_FullW>
+
+            </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 
@@ -46,11 +59,90 @@
 
     private V2057Model v = new();
 
+    V00_RepVars rv = new();
+
     private TelerikNotification NotificationRef;
 
+    private _2057_PenaltyTypeList PenaltyTypeGridRef;
 
-    public void ChildAction()
+
+    protected override async Task OnInitializedAsync()
     {
+        v.IsLoading = true;
 
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+        await LoadPenaltyTypes();
+
+        // Report ---------
+        InitializeReport();
+        await LoadCompanyInfo();
+        v.IsLoading = false;
+
+    }
+
+
+
+
+    private async Task LoadPenaltyTypes()
+    {
+        try
+        {
+            var res = await _penalty._02(v.OPisdb, v.Conn);
+            if (res != null && res.Any())
+            {
+                v.Penalties = res!;
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to load penalty type records.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private void InitializeReport()
+    {
+        rv.MCaption = "Penalty Type Listing";
+        rv.RefreshToken = 20570000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
+
+    public async Task ChildAction()
+    {
+        if (v.Action == "RefreshGrid") if (PenaltyTypeGridRef != null) PenaltyTypeGridRef.RebindGrid();
+        if (v.Action == "LoadPenaltyTypes") await LoadPenaltyTypes();
+
+        v.Action = string.Empty;
     }
 }

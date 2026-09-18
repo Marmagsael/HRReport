@@ -1,6 +1,8 @@
 ﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2054
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
 
+@inject IOInsuranceDataAccess _insurance
 
 
 <TelerikRootComponent>
@@ -10,50 +12,25 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
-        <CascadingValue Value="@v">
-            <CascadingValue Value="@NotificationRef">
 
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
+    <CascadingValue Value="@v">
+        <CascadingValue Value="@Uc">
+            <CascadingValue Value="@NotificationRef">
                 <_00BT_FullW HdrCaption="Insurance Entry">
 
                     <Details>
 
 
-
-                        @if (v.ShowInsuranceEntryModal == true)
-                        {
-                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowInsuranceEntryModal = false" ModalWidth="70vh">
-
-                                <Content>
-                                    <_2054_InsuranceEntryModal />
-                                </Content>
-
-                            </_00Modal>
-                        }
-
-
-                        @if (v.ShowInsuranceAssignmentModal == true)
-                        {
-                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowInsuranceAssignmentModal = false">
-
-                                <Content>
-                                    <_2054_InsuranceAssignmentModal />
-                                </Content>
-
-                            </_00Modal>
-                        }
-
-
-
-
                         @*---  Grid ---*@
-                       <_2054_InsuranceList ChildAction="ChildAction"/>
+                        <_2054_InsuranceList ChildAction="ChildAction" />
                     </Details>
 
                 </_00BT_FullW>
-
             </CascadingValue>
         </CascadingValue>
-
+    </CascadingValue>
 </TelerikRootComponent>
 
 
@@ -64,10 +41,46 @@
     private V2054Model v = new();
     private TelerikNotification? NotificationRef;
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        v.UcLoaded = true;
+
+    }
+
+
+    private async Task LoadInsurances()
+    {
+        v.IsLoading = true;
+
+        try
+        {
+            var res = await _insurance._02(v.OPisdb, v.Conn);
+
+            if (res.Any())
+            {
+                v.Insurances = res;
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable to load insurances", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
+        }
+    }
 
     private void ChildAction()
     {
-        
+
     }
 
 }

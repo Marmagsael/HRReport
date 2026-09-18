@@ -21,6 +21,7 @@ using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRMvc.Applications._02HR._02Library;
 using HRMvc.Applications.PisModules.Vars;
 using HRMvc.Applications.PisModules.Vars.NonExclusive;
+using static HRApiLibrary.DataAccess._10_Pis.OPis.OPenaltyDataAccess;
 
 namespace HRMvc.StartupConfig;
 
@@ -209,12 +210,18 @@ public static class ApiExt
         //-- Old Pis -----------------------------------------------------------------------
         builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
         builder.Services.AddScoped<IOClientDataAccess, OClientDataAccess>();
+        builder.Services.AddScoped<IClientstatusDataAccess, ClientstatusDataAccess>();
         builder.Services.AddScoped<IOEmpstatDataAccess, OEmpstatDataAccess>();
         builder.Services.AddScoped<IODeprecDataAccess, ODeprecDataAccess>();
         builder.Services.AddScoped<IOPisReportDataAccess, OPisReportDataAccess>();
         builder.Services.AddScoped<IOPisDomainaccessDataAccess, OPisDomainaccessDataAccess>();
+        builder.Services.AddScoped<IOPisDomainusrDataAccess, OPisDomainusrDataAccess>();
         builder.Services.AddScoped<IOPisUsrDataAccess, OPisUsrDataAccess>();
         builder.Services.AddScoped<IOInsuranceDataAccess, OInsuranceDataAccess>();
+        builder.Services.AddScoped<IOAreaDataAccess, OAreaDataAccess>();
+        builder.Services.AddScoped<IOLevtblDataAccess, OLevtblDataAccess>();
+        builder.Services.AddScoped<IODevdataDataAccess, ODevdataDataAccess>();
+        builder.Services.AddScoped<IOPenaltyDataAccess, OPenaltyDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------
@@ -226,6 +233,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOEmpportalDataAccess, OEmpportalDataAccess>();
         builder.Services.AddScoped<IOPayrollgrpDataAccess, OPayrollgrpDataAccess>();
         builder.Services.AddScoped<IODomainaccessDataAccess, ODomainaccessDataAccess>();
+        builder.Services.AddScoped<IODomainusrDataAccess, ODomainusrDataAccess>();
         builder.Services.AddScoped<IOUsrDataAccess, OUsrDataAccess>();
         
 

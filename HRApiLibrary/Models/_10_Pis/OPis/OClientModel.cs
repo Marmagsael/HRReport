@@ -13,7 +13,7 @@ public class OClientModel
 	public string? 		Rate          		{ get; set; } 
 	public string? 		BillRate      		{ get; set; } 
 	public string? 		Assist        		{ get; set; } 
-	public string? 		Status        		{ get; set; } 
+	public string? 		Status        		{ get; set; } = "Active";
 	public string? 		ColaRate      		{ get; set; } 
 	public string? 		Nd_Rate       		{ get; set; } 
 	public string? 		RetiRate      		{ get; set; } 
@@ -55,7 +55,19 @@ public class OClientModel
 	public int? 		IsLumpsum     		{ get; set; } 
 
 	// --- Other -------------------------------------------------------
-	public int? 			IsSelected 			{ get; set; } = 0; 
+	public int? 	    IsSelected 			{ get; set; } = 0; 
 	public bool     	IsSelectedB         { get => IsSelected == 1; set => IsSelected = value ? 1 : 0; }
+    public string?		ParentName			{ get; set; }
+    public string?		AreaName			{ get; set; }
+
+
+    // DOLE REPORT ---------------------------------------------
+    public string?		Job					{ get; set; }
+    public string?		PersonnelPositions	{ get; set; }
+    public int?			MaleCnt				{ get; set; } = 0;
+    public int?			FemaleCnt			{ get; set; } = 0;
+    public int?			OthersCnt			{ get; set; } = 0;
+
+
 
 }

@@ -10,10 +10,10 @@
 
         public string? Desc_        { get; set; }
 
-        public string? ResetRegRef  { get; set; }
+        public string? ResetRegRef  { get; set; }  = "0";
 
-        public string? IsTerminated { get; set; }
+        public string? IsTerminated { get; set; } = "0";
 
-        public Double? Days         { get; set; }
+        public Double? Days         { get; set; } = 0;
     }
 }
