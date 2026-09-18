@@ -1,4 +1,8 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+@inject IOLevtblDataAccess _leavetype
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.LeaveType"
               OnValidSubmit="@SaveRecord"
@@ -9,7 +13,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="4">
+                    tabindex="3">
                 Save
             </button>
 
@@ -18,7 +22,7 @@
          <div class="px-2 ps-md-3 pt-3">
             
              
-             @* --- Code Name --- *@
+             @* --- LvCode Name --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
@@ -27,11 +31,17 @@
 
                 <div class="col-12 col-md-4">
 
-                    @* <TelerikTextBox @bind-Value="@V.Position.Code"
+                    <TelerikTextBox @bind-Value="@V.LeaveType.LvCode"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox> *@
+                                    TabIndex="1"
+                                    MaxLength="2"
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
 
                 </div>
 
@@ -46,12 +56,17 @@
                 </label>
 
                 <div class="col-12 col-md-8">
-
-                    @* <TelerikTextBox @bind-Value="@V.Position.Name"
+                    <TelerikTextBox @bind-Value="@V.LeaveType.LvName"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox> *@
+                                    TabIndex="2"
+                                    MaxLength="20"
+                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DescriptionErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DescriptionErrorMsg</div>
+                    }
 
                 </div>
 
@@ -67,9 +82,159 @@
     [CascadingParameter]
     public V2056Model V { get; set; } = new();
 
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
 
-    private void SaveRecord()
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _leavetype._02(V.LeaveType.LvCode.Trim().ToUpper(), V.LeaveType.LvName.Trim().ToUpper(), V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+            V.LeaveType.LvCode = V.LeaveType.LvCode.Trim().ToUpper();
+            V.LeaveType.LvName = V.LeaveType.LvName.Trim().ToUpper();
+
+         
+            if (V.LeaveTypeOriginalState != null)
+            {
+                V.LeaveTypeOriginalState.LvCode = V.LeaveTypeOriginalState.LvCode?.Trim().ToUpper();
+                V.LeaveTypeOriginalState.LvName = V.LeaveTypeOriginalState.LvName?.Trim().ToUpper();
+            }
+
+            foreach (var e in existingRecord)
+            {
+                e.LvCode = e.LvCode?.Trim().ToUpper();
+                e.LvName = e.LvName?.Trim().ToUpper();
+            }
+
+
+            bool codeExists = existingRecord.Any(c => c.LvCode == V.LeaveType.LvCode && (string.IsNullOrWhiteSpace(V.LeaveTypeOriginalState?.LvCode) || c.LvCode != V.LeaveTypeOriginalState?.LvCode));
+            bool nameExists = existingRecord.Any(n => n.LvName == V.LeaveType.LvName && (string.IsNullOrWhiteSpace(V.LeaveTypeOriginalState?.LvName) || n.LvName != V.LeaveTypeOriginalState?.LvName));
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.DescriptionErrorMsg = "Leave type already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+
+        }
+
+
+        if (V.LeaveTypeOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _leavetype._01(V.LeaveType, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.LeaveTypes.Insert(0, res);
+                V.LeaveType = new OLevtblModel();
+
+                V.Action = "RefreshLeaveTypeGrid";
+                NotificationRef.Show("Leave type was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to insert leave type.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to insert leave type.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _leavetype._03(V.LeaveTypeOriginalState.LvCode, V.LeaveType, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.LeaveTypeOriginalState = new OLevtblModel
+                {
+                    LvCode = res.LvCode,
+                    LvName = res.LvName,
+                };
+
+
+                V.Action = "LoadLeaveTypes";
+                NotificationRef.Show("LeaveType was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update leave type.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to update leave type.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.LeaveType.LvCode))
+        {
+            V.CodeErrorMsg = "Leave type code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.LeaveType.LvName))
+        {
+            V.DescriptionErrorMsg = "Leave type description is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.DescriptionErrorMsg = string.Empty;
     }
 }

@@ -1,5 +1,11 @@
 ﻿@using HRMvc.Applications._00GeneralComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2059
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOAreaDataAccess _ac
+@inject IOPisReportDataAccess _pisRep;
+
 
 <TelerikRootComponent>
 
@@ -8,32 +14,39 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
     <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+        <CascadingValue Value="@rv">
+            <CascadingValue Value="@NotificationRef">
 
-            <_00BT_FullW HdrCaption="Area Code Entry">
+                <_00BT_FullW HdrCaption="Area Code Entry">
 
-                <Details>
+                    <Details>
 
-
-
-                    @if (v.ShowEntryModal == true)
-                    {
-                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
-                            <Content>
-                                <_2059_AreaCodeEntryModal />
-                            </Content>
-                        </_00Modal>
-                    }
+                        @*--- REPORT ---*@
+                        <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
+                        @*--- ENTRY ---*@
+                        @if (v.ShowEntryModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
+                                <Content>
+                                    <_2059_AreaCodeEntryModal ChildAction="ChildAction" />
+                                </Content>
+                            </_00Modal>
+                        }
 
-                    @*---  Grid ---*@
-                    <_2059_AreaCodeList ChildAction="ChildAction" />
-                </Details>
 
-            </_00BT_FullW>
 
+                        @*---  GRID ---*@
+                        <_2059_AreaCodeList ChildAction="ChildAction" @ref="AreaCodeGridRef" />
+                    </Details>
+
+                </_00BT_FullW>
+
+            </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 
@@ -46,11 +59,89 @@
 
     private V2059Model v = new();
 
+    V00_RepVars rv = new();
+
     private TelerikNotification NotificationRef;
 
+    private _2059_AreaCodeList AreaCodeGridRef;
 
-    public void ChildAction()
+
+    protected override async Task OnInitializedAsync()
     {
+        v.IsLoading = true;
 
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+        await LoadAreaCodes();
+
+        // Report ---------
+        InitializeReport();
+        await LoadCompanyInfo();
+        v.IsLoading = false;
+
+    }
+
+
+
+
+    private async Task LoadAreaCodes()
+    {
+        try
+        {
+            var res = await _ac._02(Uc.OpisDb, Uc.Conn);
+            if (res != null && res.Any())
+            {
+                v.Areas = res!;
+
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable to load area code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private void InitializeReport()
+    {
+        rv.MCaption = "Area Code Listing";
+        rv.RefreshToken = 20590000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
+
+    public async Task ChildAction()
+    {
+        if (v.Action == "RefreshaGrid") if (AreaCodeGridRef != null) AreaCodeGridRef.RebindGrid();
+        if (v.Action == "LoadAreaCodes") await LoadAreaCodes();
+
+        v.Action = string.Empty;
     }
 }

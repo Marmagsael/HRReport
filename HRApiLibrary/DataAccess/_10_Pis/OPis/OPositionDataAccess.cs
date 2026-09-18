@@ -49,6 +49,7 @@ public class OPositionDataAccess : IOPositionDataAccess
         var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code, Name = name}, conn);
         return data;
     }
+
     public async Task<OPositionModel?> _03(string code, OPositionModel position, string schema, string conn)
     {
         var parameters = new
@@ -60,24 +61,24 @@ public class OPositionDataAccess : IOPositionDataAccess
             position.Sort
         };
 
-        string sql = $@"UPDATE {schema}.Position 
-                     SET CODE = @Code, NAME = @Name, ISGUARD = @Isguard, sort = @Sort 
-                     WHERE CODE = @oldCode;";
+        string sql = $@"UPDATE {schema}.Position SET CODE = @Code, NAME = @Name, ISGUARD = @Isguard, sort = @Sort   WHERE TRIM(UPPER(CODE))  = @oldCode;";
 
         await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
-        sql = $@"SELECT * FROM {schema}.Position x WHERE x.Code = @Code;";
-        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { position.Code }, conn);
+        sql = $@" SELECT * FROM {schema}.Position x  WHERE TRIM(UPPER(x.Code)) = @Code;";
+
+        var data = await _sql.FetchData<OPositionModel?, dynamic>( sql, new { Code = position.Code }, conn);
         return data?.FirstOrDefault();
+
     }
 
     public async Task<OPositionModel?> _04(string code, string schema, string conn)
     {
-        string sql = $@"Delete from {schema}.Position where Code = @Code;";
+        string sql = $@"Delete from {schema}.Position WHERE TRIM(UPPER(x.Code)) = @Code;";
         await _sql.ExecuteCmd<dynamic>(sql, new { Code = code }, conn);
 
-        sql = $@" select  * from {schema}.Position x where x.Code = @Code ;";
-        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code }, conn);
+        sql = $@" select  * from {schema}.Position x WHERE TRIM(UPPER(x.Code)) = @Code;";
+        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
         return data?.FirstOrDefault();
     }
 }

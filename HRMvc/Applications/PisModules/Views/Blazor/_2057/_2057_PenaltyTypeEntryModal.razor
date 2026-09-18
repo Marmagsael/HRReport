@@ -1,4 +1,11 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOPenaltyDataAccess _penalty;
+@inject IOPisReportDataAccess _pisRep;
+
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.Penalty"
               OnValidSubmit="@SaveRecord"
@@ -9,7 +16,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="4">
+                    tabindex="6">
                 Save
             </button>
 
@@ -18,20 +25,26 @@
          <div class="px-2 ps-md-3 pt-3">
             
              
-             @* --- Code Name --- *@
+             @* --- Penalty_No Desc_ --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Code
+                    Penalty_No
                 </label>
 
                 <div class="col-12 col-md-4">
 
-                    <TelerikTextBox @bind-Value="@V.Penalty.Dev_No"
+                    <TelerikTextBox @bind-Value="@V.Penalty.Penalty_No"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox>
+                                    TabIndex="1"
+                                    MaxLength="2" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.PenaltyNoErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.PenaltyNoErrorMsg))
+                    {
+                        <div class="txt-red small">@V.PenaltyNoErrorMsg</div>
+                    }
 
                 </div>
 
@@ -50,8 +63,14 @@
                     <TelerikTextBox @bind-Value="@V.Penalty.Desc_"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox>
+                                    TabIndex="2"
+                                    MaxLength="20" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DescriptionErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DescriptionErrorMsg</div>
+                    }
 
                 </div>
 
@@ -71,7 +90,7 @@
                                          @bind-Value="@V.Penalty.ResetRegRef"
                                          Rounded="@ThemeConstants.DropDownList.Rounded.Large"
                                          FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
-                                         TabIndex="2">
+                                         TabIndex="3">
 
 
                         <DropDownListSettings>
@@ -98,7 +117,7 @@
                                          @bind-Value="@V.Penalty.IsTerminated"
                                          Rounded="@ThemeConstants.DropDownList.Rounded.Large"
                                          FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
-                                         TabIndex="2">
+                                         TabIndex="4">
 
 
                         <DropDownListSettings>
@@ -123,7 +142,7 @@
                     <TelerikNumericTextBox @bind-Value="@V.Penalty.Days"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
+                                    TabIndex="5">
                     </TelerikNumericTextBox>
 
                 </div>
@@ -139,9 +158,153 @@
     [CascadingParameter]
     public V2057Model V { get; set; } = new();
 
-    
-    private void SaveRecord()
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+
+        // ---------- Check Duplicate ---------------------------
+        List<OPenaltyModel?>? existingRecord = null;
+
+        var penaltyNo = V.Penalty.Penalty_No;
+        var desc = V.Penalty.Desc_;
+
+        try
+        {
+            existingRecord = await _penalty._02(penaltyNo.Trim().ToUpper(), desc.Trim().ToUpper(), V.OPisdb, V.Conn);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to validate penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        if (existingRecord?.Any() == true)
+        {
+            bool recordExists = V.PenaltyvOriginalState == null ? true : existingRecord.Any(c => c.Penalty_No != V.PenaltyvOriginalState.Penalty_No || c.Desc_ != V.PenaltyvOriginalState.Desc_);
+
+            if (recordExists)
+            {
+                V.PenaltyNoErrorMsg = "Penalty_No already exists.";
+                V.DescriptionErrorMsg = "Description already exists";
+                return;
+            }
+        }
+
+        // --------------------------------------------------------------
+
+
+
+
+
+        if (V.PenaltyvOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _penalty._01(V.Penalty, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.Penalties.Insert(0, res);
+                V.Penalty = new OPenaltyModel();
+
+                V.Action = "RefreshGrid";
+                NotificationRef.Show("Penalty type was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to save penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to save penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _penalty._03(V.Penalty.Penalty_No.Trim().ToUpper(), V.Penalty.Desc_, V.Penalty, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.PenaltyvOriginalState = new OPenaltyModel
+                {
+                    Penalty_No = res.Penalty_No,
+                    Desc_ = res.Desc_,
+                };
+
+
+                V.Action = "LoadPenaltyTypes";
+                NotificationRef.Show("Penalty Type was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.Penalty.Penalty_No))
+        {
+            V.PenaltyNoErrorMsg = "Code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Penalty.Desc_))
+        {
+            V.DescriptionErrorMsg = "Description is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.PenaltyNoErrorMsg = string.Empty;
+        V.DescriptionErrorMsg = string.Empty;
     }
 }

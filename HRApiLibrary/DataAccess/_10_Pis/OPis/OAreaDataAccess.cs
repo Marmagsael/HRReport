@@ -23,9 +23,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string sql = $@"Insert into {schema}.Area (AREACODE, AREANAME) values (@AREACODE, @AREANAME)";
             await _sql.ExecuteCmd<dynamic>(sql, area, conn);
 
-            sql = $@"SELECT * FROM {schema}.Area WHERE ID = (SELECT @@IDENTITY)";
+            sql = $@"SELECT * FROM {schema}.Area  WHERE TRIM(UPPER(AreaCode)) = @AreaCode";
 
-            var res = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = area.AreaCode?.Trim().ToUpper() }, conn);
 
             return res.FirstOrDefault();
         }
@@ -33,29 +33,46 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<List<OAreaModel?>?> _02( string schema, string conn)
         {
-            string sql = $@"select  AREACODE, AREANAME from {schema}.Area";
+            string sql = $@"select  AREACODE, AREANAME from {schema}.Area Order By AREANAME";
             var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new {  }, conn);
             return data;
         }
 
-
-        public async Task<OAreaModel?> _03(int id, OAreaModel area, string schema, string conn)
+        public async Task<List<OAreaModel?>?> _02(string code, string name, string schema, string conn)
         {
-            string sql = $@"Update {schema}.Area set AREACODE = @AREACODE, AREANAME = @AREANAME where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, area, conn);
+            string sql = $@"SELECT * FROM {schema}.Area  WHERE TRIM(UPPER(AREACODE)) = @Code  OR TRIM(UPPER(AREANAME)) = @Name";
 
-            sql = $@" select  * from {schema}.Area x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
+            return data;
+        }
+
+        public async Task<OAreaModel?> _03(string code, OAreaModel ac, string schema, string conn)
+        {
+            var parameters = new
+            {
+                oldCode = code,
+                ac.AreaCode,
+                ac.AreaName,
+            };
+
+            string sql = $@"UPDATE {schema}.Area  SET AreaCode = @AreaCode, AreaName = @AreaName WHERE TRIM(UPPER(AreaCode)) = @oldCode;";
+
+            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+
+            sql = $@"SELECT * FROM {schema}.Area x WHERE TRIM(UPPER(x.AreaCode)) = @AreaCode;";
+
+            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = ac.AreaCode?.Trim().ToUpper() }, conn);
             return data?.FirstOrDefault();
         }
 
-        public async Task<OAreaModel?> _04(int id, string schema, string conn)
-        {
-            string sql = $@"Delete from {schema}.Area where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
 
-            sql = $@" select  * from {schema}.Area x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { Id = id }, conn);
+        public async Task<OAreaModel?> _04(string code, string schema, string conn)
+        {
+            string sql = $@"Delete from {schema}.Area x WHERE TRIM(UPPER(x.AreaCode)) = @AreaCode;";
+            await _sql.ExecuteCmd<dynamic>(sql, new { AreaCode = code?.Trim().ToUpper() }, conn);
+
+            sql = $@" select  * from {schema}.Area x WHERE TRIM(UPPER(x.AreaCode)) = @AreaCode ;";
+            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = code?.Trim().ToUpper() }, conn);
             return data?.FirstOrDefault();
         }
     }
@@ -64,7 +81,8 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
     {
         Task<OAreaModel?> _01(OAreaModel area, string schema, string conn);
         Task<List<OAreaModel?>?> _02(string schema, string conn);
-        Task<OAreaModel?> _03(int id, OAreaModel area, string schema, string conn);
-        Task<OAreaModel?> _04(int id, string schema, string conn);
+        Task<List<OAreaModel?>?> _02(string code, string name, string schema, string conn);
+        Task<OAreaModel?> _03(string code, OAreaModel ac, string schema, string conn);
+        Task<OAreaModel?> _04(string code, string schema, string conn);
     }
 }

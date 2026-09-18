@@ -1,4 +1,10 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOMlacodeDataAccess _mla
+@inject IOPisReportDataAccess _pisRep;
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.MlaCode"
               OnValidSubmit="@SaveRecord"
@@ -9,7 +15,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="4">
+                    tabindex="3">
                 Save
             </button>
 
@@ -30,8 +36,14 @@
                     <TelerikTextBox @bind-Value="@V.MlaCode.Code"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox>
+                                    TabIndex="1"
+                                    MaxLength="5" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
 
                 </div>
 
@@ -42,7 +54,7 @@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Description
+                    Location
                 </label>
 
                 <div class="col-12 col-md-8">
@@ -50,8 +62,14 @@
                     <TelerikTextBox @bind-Value="@V.MlaCode.Name"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox>
+                                    TabIndex="2"
+                                    MaxLength="30" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.LocationErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.LocationErrorMsg))
+                    {
+                        <div class="txt-red small">@V.LocationErrorMsg</div>
+                    }
 
                 </div>
 
@@ -66,9 +84,161 @@
     [CascadingParameter]
     public V2061Model V { get; set; } = new();
 
-    
-    private void SaveRecord()
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _mla._02(V.MlaCode.Code.Trim().ToUpper(), V.MlaCode.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+            V.MlaCode.Code = V.MlaCode.Code.Trim().ToUpper();
+            V.MlaCode.Name = V.MlaCode.Name.Trim().ToUpper();
+
+
+            if (V.MlaOriginalState != null)
+            {
+                V.MlaOriginalState.Code = V.MlaOriginalState.Code?.Trim().ToUpper();
+                V.MlaOriginalState.Name = V.MlaOriginalState.Name?.Trim().ToUpper();
+            }
+
+            foreach (var e in existingRecord)
+            {
+                e.Code = e.Code?.Trim().ToUpper();
+                e.Name = e.Name?.Trim().ToUpper();
+            }
+
+
+            bool codeExists = existingRecord.Any(c => c.Code == V.MlaCode.Code && (string.IsNullOrWhiteSpace(V.MlaOriginalState?.Code) || c.Code != V.MlaOriginalState?.Code));
+            bool nameExists = existingRecord.Any(n => n.Name == V.MlaCode.Name && (string.IsNullOrWhiteSpace(V.MlaOriginalState?.Name) || n.Name != V.MlaOriginalState?.Name));
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.LocationErrorMsg = "Location already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+
+        }
+
+
+        if (V.MlaOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _mla._01(V.MlaCode, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.MlaCodes.Insert(0, res);
+                V.MlaCode = new OMlacodeModel();
+
+                V.Action = "RefreshMlaGrid";
+                NotificationRef.Show("Metro Manila area codewas saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to save Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to save Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _mla._03(V.MlaOriginalState.Code, V.MlaCode, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.MlaOriginalState = new OMlacodeModel
+                {
+                    Code = res.Code,
+                    Name = res.Name,
+                };
+
+
+                V.Action = "LoadMla";
+                NotificationRef.Show("Metro Manila area code was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.MlaCode.Code))
+        {
+            V.CodeErrorMsg = "Code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.MlaCode.Name))
+        {
+            V.LocationErrorMsg = "Location is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.LocationErrorMsg = string.Empty;
     }
 }

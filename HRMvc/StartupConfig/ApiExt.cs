@@ -21,6 +21,7 @@ using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRMvc.Applications._02HR._02Library;
 using HRMvc.Applications.PisModules.Vars;
 using HRMvc.Applications.PisModules.Vars.NonExclusive;
+using static HRApiLibrary.DataAccess._10_Pis.OPis.OPenaltyDataAccess;
 
 namespace HRMvc.StartupConfig;
 
@@ -219,6 +220,8 @@ public static class ApiExt
         builder.Services.AddScoped<IOInsuranceDataAccess, OInsuranceDataAccess>();
         builder.Services.AddScoped<IOAreaDataAccess, OAreaDataAccess>();
         builder.Services.AddScoped<IOLevtblDataAccess, OLevtblDataAccess>();
+        builder.Services.AddScoped<IODevdataDataAccess, ODevdataDataAccess>();
+        builder.Services.AddScoped<IOPenaltyDataAccess, OPenaltyDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------

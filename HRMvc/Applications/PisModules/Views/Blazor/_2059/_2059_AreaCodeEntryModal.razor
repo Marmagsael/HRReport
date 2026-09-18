@@ -1,4 +1,12 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOAreaDataAccess _ac
+@inject IOPisReportDataAccess _pisRep;
+
+
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.Area"
               OnValidSubmit="@SaveRecord"
@@ -9,7 +17,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="4">
+                    tabindex="3">
                 Save
             </button>
 
@@ -30,8 +38,14 @@
                     <TelerikTextBox @bind-Value="@V.Area.AreaCode"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox>
+                                    TabIndex="1"
+                                    MaxLength="5" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
 
                 </div>
 
@@ -50,8 +64,14 @@
                     <TelerikTextBox @bind-Value="@V.Area.AreaName"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox>
+                                    TabIndex="2"
+                                    MaxLength="20" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.LocationErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.LocationErrorMsg))
+                    {
+                        <div class="txt-red small">@V.LocationErrorMsg</div>
+                    }
 
                 </div>
 
@@ -66,9 +86,162 @@
     [CascadingParameter]
     public V2059Model V { get; set; } = new();
 
-    
-    private void SaveRecord()
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _ac._02(V.Area.AreaCode.Trim().ToUpper(), V.Area.AreaName.Trim().ToUpper(), V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+            V.Area.AreaCode = V.Area.AreaCode.Trim().ToUpper();
+            V.Area.AreaName = V.Area.AreaName.Trim().ToUpper();
+
+
+            if (V.AreaOriginalState != null)
+            {
+                V.AreaOriginalState.AreaCode = V.AreaOriginalState.AreaCode?.Trim().ToUpper();
+                V.AreaOriginalState.AreaName = V.AreaOriginalState.AreaName?.Trim().ToUpper();
+            }
+
+            foreach (var e in existingRecord)
+            {
+                e.AreaCode = e.AreaCode?.Trim().ToUpper();
+                e.AreaName = e.AreaName?.Trim().ToUpper();
+            }
+
+
+            bool codeExists = existingRecord.Any(c => c.AreaCode == V.Area.AreaCode && (string.IsNullOrWhiteSpace(V.AreaOriginalState?.AreaCode) || c.AreaCode != V.AreaOriginalState?.AreaCode));
+            bool nameExists = existingRecord.Any(n => n.AreaName == V.Area.AreaName && (string.IsNullOrWhiteSpace(V.AreaOriginalState?.AreaName) || n.AreaName != V.AreaOriginalState?.AreaName));
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.LocationErrorMsg = "Location already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+
+        }
+
+
+        if (V.AreaOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _ac._01(V.Area, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.Areas.Insert(0, res);
+                V.Area = new OAreaModel();
+
+                V.Action = "RefreshaGrid";
+                NotificationRef.Show("Area code was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to save area code.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Write(ex);
+            NotificationRef.Show("Unable to save area code.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _ac._03(V.AreaOriginalState.AreaCode, V.Area, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.AreaOriginalState = new OAreaModel
+                {
+                    AreaCode = res.AreaCode,
+                    AreaName = res.AreaName,
+                };
+
+
+                V.Action = "LoadAreaCodes";
+                NotificationRef.Show("Area code was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update area code.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update area code.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.Area.AreaCode))
+        {
+            V.CodeErrorMsg = "Area code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Area.AreaName))
+        {
+            V.LocationErrorMsg = "Location is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.LocationErrorMsg = string.Empty;
     }
 }

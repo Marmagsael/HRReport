@@ -1,5 +1,11 @@
 ﻿@using HRMvc.Applications._00GeneralComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2060
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOProcodeDataAccess _prov
+@inject IOPisReportDataAccess _pisRep;
+
 
 <TelerikRootComponent>
 
@@ -8,32 +14,40 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
-    <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
-            <_00BT_FullW HdrCaption="Area Code Entry">
+    <CascadingValue Value="@v">
+        <CascadingValue Value="@rv">
+            <CascadingValue Value="@NotificationRef">
+
+
+            <_00BT_FullW HdrCaption="Provincial Code Entry">
 
                 <Details>
 
+                        @*--- REPORT ---*@
+                        <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
+                    @*--- ENTRY ---*@
                     @if (v.ShowEntryModal == true)
                     {
                         <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
                             <Content>
-                                <_2060_ProvincialCodeEntryModal />
+                                    <_2060_ProvincialCodeEntryModal ChildAction="ChildAction" />
                             </Content>
                         </_00Modal>
                     }
 
 
 
-                    @*---  Grid ---*@
-                    <_2060_ProvincialCodeList ChildAction="ChildAction" />
+                        @*---  GRID ---*@
+                    <_2060_ProvincialCodeList ChildAction="ChildAction" @ref="ProCodeGridRef"/>
                 </Details>
 
             </_00BT_FullW>
 
+        </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 
@@ -46,11 +60,90 @@
 
     private V2060Model v = new();
 
+    V00_RepVars rv = new();
+
     private TelerikNotification NotificationRef;
 
+    private _2060_ProvincialCodeList ProCodeGridRef;
 
-    public void ChildAction()
+
+    protected override async Task OnInitializedAsync()
     {
+        v.IsLoading = true;
 
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+        await LoadProvincialCodes();
+
+        // Report ---------
+        InitializeReport();
+        await LoadCompanyInfo();
+        v.IsLoading = false;
+
+    }
+
+
+
+
+    private async Task LoadProvincialCodes()
+    {
+        try
+        {
+            var res = await _prov._02(v.OPisdb, v.Conn);
+            if (res != null && res.Any())
+            {
+                v.ProvincialCodes = res!;
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to load provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private void InitializeReport()
+    {
+        rv.MCaption = "Provincial Code Listing";
+        rv.RefreshToken = 20600000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
+
+    public async Task ChildAction()
+    {
+        if (v.Action == "RefreshGrid") if (ProCodeGridRef != null) ProCodeGridRef.RebindGrid();
+        if (v.Action == "LoadAreaCodes") await LoadProvincialCodes();
+
+        v.Action = string.Empty;
     }
 }

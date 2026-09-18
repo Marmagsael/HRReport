@@ -60,11 +60,11 @@
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     TabIndex="2"
                                     MaxLength="25" 
-                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionNameErrorMsg) ? "" : "k-invalid")" />
+                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionErrorMsg) ? "" : "k-invalid")" />
 
-                    @if (!string.IsNullOrWhiteSpace(V.DescriptionNameErrorMsg))
+                    @if (!string.IsNullOrWhiteSpace(V.DescriptionErrorMsg))
                     {
-                        <div class="txt-red small">@V.DescriptionNameErrorMsg</div>
+                        <div class="txt-red small">@V.DescriptionErrorMsg</div>
                     }
 
 
@@ -128,6 +128,26 @@
 
         if (existingRecord != null && existingRecord.Any())
         {
+
+           
+            V.Position.Code = V.Position.Code.Trim().ToUpper();
+            V.Position.Name = V.Position.Name.Trim().ToUpper();
+
+            if (V.PositionOriginalState != null)
+            {
+                V.PositionOriginalState.Code = V.PositionOriginalState.Code?.Trim().ToUpper();
+                V.PositionOriginalState.Name = V.PositionOriginalState.Name?.Trim().ToUpper();
+            }
+
+            foreach (var e in existingRecord)
+            {
+                e.Code = e.Code?.Trim().ToUpper();
+                e.Name = e.Name?.Trim().ToUpper();
+            }
+
+
+
+
             bool codeExists = existingRecord.Any(c => c.Code == V.Position?.Code && (string.IsNullOrWhiteSpace(V.PositionOriginalState?.Code) || c.Code != V.PositionOriginalState?.Code));
             bool nameExists = existingRecord.Any(n => n.Name == V.Position?.Name && (string.IsNullOrWhiteSpace(V.PositionOriginalState?.Name) || n.Name != V.PositionOriginalState?.Name));
 
@@ -141,7 +161,7 @@
 
             if (nameExists)
             {
-                V.DescriptionNameErrorMsg = "Position already exists";
+                V.DescriptionErrorMsg = "Position already exists";
                 exist = true;
             }
             if (exist) return;
@@ -233,7 +253,7 @@
 
         if (string.IsNullOrWhiteSpace(V.Position.Name))
         {
-            V.DescriptionNameErrorMsg = "Position name required";
+            V.DescriptionErrorMsg = "Position name is required";
             isValid = false;
         }
 
@@ -244,6 +264,6 @@
     private void ResetErrorMessage()
     {
         V.CodeErrorMsg              = string.Empty;
-        V.DescriptionNameErrorMsg   = string.Empty;
+        V.DescriptionErrorMsg   = string.Empty;
     }
 }

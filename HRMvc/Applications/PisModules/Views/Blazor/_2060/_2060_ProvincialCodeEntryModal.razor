@@ -1,4 +1,11 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOProcodeDataAccess _prov
+@inject IOPisReportDataAccess _pisRep;
+
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.ProvincialCode"
               OnValidSubmit="@SaveRecord"
@@ -9,7 +16,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="4">
+                    tabindex="3">
                 Save
             </button>
 
@@ -30,8 +37,14 @@
                     <TelerikTextBox @bind-Value="@V.ProvincialCode.Code"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox>
+                                    TabIndex="1" 
+                                    MaxLength="5"
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
 
                 </div>
 
@@ -42,7 +55,7 @@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Name
+                    Location
                 </label>
 
                 <div class="col-12 col-md-8">
@@ -50,8 +63,14 @@
                     <TelerikTextBox @bind-Value="@V.ProvincialCode.Name"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox>
+                                    TabIndex="2"
+                                    MaxLength="30" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.LocationErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.LocationErrorMsg))
+                    {
+                        <div class="txt-red small">@V.LocationErrorMsg</div>
+                    }
 
                 </div>
 
@@ -66,9 +85,160 @@
     [CascadingParameter]
     public V2060Model V { get; set; } = new();
 
-    
-    private void SaveRecord()
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _prov._02(V.ProvincialCode.Code.Trim().ToUpper(), V.ProvincialCode.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+            V.ProvincialCode.Code = V.ProvincialCode.Code.Trim().ToUpper();
+            V.ProvincialCode.Name = V.ProvincialCode.Name.Trim().ToUpper();
+
+
+            if (V.ProvOriginalState != null)
+            {
+                V.ProvOriginalState.Code = V.ProvOriginalState.Code?.Trim().ToUpper();
+                V.ProvOriginalState.Name = V.ProvOriginalState.Name?.Trim().ToUpper();
+            }
+
+            foreach (var e in existingRecord)
+            {
+                e.Code = e.Code?.Trim().ToUpper();
+                e.Name = e.Name?.Trim().ToUpper();
+            }
+
+
+            bool codeExists = existingRecord.Any(c => c.Code == V.ProvincialCode.Code && (string.IsNullOrWhiteSpace(V.ProvOriginalState?.Code) || c.Code != V.ProvOriginalState?.Code));
+            bool nameExists = existingRecord.Any(n => n.Name == V.ProvincialCode.Name && (string.IsNullOrWhiteSpace(V.ProvOriginalState?.Name) || n.Name != V.ProvOriginalState?.Name));
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.LocationErrorMsg = "Location already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+
+        }
+
+
+        if (V.ProvOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _prov._01(V.ProvincialCode, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.ProvincialCodes.Insert(0, res);
+                V.ProvincialCode = new OProcodeModel();
+
+                V.Action = "RefreshGrid";
+                NotificationRef.Show("Proincial code was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to save provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to save provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _prov._03(V.ProvOriginalState.Code, V.ProvincialCode, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.ProvOriginalState = new OProcodeModel
+                {
+                    Code = res.Code,
+                    Name = res.Name,
+                };
+
+
+                V.Action = "LoadAreaCodes";
+                NotificationRef.Show("Provncial code was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update provncial code.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.ProvincialCode.Code))
+        {
+            V.CodeErrorMsg = "Code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.ProvincialCode.Name))
+        {
+            V.LocationErrorMsg = "Location is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.LocationErrorMsg = string.Empty;
     }
 }

@@ -18,14 +18,11 @@ namespace HRMvc.Applications.PisModules.Vars
 
         public string?      ModalCaption                    { get; set; } = string.Empty;
         public bool         ShowEntryModal                  { get; set; } = false;
-        public bool         IsEditEntry                     { get; set; } = false;
 
 
         //Error Message ----------------------------
         public string CodeErrorMsg              { get; set; } = string.Empty;
-        public string DescriptionNameErrorMsg   { get; set; } = string.Empty;
-
-
+        public string DescriptionErrorMsg       { get; set; } = string.Empty;
 
 
 

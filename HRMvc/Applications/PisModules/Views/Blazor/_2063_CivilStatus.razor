@@ -1,5 +1,10 @@
 ﻿@using HRMvc.Applications._00GeneralComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2063
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOCivstatDataAccess _civs;
+@inject IOPisReportDataAccess _pisRep;
 
 <TelerikRootComponent>
 
@@ -8,32 +13,39 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
     <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+        <CascadingValue Value="@rv">
+            <CascadingValue Value="@NotificationRef">
 
             <_00BT_FullW HdrCaption="Civil Status Entry">
 
                 <Details>
 
 
+                        @*--- REPORT ---*@
+                        <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
+                        @*--- ENTRY ---*@
                     @if (v.ShowEntryModal == true)
                     {
                         <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
                             <Content>
-                                <_2063_CivilStatusEntryModal />
+                                    <_2063_CivilStatusEntryModal ChildAction="ChildAction" />
                             </Content>
                         </_00Modal>
                     }
 
 
 
-                    @*---  Grid ---*@
-                    <_2063_CivilStatusList ChildAction="ChildAction" />
+                        @*---  GRID ---*@
+                        <_2063_CivilStatusList ChildAction="ChildAction" @ref="CivsGridRef" />
                 </Details>
 
             </_00BT_FullW>
 
+        </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 
@@ -46,11 +58,90 @@
 
     private V2063Model v = new();
 
+    V00_RepVars rv = new();
+
     private TelerikNotification NotificationRef;
 
+    private _2063_CivilStatusList CivsGridRef;
 
-    public void ChildAction()
+
+    protected override async Task OnInitializedAsync()
     {
+        v.IsLoading = true;
 
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+        await LoadCivilStatuses();
+
+        // Report ---------
+        InitializeReport();
+        await LoadCompanyInfo();
+        v.IsLoading = false;
+
+    }
+
+
+
+
+    private async Task LoadCivilStatuses()
+    {
+        try
+        {
+            var res = await _civs._02(v.OPisdb, v.Conn);
+            if (res != null && res.Any())
+            {
+                v.CivilStatuses = res!;
+
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to load civil statuses.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private void InitializeReport()
+    {
+        rv.MCaption = "Civil Status Listing";
+        rv.RefreshToken = 20630000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
+
+    public async Task ChildAction()
+    {
+        if (v.Action == "RefreshGrid") if (CivsGridRef != null) CivsGridRef.RebindGrid();
+        if (v.Action == "LoadCivilStatuses") await LoadCivilStatuses();
+
+        v.Action = string.Empty;
     }
 }

@@ -2,6 +2,8 @@
 @using HRMvc.Applications.PisModules.Views.Blazor._2056
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 
+@inject IOLevtblDataAccess _leavetype
+@inject IOPisReportDataAccess _pisRep;
 
 <TelerikRootComponent>
 
@@ -10,32 +12,39 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
     <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+        <CascadingValue Value="@rv">
+            <CascadingValue Value="@NotificationRef">
 
-            <_00BT_FullW HdrCaption="Leave Type Entry">
+                <_00BT_FullW HdrCaption="Leave Type Entry">
 
-                <Details>
+                    <Details>
 
-
-
-                    @if (v.ShowEntryModal == true)
-                    {
-                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
-                            <Content>
-                                <_2056_LeaveTypeEntryModal />
-                            </Content>
-                        </_00Modal>
-                    }
+                        @*--- REPORT ---*@
+                        <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
 
-                    @*---  Grid ---*@
-                    <_2056_LeaveTypeList ChildAction="ChildAction" />
-                </Details>
+                        @*--- ENTRY ---*@
+                        @if (v.ShowEntryModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
+                                <Content>
+                                    <_2056_LeaveTypeEntryModal ChildAction="ChildAction" />
+                                </Content>
+                            </_00Modal>
+                        }
 
-            </_00BT_FullW>
 
+                        @*---  GRID ---*@
+                        <_2056_LeaveTypeList ChildAction="ChildAction" @ref="LeaveTypeGridRef" />
+                    </Details>
+
+                </_00BT_FullW>
+
+            </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 
@@ -48,43 +57,84 @@
 
     private V2056Model v = new();
 
+    V00_RepVars rv = new();
+
     private TelerikNotification NotificationRef;
 
-    //  protected override async Task OnInitializeAsync()
-    // {
-    //     if (Uc?.Conn == null || Uc.OpisDb == null)
-    //     {
-    //         v.UcLoaded = false;
-    //         NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-    //         return;
-    //     }
+    private _2056_LeaveTypeList LeaveTypeGridRef;
 
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = true;
 
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
 
-    //     v.UcLoaded = true;
-    // }
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+        await LoadLeaveTypes();
+
+        // Report ---------
+        InitializeReport();
+        await LoadCompanyInfo();
+        v.IsLoading = false;
+
+    }
 
 
     private async Task LoadLeaveTypes()
     {
-        // try
-        // {
-        //     var res = await _position._02(Uc.OpisDb, Uc.Conn);
-        //     if (res.Any())
-        //     {
-        //         v.Positions = res;
-        //     }
-        // }
-        // catch (Exception)
-        // {
-        //     NotificationRef?.Show("Unable to load positions.", ThemeConstants.Notification.ThemeColor.Error);
-        //     return;
-        // }
+        try
+        {
+            var res = await _leavetype._02(Uc.OpisDb, Uc.Conn);
+            if (res != null && res.Any())
+            {
+                v.LeaveTypes = res!;
+
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable to load leave types.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
     }
 
 
-    public void ChildAction()
+    public async Task ChildAction()
     {
-
+        if (v.Action == "RefreshGrid") if (LeaveTypeGridRef != null) LeaveTypeGridRef.RebindGrid();
+        if (v.Action == "LoadLeaveTypes") await LoadLeaveTypes();
     }
+
+    private void InitializeReport()
+    {
+        rv.MCaption = "Leave Type Listing";
+        rv.RefreshToken = 20560000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
 }

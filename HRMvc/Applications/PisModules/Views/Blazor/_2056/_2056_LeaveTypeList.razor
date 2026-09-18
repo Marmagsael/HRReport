@@ -1,4 +1,10 @@
-﻿<TelerikGrid TItem="OPositionModel"
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+@inject IOLevtblDataAccess _leavetype
+
+<TelerikGrid TItem="OLevtblModel"
+             Data="V.LeaveTypes"
+             @ref="@LeaveTypeGridRef"
              SelectionMode="@GridSelectionMode.Single"
              Navigable="true"
              Pageable="true"
@@ -16,12 +22,13 @@
 
         <div class="d-flex justify-content-between align-items-center w-100">
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
-                    @onclick="@(() => OpenEntryModal(new OPositionModel()))">
+                    @onclick="@(() => OpenEntryModal(new OLevtblModel()))">
                 Add Leave Type
             </button>
 
 
-            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => GenerateReport())">
                 Print Listing
             </button>
         </div>
@@ -32,14 +39,14 @@
     <GridColumns>
 
         @* --- Code --- *@
-        <GridColumn Field="@nameof(OPositionModel.Code)"
+        <GridColumn Field="@nameof(OLevtblModel.LvCode)"
                     Title="Code"
-                    Width="150px" />
+                    Width="50px" />
 
         @* --- Name --- *@
-        <GridColumn Field="@nameof(OPositionModel.Name)"
+        <GridColumn Field="@nameof(OLevtblModel.LvName)"
                     Title="Description"
-                    Width="150px" />
+                    Width="200px" />
 
 
         @* --- ACTIONS --- *@
@@ -50,7 +57,7 @@
             <Template Context="item">
 
                 @{
-                    var rec = (OPositionModel)item;
+                    var rec = (OLevtblModel)item;
                 }
 
                 <div class="d-flex justify-content-center gap-2">
@@ -62,7 +69,8 @@
                     </button>
 
                     <button type="button"
-                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => Delete(rec))">
                         Delete
                     </button>
 
@@ -86,9 +94,21 @@
     [CascadingParameter]
     public V2056Model V { get; set; } = new();
 
+    [CascadingParameter]
+    V00_RepVars Rv { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private TelerikGrid<OLevtblModel> LeaveTypeGridRef;
 
     private int PageSize { get; set; } = 25;
 
@@ -101,19 +121,97 @@
         null
     };
 
-    private async Task OpenEntryModal(OPositionModel rec)
+    private async Task OpenEntryModal(OLevtblModel rec)
     {
-        // V.Position = new OPositionModel();
-        V.ModalCaption = "Add Leave";
+        V.CodeErrorMsg = string.Empty;
+        V.DescriptionErrorMsg = string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(rec.Code))
+
+        V.LeaveType = new OLevtblModel();
+        V.LeaveTypeOriginalState = null;
+
+
+        V.ModalCaption = "Add Leave Type";
+
+        if (!string.IsNullOrWhiteSpace(rec.LvCode))
         {
-            V.ModalCaption = "Edit Leave";
-            // V.Position = rec;
+            V.ModalCaption = "Edit Leave Type";
+            V.LeaveType = MapRecord(rec);
+            V.LeaveTypeOriginalState = MapRecord(rec);
         }
 
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
+    }
+
+    private async Task Delete(OLevtblModel rec)
+    {
+        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.LvName}' record?", "Confirm Leave Type Deletion");
+        if (!confirmed) return;
+
+
+        try
+        {
+
+            //Add Validation --------------------------------
+            var res = await _leavetype._04(rec.LvCode, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                V.LeaveTypes.Remove(rec);
+                RebindGrid();
+                NotificationRef?.Show("Leave has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to delete leave type", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show("Unable to delete leave type", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+
+
+    private OLevtblModel MapRecord(OLevtblModel rec)
+    {
+        return new OLevtblModel
+        {
+            LvCode = rec.LvCode,
+            LvName = rec.LvName,
+        };
+    }
+
+    private async Task GenerateReport()
+    {
+        if (!V.LeaveTypes.Any()) { return; }
+
+
+        V.RepDtls = V.LeaveTypes;
+
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Leave Listing";
+        Rv.RelativePath = "Reports/_01Pis/J_2056_LTE.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
+        await ChildAction.InvokeAsync();
+    }
+
+
+    public void RebindGrid()
+    {
+        LeaveTypeGridRef.Rebind();
     }
 
   

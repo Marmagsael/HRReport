@@ -1,4 +1,11 @@
-﻿<div style="max-height:60vh">
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOCivstatDataAccess _civs;
+@inject IOPisReportDataAccess _pisRep;
+
+
+<div style="max-height:60vh">
 
     <EditForm Model="@V.CivilStatus"
               OnValidSubmit="@SaveRecord"
@@ -9,7 +16,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="4">
+                    tabindex="3">
                 Save
             </button>
 
@@ -30,8 +37,14 @@
                     <TelerikTextBox @bind-Value="@V.CivilStatus.Code"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1">
-                    </TelerikTextBox>
+                                    TabIndex="1"
+                                    MaxLength="1" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
 
                 </div>
 
@@ -50,8 +63,14 @@
                     <TelerikTextBox @bind-Value="@V.CivilStatus.Name"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="2">
-                    </TelerikTextBox>
+                                    TabIndex="2" 
+                                    MaxLength="10"
+                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DescriptionErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DescriptionErrorMsg</div>
+                    }
 
                 </div>
 
@@ -68,9 +87,160 @@
     [CascadingParameter]
     public V2063Model V { get; set; } = new();
 
-    
-    private void SaveRecord()
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+
+    private async Task SaveRecord()
     {
-        
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _civs._02(V.CivilStatus.Code.Trim().ToUpper(), V.CivilStatus.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+            V.CivilStatus.Code = V.CivilStatus.Code.Trim().ToUpper();
+            V.CivilStatus.Name = V.CivilStatus.Name.Trim().ToUpper();
+
+
+            if (V.CivsvOriginalState != null)
+            {
+                V.CivsvOriginalState.Code = V.CivsvOriginalState.Code?.Trim().ToUpper();
+                V.CivsvOriginalState.Name = V.CivsvOriginalState.Name?.Trim().ToUpper();
+            }
+
+            foreach (var e in existingRecord)
+            {
+                e.Code = e.Code?.Trim().ToUpper();
+                e.Name = e.Name?.Trim().ToUpper();
+            }
+
+
+            bool codeExists = existingRecord.Any(c => c.Code == V.CivilStatus.Code && (string.IsNullOrWhiteSpace(V.CivsvOriginalState?.Code) || c.Code != V.CivsvOriginalState?.Code));
+            bool nameExists = existingRecord.Any(n => n.Name == V.CivilStatus.Name && (string.IsNullOrWhiteSpace(V.CivsvOriginalState?.Name) || n.Name != V.CivsvOriginalState?.Name));
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.DescriptionErrorMsg = "Description already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+
+        }
+
+
+        if (V.CivsvOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+            var res = await _civs._01(V.CivilStatus, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.CivilStatuses.Insert(0, res);
+                V.CivilStatus = new OCivstatModel();
+
+                V.Action = "RefreshGrid";
+                NotificationRef.Show("Civil status was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to save civil status.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to save civil status.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _civs._03(V.CivsvOriginalState.Code, V.CivilStatus, V.OPisdb, V.Conn);
+
+            if (res != null)
+            {
+                V.CivsvOriginalState = new OCivstatModel
+                {
+                    Code = res.Code,
+                    Name = res.Name,
+                };
+
+
+                V.Action = "LoadCivilStatuses";
+                NotificationRef.Show("Civil status was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+                await ChildAction.InvokeAsync();
+            }
+            else
+            {
+                NotificationRef.Show("Unable to update civil status.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update civil status.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.CivilStatus.Code))
+        {
+            V.CodeErrorMsg = "Code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.CivilStatus.Name))
+        {
+            V.DescriptionErrorMsg = "Location is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.DescriptionErrorMsg = string.Empty;
     }
 }
