@@ -4,7 +4,7 @@
 
 @inject IOClientDataAccess _client;
 
-<TelerikGrid OnRead="@OnGridRead"
+<TelerikGrid OnRead="@_02OnGridRead"
              OnStateInit="@OnGridStateInit"
              TItem="OClientModel"
              @ref="ClientGrid"
@@ -113,7 +113,7 @@
 
                     @* ---  DELETE BUTTON --- *@
                     <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="@(() => Delete(client))">
+                            @onclick="@(() => _04Delete(client))">
                         Delete
                     </button>
                 </div>
@@ -186,7 +186,7 @@
 
 
 
-    private async Task OnGridRead(GridReadEventArgs args)
+    private async Task _02OnGridRead(GridReadEventArgs args)
     {
         args.Data  = new List<OClientModel>();
         args.Total = 0;
@@ -228,16 +228,47 @@
 
     private async Task OpenEntryModal(OClientModel client)
     {
-        V.Client = new OClientModel();
-        V.ModalCaption = "Add Deployment";
+        V.DeploymentNameErrorMsg    = string.Empty;
+        V.AreaErrorMsg              = string.Empty;
+        V.RegionErrorMsg            = string.Empty;
+
+
+        V.Client            = new OClientModel();
+        V.IsEditEntry       = false;
+
+        V.ModalCaption      = "Add Deployment";
+        V.Client.Status     = "Active";
 
         if (!string.IsNullOrWhiteSpace(client.ClNumber))
         {
-            V.ModalCaption = "Edit Deployment";
-            V.Client = client;
+            V.IsEditEntry   = true;
+            V.ModalCaption  = "Edit Deployment";
+            V.Client        = client;
         }
+
+
+        if(V.IsEditEntry == false)
+        {
+            await _02FetchMaxClNumber();
+        }
+
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
+    }
+
+    private async Task _02FetchMaxClNumber()
+    {
+        try
+        {
+            int? maxClnumber = await _client._02ByMaxClNumber(Uc.OpisDb, Uc.Conn);
+            V.Client.ClNumber = maxClnumber?.ToString("D5");
+        }
+        catch (Exception ex)
+        {
+
+            NotificationRef.Show("Unable to get the deployment code", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
     }
 
 
@@ -249,21 +280,52 @@
     }
 
 
-    private async Task Delete(OClientModel client)
+
+
+    private async Task _04Delete(OClientModel client)
     {
-        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{client.ClName} record'?", "Confirm Deployment Deletion");
-        if (!confirmed) return;
+        var confirmed = await DialogsRef?.ConfirmAsync( $"Are you sure you want to delete '{client.ClName}'?", "Confirm Deployment Deletion"  );
 
+        if (confirmed != true) return;
 
+        // Check if the deployment exists in empmas table ---
         try
         {
-           
+            var recordExists = await _client._02ByClNumbersCheckIfRecordExistOnTransactionTbl( client.ClNumber,  Uc.OpisDb, Uc.Conn );
+
+            if (recordExists?.Any() == true)
+            {
+                NotificationRef?.Show(  "Unable to delete this deployment. It is linked to another transaction.",ThemeConstants.Notification.ThemeColor.Warning );
+                return;
+            }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            NotificationRef?.Show("Unable to delete deployment", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show( "Unable to validate if this deployment is linked to another transaction.", ThemeConstants.Notification.ThemeColor.Error );
+            return;
+        }
+
+        // Delete deployment ----
+        try
+        {
+            var result = await _client._04( client.ClNumber, Uc.OpisDb, Uc.Conn );
+
+            if (result != null)
+            {
+                NotificationRef?.Show( "Unable to delete this deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error );
+                return;
+            }
+
+            NotificationRef?.Show( "Deployment deleted successfully.", ThemeConstants.Notification.ThemeColor.Success );
+            V.Action = "RefreshDeploymentGrid";
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show( "Unable to delete deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
+
 
     private async Task GenerateDeploymentList()
     {

@@ -18,14 +18,17 @@ namespace HRMvc.Applications.PisModules.Vars
         public string?  ModalCaption        { get; set; } = string.Empty;
         public bool?    ShowEntryModal      { get; set; } = false;
         public bool     ShowDOLEReportModal { get; set; } = false;
+        public bool     IsEditEntry         { get; set; } = false;
 
 
 
-        public List<OClientModel?>?         Clients             { get; set; } = [];
-        public OClientModel?                Client              { get; set; } = new();
+        public List<OClientModel?>?         Clients                 { get; set; } = [];
+        public OClientModel?                Client                  { get; set; } = new();
+        public OClientModel?                ClientOriginalState     { get; set; } = new();
 
         public List<OClientstatusModel?>?   ClientStatus        { get; set; } = [];
         public List<OAreaModel?>?           Areas               { get; set; } = [];
+        public List<ORegionsModel?>?        Regions             { get; set; } = [];
 
 
         public IEnumerable<OClientModel>    RepDtls             { get; set; } = new List<OClientModel>();
@@ -34,6 +37,8 @@ namespace HRMvc.Applications.PisModules.Vars
 
 
         //Error Message ----------------------------
-        public string DeploymentNameErrorMsg { get; set; } = string.Empty;
+        public string DeploymentNameErrorMsg    { get; set; } = string.Empty;
+        public string AreaErrorMsg              { get; set; } = string.Empty;
+        public string RegionErrorMsg            { get; set; } = string.Empty;
     }
 }

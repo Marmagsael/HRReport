@@ -2,6 +2,7 @@ using HRApiLibrary.DataAccess._90_Utils;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis.OPis;
 using HRApiLibrary.Models._90_Utils;
+using MySqlX.XDevAPI;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
@@ -13,7 +14,7 @@ public class OClientDataAccess : IOClientDataAccess
         _sql = sql;
     }
 
-    public async Task _01(OClientModel client, string? schema, string? conn)
+    public async Task<OClientModel?> _01(OClientModel client, string? schema, string? conn)
     {
         string? sql = $@"Insert into {schema}.Client 
 							(CLNUMBER, CLNAME, ADDR1, ADDR2, AREACODE, TEL1, FAXNO, PARENT, RATE, 
@@ -28,9 +29,30 @@ public class OClientDataAccess : IOClientDataAccess
 							 @FMEDER, @Remarks, @contStart, @contEnd, @parentcd, @maxsss, @maxphic, @ContExp, @HavTax, @MinRate, 
 							 @MealAllow, @withUniform, @withRetirement, @region, @ecolaRevised, @ctpaRate, @withCTPA, @seaRate, 
 							 @withSEA, @payprd, @sgcode, @isTrucking, @isLumpsum)";
+
+
         await _sql.ExecuteCmd<dynamic>(sql, client, conn);
+        sql = $@"Select * FROM {schema}.client WHERE TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ";
+        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { client.ClNumber }, conn);
+        return data.FirstOrDefault();
 
 
+    }
+
+
+    public async Task<int?> _02ByMaxClNumber( string? schema, string? conn)
+    {
+
+        var sql = $@"select  LPAD(MAX(CAST(clnumber AS UNSIGNED)) + 1, 5, 0) from {schema}.Client ";
+        var clnumber = await _sql.FetchData<int?, dynamic>(sql, new {  }, conn);
+        return clnumber.FirstOrDefault();
+    }
+
+    public async Task<List<OClientModel?>?> _02ByClNumbersCheckIfRecordExistOnTransactionTbl(string? clnumber, string? schema, string? conn)
+    {
+        string sql = $@"select * from {schema}.empmas where TRIM(UPPER(client_)) = TRIM(UPPER(@ClNumber)) ";
+        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { clnumber }, conn);
+        return data;
     }
 
 
@@ -92,6 +114,12 @@ public class OClientDataAccess : IOClientDataAccess
         return data;
     }
 
+    public async Task<List<OClientModel?>?> _02ByClientName(string? clname, string?  schema, string? conn)
+    {
+        string? sql = @$"select * from {schema}.Client where TRIM(UPPER(clname)) = TRIM(UPPER(@ClName))";
+        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { ClName = clname }, conn);
+        return data;
+    }
 
     public async Task<GridResultModel<OClientModel>> _02Grid(  GridRequestModel request, string schema,string conn)
     {
@@ -226,7 +254,7 @@ public class OClientDataAccess : IOClientDataAccess
 
 
         string sql1 = $@" SELECT   c.clnumber,
-                        c.clname,'Security Services' Job,
+                        c.clname, c.Addr1, c.Status, 'Security Services' Job,
                         GROUP_CONCAT(DISTINCT p.name SEPARATOR ' / ') AS PersonnelPositions,
                         SUM(IF(e.sex_ = 'M', 1, 0)) AS MaleCnt,
                         SUM(IF(e.sex_ = 'F', 1, 0)) AS FemaleCnt,
@@ -265,17 +293,39 @@ public class OClientDataAccess : IOClientDataAccess
 							ecolaRevised = @ecolaRevised, ctpaRate = @ctpaRate, withCTPA = @withCTPA, seaRate = @seaRate, 
 							withSEA = @withSEA, payprd = @payprd, sgcode = @sgcode, isTrucking = @isTrucking, 
 							isLumpsum = @isLumpsum where ClNumber = @ClNumber;
-						select  * from {schema}.Client  where ClNumber = @ClNumber ;";
+						select  * from {schema}.Client  where TRIM(UPPER(ClNumber)) = @ClNumber;";
+        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, client, conn);
+        return data?.FirstOrDefault();
+    }
+
+
+    public async Task<OClientModel?> _03FromDeploymentModule(OClientModel client, string? schema, string? conn)
+    {
+        string? sql = $@"Update {schema}.Client set CLNAME = @ClName, 
+                                                ADDR1 = @Addr1,
+							                    AREACODE = @AreaCode, 
+                                                TEL1 = @Tel1, 
+                                                FAXNO = @FaxNo,  
+                                                STATUS = @Status, 
+                                                Remarks = @Remarks, 
+                                                contStart = @ContStart, 
+							                    contEnd = @ContEnd, 
+                                                parentcd = @ParentCd, 
+							                    ContExp = @ContExp,  
+                                                region = @Region, 
+                                                CONTACT =@Contact
+					            where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber));
+						select  * from {schema}.Client  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber)) ;";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, client, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task<OClientModel?> _04(string? clNumber, string? schema, string? conn)
     {
-        string? sql = $@"Delete from {schema}.Client where Id = @Id;";
+        string? sql = $@"Delete from {schema}.Client where TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ;";
         await _sql.ExecuteCmd<dynamic>(sql, new { ClNumber = clNumber }, conn);
 
-        sql = $@" select  * from {schema}.Client x where x.Id = @Id ;";
+        sql = $@" select  * from {schema}.Client x where TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ;";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
         return data?.FirstOrDefault();
     }
@@ -283,13 +333,17 @@ public class OClientDataAccess : IOClientDataAccess
 
 public interface IOClientDataAccess
 {
-    Task _01(OClientModel client, string? schema, string? conn);
+    Task<OClientModel?> _01(OClientModel client, string? schema, string? conn);
     Task<List<OClientModel?>?> _02(string? schema, string? conn);
+    Task<int?>                  _02ByMaxClNumber(string? schema, string? conn);
+    Task<List<OClientModel?>?> _02ByClNumbersCheckIfRecordExistOnTransactionTbl(string? clnumber, string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByStatuss(string? status, string? schema, string? conn);
+    Task<List<OClientModel?>?> _02ByClientName(string? clname, string? schema, string? conn);
     Task<List<OClientModel?>?> _02ByStatuses(List<string> statuses, string? schema, string? conn);
     Task<GridResultModel<OClientModel>> _02Grid(GridRequestModel request, string schema, string conn);
     Task<GridResultModel<OClientModel>> _02GridWithEmpmas(GridRequestModel request, string schema, string conn);
     Task<OClientModel?> _03(OClientModel client, string? schema, string? conn);
+    Task<OClientModel?> _03FromDeploymentModule(OClientModel client, string? schema, string? conn);
     Task<OClientModel?> _04(string? clNumber, string? schema, string? conn);
 }

@@ -6,6 +6,7 @@
 @inject IOClientDataAccess _client;
 @inject IClientstatusDataAccess _clientstatus;
 @inject IOAreaDataAccess _area;
+@inject IORegionsDataAccess _regions;
 @inject IOPisReportDataAccess _pisRep;
 
 <TelerikRootComponent>
@@ -90,23 +91,27 @@
             return;
         }
 
-        await LoadClients();
-        await LoadClientStatus();
-        await LoadAreas();
+        await _02LoadClients();
+        await _02LoadClientStatus();
+        await _02LoadAreas();
+        await _02LoadRegions();
 
 
         // Report ---------
-        InitializeReport();
-        await LoadCompanyInfo();
+        _00InitializeReport();
+        await _02LoadCompanyInfo();
 
         v.IsLoading = false;
     }
 
 
+    private async Task ChildAction()
+    {
+    }
 
 
 
-    private async Task LoadClients()
+    private async Task _02LoadClients()
     {
         try
         {
@@ -123,7 +128,7 @@
         }
     }
 
-    private async Task LoadClientStatus()
+    private async Task _02LoadClientStatus()
     {
         try
         {
@@ -140,7 +145,7 @@
     }
 
 
-    private async Task LoadAreas()
+    private async Task _02LoadAreas()
     {
         try
         {
@@ -156,13 +161,25 @@
         }
     }
 
-    private async Task ChildAction()
+    private async Task _02LoadRegions()
     {
-
+        try
+        {
+            var res = await _regions._02(Uc.OpisDb, Uc.Conn);
+            if (res.Any())
+            {
+                v.Regions = res;
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef.Show("Unable to load options for regions drop down.", ThemeConstants.Notification.ThemeColor.Error);
+        }
     }
 
 
-    private void InitializeReport()
+
+    private void _00InitializeReport()
     {
         rv.MCaption = "";
         rv.RefreshToken = 20530000;
@@ -175,7 +192,7 @@
         };
     }
 
-    private async Task LoadCompanyInfo()
+    private async Task _02LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
         if (!(res ?? []).Any()) return;
@@ -183,6 +200,14 @@
         var r = res!.First();
         rv.ReportParams["CoName"] = r.CoName ?? "";
         rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
+  
+
+    private void OpenEntryModal()
+    {
+        v.ShowEntryModal = true;
     }
 
 

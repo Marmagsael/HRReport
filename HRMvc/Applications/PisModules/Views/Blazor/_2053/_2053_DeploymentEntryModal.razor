@@ -10,11 +10,14 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="12">
+                    tabindex="14">
                 Save
             </button>
-
         </div>
+
+
+
+
 
 
         <div class="px-2 ps-md-3 pt-3  ">
@@ -34,7 +37,7 @@
                                          @bind-Value="@V.Client.ParentCd"
                                          DefaultText="Select an item..."
                                          Filterable="true"
-                                         TabIndex="1">
+                                         TabIndex="1" >
 
                         <ItemTemplate Context="client">
                             @client.ClName  <span class="text-muted">[@client.Status]</span>
@@ -48,8 +51,11 @@
 
 
                 </div>
-
             </div>
+
+
+
+
 
 
             @* --- Client Code --- *@
@@ -59,7 +65,7 @@
                     Deployment Code
                 </label>
 
-                <div class="col-12 col-md-4 ">
+                <div class="col-12 col-md-4 col-lg-3 ">
 
                     <TelerikTextBox @bind-Value="@V.Client.ClNumber"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
@@ -67,11 +73,15 @@
                                     MaxLength="5"
                                     ReadOnly
                                     Enabled="false"
-                                    TabIndex="-1" />
+                                    TabIndex="-1" 
+                                    />
 
                 </div>
-
             </div>
+
+
+
+
 
 
             @* --- Client Name --- *@
@@ -96,8 +106,12 @@
                     }
 
                 </div>
-
             </div>
+
+
+
+
+
 
 
             @* --- Current Address --- *@
@@ -114,36 +128,90 @@
                                      TabIndex="3" />
 
                 </div>
-
             </div>
+
+
+
+
 
 
             @* --- Area Code--- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Area Code
+                    Area 
                 </label>
 
-                <div class="col-12 col-md-4  ">
+                <div class="col-12 col-md-4  col-lg-3">
                     <TelerikDropDownList Data="@V.Areas"
                                          TextField="AreaName"
                                          ValueField="AreaCode"
                                          @bind-Value="@V.Client.AreaCode"
-                                         DefaultText="Select an item..."
+                                         DefaultText="Select an area..."
                                          Filterable="true"
-                                         TabIndex="4">
+                                         TabIndex="4"
+                                         Class="@(string.IsNullOrWhiteSpace(V.AreaErrorMsg) ? "" : "k-invalid")" >
 
                         <DropDownListSettings>
                             <DropDownListPopupSettings Height="auto" />
                         </DropDownListSettings>
-
-
                     </TelerikDropDownList>
 
-                </div>
+                    @if (!string.IsNullOrWhiteSpace(V.AreaErrorMsg))
+                    {
+                        <div class="txt-red small">@V.AreaErrorMsg</div>
+                    }
 
+
+                </div>
             </div>
+
+
+
+
+
+
+
+            @* --- Region --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Region
+                </label>
+
+                <div class="col-12 col-md-4 col-lg-3 ">
+                    <TelerikDropDownList Data="@V.Regions"
+                                         TextField="Name"
+                                         ValueField="Code"
+                                         @bind-Value="@V.Client.Region"
+                                         DefaultText="Select an region..."
+                                         Filterable="true"
+                                         TabIndex="5"
+                                         Class="@(string.IsNullOrWhiteSpace(V.AreaErrorMsg) ? "" : "k-invalid")">
+
+                        <ItemTemplate Context="region">
+                            <span class="d-inline-block w-100p  text-muted"> [@region.Code]</span>
+                            <span class="">@region.Name</span>
+                        </ItemTemplate>
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" Width="auto" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+
+                         
+
+                    @if (!string.IsNullOrWhiteSpace(V.RegionErrorMsg))
+                    {
+                        <div class="txt-red small">@V.RegionErrorMsg</div>
+                    }
+
+                </div>
+            </div>
+
+
+
+
 
 
             @* --- Telephone No. --- *@
@@ -153,16 +221,21 @@
                     Telephone No.
                 </label>
 
-                <div class="col-12 col-md-4  ">
+                <div class="col-12 col-md-4  col-lg-3">
                     <TelerikTextBox @bind-Value="@V.Client.Tel1"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     MaxLength="10"
-                                    TabIndex="5" />
+                                    TabIndex="6" 
+                                    />
 
                 </div>
-
             </div>
+
+
+
+
+
 
             @* --- Fax No. --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
@@ -171,16 +244,19 @@
                     Fax No.
                 </label>
 
-                <div class="col-12 col-md-4  ">
+                <div class="col-12 col-md-4  col-lg-3">
                     <TelerikTextBox @bind-Value="@V.Client.FaxNo"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     MaxLength="10"
-                                    TabIndex="6" />
+                                    TabIndex="7" />
 
                 </div>
-
             </div>
+
+
+
+
 
             @* --- Contact Person. --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
@@ -189,16 +265,41 @@
                     Contact Person
                 </label>
 
-                <div class="col-12 col-md-8  ">
+                <div class="col-12 col-md-8 col-lg-6 ">
                     <TelerikTextBox @bind-Value="@V.Client.Contact"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     MaxLength="25"
-                                    TabIndex="7" />
+                                    TabIndex="8" />
 
                 </div>
-
             </div>
+
+
+
+
+
+
+            @* --- Start of Contract --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Start of Contract
+                </label>
+
+                <div class="col-12 col-md-4  ">
+                    <TelerikDatePicker @bind-Value="@V.Client.ContStart"
+                                       Format="MMMM dd, yyyy"
+                                       Width="200px"
+                                       TabIndex="9"
+                                       Min="@(new DateTime(1900, 1, 1))" />
+
+                </div>
+            </div>
+
+
+
+
 
             @* --- End of Contract --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
@@ -209,13 +310,17 @@
 
                 <div class="col-12 col-md-4  ">
                     <TelerikDatePicker @bind-Value="@V.Client.ContEnd"
-                                       Format="dd MMMM yyyy"
+                                       Format="MMMM dd, yyyy"
                                        Width="200px"
-                                       TabIndex="8" />
+                                       TabIndex="10"
+                                       Min="@(new DateTime(1900, 1, 1))" />
 
                 </div>
-
             </div>
+
+
+
+
 
             @* --- Contract Expiration --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
@@ -226,13 +331,16 @@
 
                 <div class="col-12 col-md-4  ">
                     <TelerikDatePicker @bind-Value="@V.Client.ContExp"
-                                       Format="dd MMMM yyyy"
+                                       Format="MMMM dd, yyyy"
                                        Width="200px"
-                                       TabIndex="9" />
+                                       TabIndex="11"
+                                       Min="@(new DateTime(1900, 1, 1))" />
 
                 </div>
-
             </div>
+
+
+
 
             @* --- Remarks --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
@@ -245,11 +353,13 @@
                     <TelerikTextArea @bind-Value="@V.Client.Remarks"
                                      MaxLength="254"
                                      Rows="5"
-                                     TabIndex="10" />
+                                     TabIndex="12" />
 
                 </div>
-
             </div>
+
+
+
 
             @* --- Status --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
@@ -258,28 +368,22 @@
                     Status
                 </label>
 
-                <div class="col-12 col-md-4  ">
+                <div class="col-12 col-md-4 col-lg-3 ">
                     <TelerikDropDownList Data="@V.ClientStatus"
                                          TextField="ClStatus"
                                          ValueField="ClStatus"
                                          @bind-Value="@V.Client.Status"
-                                         DefaultText="Select an item..."
+                                         DefaultText="Select a status..."
                                          Filterable="true"
-                                         TabIndex="11">
+                                         TabIndex="13">
 
                         <DropDownListSettings>
                             <DropDownListPopupSettings Height="auto" />
                         </DropDownListSettings>
-
-
                     </TelerikDropDownList>
-
                 </div>
-
             </div>
-
         </div>
-
     </EditForm>
 </div>
 
@@ -293,13 +397,12 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
 
-
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
 
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
-
-
 
 
 
@@ -308,76 +411,150 @@
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
-        // Check If Exist --------------------------
-
-        //update ----
-        if (!string.IsNullOrWhiteSpace(V.Client.ClNumber))
+        // Check If Deployment Name Already Exists --------------------------
+        try
         {
-            await UpdateRecord();
+            var existingRecords = await _client._02ByClientName( V.Client.ClName, Uc.OpisDb, Uc.Conn);
+
+            string clnumber = V.Client.ClNumber.Trim().ToUpper();
+
+
+            if (existingRecords.Any(c => c.ClNumber?.Trim().ToUpper() != clnumber))
+            {
+                // There are already existing duplicate deployment names in the database.
+                var confirmed = await DialogsRef?.ConfirmAsync( $"'{V.Client.ClName}' deployment name already exists. Do you still want to continue saving this entry?","Confirm Save");
+                if (!confirmed) return;
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show(  "Unable to validate if the deployment name already exists.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        //---------------------------------------------------------
+
+
+        setValueToDateIfNull();
+
+        if (V.IsEditEntry == false)
+        {
+            await _01InsertRecord();
+
         }
         else
         {
-            //insert ---
-            await InsertRecord();
+            await _03UpdateRecord();
+
         }
 
     }
 
-    private async Task UpdateRecord()
+
+
+    private async Task _01InsertRecord()
     {
         try
         {
-            // Validate if CLName already exist
+            await _02FetchMaxClNumber();
 
-            var res = await _client._03(V.Client, Uc.OpisDb, Uc.Conn);
-            if(res is not null)
+            var res = await _client._01(V.Client, Uc.OpisDb, Uc.Conn);
+            if(res == null )
             {
-                V.Action = "RefreshDeploymentGrid";
-                NotificationRef.Show("Deployment was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
+                NotificationRef.Show("Unable to insert deployment.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
-        }
-        catch (Exception)
-        {
-            NotificationRef.Show("Unable to update deployment.", ThemeConstants.Notification.ThemeColor.Error);
 
-        }
-    }
-
-
-    private async Task InsertRecord()
-    {
-        try
-        {
-            // Validate if CLName already exist
-            // How to create clnumber?
-            await _client._01(V.Client, Uc.OpisDb, Uc.Conn);
-            
+            V.ShowEntryModal = false;
             V.Action = "RefreshDeploymentGrid";
-            NotificationRef.Show("Deployment was inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            NotificationRef.Show("Deployment inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
             await ChildAction.InvokeAsync();
+
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             NotificationRef.Show("Unable to insert deployment.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
 
+        }
+    }
+
+    private async Task _03UpdateRecord()
+    {
+        try
+        {
+            var res = await _client._03FromDeploymentModule(V.Client, Uc.OpisDb, Uc.Conn);
+            if(res == null)
+            {
+                NotificationRef.Show("Unable to update deployment.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.Action = "RefreshDeploymentGrid";
+            NotificationRef.Show("Deployment updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to update deployment.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+
+        }
+    }
+
+
+    private void setValueToDateIfNull()
+    {
+        if (V.Client.ContStart == null) V.Client.ContStart = new DateTime(1900, 01, 01);
+        if (V.Client.ContEnd == null) V.Client.ContEnd     = new DateTime(1900, 01, 01);
+         if (V.Client.ContExp == null) V.Client.ContExp    = new DateTime(1900,01,01);
+    }
+
+    private async Task _02FetchMaxClNumber()
+    {
+        try
+        {
+            int? maxClnumber = await _client._02ByMaxClNumber(Uc.OpisDb, Uc.Conn);
+            V.Client.ClNumber = maxClnumber?.ToString("D5");
+        }
+        catch (Exception ex)
+        {
+
+            NotificationRef.Show("Unable to get the deployment code", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
     private bool IsFormValid()
     {
+        bool isValid = true;
+
         if (string.IsNullOrWhiteSpace(V.Client.ClName))
         {
             V.DeploymentNameErrorMsg = "Deployment name is required";
-            return false;
+            isValid = false;
         }
-        return true;
+
+        if (string.IsNullOrWhiteSpace(V.Client.AreaCode))
+        {
+            V.AreaErrorMsg = "Area is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Client.Region))
+        {
+            V.RegionErrorMsg = "Region is required";
+            isValid = false;
+        }
+        return isValid;
     }
 
     private void ResetErrorMessage()
     {
         V.DeploymentNameErrorMsg = string.Empty;
+        V.AreaErrorMsg = string.Empty;
+        V.RegionErrorMsg = string.Empty;
     }
 
 }
