@@ -122,34 +122,26 @@
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
+        var code = V.Position.Code.Trim().ToUpper();
+        var name = V.Position.Name.Trim().ToUpper();
+
+        var origcode = V.PositionOriginalState?.Code?.Trim().ToUpper();
+        var origname = V.PositionOriginalState?.Name?.Trim().ToUpper();
+
+
 
         // Validate if code and name already exist
-        var existingRecord = await _position._02(V.Position.Code.Trim().ToUpper(), V.Position.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+        var existingRecord = await _position._02ByCodeOrByName(code, name, V.OPisdb, V.Conn);
 
         if (existingRecord != null && existingRecord.Any())
         {
 
-           
-            V.Position.Code = V.Position.Code.Trim().ToUpper();
-            V.Position.Name = V.Position.Name.Trim().ToUpper();
-
-            if (V.PositionOriginalState != null)
-            {
-                V.PositionOriginalState.Code = V.PositionOriginalState.Code?.Trim().ToUpper();
-                V.PositionOriginalState.Name = V.PositionOriginalState.Name?.Trim().ToUpper();
-            }
-
-            foreach (var e in existingRecord)
-            {
-                e.Code = e.Code?.Trim().ToUpper();
-                e.Name = e.Name?.Trim().ToUpper();
-            }
 
 
+            bool codeExists = existingRecord.Any(c => c.Code.Trim().ToUpper() == code && c.Code != origcode);
+            bool nameExists = existingRecord.Any(n => n.Name.Trim().ToUpper() == name && n.Name != origname);
 
 
-            bool codeExists = existingRecord.Any(c => c.Code == V.Position?.Code && (string.IsNullOrWhiteSpace(V.PositionOriginalState?.Code) || c.Code != V.PositionOriginalState?.Code));
-            bool nameExists = existingRecord.Any(n => n.Name == V.Position?.Name && (string.IsNullOrWhiteSpace(V.PositionOriginalState?.Name) || n.Name != V.PositionOriginalState?.Name));
 
             var exist = false;
 
@@ -170,71 +162,74 @@
 
         if (V.PositionOriginalState == null)
         {
-            await InsertRecord();
+            await _01InsertRecord();
         }
         else
         {
-            await UpdateRecord();
+            await _03UpdateRecord();
         }
     }
 
-    private async Task InsertRecord()
+    private async Task _01InsertRecord()
     {
         try
         {
             var res = await _position._01(V.Position, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.Positions.Insert(0, res);
-                V.Position = new OPositionModel();
+            if (res == null)
+                if(res == null )
+                {
+                    NotificationRef.Show("Unable to insert position.", ThemeConstants.Notification.ThemeColor.Error);
+                    return;
+                }
 
-                V.Action = "RefreshPositionGrid";
-                NotificationRef.Show("Position was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
-            {
-                NotificationRef.Show("Unable to insert position.", ThemeConstants.Notification.ThemeColor.Error);
-            }
+            V.Positions.Insert(0, res);
+            V.Position = new OPositionModel();
+
+            V.Action = "RefreshPositionGrid";
+            NotificationRef.Show("Position inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+
         }
         catch (Exception ex)
         {
             NotificationRef.Show("Unable to insert position.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
 
-    private async Task UpdateRecord()
+    private async Task _03UpdateRecord()
     {
         try
         {
             var res = await _position._03(V.PositionOriginalState.Code, V.Position, V.OPisdb, V.Conn);
 
-            if (res != null)
+            if (res == null)
             {
-                V.PositionOriginalState = new OPositionModel
-                {
-                    Code        = res.Code,
-                    Name        = res.Name,
-                    Isguard     = res.Isguard,
-                    Sort        = res.Sort
-                };
 
-
-                V.Action = "LoadPositions";
-                NotificationRef.Show("Position was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
-            {
                 NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.PositionOriginalState = new OPositionModel
+            {
+                Code        = res.Code,
+                Name        = res.Name,
+                Isguard     = res.Isguard,
+                Sort        = res.Sort
+            };
+
+
+            V.Action = "LoadPositions";
+            NotificationRef.Show("Position updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 

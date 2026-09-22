@@ -20,7 +20,7 @@ public class OPositionDataAccess : IOPositionDataAccess
         string sql = $@"Insert into {schema}.Position (CODE, NAME, ISGUARD, sort) values (@Code, @Name, @IsGuard, @Sort)";
         await _sql.ExecuteCmd<dynamic>(sql, position, conn);
 
-        sql = $@"SELECT * FROM {schema}.Position WHERE Code = @Code";
+        sql = $@"SELECT * FROM {schema}.Position WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))";
 
         var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { position.Code}, conn);
 
@@ -42,7 +42,7 @@ public class OPositionDataAccess : IOPositionDataAccess
         return data;
     }
 
-    public async Task<List<OPositionModel?>?> _02(string code, string name, string schema, string conn)
+    public async Task<List<OPositionModel?>?> _02ByCodeOrByName(string code, string name, string schema, string conn)
     {
         string sql = $@"SELECT * FROM {schema}.Position  WHERE TRIM(UPPER(CODE)) = @Code  OR TRIM(UPPER(Name)) = @Name ORDER BY Name";
 
@@ -65,7 +65,7 @@ public class OPositionDataAccess : IOPositionDataAccess
 
         await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
-        sql = $@" SELECT * FROM {schema}.Position x  WHERE TRIM(UPPER(x.Code)) = @Code;";
+        sql = $@" SELECT * FROM {schema}.Position x  WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code);";
 
         var data = await _sql.FetchData<OPositionModel?, dynamic>( sql, new { Code = position.Code }, conn);
         return data?.FirstOrDefault();
@@ -74,11 +74,11 @@ public class OPositionDataAccess : IOPositionDataAccess
 
     public async Task<OPositionModel?> _04(string code, string schema, string conn)
     {
-        string sql = $@"Delete from {schema}.Position WHERE TRIM(UPPER(x.Code)) = @Code;";
+        string sql = $@"Delete from {schema}.Position WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code);";
         await _sql.ExecuteCmd<dynamic>(sql, new { Code = code }, conn);
 
-        sql = $@" select  * from {schema}.Position x WHERE TRIM(UPPER(x.Code)) = @Code;";
-        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
+        sql = $@" select  * from {schema}.Position x WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code);";
+        var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code }, conn);
         return data?.FirstOrDefault();
     }
 }
@@ -87,7 +87,7 @@ public interface IOPositionDataAccess
 {
     Task<OPositionModel?> _01(OPositionModel position, string schema, string conn);
     Task<OPositionModel?> _02(int id, string schema, string conn);
-    Task<List<OPositionModel?>?> _02(string code, string name, string schema, string conn);
+    Task<List<OPositionModel?>?> _02ByCodeOrByName(string code, string name, string schema, string conn);
     Task<List<OPositionModel?>?> _02(string schema, string conn);
     Task<OPositionModel?> _03(string code, OPositionModel position, string schema, string conn);
     Task<OPositionModel?> _04(string code, string schema, string conn);

@@ -97,7 +97,7 @@
 
                     <button type="button"
                             class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="(() => Delete(rec))">
+                            @onclick="(() => _04Delete(rec))">
                         Delete
                     </button>
 
@@ -106,7 +106,6 @@
             </Template>
 
         </GridCommandColumn>
-
     </GridColumns>
 
     <NoDataTemplate>
@@ -171,7 +170,7 @@
         await ChildAction.InvokeAsync();
     }
 
-    private async Task Delete(OPositionModel rec)
+    private async Task _04Delete(OPositionModel rec)
     {
         var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Position Deletion");
         if (!confirmed) return;
@@ -184,21 +183,21 @@
 
             var res = await _position._04(rec.Code, V.OPisdb, V.Conn);
 
-            if (res == null)
+            if (res != null)
             {
-                V.Positions.Remove(rec);
-                RebindGrid();
-                NotificationRef?.Show("Position has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+                NotificationRef?.Show("Unable to delete this position. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
 
-            }
-            else
-            {
-                NotificationRef?.Show("Unable to delete position", ThemeConstants.Notification.ThemeColor.Error);
-            }
+            V.Positions.Remove(rec);
+            RebindGrid();
+            NotificationRef?.Show("Position deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+           
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show("Unable to delete position", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show("Unable to delete position. Please try again", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
