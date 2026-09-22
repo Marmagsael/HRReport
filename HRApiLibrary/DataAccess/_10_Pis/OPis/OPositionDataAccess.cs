@@ -61,23 +61,23 @@ public class OPositionDataAccess : IOPositionDataAccess
             position.Sort
         };
 
-        string sql = $@"UPDATE {schema}.Position SET CODE = @Code, NAME = @Name, ISGUARD = @Isguard, sort = @Sort   WHERE TRIM(UPPER(CODE))  = @oldCode;";
+        string sql = $@"UPDATE {schema}.Position SET CODE = @Code, NAME = @Name, ISGUARD = @Isguard  WHERE TRIM(UPPER(CODE))  = TRIM(UPPER(@oldCode));";
 
         await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
-        sql = $@" SELECT * FROM {schema}.Position x  WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code);";
+        sql = $@" SELECT * FROM {schema}.Position x  WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code)) AND TRIM(UPPER(x.Name)) = TRIM(UPPER(@Name)) AND TRIM(UPPER(x.IsGuard)) = TRIM(UPPER(@IsGuard));";
 
-        var data = await _sql.FetchData<OPositionModel?, dynamic>( sql, new { Code = position.Code }, conn);
+        var data = await _sql.FetchData<OPositionModel?, dynamic>( sql, new {  position.Code , position.Name, position.Isguard}, conn);
         return data?.FirstOrDefault();
 
     }
 
     public async Task<OPositionModel?> _04(string code, string schema, string conn)
     {
-        string sql = $@"Delete from {schema}.Position WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code);";
+        string sql = $@"Delete from {schema}.Position WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code));";
         await _sql.ExecuteCmd<dynamic>(sql, new { Code = code }, conn);
 
-        sql = $@" select  * from {schema}.Position x WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code);";
+        sql = $@" select  * from {schema}.Position x WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code));";
         var data = await _sql.FetchData<OPositionModel?, dynamic>(sql, new { Code = code }, conn);
         return data?.FirstOrDefault();
     }
