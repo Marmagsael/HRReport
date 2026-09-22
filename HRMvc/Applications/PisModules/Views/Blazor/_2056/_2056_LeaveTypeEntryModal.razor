@@ -97,30 +97,21 @@
 
 
         // Validate if code and name already exist
-        var existingRecord = await _leavetype._02(V.LeaveType.LvCode.Trim().ToUpper(), V.LeaveType.LvName.Trim().ToUpper(), V.OPisdb, V.Conn);
+        var existingRecord = await _leavetype._02ByLvCodeOrByLvName(V.LeaveType.LvCode.Trim().ToUpper(), V.LeaveType.LvName.Trim().ToUpper(), V.OPisdb, V.Conn);
 
         if (existingRecord != null && existingRecord.Any())
         {
 
-            V.LeaveType.LvCode = V.LeaveType.LvCode.Trim().ToUpper();
-            V.LeaveType.LvName = V.LeaveType.LvName.Trim().ToUpper();
+            var code = V.LeaveType.LvCode.Trim().ToUpper();
+            var name = V.LeaveType.LvName.Trim().ToUpper();
 
-         
-            if (V.LeaveTypeOriginalState != null)
-            {
-                V.LeaveTypeOriginalState.LvCode = V.LeaveTypeOriginalState.LvCode?.Trim().ToUpper();
-                V.LeaveTypeOriginalState.LvName = V.LeaveTypeOriginalState.LvName?.Trim().ToUpper();
-            }
-
-            foreach (var e in existingRecord)
-            {
-                e.LvCode = e.LvCode?.Trim().ToUpper();
-                e.LvName = e.LvName?.Trim().ToUpper();
-            }
+            var origcode = V.LeaveTypeOriginalState?.LvCode?.Trim().ToUpper();
+            var origname = V.LeaveTypeOriginalState?.LvName?.Trim().ToUpper();
 
 
-            bool codeExists = existingRecord.Any(c => c.LvCode == V.LeaveType.LvCode && (string.IsNullOrWhiteSpace(V.LeaveTypeOriginalState?.LvCode) || c.LvCode != V.LeaveTypeOriginalState?.LvCode));
-            bool nameExists = existingRecord.Any(n => n.LvName == V.LeaveType.LvName && (string.IsNullOrWhiteSpace(V.LeaveTypeOriginalState?.LvName) || n.LvName != V.LeaveTypeOriginalState?.LvName));
+
+            bool codeExists = existingRecord.Any(c => c.LvCode.Trim().ToUpper() == code && c.LvCode.Trim().ToUpper() != origcode);
+            bool nameExists = existingRecord.Any(n => n.LvName.Trim().ToUpper() == name && n.LvName.Trim().ToUpper() != origname);
 
             var exist = false;
 
@@ -143,69 +134,79 @@
 
         if (V.LeaveTypeOriginalState == null)
         {
-            await InsertRecord();
+            await _01InsertRecord();
         }
         else
         {
-            await UpdateRecord();
+            await _03UpdateRecord();
         }
     }
 
-    private async Task InsertRecord()
+    private async Task _01InsertRecord()
     {
+
+        // To prevent null values for new entry
+        V.LeaveType.EarnCode        = string.Empty;
+        V.LeaveType.No_Indicate     = "0";
+
+
+
         try
         {
             var res = await _leavetype._01(V.LeaveType, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.LeaveTypes.Insert(0, res);
-                V.LeaveType = new OLevtblModel();
-
-                V.Action = "RefreshLeaveTypeGrid";
-                NotificationRef.Show("Leave type was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to insert leave type.", ThemeConstants.Notification.ThemeColor.Error);
+                return;                
             }
+
+
+            V.LeaveTypes.Insert(0, res);
+            V.LeaveType = new OLevtblModel();
+
+            V.Action = "RefreshGrid";
+            NotificationRef.Show("Leave type inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex);
             NotificationRef.Show("Unable to insert leave type.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
 
-    private async Task UpdateRecord()
+    private async Task _03UpdateRecord()
     {
         try
         {
             var res = await _leavetype._03(V.LeaveTypeOriginalState.LvCode, V.LeaveType, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.LeaveTypeOriginalState = new OLevtblModel
-                {
-                    LvCode = res.LvCode,
-                    LvName = res.LvName,
-                };
-
-
-                V.Action = "LoadLeaveTypes";
-                NotificationRef.Show("LeaveType was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to update leave type.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.LeaveTypeOriginalState = new OLevtblModel
+            {
+                LvCode = res.LvCode,
+                LvName = res.LvName,
+            };
+
+
+            V.Action = "LoadLeaveTypes";
+            NotificationRef.Show("Leave type updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex);
             NotificationRef.Show("Unable to update leave type.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 

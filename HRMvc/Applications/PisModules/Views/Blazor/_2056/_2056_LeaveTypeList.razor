@@ -46,12 +46,12 @@
         @* --- Name --- *@
         <GridColumn Field="@nameof(OLevtblModel.LvName)"
                     Title="Description"
-                    Width="200px" />
+                    Width="300px" />
 
 
         @* --- ACTIONS --- *@
         <GridCommandColumn Title="Action"
-                           Width="100px"
+                           Width="80px"
                            HeaderClass="text-center">
 
             <Template Context="item">
@@ -70,7 +70,7 @@
 
                     <button type="button"
                             class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="(() => Delete(rec))">
+                            @onclick="(() => _04Delete(rec))">
                         Delete
                     </button>
 
@@ -131,6 +131,7 @@
         V.LeaveTypeOriginalState = null;
 
 
+
         V.ModalCaption = "Add Leave Type";
 
         if (!string.IsNullOrWhiteSpace(rec.LvCode))
@@ -144,7 +145,7 @@
         await ChildAction.InvokeAsync();
     }
 
-    private async Task Delete(OLevtblModel rec)
+    private async Task _04Delete(OLevtblModel rec)
     {
         var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.LvName}' record?", "Confirm Leave Type Deletion");
         if (!confirmed) return;
@@ -154,22 +155,22 @@
         {
 
             //Add Validation --------------------------------
+
             var res = await _leavetype._04(rec.LvCode, V.OPisdb, V.Conn);
 
-            if (res == null)
+            if (res != null)
             {
-                V.LeaveTypes.Remove(rec);
-                RebindGrid();
-                NotificationRef?.Show("Leave has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+                NotificationRef?.Show("Unable to delete this leave type.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
 
-            }
-            else
-            {
-                NotificationRef?.Show("Unable to delete leave type", ThemeConstants.Notification.ThemeColor.Error);
-            }
+            V.LeaveTypes.Remove(rec);
+            RebindGrid();
+            NotificationRef?.Show("Leave deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
+            Console.WriteLine(ex);
             NotificationRef?.Show("Unable to delete leave type", ThemeConstants.Notification.ThemeColor.Error);
         }
     }

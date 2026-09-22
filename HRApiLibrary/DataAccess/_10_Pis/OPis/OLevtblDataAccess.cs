@@ -1,10 +1,6 @@
 ﻿using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis.OPis;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis
 {
@@ -23,7 +19,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string sql = $@"Insert into {schema}.Levtbl (LVCODE, LVNAME, EARNCODE, NO_INCDATE) values (@LvCode, @LvName, @EarnCode, @No_Indicate)";
             await _sql.ExecuteCmd<dynamic>(sql, levtbl, conn);
 
-            sql = $@"SELECT * FROM {schema}.Levtbl WHERE LVCODE = @LvCode";
+            sql = $@"SELECT * FROM {schema}.Levtbl WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@LVCODE))";
 
             var res = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { levtbl.LvCode }, conn);
 
@@ -46,9 +42,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         }
 
 
-        public async Task<List<OLevtblModel?>?> _02(string code, string name, string schema, string conn)
+        public async Task<List<OLevtblModel?>?> _02ByLvCodeOrByLvName(string code, string name, string schema, string conn)
         {
-            string sql = $@"SELECT * FROM {schema}.Levtbl  WHERE TRIM(UPPER(LVCODE)) = @Code  OR TRIM(UPPER(LVNAME)) = @Name";
+            string sql = $@"SELECT * FROM {schema}.Levtbl  WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@Code))   OR TRIM(UPPER(LVNAME)) = TRIM(UPPER(@Name))";
 
             var data = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
             return data;
@@ -64,23 +60,23 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 levtbl.LvName,
             };
 
-            string sql = $@"UPDATE {schema}.Levtbl  SET LVCODE = @Code, LVNAME = @Name  WHERE TRIM(UPPER(LVCODE)) = @oldCode;";
+            string sql = $@"UPDATE {schema}.Levtbl  SET LVCODE = @LvCode, LVNAME = @LvName  WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@oldCode));";
 
             await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
-            sql = $@"SELECT * FROM {schema}.Levtbl x WHERE TRIM(UPPER(x.LVCODE)) = @Code;";
+            sql = $@"SELECT * FROM {schema}.Levtbl x WHERE TRIM(UPPER(x.LVCODE)) = TRIM(UPPER(@LvCode)) AND   TRIM(UPPER(x.LVNAME)) = TRIM(UPPER(@LvName));";
 
-            var data = await _sql.FetchData<OLevtblModel?, dynamic>( sql, new { Code = levtbl.LvCode?.Trim().ToUpper() },conn);
+            var data = await _sql.FetchData<OLevtblModel?, dynamic>( sql, new {  levtbl.LvCode, levtbl.LvName },conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OLevtblModel?> _04(string code, string schema, string conn)
         {
-            string sql = $@"Delete from {schema}.Levtbl  WHERE TRIM(UPPER(x.LVCODE)) = @Code;";
+            string sql = $@"Delete from {schema}.Levtbl  WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@Code));";
             await _sql.ExecuteCmd<dynamic>(sql, new { Code = code }, conn);
 
-            sql = $@" select  * from {schema}.Levtbl x  WHERE TRIM(UPPER(x.LVCODE)) = @Code ;";
-            var data = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
+            sql = $@" select  * from {schema}.Levtbl x  WHERE TRIM(UPPER(x.LVCODE)) = TRIM(UPPER(@Code)) ;";
+            var data = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { Code = code }, conn);
             return data?.FirstOrDefault();
         }
     }
@@ -91,7 +87,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         Task<OLevtblModel?> _01(OLevtblModel levtbl, string schema, string conn);
         Task<OLevtblModel?> _02(int id, string schema, string conn);
         Task<List<OLevtblModel?>?> _02(string schema, string conn);
-        Task<List<OLevtblModel?>?> _02(string code, string name, string schema, string conn);
+        Task<List<OLevtblModel?>?> _02ByLvCodeOrByLvName(string code, string name, string schema, string conn);
         Task<OLevtblModel?> _03(string code, OLevtblModel levtbl, string schema, string conn);
         Task<OLevtblModel?> _04(string code, string schema, string conn);
     }

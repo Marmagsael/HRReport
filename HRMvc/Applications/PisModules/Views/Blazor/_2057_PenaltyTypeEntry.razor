@@ -81,11 +81,11 @@
         v.OPisdb = Uc.OpisDb;
         v.Conn = Uc.Conn;
 
-        await LoadPenaltyTypes();
+        await _02LoadPenaltyTypes();
 
         // Report ---------
         InitializeReport();
-        await LoadCompanyInfo();
+        await _02LoadCompanyInfo();
         v.IsLoading = false;
 
     }
@@ -93,7 +93,7 @@
 
 
 
-    private async Task LoadPenaltyTypes()
+    private async Task _02LoadPenaltyTypes()
     {
         try
         {
@@ -106,7 +106,6 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
             NotificationRef?.Show("Unable to load penalty type records.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
@@ -126,7 +125,7 @@
         };
     }
 
-    private async Task LoadCompanyInfo()
+    private async Task _02LoadCompanyInfo()
     {
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
         if (!(res ?? []).Any()) return;
@@ -141,7 +140,7 @@
     public async Task ChildAction()
     {
         if (v.Action == "RefreshGrid") if (PenaltyTypeGridRef != null) PenaltyTypeGridRef.RebindGrid();
-        if (v.Action == "LoadPenaltyTypes") await LoadPenaltyTypes();
+        if (v.Action == "LoadPenaltyTypes") await _02LoadPenaltyTypes();
 
         v.Action = string.Empty;
     }

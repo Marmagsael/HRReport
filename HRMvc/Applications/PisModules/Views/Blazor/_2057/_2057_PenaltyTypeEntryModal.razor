@@ -29,7 +29,7 @@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Penalty_No
+                    Code
                 </label>
 
                 <div class="col-12 col-md-4">
@@ -177,12 +177,16 @@
         // ---------- Check Duplicate ---------------------------
         List<OPenaltyModel?>? existingRecord = null;
 
-        var penaltyNo = V.Penalty.Penalty_No;
-        var desc = V.Penalty.Desc_;
+        var penaltyNo   = V.Penalty.Penalty_No.Trim().ToUpper();
+        var desc        = V.Penalty.Desc_.Trim().ToUpper();
+
+
+        var origpenaltyNo   = V.PenaltyvOriginalState?.Penalty_No?.Trim().ToUpper();
+        var origdesc        = V.PenaltyvOriginalState?.Desc_?.Trim().ToUpper();
 
         try
         {
-            existingRecord = await _penalty._02(penaltyNo.Trim().ToUpper(), desc.Trim().ToUpper(), V.OPisdb, V.Conn);
+            existingRecord = await _penalty._02ByPenaltyNoByDescNo(penaltyNo, desc, V.OPisdb, V.Conn);
         }
         catch (Exception ex)
         {
@@ -192,11 +196,13 @@
 
         if (existingRecord?.Any() == true)
         {
-            bool recordExists = V.PenaltyvOriginalState == null ? true : existingRecord.Any(c => c.Penalty_No != V.PenaltyvOriginalState.Penalty_No || c.Desc_ != V.PenaltyvOriginalState.Desc_);
+
+            // confirm if duplicate code && decription is allowed -- 
+            bool recordExists = V.PenaltyvOriginalState == null ? true : existingRecord.Any(c => c.Penalty_No.Trim().ToUpper() != origpenaltyNo || c.Desc_ != origdesc);
 
             if (recordExists)
             {
-                V.PenaltyNoErrorMsg = "Penalty_No already exists.";
+                V.PenaltyNoErrorMsg = "Code already exists.";
                 V.DescriptionErrorMsg = "Description already exists";
                 return;
             }
@@ -225,24 +231,24 @@
         {
             var res = await _penalty._01(V.Penalty, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.Penalties.Insert(0, res);
-                V.Penalty = new OPenaltyModel();
-
-                V.Action = "RefreshGrid";
-                NotificationRef.Show("Penalty type was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to save penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.Penalties.Insert(0, res);
+            V.Penalty = new OPenaltyModel();
+
+            V.Action = "RefreshGrid";
+            NotificationRef.Show("Penalty type inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to save penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
@@ -252,30 +258,30 @@
     {
         try
         {
-            var res = await _penalty._03(V.Penalty.Penalty_No.Trim().ToUpper(), V.Penalty.Desc_, V.Penalty, V.OPisdb, V.Conn);
+            var res = await _penalty._03FromPenaltyEntryModule(V.PenaltyvOriginalState.Penalty_No, V.PenaltyvOriginalState.Desc_, V.Penalty, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.PenaltyvOriginalState = new OPenaltyModel
-                {
-                    Penalty_No = res.Penalty_No,
-                    Desc_ = res.Desc_,
-                };
-
-
-                V.Action = "LoadPenaltyTypes";
-                NotificationRef.Show("Penalty Type was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to update penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.PenaltyvOriginalState = new OPenaltyModel
+            {
+                Penalty_No = res.Penalty_No,
+                Desc_ = res.Desc_,
+            };
+
+
+            V.Action = "LoadPenaltyTypes";
+            NotificationRef.Show("Penalty type  updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to update penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 

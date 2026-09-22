@@ -292,34 +292,14 @@ public class OClientDataAccess : IOClientDataAccess
 							withUniform = @withUniform, withRetirement = @withRetirement, region = @region, 
 							ecolaRevised = @ecolaRevised, ctpaRate = @ctpaRate, withCTPA = @withCTPA, seaRate = @seaRate, 
 							withSEA = @withSEA, payprd = @payprd, sgcode = @sgcode, isTrucking = @isTrucking, 
-							isLumpsum = @isLumpsum where ClNumber = @ClNumber;
-						select  * from {schema}.Client  where TRIM(UPPER(ClNumber)) = @ClNumber;";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, client, conn);
-        return data?.FirstOrDefault();
-    }
-
-
-    public async Task<OClientModel?> _03FromDeploymentModule(OClientModel client, string? schema, string? conn)
-    {
-        string? sql = $@"Update {schema}.Client set CLNAME = @ClName, 
-                                                ADDR1 = @Addr1,
-							                    AREACODE = @AreaCode, 
-                                                TEL1 = @Tel1, 
-                                                FAXNO = @FaxNo,  
-                                                STATUS = @Status, 
-                                                Remarks = @Remarks, 
-                                                contStart = @ContStart, 
-							                    contEnd = @ContEnd, 
-                                                parentcd = @ParentCd, 
-							                    ContExp = @ContExp,  
-                                                region = @Region, 
-                                                CONTACT =@Contact
-					            where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber));
+							isLumpsum = @isLumpsum  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber));
 						select  * from {schema}.Client  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber)) ;";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, client, conn);
         return data?.FirstOrDefault();
     }
 
+
+   
     public async Task<OClientModel?> _04(string? clNumber, string? schema, string? conn)
     {
         string? sql = $@"Delete from {schema}.Client where TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ;";
@@ -344,6 +324,5 @@ public interface IOClientDataAccess
     Task<GridResultModel<OClientModel>> _02Grid(GridRequestModel request, string schema, string conn);
     Task<GridResultModel<OClientModel>> _02GridWithEmpmas(GridRequestModel request, string schema, string conn);
     Task<OClientModel?> _03(OClientModel client, string? schema, string? conn);
-    Task<OClientModel?> _03FromDeploymentModule(OClientModel client, string? schema, string? conn);
     Task<OClientModel?> _04(string? clNumber, string? schema, string? conn);
 }
