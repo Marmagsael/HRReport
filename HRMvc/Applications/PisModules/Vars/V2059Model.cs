@@ -21,8 +21,11 @@ namespace HRMvc.Applications.PisModules.Vars
         public bool         ShowEntryModal                  { get; set; } = false;
 
 
+        public string       LastAreaCodeUsed                { get; set; } = string.Empty;
+
+
         public OAreaModel? Area                             { get; set; } = new();
-        public List<OAreaModel?>? Areas                      { get; set; } = new();
+        public List<OAreaModel?>? Areas                     { get; set; } = new();
          
        public IEnumerable<OAreaModel>        RepDtls                 { get; set; } = new List<OAreaModel>();
         public OAreaModel?                   AreaOriginalState       { get; set; } = null;

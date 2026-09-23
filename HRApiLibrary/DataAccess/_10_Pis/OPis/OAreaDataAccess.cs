@@ -20,12 +20,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OAreaModel?> _01(OAreaModel area, string schema, string conn)
         {
-            string sql = $@"Insert into {schema}.Area (AREACODE, AREANAME) values (@AREACODE, @AREANAME)";
+            string sql = $@" INSERT INTO {schema}.Area (AREACODE, AREANAME) VALUES (@AREACODE, @AREANAME)";
             await _sql.ExecuteCmd<dynamic>(sql, area, conn);
 
-            sql = $@"SELECT * FROM {schema}.Area  WHERE TRIM(UPPER(AreaCode)) = @AreaCode";
-
-            var res = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = area.AreaCode?.Trim().ToUpper() }, conn);
+            sql = $@" SELECT * FROM {schema}.Area WHERE TRIM(UPPER(AreaCode)) = TRIM(UPPER(@AreaCode))";
+            var res = await _sql.FetchData<OAreaModel?, dynamic>( sql,new { AreaCode = area.AreaCode }, conn);
 
             return res.FirstOrDefault();
         }
@@ -38,7 +37,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data;
         }
 
-        public async Task<List<OAreaModel?>?> _02(string code, string name, string schema, string conn)
+        public async Task<List<OAreaModel?>?> _02ByCodeOrByName(string code, string name, string schema, string conn)
         {
             string sql = $@"SELECT * FROM {schema}.Area  WHERE TRIM(UPPER(AREACODE)) = @Code  OR TRIM(UPPER(AREANAME)) = @Name";
 
@@ -55,24 +54,23 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 ac.AreaName,
             };
 
-            string sql = $@"UPDATE {schema}.Area  SET AreaCode = @AreaCode, AreaName = @AreaName WHERE TRIM(UPPER(AreaCode)) = @oldCode;";
-
+            string sql = $@"UPDATE {schema}.Area  SET AreaCode = @AreaCode, AreaName = @AreaName WHERE TRIM(UPPER(AreaCode)) = TRIM(UPPER(@oldCode));";
             await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
-            sql = $@"SELECT * FROM {schema}.Area x WHERE TRIM(UPPER(x.AreaCode)) = @AreaCode;";
+            sql = $@"SELECT * FROM {schema}.Area x WHERE TRIM(UPPER(x.AreaCode)) = TRIM(UPPER(@AreaCode));";
 
-            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = ac.AreaCode?.Trim().ToUpper() }, conn);
+            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = ac.AreaCode}, conn);
             return data?.FirstOrDefault();
         }
 
 
         public async Task<OAreaModel?> _04(string code, string schema, string conn)
         {
-            string sql = $@"Delete from {schema}.Area x WHERE TRIM(UPPER(x.AreaCode)) = @AreaCode;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { AreaCode = code?.Trim().ToUpper() }, conn);
+            string sql = $@"Delete from {schema}.Area x WHERE TRIM(UPPER(AreaCode)) = TRIM(UPPER(@AreaCode));";
+            await _sql.ExecuteCmd<dynamic>(sql, new { AreaCode = code}, conn);
 
-            sql = $@" select  * from {schema}.Area x WHERE TRIM(UPPER(x.AreaCode)) = @AreaCode ;";
-            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = code?.Trim().ToUpper() }, conn);
+            sql = $@" select  * from {schema}.Area x WHERE TRIM(UPPER(AreaCode)) = TRIM(UPPER(@AreaCode));";
+            var data = await _sql.FetchData<OAreaModel?, dynamic>(sql, new { AreaCode = code }, conn);
             return data?.FirstOrDefault();
         }
     }
@@ -81,7 +79,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
     {
         Task<OAreaModel?> _01(OAreaModel area, string schema, string conn);
         Task<List<OAreaModel?>?> _02(string schema, string conn);
-        Task<List<OAreaModel?>?> _02(string code, string name, string schema, string conn);
+        Task<List<OAreaModel?>?> _02ByCodeOrByName(string code, string name, string schema, string conn);
         Task<OAreaModel?> _03(string code, OAreaModel ac, string schema, string conn);
         Task<OAreaModel?> _04(string code, string schema, string conn);
     }
