@@ -48,7 +48,7 @@
         @* --- Dev_Name --- *@
         <GridColumn Field="@nameof(ODevdataModel.Dev_Name)"
                     Title="Description"
-                    Width="200px" />
+                    Width="300px" />
 
 
 
@@ -56,7 +56,7 @@
 
         @* --- ACTIONS --- *@
         <GridCommandColumn Title="Action"
-                           Width="100px"
+                           Width="80px"
                            HeaderClass="text-center">
 
             <Template Context="item">
@@ -75,7 +75,7 @@
 
                     <button type="button"
                             class="card p-2 text-center h-35p mb-btn mb-btn-gray" 
-                            @onclick="(() => Delete(rec))">
+                            @onclick="(() => _04Delete(rec))">
                         Delete
                     </button>
 
@@ -132,23 +132,46 @@
 
 
         V.Deviation = new ODevdataModel();
-        V.DeviationOriginalState = null;
-
+        // V.DeviationOriginalState = null;
+        V.IsEditEntry = false;
 
         V.ModalCaption = "Add Deviation Type";
 
         if (!string.IsNullOrWhiteSpace(rec.Dev_No))
         {
-            V.ModalCaption = "Edit Deviation Type";
-            V.Deviation = MapRecord(rec);
-            V.DeviationOriginalState = MapRecord(rec);
+            V.IsEditEntry   = true;
+            V.ModalCaption  = "Edit Deviation Type";
+            V.Deviation     = MapRecord(rec);
+            // V.DeviationOriginalState = MapRecord(rec);
+        }
+
+        if (V.IsEditEntry == false)
+        {
+            await _02FetchMaxDevNo();
         }
 
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
     }
 
-    private async Task Delete(ODevdataModel rec)
+
+    private async Task _02FetchMaxDevNo()
+    {
+        try
+        {
+            int? maxClnumber = await _deviation._02ByMaxDevNo(V.OPisdb, V.Conn);
+            V.Deviation.Dev_No = maxClnumber?.ToString("D5");
+        }
+        catch (Exception ex)
+        {
+
+            NotificationRef.Show("Unable to get the  code", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private async Task _04Delete(ODevdataModel rec)
     {
         var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Dev_Name}' record?", "Confirm Deviation Type Deletion");
         if (!confirmed) return;
@@ -165,7 +188,7 @@
             {
                 V.Deviations.Remove(rec);
                 RebindGrid();
-                NotificationRef?.Show("Deviation type has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+                NotificationRef?.Show("Deviation type deleted successfylly.", ThemeConstants.Notification.ThemeColor.Success);
 
             }
             else
@@ -204,7 +227,7 @@
         Rv.ReportData = [];
         Rv.ReportData = V.RepDtls;
 
-        Rv.ReportParams["ReportTitle"] = "Position Listing";
+        Rv.ReportParams["ReportTitle"] = "Deviation Type Listing";
         Rv.RelativePath = "Reports/_01Pis/J_2058_DTE.trdp";
         Rv.SelectedFormat = "PDF";
 
