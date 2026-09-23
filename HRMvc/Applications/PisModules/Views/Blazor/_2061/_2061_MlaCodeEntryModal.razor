@@ -98,118 +98,118 @@
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
+        var code = V.MlaCode.Code.Trim().ToUpper();
+        var name = V.MlaCode.Name.Trim().ToUpper();
 
-        // Validate if code and name already exist
-        var existingRecord = await _mla._02(V.MlaCode.Code.Trim().ToUpper(), V.MlaCode.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
 
-        if (existingRecord != null && existingRecord.Any())
+        var origcode = V.MlaOriginalState?.Code?.Trim().ToUpper();
+        var origname = V.MlaOriginalState?.Name?.Trim().ToUpper();
+
+
+
+        try
         {
+            // Validate if code and name already exist
+            var existingRecord = await _mla._02ByCodeOrName(code, name, V.OPisdb, V.Conn);
 
-            V.MlaCode.Code = V.MlaCode.Code.Trim().ToUpper();
-            V.MlaCode.Name = V.MlaCode.Name.Trim().ToUpper();
-
-
-            if (V.MlaOriginalState != null)
+            if (existingRecord != null && existingRecord.Any())
             {
-                V.MlaOriginalState.Code = V.MlaOriginalState.Code?.Trim().ToUpper();
-                V.MlaOriginalState.Name = V.MlaOriginalState.Name?.Trim().ToUpper();
+                bool codeExists = existingRecord.Any(c => c.Code.Trim().ToUpper() == code && c.Code.Trim().ToUpper() != origcode);
+                bool nameExists = existingRecord.Any(n => n.Name.Trim().ToUpper() == name && n.Name.Trim().ToUpper() != origname);
+
+                var exist = false;
+
+                if (codeExists)
+                {
+                    V.CodeErrorMsg = "Code already exists.";
+                    exist = true;
+                }
+
+                if (nameExists)
+                {
+                    V.LocationErrorMsg = "Location already exists.";
+                    exist = true;
+                }
+                if (exist) return;
             }
-
-            foreach (var e in existingRecord)
-            {
-                e.Code = e.Code?.Trim().ToUpper();
-                e.Name = e.Name?.Trim().ToUpper();
-            }
-
-
-            bool codeExists = existingRecord.Any(c => c.Code == V.MlaCode.Code && (string.IsNullOrWhiteSpace(V.MlaOriginalState?.Code) || c.Code != V.MlaOriginalState?.Code));
-            bool nameExists = existingRecord.Any(n => n.Name == V.MlaCode.Name && (string.IsNullOrWhiteSpace(V.MlaOriginalState?.Name) || n.Name != V.MlaOriginalState?.Name));
-
-            var exist = false;
-
-            if (codeExists)
-            {
-                V.CodeErrorMsg = "Code already exists.";
-                exist = true;
-            }
-
-            if (nameExists)
-            {
-                V.LocationErrorMsg = "Location already exists";
-                exist = true;
-            }
-            if (exist) return;
-
-
         }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to validate duplicate provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+            Console.WriteLine(ex);
+            return;
+        }
+
+
+
 
 
         if (V.MlaOriginalState == null)
         {
-            await InsertRecord();
+            await _01InsertRecord();
         }
         else
         {
-            await UpdateRecord();
+            await _03UpdateRecord();
         }
     }
 
-    private async Task InsertRecord()
+    private async Task _01InsertRecord()
     {
         try
         {
             var res = await _mla._01(V.MlaCode, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.MlaCodes.Insert(0, res);
-                V.MlaCode = new OMlacodeModel();
-
-                V.Action = "RefreshMlaGrid";
-                NotificationRef.Show("Metro Manila area codewas saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to save Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.MlaCodes.Insert(0, res);
+            V.MlaCode = new OMlacodeModel();
+
+            V.Action = "RefreshMlaGrid";
+            NotificationRef.Show("Metro Manila area code saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             NotificationRef.Show("Unable to save Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
 
-    private async Task UpdateRecord()
+    private async Task _03UpdateRecord()
     {
         try
         {
             var res = await _mla._03(V.MlaOriginalState.Code, V.MlaCode, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.MlaOriginalState = new OMlacodeModel
-                {
-                    Code = res.Code,
-                    Name = res.Name,
-                };
-
-
-                V.Action = "LoadMla";
-                NotificationRef.Show("Metro Manila area code was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to update Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.MlaOriginalState = new OMlacodeModel
+            {
+                Code = res.Code,
+                Name = res.Name,
+            };
+
+
+            V.Action = "LoadMla";
+            NotificationRef.Show("Metro Manila area code updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to update Metro Manila area code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
