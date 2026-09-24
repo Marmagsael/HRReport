@@ -1,5 +1,10 @@
 ﻿@using HRMvc.Applications._00GeneralComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2062
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOEmpstatDataAccess _empstat;
+@inject IOPisReportDataAccess _pisRep;
 
 <TelerikRootComponent>
 
@@ -8,32 +13,40 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
     <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+        <CascadingValue Value="@rv">
+            <CascadingValue Value="@NotificationRef">
 
-            <_00BT_FullW HdrCaption="Employee Status Entry">
+                <_00BT_FullW HdrCaption="Employee Status ">
 
-                <Details>
-
-
-
-                    @if (v.ShowEntryModal == true)
-                    {
-                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
-                            <Content>
-                                <_2062_EmpStatusEntryModal />
-                            </Content>
-                        </_00Modal>
-                    }
+                    <Details>
 
 
+                        @*--- REPORT ---*@
+                        <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
-                    @*---  Grid ---*@
-                    <_2062_EmpStatusList ChildAction="ChildAction" />
-                </Details>
 
-            </_00BT_FullW>
+                        @*--- ENTRY ---*@
+                        @if (v.ShowEntryModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
+                                <Content>
+                                     @* <_2062_EmpStatusEntryModal ChildAction="ChildAction" />  *@
+                                </Content>
+                            </_00Modal>
+                        }
 
+
+
+                        @*---  GRID ---*@
+                        <_2062_EmpStatusList ChildAction="ChildAction" @ref="EmpStatGridRef" />
+                    </Details>
+
+                </_00BT_FullW>
+
+            </CascadingValue>
         </CascadingValue>
     </CascadingValue>
 
@@ -46,11 +59,89 @@
 
     private V2062Model v = new();
 
+    V00_RepVars rv = new();
+
     private TelerikNotification NotificationRef;
 
+    private _2062_EmpStatusList EmpStatGridRef;
 
-    public void ChildAction()
+
+    protected override async Task OnInitializedAsync()
     {
+        v.IsLoading = true;
 
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+        await _02LoadEmpStatuses();
+
+        // Report ---------
+        InitializeReport();
+        await _02LoadCompanyInfo();
+        v.IsLoading = false;
+
+    }
+
+
+
+
+    private async Task _02LoadEmpStatuses()
+    {
+        try
+        {
+            var res = await _empstat._02s(v.OPisdb, v.Conn);
+            if (res != null && res.Any())
+            {
+                v.EmpStats = res!;
+
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show("Unable to load employes status records.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private void InitializeReport()
+    {
+        rv.MCaption = "Employee Status Type Listing";
+        rv.RefreshToken = 20620000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task _02LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
+
+    public async Task ChildAction()
+    {
+        if (v.Action == "RefreshGrid") if (EmpStatGridRef != null) EmpStatGridRef.RebindGrid();
+        if (v.Action == "LoadEmpStatuses") await _02LoadEmpStatuses();
+
+        v.Action = string.Empty;
     }
 }
