@@ -1,1 +1,371 @@
-﻿
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@inject IOEmpstatDataAccess _empstat;
+
+<div style="max-height:60vh">
+
+    <EditForm Model="@V.EmpStat"
+              OnValidSubmit="@SaveRecord"
+              class="h-100 d-flex flex-column">
+
+        @* --- Save Button --- *@
+        <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    type="submit"
+                    tabindex="6">
+                Save
+            </button>
+
+        </div>
+
+        <div class="px-2 ps-md-3 pt-3">
+
+
+            @* ---  Code --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Code
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikTextBox @bind-Value="@V.EmpStat.Code"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="1"
+                                    MaxLength="1"
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
+
+                </div>
+
+            </div>
+
+
+            @* --- Description --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Description
+                </label>
+
+                <div class="col-12 col-md-8">
+
+                    <TelerikTextBox @bind-Value="@V.EmpStat.Name"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="2"
+                                    MaxLength="30"
+                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DescriptionErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DescriptionErrorMsg</div>
+                    }
+
+                </div>
+
+            </div>
+
+
+            @* --- Is Resigned --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Is Resigned
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikDropDownList Data="@V.YesNoOptions"
+                                         @bind-Value="@V.EmpStat.IsResigned"
+                                         Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                         FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
+                                         TabIndex="3">
+
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+
+                </div>
+
+            </div>
+
+
+
+            @* --- Is On Leave --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Is On Leave
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikDropDownList Data="@V.YesNoOptions"
+                                         @bind-Value="@V.EmpStat.IsOnLeaved"
+                                         Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                         FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
+                                         TabIndex="4">
+
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+
+                </div>
+
+            </div>
+
+
+            @* --- Is On Floating --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Is On Floating
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikDropDownList Data="@V.YesNoOptions"
+                                         @bind-Value="@V.EmpStat.IsFloating"
+                                         Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                         FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
+                                         TabIndex="4">
+
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+
+                </div>
+
+            </div>
+
+
+            @* --- Is Suspended --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Is Suspended
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikDropDownList Data="@V.YesNoOptions"
+                                         @bind-Value="@V.EmpStat.IsSuspended"
+                                         Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                         FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
+                                         TabIndex="4">
+
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+
+                </div>
+
+            </div>
+
+
+           
+
+        </div>
+
+    </EditForm>
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public V2062Model V { get; set; } = new();
+
+
+    [CascadingParameter]
+    public V00_RepVars Rv { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private async Task SaveRecord()
+    {
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+
+
+        // ---------- Check Duplicate ---------------------------
+        List<OEmpstatModel?>? existingRecord = null;
+
+        var code = V.EmpStat.Code.Trim().ToUpper();
+        var name = V.EmpStat.Name.Trim().ToUpper();
+
+
+        var origcode = V.EmpStatOriginalState?.Code?.Trim().ToUpper();
+        var origname = V.EmpStatOriginalState?.Name?.Trim().ToUpper();
+
+        try
+        {
+            existingRecord = await _empstat._02ByCodeOrName(code, name, V.OPisdb, V.Conn);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to validate employee status.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+
+            bool codeExists = existingRecord.Any(c => c.Code?.Trim().ToUpper() == code && c.Code?.Trim().ToUpper() != origcode);
+            bool nameExists = existingRecord.Any(n => n.Name?.Trim().ToUpper() == name && n.Name?.Trim().ToUpper() != origname);
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.DescriptionErrorMsg = "Description already exists.";
+                exist = true;
+            }
+            if (exist) return;
+
+
+        }
+
+        // --------------------------------------------------------------
+
+
+
+
+
+        if (V.EmpStatOriginalState == null)
+        {
+            await InsertRecord();
+        }
+        else
+        {
+            await UpdateRecord();
+        }
+    }
+
+
+    private async Task InsertRecord()
+    {
+        try
+        {
+
+            V.EmpStat.IsInPayroll = 0;
+            V.EmpStat.InLicVer = 0;
+            V.EmpStat.InOe = 0;
+            V.EmpStat.IsDeviation = 0;
+
+            var res = await _empstat._01(V.EmpStat, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                NotificationRef.Show("Unable to save employee status.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.EmpStats.Insert(0, res);
+            V.EmpStat = new OEmpstatModel();
+
+            V.Action = "RefreshGrid";
+            NotificationRef.Show("Employee status type inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to save employee status.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+
+    private async Task UpdateRecord()
+    {
+        try
+        {
+            var res = await _empstat._03(V.EmpStatOriginalState.Code,  V.EmpStat, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                NotificationRef.Show("Unable to update employee status.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.EmpStatOriginalState = new OEmpstatModel
+            {
+                Code = res.Code,
+                Name = res.Name,
+            };
+
+
+            V.Action = "LoadEmpStatuses";
+            NotificationRef.Show("Employee status updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update employee status.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.EmpStat.Code))
+        {
+            V.CodeErrorMsg = "Code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.EmpStat.Name))
+        {
+            V.DescriptionErrorMsg = "Description is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.DescriptionErrorMsg = string.Empty;
+    }
+
+}

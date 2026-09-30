@@ -57,11 +57,19 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
             oldCode = code,
             empstat.Code,
             empstat.Name,
+            empstat.IsResigned,
+            empstat.IsOnLeaved,
+            empstat.IsFloating,
+            empstat.IsSuspended,
+            empstat.IsInPayroll,
+            empstat.InLicVer,
+            empstat.InOe,
+            empstat.IsDeviation,
         };
 
         string? sql = $@"Update {schema}.Empstat set 
 							NAME = @NAME, 
-							ISRESIGNED = @ISRESIGNED, 
+							IsResigned = @IsResigned, 
 							isonleaved = @isonleaved, 
 							isfloating = @isfloating, 
 							issuspended = @issuspended, 

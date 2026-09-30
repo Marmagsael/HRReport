@@ -59,7 +59,7 @@
                 <TelerikDropDownList Data="@V.YesNoOptions"
                                      TextField="@nameof(V2062Model.YesNoOption.Text)"
                                      ValueField="@nameof(V2062Model.YesNoOption.Value)"
-                                     Value="@SelectedIsResignedFilter"
+                                     Value="@V.EmpStat.IsResigned"
                                      ValueChanged="@((string val) => OnIsResignedChanged(val, filterContext))"
                                      DefaultText="Select...">
                 </TelerikDropDownList>
@@ -90,7 +90,7 @@
                 <TelerikDropDownList Data="@V.YesNoOptions"
                                      TextField="@nameof(V2062Model.YesNoOption.Text)"
                                      ValueField="@nameof(V2062Model.YesNoOption.Value)"
-                                     Value="@SelectedIsOnLeavedFilter"
+                                     Value="@V.EmpStat.IsOnLeaved"
                                      ValueChanged="@((string val) => OnIsLeaveChanged(val, filterContext))"
                                      DefaultText="Select...">
                 </TelerikDropDownList>
@@ -121,7 +121,7 @@
                 <TelerikDropDownList Data="@V.YesNoOptions"
                                      TextField="@nameof(V2062Model.YesNoOption.Text)"
                                      ValueField="@nameof(V2062Model.YesNoOption.Value)"
-                                     Value="@SelectedIsFloatingFilter"
+                                     Value="@V.EmpStat.IsFloating"
                                      ValueChanged="@((string val) => OnIsFloatingChanged(val, filterContext))"
                                      DefaultText="Select...">
                 </TelerikDropDownList>
@@ -151,7 +151,7 @@
                 <TelerikDropDownList Data="@V.YesNoOptions"
                                      TextField="@nameof(V2062Model.YesNoOption.Text)"
                                      ValueField="@nameof(V2062Model.YesNoOption.Value)"
-                                     Value="@SelectedIsSuspendedFilter"
+                                     Value="@V.EmpStat.IsSuspended"
                                      ValueChanged="@((string val) => OnIsSuspendedChanged(val, filterContext))"
                                      DefaultText="Select...">
                 </TelerikDropDownList>
@@ -194,7 +194,8 @@
                     </button>
 
                     <button type="button"
-                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => _04Delete(rec))">
                         Delete
                     </button>
 
@@ -254,6 +255,7 @@
         V.EmpStatOriginalState = null;
 
 
+
         V.ModalCaption = "Add Employe Status ";
 
         if (!string.IsNullOrWhiteSpace(rec.Code))
@@ -262,6 +264,7 @@
             V.EmpStat = MapRecord(rec);
             V.EmpStatOriginalState = MapRecord(rec);
         }
+       
 
         V.ShowEntryModal = true;
         await ChildAction.InvokeAsync();
@@ -352,15 +355,10 @@
 
     // Custom Filter ----------------------------------------------------------------
 
-    private string? SelectedIsResignedFilter;
-    private string? SelectedIsOnLeavedFilter;
-    private string? SelectedIsFloatingFilter;
-    private string? SelectedIsSuspendedFilter;
-
 
     private void OnIsResignedChanged(string value, FilterMenuTemplateContext filterContext)
     {
-        SelectedIsResignedFilter = value;
+        V.EmpStat.IsResigned = value;
 
         filterContext.FilterDescriptor.FilterDescriptors.Clear();
 
@@ -379,7 +377,7 @@
 
     private void OnIsLeaveChanged(string value, FilterMenuTemplateContext filterContext)
     {
-        SelectedIsOnLeavedFilter = value;
+        V.EmpStat.IsOnLeaved = value;
 
         filterContext.FilterDescriptor.FilterDescriptors.Clear();
 
@@ -396,7 +394,7 @@
 
     private void OnIsFloatingChanged(string value, FilterMenuTemplateContext filterContext)
     {
-        SelectedIsFloatingFilter = value;
+        V.EmpStat.IsFloating = value;
 
         filterContext.FilterDescriptor.FilterDescriptors.Clear();
 
@@ -413,7 +411,7 @@
 
     private void OnIsSuspendedChanged(string value, FilterMenuTemplateContext filterContext)
     {
-        SelectedIsSuspendedFilter = value;
+        V.EmpStat.IsSuspended = value;
 
         filterContext.FilterDescriptor.FilterDescriptors.Clear();
 
