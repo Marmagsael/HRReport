@@ -2,7 +2,7 @@
 
 namespace HRMvc.Applications.PisModules.Vars
 {
-    public class V2302Model
+    public class V2303Model
     {
         public string?      OPisdb                          { get; set; } = string.Empty;
         public string?      Maindb                          { get; set; } = string.Empty;
@@ -16,16 +16,14 @@ namespace HRMvc.Applications.PisModules.Vars
         public bool         IsLoading                       { get; set; } = true;
         public bool?        UcLoaded                        { get; set; } = false;
 
-        public string?      ModalCaption                    { get; set; } = string.Empty;
-        public bool         ShowSearchModal                 { get; set; } = false;
+        public string?      SearchEmployeeModalCaption      { get; set; } = string.Empty;
+        public bool         ShowSearchEmployeeModal         { get; set; } = false;
 
 
 
 
         public OEmpmasModel? OEmpmas                        { get; set; } = new();
         public List<OEmpmasModel?>? OEmployees              { get; set; } = new();
-        public List<OEmpstatModel?>? OEmpStatuses           { get; set; } = new();
-        public string NewStatus                             { get; set; } =  string.Empty;
 
     }
 }

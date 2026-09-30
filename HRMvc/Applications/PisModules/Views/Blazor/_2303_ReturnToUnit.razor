@@ -1,8 +1,80 @@
-﻿@using HRMvc.Applications._00GeneralComponents
+﻿@using HRApiLibrary.Models._10_Pis.OPis;
+@using HRMvc.Applications.PisModules.Views.Blazor._2303
+<TelerikRootComponent>
 
-<_00UnderDevelopment Module="Return To Unit(RTU)" />
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
+    <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+
+                <_00BT_FullW HdrCaption="Return To Unit">
+
+                    <Details>
+
+                   
+
+                        @*--- SEARCH EMPLOYEE  ---*@
+                    @if (v.ShowSearchEmployeeModal == true)
+                        {
+                        <_00Modal ModuleCaption="@v.SearchEmployeeModalCaption" ChildAction="() => v.ShowSearchEmployeeModal = false">
+                                <Content>
+                                      <_2303_SearchEmployeeModal ChildAction="@ChildAction"/>
+                                </Content>
+                            </_00Modal>
+                        }
+
+
+                        @*--- ENTRY  ---*@
+                        <_2303_RTUEntry ChildAction="@ChildAction"/>
+
+                    </Details>
+
+                </_00BT_FullW>
+
+            </CascadingValue>
+        </CascadingValue>
+
+</TelerikRootComponent>
+
 
 @code {
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
+
+    private V2303Model v = new();
+
+    private TelerikNotification NotificationRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = true;
+
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+       
+        v.IsLoading = false;
+
+    }
+
+
+
+
+    private async Task ChildAction()
+    {
+
+    }
 }

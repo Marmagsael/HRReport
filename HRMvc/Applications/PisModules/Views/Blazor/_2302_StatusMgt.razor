@@ -1,5 +1,9 @@
 ﻿@using HRApiLibrary.Models._10_Pis.OPis;
 @using HRMvc.Applications.PisModules.Views.Blazor._2302
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+
+@inject IOEmpstatDataAccess _oempstat
 <TelerikRootComponent>
 
     <TelerikNotification @ref="@NotificationRef"
@@ -63,16 +67,35 @@
         }
         v.UcLoaded = true;
 
-        v.OPisdb = Uc.OpisDb;
-        v.Conn = Uc.Conn;
+        v.OPisdb    = Uc.OpisDb;
+        v.Conn      = Uc.Conn;
 
-       
+
+        await _02LoadEmployeeStatuses();
+
         v.IsLoading = false;
 
     }
 
 
+    private async Task _02LoadEmployeeStatuses()
+    {
 
+        try
+        {
+            var res = await _oempstat._02s(v.OPisdb, v.Conn);
+            if (res.Any())
+            {
+                v.OEmpStatuses = res;
+            }
+        }
+        catch (Exception ex)
+        {
+
+            NotificationRef.Show("Unable to loas employee statuses. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        
+    }
 
     private async Task ChildAction()
     {
