@@ -78,8 +78,9 @@ public class PisReportController : Controller
         ["2108"] = "_2108_ResignedPersonnelfortheMonth",
         ["2109"] = "_2109_ManpowerMovement",
         ["2110"] = "_2110_InsurancePolicy",
+        ["2111"] = "_2111_AttendanceReport",
 
-        ["2202"] = "_2202_ClientGuardDetail",
+        ["2202"] = "_2202_ClientGuardDetail", 
         ["2203"] = "_2203_EmployeeClearance",
         ["2204"] = "_2204_PNPSAGSDReport",
         ["2205"] = "_2205_FEDReport",
