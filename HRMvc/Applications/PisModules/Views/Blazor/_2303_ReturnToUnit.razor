@@ -1,5 +1,12 @@
 ﻿@using HRApiLibrary.Models._10_Pis.OPis;
-@* @using HRMvc.Applications.PisModules.Views.Blazor._2303 *@
+@using HRMvc.Applications.PisModules.Views.Blazor._2303 
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+
+@inject IOOfstaffDataAccess _oofstaff
+@inject IOOfstaff2DataAccess _oofstaff2
+
+
 <TelerikRootComponent>
 
     <TelerikNotification @ref="@NotificationRef"
@@ -23,14 +30,14 @@
                         {
                         <_00Modal ModuleCaption="@v.SearchEmployeeModalCaption" ChildAction="() => v.ShowSearchEmployeeModal = false">
                                 <Content>
-                                      @* <_2303_SearchEmployeeModal ChildAction="@ChildAction"/> *@
+                                       <_2303_SearchEmployeeModal ChildAction="@ChildAction"/> 
                                 </Content>
                             </_00Modal>
                         }
 
 
                         @*--- ENTRY  ---*@
-                        @* <_2303_RTUEntry ChildAction="@ChildAction"/> *@
+                        <_2303_RTUEntry ChildAction="@ChildAction"/> 
 
                     </Details>
 
@@ -46,35 +53,57 @@
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
 
-     private V2303Model v = new();
+    private V2303Model v = new();
 
     private TelerikNotification NotificationRef;
 
-    // protected override async Task OnInitializedAsync()
-    // {
-    //     v.IsLoading = true;
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = true;
 
-    //     if (Uc?.Conn == null || Uc.OpisDb == null)
-    //     {
-    //         v.UcLoaded = false;
-    //         NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-    //         return;
-    //     }
-    //     v.UcLoaded = true;
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
 
-    //     v.OPisdb = Uc.OpisDb;
-    //     v.Conn = Uc.Conn;
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
 
-       
-    //     v.IsLoading = false;
+        await LoadPreparers();
+        await LoadApprovers();
+        v.IsLoading = false;
 
-    // }
+    }
 
 
+    private async Task LoadPreparers()
+    {
+        var res = await _oofstaff._02s(v.OPisdb, v.Conn);
+        if (res.Any())
+        {
+            v.Preparers = res;
+            v.Preparer.Staff_Id = v.Preparers?.Where(p => p.Defa == 1).Select(p => p.Staff_Id).FirstOrDefault();
+        }
 
+    }
+
+    private async Task LoadApprovers()
+    {
+        var res = await _oofstaff2._02s(v.OPisdb, v.Conn);
+        if (res.Any())
+        {
+            v.Approvers = res;
+        }
+
+    }
 
     private async Task ChildAction()
     {
 
     }
+
+
 }
