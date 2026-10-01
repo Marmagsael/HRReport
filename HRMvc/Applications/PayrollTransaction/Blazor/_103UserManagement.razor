@@ -1,6 +1,7 @@
 ﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PayrollTransaction.Blazor._103
-@using HRApiLibrary.DataAccess._20_Pay.OPay;
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._20_Pay.OPay
 @using HRMvc.Applications.PayrollTransaction.Vars;
 
 <TelerikRootComponent>
@@ -47,6 +48,7 @@
 
 @inject IOEmpmasDataAccess _empmas
 @inject IODomainusrDataAccess _usr
+@inject IMenuDataAccess _menu
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
@@ -67,6 +69,8 @@
             return;
         }
 
+        v.UcLoaded = true;
+
         v.OPaydb    = Uc.OpayDb;
         v.OPisdb    = Uc.OpisDb;
         v.Maindb    = Uc.SchemaMain;
@@ -75,8 +79,8 @@
         v.Conn      = Uc.Conn;
 
         await _02LoadUsers();
+        await _02LoadSystemMenu();
 
-        v.UcLoaded = true;
     }
 
 
@@ -95,7 +99,7 @@
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show($"Unable to load users.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show($"Unable to load users {ex}.", ThemeConstants.Notification.ThemeColor.Error);
         }
         finally
         {
@@ -103,6 +107,19 @@
         }
     }
 
+
+    private async Task _02LoadSystemMenu()
+    {
+        try
+        {
+            var result = await _menu._02ByType("shdr", v.Mainpaydb, v.Conn);
+            v.SystemMenus = result ?? [];
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show($"Unable to load system menu. Please try again {ex}.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
 
     private async Task ChilAction()
     {
