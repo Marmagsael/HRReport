@@ -1,0 +1,60 @@
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._90_Utils
+
+<div class="card p-2" style="min-height: 95vh"  >
+    <div class="text-center mt-4 bordered-bottom"><h5>Payroll System</h5></div>
+    <div class="container p-2">
+        <div class="w-100 d-flex flex-wrap gap-2 ">
+            
+            @{
+                var payHeader = menuPays
+                    .Where(p => p.Type?.StartsWith("SHdr") == true)
+                    .OrderBy(p=>p.IdParent)
+                    .ToList();
+            }
+            <div class="w-100">
+                @foreach (var h in payHeader)
+                {
+                    <div class="bordered w-100 text-center fw-bolder mt-2 p-1 bg-gray ">@h.DispText</div>
+
+                    var hId = h.Id; 
+                    var dtls = menuPays.Where(p=>p.IdParent==hId).ToList(); 
+                    @if (dtls.Count > 0)
+                    {
+                        <div class="w-100 d-flex flex-wrap gap-2 p-2  justify-content-center bordered ">
+                            @foreach (var d in dtls)
+                            {
+                                <a href="@d.Action" class="text-decoration-none txt-gray-30">
+                                    <div class="card mb-cbtn mb-btn-gray p-2 ">
+                                        @d.DispText.Trim()
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    }
+                }    
+            </div>
+            
+            
+            
+
+        </div>
+
+    </div>
+
+</div>
+
+@inject IMainmenuDataAccess _menu
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+    [CascadingParameter] public List<MainmenuModel> menuPays { get; set; } = []; 
+
+    /*protected override async Task OnParametersSetAsync()
+    {
+        var menusPay = await _menu._02("MainPay", Uc.Conn);
+        if(menusPay.Count>0) menuPays = menusPay??[];
+        
+    }*/
+}

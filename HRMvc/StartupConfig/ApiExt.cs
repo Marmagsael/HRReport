@@ -10,6 +10,7 @@ using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._10_Pis.Attendance;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
+using HRApiLibrary.DataAccess._11_AMS;
 using HRApiLibrary.DataAccess._20_Pay;
 using HRApiLibrary.DataAccess._20_Pay.DA0605;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
@@ -18,6 +19,9 @@ using HRApiLibrary.DataAccess._20_Pay.Report;
 using HRApiLibrary.DataAccess._20_Pay_Report;
 using HRApiLibrary.DataAccess._90_Utils;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Modules._11003AME;
+using HRApiLibrary.Modules._11003O;
+using HRApiLibrary.Modules._12006O;
 using HRMvc.Applications._02HR._02Library;
 using HRMvc.Applications.PisModules.Vars;
 using HRMvc.Applications.PisModules.Vars.NonExclusive;
@@ -250,7 +254,8 @@ public static class ApiExt
         //--- Accounting -------------------------------------------------------------------
         builder.Services.AddScoped<I_AcctgTableMaker, _AcctgTableMaker>();
         // builder.Services.AddScoped<IMainmenuDataAccess, IMainmenuDataAccess>();
-        
-        
+
+
+       
     }
 }

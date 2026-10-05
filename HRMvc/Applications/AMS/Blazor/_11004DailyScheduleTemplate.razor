@@ -1,0 +1,312 @@
+﻿@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+
+@inject IAttscheddailyDataAccess _dailySched
+
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<TelerikRootComponent>
+
+    <div class="card w-100 p-1">
+
+        <BodyHdr pageTitle="Daily Schedule Template" />
+
+        <div class="card-body p-1 w-100" style="max-width:1080px;">
+
+            <!-- Grid -->
+            <TelerikGrid Data="@GridData"
+                         Pageable="true"
+                         PageSize="15"
+                         Sortable="true"
+                         Resizable="true"
+                         Class="mb-3">
+                <GridToolBarTemplate>
+                    <TelerikButton Icon="@("plus")" ThemeColor="primary" OnClick="@OpenAddModal">
+                        Add Schedule
+                    </TelerikButton>
+                </GridToolBarTemplate>
+                <GridColumns>
+                    <GridColumn Field="@nameof(AttscheddailyModel.Id)"       Title="ID"        Width="70px" />
+                    <GridColumn Field="@nameof(AttscheddailyModel.Name)"     Title="Name"      Width="250px" />
+                    <GridColumn Field="@nameof(AttscheddailyModel.Dutytype)" Title="Duty Type" Width="130px">
+                        <Template>
+                            @{ var item = (AttscheddailyModel)context; }
+                            @(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == item.Dutytype)?.Name ?? item.Dutytype)
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(AttscheddailyModel.Pin)"      Title="Time In"   Width="120px">
+                        <Template>
+                            @{ var item = (AttscheddailyModel)context; }
+                            @(Vars.Attinschedules.FirstOrDefault(x => x.Id == item.Pin)?.Inschedule ?? item.Pin.ToString())
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(AttscheddailyModel.Duration)" Title="Duration"  Width="120px">
+                        <Template>
+                            @{ var item = (AttscheddailyModel)context; }
+                            @(Vars.Attworkinghours.FirstOrDefault(x => x.Id == item.Duration)?.Hours ?? item.Duration.ToString())
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(AttscheddailyModel.Pout)"     Title="Time Out"  Width="120px">
+                        <Template>
+                            @{ var item = (AttscheddailyModel)context; }
+                            @(Vars.Attinschedules.FirstOrDefault(x => x.Id == item.Pout)?.Inschedule ?? item.Pout.ToString())
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(AttscheddailyModel.Nd)"       Title="ND"        Width="80px" />
+                    <GridColumn Title="Actions" Width="110px" Sortable="false">
+                        <Template>
+                            @{ var row = (AttscheddailyModel)context; }
+                            <TelerikButton Icon="@("pencil")"
+                                           ThemeColor="warning"
+                                           FillMode="ButtonFillMode.Flat"
+                                           Size="ButtonSize.Small"
+                                           OnClick="@(async () => OpenEditModal(row))" />
+                            <TelerikButton Icon="@("trash")"
+                                           ThemeColor="error"
+                                           FillMode="ButtonFillMode.Flat"
+                                           Size="ButtonSize.Small"
+                                           OnClick="@(async () => OpenDeleteModal(row))" />
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+
+            <!-- Add / Edit Modal -->
+            <TelerikWindow @bind-Visible="@IsFormModalVisible" Modal="true" Width="500px">
+                <WindowTitle><div class="fw-bold">@FormModalTitle</div></WindowTitle>
+                <WindowActions>
+                    <WindowAction Name="Close" OnClick="@CloseFormModal" />
+                </WindowActions>
+                <WindowContent>
+                    <div class="row g-3">
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Name</label>
+                            <TelerikTextBox @bind-Value="@FormModel.Name" Placeholder="Schedule name" Class="w-100" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Duty Type</label>
+                            <TelerikDropDownList Data="@Vars.AttDutyTypes"
+                                                 @bind-Value="@FormModel.Dutytype"
+                                                 TextField="Name"
+                                                 ValueField="Code"
+                                                 Class="w-100" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Schedule Punch-In</label>
+                            <TelerikDropDownList Data="@Vars.Attinschedules"
+                                                 Value="@FormModel.Pin"
+                                                 ValueChanged="@((int val) => { FormModel.Pin = val; FormModel.Pout = VamsHelper.ComputeOut(FormModel.Pin, FormModel.Duration); })"
+                                                 TextField="Inschedule"
+                                                 ValueField="Id"
+                                                 Class="w-100" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Duration</label>
+                            <TelerikDropDownList Data="@Vars.Attworkinghours"
+                                                 Value="@FormModel.Duration"
+                                                 ValueChanged="@((int val) => { FormModel.Duration = val; FormModel.Pout = VamsHelper.ComputeOut(FormModel.Pin, FormModel.Duration); })"
+                                                 TextField="Hours"
+                                                 ValueField="Id"
+                                                 Class="w-100" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Schedule Punch Out</label>
+                            <TelerikTextBox Value="@VamsHelper.FormatTime(FormModel.Pout)" Enabled="false" Class="w-100" />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold">Night Differential (ND)</label>
+                            <TelerikNumericTextBox @bind-Value="@FormModel.Nd" Format="N2" Class="w-100" />
+                        </div>
+
+                    </div>
+                </WindowContent>
+                <WindowFooter>
+                    <TelerikButton ThemeColor="primary" OnClick="@SaveRecord" Enabled="@(!IsBusy)">
+                        @(IsBusy ? "Saving..." : "Save")
+                    </TelerikButton>
+                    <TelerikButton OnClick="@CloseFormModal">Cancel</TelerikButton>
+                </WindowFooter>
+            </TelerikWindow>
+
+            <!-- Delete Confirm Modal -->
+            <TelerikWindow @bind-Visible="@IsDeleteModalVisible" Modal="true" Width="380px">
+                <WindowTitle>Confirm Delete</WindowTitle>
+                <WindowActions>
+                    <WindowAction Name="Close" OnClick="@CloseDeleteModal" />
+                </WindowActions>
+                <WindowContent>
+                    <p>Delete schedule <strong>@FormModel.Name</strong>? This cannot be undone.</p>
+                </WindowContent>
+                <WindowFooter>
+                    <TelerikButton ThemeColor="error" OnClick="@DeleteRecord" Enabled="@(!IsBusy)">
+                        @(IsBusy ? "Deleting..." : "Delete")
+                    </TelerikButton>
+                    <TelerikButton OnClick="@CloseDeleteModal">Cancel</TelerikButton>
+                </WindowFooter>
+            </TelerikWindow>
+
+        </div>
+    </div>
+
+</TelerikRootComponent>
+
+@code {
+
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    // ── Refs & State ────────────────────────────────────────────────
+    private TelerikNotification NotificationRef { get; set; } = new();
+    private V11002Model Vars { get; set; } = new();
+
+    private List<AttscheddailyModel> GridData  { get; set; } = [];
+    private AttscheddailyModel       FormModel { get; set; } = new();
+
+    private bool   IsFormModalVisible   { get; set; } = false;
+    private bool   IsDeleteModalVisible { get; set; } = false;
+    private bool   IsEditMode           { get; set; } = false;
+    private bool   IsBusy               { get; set; } = false;
+    private string FormModalTitle       { get; set; } = "Add Schedule";
+
+    // ── Lifecycle ───────────────────────────────────────────────────
+    protected async override Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        if (Uc is null) return;
+        try
+        {
+            GridData = (await _dailySched._02s(Uc.SchemaUserPis!, Uc.Conn!) ?? [])
+                       .Where(x => x is not null)
+                       .Cast<AttscheddailyModel>()
+                       .ToList();
+        }
+        catch (Exception ex)
+        {
+            Notify("error", $"Load failed: {ex.Message}");
+        }
+    }
+
+    // ── Modal Helpers ───────────────────────────────────────────────
+    private void OpenAddModal()
+    {
+        FormModel          = new AttscheddailyModel();
+        IsEditMode         = false;
+        FormModalTitle     = "Add Schedule";
+        IsFormModalVisible = true;
+    }
+
+    private void OpenEditModal(AttscheddailyModel item)
+    {
+        FormModel = new AttscheddailyModel
+        {
+            Id       = item.Id,
+            Name     = item.Name,
+            Dutytype = item.Dutytype,
+            Pin      = item.Pin,
+            Duration = item.Duration,
+            Pout     = item.Pout,
+            Nd       = item.Nd
+        };
+        IsEditMode         = true;
+        FormModalTitle     = "Edit Schedule";
+        IsFormModalVisible = true;
+    }
+
+    private void OpenDeleteModal(AttscheddailyModel item)
+    {
+        FormModel            = item;
+        IsDeleteModalVisible = true;
+    }
+
+    private void CloseFormModal()   => IsFormModalVisible   = false;
+    private void CloseDeleteModal() => IsDeleteModalVisible = false;
+
+    // ── CRUD ────────────────────────────────────────────────────────
+    private async Task SaveRecord()
+    {
+        if (Uc is null) return;
+        IsBusy = true;
+
+        try
+        {
+            if (IsEditMode)
+            {
+                var res = await _dailySched._03(FormModel.Id, FormModel, Uc.SchemaUserPis!, Uc.Conn!);
+                if (res is not null)
+                {
+                    var idx = GridData.FindIndex(x => x.Id == res.Id);
+                    if (idx >= 0) GridData[idx] = res;
+                    GridData = [..GridData];
+                    Notify("success", "Record updated.");
+                }
+            }
+            else
+            {
+                var res = await _dailySched._01(FormModel, Uc.SchemaUserPis!, Uc.Conn!);
+                if (res is not null)
+                {
+                    GridData = [..GridData, res];
+                    Notify("success", "Record added.");
+                }
+            }
+
+            CloseFormModal();
+        }
+        catch (Exception ex)
+        {
+            Notify("error", $"Save failed: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task DeleteRecord()
+    {
+        if (Uc is null) return;
+        IsBusy = true;
+
+        try
+        {
+            await _dailySched._04(FormModel.Id, Uc.SchemaUserPis!, Uc.Conn!);
+            GridData = GridData.Where(x => x.Id != FormModel.Id).ToList();
+            Notify("success", "Record deleted.");
+            CloseDeleteModal();
+        }
+        catch (Exception ex)
+        {
+            Notify("error", $"Delete failed: {ex.Message}");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    // ── Notification ────────────────────────────────────────────────
+    private void Notify(string type, string message)
+    {
+        NotificationRef.Show(new NotificationModel
+        {
+            Text       = message,
+            ThemeColor = type,
+            CloseAfter = 4000
+        });
+    }
+}

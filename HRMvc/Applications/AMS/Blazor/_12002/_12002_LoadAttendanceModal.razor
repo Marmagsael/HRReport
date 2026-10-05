@@ -1,0 +1,198 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<TelerikDialog @bind-Visible="@v!.IsLoadModalOpen"
+               Title="Load Attendance from Biometric File"
+               Width="900px">
+    <DialogContent>
+        <div class="row g-2 align-items-end">
+
+            <!-- Device No -->
+            <div class="col-3">
+                <label class="form-label fw-bold txt-fcolor1 mb-1">Device No</label>
+                <TelerikTextBox @bind-Value="@v!.DeviceNo" Width="100%" />
+            </div>
+
+            <!-- File Select -->
+            <div class="col-7">
+                <label class="form-label fw-bold txt-fcolor1 mb-1">Select attlog.dat file</label>
+                <TelerikFileSelect OnSelect="OnFileSelected"
+                                   Accept=".dat"
+                                   Multiple="false" />
+            </div>
+
+            <!-- Upload Button -->
+            <div class="col-2">
+                <TelerikButton OnClick="OnUpload"
+                               ThemeColor="info"
+                               Enabled="@(v!.AttlogContent is not null && !v.IsBusy)">
+                    @(v!.IsBusy ? "Parsing..." : "Upload")
+                </TelerikButton>
+            </div>
+
+        </div>
+
+        <!-- Preview Grid -->
+        @if (v!.ParsedLogs.Count > 0)
+        {
+            <div class="row mt-3">
+                <div class="col-12">
+                    <label class="form-label fw-bold mb-1">
+                        Preview — @v.ParsedLogs.Count record(s) found
+                    </label>
+                    <TelerikGrid Data="@v.ParsedLogs"
+                                 Height="350px"
+                                 Pageable="true"
+                                 PageSize="25">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(BiologModel.DeviceNo)"         Title="Device"         Width="100px" />
+                            <GridColumn Field="@nameof(BiologModel.BiometricEmpNo)"   Title="Biometric Emp#" Width="120px" />
+                            <GridColumn Field="@nameof(BiologModel.LogDatetime)"      Title="Log Datetime"   Width="160px" DisplayFormat="{0:yyyy-MM-dd HH:mm:ss}" />
+                            <GridColumn Field="@nameof(BiologModel.VerifyModeLabel)"  Title="Verify Mode"    Width="130px" />
+                            <GridColumn Field="@nameof(BiologModel.AttStateLabel)"    Title="Att State"      Width="110px" />
+                            <GridColumn Field="@nameof(BiologModel.WorkCode)"         Title="Work Code"      Width="100px" />
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
+            </div>
+        }
+
+    </DialogContent>
+    <DialogButtons>
+        @if (v!.ParsedLogs.Count > 0)
+        {
+            <TelerikButton OnClick="OnSave"
+                           ThemeColor="primary"
+                           Enabled="@(!v.IsBusy)">
+                @(v.IsBusy ? "Saving..." : $"Save {v.ParsedLogs.Count} Record(s)")
+            </TelerikButton>
+        }
+        <TelerikButton OnClick="OnCancel">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject IBiologDataAccess _biolog
+
+@code {
+    [CascadingParameter] public V12002Model?     v             { get; set; }
+    [CascadingParameter] public UserClaimsModel? Uc            { get; set; }
+    [CascadingParameter] public Func<Task>?      NotifyChanged { get; set; }
+
+    private async Task OnFileSelected(FileSelectEventArgs args)
+    {
+        if (v is null) return;
+        v.ParsedLogs    = [];
+        v.AttlogContent = null;
+
+        var file = args.Files.Count > 0 ? args.Files[0] : null;
+        if (file is not null)
+        {
+            using var stream = new System.IO.MemoryStream();
+            await file.Stream.CopyToAsync(stream);
+            v.AttlogContent = System.Text.Encoding.UTF8.GetString(stream.ToArray());
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnUpload()
+    {
+        if (v is null || v.AttlogContent is null) return;
+
+        if (string.IsNullOrWhiteSpace(v.DeviceNo))
+        {
+            v.Notification = ("warning", "Please enter Device No.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        v.IsBusy = true;
+        await NotifyChanged!.Invoke();
+
+        try
+        {
+            v.ParsedLogs   = ParseAttlog(v.AttlogContent);
+            v.Notification = v.ParsedLogs.Count > 0
+                ? ("success", $"{v.ParsedLogs.Count} record(s) found.")
+                : ("warning", "No records found in file.");
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"File parse failed: {ex.Message}");
+        }
+
+        v.IsBusy = false;
+        await NotifyChanged!.Invoke();
+    }
+
+    private List<BiologModel> ParseAttlog(string content)
+    {
+        var result = new List<BiologModel>();
+        var lines  = content.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var batch  = $"{v!.DeviceNo}_{DateTime.Now:yyyyMMdd_HHmmss}";
+
+        foreach (var line in lines)
+        {
+            // Format (tab-delimited): EmpNo\tDateTime\tVerifyMode\tAttState\tWorkCode\tReserved
+            var parts = line.Split('\t');
+            if (parts.Length < 4) continue;
+
+            if (!DateTime.TryParse(parts[1].Trim(), out var logDt)) continue;
+
+            _ = int.TryParse(parts[2].Trim(), out var verifyMode);
+            _ = int.TryParse(parts[3].Trim(), out var attState);
+
+            result.Add(new BiologModel
+            {
+                DeviceNo       = v.DeviceNo,
+                BiometricEmpNo = parts[0].Trim(),
+                LogDatetime    = logDt,
+                PunchDate      = DateOnly.FromDateTime(logDt),
+                AttState       = attState,
+                VerifyMode     = verifyMode,
+                WorkCode       = parts.Length > 4 ? parts[4].Trim() : null,
+                ImportBatch    = batch
+            });
+        }
+
+        return result;
+    }
+
+    private async Task OnSave()
+    {
+        if (v is null || Uc is null || v.ParsedLogs.Count == 0) return;
+
+        v.IsBusy = true;
+        await NotifyChanged!.Invoke();
+
+        try
+        {
+            await _biolog._01Batch(v.ParsedLogs, Uc.SchemaUserPis!, Uc.Conn!);
+
+            v.Notification    = ("success", $"{v.ParsedLogs.Count} record(s) saved successfully.");
+            v.ParsedLogs      = [];
+            v.AttlogContent   = null;
+            v.DeviceNo        = "1";
+            v.IsLoadModalOpen = false;
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Save failed: {ex.Message}");
+        }
+
+        v.IsBusy = false;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnCancel()
+    {
+        if (v is null) return;
+        v.ParsedLogs      = [];
+        v.AttlogContent   = null;
+        v.DeviceNo        = "1";
+        v.IsLoadModalOpen = false;
+        await NotifyChanged!.Invoke();
+    }
+}

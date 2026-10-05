@@ -1,0 +1,281 @@
+@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using HRMvc.Applications.AMS.Blazor._11003
+@using Telerik.Blazor.Components
+
+@inject IAttadvancescheduleDataAccess _advsched
+
+<div class="card mb-3">
+    <div class="card-header fw-bold">Advance Schedules</div>
+    <div class="card-body p-2">
+
+        <!-- Date Range -->
+        <div class="row g-2 align-items-center mb-3">
+            <div class="col-auto fw-bold">Date Covered</div>
+            <div class="col-auto">
+                <label class="form-label mb-0 small">Start</label>
+                <TelerikDatePicker Value="@V!.StartDate"
+                                   ValueChanged="@((DateTime val) => OnDateChanged(val, true))"
+                                   Width="150px"
+                                   Format="MM/dd/yyyy" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label mb-0 small">End</label>
+                <TelerikDatePicker Value="@V!.EndDate"
+                                   ValueChanged="@((DateTime val) => OnDateChanged(val, false))"
+                                   Width="150px"
+                                   Format="MM/dd/yyyy" />
+            </div>
+        </div>
+
+        <!-- Advance Schedule Grid -->
+        <TelerikGrid Data="@V!.AdvScheds"
+                     Pageable="true"
+                     PageSize="10"
+                     Sortable="true"
+                     Resizable="true">
+            <GridToolBarTemplate>
+                <TelerikButton Icon="@("plus")" ThemeColor="primary" OnClick="@(async () => await OpenAddModal())">
+                    Add Schedule
+                </TelerikButton>
+            </GridToolBarTemplate>
+            <GridColumns>
+                <GridColumn Field="@nameof(AttadvancescheduleModel.Date)" Title="Date" Width="110px">
+                    <Template>
+                        @{ var row = (AttadvancescheduleModel)context; }
+                        @row.Date.ToString("MM/dd/yyyy")
+                    </Template>
+                </GridColumn>
+
+                <GridColumn Title="Template" Width="180px">
+                    <Template>
+                        @{ var row = (AttadvancescheduleModel)context; }
+                        <TelerikDropDownList Data="@V.DailyTemplates"
+                                             Value="@row.Attscheddailyid"
+                                             ValueChanged="@((int val) => OnTemplateSelected(row, val))"
+                                             TextField="Name"
+                                             ValueField="Id"
+                                             DefaultText="-- Select --"
+                                             Width="100%" />
+                    </Template>
+                </GridColumn>
+
+                <GridColumn Title="Duty Type" Width="110px">
+                    <Template>
+                        @{ var row = (AttadvancescheduleModel)context; }
+                        @(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == row.Dutytype)?.Name ?? row.Dutytype)
+                    </Template>
+                </GridColumn>
+
+                <GridColumn Title="IN Schedule" Width="120px">
+                    <Template>
+                        @{ var row = (AttadvancescheduleModel)context; }
+                        @VamsHelper.FormatTime(row.Pin)
+                    </Template>
+                </GridColumn>
+
+                <GridColumn Title="Duration" Width="110px">
+                    <Template>
+                        @{ var row = (AttadvancescheduleModel)context; }
+                        @(Vars.Attworkinghours.FirstOrDefault(x => x.Id == row.Duration)?.Hours ?? row.Duration.ToString())
+                    </Template>
+                </GridColumn>
+
+                <GridColumn Title="Out Schedule" Width="120px">
+                    <Template>
+                        @{ var row = (AttadvancescheduleModel)context; }
+                        @VamsHelper.FormatTime(row.Pout)
+                    </Template>
+                </GridColumn>
+
+                <GridColumn Field="@nameof(AttadvancescheduleModel.Nd)" Title="ND" Width="70px" />
+
+                <GridColumn Title="Actions" Width="90px" Sortable="false">
+                    <Template>
+                        @{ var row = (AttadvancescheduleModel)context; }
+                        <TelerikButton Icon="@("x")"
+                                       ThemeColor="error"
+                                       FillMode="ButtonFillMode.Flat"
+                                       Size="ButtonSize.Small"
+                                       Title="Clear"
+                                       OnClick="@(async () => await OpenDeleteConfirm(row))" />
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+
+    </div>
+</div>
+
+<!-- Delete Confirmation Dialog -->
+<TelerikDialog @bind-Visible="@V!.IsDeleteAdvVisible"
+               Title="Confirm Delete"
+               ButtonsLayout="DialogButtonsLayout.Center">
+    <DialogContent>
+        Delete schedule for <strong>@V!.DeleteAdvRow?.Date.ToString("MM/dd/yyyy")</strong>?
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton ThemeColor="error" OnClick="@ConfirmDelete">Delete</TelerikButton>
+        <TelerikButton OnClick="@CloseDeleteConfirm">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+<!-- Add Schedule Modal -->
+<_11003_AS_Adv_AddModal />
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel? Uc            { get; set; }
+    [CascadingParameter] public V11003ASModel?   V             { get; set; }
+    [CascadingParameter] public Func<Task>?      NotifyChanged { get; set; }
+
+    private V11002Model Vars { get; set; } = new();
+
+    private async Task OpenDeleteConfirm(AttadvancescheduleModel row)
+    {
+        V!.DeleteAdvRow        = row;
+        V!.IsDeleteAdvVisible  = true;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task CloseDeleteConfirm()
+    {
+        V!.IsDeleteAdvVisible = false;
+        V!.DeleteAdvRow       = null;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task ConfirmDelete()
+    {
+        V!.IsDeleteAdvVisible = false;
+        if (V.DeleteAdvRow is not null)
+            await ClearRow(V.DeleteAdvRow);
+        V.DeleteAdvRow = null;
+    }
+
+    private async Task OpenAddModal()
+    {
+        // Check if may row na walang template pa
+        var unfilled = V!.AdvScheds.Any(x => x.Attscheddailyid == 0);
+        if (unfilled)
+        {
+            V!.Notification = ("warning", "Please fill in the template for all existing schedules first.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        V!.UsedDates = V.AdvScheds.Select(x => x.Date.Date).ToList();
+
+        var allDates       = Enumerable.Range(0, (V.EndDate - V.StartDate).Days + 1)
+                                       .Select(i => V.StartDate.AddDays(i).Date)
+                                       .ToList();
+        var firstAvailable = allDates.FirstOrDefault(d => !V.UsedDates.Contains(d));
+        V.NewDate           = firstAvailable == default ? V.StartDate : firstAvailable;
+        V.DateError         = string.Empty;
+        V.IsAddModalVisible = true;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnDateChanged(DateTime val, bool isStart)
+    {
+        if (isStart) V!.StartDate = val;
+        else         V!.EndDate   = val;
+
+        await LoadAdvSched();
+    }
+
+    private async Task LoadAdvSched()
+    {
+        if (Uc is null || V!.SelectedEmployee is null) return;
+        V.IsLoadingAdvSched = true;
+
+        try
+        {
+            V.AdvScheds = (await _advsched._02sEmpNumberDateRange(
+                              V.SelectedEmployee.EmpNumber!,
+                              V.StartDate,
+                              V.EndDate,
+                              Uc.SchemaUserPis!,
+                              Uc.Conn!) ?? [])
+                          .Where(x => x is not null)
+                          .Cast<AttadvancescheduleModel>()
+                          .OrderBy(x => x.Date)
+                          .ToList();
+        }
+        catch (Exception ex)
+        {
+            V!.Notification = ("error", $"Load failed: {ex.Message}");
+        }
+        finally
+        {
+            V!.IsLoadingAdvSched = false;
+            await NotifyChanged!.Invoke();
+        }
+    }
+
+    private async Task OnTemplateSelected(AttadvancescheduleModel row, int templateId)
+    {
+        if (Uc is null) return;
+
+        var template = V!.DailyTemplates.FirstOrDefault(x => x.Id == templateId);
+        if (template is null) return;
+
+        row.Attscheddailyid = templateId;
+        row.Dutytype        = template.Dutytype;
+        row.Pin             = template.Pin;
+        row.Duration        = template.Duration;
+        row.Pout            = template.Pout;
+        row.Nd              = template.Nd;
+
+        try
+        {
+            AttadvancescheduleModel? res;
+            if (row.Id == 0)
+                res = await _advsched._01(row, Uc.SchemaUserPis!, Uc.Conn!);
+            else
+                res = await _advsched._03(row.Id, row, Uc.SchemaUserPis!, Uc.Conn!);
+
+            if (res is not null)
+            {
+                var idx = V.AdvScheds.FindIndex(x => x.Id == row.Id && x.Date == row.Date);
+                if (idx >= 0) V.AdvScheds[idx] = res;
+                V.AdvScheds    = [..V.AdvScheds];
+                V.Notification = ("success", "Schedule updated.");
+            }
+        }
+        catch (Exception ex)
+        {
+            V!.Notification = ("error", $"Save failed: {ex.Message}");
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task ClearRow(AttadvancescheduleModel row)
+    {
+        if (Uc is null) return;
+
+        try
+        {
+            if (row.Id > 0)
+            {
+                await _advsched._04(row.Id, Uc.SchemaUserPis!, Uc.Conn!);
+                V!.AdvScheds    = V.AdvScheds.Where(x => x.Id != row.Id).ToList();
+                V!.Notification = ("success", "Schedule cleared.");
+            }
+            else
+            {
+                V!.AdvScheds = V!.AdvScheds.Where(x => x.Date != row.Date).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            V!.Notification = ("error", $"Clear failed: {ex.Message}");
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+}

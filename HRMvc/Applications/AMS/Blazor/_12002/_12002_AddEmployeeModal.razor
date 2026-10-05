@@ -1,0 +1,164 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<TelerikDialog @bind-Visible="@v!.IsAddEmpModalOpen"
+               Title="Add Employee"
+               Width="600px">
+    <DialogContent>
+        <div class="row g-2 align-items-end mb-3">
+
+            <!-- Search Box -->
+            <div class="col-9">
+                <label class="form-label fw-bold txt-fcolor1 mb-1">Search by Emp# / Name</label>
+                <TelerikTextBox @bind-Value="@v!.EmpSearchKeyword"
+                                PlaceHolder="Type emp number or name..."
+                                Width="100%" />
+            </div>
+
+            <!-- Search Button -->
+            <div class="col-3">
+                <TelerikButton OnClick="OnSearch"
+                               ThemeColor="info"
+                               Enabled="@(!v.IsBusy)">
+                    @(v!.IsBusy ? "Searching..." : "Search")
+                </TelerikButton>
+            </div>
+
+        </div>
+
+        <!-- Search Results -->
+        @if (v!.SearchedEmps.Count > 0)
+        {
+            <TelerikGrid Data="@v.SearchedEmps"
+                         Height="300px"
+                         Pageable="true"
+                         PageSize="25"
+                         SelectionMode="GridSelectionMode.None">
+                <GridColumns>
+                    <GridColumn Width="40px">
+                        <HeaderTemplate>
+                            <input type="checkbox" @onchange="OnSelectAll" />
+                        </HeaderTemplate>
+                        <Template>
+                            @{
+                                var row = (M11003_Empmas)context;
+                            }
+                            <input type="checkbox" checked="@row.IsSelected"
+                                   @onchange="@(async e => { row.IsSelected = (bool)(e.Value ?? false); await NotifyChanged!.Invoke(); })" />
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(M11003_Empmas.EmpNumber)" Title="Emp#" Width="100px" />
+                    <GridColumn Field="@nameof(M11003_Empmas.EmpName)"   Title="Name" />
+                </GridColumns>
+            </TelerikGrid>
+        }
+
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="OnAddSelected"
+                       ThemeColor="primary"
+                       Enabled="@(v!.SearchedEmps.Any(x => x.IsSelected))">
+            Add Selected (@v!.SearchedEmps.Count(x => x.IsSelected))
+        </TelerikButton>
+        <TelerikButton OnClick="OnCancel">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject IDA_11003O _daO
+
+@code {
+    [CascadingParameter] public V12002Model?     v             { get; set; }
+    [CascadingParameter] public UserClaimsModel? Uc            { get; set; }
+    [CascadingParameter] public Func<Task>?      NotifyChanged { get; set; }
+
+    private async Task OnSearch()
+    {
+        if (v is null || Uc is null) return;
+
+        if (string.IsNullOrWhiteSpace(v.EmpSearchKeyword))
+        {
+            v.Notification = ("warning", "Please enter a search keyword.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        v.IsBusy = true;
+        await NotifyChanged!.Invoke();
+
+        try
+        {
+            var results = await _daO._02EmpmasByKeyword(
+                v.EmpSearchKeyword,
+                Uc.SchemaUserPis!,
+                Uc.OpisDb!,
+                Uc.Conn!) ?? [];
+
+            var existing = v.ManHours.Select(x => x.EmpNumber).ToHashSet();
+            v.SearchedEmps = results
+                .Where(x => x is not null && !existing.Contains(x.EmpNumber))
+                .Cast<M11003_Empmas>()
+                .ToList();
+
+            if (v.SearchedEmps.Count == 0)
+                v.Notification = ("warning", "No employees found.");
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Search failed: {ex.Message}");
+        }
+
+        v.IsBusy = false;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnSelectAll(ChangeEventArgs e)
+    {
+        if (v is null) return;
+        var isChecked = (bool)(e.Value ?? false);
+        foreach (var emp in v.SearchedEmps)
+            emp.IsSelected = isChecked;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnAddSelected()
+    {
+        if (v is null) return;
+
+        var selected = v.SearchedEmps.Where(x => x.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            v.Notification = ("warning", "No employee selected.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        foreach (var emp in selected)
+        {
+            v.ManHours.Add(new BioManHourModel
+            {
+                EmpNumber = emp.EmpNumber ?? string.Empty,
+                EmpName   = emp.EmpName   ?? string.Empty
+            });
+        }
+
+        // Force TelerikGrid to detect the change
+        v.ManHours          = v.ManHours.ToList();
+        v.Notification      = ("success", $"{selected.Count} employee(s) added.");
+        v.SearchedEmps      = [];
+        v.EmpSearchKeyword  = string.Empty;
+        v.IsAddEmpModalOpen = false;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnCancel()
+    {
+        if (v is null) return;
+        v.SearchedEmps      = [];
+        v.EmpSearchKeyword  = string.Empty;
+        v.IsAddEmpModalOpen = false;
+        await NotifyChanged!.Invoke();
+    }
+}

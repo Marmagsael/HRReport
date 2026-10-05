@@ -1,0 +1,419 @@
+﻿@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+
+@inject IAttscheddefaultDataAccess _defsched
+
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<TelerikRootComponent>
+
+    <div class="p-1 card">
+
+        <BodyHdr pageTitle="Standard Working Hours Schedule" />
+
+        <div class="card-body">
+
+            <div class="w-100 py-2">
+                <div @onclick="UpdateChanges" class="card mb-btn mb-cbtn-gray w-250p h-40p">
+                    Update Changes
+                </div>
+            </div>
+
+            <div class="table-responsive" style="max-width: 900px;">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead>
+                        <tr class="text-center">
+                            <th class="w-200p">Day</th>
+                            <th class="w-200p">Duty Type</th>
+                            <th class="w-150p">In Schedule</th>
+                            <th class="w-125p">Duration</th>
+                            <th>Out Schedule</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        @*---- Monday ---------------------*@
+                        <tr>
+                            <td>Monday</td>
+                            <td>
+                                <TelerikDropDownList Data="@V.AttDutyTypes"
+                                                     Value="@defSched.D2_dutytype"
+                                                     ValueChanged="@((string val) => { defSched.D2_dutytype = val; if (VamsHelper.IsDisabled(val)) { defSched.D2_in = 0; defSched.D2_hrslength = 0; } })"
+                                                     TextField="@nameof(AttdutytypeModel.Name)"
+                                                     ValueField="@nameof(AttdutytypeModel.Code)"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="150px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attinschedules"
+                                                     Value="@defSched.D2_in"
+                                                     ValueChanged="@((int val) => { defSched.D2_in = val; defSched.D2_out = VamsHelper.ComputeOut(val, defSched.D2_hrslength); })"
+                                                     TextField="@nameof(AttinscheduleModel.Inschedule)"
+                                                     ValueField="@nameof(AttinscheduleModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D2_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attworkinghours"
+                                                     Value="@defSched.D2_hrslength"
+                                                     ValueChanged="@((int val) => { defSched.D2_hrslength = val; defSched.D2_out = VamsHelper.ComputeOut(defSched.D2_in, val); })"
+                                                     TextField="@nameof(AttworkinghourModel.Hours)"
+                                                     ValueField="@nameof(AttworkinghourModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D2_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td class="text-center">@VamsHelper.FormatOut(defSched.D2_dutytype, defSched.D2_in, defSched.D2_hrslength)</td>
+                        </tr>
+
+                        @*---- Tuesday ---------------------*@
+                        <tr>
+                            <td>Tuesday</td>
+                            <td>
+                                <TelerikDropDownList Data="@V.AttDutyTypes"
+                                                     Value="@defSched.D3_dutytype"
+                                                     ValueChanged="@((string val) => { defSched.D3_dutytype = val; if (VamsHelper.IsDisabled(val)) { defSched.D3_in = 0; defSched.D3_hrslength = 0; } })"
+                                                     TextField="@nameof(AttdutytypeModel.Name)"
+                                                     ValueField="@nameof(AttdutytypeModel.Code)"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="150px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attinschedules"
+                                                     Value="@defSched.D3_in"
+                                                     ValueChanged="@((int val) => { defSched.D3_in = val; defSched.D3_out = VamsHelper.ComputeOut(val, defSched.D3_hrslength); })"
+                                                     TextField="@nameof(AttinscheduleModel.Inschedule)"
+                                                     ValueField="@nameof(AttinscheduleModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D3_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attworkinghours"
+                                                     Value="@defSched.D3_hrslength"
+                                                     ValueChanged="@((int val) => { defSched.D3_hrslength = val; defSched.D3_out = VamsHelper.ComputeOut(defSched.D3_in, val); })"
+                                                     TextField="@nameof(AttworkinghourModel.Hours)"
+                                                     ValueField="@nameof(AttworkinghourModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D3_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td class="text-center">@VamsHelper.FormatOut(defSched.D3_dutytype, defSched.D3_in, defSched.D3_hrslength)</td>
+                        </tr>
+
+                        @*---- Wednesday ---------------------*@
+                        <tr>
+                            <td>Wednesday</td>
+                            <td>
+                                <TelerikDropDownList Data="@V.AttDutyTypes"
+                                                     Value="@defSched.D4_dutytype"
+                                                     ValueChanged="@((string val) => { defSched.D4_dutytype = val; if (VamsHelper.IsDisabled(val)) { defSched.D4_in = 0; defSched.D4_hrslength = 0; } })"
+                                                     TextField="@nameof(AttdutytypeModel.Name)"
+                                                     ValueField="@nameof(AttdutytypeModel.Code)"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="150px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attinschedules"
+                                                     Value="@defSched.D4_in"
+                                                     ValueChanged="@((int val) => { defSched.D4_in = val; defSched.D4_out = VamsHelper.ComputeOut(val, defSched.D4_hrslength); })"
+                                                     TextField="@nameof(AttinscheduleModel.Inschedule)"
+                                                     ValueField="@nameof(AttinscheduleModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D4_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attworkinghours"
+                                                     Value="@defSched.D4_hrslength"
+                                                     ValueChanged="@((int val) => { defSched.D4_hrslength = val; defSched.D4_out = VamsHelper.ComputeOut(defSched.D4_in, val); })"
+                                                     TextField="@nameof(AttworkinghourModel.Hours)"
+                                                     ValueField="@nameof(AttworkinghourModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D4_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td class="text-center">@VamsHelper.FormatOut(defSched.D4_dutytype, defSched.D4_in, defSched.D4_hrslength)</td>
+                        </tr>
+
+                        @*---- Thursday ---------------------*@
+                        <tr>
+                            <td>Thursday</td>
+                            <td>
+                                <TelerikDropDownList Data="@V.AttDutyTypes"
+                                                     Value="@defSched.D5_dutytype"
+                                                     ValueChanged="@((string val) => { defSched.D5_dutytype = val; if (VamsHelper.IsDisabled(val)) { defSched.D5_in = 0; defSched.D5_hrslength = 0; } })"
+                                                     TextField="@nameof(AttdutytypeModel.Name)"
+                                                     ValueField="@nameof(AttdutytypeModel.Code)"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="150px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attinschedules"
+                                                     Value="@defSched.D5_in"
+                                                     ValueChanged="@((int val) => { defSched.D5_in = val; defSched.D5_out = VamsHelper.ComputeOut(val, defSched.D5_hrslength); })"
+                                                     TextField="@nameof(AttinscheduleModel.Inschedule)"
+                                                     ValueField="@nameof(AttinscheduleModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D5_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attworkinghours"
+                                                     Value="@defSched.D5_hrslength"
+                                                     ValueChanged="@((int val) => { defSched.D5_hrslength = val; defSched.D5_out = VamsHelper.ComputeOut(defSched.D5_in, val); })"
+                                                     TextField="@nameof(AttworkinghourModel.Hours)"
+                                                     ValueField="@nameof(AttworkinghourModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D5_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td class="text-center">@VamsHelper.FormatOut(defSched.D5_dutytype, defSched.D5_in, defSched.D5_hrslength)</td>
+                        </tr>
+
+                        @*---- Friday ---------------------*@
+                        <tr>
+                            <td>Friday</td>
+                            <td>
+                                <TelerikDropDownList Data="@V.AttDutyTypes"
+                                                     Value="@defSched.D6_dutytype"
+                                                     ValueChanged="@((string val) => { defSched.D6_dutytype = val; if (VamsHelper.IsDisabled(val)) { defSched.D6_in = 0; defSched.D6_hrslength = 0; } })"
+                                                     TextField="@nameof(AttdutytypeModel.Name)"
+                                                     ValueField="@nameof(AttdutytypeModel.Code)"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="150px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attinschedules"
+                                                     Value="@defSched.D6_in"
+                                                     ValueChanged="@((int val) => { defSched.D6_in = val; defSched.D6_out = VamsHelper.ComputeOut(val, defSched.D6_hrslength); })"
+                                                     TextField="@nameof(AttinscheduleModel.Inschedule)"
+                                                     ValueField="@nameof(AttinscheduleModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D6_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attworkinghours"
+                                                     Value="@defSched.D6_hrslength"
+                                                     ValueChanged="@((int val) => { defSched.D6_hrslength = val; defSched.D6_out = VamsHelper.ComputeOut(defSched.D6_in, val); })"
+                                                     TextField="@nameof(AttworkinghourModel.Hours)"
+                                                     ValueField="@nameof(AttworkinghourModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D6_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td class="text-center">@VamsHelper.FormatOut(defSched.D6_dutytype, defSched.D6_in, defSched.D6_hrslength)</td>
+                        </tr>
+
+                        @*---- Saturday ---------------------*@
+                        <tr class="text-primary">
+                            <td>Saturday</td>
+                            <td>
+                                <TelerikDropDownList Data="@V.AttDutyTypes"
+                                                     Value="@defSched.D7_dutytype"
+                                                     ValueChanged="@((string val) => { defSched.D7_dutytype = val; if (VamsHelper.IsDisabled(val)) { defSched.D7_in = 0; defSched.D7_hrslength = 0; } })"
+                                                     TextField="@nameof(AttdutytypeModel.Name)"
+                                                     ValueField="@nameof(AttdutytypeModel.Code)"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="150px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attinschedules"
+                                                     Value="@defSched.D7_in"
+                                                     ValueChanged="@((int val) => { defSched.D7_in = val; defSched.D7_out = VamsHelper.ComputeOut(val, defSched.D7_hrslength); })"
+                                                     TextField="@nameof(AttinscheduleModel.Inschedule)"
+                                                     ValueField="@nameof(AttinscheduleModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D7_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attworkinghours"
+                                                     Value="@defSched.D7_hrslength"
+                                                     ValueChanged="@((int val) => { defSched.D7_hrslength = val; defSched.D7_out = VamsHelper.ComputeOut(defSched.D7_in, val); })"
+                                                     TextField="@nameof(AttworkinghourModel.Hours)"
+                                                     ValueField="@nameof(AttworkinghourModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D7_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td class="text-center">@VamsHelper.FormatOut(defSched.D7_dutytype, defSched.D7_in, defSched.D7_hrslength)</td>
+                        </tr>
+
+                        @*---- Sunday ---------------------*@
+                        <tr class="text-danger">
+                            <td>Sunday</td>
+                            <td>
+                                <TelerikDropDownList Data="@V.AttDutyTypes"
+                                                     Value="@defSched.D1_dutytype"
+                                                     ValueChanged="@((string val) => { defSched.D1_dutytype = val; if (VamsHelper.IsDisabled(val)) { defSched.D1_in = 0; defSched.D1_hrslength = 0; } })"
+                                                     TextField="@nameof(AttdutytypeModel.Name)"
+                                                     ValueField="@nameof(AttdutytypeModel.Code)"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="150px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attinschedules"
+                                                     Value="@defSched.D1_in"
+                                                     ValueChanged="@((int val) => { defSched.D1_in = val; defSched.D1_out = VamsHelper.ComputeOut(val, defSched.D1_hrslength); })"
+                                                     TextField="@nameof(AttinscheduleModel.Inschedule)"
+                                                     ValueField="@nameof(AttinscheduleModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D1_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td>
+                                <TelerikDropDownList Data="@V.Attworkinghours"
+                                                     Value="@defSched.D1_hrslength"
+                                                     ValueChanged="@((int val) => { defSched.D1_hrslength = val; defSched.D1_out = VamsHelper.ComputeOut(defSched.D1_in, val); })"
+                                                     TextField="@nameof(AttworkinghourModel.Hours)"
+                                                     ValueField="@nameof(AttworkinghourModel.Id)"
+                                                     Enabled="@(!VamsHelper.IsDisabled(defSched.D1_dutytype))"
+                                                     Width="100%">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="350px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </td>
+                            <td class="text-center">@VamsHelper.FormatOut(defSched.D1_dutytype, defSched.D1_in, defSched.D1_hrslength)</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</TelerikRootComponent>
+
+@code {
+
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    TelerikNotification      NotificationRef { get; set; } = new();
+    V11002Model              V               { get; set; } = new();
+    AttscheddefaultModel     defSched        { get; set; } = new();
+
+    protected async override Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        defSched = new();
+
+        var res = await _defsched._02(Uc!.SchemaUserPis, Uc.Conn);
+        if (res != null) defSched = res;
+
+        defSched.D1_out = VamsHelper.ComputeOut(defSched.D1_in, defSched.D1_hrslength);
+        defSched.D2_out = VamsHelper.ComputeOut(defSched.D2_in, defSched.D2_hrslength);
+        defSched.D3_out = VamsHelper.ComputeOut(defSched.D3_in, defSched.D3_hrslength);
+        defSched.D4_out = VamsHelper.ComputeOut(defSched.D4_in, defSched.D4_hrslength);
+        defSched.D5_out = VamsHelper.ComputeOut(defSched.D5_in, defSched.D5_hrslength);
+        defSched.D6_out = VamsHelper.ComputeOut(defSched.D6_in, defSched.D6_hrslength);
+        defSched.D7_out = VamsHelper.ComputeOut(defSched.D7_in, defSched.D7_hrslength);
+    }
+
+    private async Task UpdateChanges()
+    {
+        var res = await _defsched._03(defSched, Uc!.SchemaUserPis, Uc.Conn);
+
+        if (res != null)
+        {
+            defSched        = res;
+            defSched.D1_out = VamsHelper.ComputeOut(defSched.D1_in, defSched.D1_hrslength);
+            defSched.D2_out = VamsHelper.ComputeOut(defSched.D2_in, defSched.D2_hrslength);
+            defSched.D3_out = VamsHelper.ComputeOut(defSched.D3_in, defSched.D3_hrslength);
+            defSched.D4_out = VamsHelper.ComputeOut(defSched.D4_in, defSched.D4_hrslength);
+            defSched.D5_out = VamsHelper.ComputeOut(defSched.D5_in, defSched.D5_hrslength);
+            defSched.D6_out = VamsHelper.ComputeOut(defSched.D6_in, defSched.D6_hrslength);
+            defSched.D7_out = VamsHelper.ComputeOut(defSched.D7_in, defSched.D7_hrslength);
+
+            NotificationRef.Show(new NotificationModel
+            {
+                Text       = "Schedule saved successfully.",
+                ThemeColor = ThemeConstants.Notification.ThemeColor.Success,
+                CloseAfter = 3000
+            });
+        }
+        else
+        {
+            NotificationRef.Show(new NotificationModel
+            {
+                Text       = "Failed to save. Please try again.",
+                ThemeColor = ThemeConstants.Notification.ThemeColor.Error,
+                CloseAfter = 3000
+            });
+        }
+    }
+}

@@ -1,0 +1,207 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._90_Utils
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.PayrollTransaction.Vars
+
+
+@*--- Line 1  *@
+<div class="d-flex gap-1 w-100 py-1">
+    <div class="p-2">Payroll Group </div>
+    <div class="w-60">
+        <TelerikDropDownList Data="@V0502.Payrollgrps"
+                             TItem="HRApiLibrary.Models._20_Pay.PayrollgrpModel"
+                             TValue="int?" TextField="Name" ValueField="Id"
+                             @bind-Value="V0502.Payrollgrp.Id"
+                             DefaultText="-- Select Payroll Group --" Width="100%">
+
+            <DropDownListSettings>
+                <DropDownListPopupSettings Height="400px" />
+            </DropDownListSettings>
+        </TelerikDropDownList>
+    </div>
+
+    <div @onclick="FetchData" class="card p-2 w-65p text-center h-35p mb-btn mb-btn-gray mb-tooltip @cssDFetchTransaction ">
+        <span class="tooltip-text">Fetch Transaction</span>
+        <i class="fa-solid fa-hand-back-fist fa-lg txt-lightgray"></i>
+    </div>
+
+    <div @onclick="LoadData" class="card p-2 w-65p text-center h-35p mb-btn mb-btn-gray mb-tooltip @cssDLoadTransaction ">
+        <span class="tooltip-text">Load Transaction</span>
+        <i class="fa-solid fa-cloud-arrow-down fa-lg txt-lightgray"></i>
+    </div>
+</div>
+
+@*--- Line 2  *@
+<div class="d-flex gap-1 w-100 px-2 py-1 bg-gray-95" style="font-size: 10px !important; ">
+    <div>Deployed Employee(s) : </div>
+    <div class="txt-fcolor1">99</div>
+
+    <div>Payroll Status : </div>
+    <div class="txt-fcolor1">Locked  </div>
+
+    <div class="bordered-right"></div>
+
+    <div>Last Payroll Entry : </div>
+    <div class="txt-fcolor1">YYMMPP  </div>
+
+</div>
+
+@* ---Line 3 *@
+<div class="d-flex gap-1 w-100 px-2 bordered-bottom py-1">
+    @* --- Payroll Period ---------------------------- *@
+    <div class="p-2 bordered br-5">
+        <div class="fw-bold bordered-bottom"><small>PAYROLL PERIOD</small></div>
+        <div class="d-flex gap-2">
+            <div>
+                <div class="p-2">Year</div>
+                <div class="w-100p">
+                    <TelerikDropDownList Data="@V0502.Years"
+                                         TItem="YearsModel"
+                                         TValue="string?"
+                                         TextField="Name"
+                                         ValueField="Name"
+                                         @bind-Value="V0502.Year"
+                                         DefaultText="-Yr-"
+                                         Width="100%">
+                    </TelerikDropDownList>
+
+                        
+                </div>
+            </div>
+
+            <div>
+                <div class="p-2 ">Month</div>
+                <div class=" w-150p ">
+                    <TelerikDropDownList Data="@V0502.Months"
+                                         TItem="MonthModel"
+                                         TValue="string?"
+                                         TextField="MonthName"
+                                         ValueField="Code"
+                                         @bind-Value="V0502.Month"
+                                         DefaultText="--Months---"
+                                         Width="100%">
+                    </TelerikDropDownList>
+                </div>
+            </div>
+
+                    
+            <div>
+                <div class="p-2 ">Period</div>
+                <div class=" w-120p ">
+                    
+                    <TelerikDropDownList Data="@V0502.Periods"
+                                         TItem="PeriodModel"
+                                         TValue="string?"
+                                         TextField="PdName"
+                                         ValueField="PdNumber"
+                                         @bind-Value="V0502.Period"
+                                         DefaultText="--Period---"
+                                         Width="100%">
+                    </TelerikDropDownList>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    @* --- Attendance Coverage ---------------------- *@
+    <div class="p-2 bordered br-5">
+        <div class="fw-bold bordered-bottom"><small>ATTENDANCE COVERAGE</small></div>
+        <div class="d-flex gap-2">
+
+            @*--- Attendance Start ---------------------------------*@
+            <div>
+                <div class="p-2 ">Attendance Start</div>
+                <div class=" w-150p ">
+                    <TelerikDatePicker @bind-Value="@V0502.AttStart"
+                                       Format="MM/dd/yyyy"
+                                       Width="100%" />
+                </div>
+            </div>
+
+            @*--- Attendance End ---------------------------------*@
+            <div>
+                <div class="p-2 ">Attendance End</div>
+                <div class=" w-150p ">
+                    <TelerikDatePicker Class="form-control"
+                                       @bind-Value="@V0502.AttEnd"
+                                       Format="MM/dd/yyyy"
+                                       Width="100%" />
+                </div>
+            </div>
+
+
+
+                    
+
+        </div>
+    </div>
+
+
+    @* <div class="p-2 bordered br-5">
+        <div class="fw-bold bordered-bottom"><small>Parameters</small></div>
+        <div>Payrollgrp Code : @V0502.PayrollgrpCode</div>
+        <div>Year : @V0502.Year</div>
+        <div>Month : @V0502.Month</div>
+        <div>Period : @V0502.Period</div>
+        <div>AStart : @V0502.AttStart</div>
+        <div>AEnd : @V0502.AttEnd</div>
+        <div>cssFetch Transaction : @dFT</div>
+        <div>cssLoad Transaction : @dLT</div>
+
+    </div> *@
+
+
+</div>
+
+@inject IODeprecDataAccess _deprec; 
+
+
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel     Uc                  { get; set; } = new();
+    [CascadingParameter] public V0502?               V0502              { get; set; } = new();
+    [CascadingParameter] public Func<Task>?         NotifyV0502Changed  { get; set; }
+
+    async Task FetchData()
+    {
+        var res = await _deprec._02ByFieldId("PayrollgrpId", V0502.Payrollgrp.Id, Uc.OpisDb, Uc.Conn);
+        V0502.PayEmpmass = [];
+        
+        Console.WriteLine($"Fetch Data * Count {res.Count} * Payrollgrp Id : {V0502.Payrollgrp.Id}");
+
+        if (res.Count > 0)
+        {
+            int ctr = 0; 
+            foreach (var r in res)
+            {
+                ctr++;
+                V0502PayEmpmasModel pEmpmas = new() { No = ctr, IsSelected = true, EmpNumber = r.EmpNumber ?? "", 
+                    EmpName = r.EmpName, Status = r.EmpStatusId.ToString()}; 
+                V0502.PayEmpmass.Add(pEmpmas);
+            }
+
+            await NotifyV0502Changed.Invoke(); 
+            StateHasChanged();
+        }
+        
+    }
+
+    async Task LoadData()
+    {
+
+    }
+
+    bool dFT => (((V0502.Payrollgrp.Id??0)<1) || (V0502.Year.Trim().Length < 4) || 
+                 (V0502.Month == "XX") || (V0502.Period == "XX") || (V0502.AttStart >= V0502.AttEnd));
+    bool dLT => ((V0502.PayrollgrpCode == "XXXXX") || (V0502.Year.Trim().Length < 4) ||
+                 (V0502.Month == "XX") || (V0502.Period == "XX") || (V0502.AttStart >= V0502.AttEnd) || 
+                 ((V0502?.PayEmpmass?.Count) == 0));
+
+    string cssDFetchTransaction => dFT == true ? "disabled-div" : ""; 
+    string cssDLoadTransaction  => dLT == true ? "disabled-div" : "";
+
+
+}

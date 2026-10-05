@@ -1,0 +1,148 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Modules._11003AME
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<div class="card h-100">
+    <div class="card-header p-1 fw-bold txt-fcolor1">
+        <div class="d-flex justify-content-between align-items-center">
+            <span>Employees</span>
+            @if (v?.Employees.Any() == true)
+            {
+                <small class="text-muted fw-normal">@(v.Employees.Count(x => x.IsSelected)) selected</small>
+            }
+        </div>
+    </div>
+    <div class="card-body p-0" style="overflow-y: auto; max-height: 600px;">
+        <TelerikGrid Data="@v!.Employees"
+                     SelectionMode="GridSelectionMode.None"
+                     Sortable="false"
+                     Resizable="false"
+                     Class="k-grid-sm">
+            <GridColumns>
+                <GridColumn Width="40px" TextAlign="ColumnTextAlign.Center">
+                    <HeaderTemplate>
+                        <TelerikCheckBox Value="@IsAllSelected"
+                                         ValueChanged="@((bool val) => OnSelectAll(val))" />
+                    </HeaderTemplate>
+                    <Template>
+                        @{
+                            var emp = (M11003AME_Empmas)context;
+                        }
+                        <TelerikCheckBox Value="@emp.IsSelected"
+                                         ValueChanged="@((bool val) => OnCheckChanged(emp, val))"
+                                         Enabled="@(emp.Empmasid > 0)" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="EmpName" Title="Name">
+                    <Template>
+                        @{
+                            var emp = (M11003AME_Empmas)context;
+                            bool noPortal = emp.Empmasid == 0;
+                            string color  = noPortal ? "orange" : (emp.IsSelected ? "darkcyan" : "inherit");
+                        }
+                        <span style="color: @color; cursor: pointer;"
+                              @onclick="@(() => OnNameClick(emp))">@emp.EmpName</span>
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+    </div>
+</div>
+
+@inject IAttpunches1DataAccess _punches
+
+@code {
+
+    [CascadingParameter] public V11003AMEModel?     v               { get; set; }
+    [CascadingParameter] public UserClaimsModel?    Uc              { get; set; }
+    [CascadingParameter] public Func<Task>?         NotifyChanged   { get; set; }
+
+    private bool IsAllSelected =>
+        v?.Employees.Any() == true &&
+        v.Employees.Where(x => x.Empmasid > 0).All(x => x.IsSelected);
+
+    private async Task OnNameClick(M11003AME_Empmas emp)
+    {
+        if (v is null || emp.Empmasid == 0) return;
+
+        // Unselect all, select only this one
+        foreach (var e in v.Employees)
+            e.IsSelected = false;
+
+        emp.IsSelected     = true;
+        v.SelectedEmployee = emp;
+        v.Punches          = [];
+
+        await LoadPunches();
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnCheckChanged(M11003AME_Empmas emp, bool val)
+    {
+        if (v is null) return;
+        emp.IsSelected = val;
+
+        // If single employee selected, auto-load punches
+        var selected = v.Employees.Where(x => x.IsSelected).ToList();
+        if (selected.Count == 1)
+        {
+            v.SelectedEmployee = selected[0];
+            await LoadPunches();
+        }
+        else
+        {
+            v.SelectedEmployee = null;
+            v.Punches          = [];
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnSelectAll(bool val)
+    {
+        if (v is null) return;
+        foreach (var emp in v.Employees.Where(x => x.Empmasid > 0))
+            emp.IsSelected = val;
+
+        var selected = v.Employees.Where(x => x.IsSelected).ToList();
+        if (selected.Count == 1)
+        {
+            v.SelectedEmployee = selected[0];
+            await LoadPunches();
+        }
+        else
+        {
+            v.SelectedEmployee = null;
+            v.Punches          = [];
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task LoadPunches()
+    {
+        if (v is null || Uc is null || v.SelectedEmployee is null) return;
+        if (v.DateStart is null || v.DateEnd is null) return;
+
+        try
+        {
+            var start  = DateOnly.FromDateTime(v.DateStart.Value);
+            var end    = DateOnly.FromDateTime(v.DateEnd.Value);
+            var result = await _punches._02ByIdByRange(
+                            v.SelectedEmployee.Empmasid, start, end,
+                            Uc.SchemaUserPis!, Uc.Conn!);
+
+            v.Punches = result?
+                .Where(x => x is not null)
+                .Cast<Attpunches1Model>()
+                .ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            v!.Notification = ("error", $"Load punches failed: {ex.Message}");
+        }
+    }
+}
