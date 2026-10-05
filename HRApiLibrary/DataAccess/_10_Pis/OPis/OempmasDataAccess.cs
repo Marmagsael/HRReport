@@ -169,7 +169,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
     {
 
-        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, e.EmpStat_
                         from {schema}.Empmas e 
                         where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter
                         order by e.EmplastNm, e.EmpFirstNm";
