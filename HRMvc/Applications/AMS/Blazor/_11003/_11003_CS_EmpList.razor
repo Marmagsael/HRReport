@@ -1,0 +1,148 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<TelerikGrid Data="@V!.Employees"
+             Pageable="true"
+             PageSize="25"
+             Sortable="true"
+             SelectionMode="GridSelectionMode.None"
+             Height="500px">
+    <GridToolBarTemplate>
+        <TelerikButton Icon="@("check-circle")"
+                       ThemeColor="primary"
+                       FillMode="ButtonFillMode.Flat"
+                       Title="Select All"
+                       OnClick="@SelectAll" />
+        <TelerikButton Icon="@("cancel")"
+                       ThemeColor="secondary"
+                       FillMode="ButtonFillMode.Flat"
+                       Title="Unselect All"
+                       OnClick="@UnselectAll" />
+        @if (V!.Employees.Any(x => x.IsSelected))
+        {
+            <TelerikButton ThemeColor="primary" OnClick="@OpenModalCurrentSchedule">
+                Change Current Schedule
+            </TelerikButton>
+            <TelerikButton ThemeColor="secondary" OnClick="@OpenModalNewSchedule">
+                Change New Schedule
+            </TelerikButton>
+
+        }
+    </GridToolBarTemplate>
+    <GridColumns>
+        <GridColumn Width="50px" Sortable="false">
+            <Template>
+                @{ var row = (M11003CS_Atttemplate)context; }
+                <div class="d-flex w-100 justify-content-center">
+                    <TelerikCheckBox Value="@row.IsSelected"
+                                     ValueChanged="@((bool val) => OnCheckChanged(row, val))"
+                                     Enabled="@(row.Empmasid != 0)" />
+                </div>
+            </Template>
+        </GridColumn>
+        <GridColumn Field="@nameof(M11003CS_Atttemplate.EmpName)" Title="Name">
+            <Template>
+                @{ var row = (M11003CS_Atttemplate)context; }
+                <div style="color: @GetNameColor(row)">@row.EmpName</div>
+                @if (row.Empmasid == 0)
+                {
+                    <div style="font-size:0.8em; color: blue;">Not portal user</div>
+                }
+            </Template>
+        </GridColumn>
+        <GridColumn Field="@nameof(M11003CS_Atttemplate.CurrentScheduleName)" Title="Curr Schedule" />
+        <GridColumn Field="@nameof(M11003CS_Atttemplate.AdvanceScheduleName)" Title="New Schedule">
+            <Template>
+                @{ var row = (M11003CS_Atttemplate)context; }
+                <span style="@(row.AdvanceScheduleName != row.CurrentScheduleName ? "color: darkcyan; font-weight: bold;" : "")">
+                    @row.AdvanceScheduleName
+                </span>
+            </Template>
+        </GridColumn>
+
+        <GridColumn Field="@nameof(M11003CS_Atttemplate.Changeschedeffectivity)" Title="Effectivity" Width="120px">
+            <Template>
+                @{ var row = (M11003CS_Atttemplate)context; }
+                @(row.Changeschedeffectivity == default ? "-" : row.Changeschedeffectivity.ToString("MM/dd/yyyy"))
+            </Template>
+        </GridColumn>
+        
+        <GridColumn Field="@nameof(M11003CS_Atttemplate.Changeschedend)" Title="Effectivity End" Width="120px">
+            <Template>
+                @{ var row = (M11003CS_Atttemplate)context; }
+                @(row.Changeschedend == default ? "-" : row.Changeschedend.ToString("MM/dd/yyyy"))
+            </Template>
+        </GridColumn>
+
+    </GridColumns>
+</TelerikGrid>
+
+<!-- Color Legend -->
+<div style="margin-top: 8px; font-size: 0.85em; display: flex; gap: 16px;">
+    <span><span style="color: darkcyan; font-weight: bold;">■</span> Schedule changed</span>
+    <span><span style="color: blue;">■</span> Not portal user</span>
+    <span><span style="color: gray;">■</span> No schedule set</span>
+</div>
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel?  Uc                { get; set; }
+    [CascadingParameter] public V11003CSModel?     V                { get; set; }
+    [CascadingParameter] public Func<Task>?        NotifyChanged    { get; set; }
+
+    private string GetNameColor(M11003CS_Atttemplate row)
+    {
+        if (row.Empmasid == 0) return "gray";
+        if (row.Attschedweeklyhdrid == 0) return "rgba(0,0,0,0.70)";
+        if (row.AdvanceScheduleName != row.CurrentScheduleName) return "darkcyan";
+        return "rgba(0,0,0,0.90)";
+    }
+
+    private async Task OnCheckChanged(M11003CS_Atttemplate row, bool val)
+    {
+        row.IsSelected = val;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task SelectAll()
+    {
+        V!.Employees.ForEach(x =>
+        {
+            if (x.Empmasid != 0) x.IsSelected = true;
+        });
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task UnselectAll()
+    {
+        V!.Employees.ForEach(x => x.IsSelected = false);
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OpenModalNewSchedule()
+    {
+        V!.SelectedEmployees    = V.Employees.Where(x => x.IsSelected).ToList();
+        V!.SelectedTemplateId   = null;
+        V!.SelectedTemplateName = null;
+        V!.SelectedDtl          = null;
+        V!.Effectivity          = DateTime.Today;
+        V!.IsModalVisible       = true;
+        await NotifyChanged!.Invoke();
+    }
+    
+    private async Task OpenModalCurrentSchedule()
+    {
+
+        V!.SelectedEmployees    = V.Employees.Where(x => x.IsSelected).ToList();
+        V!.SelectedTemplateId   = null;
+        V!.SelectedTemplateName = null;
+        V!.SelectedDtl          = null;
+        V!.Effectivity          = DateTime.Today;
+        V!.IsModalVisible1      = true;
+        await NotifyChanged!.Invoke();
+
+    }
+
+}

@@ -1,120 +1,134 @@
-﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PayrollTransaction.Blazor._103
-@using HRMvc.Applications.PayrollTransaction.Blazor._103._103_UA
-@using HRMvc.Applications.PayrollTransaction.Blazor._103._103_UM
-@using HRMvc.Applications.PayrollTransaction.Vars
-
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRMvc.Applications.PayrollTransaction.Vars;
 
 <TelerikRootComponent>
+    <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
 
-    @* =================================================
-         NOTIFICATION
-        ================================================= *@
-    <TelerikNotification @ref="@NotificationRef"
-                         HorizontalPosition="@NotificationHorizontalPosition.Right"
-                         VerticalPosition="@NotificationVerticalPosition.Top"
-                         AnimationType="@AnimationType.SlideLeft" />
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+                <_00BT_FullW HdrCaption="User Management">
+                    <Details>
+                        @*--- USER FORM MODAL ---*@
+                        @if (v.ShowUserEntryModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserEntryModal = false">
+                                <Content>
+                                    <_103_UserListForm ChildAction="@ChilAction" />
+                                </Content>
+                            </_00Modal>
+                        }
 
+                        @*--- USER ACCESS MODAL ---*@
+                        @if (v.ShowUserAccessModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserAccessModal = false">
+                                <Content>
+                                    <_103_UserAccess @ref="UserAccessRef" />
+                                </Content>
+                            </_00Modal>
+                        }
 
-    <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+                        @*--- GRID ---*@
+                        <_103_UserManagerList ChildAction="@ChilAction" @ref="UserListGridRef" />
 
-            @* =================================================
-             MODULE TITLE
-            ================================================= *@
-            <TelerikCard Height="100%">
-                <CardHeader>
-                    <h2 class="k-font-weight-bold  k-font-size-md">User Management</h2>
-                </CardHeader>
-
-
-
-                <CardBody>
-                    <TelerikTabStrip ActiveTabId="@tab"
-                                     ActiveTabIdChanged="@OnTabChanged"
-                                     Height="calc(100vh - 120px)">
-
-                        @* =================================================
-                           USER MANAGER TAB
-                        ================================================= *@
-                        <TabStripTab Id="usermanager" Title="User Manager">
-                            <_103_UserManager  />
-                        </TabStripTab>
-
-
-                        @* =================================================
-                            USER ACCESS TAB
-                        ================================================= *@
-                        <TabStripTab Id="useraccess" Title="User Access">
-                            <_103_UserAccess @ref="UserAccessRef" ChildAction="@ChilAction" />
-                        </TabStripTab>
-
-
-                    </TelerikTabStrip>
-                </CardBody>
-            </TelerikCard>
+                    </Details>
+                </_00BT_FullW>
+            </CascadingValue>
         </CascadingValue>
     </CascadingValue>
-
-
-
-
 </TelerikRootComponent>
 
-@inject I_00UsersAccess _user
+
+@inject IOEmpmasDataAccess _empmas
+@inject IODomainusrDataAccess _usr
+@inject IMenuDataAccess _menu
 
 @code {
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     private V103Model v = new();
     private TelerikNotification? NotificationRef;
-    private string tab = "useraccess";
 
-    private _103_UserAccess? UserAccessRef;
+    private _103_UserManagerList UserListGridRef;
+    private _103_UserAccess UserAccessRef;
+
 
     protected override async Task OnInitializedAsync()
     {
-        if (Uc?.Conn == null || Uc.OpisDb == null ||
-             Uc.OpayDb == null || Uc.SchemaMain == null ||
-             Uc.SchemaMainPis == null || Uc.SchemaMainPay == null)
+        if (Uc?.Conn == null || Uc.OpayDb == null || Uc.SchemaMain == null || Uc.SchemaMainPay == null)
         {
             v.UcLoaded = false;
             NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
-        v.OPaydb        = Uc.OpayDb;
-        v.Maindb        = Uc.SchemaMain;
-        v.Mainpaydb     = Uc.SchemaMainPay;
-        v.Module        = "pay";
-        v.Conn          = Uc.Conn;
-
         v.UcLoaded = true;
+
+        v.OPaydb    = Uc.OpayDb;
+        v.OPisdb    = Uc.OpisDb;
+        v.Maindb    = Uc.SchemaMain;
+        v.Mainpaydb = Uc.SchemaMainPay;
+        v.Module    = "pay";
+        v.Conn      = Uc.Conn;
+
+        await _02LoadUsers();
+        await _02LoadSystemMenu();
+
     }
 
-    private async Task OnTabChanged(string id)
+
+    private async Task _02LoadUsers()
     {
-        tab = id;
+        v.IsLoading = true;
 
-        if (id == "usermanager")
+        try
         {
+            var res = await _usr._02WithEmployeeName(v.OPisdb, v.OPaydb ,v.Conn);
 
+            if (res.Any())
+            {
+                v.Users = res;
+            }
         }
-
-
-        if (id == "useraccess" && UserAccessRef != null)
+        catch (Exception ex)
         {
-            await UserAccessRef.ResetTab();
+            NotificationRef?.Show($"Unable to load users {ex}.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
         }
     }
 
 
+    private async Task _02LoadSystemMenu()
+    {
+        try
+        {
+            var result = await _menu._02ByType("shdr", v.Mainpaydb, v.Conn);
+            v.SystemMenus = result ?? [];
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show($"Unable to load system menu. Please try again {ex}.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
 
     private async Task ChilAction()
     {
+        if (v.Action == "RebindUserListGrid") if (UserListGridRef != null) UserListGridRef.RebindGrid();
+        if (v.Action == "ResetUserAccessGrid") if (UserAccessRef != null) await UserAccessRef.ResetGrid();
     }
- 
+
 
 
 }
+
+

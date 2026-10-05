@@ -1,0 +1,353 @@
+﻿@using HRApiLibrary.Models._90_Utils
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+
+@inject IOClientDataAccess _client;
+
+<TelerikGrid OnRead="@_02OnGridRead"
+             OnStateInit="@OnGridStateInit"
+             TItem="OClientModel"
+             @ref="ClientGrid"
+             Sortable="true"
+             Navigable="true"
+             SelectionMode="GridSelectionMode.Single"
+             FilterMode="GridFilterMode.FilterMenu"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             Height="calc(100vh - 90px)">
+
+
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+
+    @* --- CREATE CLIENT BUTTON --- *@
+    <GridToolBarTemplate>
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    @onclick="@(() => OpenEntryModal(new OClientModel()))">
+                Add Deployment
+            </button>
+
+            <div class="d-flex gap-2">
+                <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                        @onclick="@(() => GenerateDeploymentList())">
+                    Print Listing
+                </button>
+
+                <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray px-3"
+                        @onclick="@(() => OpenDOLEReportModal())">
+                    DOLE Report
+                </button>
+            </div>
+        </div>
+    </GridToolBarTemplate>
+
+
+
+    <GridColumns>
+
+        @* --- CODE --- *@
+        <GridColumn Field="@nameof(OClientModel.ClNumber)"
+                    Title="Code"
+                    Width="80px" />
+
+        @* --- NAME --- *@
+        <GridColumn Field="@nameof(OClientModel.ClName)"
+                    Title="Name"
+                    Width="200px" />
+
+        @* --- AREA --- *@
+        <GridColumn Field="@nameof(OClientModel.AreaName)"
+                    Title="Area"
+                    Width="120px" />
+
+        @* --- MOTHER UNIT --- *@
+        <GridColumn Field="@nameof(OClientModel.ParentName)"
+                    Title="Mother Unit"
+                    Width="180px" />
+
+        @* --- STATUS  --- *@
+        <GridColumn Field="@nameof(OClientModel.Status)"
+                    Title="Status"
+                    Width="100px"
+                    HeaderClass="text-center">
+
+            <Template Context="item">
+                @{
+                    var user = (OClientModel)item;
+                    var status = user.Status?.Trim().ToUpper();
+                }
+
+                <div class="d-flex justify-content-center">
+                    @if (!string.IsNullOrEmpty(status))
+                    {
+                        <span class="badge @(status == "ACTIVE" ? "bg-success" : status == "INACTIVE" ? "bg-danger" : "bg-secondary")">
+                            @status
+                        </span>
+                    }
+                </div>
+            </Template>
+
+        </GridColumn>
+
+        @* --- Acttions --- *@
+        <GridCommandColumn Title="Action"
+                           Width="80px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+
+                @{
+                    var client = (OClientModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+                    @* ---  EDIT BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => OpenEntryModal(client))">
+                        Edit
+                    </button>
+
+                    @* ---  DELETE BUTTON --- *@
+                    <button class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="@(() => _04Delete(client))">
+                        Delete
+                    </button>
+                </div>
+            </Template>
+        </GridCommandColumn>
+
+
+    </GridColumns>
+
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No deployment records found.
+        </div>
+    </NoDataTemplate>
+
+
+</TelerikGrid>
+
+
+@code {
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2053Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public V00_RepVars Rv { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private TelerikGrid<OClientModel>? ClientGrid;
+
+    private int PageSize { get; set; } = 25;
+    private List<int?> PageSizes = new() { 25, 50, 75, 100, null };
+
+
+    private string ClientFormCaption = "Add Deployment";
+
+    private void OnGridStateInit(GridStateEventArgs<OClientModel> args)
+    {
+        args.GridState.FilterDescriptors = new List<IFilterDescriptor>
+        {
+            new Telerik.DataSource.FilterDescriptor
+            {
+                Member = nameof(OClientModel.Status),
+                Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+                Value = "Active"
+            }
+        };
+
+        args.GridState.SortDescriptors = new List<Telerik.DataSource.SortDescriptor>
+        {
+            new Telerik.DataSource.SortDescriptor
+            {
+                Member = nameof(OClientModel.ClName),
+                SortDirection = Telerik.DataSource.ListSortDirection.Ascending 
+            }
+        };
+    }
+
+
+
+    private async Task _02OnGridRead(GridReadEventArgs args)
+    {
+        args.Data  = new List<OClientModel>();
+        args.Total = 0;
+
+        var pageSize = args.Request.PageSize;
+
+        if (pageSize <= 0)
+            pageSize = PageSize;
+
+        PageSize = pageSize;
+
+        var page = args.Request.Page > 0 ? args.Request.Page : 1;
+        var sort = args.Request.Sorts.FirstOrDefault();
+
+        var request = new GridRequestModel
+        {
+            PageSize        = pageSize,
+            Offset          = (page - 1) * pageSize,
+            SortField       = sort?.Member ?? nameof(OClientModel.ClName),
+            SortDirection   = sort?.SortDirection == ListSortDirection.Descending ? "DESC" : "ASC",
+            Filters         = GridHelper.GetFilters(args)
+        };
+
+        try
+        {
+            var result      = await _client._02Grid(request, Uc.OpisDb, Uc.Conn);
+            args.Data       = result?.Data ?? new List<OClientModel>();
+            args.Total      = result?.Total ?? 0;
+
+            V.RepDtls       = result?.Data;
+
+
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to load deployment records.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task OpenEntryModal(OClientModel client)
+    {
+        V.DeploymentNameErrorMsg    = string.Empty;
+        V.AreaErrorMsg              = string.Empty;
+        V.RegionErrorMsg            = string.Empty;
+
+
+        V.Client            = new OClientModel();
+        V.IsEditEntry       = false;
+
+        V.ModalCaption      = "Add Deployment";
+        V.Client.Status     = "Active";
+
+        if (!string.IsNullOrWhiteSpace(client.ClNumber))
+        {
+            V.IsEditEntry   = true;
+            V.ModalCaption  = "Edit Deployment";
+            V.Client        = client;
+        }
+
+
+        if(V.IsEditEntry == false)
+        {
+            await _02FetchMaxClNumber();
+        }
+
+        V.ShowEntryModal = true;
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task _02FetchMaxClNumber()
+    {
+        try
+        {
+            int? maxClnumber = await _client._02ByMaxClNumber(Uc.OpisDb, Uc.Conn);
+            V.Client.ClNumber = maxClnumber?.ToString("D5");
+        }
+        catch (Exception ex)
+        {
+
+            NotificationRef.Show("Unable to get the  code", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private async Task OpenDOLEReportModal()
+    {
+        Rv.MCaption = "Personnel Report";
+        V.ShowDOLEReportModal   = true;
+        await ChildAction.InvokeAsync();
+    }
+
+
+
+
+    private async Task _04Delete(OClientModel client)
+    {
+        var confirmed = await DialogsRef?.ConfirmAsync( $"Are you sure you want to delete '{client.ClName}'?", "Confirm Deployment Deletion"  );
+
+        if (confirmed != true) return;
+
+        // Check if the deployment exists in empmas table ---
+        try
+        {
+            var recordExists = await _client._02ByClNumbersCheckIfRecordExistOnTransactionTbl( client.ClNumber,  Uc.OpisDb, Uc.Conn );
+
+            if (recordExists?.Any() == true)
+            {
+                NotificationRef?.Show(  "Unable to delete this deployment. It is linked to another transaction.",ThemeConstants.Notification.ThemeColor.Warning );
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show( "Unable to validate if this deployment is linked to another transaction.", ThemeConstants.Notification.ThemeColor.Error );
+            return;
+        }
+
+        // Delete deployment ----
+        try
+        {
+            var result = await _client._04( client.ClNumber, Uc.OpisDb, Uc.Conn );
+
+            if (result != null)
+            {
+                NotificationRef?.Show( "Unable to delete this deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error );
+                return;
+            }
+
+            NotificationRef?.Show( "Deployment deleted successfully.", ThemeConstants.Notification.ThemeColor.Success );
+            V.Action = "RefreshDeploymentGrid";
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show( "Unable to delete deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private async Task GenerateDeploymentList()
+    {
+
+        if (!V.Clients.Any()) { return; }
+
+        Rv.MCaption     = "Deployment Listing";
+        Rv.RelativePath = "";
+        Rv.ReportData   = [];
+        Rv.ReportData   = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Deployment Listing";
+        Rv.RelativePath = "Reports/_01Pis/J_2053_DE.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
+        await ChildAction.InvokeAsync();
+    }
+
+    public void RebindGrid()
+    {
+        ClientGrid.Rebind();
+    }
+}

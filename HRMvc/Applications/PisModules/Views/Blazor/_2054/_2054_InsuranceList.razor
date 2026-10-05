@@ -1,0 +1,164 @@
+﻿<TelerikGrid TItem="OInsuranceModel"
+             Data="@V.Insurances"
+             Navigable="true"
+             Sortable="true"
+             SelectionMode="@GridSelectionMode.Single"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             Height="calc(100vh - 90px)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+    @* --- CREATE USER BUTTON --- *@
+    <GridToolBarTemplate>
+
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    @onclick="@(() => OpenEntryModal(new OInsuranceModel()))">
+                Add Insurance
+            </button>
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => OpenInsuranceAssignmentModal())">
+                Insurance Assignment
+            </button>
+        </div>
+
+    </GridToolBarTemplate>
+
+
+    <GridColumns>
+
+        @* --- INSURANCE NAME --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.Name)"
+                    Title="Name"
+                    Width="150px"  />
+
+        @* --- INSURANCE TYPE --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.InsuranceType)"
+                    Title="Insurance Type"
+                    Width="150px" />
+
+        @* --- POLICY NO. --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.PolicyNo)"
+                    Title="Policy No."
+                    Width="150px" />
+
+        @* --- FACE VALUE --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.FaceValue)"
+                    Title="Face Value"
+                    Width="120px"
+                    DisplayFormat="{0:N2}" />
+
+        @* --- PREMIUMS --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.Premiums)"
+                    Title="Premiums"
+                    Width="120px"
+                    DisplayFormat="{0:N2}" />
+
+        @* --- INSURANCE EXPIRY --- *@
+        <GridColumn Field="@nameof(OInsuranceModel.InsExpire)"
+                    Title="Insurance Expiry"
+                    Width="130px" />
+
+        @* --- ACTIONS --- *@
+        <GridCommandColumn Title="Action"
+                           Width="100px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+
+                @{
+                    var insurance = (OInsuranceModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => OpenEntryModal(insurance))">
+                        Edit
+                    </button>
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                        Delete
+                    </button>
+
+                </div>
+
+            </Template>
+
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No insurance records found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
+
+@code {
+    [CascadingParameter]
+    public V2054Model V { get; set; } = new();
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+
+    // private void OnGridStateInit(GridStateEventArgs<OPisDomainusrModel> args)
+    // {
+    //     args.GridState.FilterDescriptors = new List<IFilterDescriptor>
+    //     {
+    //         new Telerik.DataSource.FilterDescriptor
+    //         {
+    //             Member = nameof(OPisDomainusrModel.StatusName),
+    //             Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+    //             Value = "Active"
+    //         }
+    //     };
+
+    // }
+
+
+    private async Task OpenEntryModal(OInsuranceModel rec)
+    {
+        V.Insurance = new OInsuranceModel();
+        V.ModalCaption = "Add Insurance";
+
+        if(rec.Id != 0)
+        {
+            V.ModalCaption = "Edit Insurance";
+            V.Insurance = rec;
+        }
+
+        V.ShowInsuranceEntryModal = true;
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task OpenInsuranceAssignmentModal()
+    {
+        V.ModalCaption = "Insurance Assignment";
+        V.ShowInsuranceAssignmentModal = true;
+        await ChildAction.InvokeAsync();
+    }
+}
+

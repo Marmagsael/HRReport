@@ -1,0 +1,149 @@
+﻿@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications.AMS.Vars
+@using HRMvc.Applications.AMS.Blazor._11008
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<div class="card w-100 p-1">
+    <BodyHdr pageTitle="11008 - Overtime Settings" />
+    <div class="card-body p-1 w-100">
+
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@Uc">
+                <CascadingValue Value="@NotifyChanged">
+
+                    <!-- Payroll Group Dropdown -->
+                    <div class="row mb-3 align-items-center border-bottom">
+                        <div class="col-auto">
+                            <label class="form-label fw-bold txt-fcolor1 mb-0">Payroll Group</label>
+                        </div>
+                        <div class="col-auto p-1">
+                            <TelerikDropDownList Data="@v.PayrollGrps"
+                                                 Value="@v.SelectedPayrollGrpId"
+                                                 ValueChanged="@((int? val) => OnPayrollGrpChanged(val))"
+                                                 TextField="Name" ValueField="Id" Width="400px">
+                                <DropDownListSettings>
+                                    <DropDownListPopupSettings Height="400px" />
+                                </DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                    </div>
+
+                        <!-- Save Changes Button -->
+                        @if(v.Employees.Count > 0)
+                        {
+                            <div class="py-2">
+                                <TelerikButton OnClick="@SaveChanges" ThemeColor="primary">Save Changes</TelerikButton>
+                            </div>
+                        }
+                        
+
+                    <!-- Employee OT Settings Grid -->
+                    <_11008_OT_Grid />
+
+                    
+
+                </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+
+    </div>
+</div>
+</TelerikRootComponent>
+
+@inject IAms_otsettingsDataAccess _otsettingsDa
+@inject IDA_11003O _payrollDa
+
+@code {
+    [Parameter] public UserClaimsModel? Uc                  { get; set; }
+    private     TelerikNotification     NotificationRef     { get; set; } = new();
+    private     V11008OTModel           v                   { get; set; } = new();
+    private     bool                    _initialized = false;
+
+    private Func<Task>? _notifyChanged;
+    private Func<Task> NotifyChanged => _notifyChanged ??= async () =>
+    {
+        if (!string.IsNullOrEmpty(v.Notification.Type))
+        {
+            NotificationRef.Show(new NotificationModel
+            {
+                Text       = v.Notification.Message,
+                ThemeColor = v.Notification.Type,
+                CloseAfter = 4000
+            });
+            v.Notification = (string.Empty, string.Empty);
+        }
+        await InvokeAsync(StateHasChanged);
+    };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
+        if (Uc is null) return;
+        try
+        {
+            v.PayrollGrps = await _payrollDa._02Payrollgrps(Uc.OpayDb!, Uc.Conn!) ?? [];
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Load failed: {ex.Message}");
+            await NotifyChanged.Invoke();
+        }
+    }
+
+    private async Task OnPayrollGrpChanged(int? val)
+    {
+        v.SelectedPayrollGrpId = val;
+        v.Employees = [];
+
+        if (val is not null && val > 0)
+        {
+            try
+            {
+                v.Employees = await _otsettingsDa._02sByPayrollgrpid(val.Value, Uc!.SchemaUserPis!, Uc!.OpisDb!, Uc.Conn!) ?? [];
+            }
+            catch (Exception ex)
+            {
+                v.Notification = ("error", $"Load employees failed: {ex.Message}");
+            }
+        }
+
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task SaveChanges()
+    {
+        try
+        {
+            foreach (var emp in v.Employees)
+            {
+                if (emp is not null)
+                {
+                    await _otsettingsDa._01(emp, Uc!.SchemaUserPis!, Uc.Conn!);
+                }
+            }
+            v.Notification = ("success", "Changes saved successfully.");
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Save failed: {ex.Message}");
+        }
+
+        await NotifyChanged.Invoke();
+    }
+}

@@ -4,13 +4,10 @@ namespace HRApiLibrary.DataAccess._90_Utils
 {
     public class GridHelperDataAccess
     {
-
-        public static string BuildWhere(
-          List<GridFilterModel> filters,
-          Dictionary<string, string> columns,
-          Dictionary<string, object> parameters)
+        public static string BuildWhere( List<GridFilterModel> filters, Dictionary<string, string> columns, Dictionary<string, object> parameters)
         {
-            var conditions = new List<string>();
+            var andConditions = new List<string>();
+            var orConditions = new List<string>();
 
             for (int i = 0; i < filters.Count; i++)
             {
@@ -21,12 +18,8 @@ namespace HRApiLibrary.DataAccess._90_Utils
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(filter.Value))
-                {
-                    continue;
-                }
-
                 var parameterName = $"FilterValue{i}";
+                string condition;
 
                 switch (filter.Operator)
                 {
@@ -37,64 +30,89 @@ namespace HRApiLibrary.DataAccess._90_Utils
                     case "<":
                     case "<=":
 
-                        conditions.Add(
-                            $"{column} {filter.Operator} @{parameterName}");
+                        if (string.IsNullOrWhiteSpace(filter.Value))
+                            continue;
 
-                        parameters[parameterName] = filter.Value;
+                        condition = $"{column} {filter.Operator} @{parameterName}";
+                        parameters[parameterName] = ConvertFilterValue(filter.Value);
                         break;
+
 
                     case "STARTS":
 
-                        conditions.Add(
-                            $"{column} LIKE @{parameterName}");
+                        if (string.IsNullOrWhiteSpace(filter.Value))
+                            continue;
 
+                        condition = $"{column} LIKE @{parameterName}";
                         parameters[parameterName] = $"{filter.Value}%";
                         break;
 
+
                     case "ENDS":
 
-                        conditions.Add(
-                            $"{column} LIKE @{parameterName}");
+                        if (string.IsNullOrWhiteSpace(filter.Value))
+                            continue;
 
+                        condition = $"{column} LIKE @{parameterName}";
                         parameters[parameterName] = $"%{filter.Value}";
                         break;
 
+
                     case "CONTAINS":
 
-                        conditions.Add(
-                            $"{column} LIKE @{parameterName}");
+                        if (string.IsNullOrWhiteSpace(filter.Value))
+                            continue;
 
+                        condition = $"{column} LIKE @{parameterName}";
                         parameters[parameterName] = $"%{filter.Value}%";
                         break;
+
 
                     case "NOT CONTAINS":
 
-                        conditions.Add(
-                            $"{column} NOT LIKE @{parameterName}");
+                        if (string.IsNullOrWhiteSpace(filter.Value))
+                            continue;
 
+                        condition = $"{column} NOT LIKE @{parameterName}";
                         parameters[parameterName] = $"%{filter.Value}%";
                         break;
+
+
+                    case "IS NULL":
+
+                        condition = $"{column} IS NULL";
+                        break;
+
+
+                    case "IS NOT NULL":
+
+                        condition = $"{column} IS NOT NULL";
+                        break;
+
+
+                    case "IS EMPTY":
+
+                        condition = $"({column} IS NULL OR {column} = '')";
+                        break;
+
+
+                    case "IS NOT EMPTY":
+
+                        condition = $"({column} IS NOT NULL AND {column} <> '')";
+                        break;
+
+
+                    default:
+                        continue;
                 }
-            }
 
-            if (!conditions.Any())
-            {
-                return "";
-            }
-
-            // Group OR conditions together
-            var orConditions = new List<string>();
-            var andConditions = new List<string>();
-
-            for (int i = 0; i < filters.Count && i < conditions.Count; i++)
-            {
-                if (filters[i].LogicalOperator == "OR")
+                if (filter.LogicalOperator == "OR")
                 {
-                    orConditions.Add(conditions[i]);
+                    orConditions.Add(condition);
                 }
                 else
                 {
-                    andConditions.Add(conditions[i]);
+                    andConditions.Add(condition);
                 }
             }
 
@@ -108,5 +126,17 @@ namespace HRApiLibrary.DataAccess._90_Utils
                 ? "WHERE " + string.Join(" AND ", andConditions)
                 : "";
         }
+
+
+        private static object ConvertFilterValue(string value)
+        {
+            if (DateTime.TryParse(value, out var date))
+            {
+                return date.Date;
+            }
+
+            return value;
+        }
     }
 }
+

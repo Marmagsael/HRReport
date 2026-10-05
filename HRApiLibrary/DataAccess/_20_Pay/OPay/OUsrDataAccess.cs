@@ -36,6 +36,14 @@ public class OUsrDataAccess : IOUsrDataAccess
         return data?.FirstOrDefault();
     }
 
+    public async Task<List<OUsrModel?>?> _02(string schema, string conn)
+    {
+        string sql = $@"select  UserName, FullName, Pwrd, Stat_, DednAccess, ArchievedAccess, PartDedSetupAccess, DedSumAccess, DedSumEmpAccess, MoDedRepAccess, ConDedSumAccess, ESumAccess, EHisAccess, MoERepAccess, Email from {schema}.Usr ORDER BY FullName";
+        var data = await _sql.FetchData<OUsrModel?, dynamic>(sql, new {  }, conn);
+        return data;
+    }
+
+
 
     public async Task<GridResultModel<OUsrModel>> _02Grid(GridRequestModel request, string schemapay, string conn)
     {
@@ -108,6 +116,7 @@ public interface IOUsrDataAccess
 {
     Task<OUsrModel?> _01(OUsrModel usr, string schema, string conn);
     Task<OUsrModel?> _02(int id, string schema, string conn);
+    Task<List<OUsrModel?>?> _02(string schema, string conn);
     Task<GridResultModel<OUsrModel>> _02Grid(GridRequestModel request, string schemapay, string conn);
     Task<OUsrModel?> _03(int id, OUsrModel usr, string schema, string conn);
     Task<OUsrModel?> _04(int id, string schema, string conn);

@@ -1,0 +1,73 @@
+@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+@inject IAttadvancescheduleDataAccess _advsched
+
+<TelerikWindow @bind-Visible="@V!.IsAddModalVisible" Modal="true" Width="350px">
+    <WindowTitle><div class="fw-bold">Add Schedule</div></WindowTitle>
+    <WindowActions>
+        <WindowAction Name="Close" OnClick="@Close" />
+    </WindowActions>
+    <WindowContent>
+        <div class="row g-3">
+            <div class="col-12">
+                <label class="form-label fw-bold">Date</label>
+                <TelerikDatePicker @bind-Value="@V!.NewDate"
+                                   Format="MM/dd/yyyy"
+                                   Min="@V!.StartDate"
+                                   Max="@V!.EndDate"
+                                   DisabledDates="@V!.UsedDates"
+                                   Class="w-100" />
+            </div>
+            @if (!string.IsNullOrEmpty(V!.DateError))
+            {
+                <div class="col-12">
+                    <div class="text-danger small">@V!.DateError</div>
+                </div>
+            }
+        </div>
+    </WindowContent>
+    <WindowFooter>
+        <TelerikButton ThemeColor="primary" OnClick="@Confirm">Add</TelerikButton>
+        <TelerikButton OnClick="@Close">Cancel</TelerikButton>
+    </WindowFooter>
+</TelerikWindow>
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel?  Uc            { get; set; }
+    [CascadingParameter] public V11003ASModel?     V             { get; set; }
+    [CascadingParameter] public Func<Task>?        NotifyChanged { get; set; }
+
+    private void Close()
+    {
+        V!.IsAddModalVisible = false;
+        V!.DateError         = string.Empty;
+    }
+
+    private async Task Confirm()
+    {
+        var exists = V!.AdvScheds.Any(x => x.Date.Date == V.NewDate.Date);
+        if (exists)
+        {
+            V!.DateError = $"{V.NewDate:MM/dd/yyyy} is already in the schedule list.";
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        V.AdvScheds = [..V.AdvScheds, new AttadvancescheduleModel
+        {
+            Empnumber = V.SelectedEmployee!.EmpNumber,
+            Date      = V.NewDate.Date
+        }];
+
+        V.AdvScheds          = [..V.AdvScheds.OrderBy(x => x.Date)];
+        V!.IsAddModalVisible = false;
+        V!.DateError         = string.Empty;
+
+        await NotifyChanged!.Invoke();
+    }
+}

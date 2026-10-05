@@ -1,0 +1,173 @@
+﻿@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+@inject IDA_11003O _da
+@inject IAttschedweeklydtlDataAccess _weeklyDtl
+
+<style>
+    .cs-modal .k-window-titlebar {
+        background-color: deepskyblue !important;
+        color: white !important;
+    }
+</style>
+
+<TelerikWindow @bind-Visible="@V!.IsModalVisible1" Modal="true" Width="550px" Class="cs-modal">
+    <WindowTitle><div class="fw-bold">Change New Schedule</div></WindowTitle>
+    <WindowActions>
+        <WindowAction Name="Close" OnClick="@Close" />
+    </WindowActions>
+    <WindowContent>
+        <div class="row g-3">
+
+            <div class="col-12">
+                <label class="form-label fw-bold txt-fcolor1">Template</label>
+                <TelerikDropDownList Data="@V!.WeeklyHdrs"
+                                     Value="@V!.SelectedTemplateId"
+                                     ValueChanged="@((int? val) => OnTemplateChanged(val))"
+                                     TextField="Description"
+                                     ValueField="Id"
+                                     DefaultText="-- Select Template --"
+                                     Width="100%"/>
+            </div>
+
+
+            @if (V!.SelectedDtl is not null)
+            {
+                <div class="col-12">
+                    <table class="table table-bordered align-middle mb-0 small">
+                        <thead>
+                        <tr class="text-center">
+                            <th>Day</th>
+                            <th>Duty Type</th>
+                            <th>In</th>
+                            <th>Out</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td class="text-danger">Sunday</td>
+                            <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V.SelectedDtl.D1_dutytype)?.Name ?? V.SelectedDtl.D1_dutytype)</td>
+                            <td>@VamsHelper.FormatTime(V.SelectedDtl.D1_in)</td>
+                            <td>@VamsHelper.FormatOut(V.SelectedDtl.D1_dutytype, V.SelectedDtl.D1_in, V.SelectedDtl.D1_hrslength)</td>
+                        </tr>
+                        <tr>
+                            <td>Monday</td>
+                            <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V.SelectedDtl.D2_dutytype)?.Name ?? V.SelectedDtl.D2_dutytype)</td>
+                            <td>@VamsHelper.FormatTime(V.SelectedDtl.D2_in)</td>
+                            <td>@VamsHelper.FormatOut(V.SelectedDtl.D2_dutytype, V.SelectedDtl.D2_in, V.SelectedDtl.D2_hrslength)</td>
+                        </tr>
+                        <tr>
+                            <td>Tuesday</td>
+                            <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V.SelectedDtl.D3_dutytype)?.Name ?? V.SelectedDtl.D3_dutytype)</td>
+                            <td>@VamsHelper.FormatTime(V.SelectedDtl.D3_in)</td>
+                            <td>@VamsHelper.FormatOut(V.SelectedDtl.D3_dutytype, V.SelectedDtl.D3_in, V.SelectedDtl.D3_hrslength)</td>
+                        </tr>
+                        <tr>
+                            <td>Wednesday</td>
+                            <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V.SelectedDtl.D4_dutytype)?.Name ?? V.SelectedDtl.D4_dutytype)</td>
+                            <td>@VamsHelper.FormatTime(V.SelectedDtl.D4_in)</td>
+                            <td>@VamsHelper.FormatOut(V.SelectedDtl.D4_dutytype, V.SelectedDtl.D4_in, V.SelectedDtl.D4_hrslength)</td>
+                        </tr>
+                        <tr>
+                            <td>Thursday</td>
+                            <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V.SelectedDtl.D5_dutytype)?.Name ?? V.SelectedDtl.D5_dutytype)</td>
+                            <td>@VamsHelper.FormatTime(V.SelectedDtl.D5_in)</td>
+                            <td>@VamsHelper.FormatOut(V.SelectedDtl.D5_dutytype, V.SelectedDtl.D5_in, V.SelectedDtl.D5_hrslength)</td>
+                        </tr>
+                        <tr>
+                            <td class="text-warning">Friday</td>
+                            <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V.SelectedDtl.D6_dutytype)?.Name ?? V.SelectedDtl.D6_dutytype)</td>
+                            <td>@VamsHelper.FormatTime(V.SelectedDtl.D6_in)</td>
+                            <td>@VamsHelper.FormatOut(V.SelectedDtl.D6_dutytype, V.SelectedDtl.D6_in, V.SelectedDtl.D6_hrslength)</td>
+                        </tr>
+                        <tr>
+                            <td class="text-primary">Saturday</td>
+                            <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V.SelectedDtl.D7_dutytype)?.Name ?? V.SelectedDtl.D7_dutytype)</td>
+                            <td>@VamsHelper.FormatTime(V.SelectedDtl.D7_in)</td>
+                            <td>@VamsHelper.FormatOut(V.SelectedDtl.D7_dutytype, V.SelectedDtl.D7_in, V.SelectedDtl.D7_hrslength)</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+        </div>
+    </WindowContent>
+    <WindowFooter>
+        <TelerikButton ThemeColor="primary"
+                       OnClick="@ApplyToSelected"
+                       Enabled="@(!V!.IsBusy && V.SelectedDtl is not null)">
+            @(V!.IsBusy ? "Applying..." : "Apply to Selected")
+        </TelerikButton>
+        <TelerikButton OnClick="@Close">Cancel</TelerikButton>
+    </WindowFooter>
+</TelerikWindow>
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel? Uc { get; set; }
+    [CascadingParameter] public V11003CSModel? V { get; set; }
+    [CascadingParameter] public Func<Task>? NotifyChanged { get; set; }
+
+    private V11002Model Vars { get; set; } = new();
+
+    private void Close() => V!.IsModalVisible1 = false;
+
+    private async Task OnTemplateChanged(int? val)
+    {
+        V!.SelectedTemplateId = val;
+        V!.SelectedDtl = null;
+
+        if (val is null || val == 0)
+        {
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        try
+        {
+            V.SelectedDtl = await _weeklyDtl._02h(val.Value, Uc!.SchemaUserPis!, Uc.Conn!);
+        }
+        catch (Exception ex)
+        {
+            V!.Notification = ("error", $"Load template failed: {ex.Message}");
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task ApplyToSelected()
+    {
+         if (Uc is null || V!.SelectedDtl is null || !V.SelectedEmployees.Any()) return;
+         V.IsBusy = true;
+         try
+         {
+            int ctr = 0;
+            foreach (var emp in V.SelectedEmployees)
+            {   
+                await _da._03CS_Atttemplate_CurrentSchedule(emp.Empmasid, V.SelectedTemplateId ?? 0, Uc.SchemaUserPis!, Uc.Conn!); 
+            }
+
+            // Refresh employee list
+            var count = V.SelectedEmployees.Count;
+            V.Employees = await _da._02CS_EmplistPerPayrollgrp( V.SelectedPayrollGrpId!.Value, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!) ?? [];
+
+            V.SelectedEmployees = [];
+            V.Notification = ("success", $"Schedule applied to {count} employee(s).");
+            Close();
+         }
+         catch (Exception ex)
+         {
+             V!.Notification = ("error", $"Apply failed: {ex.Message} | Inner: {ex.InnerException?.Message} | {ex.InnerException?.InnerException?.Message}");
+         }
+         finally
+         {
+             V!.IsBusy = false;
+             await NotifyChanged!.Invoke();
+         }
+    }
+}

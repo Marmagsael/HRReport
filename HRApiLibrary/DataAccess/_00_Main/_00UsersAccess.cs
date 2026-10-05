@@ -32,6 +32,8 @@ public class _00UsersAccess : I_00UsersAccess
         var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Id = id }, connName);
         return data?.FirstOrDefault();
     }
+
+
     public async Task<UsersModel?> _02ByEmail(string? email, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@" select  * from {schema}.Users e where Email = @Email";
@@ -63,43 +65,6 @@ public class _00UsersAccess : I_00UsersAccess
     }
 
 
-    // Retrieves employees with existing login credentials for the User Access module (added by Judith)
-    public async Task<List<UsersModel?>> _02( string? search, string? pisschema, string? mainschema = "Main", string? connName = "MySqlConn")
-    {
-        var condition = string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            condition = @" WHERE EMPLASTNM LIKE CONCAT('%', @search, '%') OR EMPFIRSTNM LIKE CONCAT('%', @search, '%') OR EMPMIDNM LIKE CONCAT('%', @search, '%')";
-        }
-
-        string sql = $@" SELECT   u.Loginname, CONCAT_WS( ' ', CONCAT(TRIM(EMPLASTNM), ','), TRIM(EMPFIRSTNM),  TRIM(EMPMIDNM) ) AS AFULLNAME
-                    FROM {mainschema}.Users u
-                    INNER JOIN {pisschema}.empmas e 
-                        ON e.empnumber = u.loginname
-                    {condition}
-                    ORDER BY e.Emplastnm, e.EmpFirstNm, e.EmpMidnm
-                    LIMIT 50";
-
-        var data = await _sql.FetchData<UsersModel?, dynamic>(   sql,   new { search },  connName);
-        return data;
-    }
-
-    // Retrieves the selected user (added by Judith)
-    public async Task<UsersModel?> _02LoginName_ForUserAccess( string? loginName, string? pisschema, string? mainschema = "Main", string? connName = "MySqlConn")
-    {
-        string sql = $@"  SELECT  u.LoginName,  CONCAT_WS(' ',  CONCAT(TRIM(e.EMPLASTNM), ','), TRIM(e.EMPFIRSTNM), TRIM(e.EMPMIDNM) ) AS AFULLNAME  
-                            FROM {mainschema}.Users u
-                            INNER JOIN {pisschema}.empmas e
-                                ON e.EMPNUMBER = u.LOGINNAME
-                            WHERE u.LOGINNAME = @loginName
-                            LIMIT 1";
-
-        var result = await _sql.FetchData<UsersModel?, dynamic>( sql,  new { loginName }, connName);
-        return result.FirstOrDefault();
-    }
-
-
     public async Task<UsersModel?> _03(int? id, UsersModel user, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@"Update {schema}.users set 
@@ -116,11 +81,22 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
+   
+
     public async Task<UsersModel?> _03ChangeDefaultCompany(int? userId, int? newDefaultCoId, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@"Update          {schema}.users set DefaultCoId = @DefaultCoId where Id = @Id;
                      Select  * from  {schema}.Users e where e.Id = @Id ;";
         var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Id = userId, DefaultCoId = newDefaultCoId }, connName);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<UsersModel?> _03ChangePassword(int? userId, string password, string? schema = "Main", string? connName = "MySqlConn")
+    {
+        string? sql = $@"Update  {schema}.users set Password =  sha2(@Password,512) where Id = @Id;
+
+                       Select  * from  {schema}.Users e where e.Id = @Id and Password =  sha2(@Password,512) ;";
+        var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Id = userId, Password = password }, connName);
         return data?.FirstOrDefault();
     }
 

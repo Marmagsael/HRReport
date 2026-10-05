@@ -136,6 +136,20 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
+    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesWithStatus(string? name, string? schema, string? conn)
+    {
+        name = name?.Trim().ToUpper();
+        var sql = $@"SELECT CONCAT_WS(' ', NULLIF(TRIM(e.EmpLastNm), ''), NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), '')) AS Fullname, 
+                        e.EmpNumber, s.Name EmpStatus
+                 FROM {schema}.Empmas e
+                 LEFT JOIN {schema}.empstat s ON s.code = e.empstat_
+                 WHERE (e.EmpLastNm LIKE @Name OR e.EmpFirstNm LIKE @Name)
+                 ORDER BY e.EmpLastNm, e.EmpFirstNm;";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"%{name}%" }, conn);
+        return data;
+    }
+
     public async Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn)
     {
 
@@ -155,7 +169,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
     {
 
-        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, e.EmpStat_
                         from {schema}.Empmas e 
                         where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter
                         order by e.EmplastNm, e.EmpFirstNm";
@@ -749,6 +763,8 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
     Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesNoPayGrpAssignment(string? name, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesWithStatus(string? name, string? schema, string? conn);
+
     Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn);
     Task<List<OEmpmasModel?>?>  _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);

@@ -1,0 +1,60 @@
+@model HRApiLibrary.Models._00_Main.UserClaimsModel
+
+@using HRApiLibrary.DataAccess._90_Utils
+@inject IMainmenuDataAccess _menu
+
+
+@{
+    // Load menu list ONCE
+    var menus       = await _menu._02("Main", Model.Conn ?? "") ?? [];
+    
+    const string? childCshtmlMainParentDtl  = "~/Views/Shared/ReportLayout/_ReportLeftMenuMainParentDtl.cshtml";
+    const string? childCshtmlMain           = "~/Views/Shared/ReportLayout/_ReportLeftMenuMain.cshtml";
+    const string? childCshtmlMainDtl        = "~/Views/Shared/ReportLayout/_ReportLeftMenuMainDtl.cshtml";
+    const string? childCshtml               = "~/Views/Shared/ReportLayout/_ReportLeftMenuDtl1.cshtml";
+
+    var IsExclusiveCompany = User.Claims.Where(c => c.Type == "IsExclusiveCompany").FirstOrDefault();
+}
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="~/css/ReportLayout/report-left-menu.css" />
+<div class="leftmenu-header ams-leftmenu-header ">
+    <h6>AMS System</h6>
+</div>
+
+@* =======================================================================================*@
+@* --- Employee Portal Menus -------------------------------------------------------------*@
+@* =======================================================================================*@
+@* <div class=" bg-secondary text-white p-2"> Employee Portal </div> *@
+<div class="report-left-menu">
+    <ul>
+        <div class="text-primary">
+            @await Html.PartialAsync(childCshtmlMain, (menus, 1501))
+        </div>
+        
+        @await Html.PartialAsync(childCshtmlMainParentDtl, (menus, 1001))
+        @await Html.PartialAsync(childCshtmlMain, (menus, 1101))
+        @await Html.PartialAsync(childCshtmlMain, (menus, 1201))
+        
+        
+    </ul>
+</div>
+
+
+
+
+
+
+
+<style>
+    .report-menu-section-header {
+        background-color: #f1f3f5;
+        color: #6c757d;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        border-bottom: 1px solid #e9ecef;
+    }
+</style>
