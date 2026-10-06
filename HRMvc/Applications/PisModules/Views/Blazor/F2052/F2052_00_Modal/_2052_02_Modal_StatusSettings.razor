@@ -60,15 +60,19 @@
         </TelerikCard>
 </div>
 
+@inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
 
 @code {
 
-    [Parameter]
+    [CascadingParameter]
     public V2052 V { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
 
     private TelerikGrid<OEmpstatModel>? EmployeeStatusGridRef;
 
@@ -126,10 +130,105 @@
 
     }
 
+
+
     private async Task ApplyStatus()
     {
-        V.Action = "ReLoadEmployeeList";
+        var newSelections = V.SelectedStatus.ToList();
+        var toInsert = newSelections.Where(newStatus => !V.previousSelectedStatus.Any(oldStatus => oldStatus.Code == newStatus.Code)).ToList();
+        var toRemove = V.previousSelectedStatus.Where(oldStatus => !newSelections.Any(newStatus => newStatus.Code == oldStatus.Code)).ToList();
+
+
+        if (!toInsert.Any() && !toRemove.Any())
+        {
+            // NotificationRef.Show("No changes to apply.", ThemeConstants.Notification.ThemeColor.Info);
+            return;
+        }
+
+
+        var insertSuccess = true;
+        var removeSuccess = true;
+
+
+        if (toInsert.Any())
+        {
+            insertSuccess = await InsertStatus(toInsert);
+        }
+
+        if (toRemove.Any())
+        {
+            removeSuccess = await RemoveStatus(toRemove);
+        }
+
+
+        if (insertSuccess && removeSuccess)
+        {
+            V.previousSelectedStatus = newSelections.ToList();
+            V.SelectedStatus = newSelections;
+
+            // NotificationRef.Show("Status has been updated.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+
+        V.SearchValue   = string.Empty;
+        V.Action        = "ReLoadEmployeeList";
         await ChildAction.InvokeAsync();
+
+        // NotificationRef.Show("Unable to update status. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
     }
+
+
+    private async Task<bool> InsertStatus(List<OEmpstatModel?> data)
+    {
+
+        try
+        {
+            foreach (var s in data)
+            {
+                var status = new OEmpmas_visible_statusModel
+                {
+                    Empstat_ = s.Code
+                };
+
+                await _oselectedEmpstat._01(status, V.pisdb, V.conn);
+            }
+
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"fail to insert {ex}");
+            return false;
+        }
+    }
+
+
+    private async Task<bool> RemoveStatus(List<OEmpstatModel?> data)
+    {
+
+        try
+        {
+            foreach (var s in data)
+            {
+                {
+                    var status = new OEmpmas_visible_statusModel
+                    {
+                        Empstat_ = s.Code
+                    };
+
+                    await _oselectedEmpstat._04(status, V.pisdb, V.conn);
+                }
+            }
+
+
+            return true;
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"fail to delete {ex}");
+            return false;
+        }
+    }
+
 
 }

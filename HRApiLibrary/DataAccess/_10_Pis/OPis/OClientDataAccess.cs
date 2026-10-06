@@ -59,7 +59,7 @@ public class OClientDataAccess : IOClientDataAccess
     public async Task<List<OClientModel?>?> _02ByClNumbers(string? clnumber, string? schema, string? conn)
     {
        
-        sql = $@"select  * from {schema}.Client where ClNumber = @ClNumber order by ClName ";
+        var sql = $@"select  * from {schema}.Client where ClNumber = @ClNumber order by ClName ";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
         return data;
     }
@@ -68,7 +68,7 @@ public class OClientDataAccess : IOClientDataAccess
     {
 
 
-        sql         = $@"select  * from {schema}.Client where Status = @Status order by ClName ";
+        var sql         = $@"select  * from {schema}.Client where Status = @Status order by ClName ";
         var data    = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = status }, conn);
         return data;
     }
@@ -78,7 +78,7 @@ public class OClientDataAccess : IOClientDataAccess
     {
    
 
-        sql = $@"select  * from {schema}.Client  order by ClName ";
+        var sql = $@"select  * from {schema}.Client  order by ClName ";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
@@ -90,7 +90,7 @@ public class OClientDataAccess : IOClientDataAccess
     {
      
 
-        sql = $@"select  * from {schema}.Client where Status in @Status order by ClName ";
+        var sql = $@"select  * from {schema}.Client where Status in @Status order by ClName ";
         var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = statuses }, conn);
         return data;
     }

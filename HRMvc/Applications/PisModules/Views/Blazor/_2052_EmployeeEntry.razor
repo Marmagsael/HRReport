@@ -11,49 +11,53 @@
 
     <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
+     <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+                <CascadingValue Value="@NotificationRef">
+                      <_00BT_FullW HdrCaption="Employee Entry">
+                           <Details>
 
-    <div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper emp-entry overflow-hidden d-flex flex-column"
-         style=" height:calc(100vh - 100px);">
 
-        <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02PageHdr pageTitle="Employee Entry" />
 
-        @if (v.ShowDataEntry)
-        {
-            <_2052_01_Modal_DataEntry V="@v" ChildAction="ChildAction" />
-        }
 
-        @*--- EMPLOYESS STATUS MODAL ---*@
-        @if (v.ShowStatusModal == true)
-        {
-            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowStatusModal = false" ModalWidth="50%">
+                                @if (v.ShowDataEntry)
+                                {
+                                    <_2052_01_Modal_DataEntry  ChildAction="ChildAction" />
+                                }
 
-                <Content>
-                    <_2052_02_Modal_StatusSettings V="@v" ChildAction="ChildAction"  />
-                </Content>
+                                @*--- EMPLOYESS STATUS MODAL ---*@
+                                @if (v.ShowStatusModal == true)
+                                {
+                                    <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowStatusModal = false" ModalWidth="50%">
 
-            </_00Modal>
-        }
+                                        <Content>
+                                            <_2052_02_Modal_StatusSettings ChildAction="ChildAction"  />
+                                        </Content>
 
-        <div class="p-2 flex-grow-1 overflow-hidden">
-            <div class="d-flex gap-3 w-100 h-100">
-                <div class="pe-1  h-100 overflow-hidden" style="width:28%; min-width:0;">
-                    <_2052_02_EmpList V="@v" ChildAction="ChildAction" />
-                </div>
-                <div class="ps-1 pe-2 hide-scroll  w-75 h-100" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
-                    <_2052_03_RecordsEntry V="@v" ChildAction="ChildAction" />
-                </div>
-            </div>
-        </div>
-    </div>
+                                    </_00Modal>
+                                }
+
+                                <div class="p-2 flex-grow-1 overflow-hidden">
+                                    <div class="d-flex gap-2 w-100 h-100">
+                                        <div class="pe-1  h-100 overflow-hidden" style="width:28%; min-width:0;">
+                                            <_2052_02_EmpList  ChildAction="ChildAction" />
+                                        </div>
+                                        <div class="ps-1 pe-2 hide-scroll  w-85 h-100" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
+                                            <_2052_03_RecordsEntry  ChildAction="ChildAction" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                        </Details>
+                    </_00BT_FullW>
+
+                </CascadingValue>
+            </CascadingValue>
+         </CascadingValue>
 </TelerikRootComponent>
 
 
-<div>
-    @foreach (var item in v.SelectedStatus)
-    {
-        <div>@item.Code - @item.Name </div>
-    }
-</div>
+
 
 @inject IOEmpmasDataAccess _empmas
 @inject IOCivstatDataAccess _ocivstat
@@ -62,6 +66,7 @@
 @inject IOMlacodeDataAccess _omla
 @inject IOPositionDataAccess _oposition
 @inject IOEmpstatDataAccess _oempstat
+@inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
 @inject IOProcodeDataAccess _opro
 
 
@@ -93,6 +98,7 @@
 
         try
         {
+            await LoadSelectedStatus();
             await LoadEmployeeStatus();
             await LoadEmployeeList();
             await LoadDropdownValues();
@@ -107,20 +113,58 @@
 
     }
 
-
-
-
-
-    private async Task LoadEmployeeList()
+    private async Task LoadSelectedStatus()
     {
         try
         {
-            var res = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
+            v.OEmpstatVisibleStatus = await _oselectedEmpstat._02s(v.pisdb, v.conn) ?? new();
+        }
+
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load selected statues. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadEmployeeStatus()
+    {
+        try
+        {
+            var empstats = await _oempstat._02s(v.pisdb, v.conn) ?? new();
+            v.OEmpstats = empstats.Where(e => !string.IsNullOrWhiteSpace(e.Name)).ToList();
+            if (v.OEmpstatVisibleStatus.Any())
+            {
+                v.SelectedStatus = v.OEmpstats.Where(e => v.OEmpstatVisibleStatus.Any(a => e.Code == a.Empstat_)).ToList();
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load employee statues. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadEmployeeList()
+    {
+
+        v.EmpmasList = [];
+        try
+        {
+            var statuses = new List<string>();
+            foreach (var s in v.SelectedStatus)
+            {
+                statuses.Add(s.Code);
+            }
+
+            var res = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, v.pisdb, v.conn);
             if (res.Any())
             {
-                v.EmpmasInitialList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
-
-                ReLoadEmployeeList();
+                v.EmpmasList = res;
             }
         }
         catch (Exception ex)
@@ -132,11 +176,6 @@
     }
 
 
-    private void ReLoadEmployeeList()
-    {
-        v.EmpmasList = v.EmpmasInitialList?.Where(e => e != null && v.SelectedStatus.Any(s => s.Code ==  e.EmpStat_ )).ToList();
-        Console.WriteLine("Change Status");
-    }
 
     
     private async Task LoadDropdownValues()
@@ -240,21 +279,7 @@
     }
 
 
-    private async Task LoadEmployeeStatus()
-    {
-        try
-        {
-            var empstats = await _oempstat._02s(v.pisdb, v.conn) ?? new();
-            v.OEmpstats = empstats.Where(e =>  !string.IsNullOrWhiteSpace(e.Name)).ToList();
-            v.SelectedStatus = v.OEmpstats.Where(e => e.Code == "A").ToList();
-        }
-        catch (Exception ex)
-        {
 
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load employee statues. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
 
     private async Task ChildAction()
     {
@@ -264,7 +289,7 @@
 
         if (v.Action == "SelectEmpmas") await SelectEmpmas();
         if (v.Action == "SplitHeight") SplitHeight(v.EmpmasToEdit.Height);
-        if (v.Action == "ReLoadEmployeeList") ReLoadEmployeeList();
+        if (v.Action == "ReLoadEmployeeList") await LoadEmployeeList();
 
         v.Action = "";
     }
