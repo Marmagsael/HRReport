@@ -136,14 +136,31 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
-    public async Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn)
+    public async Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesWithStatus(string? name, string? schema, string? conn)
     {
-        string? sql = $@"SELECT  e.EmpNumber, 
-                    CONCAT_WS(',', e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm) AS Fullname
-                    FROM {schema}.empmas e
-                    INNER JOIN {schema}.deprec d ON d.empmasId = e.Id
-                    WHERE d.payrollgrpId = @PayrollgrpId
-                    ORDER BY e.EmpLastNm;";
+        name = name?.Trim().ToUpper();
+        var sql = $@"SELECT CONCAT_WS(' ', NULLIF(TRIM(e.EmpLastNm), ''), NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), '')) AS Fullname, 
+                        e.EmpNumber, s.Name EmpStatus
+                 FROM {schema}.Empmas e
+                 LEFT JOIN {schema}.empstat s ON s.code = e.empstat_
+                 WHERE (e.EmpLastNm LIKE @Name OR e.EmpFirstNm LIKE @Name)
+                 ORDER BY e.EmpLastNm, e.EmpFirstNm;";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"%{name}%" }, conn);
+        return data;
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn)
+    {
+
+        
+        string? sql = $@"SELECT  u.Id AS UserId, e.EmpNumber, 
+                        CONCAT_WS(' ', NULLIF(TRIM(e.EmpLastNm), ''), NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), '')) AS Fullname
+                        FROM {pisschema}.empmas e
+                        INNER JOIN {pisschema}.deprec d ON d.empnumber = e.empnumber
+                        LEFT JOIN {mainschema}.users u on u.loginname = e.empnumber
+                        WHERE d.payrollgrpId = @PayrollgrpId
+                        ORDER BY e.EmpLastNm;";
 
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
         return data;
@@ -152,7 +169,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<List<OEmpmasModel?>?> _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema = "MainPis", string? conn = "MySqlConn")
     {
 
-        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName 
+        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, e.EmpStat_
                         from {schema}.Empmas e 
                         where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter
                         order by e.EmplastNm, e.EmpFirstNm";
@@ -746,7 +763,9 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?>  _02Migrated(string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByLNameAndFNames(string? name, string? schema, string? conn);
     Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesNoPayGrpAssignment(string? name, string? schema, string? conn);
-    Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02ByLNameAndFNamesWithStatus(string? name, string? schema, string? conn);
+
+    Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn);
     Task<List<OEmpmasModel?>?>  _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);

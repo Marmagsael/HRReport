@@ -1,0 +1,328 @@
+﻿@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+@using ClosedXML.Excel
+@using Microsoft.JSInterop
+
+@inject IJSRuntime JS
+
+<style>
+    .rd-header .k-cell-inner { background-color: #dbeafe !important; }
+    .lh-header .k-cell-inner { background-color: #dcfce7 !important; }
+    .sh-header .k-cell-inner { background-color: #fef9c3 !important; }
+    .dh-header .k-cell-inner { background-color: #ffedd5 !important; }
+    .k-grid .k-numerictextbox { border: none !important; box-shadow: none !important; border-radius: 0 !important; background: transparent !important; }
+    .k-grid .k-numerictextbox .k-input { border: none !important; box-shadow: none !important; border-radius: 0 !important; }
+    .k-grid td { padding: 0 !important; }
+</style>
+
+<TelerikGrid Data="@v!.ManHours" Height="400px" Pageable="false"
+             SelectedItems="@SelectedItems"
+             SelectedItemsChanged="@(async (IEnumerable<BioManHourModel> items) => await OnSelectionChanged(items))"
+             SelectionMode="GridSelectionMode.Multiple">
+    <GridToolBarTemplate>
+        <div class="d-flex gap-1 align-items-center w-100">
+            <TelerikButton OnClick="OnAddEmployee" ThemeColor="success" Title="Add Employee">
+                <i class="fas fa-user-check"></i>
+            </TelerikButton>
+            <TelerikButton OnClick="OnRemoveSelectedEmployee" ThemeColor="error" Title="Remove Employee">
+                <i class="fas fa-user-times"></i>
+            </TelerikButton>
+            <TelerikButton OnClick="OnExportExcel" Title="Export to Excel">
+                <i class="fas fa-file-excel"></i> Export to Excel
+            </TelerikButton>
+            <TelerikButton OnClick="OnOpenUploadModal" Title="Upload Excel">
+                <i class="fas fa-file-upload"></i> Upload Excel
+            </TelerikButton>
+        </div>
+    </GridToolBarTemplate>
+    <GridColumns>
+        <GridCheckboxColumn Width="40px" Title="Mrk" CheckBoxOnlySelection="true" />
+        <GridColumn Field="@nameof(BioManHourModel.EmpNumber)" Title="Emp#" Width="90px" Editable="false" />
+        <GridColumn Field="@nameof(BioManHourModel.EmpName)"   Title="Name" Width="200px" Editable="false" />
+
+        <GridColumn Title="Regular Day" HeaderClass="rd-header">
+            <Columns>
+                <GridColumn Title="Days" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.RdDays" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="RD" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.RdRd" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Tardiness" Width="90px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.RdTardiness" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="OT" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.RdOt" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+            </Columns>
+        </GridColumn>
+
+        <GridColumn Title="Legal Holiday" HeaderClass="lh-header">
+            <Columns>
+                <GridColumn Title="Days" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.LhDays" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="RD" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.LhRd" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Tardiness" Width="90px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.LhTardiness" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="OT" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.LhOt" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+            </Columns>
+        </GridColumn>
+
+        <GridColumn Title="Special Holiday" HeaderClass="sh-header">
+            <Columns>
+                <GridColumn Title="Days" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.ShDays" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="RD" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.ShRd" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Tardiness" Width="90px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.ShTardiness" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="OT" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.ShOt" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+            </Columns>
+        </GridColumn>
+
+        <GridColumn Title="Double Holiday" HeaderClass="dh-header">
+            <Columns>
+                <GridColumn Title="Days" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.DhDays" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="RD" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.DhRd" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Tardiness" Width="90px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.DhTardiness" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="OT" Width="80px">
+                    <Template>
+                        @{ var r = (BioManHourModel)context; }
+                        <TelerikNumericTextBox @bind-Value="r.DhOt" Decimals="2" Format="N2" Width="100%" ShowClearButton="false" Arrows="false" Step="0" />
+                    </Template>
+                </GridColumn>
+            </Columns>
+        </GridColumn>
+    </GridColumns>
+</TelerikGrid>
+
+@code {
+    [CascadingParameter] public V12002Model? v             { get; set; }
+    [CascadingParameter] public Func<Task>?  NotifyChanged { get; set; }
+
+    private IEnumerable<BioManHourModel> SelectedItems { get; set; } = [];
+
+    private async Task OnExportExcel()
+    {
+        if (v is null || v.ManHours.Count == 0) return;
+
+        using var wb = new XLWorkbook();
+        var ws = wb.Worksheets.Add("ManHour");
+
+        // Row 1 — Payroll Group
+        var payrollGrp = v.PayrollGrps.FirstOrDefault(x => x.Id == v.SelectedPayrollGrpId);
+        ws.Cell(1, 1).Value = $"Payroll Group: {payrollGrp?.Id} - {payrollGrp?.Name}";
+        ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Range(1, 1, 1, 18).Merge();
+
+        // Row 2 — Coverage
+        ws.Cell(2, 1).Value = $"Coverage: {v.Hdr.CoverageStart:MM/dd/yyyy} to {v.Hdr.CoverageEnd:MM/dd/yyyy}";
+        ws.Cell(2, 1).Style.Font.Bold = true;
+        ws.Range(2, 1, 2, 18).Merge();
+
+        // Row 3 — Blank
+        // (empty)
+
+        // Row 4 — Fixed columns headers
+        ws.Cell(4, 1).Value = "EmpNumber";
+        ws.Cell(4, 2).Value = "Name";
+        ws.Cell(4, 1).Style.Font.Bold = true;
+        ws.Cell(4, 2).Style.Font.Bold = true;
+        ws.Range(4, 1, 5, 1).Merge();
+        ws.Range(4, 2, 5, 2).Merge();
+
+        // Row 4 — Group headers
+        ws.Cell(4, 3).Value = "Regular Day";
+        ws.Range(4, 3, 4, 6).Merge();
+        ws.Cell(4, 3).Style.Font.Bold = true;
+        ws.Cell(4, 3).Style.Fill.BackgroundColor = XLColor.FromHtml("#dbeafe");
+        ws.Cell(4, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        ws.Cell(4, 7).Value = "Legal Holiday";
+        ws.Range(4, 7, 4, 10).Merge();
+        ws.Cell(4, 7).Style.Font.Bold = true;
+        ws.Cell(4, 7).Style.Fill.BackgroundColor = XLColor.FromHtml("#dcfce7");
+        ws.Cell(4, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        ws.Cell(4, 11).Value = "Special Holiday";
+        ws.Range(4, 11, 4, 14).Merge();
+        ws.Cell(4, 11).Style.Font.Bold = true;
+        ws.Cell(4, 11).Style.Fill.BackgroundColor = XLColor.FromHtml("#fef9c3");
+        ws.Cell(4, 11).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        ws.Cell(4, 15).Value = "Double Holiday";
+        ws.Range(4, 15, 4, 18).Merge();
+        ws.Cell(4, 15).Style.Font.Bold = true;
+        ws.Cell(4, 15).Style.Fill.BackgroundColor = XLColor.FromHtml("#ffedd5");
+        ws.Cell(4, 15).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+        // Row 5 — Sub-headers
+        var subHeaders = new[] { "Days", "RD", "Tardiness", "OT" };
+        for (int g = 0; g < 4; g++)
+        {
+            for (int s = 0; s < 4; s++)
+            {
+                ws.Cell(5, 3 + g * 4 + s).Value = subHeaders[s];
+                ws.Cell(5, 3 + g * 4 + s).Style.Font.Bold = true;
+            }
+        }
+
+        // Row 6+ — Data
+        int row = 6;
+        foreach (var emp in v.ManHours)
+        {
+            ws.Cell(row, 1).Value  = emp.EmpNumber;
+            ws.Cell(row, 2).Value  = emp.EmpName;
+            ws.Cell(row, 3).Value  = emp.RdDays      ?? 0;
+            ws.Cell(row, 4).Value  = emp.RdRd        ?? 0;
+            ws.Cell(row, 5).Value  = emp.RdTardiness ?? 0;
+            ws.Cell(row, 6).Value  = emp.RdOt        ?? 0;
+            ws.Cell(row, 7).Value  = emp.LhDays      ?? 0;
+            ws.Cell(row, 8).Value  = emp.LhRd        ?? 0;
+            ws.Cell(row, 9).Value  = emp.LhTardiness ?? 0;
+            ws.Cell(row, 10).Value = emp.LhOt        ?? 0;
+            ws.Cell(row, 11).Value = emp.ShDays      ?? 0;
+            ws.Cell(row, 12).Value = emp.ShRd        ?? 0;
+            ws.Cell(row, 13).Value = emp.ShTardiness ?? 0;
+            ws.Cell(row, 14).Value = emp.ShOt        ?? 0;
+            ws.Cell(row, 15).Value = emp.DhDays      ?? 0;
+            ws.Cell(row, 16).Value = emp.DhRd        ?? 0;
+            ws.Cell(row, 17).Value = emp.DhTardiness ?? 0;
+            ws.Cell(row, 18).Value = emp.DhOt        ?? 0;
+
+            // Font colors
+            ws.Range(row, 3,  row, 6).Style.Font.FontColor  = XLColor.Blue;
+            ws.Range(row, 7,  row, 10).Style.Font.FontColor = XLColor.Black;
+            ws.Range(row, 11, row, 14).Style.Font.FontColor = XLColor.Blue;
+            ws.Range(row, 15, row, 18).Style.Font.FontColor = XLColor.Black;
+
+            row++;
+        }
+
+        ws.Column(1).Width = 12;
+        ws.Column(2).Width = 25;
+        for (int c = 3; c <= 18; c++)
+            ws.Column(c).Width = 10;
+
+        using var ms = new System.IO.MemoryStream();
+        wb.SaveAs(ms);
+        var base64   = Convert.ToBase64String(ms.ToArray());
+        var fileName = $"ManHour_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+        await JS.InvokeVoidAsync("downloadFile", fileName, base64);
+    }
+
+    private async Task OnOpenUploadModal()
+    {
+        if (v is null) return;
+        v.IsUploadExcelModalOpen = true;
+        v.AllowAddFromExcel      = false;
+        v.AllowRemoveFromExcel   = false;
+        v.ExcelToAdd             = [];
+        v.ExcelToUpdate          = [];
+        v.ExcelToRemove          = [];
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnAddEmployee()
+    {
+        if (v is null) return;
+        if (v.SelectedPayrollGrpId is null)
+        {
+            v.Notification = ("warning", "Please select a Payroll Group first.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+        v.SearchedEmps      = [];
+        v.EmpSearchKeyword  = string.Empty;
+        v.IsAddEmpModalOpen = true;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnRemoveSelectedEmployee()
+    {
+        if (v is null) return;
+        var selected = v.ManHours.Where(x => x.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            v.Notification = ("warning", "No employee selected.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+        v.IsRemoveEmpConfirmOpen = true;
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnSelectionChanged(IEnumerable<BioManHourModel> items)
+    {
+        if (v is null) return;
+        var selected = items.ToHashSet();
+        foreach (var row in v.ManHours)
+            row.IsSelected = selected.Contains(row);
+        SelectedItems = items;
+        await NotifyChanged!.Invoke();
+    }
+}

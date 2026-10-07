@@ -1,0 +1,107 @@
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.Models._00_Main
+@using System.Security.Claims
+@using Microsoft.Extensions.Configuration
+
+@inject I_00MainDA _mainDA
+@inject IConfiguration _config
+
+@{
+    IEnumerable<Claim?> claims = User.Claims;
+    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
+}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <base href="~/" />
+
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <!-- Global CSS -->
+    <link rel="stylesheet" href="~/css/global.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Layout/main_content.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Main/msds.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/Main/left-menu.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/msds-modal.css" asp-append-version="true" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="~/lib/font-awesome/css/all.min.css" />
+
+    <link href="_content/Radzen.Blazor/css/material-base.css" rel="stylesheet" />
+    <link href="_content/Radzen.Blazor/css/radzen.blazor.css" rel="stylesheet" />
+
+    <!-- Payroll / App styles -->
+    <link rel="stylesheet" href="~/css/Payroll/pay.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/radzen-override.css" asp-append-version="true" />
+    
+
+    <link rel="stylesheet" href="_content/Telerik.UI.for.Blazor/css/kendo-theme-bootstrap/all.css" /> <!-- Bootstrap -->
+    
+    <!-- Telerik Icons -->
+    <link rel="stylesheet" href="_content/Telerik.UI.for.Blazor/css/kendo-font-icons/font-icons.css" />
+    <!-- ⭐ Telerik/Kendo Icons -->
+
+</head>
+
+<body>
+<div class="main-wrapper d-flex flex-column vh-100 w-100 bg-light">
+    
+    <div class="mobile-menu h-50p p-2" >
+        <a href="1000/1000">
+        <div class="card p-2 text-center mb-btn mb-btn-lightblue " >
+            Menu
+        </div>
+        </a>
+    </div>
+
+    <!-- 🔹 HEADER (MVC PARTIAL) -->
+    <header class="bg-gray-10 txt-white sticky-top p-0 ">
+        @await Html.PartialAsync("~/Views/Shared/ReportLayout/_Header.cshtml", userClaims)
+    </header>
+
+    <!-- 🔹 BODY -->
+    <div class="d-flex flex-grow-1 w-100 p-0 ">
+        
+        <!-- 🔹 LEFT MENU (MVC PARTIAL) -->
+        <aside class="border-end bg-white floating-panel" style="width:240px;">
+            @await Html.PartialAsync("~/Views/Shared/ReportLayout/_ReportLeftMenu.cshtml", userClaims)
+        </aside>
+
+        <!-- 🔹 MAIN CONTENT -->
+        <main class="bg-gray-95 overflow-auto w-100 flex-fill  bg-gray-95 ">
+            @RenderBody()
+        </main>
+
+    </div>
+</div>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="~/js/site.js"></script>
+    <script src="~/js/_00Main.js"></script>
+    <script src="~/js/Main/TelerikDownload.js"></script>
+
+    <script src="_content/Telerik.UI.for.Blazor/js/telerik-blazor.js"></script>
+
+
+
+    <!-- Blazor Server (ONLY needed for content pages that render Blazor) -->
+    <script src="_framework/blazor.server.js"></script>
+    <script
+    src="_content/Radzen.Blazor/Radzen.Blazor.js?v=@(typeof(Radzen.Colors).Assembly.GetName().Version)"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+
+</html>

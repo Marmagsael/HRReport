@@ -1,0 +1,186 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+@using ClosedXML.Excel
+
+<TelerikDialog @bind-Visible="@v!.IsUploadExcelModalOpen"
+               Title="Upload Excel"
+               Width="700px">
+    <DialogContent>
+        <div class="row g-2 mb-3">
+            <div class="col-12">
+                <TelerikFileSelect OnSelect="OnFileSelected" Accept=".xlsx" Multiple="false" />
+            </div>
+        </div>
+
+        @if (v!.ExcelToUpdate.Count > 0 || v!.ExcelToAdd.Count > 0 || v!.ExcelToRemove.Count > 0)
+        {
+            <!-- Options -->
+            <div class="d-flex gap-3 mb-3">
+                @if (v!.ExcelToAdd.Count > 0)
+                {
+                    <div>
+                        <TelerikCheckBox @bind-Value="v!.AllowAddFromExcel" Id="chkAdd" />
+                        <label for="chkAdd" class="ms-1">
+                            Add @v.ExcelToAdd.Count new employee(s) from Excel
+                        </label>
+                    </div>
+                }
+                @if (v!.ExcelToRemove.Count > 0)
+                {
+                    <div>
+                        <TelerikCheckBox @bind-Value="v!.AllowRemoveFromExcel" Id="chkRemove" />
+                        <label for="chkRemove" class="ms-1">
+                            Remove @v.ExcelToRemove.Count employee(s) not in Excel
+                        </label>
+                    </div>
+                }
+            </div>
+
+            <!-- Summary -->
+            <div class="small text-muted">
+                <span class="me-3"><i class="fas fa-sync txt-fcolor1"></i> @v.ExcelToUpdate.Count to update</span>
+                <span class="me-3"><i class="fas fa-user-plus text-success"></i> @v.ExcelToAdd.Count to add</span>
+                <span><i class="fas fa-user-minus text-danger"></i> @v.ExcelToRemove.Count to remove</span>
+            </div>
+        }
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="OnApply" ThemeColor="primary"
+                       Enabled="@(v!.ExcelToUpdate.Count > 0 || (v!.AllowAddFromExcel && v!.ExcelToAdd.Count > 0) || (v!.AllowRemoveFromExcel && v!.ExcelToRemove.Count > 0))">
+            Apply
+        </TelerikButton>
+        <TelerikButton OnClick="OnCancel">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@code {
+    [CascadingParameter] public V12002Model?     v             { get; set; }
+    [CascadingParameter] public UserClaimsModel? Uc            { get; set; }
+    [CascadingParameter] public Func<Task>?      NotifyChanged { get; set; }
+
+    private async Task OnFileSelected(FileSelectEventArgs args)
+    {
+        if (v is null || args.Files.Count == 0) return;
+
+        v.ExcelToAdd    = [];
+        v.ExcelToUpdate = [];
+        v.ExcelToRemove = [];
+
+        try
+        {
+            using var stream = new System.IO.MemoryStream();
+            await args.Files[0].Stream.CopyToAsync(stream);
+            stream.Position = 0;
+
+            using var wb = new XLWorkbook(stream);
+            var ws = wb.Worksheet(1);
+
+            var excelEmps = new List<BioManHourModel>();
+            int row = 6;
+            while (!ws.Row(row).IsEmpty())
+            {
+                var empNo = ws.Cell(row, 1).GetString().Trim();
+                if (string.IsNullOrEmpty(empNo)) break;
+
+                excelEmps.Add(new BioManHourModel
+                {
+                    EmpNumber    = empNo,
+                    EmpName      = ws.Cell(row, 2).GetString(),
+                    RdDays       = ws.Cell(row, 3).GetDouble(),
+                    RdRd         = ws.Cell(row, 4).GetDouble(),
+                    RdTardiness  = ws.Cell(row, 5).GetDouble(),
+                    RdOt         = ws.Cell(row, 6).GetDouble(),
+                    LhDays       = ws.Cell(row, 7).GetDouble(),
+                    LhRd         = ws.Cell(row, 8).GetDouble(),
+                    LhTardiness  = ws.Cell(row, 9).GetDouble(),
+                    LhOt         = ws.Cell(row, 10).GetDouble(),
+                    ShDays       = ws.Cell(row, 11).GetDouble(),
+                    ShRd         = ws.Cell(row, 12).GetDouble(),
+                    ShTardiness  = ws.Cell(row, 13).GetDouble(),
+                    ShOt         = ws.Cell(row, 14).GetDouble(),
+                    DhDays       = ws.Cell(row, 15).GetDouble(),
+                    DhRd         = ws.Cell(row, 16).GetDouble(),
+                    DhTardiness  = ws.Cell(row, 17).GetDouble(),
+                    DhOt         = ws.Cell(row, 18).GetDouble(),
+                });
+                row++;
+            }
+
+            var excelEmpNos   = excelEmps.Select(x => x.EmpNumber).ToHashSet();
+            var currentEmpNos = v.ManHours.Select(x => x.EmpNumber).ToHashSet();
+
+            v.ExcelToUpdate = excelEmps.Where(x => currentEmpNos.Contains(x.EmpNumber)).ToList();
+            v.ExcelToAdd    = excelEmps.Where(x => !currentEmpNos.Contains(x.EmpNumber)).ToList();
+            v.ExcelToRemove = v.ManHours.Where(x => !excelEmpNos.Contains(x.EmpNumber)).ToList();
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"File parse failed: {ex.Message}");
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnApply()
+    {
+        if (v is null) return;
+
+        // Update existing
+        foreach (var emp in v.ExcelToUpdate)
+        {
+            var existing = v.ManHours.FirstOrDefault(x => x.EmpNumber == emp.EmpNumber);
+            if (existing is null) continue;
+            existing.RdDays      = emp.RdDays;
+            existing.RdRd        = emp.RdRd;
+            existing.RdTardiness = emp.RdTardiness;
+            existing.RdOt        = emp.RdOt;
+            existing.LhDays      = emp.LhDays;
+            existing.LhRd        = emp.LhRd;
+            existing.LhTardiness = emp.LhTardiness;
+            existing.LhOt        = emp.LhOt;
+            existing.ShDays      = emp.ShDays;
+            existing.ShRd        = emp.ShRd;
+            existing.ShTardiness = emp.ShTardiness;
+            existing.ShOt        = emp.ShOt;
+            existing.DhDays      = emp.DhDays;
+            existing.DhRd        = emp.DhRd;
+            existing.DhTardiness = emp.DhTardiness;
+            existing.DhOt        = emp.DhOt;
+        }
+
+        // Add new
+        if (v.AllowAddFromExcel)
+            foreach (var emp in v.ExcelToAdd)
+                v.ManHours.Add(emp);
+
+        // Remove
+        if (v.AllowRemoveFromExcel)
+            v.ManHours = v.ManHours.Where(x => !v.ExcelToRemove.Any(r => r.EmpNumber == x.EmpNumber)).ToList();
+        else
+            v.ManHours = v.ManHours.ToList();
+
+        v.Notification           = ("success", "Excel applied successfully.");
+        v.IsUploadExcelModalOpen = false;
+        v.ExcelToAdd             = [];
+        v.ExcelToUpdate          = [];
+        v.ExcelToRemove          = [];
+        v.AllowAddFromExcel      = false;
+        v.AllowRemoveFromExcel   = false;
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private async Task OnCancel()
+    {
+        if (v is null) return;
+        v.IsUploadExcelModalOpen = false;
+        v.ExcelToAdd             = [];
+        v.ExcelToUpdate          = [];
+        v.ExcelToRemove          = [];
+        v.AllowAddFromExcel      = false;
+        v.AllowRemoveFromExcel   = false;
+        await NotifyChanged!.Invoke();
+    }
+}

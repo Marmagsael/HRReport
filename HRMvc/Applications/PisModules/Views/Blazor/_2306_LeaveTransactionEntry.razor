@@ -1,0 +1,111 @@
+﻿@using HRApiLibrary.Models._10_Pis.OPis;
+@using HRMvc.Applications.PisModules.Views.Blazor._2303
+@using HRMvc.Applications.PisModules.Views.Blazor._2306
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+
+@inject IOOfstaffDataAccess _oofstaff
+@inject IOOfstaff2DataAccess _oofstaff2
+
+
+<TelerikRootComponent>
+
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
+    <CascadingValue Value="@v">
+        <CascadingValue Value="@NotificationRef">
+
+            <_00BT_FullW HdrCaption="Leave Transaction Entry">
+
+                <Details>
+
+
+
+                    @*--- SEARCH EMPLOYEE  ---*@
+                    @if (v.ShowSearchEmployeeModal == true)
+                    {
+                        <_00Modal ModuleCaption="@v.SearchEmployeeModalCaption" ChildAction="() => v.ShowSearchEmployeeModal = false">
+                            <Content>
+                                <_2303_SearchEmployeeModal ChildAction="@ChildAction" />
+                            </Content>
+                        </_00Modal>
+                    }
+
+
+                    @*--- ENTRY  ---*@
+                    <_2306_LTEntry ChildAction="@ChildAction" />
+
+                </Details>
+
+            </_00BT_FullW>
+
+        </CascadingValue>
+    </CascadingValue>
+
+</TelerikRootComponent>
+
+
+@code {
+    [Parameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    private V2303Model v = new();
+
+    private TelerikNotification NotificationRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = true;
+
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb = Uc.OpisDb;
+        v.Conn = Uc.Conn;
+
+        await LoadPreparers();
+        await LoadApprovers();
+        v.IsLoading = false;
+
+    }
+
+
+    private async Task LoadPreparers()
+    {
+        var res = await _oofstaff._02s(v.OPisdb, v.Conn);
+        if (res.Any())
+        {
+            v.Preparers = res;
+            v.Preparer = v.Preparers?.Where(p => p.Defa == 1).FirstOrDefault();
+        }
+
+    }
+
+    private async Task LoadApprovers()
+    {
+        var res = await _oofstaff2._02s(v.OPisdb, v.Conn);
+        if (res.Any())
+        {
+            v.Approvers = res;
+            v.Approver = v.Approvers?.Where(p => p.Defa == 1).FirstOrDefault();
+        }
+
+    }
+
+    private async Task ChildAction()
+    {
+
+    }
+
+
+}

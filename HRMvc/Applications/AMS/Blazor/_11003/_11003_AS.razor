@@ -1,0 +1,151 @@
+@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications.AMS.Blazor._11003
+@using HRMvc.Applications.AMS.Vars
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<div class="card w-100 p-1">
+    <BodyHdr pageTitle="Advance Scheduling" />
+    <div class="card-body p-1 w-100">
+
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@Uc">
+                <CascadingValue Value="@NotifyChanged">
+
+                    <!-- Payroll Group -->
+                    <div class="row mb-3 align-items-center border-bottom">
+                        <div class="col-auto">
+                            <label class="form-label fw-bold txt-fcolor1 mb-0">Payroll Group</label>
+                        </div>
+                        <div class="col-auto p-1">
+                            <TelerikDropDownList Data="@v.PayrollGrps" Value="@v.SelectedPayrollGrpId"
+                                                 ValueChanged="@((int? val) => OnPayrollGrpChanged(val))"
+                                                 TextField="Name" ValueField="Id" Width="400px">
+                                <DropDownListSettings>
+                                    <DropDownListPopupSettings Height="400px" />
+                                </DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                    </div>
+
+                    <!-- Two-column layout -->
+                    <div class="row g-2">
+
+                        <!-- Left: Employee List -->
+                        <div class="col-12 col-md-3">
+                            <_11003_AS_EmpList />
+                        </div>
+
+                        <!-- Right: Advance Schedules + Current Schedule -->
+                        <div class="col-12 col-md-9">
+                            @if (v.SelectedEmployee is not null)
+                            {
+                                <_11003_AS_AdvSched />
+                                <_11003_AS_CurrSched />
+                            }
+                        </div>
+
+                    </div>
+
+                </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+
+    </div>
+</div>
+
+@inject IAttscheddailyDataAccess _dailysched
+@inject IDA_11003O _da
+
+@code {
+
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+    private TelerikNotification NotificationRef { get; set; } = new();
+    private V11003ASModel v { get; set; } = new();
+    private bool _initialized = false;
+
+    private Func<Task>? _notifyChanged;
+    private Func<Task> NotifyChanged => _notifyChanged ??= async () =>
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(v.Notification.Type))
+            {
+                NotificationRef.Show(new NotificationModel
+                {
+                    Text = v.Notification.Message,
+                    ThemeColor = v.Notification.Type,
+                    CloseAfter = 4000
+                });
+                v.Notification = (string.Empty, string.Empty);
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (ObjectDisposedException) { }
+    };
+
+    protected async override Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
+        if (Uc is null) { Console.WriteLine("Uc is null"); return; }
+        try
+        {
+            v.PayrollGrps = await _da._02Payrollgrps(Uc.OpayDb!, Uc.Conn!) ?? [];
+
+            v.DailyTemplates = (await _dailysched._02s(Uc.SchemaUserPis!, Uc.Conn!) ?? [])
+                               .Where(x => x is not null)
+                               .Cast<AttscheddailyModel>()
+                               .ToList();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show(new NotificationModel
+            {
+                Text = $"Load failed: {ex.Message}",
+                ThemeColor = "error",
+                CloseAfter = 4000
+            });
+        }
+    }
+
+    private async Task OnPayrollGrpChanged(int? val)
+    {
+        //Console.WriteLine($"OnPayrollGrpChanged fired — val: {val}");
+
+        v.SelectedPayrollGrpId  = val;
+        v.SelectedEmployee      = null;
+        v.SelectedEmployees     = [];
+        v.AdvScheds             = [];
+        v.CurrSched             = new();
+        v.Employees             = [];
+
+        if (val is not null && val > 0)
+        {
+            try
+            {
+                var result = await _da._02Deprec_ByFieldId("PayrollgrpId", val, Uc!.SchemaUserPis!, Uc!.OpisDb!, Uc.Conn!);
+                v.Employees = [.. result ?? []];  // force new list reference
+            }
+            catch (Exception ex)
+            {
+                //Console.WriteLine($"Error: {ex.Message}");
+                v.Notification = ("error", $"Load employees failed: {ex.Message}");
+            }
+        }
+
+        await NotifyChanged.Invoke();
+    }
+}

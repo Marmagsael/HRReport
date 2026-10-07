@@ -1,0 +1,92 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<div class="card">
+    <div class="card-header fw-bold">Current Schedule</div>
+    <div class="card-body p-2">
+
+        @if (!V!.HasCurrSched)
+        {
+            <div class="text-muted fst-italic p-2">No schedule set for this employee.</div>
+        }
+        else
+        {
+        <div class="table-responsive" style="max-width:600px;">
+            <table class="table table-bordered align-middle mb-0">
+                <thead>
+                    <tr class="text-center">
+                        <th class="w-150p">Day</th>
+                        <th>Duty Type</th>
+                        <th>In</th>
+                        <th>Out</th>
+                        <th>ND</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-danger">Sunday</td>
+                        <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V!.CurrSched.D1_dutytype)?.Name ?? V!.CurrSched.D1_dutytype)</td>
+                        <td>@VamsHelper.FormatTime(V!.CurrSched.D1_in ?? 0)</td>
+                        <td>@VamsHelper.FormatOut(V!.CurrSched.D1_dutytype, V!.CurrSched.D1_in ?? 0, V!.CurrSched.D1_hrslength ?? 0)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Monday</td>
+                        <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V!.CurrSched.D2_dutytype)?.Name ?? V!.CurrSched.D2_dutytype)</td>
+                        <td>@VamsHelper.FormatTime(V!.CurrSched.D2_in ?? 0)</td>
+                        <td>@VamsHelper.FormatOut(V!.CurrSched.D2_dutytype, V!.CurrSched.D2_in ?? 0, V!.CurrSched.D2_hrslength ?? 0)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Tuesday</td>
+                        <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V!.CurrSched.D3_dutytype)?.Name ?? V!.CurrSched.D3_dutytype)</td>
+                        <td>@VamsHelper.FormatTime(V!.CurrSched.D3_in ?? 0)</td>
+                        <td>@VamsHelper.FormatOut(V!.CurrSched.D3_dutytype, V!.CurrSched.D3_in ?? 0, V!.CurrSched.D3_hrslength ?? 0)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Wednesday</td>
+                        <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V!.CurrSched.D4_dutytype)?.Name ?? V!.CurrSched.D4_dutytype)</td>
+                        <td>@VamsHelper.FormatTime(V!.CurrSched.D4_in ?? 0)</td>
+                        <td>@VamsHelper.FormatOut(V!.CurrSched.D4_dutytype, V!.CurrSched.D4_in ?? 0, V!.CurrSched.D4_hrslength ?? 0)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>Thursday</td>
+                        <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V!.CurrSched.D5_dutytype)?.Name ?? V!.CurrSched.D5_dutytype)</td>
+                        <td>@VamsHelper.FormatTime(V!.CurrSched.D5_in ?? 0)</td>
+                        <td>@VamsHelper.FormatOut(V!.CurrSched.D5_dutytype, V!.CurrSched.D5_in ?? 0, V!.CurrSched.D5_hrslength ?? 0)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-warning">Friday</td>
+                        <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V!.CurrSched.D6_dutytype)?.Name ?? V!.CurrSched.D6_dutytype)</td>
+                        <td>@VamsHelper.FormatTime(V!.CurrSched.D6_in ?? 0)</td>
+                        <td>@VamsHelper.FormatOut(V!.CurrSched.D6_dutytype, V!.CurrSched.D6_in ?? 0, V!.CurrSched.D6_hrslength ?? 0)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td class="text-primary">Saturday</td>
+                        <td>@(Vars.AttDutyTypes.FirstOrDefault(x => x.Code == V!.CurrSched.D7_dutytype)?.Name ?? V!.CurrSched.D7_dutytype)</td>
+                        <td>@VamsHelper.FormatTime(V!.CurrSched.D7_in ?? 0)</td>
+                        <td>@VamsHelper.FormatOut(V!.CurrSched.D7_dutytype, V!.CurrSched.D7_in ?? 0, V!.CurrSched.D7_hrslength ?? 0)</td>
+                        <td>-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel?  Uc  { get; set; }
+    [CascadingParameter] public V11003ASModel?     V   { get; set; }
+    [CascadingParameter] public Func<Task>?        NotifyChanged { get; set; }
+
+    private V11002Model Vars { get; set; } = new();
+}

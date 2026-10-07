@@ -11,6 +11,7 @@ namespace HRMvc.Controllers
         {
             // Settings 
             [102] = "_102_PayrollGroupManagement",
+            [103] = "_103_UserManagement",
 
 
 

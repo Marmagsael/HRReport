@@ -1,0 +1,106 @@
+﻿@using HRApiLibrary.Models._10_Pis.OPis;
+@using HRMvc.Applications.PisModules.Views.Blazor._2302
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+
+@inject IOEmpstatDataAccess _oempstat
+
+
+<TelerikRootComponent>
+
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
+    <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+
+                <_00BT_FullW HdrCaption="Employee Status Management">
+
+                    <Details>
+
+                   
+
+                        @*--- SEARCH EMPLOYEE  ---*@
+                    @if (v.ShowSearchModal == true)
+                        {
+                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowSearchModal = false">
+                                <Content>
+                                 <_2302_SearchEmployeeModal ChildAction="@ChildAction" />
+                                </Content>
+                            </_00Modal>
+                        }
+
+
+                        @*--- ENTRY  ---*@
+                    <_2302_EmploymentStatusEntry ChildAction="@ChildAction" />
+
+
+                    </Details>
+
+                </_00BT_FullW>
+
+            </CascadingValue>
+        </CascadingValue>
+
+</TelerikRootComponent>
+
+
+@code {
+    [Parameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    private V2302Model v = new();
+
+    private TelerikNotification NotificationRef;
+
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = true;
+
+        if (Uc?.Conn == null || Uc.OpisDb == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+        v.UcLoaded = true;
+
+        v.OPisdb    = Uc.OpisDb;
+        v.Conn      = Uc.Conn;
+
+
+        await _02LoadEmployeeStatuses();
+
+        v.IsLoading = false;
+
+    }
+
+
+    private async Task _02LoadEmployeeStatuses()
+    {
+
+        try
+        {
+            var res = await _oempstat._02s(v.OPisdb, v.Conn);
+            if (res.Any())
+            {
+                v.OEmpStatuses = res;
+            }
+        }
+        catch (Exception ex)
+        {
+
+            NotificationRef.Show("Unable to loas employee statuses. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        
+    }
+
+    private async Task ChildAction()
+    {
+
+    }
+}

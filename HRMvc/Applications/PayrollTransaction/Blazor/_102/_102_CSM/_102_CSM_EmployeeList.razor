@@ -1,73 +1,130 @@
-﻿@using System.ComponentModel
-@using HRApiLibrary.DataAccess._10_Pis.Interface
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
-@using HRApiLibrary.Models._90_Utils
+@using HRApiLibrary.Models._10_Pis.OPis
 @using HRMvc.Applications.PayrollTransaction.Vars
-@using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
 
-@inject IODeprecDataAccess _deprec
+@inject IAtttemplateDataAccess _atttemplate
 
-<div class="employee-list">
+<div class="employee-list h-100 d-flex flex-column">
 
-
-    @*========= GRID ===========*@
-    <TelerikGrid TItem="ODeprecModel"
-                 @ref="DeprecGrid"
-                 OnRead="@OnGridRead"
+  
+    <TelerikGrid TItem="OEmpmasModel"
+                 @ref="EmployeeAssignedGrid"
+                 Data="@V.AssignedEmployees"
+                 OnRowClick="@OnRowClick"
+                 OnRowRender="@OnRowRender"
                  SelectionMode="@GridSelectionMode.Multiple"
-                 @bind-SelectedItems="@SelectedEmployees"
+                 SelectedItems="@SelectedEmployees"
+                 SelectedItemsChanged="@OnSelectedEmployeesChanged"
                  Pageable="true"
-                 PageSize="11"
+                 @bind-Page="@CurrentPage"
+                 @bind-PageSize="@PageSize"
                  FilterMode="@GridFilterMode.FilterMenu"
                  Sortable="true"
                  Resizable="true"
                  Navigable="true"
-                 CustomKeyboardShortcuts="@GridCustomShortcuts"
                  Width="100%"
-                 Height="calc(100vh - 350px)">
+                 Height="100%">
+
+        @* =====================================================
+           GRID SETTINGS / PAGINATION
+           ===================================================== *@
+        <GridSettings>
+
+            <GridPagerSettings InputType="@PagerInputType.Input"
+                               PageSizes="@PageSizes"
+                               Responsive="true" />
+
+        </GridSettings>
+
 
         <GridColumns>
 
+            @* =================================================
+               CHECKBOX COLUMN
+               ================================================= *@
             <GridCheckboxColumn SelectAll="true"
                                 SelectAllMode="@GridSelectAllMode.Current"
                                 Width="50px" />
 
-            <GridColumn Field="@nameof(ODeprecModel.EmpName)" Title="Employee name" />
+
+            @* =================================================
+               EMPLOYEE NAME
+               ================================================= *@
+            <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
+                        Title="Employee Name">
+
+                <Template>
+
+                    @{
+                        var employee = (OEmpmasModel)context;
+                    }
+
+                    <div class="employee-name-cell">
+
+                        <div>
+                            @employee.Fullname
+                        </div>
+
+                        @if (employee.UserId == 0)
+                        {
+                            <div class="no-login-message">
+                                User has no login credentials yet
+                            </div>
+                        }
+
+                    </div>
+
+                </Template>
+
+            </GridColumn>
 
         </GridColumns>
 
+
+        @* =========================================================
+           NO DATA MESSAGE
+           ========================================================= *@
         <NoDataTemplate>
+
             <div class="text-center text-secondary p-3">
 
                 @if (V.SelectedPayrollGroup <= 0)
                 {
-                    <div>Select a payroll group to see assigned employees.</div>
+                    <div>
+                        Select a payroll group to see assigned employees.
+                    </div>
                 }
                 else if (HasActiveFilter)
                 {
-                    <div>No employees match the current filter.</div>
-                    <div class="k-font-size-sm">Clear the column filter to see everyone.</div>
+                    <div>
+                        No employees match the current filter.
+                    </div>
+
+                    <div class="k-font-size-sm">
+                        Clear the column filter to see everyone.
+                    </div>
                 }
                 else
                 {
-                    <div>No one assigned to this group yet</div>
-                    <div class="k-font-size-sm">Click the '+' to add employees.</div>
+                    <div>
+                        No one is assigned to this group yet.
+                    </div>
                 }
 
             </div>
+
         </NoDataTemplate>
 
     </TelerikGrid>
 
 </div>
 
+
 @code {
 
     [CascadingParameter]
     public UserClaimsModel? Uc { get; set; }
-
-    [CascadingParameter]
-    public Telerik.Blazor.DialogFactory? TelerikDialogs { get; set; }
 
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; }
@@ -78,107 +135,211 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
-    private TelerikGrid<ODeprecModel>? DeprecGrid;
-    private IEnumerable<ODeprecModel> SelectedEmployees { get; set; } = new List<ODeprecModel>();
+    private TelerikGrid<OEmpmasModel>? EmployeeAssignedGrid;
 
-    private bool HasActiveFilter => DeprecGrid?.GetState().FilterDescriptors?.Any() == true;
+    private int CurrentPage { get; set; } = 1;
 
+    private int PageSize { get; set; } = 25;
 
-    private readonly Dictionary<GridKeyboardScope, Dictionary<string, GridKeyboardCommand?>>
-        GridCustomShortcuts = new()
-        {
-            [GridKeyboardScope.Common] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["W"] = GridKeyboardCommand.NavigateUp,
-                    ["S"] = GridKeyboardCommand.NavigateDown,
-                    ["A"] = GridKeyboardCommand.NavigateLeft,
-                    ["D"] = GridKeyboardCommand.NavigateRight,
-
-                    ["ArrowUp"] = GridKeyboardCommand.NavigateUp,
-                    ["ArrowDown"] = GridKeyboardCommand.NavigateDown,
-                    ["ArrowLeft"] = GridKeyboardCommand.NavigateLeft,
-                    ["ArrowRight"] = GridKeyboardCommand.NavigateRight
-                },
-
-            [GridKeyboardScope.HeaderCell] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["O"] = GridKeyboardCommand.SortColumn,
-                    ["Enter"] = GridKeyboardCommand.SortColumn
-                },
-
-            [GridKeyboardScope.DataCell] =
-                new Dictionary<string, GridKeyboardCommand?>
-                {
-                    ["Enter"] = GridKeyboardCommand.Select
-                }
-        };
-
-
-    private async Task OnGridRead(GridReadEventArgs args)
+    private List<int?> PageSizes = new()
     {
-        if (V.SelectedPayrollGroup <= 0)
+        10,
+        25,
+        50,
+        100,
+        null
+    };
+
+    private List<OEmpmasModel> SelectedEmployees { get; set; } = new();
+
+    private bool IgnoreNextSelectionChanged { get; set; }
+
+    private bool HasActiveFilter => EmployeeAssignedGrid?.GetState().FilterDescriptors?.Any() == true;
+
+    private void OnRowRender(GridRowRenderEventArgs args)
+    {
+        var employee = (OEmpmasModel)args.Item;
+
+        if (employee.UserId <= 0)
         {
-            args.Data = new List<ODeprecModel>();
-            args.Total = 0;
+            args.Class = "row-disabled";
+        }
+    }
+
+    private async Task OnRowClick(GridRowClickEventArgs args)
+    {
+        var employee = (OEmpmasModel)args.Item;
+
+        if (employee.UserId <= 0)
+        {
+            args.ShouldRender = false;
             return;
         }
 
-        var pageSize = args.Request.PageSize > 0 ? args.Request.PageSize : 10;
-        var page = args.Request.Page > 0 ? args.Request.Page : 1;
-        var offset = (page - 1) * pageSize;
+        var alreadySelected = SelectedEmployees.Any(x => x.UserId == employee.UserId);
 
-        var sort = args.Request.Sorts.FirstOrDefault();
-        var sortField = sort?.Member ?? nameof(ODeprecModel.EmpName);
-        var sortDirection = sort?.SortDirection == Telerik.DataSource.ListSortDirection.Descending ? "DESC" : "ASC";
+        IgnoreNextSelectionChanged = true;
 
-        var filters = GridHelper.GetFilters(args);
-
-        var request = new GridRequestModel
+        if (alreadySelected)
         {
-            PageSize = pageSize,
-            Offset = offset,
-            SortField = sortField,
-            SortDirection = sortDirection,
-            Filters = filters
-        };
+            SelectedEmployees = SelectedEmployees
+                .Where(x => x.UserId != employee.UserId)
+                .ToList();
+        }
+        else
+        {
+            SelectedEmployees = SelectedEmployees
+                .Concat(new[] { employee })
+                .ToList();
+        }
 
-        var result = await _deprec._02Grid(V.SelectedPayrollGroup, request, V.pisdb, V.conn);
+        await ProcessSelectedEmployees();
 
-        args.Data = result.Data;
-        args.Total = result.Total;
+        args.ShouldRender = true;
+
     }
 
-
-    public Task RefreshGrid()
+    private async Task OnSelectedEmployeesChanged(IEnumerable<OEmpmasModel> employees)
     {
-        DeprecGrid?.Rebind();
+        if (IgnoreNextSelectionChanged)
+        {
+            IgnoreNextSelectionChanged = false;
+            return;
+        }
 
-        return Task.CompletedTask;
+        SelectedEmployees = employees
+            .Where(x => x.UserId > 0)
+            .ToList();
+
+        await ProcessSelectedEmployees();
     }
 
+    private async Task ProcessSelectedEmployees()
+    {
+        var lastEmployee = string.Empty;
+
+        try
+        {
+            var selectedEmployees = SelectedEmployees
+                .Where(x => x.UserId > 0)
+                .ToList();
+
+            V.SelectedEmployee          = string.Empty;
+            V.CurrentAttendance         = new AtttemplateModel();
+
+            V.SelectedAssignedEmployees = [];
+            V.SelectedAssignedEmployees = selectedEmployees;
+
+            if (!selectedEmployees.Any())
+            {
+                await ChildAction.InvokeAsync();
+                return;
+            }
+
+            var employee = selectedEmployees.LastOrDefault();
+
+            if (employee == null)
+            {
+                await ChildAction.InvokeAsync();
+                return;
+            }
+
+            lastEmployee = employee.Fullname ?? "-";
+
+            if (Uc == null)
+            {
+                NotificationRef?.Show(
+                    "User information is unavailable.",
+                    ThemeConstants.Notification.ThemeColor.Error);
+
+                return;
+            }
+
+            var result = await _atttemplate._02(
+                employee.UserId,
+                Uc.SchemaUserPis,
+                V.conn);
+
+            var schedule = new AtttemplateModel
+            {
+                EmpmasId = 0,
+                AttendancetypeId = 0,
+
+                D1_in = 0,
+                D1_hrslength = 0,
+                D1_dutytype = "-",
+
+                D2_in = 0,
+                D2_hrslength = 0,
+                D2_dutytype = "-",
+
+                D3_in = 0,
+                D3_hrslength = 0,
+                D3_dutytype = "-",
+
+                D4_in = 0,
+                D4_hrslength = 0,
+                D4_dutytype = "-",
+
+                D5_in = 0,
+                D5_hrslength = 0,
+                D5_dutytype = "-",
+
+                D6_in = 0,
+                D6_hrslength = 0,
+                D6_dutytype = "-",
+
+                D7_in = 0,
+                D7_hrslength = 0,
+                D7_dutytype = "-",
+
+                Attendancetype = "-"
+            };
+
+            if (result != null && result.EmpmasId > 0)
+            {
+                schedule = result;
+            }
+
+            V.SelectedEmployee = employee.Fullname;
+            V.CurrentAttendance = schedule;
+
+            await ChildAction.InvokeAsync();
+        }
+        catch
+        {
+            NotificationRef?.Show(
+                $"Couldn't get the current schedule of {lastEmployee}",
+                ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
 
     public async Task ResetGrid()
     {
-        if (DeprecGrid == null)
-        {
-            return;
-        }
+        SelectedEmployees = new List<OEmpmasModel>();
+        IgnoreNextSelectionChanged = false;
+        CurrentPage = 1;
 
-        var state = DeprecGrid.GetState();
+        V.SelectedEmployee = string.Empty;
+        V.CurrentAttendance = new AtttemplateModel();
+
+        if (EmployeeAssignedGrid == null)
+            return;
+
+        var state = EmployeeAssignedGrid.GetState();
+
         state.FilterDescriptors.Clear();
         state.SortDescriptors.Clear();
-        state.Page = 1;
+        state.Page = CurrentPage;
+        state.SelectedItems = new List<OEmpmasModel>();
 
-        SelectedEmployees = new List<ODeprecModel>();
-
-        await DeprecGrid.SetStateAsync(state);
+        await EmployeeAssignedGrid.SetStateAsync(state);
     }
 
-
- 
-    
+    public async Task UnselectAllEmployees()
+    {
+        await ResetGrid();
+    }
 
 }
 
@@ -186,6 +347,26 @@
 
     .employee-list {
         width: 100%;
+    }
+
+
+    .employee-name-cell {
+        width: 100%;
+        cursor: pointer;
+        user-select: none;
+    }
+
+
+    .no-login-message {
+        font-size: 11px;
+        color: #999;
+    }
+
+
+    .row-disabled {
+        pointer-events: none;
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 
 </style>

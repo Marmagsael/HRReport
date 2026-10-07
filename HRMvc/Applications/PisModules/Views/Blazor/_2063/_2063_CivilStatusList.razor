@@ -1,0 +1,222 @@
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOCivstatDataAccess _civs;
+@inject IOPisReportDataAccess _pisRep;
+
+<TelerikGrid TItem="OCivstatModel"
+             Data="V.CivilStatuses"
+             @ref="CivsGridRef"
+             SelectionMode="@GridSelectionMode.Single"
+             Navigable="true"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             Sortable="true"
+             FilterMode="@GridFilterMode.FilterMenu"
+             Height="calc(100vh - 90px)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+    @* --- CREATE USER BUTTON --- *@
+    <GridToolBarTemplate>
+
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    @onclick="@(() => OpenEntryModal(new OCivstatModel()))">
+                Add Civil Status
+            </button>
+
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                    @onclick="@(() => GenerateReport())">
+                Print Listing
+            </button>
+        </div>
+
+    </GridToolBarTemplate>
+
+
+    <GridColumns>
+
+        @* --- Code --- *@
+        <GridColumn Field="@nameof(OCivstatModel.Code)"
+                    Title="Code"
+                    Width="80px" />
+
+        @* --- Name --- *@
+        <GridColumn Field="@nameof(OCivstatModel.Name)"
+                    Title="Description"
+                    Width="200px" />
+
+
+
+        @* --- ACTIONS --- *@
+        <GridCommandColumn Title="Action"
+                           Width="80px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+
+                @{
+                    var rec = (OCivstatModel)item;
+                }
+
+                <div class="d-flex justify-content-center gap-2">
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => OpenEntryModal(rec))">
+                        Edit
+                    </button>
+
+                    <button type="button"
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray" 
+                            @onclick="(() => _04Delete(rec))">
+                        Delete
+                    </button>
+
+                </div>
+
+            </Template>
+
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No civil status records found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
+
+@code {
+    [CascadingParameter]
+    public V2063Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public V00_RepVars Rv { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    private TelerikGrid<OCivstatModel> CivsGridRef;
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+    private async Task OpenEntryModal(OCivstatModel rec)
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.DescriptionErrorMsg = string.Empty;
+
+
+        V.CivilStatus = new OCivstatModel();
+        V.CivsvOriginalState = null;
+
+
+        V.ModalCaption = "Add Civil Status ";
+
+        if (!string.IsNullOrWhiteSpace(rec.Code))
+        {
+            V.ModalCaption = "Edit Civil Status";
+            V.CivilStatus = MapRecord(rec);
+            V.CivsvOriginalState = MapRecord(rec);
+        }
+
+        V.ShowEntryModal = true;
+        await ChildAction.InvokeAsync();
+    }
+
+    private async Task _04Delete(OCivstatModel rec)
+    {
+        var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Civil Status Deletion");
+        if (!confirmed) return;
+
+
+        try
+        {
+
+            //Add Validation --------------------------------
+
+            var res = await _civs._04(rec.Code, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                V.CivilStatuses.Remove(rec);
+                RebindGrid();
+                NotificationRef?.Show("Civil status deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+            else
+            {
+                NotificationRef?.Show("Unable to delete civil status.", ThemeConstants.Notification.ThemeColor.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to delete civil status.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+
+
+
+
+    private OCivstatModel MapRecord(OCivstatModel rec)
+    {
+        return new OCivstatModel
+        {
+            Code = rec.Code,
+            Name = rec.Name,
+        };
+    }
+
+    private async Task GenerateReport()
+    {
+        if (!V.CivilStatuses.Any()) { return; }
+
+
+        V.RepDtls = V.CivilStatuses;
+
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Civil Status Listing";
+        Rv.RelativePath = "Reports/_01Pis/J_2063_CS.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
+        await ChildAction.InvokeAsync();
+    }
+
+    public void RebindGrid()
+    {
+        CivsGridRef.Rebind();
+    }
+
+}
+
+

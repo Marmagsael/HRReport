@@ -1,0 +1,87 @@
+@using HRMvc.Applications.PayrollTransaction.Vars
+@using HRMvc.Applications.EPortal.Blazor 
+@using HRMvc.StartupConfig.Library
+
+@inject UserClaimsContextService ClaimsContext
+@inject L12_102 L102 
+
+
+@{
+    Layout = "~/Views/Shared/_EPortalLayout.cshtml";
+
+    var uc              = PayClaimsHelper.UserToClaims(User);
+    var OEmpmas         = await L102._02OEmpmass(uc); 
+    var V12_102      = await L102.V12_102(uc);  
+}
+
+<div>
+    @(await Html.RenderComponentAsync<HRMvc.Applications.EPortal.Blazor. _12_102DB>(RenderMode.ServerPrerendered, new { UserClaims = uc, OEmpmass = OEmpmas, V12_102 = V12_102 })) 
+
+    <div>
+        <div>UserId ==>: @uc.UserId </div>
+        <div>EmpmasId ==>: @uc.EmpmasId </div>
+        <div>UserName ==>: @uc.UserName </div>
+        <div>Email ==>: @uc.Email </div>
+        <div>DefCompanyId ==>: @uc.DefCompanyId </div>
+        <div>SchemaMain ==>: @uc.SchemaMain </div>
+        <div>SchemaMainPis ==>: @uc.SchemaMainPis </div>
+        <div>SchemaUserPis ==>: @uc.SchemaUserPis </div>
+        <div>SchemaUserPay ==>: @uc.SchemaUserPay </div>
+        <div>SchemaUserAms ==>: @uc.SchemaUserAms </div>
+        <div>SchemaUserAcctg ==>: @uc.SchemaUserAcctg </div>
+        <div>SchemaUserApp ==>: @uc.SchemaUserApp </div>
+        <div>CoName ==>: @uc.CoName </div>
+        <div>OempNumber ==>: @uc.OempNumber </div>
+        <div>OpisDb ==>: @uc.OpisDb </div>
+        <div>OpayDb ==>: @uc.OpayDb </div>
+        <div>Conn ==>: @uc.Conn </div>
+        <div>ConnNoDb ==>: @uc.ConnNoDb </div>
+        <div>ConnPay ==>: @uc.ConnPay </div>
+        <div>ConnPis ==>: @uc.ConnPis </div>
+        <div>ConnAcctg ==>: @uc.ConnAcctg </div>
+        <div>IsExclusiveCompany ==>: @uc.IsExclusiveCompany </div>
+    </div>
+        
+
+
+    <div class="card-body">
+        <ul>
+            @foreach (var user in User.Claims)
+            {
+                <li>@user.Type : @user.Value </li>
+            }
+        </ul>
+
+    </div>
+
+</div>
+
+
+
+<script>
+    window.startClock = function (elementId) {
+        setInterval(function () {
+            const now       = new Date();
+            const options   = { weekday: 'long', year: 'numeric', month: 'long', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+
+            const el = document.getElementById(elementId);
+            if (el) { el.innerText = now.toLocaleString('en-US', options); }
+
+        }, 1000);
+
+    }
+
+    window.startTextboxTime = function (elementId) {
+        setInterval(function () 
+        {
+            const now = new Date();
+            const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            const el = document.getElementById(elementId);
+        
+            if (el) { el.value = now.toLocaleTimeString('en-US', options); }
+
+        }, 1000);
+
+    }
+</script>
+

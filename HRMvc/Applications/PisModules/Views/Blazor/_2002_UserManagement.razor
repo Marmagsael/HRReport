@@ -1,8 +1,120 @@
-@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using HRMvc.Applications.PisModules.Views.Blazor._2002
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
 
-User Management
+
+<TelerikRootComponent>
+    <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
+
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@NotificationRef">
+                <_00BT_FullW HdrCaption="User Management">
+                    <Details>
+                        @*--- USER FORM MODAL ---*@
+                        @if (v.ShowUserEntryModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserEntryModal = false">
+                                <Content>
+                                     <_2002_UserListForm ChildAction="@ChilAction" /> 
+                                </Content>
+                            </_00Modal>
+                        }
+
+                        @*--- USER ACCESS MODAL ---*@
+                        @if (v.ShowUserAccessModal == true)
+                        {
+                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowUserAccessModal = false">
+                                <Content>
+                                    <_2002_UserAccess @ref="UserAccessRef" />
+                                </Content>
+                            </_00Modal>
+                        }
+
+                        @*--- GRID ---*@
+                        <_2002_UserManagerList ChildAction="@ChilAction" @ref="UserListGridRef" />
+
+                    </Details>
+                </_00BT_FullW>
+            </CascadingValue>
+        </CascadingValue>
+    </CascadingValue>
+</TelerikRootComponent>
+
+
+@inject IOEmpmasDataAccess _empmas
+@inject IOPisDomainusrDataAccess _usr
 
 @code {
-        [Parameter]public UserClaimsModel   Uc  {get; set;} = new();
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
+    private V2002Model v = new();
+    private TelerikNotification? NotificationRef;
+
+    private _2002_UserManagerList   UserListGridRef;
+    private _2002_UserAccess        UserAccessRef;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.OpisDb == null || Uc.SchemaMain == null || Uc.SchemaMainPis == null)
+        {
+            v.UcLoaded = false;
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        v.OPisdb        = Uc.OpisDb;
+        v.Maindb        = Uc.SchemaMain;
+        v.Mainpisdb     = Uc.SchemaMainPis;
+        v.Module        = "pis";
+        v.Conn          = Uc.Conn;
+
+        v.UcLoaded      = true;
+
+
+        await LoadUsers();
+
+
+    }
+
+
+    private async Task LoadUsers()
+    {
+        v.IsLoading = true;
+
+        try
+        {
+            var res = await _usr._02(v.OPisdb, v.Conn);
+
+            if (res.Any())
+            {
+                v.Users = res;
+            }
+        }
+        catch (Exception)
+        {
+            NotificationRef?.Show("Unable to load users", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
+        }
+    }
+
+
+    private async Task ChilAction()
+    {
+        if (v.Action == "RebindUserListGrid")   if (UserListGridRef != null) UserListGridRef.RebindGrid();
+        if (v.Action == "ResetUserAccessGrid")  if (UserAccessRef != null) await UserAccessRef.ResetGrid();
+
+    }
+
+
+ 
 }
+
+

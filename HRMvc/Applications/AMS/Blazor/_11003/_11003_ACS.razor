@@ -1,0 +1,110 @@
+﻿@using HRMvc.Applications.AMS.Vars
+<TelerikMediaQuery Media="(max-width: 768px)" OnChange="@((bool matches) => { IsMobile = matches; StateHasChanged(); })" />
+<TelerikMediaQuery Media="(max-width: 991.98px)" OnChange="@((bool matches) => { IsNarrow = matches; StateHasChanged(); })" />
+
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right"
+                     VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
+
+        
+<CascadingValue Value="NotifyV11003Changed">
+<TelerikCard Class="csm-card d-flex flex-column w-100 h-100">
+    @if (IsMobile)      { <div> <_11003_ACS_Mobile  /> </div> }
+    else if (IsNarrow)  { <div> <_11003_ACS_Tablet  /> </div> }
+    else                { <div> <_11003_ACS_Desktop ApplySchedule="@ApplySchedule" /> </div> }
+
+    
+    <!-- DESKTOP APPLY BUTTON -->
+    @if (!IsNarrow)
+    {
+        <div class="apply-desktop flex-shrink-0">
+            <TelerikButton OnClick="@ApplySchedule" ThemeColor="@ThemeConstants.Button.ThemeColor.Primary"
+                           Size="@ThemeConstants.Button.Size.Small">Apply schedule to selected employee(s)</TelerikButton>
+        </div>
+    }
+</TelerikCard>
+</CascadingValue>
+
+
+@code {
+
+    [CascadingParameter]    public UserClaimsModel?     Uc  { get; set; }
+    [CascadingParameter]    public TelerikNotification? NotificationRef { get; set; }
+    [Parameter]             public EventCallback        ChildAction { get; set; }
+    [CascadingParameter]    public DialogFactory?       TelerikDialogs { get; set; }
+    
+    
+    private async Task NotifyV11003Changed() { await InvokeAsync(StateHasChanged); }
+    
+
+    private bool IsMobile;
+    private bool IsNarrow;
+
+
+
+
+
+    private async Task ApplySchedule()
+    {
+        @* try
+        {
+            ApplyDaysToModel();
+
+            if (!ValidateApplySchedule()) return;
+
+            var schedule = MapAttendanceRec(Cs.Atttemplatereqdtl);
+            int successCount = 0;
+            int skippedCount = 0;
+            List<string> failedEmployees = new();
+
+            foreach (var employee in V.SelectedAssignedEmployees)
+            {
+                if (employee.UserId == 0)
+                {
+                    skippedCount++;
+                    NotificationRef?.Show($"Employee Skipped. {employee.Fullname} was skipped because no existing user record was found.",
+                                            ThemeConstants.Notification.ThemeColor.Info);
+                    continue;
+                }
+
+                schedule.EmpmasId = employee.UserId;
+                bool dbUpdated = await InsertUpdateSchedule(schedule);
+
+                if (dbUpdated)
+                {
+                    var attreqhistory = AssignValuesToRequestHistory(employee.UserId, Uc.OempNumber);
+                    await _iattTemplateReqHis._01(attreqhistory, Uc.SchemaUserPis, V.conn);
+                    successCount++;
+                }
+                else
+                {
+                    skippedCount++;
+                    failedEmployees.Add(employee.Fullname);
+                }
+            }
+
+            ShowApplyScheduleSummary(successCount, skippedCount, failedEmployees);
+
+            V.SelectedEmployee = string.Empty;
+            foreach (var e in V.EmpmasList) e.Sel = false;
+
+            await OnInitializedAsync();
+            StateHasChanged();
+            await ChildActionCatcher();
+        }
+        catch
+        {
+            NotificationRef?.Show("Couldn't apply the schedules to selected employees", ThemeConstants.Notification.ThemeColor.Error);
+        }
+
+        await EmployeeListRef.UnselectAllEmployees(); *@
+    }
+
+    private async Task PayrollgrpChange(int value)
+    {
+        @* if (value == previousPayrollGroup) return;
+        previousPayrollGroup = value;
+        V.SelectedPayrollGroup = value;
+        await LoadEmployeesForPayrollGroup(value); *@
+    }
+
+}

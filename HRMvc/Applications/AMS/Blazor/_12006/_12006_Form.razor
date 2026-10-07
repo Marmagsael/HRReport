@@ -1,0 +1,109 @@
+@using HRApiLibrary.Modules._12006O
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+@inject IDA_12006O Da
+
+@if (IsFormVisible)
+{
+    <TelerikWindow @bind-Visible="@IsFormVisible" Modal="true" Width="500px">
+        <WindowTitle><div class="fw-bold">@FormTitle</div></WindowTitle>
+        <WindowActions>
+            <WindowAction Name="Close" OnClick="@CloseModal" />
+        </WindowActions>
+        <WindowContent>
+            <div class="row g-3">
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Code</label>
+                    <TelerikTextBox @bind-Value="@FormModel.Code" Class="w-100" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Name</label>
+                    <TelerikTextBox @bind-Value="@FormModel.Name" Class="w-100" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Address</label>
+                    <TelerikTextBox @bind-Value="@FormModel.Address" Class="w-100" />
+                </div>
+
+                <div class="col-6">
+                    <label class="form-label fw-bold">Latitude</label>
+                    <TelerikNumericTextBox @bind-Value="@FormModel.Latitude" Decimals="8" Class="w-100" />
+                </div>
+
+                <div class="col-6">
+                    <label class="form-label fw-bold">Longitude</label>
+                    <TelerikNumericTextBox @bind-Value="@FormModel.Longitude" Decimals="8" Class="w-100" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Radius (meters)</label>
+                    <TelerikNumericTextBox @bind-Value="@FormModel.RadiusMeters" Min="10" Max="5000" Class="w-100" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-bold">Status</label>
+                    <TelerikDropDownList Data="@StatusOptions"
+                                         @bind-Value="@FormModel.Status"
+                                         TextField="Text"
+                                         ValueField="Value"
+                                         Class="w-100" />
+                </div>
+
+            </div>
+        </WindowContent>
+        <WindowFooter>
+            <TelerikButton ThemeColor="primary" OnClick="@SaveRecord" Enabled="@(!IsBusy)">
+                @(IsBusy ? "Saving..." : "Save")
+            </TelerikButton>
+            <TelerikButton OnClick="@CloseModal">Cancel</TelerikButton>
+        </WindowFooter>
+    </TelerikWindow>
+}
+
+@code {
+    [Parameter] public UserClaimsModel? Uc          { get; set; }
+    [Parameter] public M12006_Site      FormModel   { get; set; } = new();
+    [Parameter] public bool             IsFormVisible { get; set; } = false;
+    [Parameter] public bool             IsEditMode  { get; set; } = false;
+    [Parameter] public EventCallback<bool>          IsFormVisibleChanged { get; set; }
+    [Parameter] public EventCallback                OnSaved              { get; set; }
+    [Parameter] public EventCallback<string>        OnNotify             { get; set; }
+
+    private bool   IsBusy    { get; set; } = false;
+    private string FormTitle => IsEditMode ? "Edit Site" : "Add Site";
+
+    private List<(string Text, string Value)> StatusOptions =
+    [
+        ("Active",   "A"),
+        ("Inactive", "I")
+    ];
+
+    private async Task SaveRecord()
+    {
+        if (Uc is null) return;
+        IsBusy = true;
+        try
+        {
+            if (IsEditMode)
+                await Da._03_Site(FormModel, Uc.SchemaUserPis!, Uc.Conn!);
+            else
+                await Da._01_Site(FormModel, Uc.SchemaUserPis!, Uc.Conn!);
+
+            await OnNotify.InvokeAsync($"success|{FormModel.Name} saved.");
+            await CloseModal();
+            await OnSaved.InvokeAsync();
+        }
+        catch (Exception ex) { await OnNotify.InvokeAsync($"error|Save failed: {ex.Message}"); }
+        finally { IsBusy = false; }
+    }
+
+    private async Task CloseModal()
+    {
+        IsFormVisible = false;
+        await IsFormVisibleChanged.InvokeAsync(false);
+    }
+}

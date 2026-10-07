@@ -1,0 +1,260 @@
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOAreaDataAccess _ac
+@inject IOPisReportDataAccess _pisRep;
+
+
+
+<div style="max-height:60vh">
+
+    <EditForm Model="@V.Area"
+              OnValidSubmit="@SaveRecord"
+              class="h-100 d-flex flex-column">
+
+               @* --- Save Button --- *@
+        <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    type="submit"
+                    tabindex="3">
+                Save
+            </button>
+
+        </div>
+
+         <div class="px-2 ps-md-3 pt-3">
+            
+
+               
+            @*  --- Last Area Code  Used ---
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                   Last Area Code Used
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikTextBox @bind-Value="@V.LastAreaCodeUsed"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    ReadOnly
+                                    Enabled="false" />
+                </div>
+
+            </div> *@
+
+
+             
+             @* --- Code  --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Code
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikTextBox @bind-Value="@V.Area.AreaCode"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="1"
+                                    MaxLength="5" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
+
+                </div>
+
+            </div>
+
+
+            @* --- Location --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Location
+                </label>
+
+                <div class="col-12 col-md-8">
+
+                    <TelerikTextBox @bind-Value="@V.Area.AreaName"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="2"
+                                    MaxLength="20" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.LocationErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.LocationErrorMsg))
+                    {
+                        <div class="txt-red small">@V.LocationErrorMsg</div>
+                    }
+
+                </div>
+
+            </div>
+
+         </div>
+
+    </EditForm>
+</div>
+
+@code{
+    [CascadingParameter]
+    public V2059Model V { get; set; } = new();
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+
+    private async Task SaveRecord()
+    {
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+        var code = V.Area.AreaCode.Trim().ToUpper();
+        var name = V.Area.AreaName.Trim().ToUpper();
+
+
+        var origcode = V.AreaOriginalState?.AreaCode?.Trim().ToUpper();
+        var origname = V.AreaOriginalState?.AreaName?.Trim().ToUpper();
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _ac._02ByCodeOrByName(code, name, V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+                
+
+            bool codeExists = existingRecord.Any(c => c.AreaCode?.Trim().ToUpper() == code && c.AreaCode?.Trim().ToUpper() != origcode);
+            bool nameExists = existingRecord.Any(n => n.AreaName?.Trim().ToUpper() == name && n.AreaName?.Trim().ToUpper() != origname);
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.LocationErrorMsg = "Location already exists.";
+                exist = true;
+            }
+            if (exist) return;
+
+
+        }
+
+
+        if (V.AreaOriginalState == null)
+        {
+            await _01InsertRecord();
+        }
+        else
+        {
+            await _03UpdateRecord();
+        }
+    }
+
+    private async Task _01InsertRecord()
+    {
+        try
+        {
+            var res = await _ac._01(V.Area, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                NotificationRef.Show("Unable to save area code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+
+            V.Areas.Insert(0, res);
+            V.Area = new OAreaModel();
+
+            V.Action = "RefreshaGrid";
+            NotificationRef.Show("Area code saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Write(ex);
+            NotificationRef.Show("Unable to save area code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+
+    private async Task _03UpdateRecord()
+    {
+        try
+        {
+            var res = await _ac._03(V.AreaOriginalState.AreaCode, V.Area, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+                NotificationRef.Show("Unable to update area code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.AreaOriginalState = new OAreaModel
+            {
+                AreaCode = res.AreaCode,
+                AreaName = res.AreaName,
+            };
+
+
+            V.Action = "LoadAreaCodes";
+            NotificationRef.Show("Area code updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update area code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.Area.AreaCode))
+        {
+            V.CodeErrorMsg = "Area code is required.";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Area.AreaName))
+        {
+            V.LocationErrorMsg = "Location is required.";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg = string.Empty;
+        V.LocationErrorMsg = string.Empty;
+    }
+}

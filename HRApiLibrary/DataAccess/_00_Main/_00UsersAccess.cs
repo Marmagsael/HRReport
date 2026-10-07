@@ -32,6 +32,8 @@ public class _00UsersAccess : I_00UsersAccess
         var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Id = id }, connName);
         return data?.FirstOrDefault();
     }
+
+
     public async Task<UsersModel?> _02ByEmail(string? email, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@" select  * from {schema}.Users e where Email = @Email";
@@ -62,6 +64,7 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
+
     public async Task<UsersModel?> _03(int? id, UsersModel user, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@"Update {schema}.users set 
@@ -78,11 +81,22 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
+   
+
     public async Task<UsersModel?> _03ChangeDefaultCompany(int? userId, int? newDefaultCoId, string? schema = "Main", string? connName = "MySqlConn")
     {
         string? sql = $@"Update          {schema}.users set DefaultCoId = @DefaultCoId where Id = @Id;
                      Select  * from  {schema}.Users e where e.Id = @Id ;";
         var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Id = userId, DefaultCoId = newDefaultCoId }, connName);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<UsersModel?> _03ChangePassword(int? userId, string password, string? schema = "Main", string? connName = "MySqlConn")
+    {
+        string? sql = $@"Update  {schema}.users set Password =  sha2(@Password,512) where Id = @Id;
+
+                       Select  * from  {schema}.Users e where e.Id = @Id and Password =  sha2(@Password,512) ;";
+        var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Id = userId, Password = password }, connName);
         return data?.FirstOrDefault();
     }
 

@@ -1,0 +1,272 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis;
+
+<div style="max-height:60vh">
+
+    <EditForm Model="@V.Position"
+              OnValidSubmit="@SaveRecord"
+              class="h-100 d-flex flex-column">
+
+               @* --- Save Button --- *@
+        <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    type="submit"
+                    tabindex="4">
+                Save
+            </button>
+
+        </div>
+
+         <div class="px-2 ps-md-3 pt-3">
+            
+             
+             @* --- Code Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Code
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikTextBox @bind-Value="@V.Position.Code"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="1"
+                                    MaxLength="5"
+                                    Class="@(string.IsNullOrWhiteSpace(V.CodeErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.CodeErrorMsg))
+                    {
+                        <div class="txt-red small">@V.CodeErrorMsg</div>
+                    }
+
+                </div>
+
+            </div>
+
+
+            @* --- Description --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Description
+                </label>
+
+                <div class="col-12 col-md-8">
+
+                    <TelerikTextBox @bind-Value="@V.Position.Name"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="2"
+                                    MaxLength="25" 
+                                    Class="@(string.IsNullOrWhiteSpace(V.DescriptionErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DescriptionErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DescriptionErrorMsg</div>
+                    }
+
+
+                </div>
+
+            </div>
+
+
+            @* --- Is Guard --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                    Is Guard
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikDropDownList Data="@V.GuardOptions"
+                                         @bind-Value="@V.Position.Isguard"
+                                         TextField="Text"
+                                         ValueField="Value"
+                                         Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                         FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
+                                         TabIndex="3">
+
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="auto" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+
+
+
+                </div>
+
+            </div>
+         </div>
+
+    </EditForm>
+</div>
+
+@inject IOPositionDataAccess _position;
+@code{
+    [CascadingParameter]
+    public V2055Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private async Task SaveRecord()
+    {
+        ResetErrorMessage();
+        if (!IsFormValid()) return;
+
+        var code = V.Position.Code.Trim().ToUpper();
+        var name = V.Position.Name.Trim().ToUpper();
+
+        var origcode = V.PositionOriginalState?.Code?.Trim().ToUpper();
+        var origname = V.PositionOriginalState?.Name?.Trim().ToUpper();
+
+
+
+        // Validate if code and name already exist
+        var existingRecord = await _position._02ByCodeOrByName(code, name, V.OPisdb, V.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+
+
+
+            bool codeExists = existingRecord.Any(c => c.Code.Trim().ToUpper() == code && c.Code.Trim().ToUpper() != origcode);
+            bool nameExists = existingRecord.Any(n => n.Name.Trim().ToUpper() == name && n.Name.Trim().ToUpper() != origname);
+
+
+
+            var exist = false;
+
+            if (codeExists)
+            {
+                V.CodeErrorMsg = "Code already exists.";
+                exist = true;
+            }
+
+            if (nameExists)
+            {
+                V.DescriptionErrorMsg = "Position already exists";
+                exist = true;
+            }
+            if (exist) return;
+
+        }
+
+        if (V.PositionOriginalState == null)
+        {
+            await _01InsertRecord();
+        }
+        else
+        {
+            await _03UpdateRecord();
+        }
+    }
+
+    private async Task _01InsertRecord()
+    {
+
+        // To prevent null values for new entry
+        V.Position.Isguard = "0";
+        V.Position.Sort    = string.Empty;
+
+
+        try
+        {
+            var res = await _position._01(V.Position, V.OPisdb, V.Conn);
+
+            if(res == null )
+            {
+                NotificationRef.Show("Unable to insert position.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.Positions.Insert(0, res);
+            V.Position = new OPositionModel();
+
+            V.Action = "RefreshPositionGrid";
+            NotificationRef.Show("Position inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to insert position.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+
+    private async Task _03UpdateRecord()
+    {
+
+
+        try
+        {
+            var res = await _position._03(V.PositionOriginalState.Code, V.Position, V.OPisdb, V.Conn);
+
+            if (res == null)
+            {
+
+                NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.PositionOriginalState = new OPositionModel
+            {
+                Code        = res.Code,
+                Name        = res.Name,
+                Isguard     = res.Isguard,
+                Sort        = res.Sort
+            };
+
+
+            V.Action = "LoadPositions";
+            NotificationRef.Show("Position updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+
+
+    private bool IsFormValid()
+    {
+        bool isValid = true;
+
+        if (string.IsNullOrWhiteSpace(V.Position.Code))
+        {
+            V.CodeErrorMsg = "Position code is required";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Position.Name))
+        {
+            V.DescriptionErrorMsg = "Position name is required";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+
+    private void ResetErrorMessage()
+    {
+        V.CodeErrorMsg              = string.Empty;
+        V.DescriptionErrorMsg   = string.Empty;
+    }
+}

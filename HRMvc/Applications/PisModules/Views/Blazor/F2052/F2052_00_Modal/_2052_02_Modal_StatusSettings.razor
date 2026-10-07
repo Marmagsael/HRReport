@@ -1,0 +1,135 @@
+﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications._00GeneralComponents.FormComponents
+@using Telerik.SvgIcons
+@using HRMvc.Applications.PisModules.Vars;
+
+<div class="vh-max vh60">
+
+        <TelerikCard Width="100%" Class="h-100">
+
+            <CardHeader>
+                <div class="d-flex  justify-content-between  align-items-center">
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                            @onclick="@(() => ApplyStatus())">
+                        Apply Status
+                    </button>
+                </div>
+
+            </CardHeader>
+
+            <CardBody Class="p-0">
+
+                <TelerikGrid @ref="@EmployeeStatusGridRef"
+                                TItem="OEmpstatModel"
+                                Data="@V.OEmpstats"
+                                Height="400px"
+                                Pageable="true"
+                                Sortable="true"
+                                FilterMode="@GridFilterMode.FilterMenu"
+                                Resizable="true"
+                                Reorderable="true"
+                                Navigable="true"
+                                SelectionMode="@GridSelectionMode.Multiple"
+                                SelectedItems="@V.SelectedStatus"
+                                SelectedItemsChanged="@StatusSelectionChanged"
+                                OnRowClick="@OnRowClick"
+                                @bind-PageSize="@PageSize">
+
+                    <GridSettings>
+                        <GridPagerSettings PageSizes="@PageSizes" />
+                    </GridSettings>
+
+                    <GridColumns>
+
+                        <GridCheckboxColumn Width="50px"
+                                            Resizable="false"
+                                            SelectAll="true"
+                                            SelectAllMode="@GridSelectAllMode.All" />
+
+                    <GridColumn Field="@nameof(OEmpstatModel.Name)"
+                                    Title="Status" />
+
+                    </GridColumns>
+
+                </TelerikGrid>
+
+            </CardBody>
+
+        </TelerikCard>
+</div>
+
+
+@code {
+
+    [Parameter]
+    public V2052 V { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+    private TelerikGrid<OEmpstatModel>? EmployeeStatusGridRef;
+
+
+    private bool IsRowClickSelection { get; set; }
+
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+
+
+
+    private async Task OnRowClick(GridRowClickEventArgs args)
+    {
+        var status = (OEmpstatModel)args.Item;
+
+        var selectedStatus = V.SelectedStatus.ToList();
+        var alreadySelected = selectedStatus.Any(x => x.Code == status.Code);
+
+        IsRowClickSelection = true;
+
+        if (alreadySelected)
+        {
+            selectedStatus.RemoveAll(x => x.Code == status.Code);
+        }
+        else
+        {
+            selectedStatus.Add(status);
+        }
+
+        V.SelectedStatus = selectedStatus;
+
+        args.ShouldRender = true;
+
+    }
+
+    private async Task StatusSelectionChanged(IEnumerable<OEmpstatModel?> selectedItems)
+    {
+        if (IsRowClickSelection)
+        {
+            IsRowClickSelection = false;
+            return;
+        }
+
+        V.SelectedStatus = selectedItems?.ToList() ?? [];
+
+    }
+
+    private async Task ApplyStatus()
+    {
+        V.Action = "ReLoadEmployeeList";
+        await ChildAction.InvokeAsync();
+    }
+
+}
