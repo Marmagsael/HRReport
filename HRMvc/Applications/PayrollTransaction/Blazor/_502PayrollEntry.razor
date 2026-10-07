@@ -1,4 +1,5 @@
 ﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._20_Pay
 @using HRMvc.Applications.PayrollTransaction.Blazor._502
 @using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using Radzen
@@ -7,36 +8,41 @@
 @inject NotificationService NotificationService
 
 <style>
-    .l-content { flex: 1; min-height: 0; overflow-y: auto;}
+    .l-content { flex: 1; min-height: 0; overflow-y: auto; background-color: white; }
     .r-content { width: 250px; flex-shrink: 0; }
 </style>
 
 <CascadingValue Value="Uc" IsFixed="true">
-<div class="card body-content ">
+    <CascadingValue Value="v502">
+        <div class="card body-content ">
 
-    <BodyHdr pageTitle="Payroll Entry"  />
+            <BodyHdr pageTitle="Payroll Entry" />
 
-    <_502_buttons />
-    <_502_shdr />
+            <_502_buttons />
+            <_502_shdr />
 
-    <div class="d-flex w-100 p-1" style="max-width: 100%;">
-        @* --- Manhour Entry ------------------------------ *@
-        <div class="l-content bordered p-1">
-            <_502_manhour />
+            <div class="d-flex gap-1 w-100 p-1" style="max-width: 100%;">
+                @* --- Manhour Entry ------------------------------ *@
+                <div class="l-content bordered p-1">
 
-        </div>
-        
-        @* --- Figure Display ------------------------------ *@
-        <div class="r-content bordered p-1">
-            <_502_figures />
+                    @* <GridSample /> *@
+                    <_502_manhour />
 
-        </div>
-    </div>
+                </div>
+
+                @* --- Figure Display ------------------------------ *@
+                <div class="r-content bordered p-1">
+                    <_502_figures />
+
+            
+                </div>
+            </div>
 
 
     
 
-</div>
+        </div>
+    </CascadingValue>
 </CascadingValue>
     
 
@@ -46,5 +52,22 @@
 
 @code {
     [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    V502 v502 = new V502();
+
+    protected override void OnInitialized()
+    {
+        SetTestData();
+    }
+
+    private void SetTestData()
+    {
+        v502.Paymaindtls = new List<PaymaindtlModel?>
+        {
+            new PaymaindtlModel { Empmasid = 1, EmpName = "Mar Lopez Magsael",   Daywrk = 20.5, Rot = 164.0 },
+            new PaymaindtlModel { Empmasid = 2, EmpName = "John Doe",            Daywrk = 18.0, Rot = 144.0 },
+            new PaymaindtlModel { Empmasid = 3, EmpName = "Jane Smith",          Daywrk = 22.0, Rot = 176.0 }
+        };
+    }
 
 }
