@@ -11,49 +11,56 @@
 
     <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
+     <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@rv">
+                <CascadingValue Value="@NotificationRef">
+                      <_00BT_FullW HdrCaption="Employee Entry">
+                           <Details>
 
-    <div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper emp-entry overflow-hidden d-flex flex-column"
-         style=" height:calc(100vh - 100px);">
 
-        <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02PageHdr pageTitle="Employee Entry" />
+                            @*--- REPORT ---*@
+                            <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
-        @if (v.ShowDataEntry)
-        {
-            <_2052_01_Modal_DataEntry V="@v" ChildAction="ChildAction" />
-        }
+                                @if (v.ShowDataEntry)
+                                {
+                                    <_2052_01_Modal_DataEntry  ChildAction="ChildAction" />
+                                }
 
-        @*--- EMPLOYESS STATUS MODAL ---*@
-        @if (v.ShowStatusModal == true)
-        {
-            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowStatusModal = false" ModalWidth="50%">
+                                @*--- EMPLOYESS STATUS MODAL ---*@
+                                @if (v.ShowStatusModal == true)
+                                {
+                                    <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowStatusModal = false" ModalWidth="50%">
 
-                <Content>
-                    <_2052_02_Modal_StatusSettings V="@v" ChildAction="ChildAction"  />
-                </Content>
+                                        <Content>
+                                            <_2052_02_Modal_StatusSettings ChildAction="ChildAction"  />
+                                        </Content>
 
-            </_00Modal>
-        }
+                                    </_00Modal>
+                                }
 
-        <div class="p-2 flex-grow-1 overflow-hidden">
-            <div class="d-flex gap-3 w-100 h-100">
-                <div class="pe-1  h-100 overflow-hidden" style="width:28%; min-width:0;">
-                    <_2052_02_EmpList V="@v" ChildAction="ChildAction" />
-                </div>
-                <div class="ps-1 pe-2 hide-scroll  w-75 h-100" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
-                    <_2052_03_RecordsEntry V="@v" ChildAction="ChildAction" />
-                </div>
-            </div>
-        </div>
-    </div>
+                                <div class="p-2 flex-grow-1 overflow-hidden">
+                                    <div class="d-flex gap-2 w-100 h-100">
+                                        <div class="pe-1  h-100 overflow-hidden" style="width:28%; min-width:0;">
+                                            <_2052_02_EmpList  ChildAction="ChildAction" />
+                                        </div>
+                                        <div class="ps-1 pe-2 hide-scroll  w-85 h-100" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
+                                            <_2052_03_RecordsEntry  ChildAction="ChildAction" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                        </Details>
+                    </_00BT_FullW>
+
+                </CascadingValue>
+            </CascadingValue>
+            </CascadingValue>
+         </CascadingValue>
 </TelerikRootComponent>
 
 
-<div>
-    @foreach (var item in v.SelectedStatus)
-    {
-        <div>@item.Code - @item.Name </div>
-    }
-</div>
+
 
 @inject IOEmpmasDataAccess _empmas
 @inject IOCivstatDataAccess _ocivstat
@@ -62,8 +69,9 @@
 @inject IOMlacodeDataAccess _omla
 @inject IOPositionDataAccess _oposition
 @inject IOEmpstatDataAccess _oempstat
+@inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
 @inject IOProcodeDataAccess _opro
-
+@inject IOPisReportDataAccess _pisRep;
 
 @code {
 
@@ -71,6 +79,8 @@
 
     [Parameter]
     public UserClaimsModel? Uc { get; set; } = new();
+
+    V00_RepVars rv = new();
 
     private TelerikNotification? NotificationRef;
 
@@ -93,9 +103,15 @@
 
         try
         {
+            await LoadSelectedStatus();
             await LoadEmployeeStatus();
             await LoadEmployeeList();
             await LoadDropdownValues();
+
+
+            // Report ---------
+            _00InitializeReport();
+            await _02LoadCompanyInfo();
         }
         catch (Exception ex)
         {
@@ -103,24 +119,86 @@
             NotificationRef.Show("Something went wrong while loading the employee page. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
 
+
         v.IsLoading = false;
 
     }
 
+    private void _00InitializeReport()
+    {
+        rv.MCaption = "";
+        rv.RefreshToken = 20520000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
 
+    private async Task _02LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
 
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
 
-
-    private async Task LoadEmployeeList()
+    private async Task LoadSelectedStatus()
     {
         try
         {
-            var res = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
+            v.OEmpstatVisibleStatus = await _oselectedEmpstat._02s(v.pisdb, v.conn) ?? new();
+        }
+
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load selected statues. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadEmployeeStatus()
+    {
+        try
+        {
+            var empstats = await _oempstat._02s(v.pisdb, v.conn) ?? new();
+            v.OEmpstats = empstats.Where(e => !string.IsNullOrWhiteSpace(e.Name)).ToList();
+            if (v.OEmpstatVisibleStatus.Any())
+            {
+                v.SelectedStatus = v.OEmpstats.Where(e => v.OEmpstatVisibleStatus.Any(a => e.Code == a.Empstat_)).ToList();
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load employee statues. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadEmployeeList()
+    {
+
+        v.EmpmasList = [];
+        try
+        {
+            var statuses = new List<string>();
+            foreach (var s in v.SelectedStatus)
+            {
+                statuses.Add(s.Code);
+            }
+
+            var res = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, v.pisdb, v.conn);
             if (res.Any())
             {
-                v.EmpmasInitialList = await _empmas._02By1stLetterRange("A", "J", v.pisdb, v.conn);
-
-                ReLoadEmployeeList();
+                v.EmpmasList = res;
             }
         }
         catch (Exception ex)
@@ -130,14 +208,6 @@
             NotificationRef.Show("Unable to load employee list. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-
-
-    private void ReLoadEmployeeList()
-    {
-        v.EmpmasList = v.EmpmasInitialList?.Where(e => e != null && v.SelectedStatus.Any(s => s.Code ==  e.EmpStat_ )).ToList();
-        Console.WriteLine("Change Status");
-    }
-
     
     private async Task LoadDropdownValues()
     {
@@ -148,7 +218,6 @@
         await LoadProCodes();
         await LoadPositions();
     }
-
 
     private async Task LoadCivilStatuses()
     {
@@ -164,7 +233,6 @@
         }
     }
 
-
     private async Task LoadGenders()
     {
         try
@@ -179,7 +247,6 @@
         }
     }
 
-
     private async Task LoadCountries()
     {
         try
@@ -193,8 +260,6 @@
             NotificationRef.Show("Unable to load countries. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-
-
 
     private async Task LoadMlaCodes()
     {
@@ -239,23 +304,6 @@
         }
     }
 
-
-    private async Task LoadEmployeeStatus()
-    {
-        try
-        {
-            var empstats = await _oempstat._02s(v.pisdb, v.conn) ?? new();
-            v.OEmpstats = empstats.Where(e =>  !string.IsNullOrWhiteSpace(e.Name)).ToList();
-            v.SelectedStatus = v.OEmpstats.Where(e => e.Code == "A").ToList();
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load employee statues. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
-
     private async Task ChildAction()
     {
         if (v == null) return;
@@ -264,7 +312,7 @@
 
         if (v.Action == "SelectEmpmas") await SelectEmpmas();
         if (v.Action == "SplitHeight") SplitHeight(v.EmpmasToEdit.Height);
-        if (v.Action == "ReLoadEmployeeList") ReLoadEmployeeList();
+        if (v.Action == "ReLoadEmployeeList") await LoadEmployeeList();
 
         v.Action = "";
     }
@@ -367,11 +415,11 @@
         margin-inline: 0 !important;
     }
 
-        .emp-entry .page-header h1 {
-            padding-left: 0;
-            padding: 1rem;
-            padding-bottom: 0;
-        }
+    .emp-entry .page-header h1 {
+        padding-left: 0;
+        padding: 1rem;
+        padding-bottom: 0;
+    }
 
 
 
@@ -383,4 +431,53 @@
         transition: box-shadow 0.15s ease;
     }
 
+    .display-sm-grid {
+        display: block;
+    }
+
+    .display-md-grid {
+        display: none;
+    }
+
+    .custom-grid .custom-grid-md {
+        display: none !important;
+    }
+
+    .custom-grid .custom-grid-sm {
+        display: inline-block !important;
+    }
+
+
+    .custom-grid .rz-column-title-content {
+        width: 100%;
+    }
+
+    .custom-grid .rz-stack {
+        width: 100%;
+    }
+
+    .custom-form-field label {
+        min-width: auto;
+    }
+
+
+    @@media (min-width: 768px) {
+    .display-sm-grid
+    {
+        display: none;
+    }
+
+    .display-md-grid {
+        display: block;
+    }
+
+    .custom-grid .custom-grid-md {
+        display: inline-block !important;
+    }
+
+    .custom-grid .custom-grid-sm {
+        display: none !important;
+    }
+
+    }
 </style>
