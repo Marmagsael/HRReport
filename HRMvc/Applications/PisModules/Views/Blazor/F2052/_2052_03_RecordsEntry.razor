@@ -23,13 +23,14 @@
 
 
             <div class="d-flex gap-1">
-                <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 " >
+                <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 "
+                        @onclick="GenerateReport">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
                         <span class="fw-semibold"><small>Print</small></span>
                     </div>
                 </button>
 
-                <button class="btn btn-link p-0 txt"
+                <button class="btn btn-link p-0 txt border-0"
                         title="Status Settings"
                         @onclick="OpenStatusSettingsModal">
                     <i class="fa-solid fa-gear"></i>
@@ -111,6 +112,9 @@
     public V2052 V { get; set; } = new();
 
 
+    [CascadingParameter]
+    public V00_RepVars Rv { get; set; } = new();
+
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
@@ -144,6 +148,39 @@
         await ChildAction.InvokeAsync();
     }
 
+
+    private async Task GenerateReport()
+    {
+
+        if (String.IsNullOrWhiteSpace(V.Empmas.EmpNumber) ) { return; }
+
+        Rv.MCaption = "Personal Data Sheet";
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        V.RepDtls = new List<dynamic>
+        {
+            new
+            {
+                Empmas              = V.Empmas,
+                EmpAddress          = V.Empmasaddress,
+                Deployments         = V.Employments,
+                Educations          = V.Educations,
+                Familys             = V.Familys,
+                Trainings           = V.Trainings,
+                CharRefs            = V.CharRefs,
+                InsuranceAccident   = V.InsuranceAccident
+            },
+        };
+
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Personal Data Sheet";
+        Rv.RelativePath = "Reports/_02HR/K_201.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+        await ChildAction.InvokeAsync();
+    }
 
 
 }

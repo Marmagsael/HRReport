@@ -13,12 +13,14 @@
 
      <CascadingValue Value="@Uc">
         <CascadingValue Value="@v">
+            <CascadingValue Value="@rv">
                 <CascadingValue Value="@NotificationRef">
                       <_00BT_FullW HdrCaption="Employee Entry">
                            <Details>
 
 
-
+                            @*--- REPORT ---*@
+                            <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
                                 @if (v.ShowDataEntry)
                                 {
@@ -53,6 +55,7 @@
 
                 </CascadingValue>
             </CascadingValue>
+            </CascadingValue>
          </CascadingValue>
 </TelerikRootComponent>
 
@@ -68,7 +71,7 @@
 @inject IOEmpstatDataAccess _oempstat
 @inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
 @inject IOProcodeDataAccess _opro
-
+@inject IOPisReportDataAccess _pisRep;
 
 @code {
 
@@ -76,6 +79,8 @@
 
     [Parameter]
     public UserClaimsModel? Uc { get; set; } = new();
+
+    V00_RepVars rv = new();
 
     private TelerikNotification? NotificationRef;
 
@@ -102,6 +107,11 @@
             await LoadEmployeeStatus();
             await LoadEmployeeList();
             await LoadDropdownValues();
+
+
+            // Report ---------
+            _00InitializeReport();
+            await _02LoadCompanyInfo();
         }
         catch (Exception ex)
         {
@@ -109,9 +119,37 @@
             NotificationRef.Show("Something went wrong while loading the employee page. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
 
+
         v.IsLoading = false;
 
     }
+
+     private void _00InitializeReport()
+    {
+        rv.MCaption = "";
+        rv.RefreshToken = 20520000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task _02LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+
+
+
 
     private async Task LoadSelectedStatus()
     {
@@ -392,11 +430,11 @@
         margin-inline: 0 !important;
     }
 
-        .emp-entry .page-header h1 {
-            padding-left: 0;
-            padding: 1rem;
-            padding-bottom: 0;
-        }
+    .emp-entry .page-header h1 {
+        padding-left: 0;
+        padding: 1rem;
+        padding-bottom: 0;
+    }
 
 
 
@@ -408,4 +446,53 @@
         transition: box-shadow 0.15s ease;
     }
 
+    .display-sm-grid {
+        display: block;
+    }
+
+    .display-md-grid {
+        display: none;
+    }
+
+    .custom-grid .custom-grid-md {
+        display: none !important;
+    }
+
+    .custom-grid .custom-grid-sm {
+        display: inline-block !important;
+    }
+
+
+    .custom-grid .rz-column-title-content {
+        width: 100%;
+    }
+
+    .custom-grid .rz-stack {
+        width: 100%;
+    }
+
+    .custom-form-field label {
+        min-width: auto;
+    }
+
+
+    @@media (min-width: 768px) {
+    .display-sm-grid
+    {
+        display: none;
+    }
+
+    .display-md-grid {
+        display: block;
+    }
+
+    .custom-grid .custom-grid-md {
+        display: inline-block !important;
+    }
+
+    .custom-grid .custom-grid-sm {
+        display: none !important;
+    }
+
+    }
 </style>
