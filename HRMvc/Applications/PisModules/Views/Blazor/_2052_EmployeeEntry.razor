@@ -208,7 +208,7 @@
             NotificationRef.Show("Unable to load employee list. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-    
+
     private async Task LoadDropdownValues()
     {
         await LoadCivilStatuses();
@@ -227,7 +227,7 @@
         }
         catch (Exception ex)
         {
-            
+
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to load civil status. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
@@ -313,14 +313,22 @@
         if (v.Action == "SelectEmpmas") await SelectEmpmas();
         if (v.Action == "SplitHeight") SplitHeight(v.EmpmasToEdit.Height);
         if (v.Action == "ReLoadEmployeeList") await LoadEmployeeList();
+        if (v.Action == "GenerateReport") await GenerateReport();
 
         v.Action = "";
     }
 
+    private async Task GenerateReport()
+    {
+        rv.ShowModal = true;
+        await Task.Delay(1000);
+        v.IsLoading = false;
+    }
     private async Task SelectEmpmas()
     {
-        if (string.IsNullOrWhiteSpace(v.SelectedEmpnumber)) return;
 
+        if (string.IsNullOrWhiteSpace(v.SelectedEmpnumber)) return;
+        v.IsLoading = true;
         try
         {
             var res = await _empmas._02(v.SelectedEmpnumber, v.pisdb, v.maindb, v.newpisdb, v.conn);
@@ -349,6 +357,9 @@
             Console.WriteLine(ex);
             NotificationRef.Show("Something went wrong while loading the employee records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
+        await Task.Delay(1000);
+        v.IsLoading = false;
+
     }
 
    
