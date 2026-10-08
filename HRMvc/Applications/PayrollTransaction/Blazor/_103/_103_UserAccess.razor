@@ -210,27 +210,6 @@
     };
 
 
-    protected override async Task OnInitializedAsync()
-    {
-        if (V.UcLoaded == false) return;
-        await LoadSystemMenu();
-    }
-
-
-    private async Task LoadSystemMenu()
-    {
-        try
-        {
-            var result = await _menu._02ByType( "shdr", V.Mainpaydb,V.Conn);
-            V.SystemMenus = result ?? [];
-        }
-        catch
-        {
-            NotificationRef?.Show( "Unable to load system menu. Please try again.",ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
-
-
     private async Task SystemMenuSelectionChanged( IEnumerable<MenuModel> selectedItems)
     {
         V.SelectedSystemMenu = selectedItems?.ToList() ?? [];
@@ -267,13 +246,13 @@
             V.SelectedDtlsMenu      = V.DtlsMenus.Where(x =>x.Id.HasValue &&accessMenuIds.Contains(x.Id.Value)).ToList();
             previousDtlsSelections  = V.SelectedDtlsMenu.ToList();
         }
-        catch
+        catch (Exception ex)
         {
             V.DtlsMenus             = [];
             V.SelectedDtlsMenu      = [];
             previousDtlsSelections  = [];
 
-            NotificationRef?.Show( "Unable to load sub menus. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show( $"Unable to load sub menus. Please try again. {ex}", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 

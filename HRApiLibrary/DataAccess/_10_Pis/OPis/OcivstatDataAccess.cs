@@ -18,7 +18,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string? sql = $@"Insert into {schema}.Civstat (CODE, NAME) values (@CODE, @NAME)";
             await _sql.ExecuteCmd<dynamic>(sql, civstat, conn);
 
-            sql = $@"SELECT * FROM {schema}.Civstat WHERE TRIM(UPPER(Code)) = @Code";
+            sql = $@"SELECT * FROM {schema}.Civstat WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))";
 
             var res = await _sql.FetchData<OCivstatModel?, dynamic>(sql, new { Code = civstat.Code?.Trim().ToUpper() }, conn);
 
@@ -33,9 +33,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data;
         }
 
-        public async Task<List<OCivstatModel?>?> _02(string code, string name, string schema, string conn)
+        public async Task<List<OCivstatModel?>?> _02ByCodeorName(string code, string name, string schema, string conn)
         {
-            string sql = $@"SELECT * FROM {schema}.Civstat  WHERE TRIM(UPPER(Code)) = @Code  OR TRIM(UPPER(Name)) = @Name";
+            string sql = $@"SELECT * FROM {schema}.Civstat  WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))  OR TRIM(UPPER(Name)) = TRIM(UPPER(@Name)) ";
 
             var data = await _sql.FetchData<OCivstatModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
             return data;
@@ -50,13 +50,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 civstat.Name,
             };
 
-            string sql = $@"UPDATE {schema}.Civstat  SET Code = @Code, Name = @Name WHERE TRIM(UPPER(Code)) = @oldCode;";
+            string sql = $@"UPDATE {schema}.Civstat  SET Code = @Code, Name = @Name WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@oldCode));";
 
             await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
-            sql = $@"SELECT * FROM {schema}.Civstat x WHERE TRIM(UPPER(x.Code)) = @Code;";
+            sql = $@"SELECT * FROM {schema}.Civstat x WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code));";
 
-            var data = await _sql.FetchData<OCivstatModel?, dynamic>(sql, new { Code = civstat.Code?.Trim().ToUpper() }, conn);
+            var data = await _sql.FetchData<OCivstatModel?, dynamic>(sql, new { Code = civstat.Code }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -65,11 +65,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OCivstatModel?> _04(string? code, string? schema, string? conn)
         {
-            string? sql = $@"Delete from {schema}.Civstat WHERE TRIM(UPPER(Code)) = @Code;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
+            string? sql = $@"Delete from {schema}.Civstat WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code));";
+            await _sql.ExecuteCmd<dynamic>(sql, new { Code = code}, conn);
 
-            sql = $@" select  * from {schema}.Procode x WHERE TRIM(UPPER(x.Code)) = @Code ;";
-            var data = await _sql.FetchData<OCivstatModel?, dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
+            sql = $@" select  * from {schema}.Procode x WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code)) ;";
+            var data = await _sql.FetchData<OCivstatModel?, dynamic>(sql, new { Code = code }, conn);
             return data?.FirstOrDefault();
         }
     }
@@ -79,7 +79,7 @@ public interface IOCivstatDataAccess
 {
     Task<OCivstatModel?> _01(OCivstatModel civstat, string? schema, string? conn);
     Task<List<OCivstatModel?>?> _02(string? schema, string? conn);
-    Task<List<OCivstatModel?>?> _02(string code, string name, string schema, string conn);
+    Task<List<OCivstatModel?>?> _02ByCodeorName(string code, string name, string schema, string conn);
     Task<OCivstatModel?> _03(string code, OCivstatModel civstat, string schema, string conn);
     Task<OCivstatModel?> _04(string? code, string? schema, string? conn);
 }

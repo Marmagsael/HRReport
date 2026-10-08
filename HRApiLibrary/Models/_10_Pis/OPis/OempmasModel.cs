@@ -212,7 +212,7 @@ public class OEmpmasModel
     
     
     //-------------------------------------------------------
-    public int?     UserId                 { get; set; } = 0;
+    public int?     UserId                  { get; set; } = 0;
     public int?     EmpmasId                { get; set; } = 0;
     public string?  EmpName                 { get; set; } = string.Empty;
     public string?  Fullname                { get; set; } = string.Empty;
@@ -223,5 +223,11 @@ public class OEmpmasModel
     public double?  HeightInches            { get; set; }
     public bool     Sel                     { get; set; } = false;
 
+    // RTU Transaction Module ----------------------------------
+    public DateTime?    MovPrepDate         { get; set; } 
+    public DateTime?    MovExpDate          { get; set; } 
+    public DateTime?    MovSaDate           { get; set; } 
+    public TimeOnly?    MovSaTime           { get; set; } 
+    public string?      ControlNumber       { get; set; } = string.Empty;
 
 }

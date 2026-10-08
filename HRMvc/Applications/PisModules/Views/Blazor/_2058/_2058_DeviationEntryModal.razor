@@ -38,6 +38,8 @@
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     TabIndex="1"
                                     MaxLength="10"
+                                    ReadOnly
+                                    Enabled="false"
                                     Class="@(string.IsNullOrWhiteSpace(V.DevNoErrorMsg) ? "" : "k-invalid")" />
 
                         @if (!string.IsNullOrWhiteSpace(V.DevNoErrorMsg))
@@ -98,120 +100,114 @@
 
 
         // Validate if code and name already exist
-        var existingRecord = await _deviation._02(V.Deviation.Dev_No.Trim().ToUpper(), V.Deviation.Dev_Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+        var existingRecord = await _deviation._02ByDevName(V.Deviation.Dev_Name.Trim().ToUpper(), V.OPisdb, V.Conn);
 
         if (existingRecord != null && existingRecord.Any())
         {
 
 
-            V.Deviation.Dev_No      = V.Deviation.Dev_No.Trim().ToUpper();
-            V.Deviation.Dev_Name    = V.Deviation.Dev_Name.Trim().ToUpper();
+            var devname = V.Deviation.Dev_Name.Trim().ToUpper();
+            var devno   = V.Deviation.Dev_No.Trim().ToUpper();
 
-            if (V.DeviationOriginalState != null)
-            {
-                V.DeviationOriginalState.Dev_No     = V.DeviationOriginalState.Dev_No?.Trim().ToUpper();
-                V.DeviationOriginalState.Dev_Name   = V.DeviationOriginalState.Dev_Name?.Trim().ToUpper();
-            }
+            bool nameExists = existingRecord.Any( n => n.Dev_No.Trim().ToUpper() != devno);
 
-            foreach (var e in existingRecord)
-            {
-                e.Dev_No = e.Dev_No?.Trim().ToUpper();
-                e.Dev_Name = e.Dev_Name?.Trim().ToUpper();
-            }
-
-
-
-
-            bool codeExists = existingRecord.Any(c => c.Dev_No == V.Deviation?.Dev_No && (string.IsNullOrWhiteSpace(V.DeviationOriginalState?.Dev_No) || c.Dev_No != V.DeviationOriginalState?.Dev_No));
-            bool nameExists = existingRecord.Any(n => n.Dev_Name == V.Deviation?.Dev_Name && (string.IsNullOrWhiteSpace(V.DeviationOriginalState?.Dev_Name) || n.Dev_Name != V.DeviationOriginalState?.Dev_Name));
-
-            var exist = false;
-
-            if (codeExists)
-            {
-                V.DevNoErrorMsg = "Deviation number already exists.";
-                exist = true;
-            }
 
             if (nameExists)
             {
                 V.DevNameErrorMsg = "Deviation type already exists";
-                exist = true;
+                return;
             }
-            if (exist) return;
 
         }
 
-        if (V.DeviationOriginalState == null)
+        if (V.IsEditEntry == false)
         {
-            await InsertRecord();
+            await _01InsertRecord();
         }
         else
         {
-            await UpdateRecord();
+            await _03UpdateRecord();
         }
     }
 
-    private async Task InsertRecord()
+    private async Task _01InsertRecord()
     {
         try
         {
             var res = await _deviation._01(V.Deviation, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.Deviations.Insert(0, res);
-                V.Deviation = new ODevdataModel();
-
-                V.Action = "RefreshDeviationGrid";
-                NotificationRef.Show("Deviation was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to save deviation type.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.Deviations.Insert(0, res);
+            V.Deviation = new ODevdataModel();
+
+            V.Action = "RefreshDeviationGrid";
+            NotificationRef.Show("Deviation type saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+
+            await _02FetchMaxDevNo();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to save deviation type.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
 
-    private async Task UpdateRecord()
+    private async Task _03UpdateRecord()
     {
         try
         {
-            var res = await _deviation._03(V.DeviationOriginalState.Dev_No, V.Deviation, V.OPisdb, V.Conn);
+            var res = await _deviation._03FromDeviationEntryModule( V.Deviation, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.DeviationOriginalState = new ODevdataModel
-                {
-                    Dev_No = res.Dev_No,
-                    Dev_Name = res.Dev_Name,
-                };
-
-
-                V.Action = "LoadDeviations";
-                NotificationRef.Show("Deviation was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+
             }
+
+            V.DeviationOriginalState = new ODevdataModel
+            {
+                Dev_No = res.Dev_No,
+                Dev_Name = res.Dev_Name,
+            };
+
+
+            V.Action = "LoadDeviations";
+            NotificationRef.Show("Deviation type updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to update position.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
+
+    private async Task _02FetchMaxDevNo()
+    {
+        try
+        {
+            int? maxClnumber = await _deviation._02ByMaxDevNo(V.OPisdb, V.Conn);
+            V.Deviation.Dev_No = maxClnumber?.ToString("D5");
+        }
+        catch (Exception ex)
+        {
+
+            NotificationRef.Show("Unable to get the  code", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
 
 
 
@@ -227,7 +223,7 @@
 
         if (string.IsNullOrWhiteSpace(V.Deviation.Dev_Name))
         {
-            V.DevNameErrorMsg = "Deviation name is required";
+            V.DevNameErrorMsg = "Description is required";
             isValid = false;
         }
 

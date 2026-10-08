@@ -19,6 +19,7 @@ namespace HRMvc.Applications.PisModules.Vars
 
         public string?      ModalCaption                    { get; set; } = string.Empty;
         public bool         ShowEntryModal                  { get; set; } = false;
+        public bool         IsEditEntry                     { get; set; } = false;
 
 
         public ODevdataModel?               Deviation                  { get; set; } = new();

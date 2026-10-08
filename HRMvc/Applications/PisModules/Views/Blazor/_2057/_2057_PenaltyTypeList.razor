@@ -56,12 +56,64 @@
         @* --- Reset Reg Ref --- *@
         <GridColumn Field="@nameof(OPenaltyModel.ResetRegRef)"
                     Title="Reg Ref (Rst)"
-                    Width="80px" />
+                    Width="80px" >
+
+            <FilterMenuTemplate Context="filterContext">
+                <TelerikDropDownList Data="@V.YesNoOptions"
+                                     TextField="@nameof(V2057Model.YesNoOption.Text)"
+                                     ValueField="@nameof(V2057Model.YesNoOption.Value)"
+                                     Value="@SelectedIsRegRefFilter"
+                                     ValueChanged="@((string val) => OnIsRegRefChanged(val, filterContext))"
+                                     DefaultText="Select...">
+                </TelerikDropDownList>
+            </FilterMenuTemplate>
+
+            <Template Context="item">
+                @{
+                    var isRegRefRes = ((OPenaltyModel)item).ResetRegRef;
+                }
+                <div class="d-flex justify-content-center">
+                    @if (!string.IsNullOrEmpty(isRegRefRes))
+                    {
+                        <span class="badge @(isRegRefRes == "1" ? "bg-success" : "bg-secondary")">
+                            @(isRegRefRes == "1" ? "Yes" : "No")
+                        </span>
+                    }
+                </div>
+            </Template>
+         </GridColumn>
 
         @* --- Is Terminated --- *@
         <GridColumn Field="@nameof(OPenaltyModel.IsTerminated)"
                     Title="Is Terminated"
-                    Width="80px" />
+                    Width="80px" >
+
+            <FilterMenuTemplate Context="filterContext">
+                <TelerikDropDownList Data="@V.YesNoOptions"
+                                     TextField="@nameof(V2057Model.YesNoOption.Text)"
+                                     ValueField="@nameof(V2057Model.YesNoOption.Value)"
+                                     Value="@SelectedIsTerminatedFilter"
+                                     ValueChanged="@((string val) => OnIsTerminatedChanged(val, filterContext))"
+                                     DefaultText="Select...">
+                </TelerikDropDownList>
+            </FilterMenuTemplate>
+
+            <Template Context="item">
+                @{
+                    var isTerminated = ((OPenaltyModel)item).IsTerminated;
+                }
+                <div class="d-flex justify-content-center">
+                    @if (!string.IsNullOrEmpty(isTerminated))
+                    {
+                        <span class="badge @(isTerminated == "1" ? "bg-success" : "bg-secondary")">
+                            @(isTerminated == "1" ? "Yes" : "No")
+                        </span>
+                    }
+                </div>
+            </Template>
+
+
+        </GridColumn>
 
 
 
@@ -92,7 +144,7 @@
 
                     <button type="button"
                             class="card p-2 text-center h-35p mb-btn mb-btn-gray"
-                            @onclick="(() => Delete(rec))">
+                            @onclick="(() => _04Delete(rec))">
                         Delete
                     </button>
 
@@ -166,7 +218,7 @@
         await ChildAction.InvokeAsync();
     }
 
-    private async Task Delete(OPenaltyModel rec)
+    private async Task _04Delete(OPenaltyModel rec)
     {
         var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Desc_}' record?", "Confirm Penalty Type Deletion");
         if (!confirmed) return;
@@ -179,22 +231,23 @@
 
             var res = await _penalty._04(rec.Penalty_No, rec.Desc_, V.OPisdb, V.Conn);
 
-            if (res == null)
+            if (res != null)
             {
-                V.Penalties.Remove(rec);
-                RebindGrid();
-                NotificationRef?.Show("Penalty Type has been deleted", ThemeConstants.Notification.ThemeColor.Success);
+                NotificationRef?.Show("Unable to delete penalty type.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
 
-            }
-            else
-            {
-                NotificationRef?.Show("Unable to delete penalty type", ThemeConstants.Notification.ThemeColor.Error);
-            }
+
+            V.Penalties.Remove(rec);
+            RebindGrid();
+            NotificationRef?.Show("Penalty type deleted succesfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            NotificationRef?.Show("Unable to delete penalty type", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show("Unable to delete penalty type.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -239,6 +292,47 @@
     public void RebindGrid()
     {
         PenaltyGridRef.Rebind();
+    }
+
+    // Custom Filter ----------------------------------------------------------------
+
+    private string? SelectedIsTerminatedFilter;
+    private string? SelectedIsRegRefFilter;
+
+
+    private void OnIsTerminatedChanged(string value, FilterMenuTemplateContext filterContext)
+    {
+        SelectedIsTerminatedFilter = value;
+
+        filterContext.FilterDescriptor.FilterDescriptors.Clear();
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            filterContext.FilterDescriptor.FilterDescriptors.Add(new Telerik.DataSource.FilterDescriptor
+            {
+                Member = nameof(OPenaltyModel.IsTerminated),
+                Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+                Value = value
+            });
+        }
+    }
+
+
+    private void OnIsRegRefChanged(string value, FilterMenuTemplateContext filterContext)
+    {
+        SelectedIsTerminatedFilter = value;
+
+        filterContext.FilterDescriptor.FilterDescriptors.Clear();
+
+        if (!string.IsNullOrEmpty(value))
+        {
+            filterContext.FilterDescriptor.FilterDescriptors.Add(new Telerik.DataSource.FilterDescriptor
+            {
+                Member = nameof(OPenaltyModel.ResetRegRef),
+                Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
+                Value = value
+            });
+        }
     }
 
 }

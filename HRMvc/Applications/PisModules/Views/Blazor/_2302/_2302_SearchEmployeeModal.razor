@@ -1,0 +1,137 @@
+﻿<TelerikGrid Data="@V.OEmployees"
+             TItem="OEmpmasModel"
+             Sortable="true"
+             Navigable="true"
+             SelectionMode="GridSelectionMode.Single"
+             FilterMode="GridFilterMode.FilterMenu"
+             Pageable="true"
+             @bind-PageSize="@PageSize"
+             @ref="@EmpmasGridRef"
+             Height="calc(100vh - 40vh)">
+
+    <GridSettings>
+        <GridPagerSettings PageSizes="@PageSizes" />
+    </GridSettings>
+
+    <GridToolBarTemplate>
+        <div class="d-flex gap-2 flex-column flex-md-row mb-2 w-100">
+
+            <div class="col-12 col-md-6 col-lg-4">
+                <TelerikTextBox @bind-Value="@EmployeeName"
+                                Width="100%"
+                                TabIndex="1"
+                                Placeholder="Enter employee name" />
+            </div>
+
+            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
+                    type="button"
+                    tabindex="2"
+                    disabled="@V.IsLoading">
+
+                Search Employee
+
+            </button>
+
+        </div>
+    </GridToolBarTemplate>
+
+    <GridColumns>
+
+        <GridColumn Field="@nameof(OEmpmasModel.EmpNumber)"
+                    Title="Employee No." />
+
+        <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
+                    Title="Employee Name" />
+
+        <GridColumn Field="@nameof(OEmpmasModel.EmpStatus)"
+                    Title="Status"
+                    Width="150px"
+                    HeaderClass="text-center">
+
+            <Template Context="item">
+                @{
+                    var emp = (OEmpmasModel)item;
+                    var status = emp.EmpStatus?.ToUpper().Trim();
+                }
+
+                <div class="d-flex justify-content-center">
+
+                    @if (status == "ACTIVE")
+                    {
+                        <span class="badge bg-success">
+                            Active
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">
+                            @status
+                        </span>
+                    }
+
+                </div>
+            </Template>
+
+        </GridColumn>
+
+        <GridCommandColumn Title="Action"
+                           Width="180px"
+                           HeaderClass="text-center">
+
+            <Template Context="item">
+                @{
+                    var employee = (OEmpmasModel)item;
+                }
+
+                <div class="d-flex justify-content-center">
+
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
+                            type="button"
+                            tabindex="3"
+                            disabled="@V.IsLoading">
+
+                        Add
+
+                    </button>
+
+                </div>
+
+            </Template>
+
+        </GridCommandColumn>
+
+    </GridColumns>
+
+    <NoDataTemplate>
+        <div class="text-center text-secondary p-4">
+            No employees found.
+        </div>
+    </NoDataTemplate>
+
+</TelerikGrid>
+
+@code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2302Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification NotificationRef { get; set; }
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes { get; set; } =
+        new() { 25, 50, 75, 100, null };
+
+    private string EmployeeName { get; set; } = string.Empty;
+
+    private TelerikGrid<OEmpmasModel>? EmpmasGridRef;
+
+}

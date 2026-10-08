@@ -222,6 +222,9 @@ public static class ApiExt
         builder.Services.AddScoped<IOLevtblDataAccess, OLevtblDataAccess>();
         builder.Services.AddScoped<IODevdataDataAccess, ODevdataDataAccess>();
         builder.Services.AddScoped<IOPenaltyDataAccess, OPenaltyDataAccess>();
+        builder.Services.AddScoped<IORegionsDataAccess, ORegionsDataAccess>();
+        builder.Services.AddScoped<IOOfstaffDataAccess, OOfstaffDataAccess>();
+        builder.Services.AddScoped<IOOfstaff2DataAccess, OOfstaff2DataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------

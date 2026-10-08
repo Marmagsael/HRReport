@@ -100,63 +100,65 @@
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
+        var code = V.CivilStatus.Code.Trim().ToUpper();
+        var name = V.CivilStatus.Name.Trim().ToUpper();
 
-        // Validate if code and name already exist
-        var existingRecord = await _civs._02(V.CivilStatus.Code.Trim().ToUpper(), V.CivilStatus.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
 
-        if (existingRecord != null && existingRecord.Any())
+        var origcode = V.CivsvOriginalState?.Code?.Trim().ToUpper();
+        var origname = V.CivsvOriginalState?.Name?.Trim().ToUpper();
+
+
+
+        try
         {
+            // Validate if code and name already exist
+            var existingRecord = await _civs._02ByCodeorName(code, name, V.OPisdb, V.Conn);
 
-            V.CivilStatus.Code = V.CivilStatus.Code.Trim().ToUpper();
-            V.CivilStatus.Name = V.CivilStatus.Name.Trim().ToUpper();
-
-
-            if (V.CivsvOriginalState != null)
+            if (existingRecord != null && existingRecord.Any())
             {
-                V.CivsvOriginalState.Code = V.CivsvOriginalState.Code?.Trim().ToUpper();
-                V.CivsvOriginalState.Name = V.CivsvOriginalState.Name?.Trim().ToUpper();
+
+
+                bool codeExists = existingRecord.Any(c => c.Code.Trim().ToUpper() == code && c.Code.Trim().ToUpper() != origcode);
+                bool nameExists = existingRecord.Any(n => n.Name.Trim().ToUpper() == name && n.Name.Trim().ToUpper() != origname);
+
+                var exist = false;
+
+                if (codeExists)
+                {
+                    V.CodeErrorMsg = "Code already exists.";
+                    exist = true;
+                }
+
+                if (nameExists)
+                {
+                    V.DescriptionErrorMsg = "Description already exists.";
+                    exist = true;
+                }
+                if (exist) return;
+
+
             }
-
-            foreach (var e in existingRecord)
-            {
-                e.Code = e.Code?.Trim().ToUpper();
-                e.Name = e.Name?.Trim().ToUpper();
-            }
-
-
-            bool codeExists = existingRecord.Any(c => c.Code == V.CivilStatus.Code && (string.IsNullOrWhiteSpace(V.CivsvOriginalState?.Code) || c.Code != V.CivsvOriginalState?.Code));
-            bool nameExists = existingRecord.Any(n => n.Name == V.CivilStatus.Name && (string.IsNullOrWhiteSpace(V.CivsvOriginalState?.Name) || n.Name != V.CivsvOriginalState?.Name));
-
-            var exist = false;
-
-            if (codeExists)
-            {
-                V.CodeErrorMsg = "Code already exists.";
-                exist = true;
-            }
-
-            if (nameExists)
-            {
-                V.DescriptionErrorMsg = "Description already exists";
-                exist = true;
-            }
-            if (exist) return;
-
-
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to validate duplicate civils status.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+     
 
 
         if (V.CivsvOriginalState == null)
         {
-            await InsertRecord();
+            await _01InsertRecord();
         }
         else
         {
-            await UpdateRecord();
+            await _03UpdateRecord();
         }
     }
 
-    private async Task InsertRecord()
+    private async Task _01InsertRecord()
     {
         try
         {
@@ -164,54 +166,55 @@
 
             if (res != null)
             {
-                V.CivilStatuses.Insert(0, res);
-                V.CivilStatus = new OCivstatModel();
-
-                V.Action = "RefreshGrid";
-                NotificationRef.Show("Civil status was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
-            {
                 NotificationRef.Show("Unable to save civil status.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.CivilStatuses.Insert(0, res);
+            V.CivilStatus = new OCivstatModel();
+
+            V.Action = "RefreshGrid";
+            NotificationRef.Show("Civil status saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             NotificationRef.Show("Unable to save civil status.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
 
-    private async Task UpdateRecord()
+    private async Task _03UpdateRecord()
     {
         try
         {
             var res = await _civs._03(V.CivsvOriginalState.Code, V.CivilStatus, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.CivsvOriginalState = new OCivstatModel
-                {
-                    Code = res.Code,
-                    Name = res.Name,
-                };
-
-
-                V.Action = "LoadCivilStatuses";
-                NotificationRef.Show("Civil status was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to update civil status.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+
+            V.CivsvOriginalState = new OCivstatModel
+            {
+                Code = res.Code,
+                Name = res.Name,
+            };
+
+
+            V.Action = "LoadCivilStatuses";
+            NotificationRef.Show("Civil status updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to update civil status.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
@@ -224,13 +227,13 @@
 
         if (string.IsNullOrWhiteSpace(V.CivilStatus.Code))
         {
-            V.CodeErrorMsg = "Code is required";
+            V.CodeErrorMsg = "Code is required.";
             isValid = false;
         }
 
         if (string.IsNullOrWhiteSpace(V.CivilStatus.Name))
         {
-            V.DescriptionErrorMsg = "Location is required";
+            V.DescriptionErrorMsg = "Description is required.";
             isValid = false;
         }
 

@@ -25,8 +25,29 @@
 
          <div class="px-2 ps-md-3 pt-3">
             
+
+               
+            @*  --- Last Area Code  Used ---
+            <div class="d-flex flex-column flex-md-row mb-2">
+
+                <label class="fw-normal w-180p">
+                   Last Area Code Used
+                </label>
+
+                <div class="col-12 col-md-4">
+
+                    <TelerikTextBox @bind-Value="@V.LastAreaCodeUsed"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    ReadOnly
+                                    Enabled="false" />
+                </div>
+
+            </div> *@
+
+
              
-             @* --- Code Name --- *@
+             @* --- Code  --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
@@ -52,11 +73,11 @@
             </div>
 
 
-            @* --- Description --- *@
+            @* --- Location --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Description
+                    Location
                 </label>
 
                 <div class="col-12 col-md-8">
@@ -100,32 +121,23 @@
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
+        var code = V.Area.AreaCode.Trim().ToUpper();
+        var name = V.Area.AreaName.Trim().ToUpper();
+
+
+        var origcode = V.AreaOriginalState?.AreaCode?.Trim().ToUpper();
+        var origname = V.AreaOriginalState?.AreaName?.Trim().ToUpper();
+
 
         // Validate if code and name already exist
-        var existingRecord = await _ac._02(V.Area.AreaCode.Trim().ToUpper(), V.Area.AreaName.Trim().ToUpper(), V.OPisdb, V.Conn);
+        var existingRecord = await _ac._02ByCodeOrByName(code, name, V.OPisdb, V.Conn);
 
         if (existingRecord != null && existingRecord.Any())
         {
+                
 
-            V.Area.AreaCode = V.Area.AreaCode.Trim().ToUpper();
-            V.Area.AreaName = V.Area.AreaName.Trim().ToUpper();
-
-
-            if (V.AreaOriginalState != null)
-            {
-                V.AreaOriginalState.AreaCode = V.AreaOriginalState.AreaCode?.Trim().ToUpper();
-                V.AreaOriginalState.AreaName = V.AreaOriginalState.AreaName?.Trim().ToUpper();
-            }
-
-            foreach (var e in existingRecord)
-            {
-                e.AreaCode = e.AreaCode?.Trim().ToUpper();
-                e.AreaName = e.AreaName?.Trim().ToUpper();
-            }
-
-
-            bool codeExists = existingRecord.Any(c => c.AreaCode == V.Area.AreaCode && (string.IsNullOrWhiteSpace(V.AreaOriginalState?.AreaCode) || c.AreaCode != V.AreaOriginalState?.AreaCode));
-            bool nameExists = existingRecord.Any(n => n.AreaName == V.Area.AreaName && (string.IsNullOrWhiteSpace(V.AreaOriginalState?.AreaName) || n.AreaName != V.AreaOriginalState?.AreaName));
+            bool codeExists = existingRecord.Any(c => c.AreaCode?.Trim().ToUpper() == code && c.AreaCode?.Trim().ToUpper() != origcode);
+            bool nameExists = existingRecord.Any(n => n.AreaName?.Trim().ToUpper() == name && n.AreaName?.Trim().ToUpper() != origname);
 
             var exist = false;
 
@@ -137,7 +149,7 @@
 
             if (nameExists)
             {
-                V.LocationErrorMsg = "Location already exists";
+                V.LocationErrorMsg = "Location already exists.";
                 exist = true;
             }
             if (exist) return;
@@ -148,71 +160,72 @@
 
         if (V.AreaOriginalState == null)
         {
-            await InsertRecord();
+            await _01InsertRecord();
         }
         else
         {
-            await UpdateRecord();
+            await _03UpdateRecord();
         }
     }
 
-    private async Task InsertRecord()
+    private async Task _01InsertRecord()
     {
         try
         {
             var res = await _ac._01(V.Area, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.Areas.Insert(0, res);
-                V.Area = new OAreaModel();
-
-                V.Action = "RefreshaGrid";
-                NotificationRef.Show("Area code was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to save area code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+
+            V.Areas.Insert(0, res);
+            V.Area = new OAreaModel();
+
+            V.Action = "RefreshaGrid";
+            NotificationRef.Show("Area code saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.Write(ex);
             NotificationRef.Show("Unable to save area code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
 
-    private async Task UpdateRecord()
+    private async Task _03UpdateRecord()
     {
         try
         {
             var res = await _ac._03(V.AreaOriginalState.AreaCode, V.Area, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.AreaOriginalState = new OAreaModel
-                {
-                    AreaCode = res.AreaCode,
-                    AreaName = res.AreaName,
-                };
-
-
-                V.Action = "LoadAreaCodes";
-                NotificationRef.Show("Area code was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to update area code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.AreaOriginalState = new OAreaModel
+            {
+                AreaCode = res.AreaCode,
+                AreaName = res.AreaName,
+            };
+
+
+            V.Action = "LoadAreaCodes";
+            NotificationRef.Show("Area code updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to update area code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
@@ -225,13 +238,13 @@
 
         if (string.IsNullOrWhiteSpace(V.Area.AreaCode))
         {
-            V.CodeErrorMsg = "Area code is required";
+            V.CodeErrorMsg = "Area code is required.";
             isValid = false;
         }
 
         if (string.IsNullOrWhiteSpace(V.Area.AreaName))
         {
-            V.LocationErrorMsg = "Location is required";
+            V.LocationErrorMsg = "Location is required.";
             isValid = false;
         }
 

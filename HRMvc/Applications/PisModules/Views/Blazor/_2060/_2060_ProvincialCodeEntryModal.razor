@@ -51,7 +51,7 @@
             </div>
 
 
-            @* --- Name --- *@
+            @* --- Location --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
@@ -98,32 +98,23 @@
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
+        var code = V.ProvincialCode.Code.Trim().ToUpper();
+        var name = V.ProvincialCode.Name.Trim().ToUpper();
+
+
+        var origcode = V.ProvOriginalState?.Code?.Trim().ToUpper();
+        var origname = V.ProvOriginalState?.Name?.Trim().ToUpper();
+
 
         // Validate if code and name already exist
-        var existingRecord = await _prov._02(V.ProvincialCode.Code.Trim().ToUpper(), V.ProvincialCode.Name.Trim().ToUpper(), V.OPisdb, V.Conn);
+        var existingRecord = await _prov._02ByCodeOrByName(code, name, V.OPisdb, V.Conn);
 
         if (existingRecord != null && existingRecord.Any())
         {
 
-            V.ProvincialCode.Code = V.ProvincialCode.Code.Trim().ToUpper();
-            V.ProvincialCode.Name = V.ProvincialCode.Name.Trim().ToUpper();
 
-
-            if (V.ProvOriginalState != null)
-            {
-                V.ProvOriginalState.Code = V.ProvOriginalState.Code?.Trim().ToUpper();
-                V.ProvOriginalState.Name = V.ProvOriginalState.Name?.Trim().ToUpper();
-            }
-
-            foreach (var e in existingRecord)
-            {
-                e.Code = e.Code?.Trim().ToUpper();
-                e.Name = e.Name?.Trim().ToUpper();
-            }
-
-
-            bool codeExists = existingRecord.Any(c => c.Code == V.ProvincialCode.Code && (string.IsNullOrWhiteSpace(V.ProvOriginalState?.Code) || c.Code != V.ProvOriginalState?.Code));
-            bool nameExists = existingRecord.Any(n => n.Name == V.ProvincialCode.Name && (string.IsNullOrWhiteSpace(V.ProvOriginalState?.Name) || n.Name != V.ProvOriginalState?.Name));
+            bool codeExists = existingRecord.Any(c => c.Code.Trim().ToUpper() == code && c.Code.Trim().ToUpper() != origcode);
+            bool nameExists = existingRecord.Any(n => n.Name.Trim().ToUpper() == name && n.Name.Trim().ToUpper() != origname);
 
             var exist = false;
 
@@ -135,7 +126,7 @@
 
             if (nameExists)
             {
-                V.LocationErrorMsg = "Location already exists";
+                V.LocationErrorMsg = "Location already exists.";
                 exist = true;
             }
             if (exist) return;
@@ -146,70 +137,71 @@
 
         if (V.ProvOriginalState == null)
         {
-            await InsertRecord();
+            await _01InsertRecord();
         }
         else
         {
-            await UpdateRecord();
+            await _03UpdateRecord();
         }
     }
 
-    private async Task InsertRecord()
+    private async Task _01InsertRecord()
     {
         try
         {
             var res = await _prov._01(V.ProvincialCode, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.ProvincialCodes.Insert(0, res);
-                V.ProvincialCode = new OProcodeModel();
-
-                V.Action = "RefreshGrid";
-                NotificationRef.Show("Proincial code was saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to save provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+
+            V.ProvincialCodes.Insert(0, res);
+            V.ProvincialCode = new OProcodeModel();
+
+            V.Action = "RefreshGrid";
+            NotificationRef.Show("Proincial code saved successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             NotificationRef.Show("Unable to save provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
 
 
-    private async Task UpdateRecord()
+    private async Task _03UpdateRecord()
     {
         try
         {
             var res = await _prov._03(V.ProvOriginalState.Code, V.ProvincialCode, V.OPisdb, V.Conn);
 
-            if (res != null)
-            {
-                V.ProvOriginalState = new OProcodeModel
-                {
-                    Code = res.Code,
-                    Name = res.Name,
-                };
-
-
-                V.Action = "LoadAreaCodes";
-                NotificationRef.Show("Provncial code was updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
-                await ChildAction.InvokeAsync();
-            }
-            else
+            if (res == null)
             {
                 NotificationRef.Show("Unable to update provincial code.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
             }
+
+            V.ProvOriginalState = new OProcodeModel
+            {
+                Code = res.Code,
+                Name = res.Name,
+            };
+
+
+            V.Action = "LoadAreaCodes";
+            NotificationRef.Show("Provncial code updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to update provncial code.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
     }
 
