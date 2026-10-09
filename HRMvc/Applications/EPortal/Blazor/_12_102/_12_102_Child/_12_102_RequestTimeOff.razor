@@ -15,7 +15,7 @@
 
 <CascadingValue Value="Uc" IsFixed="true">
 <CascadingValue Value="v">
-
+    
     @if (!v.ShowPrint)
     {
         <div class="d-flex gap-1 p-1 border-bottom ">
@@ -34,7 +34,7 @@
     @if(v.ShowPrint) { return; } 
 
     @* <div>Count : @v.LeaveApplicationdtls.Count * @Uc.UserId </div> *@
-
+    
     <div class="card-body p-0 @DivLocked ">
         <table class="table table-small table-bordered">
             <tbody>
@@ -406,6 +406,7 @@
             d.LeaveApplicationId    = lva.Id; 
             d.EmpmasId              = Uc.EmpmasId; 
             d.EmpNumber             = Uc.OempNumber??"";
+            d.DutyType              = " ";
 
             if(d.Id == 0)   { await _lvaDtls._01(d, Uc.SchemaUserPis, Uc.Conn);  } 
             else            { await _lvaDtls._03(d.Id??0, d, Uc.SchemaUserPis, Uc.Conn); }; 
@@ -446,7 +447,7 @@
         v.ShowMyReqquest = true; 
 
         v.IsLoading = true;
-        var res = await _lvApplication._02ByRequest(Uc.UserId,Uc.SchemaUserPis, Uc.Conn); 
+        var res = await _lvApplication._02ByRequest(Uc.EmpmasId,Uc.SchemaUserPis, Uc.Conn); 
         v.IsLoading = false;
         
         if(res!=null) v.LeaveApplications = res!; 
@@ -456,8 +457,8 @@
     async Task Print()
     {
         var res = await _settings._02(1, Uc.SchemaUserPay, Uc.Conn);
-        var resEmpmas   = await _empmasInternal._02(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
-        var resEmpmas1  = await _empmas._02Deprecs(Uc.UserId, Uc.SchemaUserPis, Uc.Conn);
+        var resEmpmas   = await _empmasInternal._02(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
+        var resEmpmas1  = await _empmas._02Deprecs(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
 
 
         ctr++;
@@ -666,13 +667,13 @@
 
     LeaveapplicationdtlModel _02LA(string? ddd) => ddd switch
     {
-        "Mon" => new LeaveapplicationdtlModel { DutyType = at.D2_dutytype},
-        "Tue" => new LeaveapplicationdtlModel { DutyType = at.D3_dutytype},
-        "Wed" => new LeaveapplicationdtlModel { DutyType = at.D4_dutytype},
-        "Thu" => new LeaveapplicationdtlModel { DutyType = at.D5_dutytype},
-        "Fri" => new LeaveapplicationdtlModel { DutyType = at.D6_dutytype},
-        "Sat" => new LeaveapplicationdtlModel { DutyType = at.D7_dutytype},
-        "Sun" => new LeaveapplicationdtlModel { DutyType = at.D1_dutytype},
+        "Mon" => new LeaveapplicationdtlModel { DutyType = at?.D2_dutytype},
+        "Tue" => new LeaveapplicationdtlModel { DutyType = at?.D3_dutytype},
+        "Wed" => new LeaveapplicationdtlModel { DutyType = at?.D4_dutytype},
+        "Thu" => new LeaveapplicationdtlModel { DutyType = at?.D5_dutytype},
+        "Fri" => new LeaveapplicationdtlModel { DutyType = at?.D6_dutytype},
+        "Sat" => new LeaveapplicationdtlModel { DutyType = at?.D7_dutytype},
+        "Sun" => new LeaveapplicationdtlModel { DutyType = at?.D1_dutytype},
         _ => new LeaveapplicationdtlModel() 
     };
     
