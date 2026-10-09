@@ -29,6 +29,7 @@ public class V2052
     public int?     userid           { get; set; } = 0;
 
     public bool     IsLoading        { get; set; } = false;
+    public bool     UcLoaded         { get; set; } = false;
 
 
     public bool                          ShowDataEntry          { get; set; } = false;

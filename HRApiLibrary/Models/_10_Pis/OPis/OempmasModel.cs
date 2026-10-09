@@ -223,6 +223,16 @@ public class OEmpmasModel
     public double?  HeightInches            { get; set; }
     public bool     Sel                     { get; set; } = false;
 
+    public string? Gender                   { get; set; } = string.Empty;
+    public string? CivilStatus              { get; set; } = string.Empty;
+    public string? ManilaArea               { get; set; } = string.Empty;
+    public string? ProvincialArea           { get; set; } = string.Empty;
+
+
+
+
+
+
     // RTU Transaction Module ----------------------------------
     public DateTime?    MovPrepDate         { get; set; } 
     public DateTime?    MovExpDate          { get; set; } 
