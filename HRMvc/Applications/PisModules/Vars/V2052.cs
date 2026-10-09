@@ -29,6 +29,7 @@ public class V2052
     public int?     userid           { get; set; } = 0;
 
     public bool     IsLoading        { get; set; } = false;
+    public bool     UcLoaded         { get; set; } = false;
 
 
     public bool                          ShowDataEntry          { get; set; } = false;
@@ -48,6 +49,7 @@ public class V2052
     public string?                       EmailRegisteredMessage { get; set; } = string.Empty;
     public string?                       RegisteredUserOnMain   { get; set; } = string.Empty;
     public string?                       RelatedUserOnSecpis    { get; set; } = string.Empty;
+    public string?                       SearchValue            { get; set; } = string.Empty;
 
 
 
@@ -81,7 +83,9 @@ public class V2052
 
     public List<PisEmpmasModel?>?           Empmass             { get; set; } = new();
     public List<OEmpstatModel?>?            OEmpstats           { get; set; } = new();
-    public IEnumerable<OEmpstatModel?>      SelectedStatus      { get; set; } = new List<OEmpstatModel>();
+    public List<OEmpstatModel?>?            previousSelectedStatus          { get; set; } = new();
+    public IEnumerable<OEmpstatModel?>      SelectedStatus                  { get; set; } = new List<OEmpstatModel>();
+    public List<OEmpmas_visible_statusModel?>  OEmpstatVisibleStatus        { get; set; } = new();
 
     public List<OEmpmasModel?>?             EmpmasInitialList   { get; set; } = new();
     public List<OEmpmasModel?>?             EmpmasList          { get; set; } = new();
@@ -97,12 +101,13 @@ public class V2052
 
     public List<EmpmovementModel?>?         EmpmovementList     { get; set; } = new();
 
+    public IEnumerable<dynamic> RepDtls { get; set; } = new List<dynamic>();
 
 
 
 
 
-public RadzenDataGrid<OEmployModel>?             EmploymentGrid         = new();
+    public RadzenDataGrid<OEmployModel>?         EmploymentGrid         = new();
 public RadzenDataGrid<EmpmasEducateModel>?       EducationGrid          = new();
 public RadzenDataGrid<OFamilyModel>?             FamilyGrid             = new();
 public RadzenDataGrid<OParentModel>?             ParentGrid             = new();

@@ -94,8 +94,12 @@
 @inject IOEmpmasDataAccess _empmas
 
 @code {
-    [Parameter]
+    [CascadingParameter]
     public V2052 V { get; set; } = new();
+
+        
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
@@ -107,24 +111,12 @@
         {
             await _empmas._03_Insurance(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
 
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 3000
-            });
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
