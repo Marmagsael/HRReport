@@ -14,7 +14,7 @@
                 <button type="button"
                         class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
                         @onclick="InsertRow"
-                        disabled="@(editMode || isLoading)">
+                        disabled="@(editMode )">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
                         <span class="fw-semibold"> <small>New</small> </span>
                     </div>
@@ -31,8 +31,7 @@
                             AllowPaging="true"
                             PageSize="10"
                             PageSizeOptions=@(new int[]{5, 10, 20, 30})
-                            ColumnWidth="200px"
-                            IsLoading="isLoading">
+                            ColumnWidth="200px">
                 <Columns>
                     <RadzenDataGridColumn TItem="OParentModel"
                                           Context="OParentModel"
@@ -161,7 +160,8 @@
                                     <RadzenColumn Size="4"><RadzenLabel Text="Date of Birth" /></RadzenColumn>
                                     <RadzenColumn Size="8">
                                         <RadzenFormField Variant="Variant.Text" class="w-100">
-                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMM dd, yyyy" />
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMM dd, yyyy" Name="ParentDobSm" class="w-100"/>
+                                            <RadzenRequiredValidator Component="ParentDobSm" Text="Date of Birth is required" Popup="true" Style="position:absolute;" />
                                         </RadzenFormField>
                                     </RadzenColumn>
                                 </RadzenRow>
@@ -222,7 +222,8 @@
 
                                         <div class="mt-1">
                                             <RadzenFormField AllowFloatingLabel="false" Text="Date of Birth" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMM dd, yyyy" />
+                                                <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMM dd, yyyy" Name="ParentDobLg" class="w-100" />
+                                                <RadzenRequiredValidator Component="ParentDobLg" Text="Date of Birth is required" Popup="true" Style="position:absolute;" />
                                             </RadzenFormField>
                                         </div>
                                     </RadzenColumn>
@@ -291,17 +292,7 @@
     };
 
 
-    protected override async Task OnParametersSetAsync()
-    {
-        if (empnumber != V.SelectedEmpnumber)
-        {
-            empnumber = V.SelectedEmpnumber;
-            await Task.Delay(250);
-            V.Parents = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
-        }
-        isLoading = false;
-        StateHasChanged();
-    }
+
 
     //-- InsertRow ----------------
     private async Task InsertRow()

@@ -8,6 +8,6 @@ namespace HRApiLibrary.Models._10_Pis.OPis
 {
     public class OEmpmas_visible_statusModel
     {
-        public string? Empstat_ { get; set; }
+        public string? Empstat_ { get; set; } = string.Empty;
     }
 }
