@@ -111,7 +111,7 @@
                     <div class="w-20 small">Height </div>
                     <div class="w-80 d-flex">
                         <div class="w-125p gap-2">
-                            <RadzenNumeric Placeholder="0" Step="1" @bind-Value=@V.Empmas.Height TextAlign="TextAlign.Right"
+                            <RadzenNumeric Placeholder="0" Step="1" @bind-Value=@V.Empmas.HeightFt TextAlign="TextAlign.Right"
                                            InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                         </div><div class="p-2 small"> Feet</div>
                         <div class="w-125p">
@@ -229,7 +229,7 @@
     [CascadingParameter]
     public V2052 V { get; set; } = new();
 
-    
+
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
@@ -242,11 +242,12 @@
         if (model == null) return;
         try
         {
-            CombineHeight();
-            await _empmas._03_PersonalData(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
-            
-            
-            V.Action = "GetGenderAndCivilStatus";
+            V.Empmas.Height =  CombineHeight();
+
+            var res = await _empmas._03_PersonalData(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
+
+            V.Empmas.Height = res.Height;
+            V.Action = "GetGenderAndCivilStatus_SplitHeight";
             await ChildAction.InvokeAsync();
 
             NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
@@ -265,18 +266,11 @@
 
     }
 
-    private void CombineHeight()
+    private double CombineHeight()
     {
-        if (V.Empmas.Height.HasValue || V.Empmas.HeightInches.HasValue)
-        {
-            double feet = V.Empmas.Height ?? 0;
-            double inches = V.Empmas.HeightInches ?? 0;
+        if (V.Empmas.HeightFt == null || V.Empmas.HeightInches == null)
+            return 0.00;
 
-            V.Empmas.Height = feet + (inches / 100);
-        }
-        else
-        {
-            V.Empmas.Height = null;
-        }
+        return V.Empmas.HeightFt.Value + (V.Empmas.HeightInches.Value / 100.0);
     }
 }
