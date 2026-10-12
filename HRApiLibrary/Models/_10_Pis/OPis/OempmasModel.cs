@@ -220,6 +220,7 @@ public class OEmpmasModel
     public string?  EmpStatus               { get; set; } = string.Empty;
     public string?  Reason                  { get; set; }
     public int?     CntNotMigrated          { get; set; } = 0;
+    public int?     HeightFt                { get; set; }
     public double?  HeightInches            { get; set; }
     public bool     Sel                     { get; set; } = false;
 

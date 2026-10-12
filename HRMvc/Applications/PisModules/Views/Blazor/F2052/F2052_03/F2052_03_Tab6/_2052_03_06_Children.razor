@@ -145,7 +145,11 @@
 
     string? empnumber = string.Empty;
 
-    [Parameter] public V2052 V { get; set; } = new();
+    [CascadingParameter] public V2052 V { get; set; } = new();
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OChildrenModel?>? childrenToInsert  = new();
@@ -234,7 +238,8 @@
                 {
                     await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
                     V.Children.Remove(rec);
-                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
+                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
+
                 }
             }
         }
@@ -299,7 +304,7 @@
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same name and birthday already exists.", 5000);
+                    NotificationRef.Show("A record with the same name and birthday already exists.", ThemeConstants.Notification.ThemeColor.Warning);
                     return;
                 }
             }
@@ -315,12 +320,12 @@
             }
 
             await V.ChildrenGrid.UpdateRow(rec);
-            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            NotificationRef.Show("Something went wrong while saving. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
@@ -339,23 +344,7 @@
         return true;
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-      _NotificationService.Notify(new NotificationMessage
-      {
-          Severity = NotificationSeverity.Success,
-          Summary = summary,
-          Detail = detail,
-          Duration = duration
-      });
-
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+   
 }
 
 

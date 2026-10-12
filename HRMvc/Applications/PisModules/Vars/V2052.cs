@@ -107,7 +107,7 @@ public class V2052
 
 
 
-    public RadzenDataGrid<OEmployModel>?         EmploymentGrid         = new();
+public RadzenDataGrid<OEmployModel>?             EmploymentGrid         = new();
 public RadzenDataGrid<EmpmasEducateModel>?       EducationGrid          = new();
 public RadzenDataGrid<OFamilyModel>?             FamilyGrid             = new();
 public RadzenDataGrid<OParentModel>?             ParentGrid             = new();

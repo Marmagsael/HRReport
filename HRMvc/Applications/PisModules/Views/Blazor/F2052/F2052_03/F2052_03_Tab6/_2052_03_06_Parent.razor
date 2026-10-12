@@ -152,7 +152,7 @@
                                     <RadzenColumn Size="4"><RadzenLabel Text="Age" /></RadzenColumn>
                                     <RadzenColumn Size="8">
                                         <RadzenFormField Variant="Variant.Text" class="w-100">
-                                            <RadzenNumeric @bind-Value="rec.Age" Max="99" Format="0" />
+                                            <RadzenNumeric @bind-Value="rec.Age" Max="99" Format="0" Disabled/>
                                         </RadzenFormField>
                                     </RadzenColumn>
                                 </RadzenRow>
@@ -160,7 +160,7 @@
                                     <RadzenColumn Size="4"><RadzenLabel Text="Date of Birth" /></RadzenColumn>
                                     <RadzenColumn Size="8">
                                         <RadzenFormField Variant="Variant.Text" class="w-100">
-                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMM dd, yyyy" Name="ParentDobSm" class="w-100"/>
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMMM dd, yyyy" Name="ParentDobSm" class="w-100"/>
                                             <RadzenRequiredValidator Component="ParentDobSm" Text="Date of Birth is required" Popup="true" Style="position:absolute;" />
                                         </RadzenFormField>
                                     </RadzenColumn>
@@ -198,7 +198,7 @@
 
                                         <div class="mt-1">
                                             <RadzenFormField AllowFloatingLabel="false" Text="Age" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                <RadzenNumeric @bind-Value="rec.Age" Format="0" Max="99" class="w-100" />
+                                                <RadzenNumeric @bind-Value="rec.Age" Format="0" Max="99" class="w-100" Disabled />
                                             </RadzenFormField>
                                         </div>
                                     </RadzenColumn>
@@ -222,7 +222,7 @@
 
                                         <div class="mt-1">
                                             <RadzenFormField AllowFloatingLabel="false" Text="Date of Birth" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                                <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMM dd, yyyy" Name="ParentDobLg" class="w-100" />
+                                                <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.DoB" DateFormat="MMMM dd, yyyy" Name="ParentDobLg" class="w-100" />
                                                 <RadzenRequiredValidator Component="ParentDobLg" Text="Date of Birth is required" Popup="true" Style="position:absolute;" />
                                             </RadzenFormField>
                                         </div>
@@ -268,7 +268,10 @@
 
     string? empnumber = string.Empty;
 
-    [Parameter] public V2052 V { get; set; } = new();
+    [CascadingParameter] public V2052 V { get; set; } = new();
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OParentModel?>? parentToInsert = new();
@@ -365,7 +368,7 @@
                 {
                     await _empmas._04(rec.EmpNumber, rec.Name, rec.Code, V.pisdb!, V.conn!);
                     V.Parents.Remove(rec);
-                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
+                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
                 }
             }
         }
@@ -413,17 +416,24 @@
     //-- Save Row ----------------
     private async Task SaveRow(OParentModel rec)
     {
+
         if (V.ParentGrid == null || rec == null) return;
         if (!SafeToSave(rec))
         {
             await V.ParentGrid.UpdateRow(rec);
             return;
         }
+
+        ComputeAge(rec);
+
         try
         {
+           
             bool isNew = parentToInsert!.Contains(rec);
             var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Code, V.pisdb!, V.conn!);
             bool exists = res != null && res.Count > 0;
+
+           
 
             if (exists)
             {
@@ -433,31 +443,34 @@
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    NotificationRef.Show("A record with the same name and relationship already exists.", ThemeConstants.Notification.ThemeColor.Warning);
                     return;
                 }
             }
+           
 
             if (isNew)
             {
+               
+
                 await _empmas._01(rec, V.pisdb!, V.conn!);
                 V.Parents!.Add(rec);
-                Console.WriteLine("Insert");
             }
             else
             {
+                
+
                 await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.Code, rec, V.pisdb!, V.conn!);
-                Console.WriteLine("Update");
 
             }
 
             await V.ParentGrid.UpdateRow(rec);
-            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+            NotificationRef.Show( "Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            NotificationRef.Show("Something went wrong while saving. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
@@ -471,24 +484,25 @@
     {
         if (string.IsNullOrWhiteSpace(rec.Name)) return false;
         if (string.IsNullOrWhiteSpace(rec.Code)) return false;
+        if (rec.DoB == null) return false;
         return true;
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Success,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+    private void ComputeAge(OParentModel rec)
+    {
+        rec.Age = 0;
 
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
+        DateTime today = DateTime.Today;
+        DateTime birthDate = rec.DoB.Value;
+
+        int age = today.Year - birthDate.Year;
+
+        if (today < birthDate.AddYears(age))
         {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+            age--;
+        }
+
+        rec.Age = age;
+        
+    }
 }

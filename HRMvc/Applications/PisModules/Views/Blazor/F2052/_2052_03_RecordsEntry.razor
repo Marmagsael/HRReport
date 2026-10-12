@@ -7,35 +7,31 @@
 
     @* --- New Entry Button *@
     <div class="w-100 p-2" style="border-bottom:1px solid #d9dde2; flex-shrink:0;">
-        @* <button type="submit" class="card p-1 mb-cbtn mb-cbtn-blue d-flex w-100p" @onclick="NewEntry">
-            <div class="d-flex align-items-center justify-content-center">
-                <span class="p-0">New Entry</span>
-            </div>
-        </button> *@
+
         <div class="d-flex justify-content-between">
-            <div>
+            <div class="d-flex gap-1">
                 <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="NewEntry">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
                         <span class="fw-semibold"><small>New Entry</small></span>
                     </div>
                 </button>
-            </div>
 
-
-            <div class="d-flex gap-1">
                 <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 "
                         @onclick="GenerateReport">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
                         <span class="fw-semibold"><small>Print</small></span>
                     </div>
                 </button>
+            </div>
 
-                <button class="btn btn-link p-0 txt border-0"
+
+            <div >
+
+                <button class="btn btn-secondary "
                         title="Status Settings"
                         @onclick="OpenStatusSettingsModal">
                     <i class="fa-solid fa-gear"></i>
                 </button>
-
             </div>
 
           
@@ -107,11 +103,11 @@
 
 @inject IOEmpmasDataAccess _empmas
 
-@code {
 
+@code
+{
     [CascadingParameter]
     public V2052 V { get; set; } = new();
-
 
     [CascadingParameter]
     public V00_RepVars Rv { get; set; } = new();
@@ -119,31 +115,40 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
+
     async Task NewEntry()
     {
-        V.Action            = "New Entry";
-        V.EmpmasToEdit      = new OEmpmasModel();
-        V.IsNewEntry        = true;
+        V.Action        = "New Entry";
+        V.EmpmasToEdit  = new OEmpmasModel();
+        V.IsNewEntry    = true;
+
         await GetLastEmpNumber();
 
         V.ShowDataEntry = true;
+
         await ChildAction.InvokeAsync();
     }
+
 
     async Task GetLastEmpNumber()
     {
         if (V.IsNewEntry == true)
         {
-            var maxEmpNo = await _empmas._02MaxEmpnumber(V.pisdb, V.conn);
-            if (!string.IsNullOrWhiteSpace(maxEmpNo.EmpNumber)) V.LastEmpNumber = maxEmpNo.EmpNumber;
-        }
+            var maxEmpNo = await _empmas._02MaxEmpnumber( V.pisdb, V.conn );
 
+            if (!string.IsNullOrWhiteSpace(maxEmpNo.EmpNumber))
+            {
+                V.LastEmpNumber = maxEmpNo.EmpNumber;
+            }
+        }
     }
+
 
     async Task OpenStatusSettingsModal()
     {
-        V.ModalCaption = "Employee Settings";
-        V.ShowStatusModal = true;
+        V.ModalCaption      = "Employee Settings";
+        V.ShowStatusModal   = true;
+
         V.previousSelectedStatus = V.SelectedStatus.ToList();
 
         await ChildAction.InvokeAsync();
@@ -152,43 +157,69 @@
 
     private async Task GenerateReport()
     {
-
-        if (String.IsNullOrWhiteSpace(V.Empmas.EmpNumber) ) { return; }
+        if (string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))  return;
 
         V.IsLoading = true;
 
-        Rv.MCaption = "Personal Data Sheet";
-        Rv.RelativePath = "";
-        Rv.ReportData = [];
+        Rv.MCaption         = "Personal Data Sheet";
+        Rv.RelativePath     = "";
+        Rv.ReportData       = [];
+
+        // Parents
+        var mother = V.Parents.LastOrDefault(p => p.Code == "M");
+        var father = V.Parents.LastOrDefault(p => p.Code == "F");
+
+        // Educations
+        var elementary      = V.Educations.LastOrDefault(p => p.Code == "E");
+        var highschool      = V.Educations.LastOrDefault(p => p.Code == "H");
+        var vocational      = V.Educations.LastOrDefault(p => p.Code == "V");
+        var college         = V.Educations.LastOrDefault(p => p.Code == "C");
+        var postgraduate    = V.Educations.LastOrDefault(p => p.Code == "P");
+
+        // Report details
         V.RepDtls = new List<dynamic>
         {
             new
             {
-                Empmas              = V.Empmas,
-                EmpAddress          = V.Empmasaddress,
-                Familys             = V.Familys,
-                Parents             = V.Parents,
+                Empmas          = V.Empmas,
+                EmpAddress      = V.Empmasaddress,
+                Familys         = V.Familys,
+
+                Parents = new
+                {
+                    Mother = mother,
+                    Father = father
+                },
+
+                Children            = V.Children,
                 EmergencyContacts   = V.EmergencyContacts,
                 Employments         = V.Employments,
-                Educations          = V.Educations,
+
+                Educations  = new
+                {
+                    Elementary      = elementary,
+                    HighSchool      = highschool,
+                    Vocational      = vocational,
+                    College         = college,
+                    Postgraduate    = postgraduate
+                },
+
                 Trainings           = V.Trainings,
                 CharRefs            = V.CharRefs,
                 InsuranceAccident   = V.InsuranceAccident
-            },
+            }
         };
 
+        // Assign report data
         Rv.ReportData = V.RepDtls;
 
+        // Report settings
         Rv.ReportParams["ReportTitle"] = "Personal Data Sheet";
-        Rv.RelativePath = "Reports/_01Pis/K_2052_201.trdp";
-        Rv.SelectedFormat = "PDF";
+        Rv.RelativePath         = "Reports/_01Pis/K_2052_201.trdp";
+        Rv.SelectedFormat       = "PDF";
 
         V.Action = "GenerateReport";
 
         await ChildAction.InvokeAsync();
-
-
     }
-
-
 }

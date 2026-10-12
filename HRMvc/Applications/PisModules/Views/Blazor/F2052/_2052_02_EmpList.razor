@@ -83,7 +83,30 @@
         }
     </div>
     <div class="bg-lightgray" style="color:#2c2f33; padding: 5px 10px; font-size: small; border:1px solid #d9dde2; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;">
-        Employee Listing
+        <span class="fw-bold">Visible Status: </span>
+
+        @{
+            var statLastNumber = V.SelectedStatus.Count() - 1;
+            var ctr = 0;
+        }
+
+        @foreach(var s in V.SelectedStatus)
+        {
+            ctr++;
+
+            @if(V.SelectedStatus.Count() > 1)
+            {
+                <span>@s.Name</span>
+                @if (ctr <= statLastNumber)
+                {
+                    <span>, </span>
+                }
+            }
+            else
+            {
+                <span>@s.Name</span>
+            }
+        }
     </div>
 </div>
 @inject IOEmpmasDataAccess _empmas
@@ -205,7 +228,7 @@
             statuses.Add(s.Code);
         }
 
-        V.EmpmasList = await _empmas._02SearchName(V.SearchValue, V.pisdb!, V.conn!);
+        V.EmpmasList = await _empmas._02SearchNameByStatus(V.SearchValue, statuses, V.pisdb!, V.conn!);
         await ChildAction.InvokeAsync();
     }
 
