@@ -62,7 +62,8 @@
         @* --- INSURANCE EXPIRY --- *@
         <GridColumn Field="@nameof(OInsuranceModel.InsExpire)"
                     Title="Insurance Expiry"
-                    Width="130px" />
+                    Width="130px"
+                    DisplayFormat="{0:MM/dd/yyyy}" />
 
         @* --- ACTIONS --- *@
         <GridCommandColumn Title="Action"
@@ -84,7 +85,8 @@
                     </button>
 
                     <button type="button"
-                            class="card p-2 text-center h-35p mb-btn mb-btn-gray">
+                            class="card p-2 text-center h-35p mb-btn mb-btn-gray"
+                            @onclick="(() => _04Delete(insurance))">
                         Delete
                     </button>
 
@@ -104,6 +106,8 @@
 
 </TelerikGrid>
 
+
+@* @inject IOInsuranceDataAccess _insurance *@
 @code {
     [CascadingParameter]
     public V2054Model V { get; set; } = new();
@@ -122,21 +126,6 @@
         100,
         null
     };
-
-
-    // private void OnGridStateInit(GridStateEventArgs<OPisDomainusrModel> args)
-    // {
-    //     args.GridState.FilterDescriptors = new List<IFilterDescriptor>
-    //     {
-    //         new Telerik.DataSource.FilterDescriptor
-    //         {
-    //             Member = nameof(OPisDomainusrModel.StatusName),
-    //             Operator = Telerik.DataSource.FilterOperator.IsEqualTo,
-    //             Value = "Active"
-    //         }
-    //     };
-
-    // }
 
 
     private async Task OpenEntryModal(OInsuranceModel rec)
@@ -160,5 +149,38 @@
         V.ShowInsuranceAssignmentModal = true;
         await ChildAction.InvokeAsync();
     }
+
+    private async Task _04Delete(OInsuranceModel rec)
+    {
+        // var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}'?", "Confirm Insurance Deletion");
+
+        // if (confirmed != true) return;
+
+        // Check if the insurance exists in other transactions ---
+        /// Add validation here
+        
+
+        // Delete insurance ----
+        // try
+        // {
+        //     var result = await _insurance._04(rec.PolicyNo, Uc.OpisDb, Uc.Conn);
+
+        //     if (result != null)
+        //     {
+        //         NotificationRef?.Show("Unable to delete this deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        //         return;
+        //     }
+
+        //     NotificationRef?.Show("Deployment deleted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+        //     V.Action = "RefreshDeploymentGrid";
+        //     await ChildAction.InvokeAsync();
+        // }
+        // catch (Exception ex)
+        // {
+        //     NotificationRef?.Show("Unable to delete deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        // }
+    }
+
+
 }
 

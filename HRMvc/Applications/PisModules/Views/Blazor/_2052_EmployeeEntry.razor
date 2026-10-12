@@ -360,7 +360,9 @@
 
         if (v.Action == "SelectEmpmas") await SelectEmpmas();
         if (v.Action == "SplitHeight") SplitHeight();
-        if (v.Action == "ComputeAge") ComputeAge();
+        if (v.Action == "ComputeEmployeesAge") ComputeEmployeesAge();
+        if (v.Action == "ComputeParentsAge") ComputeParentsAge();
+
         if (v.Action == "GetGenderAndCivilStatus_SplitHeight") {
             SplitHeight();
             GetGenderAndCivilStatus();
@@ -413,7 +415,7 @@
                 v.IsNewEntry    = false;
                 v.Empmas        = emp;
                 v.EmpmasToEdit  = MapEmpmas(emp);
-              
+
 
                 await LoadEmployments();
                 await LoadEducations();
@@ -428,7 +430,8 @@
                 SplitHeight();
                 GetAddressArea();
                 GetGenderAndCivilStatus();
-                ComputeAge();
+                ComputeParentsAge();
+                ComputeEmployeesAge();
 
 
             }
@@ -668,9 +671,8 @@
         }
     }
 
-    private void ComputeAge()
+    private void ComputeParentsAge()
     {
-        DateTime today = DateTime.Today;
 
         foreach (var c in v.Parents)
         {
@@ -680,20 +682,36 @@
                 continue;
             }
 
-            DateTime birthDate = c.DoB.Value;
-
-            int age = today.Year - birthDate.Year;
-
-            if (today < birthDate.AddYears(age))
-            {
-                age--;
-            }
-
-            c.Age = age;
+            c.Age = ComputeAge(c.DoB);
         }
     }
 
-   
+    private void ComputeEmployeesAge()
+    {
+        var age = ComputeAge(v.Empmas.EmpBirth);
+        v.Empmas.Age = age.ToString();
+    }
+
+
+
+
+    private double ComputeAge(DateTime? date)
+    {
+        if (date == null || date == DateTime.MinValue)
+            return 0;
+
+        DateTime today = DateTime.Today;
+        DateTime birthDate = date!.Value ;
+
+        int age = today.Year - birthDate.Year;
+
+        if (today < birthDate.AddYears(age))
+        {
+            age--;
+        }
+
+        return age;
+    }
 }
 
 
