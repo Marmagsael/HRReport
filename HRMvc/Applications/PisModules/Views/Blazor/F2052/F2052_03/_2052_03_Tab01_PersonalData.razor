@@ -2,11 +2,6 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 
 
-@inject NotificationService _NotificationService;
-@inject DialogService _DialogService;
-
-
-
 <div class="p-2">
     <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
         <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
@@ -134,6 +129,16 @@
                         <div class="small">lbs</div>
                     </div>
                 </div>
+
+            @* ----- Age ----------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Age </div>
+                <div class="w-80 d-flex gap-2">
+                    <div class="w-125p">
+                        <RadzenTextBox  @bind-Value="V.Empmas.Age" Disabled  class="form-control" />
+                    </div>
+                </div>
+            </div>
             </RadzenFieldset>
 
 
@@ -240,6 +245,11 @@
     async Task OnSubmit(OEmpmasModel model)
     {
         if (model == null) return;
+
+        V.Action = "ComputeEmployeesAge";
+        await ChildAction.InvokeAsync();
+
+
         try
         {
             V.Empmas.Height =  CombineHeight();
@@ -274,4 +284,5 @@
 
         return V.Empmas.HeightFt.Value + (V.Empmas.HeightInches.Value / 100.0);
     }
+
 }

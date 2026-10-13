@@ -1,15 +1,15 @@
-﻿using HRApiLibrary.Models._00_MainPis;
-using HRApiLibrary.Models._10_Pis;
-using Radzen.Blazor;
-using Radzen;
-using HRApiLibrary.Models._20_Pay;
-
-using System.Reflection;
-using OfficeOpenXml.FormulaParsing.Utilities;
-using System;
-using HRApiLibrary.DataAccess._10_Pis.Interface;
+﻿using HRApiLibrary.DataAccess._10_Pis.Interface;
+using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._00_MainPis;
+using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._10_Pis.OPis;
+using HRApiLibrary.Models._20_Pay;
+using OfficeOpenXml.FormulaParsing.Utilities;
+using Radzen;
+using Radzen.Blazor;
+using System;
+using System.Reflection;
 
 namespace HRMvc.Applications.PisModules.Vars;
 
@@ -60,6 +60,7 @@ public class V2052
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();
     public OEducateModel?                  Education            { get; set; } = new();
+    public OSeclicModel?                   SecLicense           { get; set; } = new();
 
     public List<OEmployModel?>?             Employments         { get; set; } = new();
     public List<OEducateModel?>?            Educations          { get; set; } = new();
