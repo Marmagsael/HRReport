@@ -1,22 +1,141 @@
-﻿
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+
 <div class="p-2">
-    
-    <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Security" />
+    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+        <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
+            <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Security" />
 
-    <div>Conn : @V.conn </div>
+            <div class="h-10p"></div>
 
+            @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+            {
+                <div class="p-2 bordered mb-2 w-100">
+
+                    <button type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <span class="fw-semibold"><small>Save</small></span>
+                        </div>
+                    </button>
+                </div>
+            }
+        </div>
+
+
+
+
+        <div class="h-10p"></div>
+        <RadzenFieldset Text="******">
+            @* ----- Sec License (varchar(15))----------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Security License </div>
+                <div class="w-80">
+                    <RadzenTextBox @bind-Value=@V.Empmas.SecLicense class="form-control" Name="SecurityLicense" MaxLength="15" Style="width:100%" />
+                    <RadzenRequiredValidator Component="SecurityLicense" Text="SecurityLicense is required" Style="color: red; display:block" />
+                </div>
+            </div>
+
+            @* ----- Expiration -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Expiration </div>
+                <div class="w-30">
+                    <RadzenDatePicker @bind-Value=@V.Empmas.Licexpire Name="Licexpire" DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                    <RadzenRequiredValidator Component="Licexpire" Text="License Expiration is required" Style="color: red; display:block" />
+                </div>
+            </div>
+
+            @* ----- Badge No -----------------------*@
+             <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Badge No. </div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.Empmas.BadgeNo class="form-control" Name="BadgeNo" MaxLength="10" Style="width:100%" />
+                    <RadzenRequiredValidator Component="BadgeNo" Text="Badge No. is required" Style="color: red; display:block" />
+                </div>
+            </div> 
+
+           
+        </RadzenFieldset>
+
+
+        <div class="h-10p"></div>
+        <RadzenFieldset Text="******">
+            @* ----- Guard No Years -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Guard # of Yrs </div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.Empmas.GuardNoYrs class="form-control" Name="GuardNoYrs" MaxLength="5" Style="width:100%" />
+                    <RadzenRequiredValidator Component="GuardNoYrs" Text="Guard no of years is required" Style="color: red; display:block" />
+                </div>
+            </div>
+
+            @* ----- Military No Years -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Military # of Yrs </div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.Empmas.MilitaryNoYr class="form-control" Name="MilitaryNoYr" MaxLength="5" Style="width:100%" />
+                    <RadzenRequiredValidator Component="MilitaryNoYr" Text="Military no of years is required" Style="color: red; display:block" />
+                </div>
+            </div>
+
+            @* ----- Remarks -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Remarks </div>
+                <div class="w-80">
+                    <RadzenTextBox @bind-Value=@V.Empmas.Remarks class="form-control"  MaxLength="150" Style="width:100%" />
+                </div>
+            </div>
+
+        </RadzenFieldset>
+    </RadzenTemplateForm>
 
 </div>
 
 
+@inject IOEmpmasDataAccess _empmas
 
 @code {
-
-
     [CascadingParameter]
     public V2052 V { get; set; } = new();
-     
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
     [Parameter]
-    public EventCallback    ChildAction     { get; set; }
+    public EventCallback ChildAction { get; set; }
+
+    async Task OnSubmit(OEmpmasModel model)
+    {
+        if (model == null) return;
+
+
+
+        try
+        {
+
+            Console.Write("1");
+            var res = await _empmas._03_Security(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
+            Console.Write("2");
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            Console.Write("3");
+
+        }
+
+
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+
+    }
+
+  
 
 }

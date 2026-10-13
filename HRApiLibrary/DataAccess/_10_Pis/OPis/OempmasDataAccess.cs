@@ -510,13 +510,14 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _03_Deployment(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
-                    DATEHIRED = @DATEHIRED, POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF
+                    DATEHIRED = @DATEHIRED, POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF, SEPARATE =@SEPARATE
                     WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT  POSITION_, EMPSTAT_,  
                 if(e.DATEHIRED  < '1000-01-01', null, DATEHIRED  )  as DATEHIRED  ,       
-                if(e.REGREF  < '1000-01-01', null, REGREF  )  as REGREF 
+                if(e.REGREF  < '1000-01-01', null, REGREF  )  as REGREF,
+                if(e.SEPARATE  < '1000-01-01', null, SEPARATE  )  as SEPARATE 
                 FROM {schema}.Empmas e WHERE Empnumber = @Empnumber";
 
         var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
@@ -571,26 +572,17 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data?.FirstOrDefault();
     }
 
+    
     public async Task<OEmpmasModel?> _03_Security(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
                     SECLICENSE = @SECLICENSE, LICEXPIRE = @LICEXPIRE,
                     GUARDEXP = @GUARDEXP, GUARDNOYRS = @GUARDNOYRS,
-                    EXMILITARY = @EXMILITARY, MILITARYNOYR = @MILITARYNOYR,
-                    CSP = @CSP, CPP = @CPP, ROTC = @ROTC,
-                    EXP_NBI = @EXP_NBI, EXP_POLICE = @EXP_POLICE, EXP_PNP = @EXP_PNP,
-                    EXP_BRGY = @EXP_BRGY, EXP_COURT = @EXP_COURT,
-                    EXP_NEURO = @EXP_NEURO, EXP_DRUG = @EXP_DRUG,
-                    BADGENO = @BADGENO, DRV_LICENSE = @DRV_LICENSE, DRV_EXP = @DRV_EXP,
-                    W_BIRTHC = @W_BIRTHC, W_CLOSINGR = @W_CLOSINGR, W_TRNCERT = @W_TRNCERT,
-                    W_PRELIC = @W_PRELIC, W_CERTEMP = @W_CERTEMP, W_MEDEXAM = @W_MEDEXAM
+                    EXMILITARY = @EXMILITARY, MILITARYNOYR = @MILITARYNOYR,  BADGENO = @BADGENO, REMARKS =@REMARKS
                     WHERE EMPNUMBER = @EMPNUMBER";
         await _sql.ExecuteCmd<dynamic>(sql, m, conn);
 
-        sql = $@"SELECT SECLICENSE, LICEXPIRE, GUARDEXP, GUARDNOYRS, EXMILITARY, MILITARYNOYR,
-                    CSP, CPP, ROTC, EXP_NBI, EXP_POLICE, EXP_PNP, EXP_BRGY, EXP_COURT,
-                    EXP_NEURO, EXP_DRUG, BADGENO, DRV_LICENSE, DRV_EXP,
-                    W_BIRTHC, W_CLOSINGR, W_TRNCERT, W_PRELIC, W_CERTEMP, W_MEDEXAM, EMPNUMBER
+        sql = $@"SELECT SECLICENSE, LICEXPIRE, GUARDEXP, GUARDNOYRS, EXMILITARY, MILITARYNOYR,  BADGENO, REMARKS
                     FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
 
 
