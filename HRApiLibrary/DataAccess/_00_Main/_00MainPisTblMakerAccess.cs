@@ -2241,7 +2241,6 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IsDefaultApprover   INTEGER     UNSIGNED DEFAULT 0,
                         PRIMARY KEY (`Id`))ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
-        Console.WriteLine("LeaveGrpApprover table created successfully.");
     }
 
     // private async Task _01LeaveCredit(string? schema, string? conn)

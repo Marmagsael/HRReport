@@ -454,10 +454,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         
         sql = $@"Desc {schema}.settings ";
         res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
-
+        
         if (res.Count == 27)
         {
-            sql = $@"  ALTER TABLE {schema}.`settings` ADD COLUMN `ImageDefultLocation` INTEGER UNSIGNED DEFAULT 3 AFTER `LogoAddress`;";
+            sql = $@"  ALTER TABLE {schema}.`settings` ADD COLUMN `ImageDefultLocation` varchar(200) DEFAULT '' AFTER `LogoAddress`;";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
 
