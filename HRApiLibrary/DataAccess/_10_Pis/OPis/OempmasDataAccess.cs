@@ -177,6 +177,29 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data;
     }
 
+    public async Task<List<OEmpmasModel?>?> _02By1stLetterRangeByStatus(string? firstLetter,  string? secondLetter, List<string> statuses, string? schema = "MainPis", string? conn = "MySqlConn")
+    {
+
+        string? sql = $@"select e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName, e.EmpStat_
+                        from {schema}.Empmas e 
+                        where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter and e.empstat_ in @Statuses
+                        order by e.EmplastNm, e.EmpFirstNm";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter, Statuses = statuses }, conn);
+        return data;
+    }
+
+    public async Task<List<OEmpmasModel?>?> _02SearchNameByStatus(string? skey, List<string> statuses,  string? schema = "MainPis", string? conn = "MySqlConn")
+    {
+        string? searchKey = $"{skey}%";
+        string? sql = $@"select  e.Empnumber, e.EmpLastNm, e.EmpFirstNm, e.EmpMidNm, concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName,  e.EmpStat_
+                        from {schema}.Empmas e 
+                        where (e.EmpLastNm like @SearchKey or e.EmpFirstNm like @SearchKey) and e.empstat_ in @Statuses
+                        order by e.EmplastNm, e.EmpFirstNm";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { SearchKey = searchKey , Statuses = statuses }, conn);
+        return data;
+    }
+
     public async Task<List<OEmpmasModel?>?> _02SearchName(string? skey, string? schema = "MainPis", string? conn = "MySqlConn")
     {
         string? searchKey = $"{skey}%";
@@ -767,6 +790,8 @@ public interface IOEmpmasDataAccess
 
     Task<List<OEmpmasModel?>?> _02ByPayrollGrpId(int? payrollgrpId, string? mainschema, string? pisschema, string? conn);
     Task<List<OEmpmasModel?>?>  _02By1stLetterRange(string? firstLetter, string? secondLetter, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02By1stLetterRangeByStatus(string? firstLetter,  string? secondLetter, List<string> statuses, string? schema , string? conn );
+    Task<List<OEmpmasModel?>?> _02SearchNameByStatus(string? skey, List<string> statuses, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02SearchName(string? skey, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn);

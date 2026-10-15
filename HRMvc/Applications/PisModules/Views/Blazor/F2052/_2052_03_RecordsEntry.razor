@@ -7,26 +7,34 @@
 
     @* --- New Entry Button *@
     <div class="w-100 p-2" style="border-bottom:1px solid #d9dde2; flex-shrink:0;">
-        @* <button type="submit" class="card p-1 mb-cbtn mb-cbtn-blue d-flex w-100p" @onclick="NewEntry">
-            <div class="d-flex align-items-center justify-content-center">
-                <span class="p-0">New Entry</span>
-            </div>
-        </button> *@
+
         <div class="d-flex justify-content-between">
-            <div>
+            <div class="d-flex gap-1">
                 <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="NewEntry">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
                         <span class="fw-semibold"><small>New Entry</small></span>
                     </div>
                 </button>
-            </div>
-           
 
-            <button class="btn btn-link p-0 txt"
-                    title="Status Settings"
-                    @onclick="OpenStatusSettingsModal">
-                <i class="fa-solid fa-gear"></i>
-            </button>
+                <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 "
+                        @onclick="GenerateReport">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"><small>Print</small></span>
+                    </div>
+                </button>
+            </div>
+
+
+            <div >
+
+                <button class="btn btn-secondary "
+                        title="Status Settings"
+                        @onclick="OpenStatusSettingsModal">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+
+          
 
         </div>
        
@@ -36,69 +44,73 @@
 
     @* --- Empmas Info *@
     <div style="background-color:#f5f6f7; border-bottom:1px solid #d9dde2; flex-shrink:0;">
-        <_2052_03_EmpmasInfo V="@V" ChildAction="ChildAction" />
+        <_2052_03_EmpmasInfo  ChildAction="ChildAction" />
     </div>
 
     @* --- Tabs *@
     <div style="flex-shrink:0;">
-        <_2052_03_01_Buttons V="@V" ChildAction="ChildAction" />
+        <_2052_03_01_Buttons  ChildAction="ChildAction" />
     </div>
 
     @* --- Tab Content *@
     <div class="hide-scroll" style="flex:1; overflow-y:auto; overflow-x:hidden;">
         @if (V.TabNo == 1)
         {
-            <_2052_03_Tab01_PersonalData V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab01_PersonalData  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 2)
         {
-            <_2052_03_Tab02_Address V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab02_Address  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 3)
         {
-            <_2052_03_Tab03_Deployment V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab03_Deployment  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 4)
         {
-            <_2052_03_Tab04_Employment V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab04_Employment  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 5)
         {
-            <_2052_03_Tab05_Education V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab05_Education  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 6)
         {
-            <_2052_03_Tab06_Family V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab06_Family  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 7)
         {
-            <_2052_03_Tab07_TrainingAndSeminar V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab07_TrainingAndSeminar  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 8)
         {
-            <_2052_03_Tab08_CharacterReference V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab08_CharacterReference  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 9)
         {
-            <_2052_03_Tab09_Insurance V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab09_Insurance  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 10)
         {
-            <_2052_03_Tab10_Compliance V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab10_Compliance  ChildAction="ChildAction" />
         }
         @if (V.TabNo == 11)
         {
-            <_2052_03_Tab11_Government V="@V" ChildAction="ChildAction" />
+            <_2052_03_Tab11_Government  ChildAction="ChildAction" />
         }
     </div>
 </div>
+
 @inject IOEmpmasDataAccess _empmas
 
 @code {
 
-    [Parameter]
+    [CascadingParameter]
     public V2052 V { get; set; } = new();
 
+
+    [CascadingParameter]
+    public V00_RepVars Rv { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
@@ -128,9 +140,51 @@
     {
         V.ModalCaption = "Employee Settings";
         V.ShowStatusModal = true;
+        V.previousSelectedStatus = V.SelectedStatus.ToList();
+
         await ChildAction.InvokeAsync();
     }
 
+
+    private async Task GenerateReport()
+    {
+
+        if (String.IsNullOrWhiteSpace(V.Empmas.EmpNumber) ) { return; }
+
+        V.IsLoading = true;
+
+        Rv.MCaption = "Personal Data Sheet";
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        V.RepDtls = new List<dynamic>
+        {
+            new
+            {
+                Empmas              = V.Empmas,
+                EmpAddress          = V.Empmasaddress,
+                Familys             = V.Familys,
+                Parents             = V.Parents,
+                EmergencyContacts   = V.EmergencyContacts,
+                Employments         = V.Employments,
+                Educations          = V.Educations,
+                Trainings           = V.Trainings,
+                CharRefs            = V.CharRefs,
+                InsuranceAccident   = V.InsuranceAccident
+            },
+        };
+
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Personal Data Sheet";
+        Rv.RelativePath = "Reports/_01Pis/K_2052_201.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        V.Action = "GenerateReport";
+
+        await ChildAction.InvokeAsync();
+
+
+    }
 
 
 }

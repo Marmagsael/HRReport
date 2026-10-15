@@ -9,7 +9,7 @@
 
 <div class="p-2">
     <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
-        <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:1000;">
+        <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
             <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Personal Data" />
 
             <div class="h-10p"></div>
@@ -226,8 +226,13 @@
 @inject IOEmpmasDataAccess _empmas
 
 @code {
-    [Parameter]
+    [CascadingParameter]
     public V2052 V { get; set; } = new();
+
+    
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
@@ -241,27 +246,15 @@
             await _empmas._03_PersonalData(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
             
             
-            V.Action = "SplitHeight";
+            V.Action = "GetGenderAndCivilStatus";
             await ChildAction.InvokeAsync();
 
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 3000
-            });
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
         }
 
 
