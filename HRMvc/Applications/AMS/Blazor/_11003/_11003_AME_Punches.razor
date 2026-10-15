@@ -1,0 +1,212 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003AME
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<div class="card h-100">
+    <div class="card-header p-1">
+        <div class="row g-2 align-items-center">
+            <div class="col-auto fw-bold txt-fcolor1">
+                Attendance Punches
+                @if (v?.SelectedEmployee is not null)
+                {
+                    <span class="ms-2 text-muted fw-normal">— @v.SelectedEmployee.EmpName</span>
+                }
+            </div>
+
+            <!-- Date Range -->
+            <div class="col-auto d-flex align-items-center gap-2">
+                <label class="mb-0">From:</label>
+                <TelerikDatePicker @bind-Value="@v!.DateStart" Width="140px" />
+                <label class="mb-0">To:</label>
+                <TelerikDatePicker @bind-Value="@v!.DateEnd" Width="140px" />
+                <TelerikButton OnClick="OnLoadPunches" ThemeColor="primary">Load</TelerikButton>
+            </div>
+
+            <!-- Add Button -->
+            @if (v?.Employees.Any(x => x.IsSelected && x.Empmasid > 0) == true)
+            {
+                <div class="col-auto ms-auto">
+                    <TelerikButton OnClick="OnAddPunch" ThemeColor="success">Add Punch</TelerikButton>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card-body p-0">
+        @if (v?.Employees.Any(x => x.IsSelected && x.Empmasid > 0) != true)
+        {
+            <div class="p-3 text-muted">Select an employee to view punches.</div>
+        }
+        else if (v?.SelectedEmployee is null)
+        {
+            <div class="p-3 text-muted">Multiple employees selected — punches shown for single selection only.</div>
+        }
+        else
+        {
+            <TelerikGrid Data="@v.Punches"
+                         SelectionMode="GridSelectionMode.None"
+                         Sortable="false"
+                         Class="k-grid-sm">
+                <GridColumns>
+                    <GridColumn Title="Punch In" Width="160px">
+                        <Template>
+                            @{ var p = (Attpunches1Model)context; }
+                            <span class="txt-fcolor1">
+                                @(p.PunchInDate?.ToString("MM/dd/yyyy hh:mm tt") ?? "-")
+                            </span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Title="Punch Out" Width="160px">
+                        <Template>
+                            @{ var p = (Attpunches1Model)context; }
+                            <span class="txt-green">
+                                @(p.PunchOutDate?.ToString("MM/dd/yyyy hh:mm tt") ?? "-")
+                            </span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Title="Schedule In" Width="110px">
+                        <Template>
+                            @{ var p = (Attpunches1Model)context;
+                               var match = v?.Attinschedules.FirstOrDefault(x => x.Id == p.PunchT); }
+                            @(match?.Inschedule ?? p.PunchT?.ToString() ?? "-")
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Title="Duty Duration" Width="110px">
+                        <Template>
+                            @{ var p = (Attpunches1Model)context; }
+                            @(p.SchedDuration?.ToString() ?? "-")
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Title="Actions" Width="100px" TextAlign="ColumnTextAlign.Center">
+                        <Template>
+                            @{ var p = (Attpunches1Model)context; }
+                            <TelerikButton OnClick="@(() => OnEditPunch(p))"   ThemeColor="info"  FillMode="flat" Size="sm">Edit</TelerikButton>
+                            <TelerikButton OnClick="@(() => OnDeletePunch(p))" ThemeColor="error" FillMode="flat" Size="sm">Del</TelerikButton>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+        }
+    </div>
+</div>
+
+<!-- Delete Confirm Dialog -->
+<TelerikDialog @bind-Visible="@v!.IsDeleteDialogOpen" Title="Confirm Delete">
+    <DialogContent>
+        Are you sure you want to delete this punch record?
+        @if (v?.PunchToDelete?.PunchInDate is not null)
+        {
+            <div class="mt-2 text-muted">@v.PunchToDelete.PunchInDate?.ToString("MM/dd/yyyy hh:mm tt")</div>
+        }
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="OnConfirmDelete" ThemeColor="error">Delete</TelerikButton>
+        <TelerikButton OnClick="OnCancelDelete">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject IDA_11003AME            _da
+@inject IAttpunches1DataAccess  _punches
+
+@code {
+
+    [CascadingParameter] public V11003AMEModel?     v               { get; set; }
+    [CascadingParameter] public UserClaimsModel?    Uc              { get; set; }
+    [CascadingParameter] public Func<Task>?         NotifyChanged   { get; set; }
+
+    private async Task OnLoadPunches()
+    {
+        if (v is null || Uc is null || v.SelectedEmployee is null) return;
+        if (v.DateStart is null || v.DateEnd is null) return;
+
+        try
+        {
+            var start  = DateOnly.FromDateTime(v.DateStart.Value);
+            var end    = DateOnly.FromDateTime(v.DateEnd.Value);
+            var result = await _punches._02ByIdByRange(v.SelectedEmployee.Empmasid, start, end, Uc.SchemaUserPis!, Uc.Conn!);
+
+            v.Punches = result?
+                .Where(x => x is not null)
+                .Cast<Attpunches1Model>()
+                .ToList() ?? [];
+        }
+        catch (Exception ex)
+        {
+            v!.Notification = ("error", $"Load punches failed: {ex.Message}");
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private void OnAddPunch()
+    {
+        if (v is null) return;
+
+        v.IsEditMode        = false;
+        v.ModalPunch        = new Attpunches1Model { EmpmasId = v.SelectedEmployee?.Empmasid, Status = "L" };
+        v.ModalPunchInDate  = null;
+        v.ModalPunchInTime  = -1;
+        v.ModalPunchOutDate = null;
+        v.ModalPunchOutTime = -1;
+        v.IsModalOpen       = true;
+
+        NotifyChanged!.Invoke();
+    }
+
+    private void OnEditPunch(Attpunches1Model punch)
+    {
+        if (v is null) return;
+
+        v.IsEditMode        = true;
+        v.ModalPunch        = punch;
+        v.ModalPunchInDate  = punch.PunchInDate?.Date;
+        v.ModalPunchInTime  = punch.PunchInDate.HasValue ? TimeToHundreds(punch.PunchInDate.Value) : -1;
+        v.ModalPunchOutDate = punch.PunchOutDate?.Date;
+        v.ModalPunchOutTime = punch.PunchOutDate.HasValue ? TimeToHundreds(punch.PunchOutDate.Value) : -1;
+        v.IsModalOpen       = true;
+
+        NotifyChanged!.Invoke();
+    }
+
+    private void OnDeletePunch(Attpunches1Model punch)
+    {
+        if (v is null) return;
+        v.PunchToDelete      = punch;
+        v.IsDeleteDialogOpen = true;
+        NotifyChanged!.Invoke();
+    }
+
+    private async Task OnConfirmDelete()
+    {
+        if (v is null || Uc is null || v.PunchToDelete?.PunchInDate is null) return;
+
+        try
+        {
+            await _da._04AME_DeletePunch(v.PunchToDelete.EmpmasId!.Value, v.PunchToDelete.PunchInDate!.Value, Uc.SchemaUserPis!, Uc.Conn!);
+            v.Punches.Remove(v.PunchToDelete);
+            v.Notification = ("success", "Punch record deleted.");
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Delete failed: {ex.Message}");
+        }
+
+        v.IsDeleteDialogOpen = false;
+        v.PunchToDelete      = null;
+        await NotifyChanged!.Invoke();
+    }
+
+    private void OnCancelDelete()
+    {
+        if (v is null) return;
+        v.IsDeleteDialogOpen = false;
+        v.PunchToDelete      = null;
+        NotifyChanged!.Invoke();
+    }
+
+    private int TimeToHundreds(DateTime dt) => (dt.Hour * 100) + dt.Minute;
+}

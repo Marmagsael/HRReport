@@ -220,8 +220,19 @@ public class OEmpmasModel
     public string?  EmpStatus               { get; set; } = string.Empty;
     public string?  Reason                  { get; set; }
     public int?     CntNotMigrated          { get; set; } = 0;
+    public int?     HeightFt                { get; set; }
     public double?  HeightInches            { get; set; }
     public bool     Sel                     { get; set; } = false;
+
+    public string? Gender                   { get; set; } = string.Empty;
+    public string? CivilStatus              { get; set; } = string.Empty;
+    public string? ManilaArea               { get; set; } = string.Empty;
+    public string? ProvincialArea           { get; set; } = string.Empty;
+
+
+
+
+
 
     // RTU Transaction Module ----------------------------------
     public DateTime?    MovPrepDate         { get; set; } 

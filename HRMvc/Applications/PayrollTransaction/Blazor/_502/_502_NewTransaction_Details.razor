@@ -1,0 +1,78 @@
+﻿@using HRMvc.Applications.PayrollTransaction.Vars
+<div class="container-fluid p-0">
+
+    <div class="d-flex">
+        
+        @* --- Emplpyee Grid *@
+        <div class="w-60">
+            <TelerikGrid Data="@V0502.PayEmpmass"
+                         Height="500px"
+                         Pageable="false"
+                         Sortable="false"
+                         Resizable="true"
+                         SelectionMode="@GridSelectionMode.None">
+
+                <GridColumns>
+                    <GridColumn Field=@nameof(V0502PayEmpmasModel.No) Title="No" Width="50px" TextAlign="@ColumnTextAlign.Center" />
+                    
+                    <GridColumn Title="Mrk" Width="50px" TextAlign="@ColumnTextAlign.Center">
+                        <Template Context="item"> @{ var employee = (V0502PayEmpmasModel)item; }
+                            <TelerikCheckBox @bind-Value="employee.IsSelected" />
+                        </Template>
+                    </GridColumn>
+
+                    <GridColumn Field=@nameof(V0502PayEmpmasModel.EmpNumber) Width="100px"    Title="Emp No" />
+                <GridColumn Field=@nameof(V0502PayEmpmasModel.EmpName) Title="Name" />
+                <GridColumn Field=@nameof(V0502PayEmpmasModel.Status) Width="100px" Title="Status" />
+                    
+                </GridColumns>
+            </TelerikGrid>
+
+        </div>
+
+        @* --- Account Grid *@
+        <div class="w-40">
+
+            <TelerikGrid Data="@V0502.AccountSelecteds"
+                         Height="500px"
+                         Pageable="false"
+                         Sortable="false"
+                         Resizable="true"
+                         SelectionMode="@GridSelectionMode.None">
+
+                <GridColumns>
+                    <GridColumn Field=@nameof(V0502PayAccountModel.No) Title="No" Width="50px" TextAlign="@ColumnTextAlign.Center" />
+                    
+                    <GridColumn Title="Mrk" Width="50px" TextAlign="@ColumnTextAlign.Center">
+                        <Template Context="item"> @{ var account = (V0502PayAccountModel)item; }
+                            <TelerikCheckBox @bind-Value="account.IsSelected" />
+                        </Template>
+                    </GridColumn>
+
+                    <GridColumn Field=@nameof(V0502PayAccountModel.AcctName)                     Title="Name" />
+                    
+                </GridColumns>
+            </TelerikGrid>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+@code {
+    [CascadingParameter] public UserClaimsModel Uc                  { get; set; } = new();
+    [CascadingParameter] public V0502?           V0502              { get; set; } = new();
+    [CascadingParameter] public Func<Task>?     NotifyV0502Changed  { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // V0502.PayEmpmass.Add(new(){No=1});
+        // V0502.PayEmpmass.Add(new(){No=2});
+        // V0502.PayEmpmass.Add(new() { No = 3 });
+
+    }
+
+
+}

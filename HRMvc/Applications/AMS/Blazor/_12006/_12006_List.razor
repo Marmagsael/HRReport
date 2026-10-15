@@ -1,0 +1,186 @@
+@using HRApiLibrary.Modules._12006O
+@using HRMvc.Applications.AMS.Vars
+@using HRMvc.Applications.AMS.Blazor._12006
+@using Telerik.Blazor.Components
+
+@inject IDA_12006O Da
+
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<TelerikRootComponent>
+<div class="card w-100 p-1">
+    <div class="card-body p-1 w-100">
+
+        <TelerikGrid Data="@FilteredSites"
+                     Pageable="true"
+                     PageSize="20"
+                     Sortable="true"
+                     Resizable="true"
+                     Class="mb-3">
+            <GridToolBarTemplate>
+                <TelerikDropDownList Data="@StatusOptions"
+                                     @bind-Value="@StatusFilter"
+                                     TextField="Text"
+                                     ValueField="Value"
+                                     Width="130px" />
+                <TelerikButton Icon="@("plus")" ThemeColor="primary" OnClick="@OpenAddModal">
+                    Add Site
+                </TelerikButton>
+            </GridToolBarTemplate>
+            <GridColumns>
+                <GridColumn Field="@nameof(M12006_Site.Code)"         Title="Code"       Width="120px" />
+                <GridColumn Field="@nameof(M12006_Site.Name)"         Title="Name"       />
+                <GridColumn Field="@nameof(M12006_Site.Address)"      Title="Address"    />
+                <GridColumn Field="@nameof(M12006_Site.RadiusMeters)" Title="Radius (m)" Width="110px" />
+                <GridColumn Field="@nameof(M12006_Site.Status)"       Title="Status"     Width="90px">
+                    <Template>
+                        @{ var row = (M12006_Site)context; }
+                        <span class="badge @(row.Status == "A" ? "bg-success" : "bg-secondary")">
+                            @(row.Status == "A" ? "Active" : "Inactive")
+                        </span>
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Actions" Width="110px" Sortable="false">
+                    <Template>
+                        @{ var row = (M12006_Site)context; }
+                        <TelerikButton Icon="@("pencil")"
+                                       ThemeColor="warning"
+                                       FillMode="ButtonFillMode.Flat"
+                                       Size="ButtonSize.Small"
+                                       OnClick="@(() => OpenEditModal(row))" />
+                        <TelerikButton Icon="@("trash")"
+                                       ThemeColor="error"
+                                       FillMode="ButtonFillMode.Flat"
+                                       Size="ButtonSize.Small"
+                                       OnClick="@(() => OpenDeleteModal(row))" />
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+
+        @* ── Form Modal (separate component) ── *@
+        <_12006_Form Uc="@Uc"
+                     FormModel="@FormModel"
+                     IsEditMode="@IsEditMode"
+                     @bind-IsFormVisible="@IsFormVisible"
+                     OnSaved="@LoadData"
+                     OnNotify="@HandleNotify" />
+
+        @* ── Delete Confirm Modal ── *@
+        <TelerikWindow @bind-Visible="@IsDeleteVisible" Modal="true" Width="380px">
+            <WindowTitle>Confirm Delete</WindowTitle>
+            <WindowActions>
+                <WindowAction Name="Close" OnClick="@CloseDeleteModal" />
+            </WindowActions>
+            <WindowContent>
+                <p>Delete site <strong>@FormModel.Name</strong>? This cannot be undone.</p>
+            </WindowContent>
+            <WindowFooter>
+                <TelerikButton ThemeColor="error" OnClick="@DeleteRecord" Enabled="@(!IsBusy)">
+                    @(IsBusy ? "Deleting..." : "Delete")
+                </TelerikButton>
+                <TelerikButton OnClick="@CloseDeleteModal">Cancel</TelerikButton>
+            </WindowFooter>
+        </TelerikWindow>
+
+    </div>
+</div>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    private TelerikNotification NotificationRef { get; set; } = new();
+    private List<M12006_Site>   Sites           { get; set; } = [];
+    private M12006_Site         FormModel       { get; set; } = new();
+
+    private bool   IsFormVisible   { get; set; } = false;
+    private bool   IsDeleteVisible { get; set; } = false;
+    private bool   IsEditMode      { get; set; } = false;
+    private bool   IsBusy          { get; set; } = false;
+    private string StatusFilter    { get; set; } = "A";
+
+    private IEnumerable<M12006_Site> FilteredSites =>
+        StatusFilter == "ALL" ? Sites : Sites.Where(s => s.Status == StatusFilter);
+
+    private List<(string Text, string Value)> StatusOptions =
+    [
+        ("Active",   "A"),
+        ("Inactive", "I"),
+        ("All",      "ALL")
+    ];
+
+    protected override async Task OnParametersSetAsync() => await LoadData();
+
+    private async Task LoadData()
+    {
+        if (Uc is null) return;
+        try { Sites = await Da._02s_Sites(Uc.SchemaUserPis!, Uc.Conn!) ?? []; }
+        catch (Exception ex) { Notify("error", $"Load failed: {ex.Message}"); }
+    }
+
+    private void OpenAddModal()
+    {
+        FormModel     = new M12006_Site { Status = "A", RadiusMeters = 100 };
+        IsEditMode    = false;
+        IsFormVisible = true;
+    }
+
+    private void OpenEditModal(M12006_Site item)
+    {
+        FormModel = new M12006_Site
+        {
+            Id           = item.Id,
+            Code         = item.Code,
+            Name         = item.Name,
+            Address      = item.Address,
+            Latitude     = item.Latitude,
+            Longitude    = item.Longitude,
+            RadiusMeters = item.RadiusMeters,
+            Status       = item.Status
+        };
+        IsEditMode    = true;
+        IsFormVisible = true;
+    }
+
+    private void OpenDeleteModal(M12006_Site item)
+    {
+        FormModel      = item;
+        IsDeleteVisible = true;
+    }
+
+    private void CloseDeleteModal() => IsDeleteVisible = false;
+
+    private async Task DeleteRecord()
+    {
+        if (Uc is null) return;
+        IsBusy = true;
+        try
+        {
+            await Da._04_Site(FormModel.Id, Uc.SchemaUserPis!, Uc.Conn!);
+            await LoadData();
+            Notify("success", $"{FormModel.Name} deleted.");
+            CloseDeleteModal();
+        }
+        catch (Exception ex) { Notify("error", $"Delete failed: {ex.Message}"); }
+        finally { IsBusy = false; }
+    }
+
+    private void HandleNotify(string payload)
+    {
+        var parts = payload.Split('|', 2);
+        if (parts.Length == 2) Notify(parts[0], parts[1]);
+    }
+
+    private void Notify(string type, string message)
+    {
+        NotificationRef.Show(new NotificationModel
+        {
+            Text       = message,
+            ThemeColor = type,
+            CloseAfter = 4000
+        });
+    }
+}

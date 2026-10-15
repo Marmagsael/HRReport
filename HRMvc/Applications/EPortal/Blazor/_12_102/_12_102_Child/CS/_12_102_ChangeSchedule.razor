@@ -1,0 +1,93 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRMvc.Applications._00GeneralComponents
+
+@if(Cs.ShowMyReqquest){
+    <_00Modal ModuleCaption="Change Schedule Request" ChildAction="()=>Cs.ShowMyReqquest=false" >
+        <Content>
+            <_12_102_CS_Request Cs="@Cs" Uc="@Uc" Ec="@Ec" />
+        </Content>
+    </_00Modal>
+}
+
+@if(Cs.ShowSendForApproval){
+    <_00Modal ModuleCaption="Submit for Approval" ChildAction="()=>Cs.ShowSendForApproval=false" >
+        <Content>
+
+            <div class="shatter @(IsCancelling ? "animate" : "")">
+
+                <div class="w-100 border-bottom p-1 mb-1">
+                    <div @onclick="Send" class="w-150p mb-cbtn mb-cbtn-blue p-1 card  ">Send For Approval</div>
+                </div>
+            
+                <_12_102_CS_Details Cs="@Cs" Uc="@Uc"  /> 
+            </div>
+            
+        </Content>
+    </_00Modal>
+}
+
+@if(Cs.ShowCancel){
+    <_00Modal ModuleCaption="Cancel Request" ChildAction="()=>Cs.ShowCancel=false" >
+        <Content>
+            
+            <div class="shatter @(IsCancelling ? "animate" : "")">
+
+                <div class="w-100 border-bottom p-1 mb-1">
+                    <div @onclick="Cancel" class="w-125p mb-cbtn mb-cbtn-red p-1 card  ">Cancel</div>
+                </div>
+            
+                <_12_102_CS_Details Cs="@Cs" Uc="@Uc"  /> 
+            </div>
+
+
+
+
+        </Content>
+    </_00Modal>
+}
+
+
+
+
+@inject IAtttemplatereqhdrDataAccess    _attTemplateReqhdr; 
+@inject IAtttemplatereqdtlDataAccess    _attTemplateReqdtl; 
+
+@code {
+    [Parameter] public  UserClaimsModel?    Uc      { get; set; } = new();
+    [Parameter] public  V12_102CS           Cs      { get; set; } = new();
+    [Parameter] public EventCallback        Ec      { get; set; } 
+
+
+    bool        IsCancelling = false;
+
+    async Task Send()
+    {
+
+        Cs.Atttemplatereqhdr = await _attTemplateReqhdr._03SendForApproval(Cs.Atttemplatereqhdr, Uc.SchemaUserPis, Uc.Conn); 
+        Cs.Atttemplatereqdtl = (await _attTemplateReqdtl._02ByAtttemplateReqHdrId(Cs?.Atttemplatereqhdr?.Id??0, Uc.SchemaUserPis, Uc.Conn))?.FirstOrDefault(); 
+        Cs.ShowSendForApproval = false; 
+        await Ec.InvokeAsync();
+    }
+
+    async Task Cancel()
+    {
+        IsCancelling = true;
+        StateHasChanged();
+
+        await Task.Delay(500); // match CSS animation time
+
+        await _attTemplateReqhdr._04(Cs.Atttemplatereqhdr.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+        await _attTemplateReqdtl._04(Cs.Atttemplatereqhdr.Id??0, Uc.SchemaUserPis, Uc.Conn); 
+
+        Cs.Atttemplatereqhdr = new(); 
+        Cs.Atttemplatereqdtl = new(); 
+        IsCancelling = false; 
+        Cs.ShowCancel = false; 
+
+        await Ec.InvokeAsync(); 
+
+
+    }
+
+
+}

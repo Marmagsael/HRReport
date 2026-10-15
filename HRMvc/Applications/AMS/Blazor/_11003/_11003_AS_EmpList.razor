@@ -1,0 +1,109 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<div class="fw-bold mb-2">Employee List</div>
+
+<TelerikGrid Data="@V!.Employees" Pageable="true" PageSize="25" Sortable="true"
+             SelectionMode="GridSelectionMode.Single"
+             SelectedItems="@V.SelectedEmployees"
+             SelectedItemsChanged="@((IEnumerable<M11003_Empmas> items) => OnEmpSelected(items))"
+             Height="650px" Class="emp-grid">
+    <GridColumns>
+        <GridColumn Field="@nameof(M11003_Empmas.EmpNumber)" Title="Emp No." Width="100px" />
+        <GridColumn Field="@nameof(M11003_Empmas.EmpName)" Title="Emp Name">
+            <Template>
+                @{ var row = (M11003_Empmas)context; }
+                @if (row.SystemId == 0)
+                {
+                    <span class="text-danger">@row.EmpName</span>
+                }
+                else
+                {
+                    <span>@row.EmpName</span>
+                }
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</TelerikGrid>
+
+@inject IAtttemplateDataAccess          _atttemplate
+@inject IAttadvancescheduleDataAccess   _advsched
+
+@code {
+
+    [CascadingParameter] public UserClaimsModel? Uc            { get; set; }
+    [CascadingParameter] public V11003ASModel?   V             { get; set; }
+    [CascadingParameter] public Func<Task>?      NotifyChanged { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // Console.WriteLine($"EmpList re-rendered — Employees count: {V?.Employees?.Count ?? 0}");
+    }
+
+    private async Task OnEmpSelected(IEnumerable<M11003_Empmas> items)
+    {
+        V!.SelectedEmployees = items;
+        V!.SelectedEmployee  = items.FirstOrDefault();
+
+        if (V.SelectedEmployee is null)
+        {
+            try { await NotifyChanged!.Invoke(); } catch (ObjectDisposedException) { }
+            return;
+        }
+
+        try
+        {
+            var empmasId = V.SelectedEmployee.SystemId;
+            var empname  = V.SelectedEmployee.EmpName;
+
+            V.CurrSched    = new AtttemplateModel();
+            V.HasCurrSched = false;
+            V.AdvScheds    = [];
+
+            if (empmasId == 0)
+            {
+                V!.Notification     = ("warning", $"No Empmas record found for {empname}.");
+                V.SelectedEmployee  = null;
+                V.SelectedEmployees = [];
+            }
+            else
+            {
+                // Load current schedule
+                var currSched  = await _atttemplate._02(empmasId, Uc!.SchemaUserPis!, Uc.Conn!);
+                V.HasCurrSched = currSched is not null;
+                V.CurrSched    = currSched ?? new AtttemplateModel { EmpmasId = empmasId };
+
+                // Auto-load advance schedules
+                V.AdvScheds = (await _advsched._02sEmpNumberDateRange(
+                                  V.SelectedEmployee.EmpNumber!,
+                                  V.StartDate,
+                                  V.EndDate,
+                                  Uc!.SchemaUserPis!,
+                                  Uc.Conn!) ?? [])
+                              .Where(x => x is not null)
+                              .Cast<AttadvancescheduleModel>()
+                              .OrderBy(x => x.Date)
+                              .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            V!.Notification = ("error", $"Load schedule failed: {ex.Message} | {ex.StackTrace?.Split('\n').FirstOrDefault()}");
+        }
+
+        try { await NotifyChanged!.Invoke(); } catch (ObjectDisposedException) { }
+    }
+}
+
+<style>
+    .emp-grid .k-grid-table tr td {
+        cursor: pointer;
+    }
+</style>

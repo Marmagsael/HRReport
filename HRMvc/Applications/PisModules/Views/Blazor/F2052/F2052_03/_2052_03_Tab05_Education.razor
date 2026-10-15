@@ -1,15 +1,12 @@
 ﻿@using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03.F2052_03_Tab5
 
-@inject NotificationService _NotificationService;
-@inject DialogService _DialogService;
-
 
 
 <div class="p-2">
     <RadzenTemplateForm TItem="OEducateModel" Data=@V.Education Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
 
 
-        <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:1000;">
+        <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
         <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Educational Background" />
 
             <div class="h-10p"></div>
@@ -55,30 +52,15 @@
     string? empnumber = string.Empty;
     bool isLoading = true;
 
-    [Parameter] public V2052 V { get; set; } = new();
+    [CascadingParameter] public V2052 V { get; set; } = new();
+
+        
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
-    protected override async Task OnParametersSetAsync()
-    {
-        if (empnumber != V.SelectedEmpnumber)
-        {
-            empnumber = V.SelectedEmpnumber;
-            await Task.Delay(250);
 
-            var res = await _empmas._02(V.SelectedEmpnumber, V.pisdb, V.conn) ?? new();
-
-            var codes = new[] { "E", "H", "C", "V", "P" };
-            foreach (var code in codes)
-            {
-                if (!res.Any(e => e?.Code == code))
-                    res.Add(new OEducateModel { Code = code, EmpNumber = V.SelectedEmpnumber });
-            }
-
-            V.Educations = res;
-        }
-        isLoading = false;
-        StateHasChanged();
-    }
 
     OEducateModel LoadRec(string code)
     {
@@ -110,33 +92,17 @@
                     await _empmas._01(edu, V.pisdb!, V.conn!);
             }
 
-            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowError("Unable to save", "Something went wrong.", 6000);
+            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
     {
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-     _NotificationService.Notify(new NotificationMessage
-     {
-         Severity = NotificationSeverity.Success,
-         Summary = summary,
-         Detail = detail,
-         Duration = duration
-     });
-
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+    
 }

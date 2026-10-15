@@ -2234,12 +2234,14 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     private async Task _01LeaveGrpApprover(string? schema, string? conn)
     {
         string? sql = $@"CREATE TABLE if not exists {schema}.LeaveGrpApprover (
-                            Id              INTEGER     UNSIGNED            NOT NULL AUTO_INCREMENT,
-                            LeaveGrpId      INTEGER     UNSIGNED DEFAULT 0,
-                            ApproverId      INTEGER     UNSIGNED DEFAULT 0,
-                            ApproverLevel   INTEGER     UNSIGNED DEFAULT 0,
+                            Id                  INTEGER     UNSIGNED            NOT NULL AUTO_INCREMENT,
+                            LeaveGrpId          INTEGER     UNSIGNED DEFAULT 0,
+                            ApproverId          INTEGER     UNSIGNED DEFAULT 0,
+                            ApproverLevel       INTEGER     UNSIGNED DEFAULT 0,
+                            IsDefaultApprover   INTEGER     UNSIGNED DEFAULT 0,
                         PRIMARY KEY (`Id`))ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
+        Console.WriteLine("LeaveGrpApprover table created successfully.");
     }
 
     // private async Task _01LeaveCredit(string? schema, string? conn)

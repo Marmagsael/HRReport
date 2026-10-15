@@ -22,6 +22,7 @@
 
                     <Details>
 
+                  
 
                         @*---  Grid ---*@
                         <_2054_InsuranceList ChildAction="ChildAction" />
@@ -52,24 +53,28 @@
 
         v.UcLoaded = true;
 
+
+        await _02LoadInsurances();
+
     }
 
 
-    private async Task LoadInsurances()
+    private async Task _02LoadInsurances()
     {
         v.IsLoading = true;
 
         try
         {
-            var res = await _insurance._02(v.OPisdb, v.Conn);
+            var res = await _insurance._02(Uc.OpisDb, Uc.Conn);
 
             if (res.Any())
             {
                 v.Insurances = res;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
             NotificationRef?.Show("Unable to load insurances", ThemeConstants.Notification.ThemeColor.Error);
         }
         finally

@@ -1,0 +1,337 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications.AMS.Blazor._12002
+@using HRMvc.Applications.AMS.Vars
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+
+<TelerikRootComponent>
+
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="NotificationHorizontalPosition.Center"
+                         VerticalPosition="NotificationVerticalPosition.Top" />
+
+    <!-- Remove Employee Confirmation -->
+    <TelerikDialog @bind-Visible="@v.IsRemoveEmpConfirmOpen" Title="Confirm Remove" Width="400px">
+        <DialogContent>
+            <p>Are you sure you want to remove the selected employee(s) from the list?</p>
+        </DialogContent>
+        <DialogButtons>
+            <TelerikButton OnClick="OnConfirmRemove" ThemeColor="error">Yes, Remove</TelerikButton>
+            <TelerikButton OnClick="OnCancelRemove">Cancel</TelerikButton>
+        </DialogButtons>
+    </TelerikDialog>
+
+    <div class="card w-100 p-1">
+        <BodyHdr pageTitle="Attendance Processing" />
+        <div class="card-body p-1 w-100">
+
+            <CascadingValue Value="@v">
+                <CascadingValue Value="@Uc">
+                    <CascadingValue Value="@NotifyChanged">
+
+                        <!-- Top Buttons -->
+                        <div class="d-flex gap-1 bordered-bottom py-1">
+                            <div class="col-auto">
+                                <TelerikButton OnClick="OnSave" ThemeColor="primary"
+                                               Enabled="@(v.SelectedPayrollGrpId is not null
+                                                       && v.Hdr.CoverageStart != default
+                                                       && v.Hdr.CoverageEnd != default
+                                                       && v.ManHours.Count > 0
+                                                       && !v.IsBusy)">
+                                    Save
+                                </TelerikButton>
+                            </div>
+                            <div class="col-auto">
+                                <TelerikButton OnClick="OnPostToPayroll">Post to Payroll</TelerikButton>
+                            </div>
+                            <div class="col-auto">
+                                <TelerikButton OnClick="OnPrint">Print</TelerikButton>
+                            </div>
+                        </div>
+
+                        <!-- Payroll Group -->
+                        <div class="row mb-2 align-items-center border-bottom">
+                            <div class="col-auto">
+                                <label class="form-label fw-bold txt-fcolor1 mb-0">Payroll Group</label>
+                            </div>
+                            <div class="col-auto p-1">
+                                <TelerikDropDownList Data="@v.PayrollGrps"
+                                                     Value="@v.SelectedPayrollGrpId"
+                                                     ValueChanged="@((int? val) => OnPayrollGrpChanged(val))"
+                                                     TextField="Name" ValueField="Id" Width="400px">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="400px" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </div>
+                        </div>
+
+                        <!-- Coverage + Load Button -->
+                        <div class="d-flex gap-2 align-items-center bordered-bottom py-1">
+                            <div class="">
+                                <label class="form-label fw-bold mb-0">Punches Coverage :</label>
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label mb-0 me-1">Start</label>
+                                <TelerikDatePicker Value="@v.Hdr.CoverageStart" ValueChanged="@((DateTime val) => { v.Hdr.CoverageStart = val; })" Width="160px" />
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label mb-0 me-1 txt-orange">End</label>
+                                <TelerikDatePicker Value="@v.Hdr.CoverageEnd" ValueChanged="@((DateTime val) => { v.Hdr.CoverageEnd = val; })" Width="160px" />
+                            </div>
+                            <div class="col-auto">
+                                <TelerikButton OnClick="OnLoad" ThemeColor="primary" Enabled="@(!v.IsBusy)">
+                                    @(v.IsBusy ? "Loading..." : "Load")
+                                </TelerikButton>
+                            </div>
+                        </div>
+
+                        <!-- BioManHour Grid -->
+                        <_12002_ManHourGrid />
+
+                        <!-- Bottom Buttons -->
+                        <div class="row mt-2 mb-1">
+                            <div class="col-auto">
+                                <TelerikButton OnClick="OnLoadAttendance" ThemeColor="primary">Load Attendance</TelerikButton>
+                            </div>
+                            <div class="col-auto">
+                                <TelerikButton OnClick="OnProcessData">Process Data</TelerikButton>
+                            </div>
+                            <div class="col-auto">
+                                <TelerikButton OnClick="OnSaveDailyPunches">Save</TelerikButton>
+                            </div>
+                        </div>
+
+                        <!-- Daily Transaction Label -->
+                        <div class="row mb-1">
+                            <div class="col-auto">
+                                <label class="fw-bold txt-fcolor1">Daily Transaction</label>
+                            </div>
+                        </div>
+
+                        <!-- BioDailyPunches Grid -->
+                        <_12002_DailyTransactionGrid />
+
+                        <!-- Load Attendance Modal -->
+                        <_12002_LoadAttendanceModal />
+
+                        <!-- Add Employee Modal -->
+                        <_12002_AddEmployeeModal />
+
+                        <_12002_UploadExcelModal />
+
+                    </CascadingValue>
+                </CascadingValue>
+            </CascadingValue>
+
+        </div>
+    </div>
+
+</TelerikRootComponent>
+
+@inject IDA_11003O               _daO
+@inject IBioManHourHdrDataAccess _hdrDa
+@inject IBioManHourDataAccess    _manHourDa
+
+@code {
+    [Parameter] public UserClaimsModel? Uc        { get; set; }
+    private TelerikNotification NotificationRef   { get; set; } = new();
+    private V12002Model         v                 { get; set; } = new();
+    private bool                _initialized      = false;
+    private Func<Task>? _notifyChanged;
+    private Func<Task> NotifyChanged => _notifyChanged ??= async () =>
+    {
+        try
+        {
+            if (!string.IsNullOrEmpty(v.Notification.Type))
+            {
+                NotificationRef.Show(new NotificationModel
+                {
+                    Text       = v.Notification.Message,
+                    ThemeColor = v.Notification.Type,
+                    CloseAfter = 4000
+                });
+                v.Notification = (string.Empty, string.Empty);
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (ObjectDisposedException) { }
+    };
+
+    protected async override Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        if (_initialized) return;
+        _initialized = true;
+
+        if (Uc is null) return;
+        try
+        {
+            v.PayrollGrps = await _daO._02Payrollgrps(Uc.OpayDb!, Uc.Conn!) ?? [];
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show(new NotificationModel
+            {
+                Text       = $"Load failed: {ex.Message}",
+                ThemeColor = "error",
+                CloseAfter = 4000
+            });
+        }
+    }
+
+    private async Task OnPayrollGrpChanged(int? val)
+    {
+        v.SelectedPayrollGrpId = val;
+        v.ManHours             = [];
+        v.DailyPunches         = [];
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task OnLoad()
+    {
+        if (Uc is null) return;
+
+        if (v.SelectedPayrollGrpId is null)
+        {
+            v.Notification = ("warning", "Please select a Payroll Group.");
+            await NotifyChanged.Invoke();
+            return;
+        }
+
+        if (v.Hdr.CoverageStart == default || v.Hdr.CoverageEnd == default)
+        {
+            v.Notification = ("warning", "Please set Coverage Start and End date.");
+            await NotifyChanged.Invoke();
+            return;
+        }
+
+        v.IsBusy = true;
+        await NotifyChanged.Invoke();
+
+        try
+        {
+            var hdrs     = await _hdrDa._02sByPayrollGrp(v.SelectedPayrollGrpId.Value, Uc.SchemaUserPis!, Uc.Conn!) ?? [];
+            var existing = hdrs.FirstOrDefault(x => x is not null && x.CoverageStart == v.Hdr.CoverageStart);
+
+            if (existing is not null)
+            {
+                v.Hdr      = existing;
+                var detail = await _manHourDa._02sByHdr(existing.Id, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!);
+                v.ManHours = detail.Where(x => x is not null).Cast<BioManHourModel>().ToList();
+            }
+            else
+            {
+                v.Hdr.PayrollGrpId = v.SelectedPayrollGrpId.Value;
+                var emps    = await _daO._02Deprec_ByFieldId("PayrollgrpId", v.SelectedPayrollGrpId.Value, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!) ?? [];
+                v.ManHours  = emps.Where(x => x is not null).Select(x => new BioManHourModel
+                {
+                    EmpNumber = x!.EmpNumber ?? string.Empty,
+                    EmpName   = x.EmpName    ?? string.Empty
+                }).ToList();
+            }
+
+            v.Notification = ("success", $"{v.ManHours.Count} employee(s) loaded.");
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Load failed: {ex.Message}");
+        }
+
+        v.IsBusy = false;
+        await NotifyChanged.Invoke();
+    }
+
+private async Task OnConfirmRemove()
+    {
+        var selected = v.ManHours.Where(x => x.IsSelected).ToList();
+        v.ManHours               = v.ManHours.Where(x => !x.IsSelected).ToList();
+        v.IsRemoveEmpConfirmOpen = false;
+        v.Notification           = ("success", $"{selected.Count} employee(s) removed.");
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task OnCancelRemove()
+    {
+        v.IsRemoveEmpConfirmOpen = false;
+        await NotifyChanged.Invoke();
+    }
+
+private async Task OnSave()
+    {
+        if (Uc is null) return;
+
+        v.IsBusy = true;
+        await NotifyChanged.Invoke();
+
+        try
+        {
+            v.Hdr.PayrollGrpId = v.SelectedPayrollGrpId!.Value;
+            await _hdrDa._01(v.Hdr, Uc.SchemaUserPis!, Uc.Conn!);
+
+            var hdrs  = await _hdrDa._02sByPayrollGrp(v.SelectedPayrollGrpId.Value, Uc.SchemaUserPis!, Uc.Conn!) ?? [];
+            var saved = hdrs.FirstOrDefault(x => x is not null && x.CoverageStart == v.Hdr.CoverageStart);
+            if (saved is null)
+            {
+                v.Notification = ("error", "Failed to retrieve saved header.");
+                v.IsBusy = false;
+                await NotifyChanged.Invoke();
+                return;
+            }
+            v.Hdr = saved;
+
+            foreach (var row in v.ManHours)
+            {
+                row.BioManHourHdrId = saved.Id;
+                await _manHourDa._01(row, Uc.SchemaUserPis!, Uc.Conn!);
+            }
+
+            v.Notification = ("success", $"Saved successfully — {v.ManHours.Count} employee(s).");
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Save failed: {ex.Message}");
+        }
+
+        v.IsBusy = false;
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task OnPostToPayroll()
+    {
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task OnPrint()
+    {
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task OnLoadAttendance()
+    {
+        if (v.Hdr.CoverageStart == default || v.Hdr.CoverageEnd == default)
+        {
+            v.Notification = ("warning", "Please set Coverage Start and End date.");
+            await NotifyChanged.Invoke();
+            return;
+        }
+        v.IsLoadModalOpen = true;
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task OnProcessData()
+    {
+        await NotifyChanged.Invoke();
+    }
+
+    private async Task OnSaveDailyPunches()
+    {
+        await NotifyChanged.Invoke();
+    }
+}

@@ -1,0 +1,77 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._10_Pis
+
+<div class="card w-100 p-0 ">
+    @* ---- My Punches ----------------------------------------- *@
+    @* ********************************************************* *@
+    <div class=" w-100 card-header bg-dark text-white"> 
+        My Punches - [ Covering : @Ts.AttReqhdr.CovStart.ToString("MMMM dd, yyyy") - @Ts.AttReqhdr.CovEnd.ToString("MMMM dd, yyyy") ]
+    </div>
+
+    <div class="d-flex gap-2 p-1 bordered-bottom-darkgreen bg-lightgray ">
+        <div class=" w-75p  txt mb-a-blue ">Day</div>
+        <div class=" w-90p  txt mb-a-blue">In Date</div>
+        <div class=" w-100p text-center ">In Time</div>
+        
+        <div class=" w-90p mb-a-green txt text-center ">Out Date</div>
+        <div class=" w-90p mb-a-green txt text-center ">Out Time</div>
+        
+        <div class=" w-125p text-center">In Sched</div>
+        <div class=" w-75p ">D. Length</div>
+
+        <div class=" w-155p ">Terminal In</div>
+        <div class=" w-155p ">Terminal Out</div> 
+    </div>
+    @if(!Ts.AttPunches1s.Any()) {
+        <div class="w-100 txt mb-a-red h-150p p-4">
+            <h4> No IN/OUT records found.  </h4>
+        </div>
+    }
+
+
+    @{ int? ctr = 0; }
+    @foreach(var d in Ts.AttPunches1s) {
+        ctr++; 
+        var rowClass = ctr % 2 == 0 ? "mb-a-graylight bg" : "";
+
+        <div class="d-flex gap-2 p-1 @rowClass ">
+            <div class=" w-75p ">@d.PunchInDate?.DayOfWeek </div>
+            <div class=" w-90p  txt mb-a-blue ">@d.PunchInDate?.ToShortDateString() </div>
+            <div class=" w-100p txt mb-a-blue text-center ">@d.PunchInDate?.ToShortTimeString() </div>
+
+            <div class=" w-90p mb-a-green txt text-center">
+                @(d.PunchOutDate < new DateTime(1901, 1, 2) ? "-" : @d.PunchOutDate?.ToShortDateString())
+            </div>
+            <div class=" w-90p mb-a-green txt text-center ">
+                @(d.PunchOutDate < new DateTime(1901, 1, 2) ? "-" : @d.PunchOutDate?.ToShortTimeString())
+            </div>
+
+            <div class=" w-125p text-center ">
+                @(d.PunchT != 0 ? $"{d.PunchT}H" : "-" )
+            </div>
+            <div class=" w-75p text-center">
+                @* @d.SchedDuration *@
+                @((d.SchedDuration > 0) ? $"{d.SchedDuration / 100}.{d.SchedDuration % 100:00}" : "-")
+            </div>
+        
+            <div class=" w-155p ">@d.MacAddressIn</div>
+            <div class=" w-155p ">@d.MacAddressOut</div>
+        </div>
+    }
+
+</div>
+
+<div class="card w-100 p-0 mt-3 ">    
+    @* ---- Current Schedule ----------------------------------- *@
+    @* ********************************************************* *@
+    <div class=" w-100 card-header bg-dark text-white">  My Duty Schedule </div>
+
+    <_12_102_AttTemplate AttTemplate="@At" />
+</div>
+
+
+@code {
+    [Parameter] public V12_102TS            Ts      { get; set; } = new(); 
+    [Parameter] public AtttemplateModel     At      { get; set; } = new(); 
+
+}

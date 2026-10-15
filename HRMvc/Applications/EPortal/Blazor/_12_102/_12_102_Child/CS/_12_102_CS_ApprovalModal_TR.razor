@@ -1,0 +1,209 @@
+@using HRApiLibrary.Models._10_Pis
+<tr>
+    <td class="bordered-right">@T_DayName(Dayno) </td>
+    <td class="@currCss(Dayno) ">@T_DutyType(Dayno)  </td>
+    <td class="@currCss(Dayno) ">@T_TimeIn(Dayno) </td>
+    <td class="@currCss(Dayno) bordered-right ">@T_Duration(Dayno)</td>
+    <td class="@reqCss(Dayno) "> @TD_DutyType(Dayno)</td>
+    <td class="@reqCss(Dayno) "> @TD_TimeIn(Dayno) </td>
+    <td class="@reqCss(Dayno) "> @TD_Out(Dayno)</td>
+</tr>
+
+@code {
+
+    [Parameter] public int?                      Dayno   { get; set; } = 0;
+    [Parameter] public AtttemplateModel?        T       { get; set; } = new();
+    [Parameter] public AtttemplatereqdtlModel?  TD      { get; set; } = new();
+    
+    string? currCss(int? dayNo) => T_DutyType(dayNo) switch
+    {
+        "RD" => " text-danger bg-danger  bg-opacity-10 disabled-div-50 ",
+        "RN" => " bg-success bg-opacity-10 txt mb-a-blue disabled-div-50 ",
+        _ => " text-muted "
+    };
+    string? reqCss(int? dayNo) => TD_DutyType(dayNo) switch
+    {
+        "RD" => " text-danger bg-danger  bg-opacity-10 ",
+        "RN" => " text-primary bg-success bg-opacity-10  ",
+        _    => " "
+    };
+
+
+    @* ************************************************************ *@
+    @* --- Requested Template --------------------------------------- *@
+    @* ************************************************************ *@
+    string? TD_DutyType(int? dutyType) => dutyType switch
+    {
+        1 => TD?.D1_DutyType ?? "",
+        2 => TD?.D2_DutyType ?? "",
+        3 => TD?.D3_DutyType ?? "",
+        4 => TD?.D4_DutyType ?? "",
+        5 => TD?.D5_DutyType ?? "",
+        6 => TD?.D6_DutyType ?? "",
+        7 => TD?.D7_DutyType ?? "",
+        _ => ""
+    };
+
+    string? TD_TimeIn(int? dayNo)
+    {
+        var dtype = TD_DutyType(dayNo);
+        if (dtype == "RD") return "-";
+        
+        var hrs = TD_TimeInQuery(dayNo);
+        if (hrs == 0) return "-";
+        
+        string? ampm = "am";
+        if (hrs >= 1300)
+        {
+            hrs -= 1200;
+            ampm = "pm";
+        }
+
+        int? hr = hrs / 100;
+        int? min = hrs % 100;
+
+        return $"{hr}:{min:D2} {ampm}";
+    }
+
+    int? TD_TimeInQuery(int? dayNo) => dayNo switch
+    {
+        1 => TD?.D1_In ?? 0,
+        2 => TD?.D2_In ?? 0,
+        3 => TD?.D3_In ?? 0,
+        4 => TD?.D4_In ?? 0,
+        5 => TD?.D5_In ?? 0,
+        6 => TD?.D6_In ?? 0,
+        7 => TD?.D7_In ?? 0,
+        _ => 0
+    };
+
+
+    string? TD_Out(int? dayno)
+    {
+        string? dtype = TD_DutyType(dayno);
+        if (dtype == "RD") return "-";
+        
+        int? dur = TD_DurationQuery(dayno);
+        int? tin = TD_TimeInQuery(dayno);
+        int? tothrs = tin + dur;
+
+        if (tothrs > 2400) tothrs -= 2400;
+        string? ampm = "am";
+        if (tothrs > 1259)
+        {
+            ampm = "pm";
+            tothrs -= 1200;
+        }
+
+        int? hr = tothrs / 100;
+        int? min = tothrs % 100;
+
+        string? hrs = $"{hr}:{min:D2} {ampm}";
+
+        return hrs;
+    }
+    int? TD_DurationQuery(int? dayNo) => dayNo switch
+    {
+        1 => T?.D1_hrslength ?? 0,
+        2 => T?.D2_hrslength ?? 0,
+        3 => T?.D3_hrslength ?? 0,
+        4 => T?.D4_hrslength ?? 0,
+        5 => T?.D5_hrslength ?? 0,
+        6 => T?.D6_hrslength ?? 0,
+        7 => T?.D7_hrslength ?? 0,
+        _ => 0
+    };
+
+    @* ************************************************************ *@
+    @* --- Current Template --------------------------------------- *@
+    @* ************************************************************ *@
+    string? T_DayName(int? dayNo) => dayNo switch
+    {
+        1 => "Sunday",
+        2 => "Monday",
+        3 => "Tuesday",
+        4 => "Wednesday",
+        5 => "Thursday",
+        6 => "Friday",
+        7 => "Saturday",
+        _ => "" };
+
+    string? T_DutyType(int? dutyType) => dutyType switch
+    {
+        1 => T?.D1_dutytype ?? "",
+        2 => T?.D2_dutytype ?? "",
+        3 => T?.D3_dutytype ?? "",
+        4 => T?.D4_dutytype ?? "",
+        5 => T?.D5_dutytype ?? "",
+        6 => T?.D6_dutytype ?? "",
+        7 => T?.D7_dutytype ?? "",
+        _ => ""
+    };
+
+    string? T_TimeIn(int? dayNo)
+    {
+        var dtype = T_DutyType(dayNo); 
+        if (dtype == "RD") return "-";
+        
+        var hrs = T_TimeInQuery(dayNo);
+        if (hrs == 0) return "-";
+        
+        string? ampm = "am";
+        if(hrs >= 1300) { 
+            hrs -= 1200;
+            ampm = "pm";
+        }
+
+        int? hr = (hrs??0) / 100;
+        int? min = (hrs??0) % 100;
+
+        @* Console.WriteLine($"Dayno: {dayNo} - TimeIn: {hrs} - hr: {hr} - min: {min} - ampm: {ampm}"); *@
+        return $"{hr}:{min:D2} {ampm}";
+    }
+
+    int? T_TimeInQuery(int? dayNo) => dayNo switch
+        { 
+            1 => T?.D1_in, 
+            2 => T?.D2_in, 
+            3 => T?.D3_in, 
+            4 => T?.D4_in, 
+            5 => T?.D5_in, 
+            6 => T?.D6_in, 
+            7 => T?.D7_in, 
+            _ => 0 };
+    
+    string? T_Duration(int? dayno) {
+       int? dur      = T_DurationQuery(dayno);
+       int? tin      = T_TimeInQuery(dayno) ?? 0;
+       int? tothrs   = tin + dur;
+
+       if (tothrs > 2400) tothrs -= 2400; 
+       string? ampm = "am";
+       if(tothrs > 1259) {
+            ampm = "pm";
+            tothrs -= 1200;
+        }
+
+        int? hr = tothrs / 100 ;
+        int? min = tothrs % 100; 
+
+       string? hrs = $"{hr}:{min:D2} {ampm}";  
+
+        string? dtype = T_DutyType(dayno);
+        if (dtype == "RD") hrs = "-";
+        return hrs;
+    }
+    int? T_DurationQuery(int? dayNo) => dayNo switch
+        { 
+            1 => T?.D1_hrslength ?? 0, 
+            2 => T?.D2_hrslength ?? 0, 
+            3 => T?.D3_hrslength ?? 0, 
+            4 => T?.D4_hrslength ?? 0, 
+            5 => T?.D5_hrslength ?? 0, 
+            6 => T?.D6_hrslength ?? 0, 
+            7 => T?.D7_hrslength ?? 0, 
+            _ => 0 };
+
+    
+
+}

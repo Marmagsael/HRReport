@@ -5,6 +5,17 @@ window.attachGridKeyboardNav = function (gridContainerId) {
     if (!container || container.dataset.hasListener) return;
     container.dataset.hasListener = "true";
 
+    function focusAndSelect(input) {
+        if (!input) return;
+        input.focus();
+        input.select();
+        // prevent mouseup from deselecting
+        input.addEventListener('mouseup', function preventDeselect(e) {
+            e.preventDefault();
+            input.removeEventListener('mouseup', preventDeselect);
+        });
+    }
+
     container.addEventListener('keydown', function (e) {
         let active = document.activeElement;
         if (!active || active.tagName !== 'INPUT') return;
@@ -27,9 +38,7 @@ window.attachGridKeyboardNav = function (gridContainerId) {
             e.preventDefault();
             if (rowIndex + 1 < allRows.length) {
                 let nextRowInputs = allRows[rowIndex + 1].querySelectorAll('input');
-                if (nextRowInputs[colIndexInRow]) {
-                    nextRowInputs[colIndexInRow].focus();
-                }
+                focusAndSelect(nextRowInputs[colIndexInRow]);
             }
         }
         // UP ARROW
@@ -37,27 +46,21 @@ window.attachGridKeyboardNav = function (gridContainerId) {
             e.preventDefault();
             if (rowIndex - 1 >= 0) {
                 let prevRowInputs = allRows[rowIndex - 1].querySelectorAll('input');
-                if (prevRowInputs[colIndexInRow]) {
-                    prevRowInputs[colIndexInRow].focus();
-                }
+                focusAndSelect(prevRowInputs[colIndexInRow]);
             }
         }
         // RIGHT ARROW
         else if (e.key === 'ArrowRight') {
             if (active.selectionEnd === active.value.length) {
                 e.preventDefault();
-                if (currentIndex + 1 < allInputs.length) {
-                    allInputs[currentIndex + 1].focus();
-                }
+                focusAndSelect(allInputs[currentIndex + 1]);
             }
         }
         // LEFT ARROW
         else if (e.key === 'ArrowLeft') {
             if (active.selectionStart === 0) {
                 e.preventDefault();
-                if (currentIndex - 1 >= 0) {
-                    allInputs[currentIndex - 1].focus();
-                }
+                focusAndSelect(allInputs[currentIndex - 1]);
             }
         }
     });
