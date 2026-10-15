@@ -1,9 +1,5 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 
-@inject NotificationService _NotificationService
-@inject DialogService _DialogService
-
-
 <div class="p-2">
     <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
         <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="References" />
@@ -57,7 +53,7 @@
                                 </RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" />
+                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="50" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -69,7 +65,7 @@
                                 </RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Position" Disabled="true" />
+                                        <RadzenTextBox @bind-Value="rec.Position" Disabled="true" MaxLength="75"/>
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -258,6 +254,10 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
@@ -335,14 +335,12 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
-                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Position, V.pisdb!, V.conn!);
-                    V.CharRefs .Remove(rec);
-                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
-                }
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Penalty Type Deletion");
+                if (!confirmed) return;
+
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.Position, V.pisdb!, V.conn!);
+                V.CharRefs .Remove(rec);
+                NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
             }
         }
         else
@@ -449,22 +447,6 @@
         return true;
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-      _NotificationService.Notify(new NotificationMessage
-      {
-          Severity = NotificationSeverity.Success,
-          Summary = summary,
-          Detail = detail,
-          Duration = duration
-      });
-
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+  
 }
 

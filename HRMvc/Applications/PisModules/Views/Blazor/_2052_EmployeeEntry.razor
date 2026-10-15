@@ -84,6 +84,8 @@
 @inject IOTrainDataAccess _training
 @inject IOReferDataAccess _charref
 @inject IOInsuranceaccidentDataAccess _insuranceacc
+@inject IOLicverstatusDataAccess _licverstatus
+@inject IOSeclicDataAccess _seclic
 
 @code {
 
@@ -99,6 +101,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine($"Uc.UserName {Uc.UserName}");
 
         if (Uc.Conn == null || Uc.OpisDb == null || Uc.OpayDb == null)
         {
@@ -118,8 +121,10 @@
         v.paydb         = Uc.OpayDb;
         v.conn          = Uc.Conn;
         v.userid        = Uc.UserId;
-        v.defcoid       = int.Parse(Uc.DefCompanyId ?? "0");
+        v.username      = Uc.UserName;
+        v.defcoid = int.Parse( string.IsNullOrEmpty(Uc.DefCompanyId) ? "0" : Uc.DefCompanyId  );
 
+        Console.WriteLine($"UserName {Uc.UserName}");
         v.IsLoading = true;
 
         try
@@ -235,6 +240,7 @@
         await LoadMlaCodes();
         await LoadProCodes();
         await LoadPositions();
+        await LoadSecLicStatus();
     }
 
     private async Task LoadCivilStatuses()
@@ -325,6 +331,22 @@
         }
     }
 
+    private async Task LoadSecLicStatus()
+    {
+        try
+        {
+            var res = await _licverstatus._02s(v.pisdb, v.conn) ?? new();
+            v.LicverStatuses = res;
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load License Verification Statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+
+        }
+    }
+
     private void _00InitializeReport()
     {
         rv.MCaption = "";
@@ -359,7 +381,15 @@
         v.ActionRef = string.Empty;
 
         if (v.Action == "SelectEmpmas") await SelectEmpmas();
-        if (v.Action == "SplitHeight") SplitHeight(v.EmpmasToEdit.Height);
+        if (v.Action == "SplitHeight") SplitHeight();
+        if (v.Action == "ComputeEmployeesAge") ComputeEmployeesAge();
+        if (v.Action == "ComputeParentsAge") ComputeParentsAge();
+
+        if (v.Action == "GetGenderAndCivilStatus_SplitHeight") {
+            SplitHeight();
+            GetGenderAndCivilStatus();
+        }
+
         if (v.Action == "GetAddressArea") GetAddressArea();
         if (v.Action == "GetGenderAndCivilStatus") GetGenderAndCivilStatus();
         if (v.Action == "ReLoadEmployeeList") await LoadEmployeeList();
@@ -407,9 +437,7 @@
                 v.IsNewEntry    = false;
                 v.Empmas        = emp;
                 v.EmpmasToEdit  = MapEmpmas(emp);
-                SplitHeight(v.EmpmasToEdit.Height);
-                GetAddressArea();
-                GetGenderAndCivilStatus();
+
 
                 await LoadEmployments();
                 await LoadEducations();
@@ -420,6 +448,14 @@
                 await LoadTrainings();
                 await LoadCharRefs();
                 await LoadInsuranceAccident();
+                await LoadSecLicense();
+
+                SplitHeight();
+                GetAddressArea();
+                GetGenderAndCivilStatus();
+                ComputeParentsAge();
+                ComputeEmployeesAge();
+
 
             }
             else
@@ -428,7 +464,6 @@
                 v.Empmas = new OEmpmasModel();
                 v.EmpmasToEdit = new OEmpmasModel();
 
-                SplitHeight(null);
             }
         }
         catch (Exception ex)
@@ -443,43 +478,13 @@
     }
 
 
-    private void GetAddressArea()
-    {
-        v.Empmas.ManilaArea = string.Empty;
-        v.Empmas.ProvincialArea = string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(v.Empmas.MlaCode_))
-        {
-            v.Empmas.ManilaArea = v.MlaList?.FirstOrDefault(m => m.Code == v.Empmas.MlaCode_)?.Name ?? string.Empty;
-        }
-
-        if (!string.IsNullOrWhiteSpace(v.Empmas.ProCode_))
-        {
-            v.Empmas.ProvincialArea = v.ProList? .FirstOrDefault(m => m.Code == v.Empmas.ProCode_)?.Name ?? string.Empty;
-        }
-    }
-
-    private void GetGenderAndCivilStatus()
-    {
-        v.Empmas.Gender = string.Empty;
-        v.Empmas.CivilStatus = string.Empty;
-
-        if (!string.IsNullOrWhiteSpace(v.Empmas.Sex_))
-        {
-            v.Empmas.Gender = v.OGenders? .FirstOrDefault(m => m.Code == v.Empmas.Sex_)?.Name ?? string.Empty;
-        }
-
-        if (!string.IsNullOrWhiteSpace(v.Empmas.CivStat_))
-        {
-            v.Empmas.CivilStatus = v.OCivStats? .FirstOrDefault(m => m.Code == v.Empmas.CivStat_)?.Name ?? string.Empty;
-        }
-    }
 
     private  async Task LoadEmployments()
     {
         try
         {
-           v.Employments = await _employemt._02(v.SelectedEmpnumber, v.pisdb!, v.conn!) ?? new();
+            v.Employments = await _employemt._02(v.SelectedEmpnumber, v.pisdb!, v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -501,7 +506,7 @@
                 if (!res.Any(e => e?.Code == code)) res.Add(new OEducateModel { Code = code, EmpNumber = v.SelectedEmpnumber });
             }
 
-           v.Educations = res;
+            v.Educations = res;
 
         }
         catch (Exception ex)
@@ -510,13 +515,13 @@
             NotificationRef.Show("Unable to load education records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
-   
+
     private  async Task LoadParents()
     {
 
         try
         {
-           v.Parents = await _parent._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            v.Parents = await _parent._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -531,7 +536,7 @@
 
         try
         {
-           v.Children = await _children._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            v.Children = await _children._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -547,7 +552,7 @@
 
         try
         {
-           v.EmergencyContacts = await _emergency._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            v.EmergencyContacts = await _emergency._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -561,7 +566,7 @@
     {
         try
         {
-           v.Familys = await _family._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            v.Familys = await _family._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -572,11 +577,11 @@
     }
 
     private async Task LoadTrainings()
-     {
-       
+    {
+
         try
         {
-           v.Trainings = await _training._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            v.Trainings = await _training._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -591,7 +596,7 @@
     {
         try
         {
-           v.CharRefs = await _charref._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            v.CharRefs = await _charref._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -604,10 +609,25 @@
 
     private async Task  LoadInsuranceAccident()
     {
-       
+
         try
         {
-           v.InsuranceAccident = await _insuranceacc._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            v.InsuranceAccident = await _insuranceacc._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load insurance accident records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadSecLicense()
+    {
+
+        try
+        {
+            v.SecLicense = await _seclic._02(v.SelectedEmpnumber, v.pisdb!, v.conn!) ?? new();
 
         }
         catch (Exception ex)
@@ -637,25 +657,99 @@
         return clone;
     }
 
-    private void SplitHeight(double? height)
+    private void SplitHeight()
     {
-        if (height.HasValue)
-        {
-            double h = height.Value;
-            double feet = Math.Truncate(h);
-            double inchesPart = Math.Round((h - feet) * 100, MidpointRounding.AwayFromZero);
+        var height = v.Empmas.Height;
 
-            v.EmpmasToEdit.Height = feet;
-            v.EmpmasToEdit.HeightInches = inchesPart;
-        }
-        else
+        if (height == null)
         {
-            v.EmpmasToEdit.Height = null;
-            v.EmpmasToEdit.HeightInches = null;
+            v.Empmas.HeightFt  = 0;
+            v.Empmas.HeightInches = 0;
+            return;
+        }
+
+        int feet = (int)height.Value;
+        int inches = (int)Math.Round( (height.Value - feet) * 100);
+
+        v.Empmas.HeightFt = feet;
+        v.Empmas.HeightInches = inches;
+
+
+    }
+
+    private void GetAddressArea()
+    {
+        v.Empmas.ManilaArea = string.Empty;
+        v.Empmas.ProvincialArea = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(v.Empmas.MlaCode_))
+        {
+            v.Empmas.ManilaArea = v.MlaList?.FirstOrDefault(m => m.Code == v.Empmas.MlaCode_)?.Name ?? string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(v.Empmas.ProCode_))
+        {
+            v.Empmas.ProvincialArea = v.ProList?.FirstOrDefault(m => m.Code == v.Empmas.ProCode_)?.Name ?? string.Empty;
         }
     }
 
-   
+    private void GetGenderAndCivilStatus()
+    {
+        v.Empmas.Gender = string.Empty;
+        v.Empmas.CivilStatus = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(v.Empmas.Sex_))
+        {
+            v.Empmas.Gender = v.OGenders?.FirstOrDefault(m => m.Code == v.Empmas.Sex_)?.Name ?? string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(v.Empmas.CivStat_))
+        {
+            v.Empmas.CivilStatus = v.OCivStats?.FirstOrDefault(m => m.Code == v.Empmas.CivStat_)?.Name ?? string.Empty;
+        }
+    }
+
+    private void ComputeParentsAge()
+    {
+
+        foreach (var c in v.Parents)
+        {
+            if (c.DoB == null)
+            {
+                c.Age = 0;
+                continue;
+            }
+
+            c.Age = ComputeAge(c.DoB);
+        }
+    }
+
+    private void ComputeEmployeesAge()
+    {
+        var age = ComputeAge(v.Empmas.EmpBirth);
+        v.Empmas.Age = age.ToString();
+    }
+
+
+
+
+    private double ComputeAge(DateTime? date)
+    {
+        if (date == null || date == DateTime.MinValue)
+            return 0;
+
+        DateTime today = DateTime.Today;
+        DateTime birthDate = date!.Value ;
+
+        int age = today.Year - birthDate.Year;
+
+        if (today < birthDate.AddYears(age))
+        {
+            age--;
+        }
+
+        return age;
+    }
 }
 
 

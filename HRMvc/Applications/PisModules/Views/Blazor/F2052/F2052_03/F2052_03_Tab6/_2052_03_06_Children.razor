@@ -1,8 +1,5 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 
-@inject NotificationService _NotificationService
-@inject DialogService _DialogService
-
 
 <RadzenFieldset Text="Children" Style="font-weight:bold">
     <div class="fw-normal">
@@ -145,7 +142,13 @@
 
     string? empnumber = string.Empty;
 
-    [Parameter] public V2052 V { get; set; } = new();
+    [CascadingParameter] public V2052 V { get; set; } = new();
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OChildrenModel?>? childrenToInsert  = new();
@@ -228,14 +231,13 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
-                    await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
-                    V.Children.Remove(rec);
-                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
-                }
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Record Deletion");
+                if (!confirmed) return;
+
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+                V.Children.Remove(rec);
+                NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
+
             }
         }
         else
@@ -299,7 +301,7 @@
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same name and birthday already exists.", 5000);
+                    NotificationRef.Show("A record with the same name and birthday already exists.", ThemeConstants.Notification.ThemeColor.Warning);
                     return;
                 }
             }
@@ -315,12 +317,12 @@
             }
 
             await V.ChildrenGrid.UpdateRow(rec);
-            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            NotificationRef.Show("Something went wrong while saving. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
@@ -339,23 +341,7 @@
         return true;
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-      _NotificationService.Notify(new NotificationMessage
-      {
-          Severity = NotificationSeverity.Success,
-          Summary = summary,
-          Detail = detail,
-          Duration = duration
-      });
-
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+   
 }
 
 
