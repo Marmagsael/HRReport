@@ -1,0 +1,144 @@
+@using Blazorise
+@using HRApiLibrary.Models._10_Pis
+<div class="card w-100 ">
+
+
+    <div class="card-header">
+
+        <div class="p-2 ">
+            <div class="p-0 d-flex justify-content-between ">
+                <div class="d-flex p-1">
+                    <div class="w-120p p-2">Control No.</div>
+                    <div class="w-175p border-bottom fw-bold text-center p-2 text-primary "> 
+                        @(ts.AttReqhdr.Id < 1 ? "-" : ts.AttReqhdr.Id) 
+                    </div>
+                </div>
+                
+                <div class="d-flex p-1">
+                    <div class="w-75p p-2">Status</div>
+                    <div class="w-175p   text-start p-2 text-primary "> 
+                        @(ts.AttReqhdr.Status switch {"N" => "New", "S" => "Saved", "F" => "For Approval", "A" => "Approved", _ => "Unknown" } )
+                    </div>
+                </div>
+            </div>
+        
+            <div class="mb-a-blue d-flex p-1 ">
+                <div class="w-120p px-2">Date</div>
+                @ts.AttReqhdr.DateRequested.ToString("MMMM dd, yyyy")
+
+            </div>
+
+            <div class="mb-a-blue d-flex p-1">
+                <div class="w-120p px-2">Coverage</div>
+                <div class=" px-0 ">
+                    @ts.AttReqhdr.CovStart.ToString("MMMM dd, yyyy")
+
+                </div>
+                <div class=" px-2"> to  </div>
+                <div class=" px-2 " >
+                    @ts.AttReqhdr.CovEnd.ToString("MMMM dd, yyyy")
+
+                </div>    
+            </div>
+
+            <div class="d-flex p-1">
+                <div class="w-120p px-2"> Approver </div>
+                <div class="mb-a-blue flex-grow-1 "> 
+                    @ts.AttReqhdr.ApproverName
+                </div>
+
+            </div>
+            
+            <div class="d-flex">
+                <div class="w-120p px-2"> Remarks </div>
+                <div class=" flex-grow-1 px-1 "> 
+                    @ts.AttReqhdr.Remarks
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+
+    @* --- Details ----------------------------------------------- *@
+    <div class="card-body">
+
+        @* --- Detail Content  *@
+        <div class=" w-100 ">
+        @* <div class=" w-100 "> *@
+            
+            @* --- Header --------------------------------------- *@
+            <div class="d-flex gap-2 p-1 border-bottom fw-bold ">
+                <div class="w-220p p-1">Request Type</div>
+                <div class="w-190p p-1">Date Start</div>
+                <div class="w-190p p-1">Date End</div>
+                <div class="w-100p p-1 text-center">Hours </div>
+            </div>
+            @foreach(var dtl in ts.AttReqdtls) {
+                <div class="d-flex gap-2 p-1">
+                    <div class="w-220p p-1 mb-a-blue">
+                        @GetRequestType(dtl.AttReqTypeId??0) 
+
+                    </div>
+
+                    <div class="w-190p p-1 mb-a-blue ">   
+                        @if(ShowDtlDateStart(dtl.AttReqTypeId)){
+                            <span> @dtl.DStart?.ToString("MMM dd, yyyy") </span> 
+                            <span class=" text-primary ">  @dtl.DStart?.ToString("hh:mm tt") </span> 
+
+                        } else { <div class="w-100 p-2 text-center text-primary border-bottom ">  </div>}
+                        
+                    </div>
+
+                    <div class="w-190p p-1 mb-a-blue ">
+                        @if(ShowDtlDateEnd(dtl.AttReqTypeId)) {
+                            <span> @dtl.DEnd?.ToString("MMM dd, yyyy") </span> 
+                            <span class=" text-primary ">  @dtl.DEnd?.ToString("hh:mm tt")</span>        
+                        } else  { <div class="w-100 p-2 text-center text-primary border-bottom">  </div> }
+                    </div>
+
+                    <div class="w-100p p-1 text-center ">
+                        @(ComputeHours(dtl) == 0 ? "-" : ComputeHours(dtl).ToString("N2") )
+                    </div>
+                    
+                    <div class="w-100p p-2 ">
+                    </div>
+
+                </div>
+            }
+
+            <div class="d-flex gap-2 p-1">
+                <div class="w-220p p-1 mb-a-blue ">&nbsp; </div>
+                <div class="w-190p p-1 mb-a-blue ">&nbsp; </div>
+                <div class="w-190p p-1 mb-a-blue ">&nbsp; </div>
+                <div class="w-100p p-2 text-center border-top border-bottom-double ">
+                    @(ts.AttReqdtls.Sum(x => ComputeHours(x)).ToString("N2"))
+                </div>
+                
+                <div class="w-100p p-2 "> </div>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+@code {
+    [Parameter] public V12_102TS   ts   { get; set; } = new();
+
+
+    double ComputeHours(AttreqdtlModel dtl)
+    {
+        if (dtl.DStart is null    || dtl.DEnd is null    || dtl.DEnd <= dtl.DStart || dtl.AttReqTypeId != 3 ) return 0;
+        return (dtl.DEnd.Value - dtl.DStart.Value).TotalHours;
+    }
+    bool ShowDtlDateStart(int?  typeId) => typeId is 1 or 3;  
+    bool ShowDtlDateEnd(int?    typeId) => typeId is 2 or 3;
+
+    string? GetRequestType(int? id) => ts.Attreqtypes.FirstOrDefault(t => t.Id == id)?.Name ?? "";
+
+
+}

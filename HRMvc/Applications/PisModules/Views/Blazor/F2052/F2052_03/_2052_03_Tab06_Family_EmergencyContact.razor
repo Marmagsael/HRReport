@@ -1,6 +1,4 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-@inject NotificationService _NotificationService;
-@inject DialogService _DialogService;
 @inject I_10_EmpmasDataAccess _empmas;
 
 <div class="p-2">
@@ -10,7 +8,7 @@
             <button type="button"
                     class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
                     @onclick="InsertRow"
-                    disabled="@(editMode || isLoading)">
+                    disabled="@(editMode )">
                 <div class="d-flex gap-1 align-items-center justify-content-center">
                     <span class="fw-semibold"> <small>New</small> </span>
                 </div>
@@ -27,8 +25,7 @@
                         AllowPaging="true"
                         PageSize="10"
                         PageSizeOptions=@(new int[]{5, 10, 20, 30})
-                        ColumnWidth="200px"
-                        IsLoading="isLoading">
+                        ColumnWidth="200px">
             <Columns>
                 <RadzenDataGridColumn TItem="OEmergencModel"
                                       Context="OEmergencModel"
@@ -50,7 +47,7 @@
                                 <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="Name" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="60" />
+                                        <RadzenTextBox @bind-Value="rec.Name" Disabled="true" MaxLength="25" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -121,7 +118,7 @@
                                 <RadzenColumn Size="4"><RadzenLabel Text="Name" Component="NameSm" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameSm" MaxLength="60" />
+                                        <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameSm" MaxLength="25" />
                                         <RadzenRequiredValidator Component="NameSm" Text="Name is required" Popup="true" Style="position: absolute;" />
                                     </RadzenFormField>
                                 </RadzenColumn>
@@ -160,7 +157,7 @@
                         <RadzenStack Gap="0" class="custom-grid-md">
                             <RadzenRow Gap=".3rem">
                                 <RadzenColumn Size="7">
-                                    <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameLg" MaxLength="60" Style="display: block" />
+                                    <RadzenTextBox @bind-Value="rec.Name" Change="@(args => rec.Name = args.ToString().Trim())" class="w-100" Name="NameLg" MaxLength="25" Style="display: block" />
                                     <RadzenRequiredValidator Component="NameLg" Text="Name is required" Popup="true" Style="position: absolute;" />
                                     <div class="mt-1">
                                         <RadzenRow RowGap="0">
@@ -214,7 +211,15 @@
 
     string? empnumber = string.Empty;
 
-    [Parameter] public V2052 V { get; set; } = new();
+    [CascadingParameter] public V2052 V { get; set; } = new();
+        
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OEmergencModel?>? emergencycontactToInsert = new();
@@ -227,17 +232,6 @@
 
 
 
-    protected override async Task OnParametersSetAsync()
-    {
-        if (empnumber != V.SelectedEmpnumber)
-        {
-            empnumber = V.SelectedEmpnumber;
-            await Task.Delay(250);
-            V.EmergencyContacts = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
-        }
-        isLoading = false;
-        StateHasChanged();
-    }
 
     //-- InsertRow ----------------
     private async Task InsertRow()
@@ -303,14 +297,13 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Record Deletion");
+                if (!confirmed) return;
+
                     await _empmas._04(rec.EmpNumber, rec.Name, rec.Rela, V.pisdb!, V.conn!);
                     V.EmergencyContacts.Remove(rec);
-                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
-                }
+                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
+
             }
         }
         else
@@ -375,7 +368,8 @@
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    NotificationRef.Show("A record with the same name and relationship already exists.", ThemeConstants.Notification.ThemeColor.Warning);
+
                     return;
                 }
             }
@@ -391,12 +385,13 @@
             }
 
             await V.EmergencyContactGrid.UpdateRow(rec);
-            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
+
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            NotificationRef.Show("Something went wrong while saving. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
@@ -415,23 +410,7 @@
         return true;
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-      _NotificationService.Notify(new NotificationMessage
-      {
-          Severity = NotificationSeverity.Success,
-          Summary = summary,
-          Detail = detail,
-          Duration = duration
-      });
-
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+   
 }
 
 

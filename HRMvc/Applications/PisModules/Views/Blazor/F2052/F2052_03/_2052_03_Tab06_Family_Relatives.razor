@@ -1,7 +1,6 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-@inject NotificationService _NotificationService
-@inject DialogService _DialogService
 @inject IOFamilyDataAccess _empmas
+
 
 <div class="p-2">
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
@@ -10,7 +9,7 @@
             <button type="button"
                     class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-1 px-4 "
                     @onclick="InsertRow"
-                    disabled="@(editMode || isLoading)">
+                    disabled="@(editMode )">
                 <div class="d-flex gap-1 align-items-center justify-content-center">
                     <span class="fw-semibold"> <small>New</small> </span>
                 </div>
@@ -27,8 +26,7 @@
                         AllowPaging="true"
                         PageSize="10"
                         PageSizeOptions=@(new int[]{5, 10, 20, 30})
-                        ColumnWidth="200px"
-                        IsLoading="isLoading">
+                        ColumnWidth="200px">
             <Columns>
                 <RadzenDataGridColumn TItem="OFamilyModel"
                                       Context="row"
@@ -109,7 +107,7 @@
                                 <RadzenColumn Size="4"><RadzenLabel Text="Birth" /></RadzenColumn>
                                 <RadzenColumn Size="8">
                                     <RadzenFormField Variant="Variant.Text" class="w-100">
-                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" class="w-100" />
+                                        <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMMM dd, yyyy" class="w-100" />
                                     </RadzenFormField>
                                 </RadzenColumn>
                             </RadzenRow>
@@ -131,7 +129,7 @@
 
                                     <div class="mt-1">
                                         <RadzenFormField AllowFloatingLabel="false" Text="Date of Birth" Variant="Variant.Outlined" Style="width:100%" class="custom-form-field">
-                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMM dd, yyyy" class="w-100" />
+                                            <RadzenDatePicker TValue="DateTime?" @bind-Value="rec.Birth" DateFormat="MMMM dd, yyyy" class="w-100" />
                                         </RadzenFormField>
                                     </div>
                                 </RadzenColumn>
@@ -170,7 +168,15 @@
 
     string? empnumber = string.Empty;
 
-    [Parameter] public V2052 V { get; set; } = new();
+    [CascadingParameter] public V2052 V { get; set; } = new();
+        
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OFamilyModel?>? familyToInsert = new();
@@ -183,17 +189,7 @@
 
 
 
-    protected override async Task OnParametersSetAsync()
-    {
-        if (empnumber != V.SelectedEmpnumber)
-        {
-            empnumber = V.SelectedEmpnumber;
-            await Task.Delay(250);
-            V.Familys  = await _empmas._02(V.SelectedEmpnumber, V.pisdb!, V.conn!) ?? new();
-        }
-        isLoading = false;
-        StateHasChanged();
-    }
+   
 
     //-- InsertRow ----------------
     private async Task InsertRow()
@@ -257,14 +253,13 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
-                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
-                    V.Familys .Remove(rec);
-                    ShowSuccess("Successfully deleted", "Record has been successfully deleted.", 4000);
-                }
+
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Penalty Type Deletion");
+                if (!confirmed) return;
+
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
+                V.Familys .Remove(rec);
+                NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
             }
         }
         else
@@ -328,7 +323,7 @@
 
                 if (!isSameAsOriginal)
                 {
-                    ShowError("Duplicate entry", "A record with the same name and relationship already exists.", 5000);
+                    NotificationRef.Show("A record with the same name and relationship already exists.", ThemeConstants.Notification.ThemeColor.Warning);
                     return;
                 }
             }
@@ -344,12 +339,12 @@
             }
 
             await V.FamilyGrid.UpdateRow(rec);
-            ShowSuccess("Successfully saved", "Record has been successfully saved.", 4000);
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            ShowError("Unable to save", "Something went wrong while saving. Please try again.", 6000);
+            NotificationRef.Show("Something went wrong while saving. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
@@ -368,23 +363,7 @@
         return true;
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-      _NotificationService.Notify(new NotificationMessage
-      {
-          Severity = NotificationSeverity.Success,
-          Summary = summary,
-          Detail = detail,
-          Duration = duration
-      });
-
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+   
 }
 
 

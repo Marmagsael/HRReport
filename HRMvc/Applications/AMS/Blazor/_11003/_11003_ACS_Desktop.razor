@@ -1,0 +1,62 @@
+﻿@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.AMS.Vars
+
+
+<CardHeader class="bg-secondary bg-opacity-10 flex-shrink-0 p-2">
+    <div
+        class="d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-lg-between gap-2 gap-lg-3 w-100">
+
+        <!-- PAYROLL GROUP DROPDOWN -->
+        <div
+            class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 flex-grow-1 min-w-0">
+            <label for="paygrp" class="mb-0 fw-semibold text-nowrap">Payroll group</label>
+
+            <div class="paygrp-picker">
+                <TelerikDropDownList Data="@V.PayrollGrps" @bind-Value="V.SelectedPayrollGroup"
+                                     TextField="@nameof(PayrollgrpModel.Name)" ValueField="@nameof(PayrollgrpModel.Id)" Filterable="true"
+                                     FilterPlaceholder="Search payroll group..." Width="100%"
+                                     OnChange="@((object value) => PayrollgrpChange((int)value))">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Width="450px" Height="600px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </div>
+        </div>
+    </div>
+</CardHeader>
+
+<CardBody Class="csm-card-body flex-grow-1 min-h-0 p-1 p-lg-2 overflow-auto">
+    <div class="d-flex gap-2">
+        @* --- Employee List ---------------------------------*@
+        <div class="w-30">
+            <_11003_ACS_01_EmployeeList />
+        </div>
+        
+        @* --- Schedule List --------------------------------- *@
+        <div class="flex-grow-1">
+            <_11003_ACS_01_Schedule />
+        </div>
+
+    </div>
+
+</CardBody>
+
+
+
+@code {
+
+    [CascadingParameter]    public  UserClaimsModel?        Uc              { get; set; }
+    [CascadingParameter]    public  V11003Model?            V               { get; set; }
+
+    [Parameter]             public  EventCallback<int>           ApplySchedule   { get; set; }
+    private async Task PayrollgrpChange(int value)
+    {
+        // existing code
+
+        await ApplySchedule.InvokeAsync();
+    }
+
+    
+
+
+}

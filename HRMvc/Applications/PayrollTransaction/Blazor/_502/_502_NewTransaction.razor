@@ -1,0 +1,90 @@
+@using DocumentFormat.OpenXml.Wordprocessing
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications.PayrollTransaction.Vars 
+
+
+<_00Modal ModuleCaption="New Payroll Entry" ChildAction="CloseModal" >
+    <Content>
+        <div class="k-pos-relative">
+            <TelerikLoaderContainer Visible="@isLoading" Text="Loading..." ThemeColor="primary" />
+
+            @if (!isLoading)
+            {
+                <_502_NewTransaction_Hdr/>
+                <_502_NewTransaction_Details/>
+            }
+
+        </div>
+    </Content>
+</_00Modal>
+
+@inject IOPayrollgrpDataAccess _payrollgrp;
+
+@code {
+    [CascadingParameter] public UserClaimsModel         Uc                  { get; set; } = new();
+    [CascadingParameter] public V0502?                  V0502               { get; set; } = new();
+    [CascadingParameter] public Func<Task>?             NotifyV0502Changed  { get; set; }
+    
+    private bool isLoading = true;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadInitialDatas();
+        SetDefaultValues();
+    }
+    
+    async Task LoadInitialDatas()
+    {
+        isLoading = true; 
+        if(V0502.Payrollgrps?.Count < 1)
+        {
+            var res = await _payrollgrp._02(Uc.OpayDb, Uc.Conn);
+            if (res.Count > 0) V0502.Payrollgrps = res!;
+        }
+        isLoading = false; 
+        
+    }
+
+    void SetDefaultValues()
+    {
+        
+        // --- Year ------------------------------------------------
+        var yr = DateTime.Now.Year.ToString();
+        V0502.Year = yr; 
+        
+        // --- Month ------------------------------------------------
+        var mo = DateTime.Now.Month.ToString().Trim().PadLeft(2,'0');
+        V0502.Month = mo; 
+        
+        // --- Period -----------------------------------------------
+        var dd = DateTime.Now.Day;
+        V0502.Period = "01";
+        if (dd > 15) { V0502.Period = "02";} 
+        
+        // --- Date Covered  -----------------------------------------------
+        DateTime now = DateTime.Now;
+        V0502.AttStart  = new DateTime(now.Year, now.Month, 1); 
+        V0502.AttEnd    = new DateTime(now.Year, now.Month, 15);
+        if (dd > 15)
+        {
+            int lastDay     = DateTime.DaysInMonth(now.Year, now.Month); 
+            V0502.AttStart  = new DateTime(now.Year, now.Month, 16); 
+            V0502.AttEnd    = new DateTime(now.Year, now.Month, lastDay);
+
+        }
+        StateHasChanged();
+
+
+
+
+    }
+
+    async Task CloseModal()
+    {
+        V0502.ShowNewTransaction = false;
+        await NotifyV0502Changed?.Invoke();
+    }
+
+}

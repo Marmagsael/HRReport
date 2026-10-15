@@ -1,0 +1,190 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Modules._11003AME
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<TelerikDialog @bind-Visible="@v!.IsModalOpen"
+               Title="@(v?.IsEditMode == true ? "Edit Punch" : "Add Punch")"
+               Width="480px">
+    <DialogContent>
+        @{
+            var minDate     = v?.DateStart ?? DateTime.Today.AddDays(-30);
+            var maxDate     = v?.DateEnd   ?? DateTime.Today;
+            var maxDateOut  = maxDate.AddDays(1);
+        }
+        <div class="row g-2">
+
+            <!-- Punch In Date + Time -->
+            <div class="col-6">
+                <label class="form-label fw-bold mb-1 txt-fcolor1">Punch In Date</label>
+                <TelerikDatePicker Value="@v!.ModalPunchInDate"
+                                   ValueChanged="@((DateTime? val) => OnPunchInDateChanged(val))"
+                                   Min="@minDate"
+                                   Max="@maxDate"
+                                   Width="100%" />
+            </div>
+            <div class="col-6">
+                <label class="form-label fw-bold mb-1 txt-fcolor1">Punch In Time</label>
+                <TelerikDropDownList Data="@v!.Attinschedules"
+                                     Value="@v!.ModalPunchInTime"
+                                     ValueChanged="@((int? val) => { v!.ModalPunchInTime = val; })"
+                                     TextField="Inschedule" ValueField="Id"
+                                     Width="100%">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Height="300px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </div>
+
+            <!-- Punch Out Date + Time -->
+            <div class="col-6">
+                <label class="form-label fw-bold mb-1 txt-green">Punch Out Date</label>
+                <TelerikDatePicker Value="@v!.ModalPunchOutDate"
+                                   ValueChanged="@((DateTime? val) => { v!.ModalPunchOutDate = val; })"
+                                   Min="@minDate"
+                                   Max="@maxDateOut"
+                                   Width="100%" />
+            </div>
+            <div class="col-6">
+                <label class="form-label fw-bold mb-1 txt-green">Punch Out Time</label>
+                <TelerikDropDownList Data="@v!.Attinschedules"
+                                     Value="@v!.ModalPunchOutTime"
+                                     ValueChanged="@((int? val) => { v!.ModalPunchOutTime = val; })"
+                                     TextField="Inschedule" ValueField="Id"
+                                     Width="100%">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Height="300px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </div>
+
+            <!-- Schedule In (PunchT) -->
+            <div class="col-6">
+                <label class="form-label fw-bold mb-1">Schedule In</label>
+                <TelerikDropDownList Data="@v!.Attinschedules"
+                                     @bind-Value="@v!.ModalPunch.PunchT"
+                                     TextField="Inschedule" ValueField="Id"
+                                     Width="100%">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Height="300px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </div>
+
+            <!-- Duty Duration (SchedDuration) -->
+            <div class="col-6">
+                <label class="form-label fw-bold mb-1">Duty Duration</label>
+                <TelerikDropDownList Data="@v!.Attworkinghours"
+                                     @bind-Value="@v!.ModalPunch.SchedDuration"
+                                     TextField="Hours" ValueField="Id"
+                                     Width="100%">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Height="300px" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </div>
+
+        </div>
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="OnSave" ThemeColor="primary">Save</TelerikButton>
+        <TelerikButton OnClick="OnCancel">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject IDA_11003AME            _da
+@inject IAttpunches1DataAccess  _punches
+
+@code {
+
+    [CascadingParameter] public V11003AMEModel?     v               { get; set; }
+    [CascadingParameter] public UserClaimsModel?    Uc              { get; set; }
+    [CascadingParameter] public Func<Task>?         NotifyChanged   { get; set; }
+
+    private void OnPunchInDateChanged(DateTime? val)
+    {
+        if (v is null) return;
+        v.ModalPunchInDate = val;
+        if (val.HasValue && v.ModalPunchOutDate is null)
+            v.ModalPunchOutDate = val;
+    }
+
+    private async Task OnSave()
+    {
+        if (v is null || Uc is null) return;
+
+        if (v.ModalPunchInDate is null || v.ModalPunchInTime is null || v.ModalPunchInTime == -1)
+        {
+            v.Notification = ("warning", "Punch In Date and Time are required.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        var selectedEmps = v.Employees.Where(x => x.IsSelected && x.Empmasid > 0).ToList();
+        if (selectedEmps.Count == 0)
+        {
+            v.Notification = ("warning", "No employee selected.");
+            await NotifyChanged!.Invoke();
+            return;
+        }
+
+        try
+        {
+            var punchIn  = CombineDateTime(v.ModalPunchInDate.Value, v.ModalPunchInTime.Value);
+            DateTime? punchOut = null;
+            if (v.ModalPunchOutDate.HasValue && v.ModalPunchOutTime.HasValue && v.ModalPunchOutTime != -1)
+                punchOut = CombineDateTime(v.ModalPunchOutDate.Value, v.ModalPunchOutTime.Value);
+
+            foreach (var emp in selectedEmps)
+            {
+                var punch = new Attpunches1Model
+                {
+                    EmpmasId        = emp.Empmasid,
+                    PunchInDate     = punchIn,
+                    PunchOutDate    = punchOut,
+                    PunchT          = v.ModalPunch.PunchT,
+                    SchedDuration   = v.ModalPunch.SchedDuration,
+                    DutyTypeId      = v.ModalPunch.DutyTypeId,
+                    Status          = "L"
+                };
+                await _da._01AME_SavePunch(punch, Uc.SchemaUserPis!, Uc.Conn!);
+            }
+
+            // Reload punches if single employee selected
+            if (selectedEmps.Count == 1 && v.DateStart.HasValue && v.DateEnd.HasValue)
+            {
+                var start  = DateOnly.FromDateTime(v.DateStart.Value);
+                var end    = DateOnly.FromDateTime(v.DateEnd.Value);
+                var result = await _punches._02ByIdByRange(selectedEmps[0].Empmasid, start, end, Uc.SchemaUserPis!, Uc.Conn!);
+                v.Punches  = result?.Where(x => x is not null).Cast<Attpunches1Model>().ToList() ?? [];
+            }
+
+            v.Notification = ("success", $"Punch record saved for {selectedEmps.Count} employee(s).");
+            v.IsModalOpen  = false;
+        }
+        catch (Exception ex)
+        {
+            v.Notification = ("error", $"Save failed: {ex.Message}");
+        }
+
+        await NotifyChanged!.Invoke();
+    }
+
+    private void OnCancel()
+    {
+        if (v is null) return;
+        v.IsModalOpen = false;
+        NotifyChanged!.Invoke();
+    }
+
+    private DateTime CombineDateTime(DateTime date, int hundreds)
+    {
+        if (hundreds == 2400) return date.Date.AddDays(1);
+        int hours   = hundreds / 100;
+        int minutes = hundreds % 100;
+        return date.Date.AddHours(hours).AddMinutes(minutes);
+    }
+}

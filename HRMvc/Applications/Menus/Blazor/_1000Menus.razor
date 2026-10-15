@@ -1,0 +1,38 @@
+﻿@using HRApiLibrary.DataAccess._90_Utils
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._90_Utils
+
+<div class="card p-2" style="min-height: 95vh"  >
+    <div class="text-center mt-4 bordered-bottom"><h5>Personnel Information System</h5></div>
+    <div class="container p-2">
+        <CascadingValue Value="menuPiss">
+            <_1000_menus_pis />    
+        </CascadingValue>
+        
+        
+        <CascadingValue Value="menuPays">
+            <_1000_menus_payroll />    
+        </CascadingValue>
+        
+    </div>
+
+</div>
+
+@inject IMainmenuDataAccess _menu
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+    List<MainmenuModel> menuPiss = []; 
+    List<MainmenuModel> menuPays = []; 
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var menusPis = await _menu._02("MainPay", Uc.Conn); 
+        var menusPay = await _menu._02("MainPay", Uc.Conn);
+        if(menusPis.Count>0) menuPiss = menusPis??[];
+        if(menusPis.Count>0) menuPays = menusPay??[];
+        
+        
+    }
+
+}

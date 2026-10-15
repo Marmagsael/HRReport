@@ -40,7 +40,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
         public async Task<List<OInsuranceModel?>?> _02(string schema, string conn)
         {
-            string sql = $@"select  Id, Name, PolicyNo, InsuranceType, FaceValue, Premiums, InsExpire from {schema}.Insurance where ORDER BY Name";
+            string sql = $@"select  Id, Name, PolicyNo, InsuranceType, FaceValue, Premiums, InsExpire from {schema}.Insurance ORDER BY Name";
             var data = await _sql.FetchData<OInsuranceModel?, dynamic>(sql, new { }, conn);
             return data;
         }

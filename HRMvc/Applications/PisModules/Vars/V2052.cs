@@ -1,15 +1,15 @@
-﻿using HRApiLibrary.Models._00_MainPis;
-using HRApiLibrary.Models._10_Pis;
-using Radzen.Blazor;
-using Radzen;
-using HRApiLibrary.Models._20_Pay;
-
-using System.Reflection;
-using OfficeOpenXml.FormulaParsing.Utilities;
-using System;
-using HRApiLibrary.DataAccess._10_Pis.Interface;
+﻿using HRApiLibrary.DataAccess._10_Pis.Interface;
+using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._00_MainPis;
+using HRApiLibrary.Models._10_Pis;
 using HRApiLibrary.Models._10_Pis.OPis;
+using HRApiLibrary.Models._20_Pay;
+using OfficeOpenXml.FormulaParsing.Utilities;
+using Radzen;
+using Radzen.Blazor;
+using System;
+using System.Reflection;
 
 namespace HRMvc.Applications.PisModules.Vars;
 
@@ -20,15 +20,23 @@ public class V2052
 {
 
 
-    public string?  maindb            { get; set; } = string.Empty;
+    public string?  maindb           { get; set; } = string.Empty;
     public string?  pisdb            { get; set; } = string.Empty;
     public string?  newpisdb         { get; set; } = string.Empty;
     public string?  paydb            { get; set; } = string.Empty;
     public string?  conn             { get; set; } = string.Empty;
     public int?     defcoid          { get; set; } = 0;
-    public int?     userid           { get; set; } = 0; 
+    public int?     userid           { get; set; } = 0;
+    public string?  username         { get; set; } = string.Empty;
+
+    public bool     IsLoading        { get; set; } = false;
+    public bool     UcLoaded         { get; set; } = false;
+
 
     public bool                          ShowDataEntry          { get; set; } = false;
+    public bool                          ShowStatusModal        { get; set; } = false;
+    public string?                       ModalCaption           { get; set; } = string.Empty;
+
     public string?                       Action                 { get; set; } = string.Empty;
     public bool?                         IsNewEntry             { get; set; } = false;
     public string?                       ActionRef              { get; set; } = string.Empty;
@@ -42,11 +50,19 @@ public class V2052
     public string?                       EmailRegisteredMessage { get; set; } = string.Empty;
     public string?                       RegisteredUserOnMain   { get; set; } = string.Empty;
     public string?                       RelatedUserOnSecpis    { get; set; } = string.Empty;
+    public string?                       SearchValue            { get; set; } = string.Empty;
+
+
+
+
+
     
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();
     public OEducateModel?                  Education            { get; set; } = new();
+    public OSeclicModel?                   SecLicense           { get; set; } = new();
+    public List<OLicverstatusModel?>?      LicverStatuses       { get; set; } = new();
 
     public List<OEmployModel?>?             Employments         { get; set; } = new();
     public List<OEducateModel?>?            Educations          { get; set; } = new();
@@ -70,8 +86,14 @@ public class V2052
 
     public List<PisEmpmasModel?>?           Empmass             { get; set; } = new();
     public List<OEmpstatModel?>?            OEmpstats           { get; set; } = new();
+    public List<OEmpstatModel?>?            previousSelectedStatus          { get; set; } = new();
+    public IEnumerable<OEmpstatModel?>      SelectedStatus                  { get; set; } = new List<OEmpstatModel>();
+    public List<OEmpmas_visible_statusModel?>  OEmpstatVisibleStatus        { get; set; } = new();
 
+    public List<OEmpmasModel?>?             EmpmasInitialList   { get; set; } = new();
     public List<OEmpmasModel?>?             EmpmasList          { get; set; } = new();
+
+
     public List<RdivisionModel?>?           Rdivisions          { get; set; } = new();
     public List<RdepartmentModel?>?         Rdepartments        { get; set; } = new();
     public List<RsectionModel?>?            Rsections           { get; set; } = new();
@@ -81,6 +103,11 @@ public class V2052
     public List<EmploymenttypeModel?>?      Employmenttypes     { get; set; } = new();
 
     public List<EmpmovementModel?>?         EmpmovementList     { get; set; } = new();
+
+    public IEnumerable<dynamic> RepDtls { get; set; } = new List<dynamic>();
+
+
+
 
 
 public RadzenDataGrid<OEmployModel>?             EmploymentGrid         = new();

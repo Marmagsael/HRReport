@@ -1,0 +1,47 @@
+﻿@using HRApiLibrary.Models._11_AMS
+@using HRMvc.Applications.AMS.Vars
+@using Telerik.Blazor.Components
+
+<TelerikGrid Data="@v.Employees" PageSize="20" Pageable="true" Height="700px" Width="100%" Class="">
+    <GridColumns>
+        <GridColumn Field="Empname" Title="Name" Width="300px" />
+
+        <GridColumn Field="NeedsotfilingBool" Title="Needs OT Filing" Width="150px">
+            <Template>
+                <div style="text-align:center;">
+                    <TelerikCheckBox @bind-Value="@((context as Ams_otsettingsModel).NeedsotfilingBool)" />
+                </div>
+            </Template>
+        </GridColumn>
+
+        <GridColumn Field="Maxothour" Title="Max OT Hours">
+            <Template>
+                <TelerikNumericTextBox @bind-Value="@((context as Ams_otsettingsModel).Maxothour)" Width="120px" />
+            </Template>
+        </GridColumn>
+    </GridColumns>
+</TelerikGrid>
+
+<div class="d-flex gap-1 p-1">
+    <div @onclick="CheckAll" class="mb-cbtn mb-cbtn-gray p-2 br-5 ">Check All</div>
+    <div @onclick="UnCheckAll" class="mb-cbtn mb-cbtn-gray p-2 br-5 ">Uncheck All</div>
+
+</div>
+
+@code {
+    [CascadingParameter] public V11008OTModel v { get; set; } = new();
+    [CascadingParameter] public Func<Task> NotifyChanged { get; set; } = default!;
+
+    async Task CheckAll()
+    {
+        v.Employees.ForEach(e=>{ e.NeedsotfilingBool = true;  }); 
+        await NotifyChanged.Invoke();
+    }
+    
+    async Task UnCheckAll()
+    {
+        v.Employees.ForEach(e=>{ e.NeedsotfilingBool = false;  }); 
+        await NotifyChanged.Invoke(); 
+    }
+
+}
