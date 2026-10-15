@@ -451,6 +451,16 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
             sql = $@"  ALTER TABLE {schema}.`settings` ADD COLUMN `AllowedMoPrd` INTEGER UNSIGNED DEFAULT 3 AFTER `PayrollType`;";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
+        
+        sql = $@"Desc {schema}.settings ";
+        res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
+
+        if (res.Count == 27)
+        {
+            sql = $@"  ALTER TABLE {schema}.`settings` ADD COLUMN `ImageDefultLocation` INTEGER UNSIGNED DEFAULT 3 AFTER `LogoAddress`;";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+
     }
 
     public async Task _00_002_SystemUser(string? schema, string? connName)
