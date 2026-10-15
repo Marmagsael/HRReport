@@ -458,8 +458,6 @@ public class AuthenticationController : Controller
 
         await _mainPisTblMaker._01UserTable(userDb, conn);
 
-        Console.WriteLine($"===><===> Company Id : {coId} ** User Id : {userId} ** User Db : {userDb}");
-
         if (coId > 1)
         {
 
