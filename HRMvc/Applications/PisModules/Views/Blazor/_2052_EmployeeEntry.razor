@@ -84,6 +84,8 @@
 @inject IOTrainDataAccess _training
 @inject IOReferDataAccess _charref
 @inject IOInsuranceaccidentDataAccess _insuranceacc
+@inject IOLicverstatusDataAccess _licverstatus
+@inject IOSeclicDataAccess _seclic
 
 @code {
 
@@ -99,6 +101,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Console.WriteLine($"Uc.UserName {Uc.UserName}");
 
         if (Uc.Conn == null || Uc.OpisDb == null || Uc.OpayDb == null)
         {
@@ -118,8 +121,10 @@
         v.paydb         = Uc.OpayDb;
         v.conn          = Uc.Conn;
         v.userid        = Uc.UserId;
+        v.username      = Uc.UserName;
         v.defcoid       = int.Parse(Uc.DefCompanyId ?? "0");
 
+        Console.WriteLine($"UserName {Uc.UserName}");
         v.IsLoading = true;
 
         try
@@ -235,6 +240,7 @@
         await LoadMlaCodes();
         await LoadProCodes();
         await LoadPositions();
+        await LoadSecLicStatus();
     }
 
     private async Task LoadCivilStatuses()
@@ -321,6 +327,22 @@
 
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to load positions. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+
+        }
+    }
+
+    private async Task LoadSecLicStatus()
+    {
+        try
+        {
+            var res = await _licverstatus._02s(v.pisdb, v.conn) ?? new();
+            v.LicverStatuses = res;
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load License Verification Statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
 
         }
     }
@@ -426,6 +448,7 @@
                 await LoadTrainings();
                 await LoadCharRefs();
                 await LoadInsuranceAccident();
+                await LoadSecLicense();
 
                 SplitHeight();
                 GetAddressArea();
@@ -590,6 +613,21 @@
         try
         {
             v.InsuranceAccident = await _insuranceacc._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load insurance accident records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadSecLicense()
+    {
+
+        try
+        {
+            v.SecLicense = await _seclic._02(v.SelectedEmpnumber, v.pisdb!, v.conn!) ?? new();
 
         }
         catch (Exception ex)

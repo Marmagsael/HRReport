@@ -52,14 +52,115 @@
                     <RadzenTextBox @bind-Value=@V.Empmas.BadgeNo class="form-control" Name="BadgeNo" MaxLength="10" Style="width:100%" />
                     <RadzenRequiredValidator Component="BadgeNo" Text="Badge No. is required" Style="color: red; display:block" />
                 </div>
-            </div> 
+            </div>
 
+
+            @* ----- OP No -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">OP No. </div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.SecLicense.Opno class="form-control" Name="OpNo" MaxLength="25" Style="width:100%" />
+                </div>
+            </div>
+
+
+            @* ----- SBR No -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">SBR No. </div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.SecLicense.Sbrno class="form-control" Name="SbrNo" MaxLength="25" Style="width:100%" />
+                </div>
+            </div>
            
         </RadzenFieldset>
 
 
+
+    <div class="h-10p"></div>
+       <RadzenFieldset Text="LICENSE VERIFICATION">
+
+            @* ----- Last Edited   -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Last Edited  </div>
+                <div class="w-30">
+                    <RadzenDatePicker @bind-Value=@V.SecLicense.DateModified  Style="width:100%"  Disabled />
+                </div>
+            </div>
+
+          
+
+
+            @* ----- By  -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">By</div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.SecLicense.User  Style="width:100%"  Disabled />
+                </div>
+            </div>
+
+            <hr/>
+
+            @* ----- Validation Status -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Validation Status </div>
+                <div class="w-30">
+                    <RadzenDropDown TValue="string"
+                                    @bind-Value="V.SecLicense.ValStatus"
+                                    Data="@V.LicverStatuses"
+                                    TextProperty="LicverStatus"
+                                    ValueProperty="LicverStatus"
+                                    class="w-100" />
+                </div>
+            </div>
+
+            @* ----- Date Validated -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Date Validated </div>
+                <div class="w-30">
+                    <RadzenDatePicker @bind-Value=@V.SecLicense.Validated Style="width:100%" DateFormat="MMMM/dd/yyyy" ShowTime="false" />
+                </div>
+            </div>
+
+
+            @* ----- Date ReValidated -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Date Re-validated </div>
+                <div class="w-30">
+                    <RadzenDatePicker @bind-Value=@V.SecLicense.Revalidated Style="width:100%" DateFormat="MMMM/dd/yyyy" ShowTime="false" />
+                </div>
+            </div>
+
+            @* ----- Lic Date Issued -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Lic Date Issued</div>
+                <div class="w-30">
+                    <RadzenDatePicker @bind-Value=@V.SecLicense.LicDateIssued Style="width:100%" DateFormat="MMMM/dd/yyyy" ShowTime="false" />
+                </div>
+            </div>
+
+        </RadzenFieldset>
+
+
         <div class="h-10p"></div>
-        <RadzenFieldset Text="******">
+       <RadzenFieldset Text="******">
+
+            @* ----- Position  -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Position </div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.Empmas.PositionName class="form-control"  Style="width:100%"  Disabled />
+                </div>
+            </div>
+
+
+            @* ----- Employee Status  -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">Employee Satus </div>
+                <div class="w-30">
+                    <RadzenTextBox @bind-Value=@V.Empmas.EmpStatus class="form-control"  Style="width:100%"  Disabled />
+                </div>
+            </div>
+
             @* ----- Guard No Years -----------------------*@
             <div class="w-100 d-flex p-1">
                 <div class="w-20 small">Guard # of Yrs </div>
@@ -93,6 +194,7 @@
 
 
 @inject IOEmpmasDataAccess _empmas
+@inject IOSeclicDataAccess _seclic
 
 @code {
     [CascadingParameter]
@@ -113,10 +215,17 @@
         try
         {
 
-            Console.Write("1");
             var res = await _empmas._03_Security(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
+
+
+            V.SecLicense.Empnumber = V.Empmas.EmpNumber;
+            V.SecLicense.User = V.username;
+            V.SecLicense.DateModified = DateTime.Now;
+
+
+
+            var resLic = await _seclic._01(V.SecLicense, V.pisdb, V.conn);
             NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
-            Console.Write("2");
 
 
         }
@@ -124,7 +233,6 @@
         {
             Console.WriteLine(ex);
             NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-            Console.Write("3");
 
         }
 

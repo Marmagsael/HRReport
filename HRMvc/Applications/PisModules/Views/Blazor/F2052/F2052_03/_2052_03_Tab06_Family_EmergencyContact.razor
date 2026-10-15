@@ -1,6 +1,4 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-@inject NotificationService _NotificationService;
-@inject DialogService _DialogService;
 @inject I_10_EmpmasDataAccess _empmas;
 
 <div class="p-2">
@@ -218,6 +216,10 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OEmergencModel?>? emergencycontactToInsert = new();
@@ -295,15 +297,13 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Record Deletion");
+                if (!confirmed) return;
+
                     await _empmas._04(rec.EmpNumber, rec.Name, rec.Rela, V.pisdb!, V.conn!);
                     V.EmergencyContacts.Remove(rec);
                     NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
 
-                }
             }
         }
         else
@@ -410,23 +410,7 @@
         return true;
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-      _NotificationService.Notify(new NotificationMessage
-      {
-          Severity = NotificationSeverity.Success,
-          Summary = summary,
-          Detail = detail,
-          Duration = duration
-      });
-
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
+   
 }
 
 

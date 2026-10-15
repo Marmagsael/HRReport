@@ -1,8 +1,5 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 
-@inject NotificationService _NotificationService
-@inject DialogService _DialogService
-
 
 <RadzenFieldset Text="Children" Style="font-weight:bold">
     <div class="fw-normal">
@@ -149,6 +146,8 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
 
     [Parameter] public EventCallback ChildAction { get; set; }
 
@@ -232,15 +231,13 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
-                    await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
-                    V.Children.Remove(rec);
-                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Record Deletion");
+                if (!confirmed) return;
 
-                }
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+                V.Children.Remove(rec);
+                NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
+
             }
         }
         else

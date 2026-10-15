@@ -1,7 +1,6 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
 @inject IOFamilyDataAccess _empmas
 
-@inject DialogService _DialogService
 
 <div class="p-2">
     @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
@@ -174,6 +173,10 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OFamilyModel?>? familyToInsert = new();
@@ -250,14 +253,13 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Name}'s record?", "Confirm Delete",
-                new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
-                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
-                    V.Familys .Remove(rec);
-                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
-                }
+
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Penalty Type Deletion");
+                if (!confirmed) return;
+
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
+                V.Familys .Remove(rec);
+                NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
             }
         }
         else

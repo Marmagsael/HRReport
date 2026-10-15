@@ -1,5 +1,4 @@
 ﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
-@inject DialogService _DialogService
 
 <div class="p-2">
     <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
@@ -259,6 +258,10 @@
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
     List<OTrainModel?>? trainingToInsert = new();
@@ -339,14 +342,12 @@
         {
             if (rec != null)
             {
-                var option = await _DialogService.Confirm($"Delete {rec.Program}'s record?", "Confirm Delete",
-                    new ConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" });
-                if (option == true)
-                {
-                    await _empmas._04(rec.EmpNumber, rec.Program, rec.Taken, V.pisdb!, V.conn!);
-                    V.Trainings.Remove(rec);
-                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
-                }
+                var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Program}' record?", "Confirm Record Deletion");
+                if (!confirmed) return;
+                
+                await _empmas._04(rec.EmpNumber, rec.Program, rec.Taken, V.pisdb!, V.conn!);
+                V.Trainings.Remove(rec);
+                NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
             }
         }
         else
