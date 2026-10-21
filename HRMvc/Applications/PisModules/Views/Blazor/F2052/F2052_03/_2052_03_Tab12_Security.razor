@@ -98,6 +98,22 @@
                 </div>
             </div>
 
+
+            @* ----- By  -----------------------*@
+            <div class="w-100 d-flex p-1">
+                <div class="w-20 small">&nbsp;</div>
+                <div class="w-30">
+                    <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 " @onclick="() => ShowLicenseVerifLogs()">
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <span class="fw-semibold"><small>Show Logs</small></span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+
+           
+
             <hr/>
 
             @* ----- Validation Status -----------------------*@
@@ -144,22 +160,6 @@
         <div class="h-10p"></div>
        <RadzenFieldset Text="******">
 
-            @* ----- Position  -----------------------*@
-            <div class="w-100 d-flex p-1">
-                <div class="w-20 small">Position </div>
-                <div class="w-30">
-                    <RadzenTextBox @bind-Value=@V.Empmas.PositionName class="form-control"  Style="width:100%"  Disabled />
-                </div>
-            </div>
-
-
-            @* ----- Employee Status  -----------------------*@
-            <div class="w-100 d-flex p-1">
-                <div class="w-20 small">Employee Satus </div>
-                <div class="w-30">
-                    <RadzenTextBox @bind-Value=@V.Empmas.EmpStatus class="form-control"  Style="width:100%"  Disabled />
-                </div>
-            </div>
 
             @* ----- Guard No Years -----------------------*@
             <div class="w-100 d-flex p-1">
@@ -195,8 +195,13 @@
 
 @inject IOEmpmasDataAccess _empmas
 @inject IOSeclicDataAccess _seclic
-
+@inject IOSecliclogsDataAccess _secliclogs
 @code {
+    
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+
     [CascadingParameter]
     public V2052 V { get; set; } = new();
 
@@ -214,17 +219,41 @@
 
         try
         {
-
-            var res = await _empmas._03_Security(V.SelectedEmpnumber, V.Empmas, V.pisdb, V.conn);
-
-
-            V.SecLicense.Empnumber = V.Empmas.EmpNumber;
-            V.SecLicense.User = V.username;
-            V.SecLicense.DateModified = DateTime.Now;
+            // Update  security records in empmas table ------
+            var res = await _empmas._03_Security(V.SelectedEmpnumber, V.Empmas, Uc.OpisDb!, Uc.Conn!);
 
 
+            V.SecLicense.Empnumber      = V.Empmas.EmpNumber;
+            V.SecLicense.User           = Uc.UserName;
+            V.SecLicense.DateModified   = DateTime.Now;
 
-            var resLic = await _seclic._01(V.SecLicense, V.pisdb, V.conn);
+
+
+
+            // Insert or update  security records in seclic table ------
+            var resLic      = await _seclic._01(V.SecLicense, Uc.OpisDb!, Uc.Conn!);
+
+            if(!string.IsNullOrWhiteSpace(resLic.Empnumber)){
+
+                var log = new OSecliclogsModel()
+                {
+                    EmpNumber      = resLic.Empnumber,
+                    Sbrno          = resLic.Sbrno,
+                    Opno           = resLic.Opno,
+                    Validated      = resLic.Validated,
+                    Vfee           = resLic.Vfee,
+                    Revalidated    = resLic.Revalidated,
+                    ValStatus      = resLic.ValStatus,
+                    User           = resLic.User,
+                    DateModified   = resLic.DateModified,
+                    LicDateIssued  = resLic.LicDateIssued
+                };
+
+
+                // Insert  security logs records in secliclogs table ------
+                var resLogs = await _secliclogs._01(log, Uc.OpisDb!, Uc.Conn!);
+            }
+
             NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
 
 
@@ -244,6 +273,13 @@
 
     }
 
-  
+    private async void ShowLicenseVerifLogs()
+    {
+        V.Action = "ShowLicVerificationLogsModal";
+        await ChildAction.InvokeAsync();
+    }
+
+
+   
 
 }

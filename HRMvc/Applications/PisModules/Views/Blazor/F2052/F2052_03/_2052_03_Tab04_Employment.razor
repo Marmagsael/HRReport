@@ -327,6 +327,10 @@
 
     string? empnumber = string.Empty;
 
+    
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
     [CascadingParameter] public V2052 V { get; set; } = new();
 
         
@@ -422,7 +426,7 @@
                 if (!confirmed) return;
 
                
-                await _empmas._04(rec.EmpNumber, rec.Comp, rec.Posi, V.pisdb!, V.conn!);
+                await _empmas._04(rec.EmpNumber, rec.Comp, rec.Posi, Uc.OpisDb!, Uc.Conn!);
                 V.Employments.Remove(rec);
 
                 NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
@@ -482,7 +486,7 @@
         try
         {
             bool isNew = employmentsToInsert!.Contains(rec);
-            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Comp, rec.Posi,  V.pisdb!, V.conn!);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Comp, rec.Posi,  Uc.OpisDb!, Uc.Conn!);
             bool exists = res != null && res.Count > 0;
 
             if (exists)
@@ -501,12 +505,12 @@
 
             if (isNew)
             {
-                await _empmas._01(rec, V.pisdb!, V.conn!);
+                await _empmas._01(rec, Uc.OpisDb!, Uc.Conn!);
                 V.Employments!.Add(rec);
             }
             else
             {
-                await _empmas._03(recBackup.EmpNumber, recBackup.Comp, recBackup.Posi, rec, V.pisdb!, V.conn!);
+                await _empmas._03(recBackup.EmpNumber, recBackup.Comp, recBackup.Posi, rec, Uc.OpisDb!, Uc.Conn!);
             }
 
             await V.EmploymentGrid.UpdateRow(rec);      

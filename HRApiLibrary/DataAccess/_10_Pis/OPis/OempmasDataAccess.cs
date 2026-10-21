@@ -263,6 +263,37 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     }
 
 
+    public async Task<List<OEmpmasModel?>?> _02EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn)
+    {
+
+
+        var sql = $@"SELECT e.empnumber, e.email,  concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName
+                            FROM {schema}.Empmas e 
+                            WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+
+        return data;
+    }
+
+
+    public async Task<List<OEmpmasModel?>?> _02EmailLinkedToOthers(string? email, string? schema, string? conn)
+    {
+
+
+        var sql = $@"SELECT e.empnumber, e.email,  concat(trim(e.EmpLastNm),', ' , trim(e.EmpFirstNm),' ', trim(e.EmpMidNm)) FullName,  e.Email
+                            FROM {schema}.Empmas e 
+                            WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))";
+
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Email = email}, conn);
+
+        return data;
+    }
+
+
+
+
+
     public async Task<List<OEmpmasModel?>?> _02(string? empnumber, string? olddb, string? maindb,  string? newdb ,string? conn)
     {
         var flds = EmpmasFields();
@@ -788,6 +819,8 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?>  _02ByClNumbers(string? clnumber, string? schema, string? conn);
     Task<List<OEmpmasModel?>?>  _02ByEmail(string? email, string? schema, string? conn);
     Task<List<OEmpmasModel?>?> _02EmpnumberAndEmailOwnedByOthers(string? empnumber, string? email, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn);
+    Task<List<OEmpmasModel?>?> _02EmailLinkedToOthers(string? email, string? schema, string? conn);
     Task<OEmpmasModel?>         _02MaxEmpnumber(string? schema, string? conn);
 
     Task<OEmpmasModel?>         _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn);

@@ -9,25 +9,25 @@ namespace HRMvc.Applications.Vars;
 
 public class V00_RepVars
 {
-    public bool                         Isloaded                { get; set; } = false; 
+    public bool                         Isloaded                 { get; set; } = false; 
     public int?                          RefreshToken            { get; set; } = 0;
     public string?                       SelectedFormat          { get; set; } = "PDF";
     public string?                       RelativePath            { get; set; } = "Reports/_03Payroll/mSample.trdp";
-    public IEnumerable<object>          ReportData              { get; set; } = [];
+    public IEnumerable<object>          ReportData               { get; set; } = [];
 
-    public Dictionary<string, object>   ReportParams            { get; set; } = new()
+    public Dictionary<string, object>   ReportParams             { get; set; } = new()
     {
         ["CoName"]     = "Morpheusbox Inc.",
         ["pPrintedBy"] = "SYSTEM",
         ["pPrintDate"] = DateTime.Now
     };
-    public List<string>                 ReportFormats           { get; set; } = ["PDF","XLSX"];
+    public List<string>                 ReportFormats            { get; set; } = ["PDF","XLSX"];
 
 
     //Newly Added ------------------------------------------------
-    public string?                       Action                  { get; set; } = string.Empty;
-    public int?                          SelectedFilter          { get; set; } = 0;
-    public List<DataFilterModel>        DataFilters             { get; set; } = [];
+    public string?                       Action                   { get; set; } = string.Empty;
+    public int?                          SelectedFilter           { get; set; } = 0;
+    public List<DataFilterModel>        DataFilters               { get; set; } = [];
     public class DataFilterModel
     {
         public int?      Code { get; set; } = 0;

@@ -232,6 +232,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOEmpmas_visible_statusDataAccess, OEmpmas_visible_statusDataAccess>();
         builder.Services.AddScoped<IOSeclicDataAccess, OSeclicDataAccess>();
         builder.Services.AddScoped<IOLicverstatusDataAccess, OLicverstatusDataAccess>();
+        builder.Services.AddScoped<IOSecliclogsDataAccess, OSecliclogsDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------

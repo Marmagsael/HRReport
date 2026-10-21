@@ -454,10 +454,9 @@ public class AuthenticationController : Controller
         
         var userId = user.Id;
         var coId   = user.DefaultCoId;
-        var userDb = "U"+userId.ToString().Trim();
+        var userDb = "U"+ (user.DefaultCoId)?.ToString().Trim();
 
         await _mainPisTblMaker._01UserTable(userDb, conn);
-
 
         if (coId > 1)
         {
@@ -467,6 +466,8 @@ public class AuthenticationController : Controller
             var paydb   = prefix + "pay";
             var acctgdb = prefix + "acctg";
             
+            if(uc.PisSchema.Trim().Length > 0) pisdb   = uc.PisSchema.Trim();
+            if(uc.PaySchema.Trim().Length > 0) paydb   = uc.PaySchema.Trim();
             
             await _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
             
@@ -476,7 +477,6 @@ public class AuthenticationController : Controller
             
             await _acctg.AccountingTableMaker(acctgdb, conn); 
 
-            
         }
 
         

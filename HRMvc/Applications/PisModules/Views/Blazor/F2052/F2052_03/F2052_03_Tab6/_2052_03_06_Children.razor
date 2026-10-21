@@ -141,6 +141,8 @@
 @code {
 
     string? empnumber = string.Empty;
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
 
     [CascadingParameter] public V2052 V { get; set; } = new();
     [CascadingParameter]
@@ -234,7 +236,7 @@
                 var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Record Deletion");
                 if (!confirmed) return;
 
-                await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.BDay,Uc.OpisDb!, Uc.Conn!);
                 V.Children.Remove(rec);
                 NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
 
@@ -290,7 +292,7 @@
         try
         {
             bool isNew = childrenToInsert !.Contains(rec);
-            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.BDay, V.pisdb!, V.conn!);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.BDay,Uc.OpisDb!, Uc.Conn!);
             bool exists = res != null && res.Count > 0;
 
             if (exists)
@@ -308,12 +310,12 @@
 
             if (isNew)
             {
-                await _empmas._01(rec, V.pisdb!, V.conn!);
+                await _empmas._01(rec,Uc.OpisDb!, Uc.Conn!);
                 V.Children!.Add(rec);
             }
             else
             {
-                await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.BDay, rec, V.pisdb!, V.conn!);
+                await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.BDay, rec,Uc.OpisDb!, Uc.Conn!);
             }
 
             await V.ChildrenGrid.UpdateRow(rec);

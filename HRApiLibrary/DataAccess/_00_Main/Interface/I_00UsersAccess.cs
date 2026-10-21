@@ -6,6 +6,7 @@ namespace HRApiLibrary.DataAccess._00_Main.Interface
     {
         Task<UsersModel?> _01(UsersModel user, string? schema = "Main", string? connName = "MySqlConn");
         Task<UsersModel?> _02ByEmail(string? email, string? schema = "Main", string? connName = "MySqlConn");
+        Task<List<UsersModel?>?> _02ByEmail_EmployeeEntryModule(string? email, string? mainschema = "Main", string? secpisschema = "Secpis", string? connName = "MySqlConn");
         Task<UsersModel?> _02ById(int? id, string? schema = "Main", string? connName = "MySqlConn");
         Task<UsersModel?> _02ByLoginName(string? loginname, string? schema = "Main", string? connName = "MySqlConn");
         Task<UsersModel?> _02LoginEmail(string? email, string? password, string? schema = "Main", string? connName = "MySqlConn");

@@ -12,7 +12,7 @@
             <CardHeader>
                 <div class="d-flex  justify-content-between  align-items-center">
                     <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
-                            @onclick="@(() => ApplyStatus())">
+                       @onclick="ApplyStatus">
                         Apply Status
                     </button>
                 </div>
@@ -33,7 +33,7 @@
                                 Navigable="true"
                                 SelectionMode="@GridSelectionMode.Multiple"
                                 SelectedItems="@V.SelectedStatus"
-                                SelectedItemsChanged="@StatusSelectionChanged"
+                                SelectedItemsChanged="@OnCheckBoxClick"
                                 OnRowClick="@OnRowClick"
                                 @bind-PageSize="@PageSize">
 
@@ -62,22 +62,23 @@
 
 
 
-@inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
+@inject IOEmpmas_visible_statusDataAccess _selectedEmpstat
 
 @code {
 
     [CascadingParameter]
     public V2052 V { get; set; } = new();
 
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
     [Parameter]
     public EventCallback ChildAction { get; set; }
-
 
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
     private TelerikGrid<OEmpstatModel>? EmployeeStatusGridRef;
-
 
     private bool IsRowClickSelection { get; set; }
 
@@ -96,31 +97,9 @@
 
 
 
-    private async Task OnRowClick(GridRowClickEventArgs args)
-    {
-        var status = (OEmpstatModel)args.Item;
 
-        var selectedStatus = V.SelectedStatus.ToList();
-        var alreadySelected = selectedStatus.Any(x => x.Code == status.Code);
 
-        IsRowClickSelection = true;
-
-        if (alreadySelected)
-        {
-            selectedStatus.RemoveAll(x => x.Code == status.Code);
-        }
-        else
-        {
-            selectedStatus.Add(status);
-        }
-
-        V.SelectedStatus = selectedStatus;
-
-        args.ShouldRender = true;
-
-    }
-
-    private async Task StatusSelectionChanged(IEnumerable<OEmpstatModel?> selectedItems)
+    private async Task OnCheckBoxClick(IEnumerable<OEmpstatModel?> selectedItems)
     {
         if (IsRowClickSelection)
         {
@@ -129,21 +108,46 @@
         }
 
         V.SelectedStatus = selectedItems?.ToList() ?? [];
+    }
+
+
+    private async Task OnRowClick(GridRowClickEventArgs args)
+    {
+        var status = (OEmpstatModel)args.Item;
+
+        var selectedStatus = V.SelectedStatus.ToList(); // currently selected statuses
+        var alreadySelected = selectedStatus.Any(x => x.Code == status.Code); // check whether the clicked row is already selected
+
+
+        IsRowClickSelection = true;
+
+        if (alreadySelected)
+        {
+            selectedStatus.RemoveAll(x => x.Code == status.Code); // deselect and remove from the list
+        }
+        else
+        {
+            selectedStatus.Add(status); // select and add from the list
+        }
+
+        V.SelectedStatus = selectedStatus;
+        args.ShouldRender = true;
 
     }
 
 
-
     private async Task ApplyStatus()
     {
-        var newSelections = V.SelectedStatus.ToList();
-        var toInsert = newSelections.Where(newStatus => !V.previousSelectedStatus.Any(oldStatus => oldStatus.Code == newStatus.Code)).ToList();
-        var toRemove = V.previousSelectedStatus.Where(oldStatus => !newSelections.Any(newStatus => newStatus.Code == oldStatus.Code)).ToList();
+        var newSelections       = V.SelectedStatus.ToList();
+        var previousSelections  = V.PreviousSelectedStatus;
+
+        var toInsert = newSelections.Where(newStatus => !previousSelections.Any(oldStatus => oldStatus.Code == newStatus.Code)).ToList();
+        var toRemove = previousSelections.Where(oldStatus => !newSelections.Any(newStatus => newStatus.Code == oldStatus.Code)).ToList();
 
 
         if (!toInsert.Any() && !toRemove.Any())
         {
-            // NotificationRef.Show("No changes to apply.", ThemeConstants.Notification.ThemeColor.Info);
+            NotificationRef.Show("No changes to apply.", ThemeConstants.Notification.ThemeColor.Info);
             return;
         }
 
@@ -165,17 +169,16 @@
 
         if (insertSuccess && removeSuccess)
         {
-            V.previousSelectedStatus = newSelections.ToList();
-            V.SelectedStatus = newSelections;
+            V.PreviousSelectedStatus    = newSelections.ToList();
+            V.SelectedStatus            = newSelections;
 
-            // NotificationRef.Show("Status has been updated.", ThemeConstants.Notification.ThemeColor.Success);
+            NotificationRef.Show("Status has been updated.", ThemeConstants.Notification.ThemeColor.Success);
         }
 
         V.SearchValue   = string.Empty;
         V.Action        = "ReLoadEmployeeList";
-        await ChildAction.InvokeAsync();
 
-        // NotificationRef.Show("Unable to update status. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        await ChildAction.InvokeAsync();
     }
 
 
@@ -191,7 +194,7 @@
                     Empstat_ = s.Code
                 };
 
-                await _oselectedEmpstat._01(status, V.pisdb, V.conn);
+                await _selectedEmpstat._01(status, Uc.OpisDb, Uc.Conn);
             }
 
 
@@ -199,7 +202,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"fail to insert {ex}");
+           NotificationRef.Show("Unable to update status. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return false;
         }
     }
@@ -218,16 +221,16 @@
                         Empstat_ = s.Code
                     };
 
-                    await _oselectedEmpstat._04(status, V.pisdb, V.conn);
+                    await _selectedEmpstat._04(status, Uc.OpisDb, Uc.Conn);
                 }
             }
 
 
             return true;
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            Console.WriteLine($"fail to delete {ex}");
+            NotificationRef.Show("Unable to update status. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return false;
         }
     }

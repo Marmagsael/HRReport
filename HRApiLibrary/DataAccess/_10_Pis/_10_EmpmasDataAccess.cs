@@ -76,6 +76,13 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         return data;
     }
 
+    public async Task<List<EmpmasModel?>?> _02Empmas_Empnumber( string? empnumber, string? schema, string? conn)
+    {
+        string? sql = $@"select  * from {schema}.Empmas where Empnumber = @Empnumber";
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Empnumber = empnumber}, conn);
+        return data;
+    }
+
     public async Task<EmpmasModel?> _02ByUserId(int? id, string? schema = "MainPis", string? conn = "MySqlConn")
     {
 
@@ -165,6 +172,22 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
         sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
         var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+        return data?.FirstOrDefault();
+    }
+
+    public async Task<EmpmasModel?> _03EmpmasWithEmpnumber(EmpmasModel empmas, string? schema, string? conn)
+    {
+        string? sql = $@"Update {schema}.Empmas set 
+                            EmpLastNm   = @EmpLastNm,  
+                            EmpFirstNm  = @EmpFirstNm,  
+                            EmpMidNm    = @EmpMidNm,  
+                            Suffix      = @Suffix, 
+                            SystemId    = @SystemId, 
+                            EmpAlias    = @EmpAlias where Empnumber = @Empnumber;";
+
+        await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
+        sql = $@" select  * from {schema}.Empmas x  where Empnumber = @Empnumber;";
+        var data = await _sql.FetchData<EmpmasModel?, dynamic>(sql, empmas, conn);
         return data?.FirstOrDefault();
     }
 

@@ -1,13 +1,17 @@
 using System.Security.Claims;
 using HRApiLibrary.Models._00_Main;
+using Microsoft.Extensions.Configuration;
 
 namespace HRMvc.Applications.PayrollTransaction.Vars;
 
 public static class PayClaimsHelper
 {
+    private static IConfiguration? _config;
+    public static void Init(IConfiguration config) => _config = config;
     public static UserClaimsModel UserToClaims(ClaimsPrincipal user)
     {
         var uid = int.TryParse(user.FindFirst("UserId")?.Value, out var usrId) ? usrId : -1;
+        // var DeploymentCaption = 
 
         return new UserClaimsModel
         {
@@ -37,7 +41,8 @@ public static class PayClaimsHelper
             ConnPay = user.FindFirst("ConnPay")?.Value ?? string.Empty,
             ConnPis = user.FindFirst("ConnPis")?.Value ?? string.Empty,
             ConnAcctg = user.FindFirst("ConnAcctg")?.Value ?? string.Empty,
-            IsExclusiveCompany = user.FindFirst("ExclusiveCompany")?.Value ?? string.Empty
+            IsExclusiveCompany = user.FindFirst("ExclusiveCompany")?.Value ?? string.Empty,
+            DeploymentCaption = _config?["CompanyInfo:DeploymentCaption"] ?? string.Empty
         };
     }
 }

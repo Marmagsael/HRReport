@@ -263,6 +263,8 @@
 @code {
 
     string? empnumber = string.Empty;
+      [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
 
     [CascadingParameter] public V2052 V { get; set; } = new();
 
@@ -370,7 +372,7 @@
 
 
                
-                await _empmas._04(rec.EmpNumber, rec.Name, rec.Code, V.pisdb!, V.conn!);
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.Code, Uc.OpisDb!, Uc.Conn!);
                 V.Parents.Remove(rec);
                 NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
             }
@@ -434,7 +436,7 @@
         {
            
             bool isNew = parentToInsert!.Contains(rec);
-            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Code, V.pisdb!, V.conn!);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Code, Uc.OpisDb!, Uc.Conn!);
             bool exists = res != null && res.Count > 0;
 
            
@@ -457,14 +459,14 @@
             {
                
 
-                await _empmas._01(rec, V.pisdb!, V.conn!);
+                await _empmas._01(rec, Uc.OpisDb!, Uc.Conn!);
                 V.Parents!.Add(rec);
             }
             else
             {
                 
 
-                await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.Code, rec, V.pisdb!, V.conn!);
+                await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.Code, rec, Uc.OpisDb!, Uc.Conn!);
 
             }
 
