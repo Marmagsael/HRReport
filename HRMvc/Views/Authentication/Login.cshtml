@@ -40,7 +40,7 @@
                     }
 
 
-                    <form action="/login" method="post" class="d-flex gap-5 flex-column">
+                    <form id="loginForm" action="/login" method="post" class="d-flex gap-5 flex-column">
                         <div>
                             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                             @*---- EMPLOYEE NUMBER ----*@
@@ -105,9 +105,109 @@
     </div>
 </div>
 
+@* --- Login loading overlay : shown on submit, stays until the next page loads ------------- *@
+<div id="loginLoading" class="login-loading" aria-live="polite" aria-hidden="true">
+    <div class="login-loading-box">
+        <div class="login-loading-rings">
+            <span></span><span></span><span></span>
+            <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <div class="login-loading-title">Signing you in</div>
+        <div id="loginLoadingMsg" class="login-loading-msg">Verifying your account…</div>
+        <div class="login-loading-bar"><div></div></div>
+    </div>
+</div>
+
+<style>
+    .login-loading {
+        position: fixed; inset: 0; z-index: 2000;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(220, 224, 228, .20);
+        backdrop-filter: blur(2px);
+        opacity: 0; visibility: hidden;
+        transition: opacity .25s ease, visibility .25s ease;
+    }
+    .login-loading.show { opacity: 1; visibility: visible; }
+
+    .login-loading-box {
+        width: 300px; padding: 28px 24px 22px;
+        background: #fff; border-radius: 14px; text-align: center;
+        box-shadow: 0 18px 50px rgba(0,0,0,.25);
+        transform: translateY(8px) scale(.98);
+        transition: transform .25s ease;
+    }
+    .login-loading.show .login-loading-box { transform: none; }
+
+    .login-loading-rings { position: relative; width: 84px; height: 84px; margin: 0 auto 16px; }
+    .login-loading-rings span {
+        position: absolute; inset: 0; border-radius: 50%;
+        border: 4px solid transparent; border-top-color: #047959;
+        animation: login-spin 1.1s cubic-bezier(.5,.1,.5,.9) infinite;
+    }
+    .login-loading-rings span:nth-child(2) { inset: 10px; border-top-color: #34b38a; animation-duration: 1.5s; animation-direction: reverse; }
+    .login-loading-rings span:nth-child(3) { inset: 20px; border-top-color: #9ad9c3; animation-duration: 1.9s; }
+    .login-loading-rings i {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        color: #047959; font-size: 18px;
+    }
+
+    .login-loading-title { font-weight: 600; font-size: 1.05rem; color: #1f2d27; }
+    .login-loading-msg   { font-size: .85rem; color: #6b7a74; min-height: 1.3em; margin-top: 2px; transition: opacity .2s; }
+
+    .login-loading-bar { height: 4px; margin-top: 16px; border-radius: 4px; background: #e6f2ee; overflow: hidden; }
+    .login-loading-bar div {
+        width: 40%; height: 100%; border-radius: 4px; background: #047959;
+        animation: login-bar 1.4s ease-in-out infinite;
+    }
+
+    @@keyframes login-spin { to { transform: rotate(360deg); } }
+    @@keyframes login-bar  { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .login-loading-rings span, .login-loading-bar div { animation-duration: 3s; }
+    }
+</style>
+
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
+    <script>
+        (function () {
+            const form    = document.getElementById('loginForm');
+            const overlay = document.getElementById('loginLoading');
+            const msgEl   = document.getElementById('loginLoadingMsg');
+            const steps   = ['Verifying your account…', 'Loading your company…', 'Preparing your workspace…', 'Almost there…'];
+            let timer     = null;
+
+            function show() {
+                let i = 0;
+                msgEl.textContent = steps[0];
+                overlay.classList.add('show');
+                overlay.setAttribute('aria-hidden', 'false');
+                timer = setInterval(() => {
+                    i = Math.min(i + 1, steps.length - 1);
+                    msgEl.style.opacity = 0;
+                    setTimeout(() => { msgEl.textContent = steps[i]; msgEl.style.opacity = 1; }, 200);
+                }, 2500);
+            }
+
+            function hide() {
+                clearInterval(timer);
+                overlay.classList.remove('show');
+                overlay.setAttribute('aria-hidden', 'true');
+            }
+
+            form.addEventListener('submit', function () {
+                // --- skip when client-side validation fails
+                if (window.jQuery && jQuery.fn.valid && !jQuery(form).valid()) return;
+                show();
+            });
+
+            // --- coming back with the browser Back button : don't leave the overlay up
+            window.addEventListener('pageshow', hide);
+        })();
+    </script>
  }
 

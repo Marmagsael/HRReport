@@ -3,11 +3,28 @@
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications.EPortal.Blazor._12_102._12_102_Child.CS
 @using HRMvc.Applications.EPortal.Blazor._12_102._12_102_Child.Leave
+@using HRMvc.Applications.EPortal.Blazor._12_102._12_102_Child.OB
 @using HRMvc.Applications.EPortal.Blazor._12_102._12_102_Child.OBL
 @using HRMvc.Applications.EPortal.Blazor._12_102._12_102_Child.OT
 
 <CascadingValue Value="Uc" IsFixed="true">
-    <div>User Id : @Uc.UserId </div>
+    @* --- Approver must have an Empmas record mapped to the system user ( Empmas.SystemId ) --- *@
+    <_12_102_NotMapped Uc="@Uc" />
+
+    @* --- Order follows the Dashboard shortcuts: Request Time-Off, Official Business, Fill in Time Sheet ( Punch, OT, Change Schedule ) --- *@
+
+    @* --- Leave Request ----------------------- *@
+    <div class="mb-2 p-0 ">
+        @if (v?.LvApps!=null && v.LvApps.Count > 0)     { <_12_102_Lv_Approval V="@v" /> }
+        else { <_12_102_EmptyyRequest HdrCaption="Leave Application Approval" BgCss="mb-a-black" BrdCss="b-green" /> }
+    </div>
+
+    @* --- Official Business Request ----------------------- *@
+    <div class="mb-2 p-0 ">
+        @if (v?.ObApps!=null && v.ObApps.Count > 0)     { <_12_102_OB_Approval V="@v" /> }
+        else { <_12_102_EmptyyRequest HdrCaption="Official Business Approval" BgCss="mb-a-black" BrdCss="b-green" /> }
+    </div>
+
     @* --- Attendance Request ----------------------- *@
     <div class="mb-2 p-0 ">
         @if (v?.Attreqhdrs!=null && v.Attreqhdrs.Count > 0)     { <_12_102_PReq V="@v" /> }
@@ -25,12 +42,6 @@
         @if (v?.Atttemplatereqhdrs!=null && v.Atttemplatereqhdrs.Count > 0)     { <_12_102_CS_Approval V="@v" /> }
         else { <_12_102_EmptyyRequest HdrCaption="Attendance Template Approval" BgCss="mb-a-maroon" BrdCss="b-green" /> }
     </div>
-    
-    @* --- Leave Request ----------------------- *@
-    <div class="mb-2 p-0 ">
-        @if (v?.LvApps!=null && v.LvApps.Count > 0)     { <_12_102_Lv_Approval V="@v" /> }
-        else { <_12_102_EmptyyRequest HdrCaption="Leave Application Approval" BgCss="mb-a-black" BrdCss="b-green" /> }
-    </div>
 
     
 
@@ -43,7 +54,9 @@
 @inject IAtttemplatereqhdrDataAccess    _attTemplateReqhdr; 
 @inject IOtdutytypeDataAccess           _OtdutyType; 
 @inject IOtdaytypeDataAccess            _OtdayType; 
-@inject ILeaveapplicationDataAccess     _lvapp; 
+@inject ILeaveapplicationDataAccess     _lvapp;
+@inject IObapplicationDataAccess        _obapp;
+@inject IObdurationDataAccess           _obDuration;
 
 
 
@@ -63,7 +76,21 @@
         await _02AttReq(); 
         await _02OTReq(); 
         await _02AttTemlateReq(); 
-        await _02LvApp(); 
+        if (!IsMapped) return;      // Leave / OB approvers are matched by EmpmasId
+        await _02LvApp();
+        await _02ObApp();
+    }
+
+    bool IsMapped => (Uc?.EmpmasId ?? 0) > 0;
+
+    async Task _02ObApp()
+    {
+        v.ObApps = [];
+        var res = await _obapp._02ForApproval_PerApprover(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null && res.Count > 0) v.ObApps = res.Where(a => a != null).Select(a => a!).ToList();
+
+        var resD = await _obDuration._02s(Uc.SchemaUserPis, Uc.Conn);
+        v.ObDurations = (resD ?? []).Where(o => o != null).Select(o => o!).ToList();
     }
     async Task _02OTReq() {
         v.Otreqhdrs = []; 

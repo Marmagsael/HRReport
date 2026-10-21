@@ -1,0 +1,73 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._10_Pis
+
+@* --- OB ( Official Business ) requests waiting for this approver --- *@
+
+@if(ShowModal) { <div> <_12_102_OB_ApprovalModal V="@V" Ec="@EC_Catcher" />  </div> }
+
+
+<div class="card b-black ">
+    <div class="card-header p-0 ">
+        <div class="bordered-bottom py-2 small fw-bold text-white bg-black px-2  ">
+            Official Business Request
+        </div>
+    </div>
+
+    <div class="card-body">
+
+        <div class="d-flex gap-2 small fw-bold border-bottom  py-1">
+            <div class="w-200p">Requestor</div>
+            <div class="w-50p">TRN</div>
+            <div class="w-100p">Date Applied</div>
+            <div class="w-300p">Date Range</div>
+        </div>
+
+        @foreach (var r in V.ObApps)
+        {
+            <div class="d-flex gap-2 mt-1">
+                <div class="w-200p py-1">@r.RequestorName</div>
+                <div class="w-50p py-1">@r.Id</div>
+                <div class="w-100p py-1">@r.DateApplied.ToShortDateString()</div>
+                <div class="w-300p py-1">
+                     @r.ObStart.ToString("MMM dd, yyyy")  - @r.ObEnd.ToString("MMM dd, yyyy")
+                </div>
+                <div class="">
+                    <button @onclick="() => ShowDtl(r)" class="btn btn-outline-secondary">Show Details</button>
+                </div>
+            </div>
+            <div class="w-100 d-flex border-bottom ms-4" style="padding: 3px 0 5px 0 ;">
+                <div class="w-120p fw-bold small  "><i>Destination : </i></div>
+                <div class="text-muted">@r.Destination</div>
+            </div>
+        }
+    </div>
+
+</div>
+
+
+@inject IObapplicationdtlDataAccess  _obappdtl;
+
+
+@code {
+    [CascadingParameter]    public UserClaimsModel      Uc { get; set; } = new();
+    [Parameter]             public V12_102Obligation    V { get; set; } = new();
+
+    bool   ShowModal   = false;
+
+
+    async Task ShowDtl(ObapplicationModel h)
+    {
+        V.ObApp     = h;
+        V.ObAppdtls = [];
+        var res = await _obappdtl._02ByObApplicationId(h.Id, Uc.SchemaUserPis, Uc.Conn);
+        if (res != null && res.Count > 0) V.ObAppdtls = res!;
+        ShowModal = true;
+    }
+
+    void EC_Catcher(bool ans)
+    {
+        ShowModal = ans;
+        V.Action = string.Empty;
+    }
+
+}

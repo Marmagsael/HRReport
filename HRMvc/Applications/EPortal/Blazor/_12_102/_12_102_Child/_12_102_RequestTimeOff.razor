@@ -13,13 +13,11 @@
 @inject DialogService _DialogService
 @inject NotificationService _NotificationService
 
-@if(isLoading) { <_00Loading  />   } 
+@if(isLoading) { <_00Loading  />   }
 
 <CascadingValue Value="Uc" IsFixed="true">
 <CascadingValue Value="v">
     
-    @if (!v.ShowPrint)
-    {
         <div class="d-flex gap-1 p-1 border-bottom ">
             <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
             <div @onclick="SaveClick" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSaveCss) "> Save </div>
@@ -30,10 +28,8 @@
             <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
             <div @onclick="Print" class="p-1 mb-cbtn mb-cbtn-blue card w-80p @CanPrintCss "> Print </div>
         </div>
-    }
         
     <_12_102_Lv_Modal ChildAction="ChildActionCatcher" Uc="@Uc" V="@v" Rv="@rv" />
-    @if(v.ShowPrint) { return; } 
 
     @* <div>Count : @v.LeaveApplicationdtls.Count * @Uc.UserId </div> *@
     
@@ -479,50 +475,45 @@
 
 
     }
+    @* --- Print : Reports/_02HR/K_12_102_LF.trdp ( Personnel + Employee copy ), shown in a maximized modal like OB --- *@
     async Task Print()
     {
-        var res = await _settings._02(1, Uc.SchemaUserPay, Uc.Conn);
-        var resEmpmas   = await _empmasInternal._02(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
-        var resEmpmas1  = await _empmas._02Deprecs(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
+        var co          = await _settings._02(1, Uc.SchemaUserPay, Uc.Conn);
+        var emp         = await _empmasInternal._02(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
+        var deprec      = (await _empmas._02Deprecs(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn))?.FirstOrDefault();
 
+        double daysCnt  = v.LeaveApplicationdtls.Count;
+        double withPay  = lva.DaysWithPay > 0 ? lva.DaysWithPay : lvWPay;
 
         ctr++;
+        rv.RelativePath = "Reports/_02HR/K_12_102_LF.trdp";
+        rv.MCaption     = "Leave Application";
+        rv.ReportData   = new List<object> { lva };       // one form ( the report has no detail fields )
 
-        rv.RelativePath = "Reports/_02HR/LvApplication.trdp";
+        rv.ReportParams = new() {
+            ["CoName"]          = co?.CoFullName ?? "-",
+            ["CoAddress"]       = co?.CoAddress ?? "-",
+            ["ReportTitle"]     = "Leave Application",
+            ["RunDate"]         = DateTime.Now,
+            ["DateFiled"]       = lva.DateApplied.ToString("MMM dd, yyyy"),
+            ["Position"]        = deprec?.Positionname ?? "-",
+            ["Department"]      = deprec?.Depname ?? "-",
+            ["EmpNumber"]       = emp?.EmpNumber ?? Uc.OempNumber ?? "-",
+            ["EmpName"]         = emp?.Fullname ?? "-",
+            ["TypeOfLeave"]     = _02LvTypeName(lva.LeaveTypeId),
+            ["DaysCount"]       = daysCnt.ToString("N2"),
+            ["LvTime"]          = lva.LvTime ?? "",
+            ["DateFrom"]        = lva.LvStart.ToString("MMM dd, yyyy"),
+            ["DateTo"]          = lva.LvEnd.ToString("MMM dd, yyyy"),
+            ["Reason"]          = lva.Reason ?? "",
+            ["AddressContact"]  = string.Join(" / ", new[] { lva.Address, lva.TelNo }.Where(t => !string.IsNullOrWhiteSpace(t))),
+            ["LvBalance"]       = lva.LvBalance.ToString("N2"),
+            ["DaysWithPay"]     = withPay.ToString("N2"),
+            ["Payment"]         = withPay > 0 ? $"With Pay ({withPay:N2} day/s)" : "Without Pay",
+        };
+
         rv.RefreshToken = 12102000 + ctr;
-        rv.MCaption = "Leave Application";
-
-        rv.ReportData = v.LeaveApplicationdtls;
-
-        // ✔ gamitin mo yung style mo
-        rv.ReportParams = [];
-
-       
-        rv.ReportParams["CoName"] = res?.CoFullName ?? "-";
-        rv.ReportParams["RunDate"] = DateTime.Now;
-        rv.ReportParams["ReportTitle"] = "Leave Application";
-        rv.ReportParams["CoAddress"] = res?.CoAddress ?? "-";
-
-        @* rv.ReportParams["TRN"] = lva.Id;
-        rv.ReportParams["TypeOfLeave"] = _02LvTypeName(lva.LeaveTypeId);
-        rv.ReportParams["DateCovered"] = $"{lva.LvStart:MMM dd, yyyy} - {lva.LvEnd:MMM dd, yyyy}";
-        rv.ReportParams["DateFiled"] = lva.DateApplied.ToString("MMM dd, yyyy");
-
-        
-        rv.ReportParams["EmpName"] = resEmpmas.Fullname ?? "-";
-        rv.ReportParams["Position"] = resEmpmas1?.FirstOrDefault()?.Positionname ?? "-";
-        rv.ReportParams["AddressWhileOnLeave"] = lva.Address ?? "-";
-        rv.ReportParams["TelNos"] = lva.TelNo ?? "-";  *@
-
-        StateHasChanged(); 
-        // 🔥 IMPORTANT: force refresh
-        rv.RefreshToken++;
-        rv.ShowModal = true; 
-        //rv.ShowReport = true;
-        
-
-        v.ShowPrint = true;
-        
+        v.ShowPrint     = true;
     }
 
     AtttemplateModel at => v.AttTemplate;

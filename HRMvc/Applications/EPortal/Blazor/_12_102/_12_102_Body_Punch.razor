@@ -1,4 +1,4 @@
-@using HRApiLibrary.DataAccess._10_Pis
+﻿@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._90_Utils
 @using HRApiLibrary.Models._10_Pis
@@ -73,6 +73,7 @@
 
 @inject IAttdailyDataAccess _attdaily 
 @inject IAttpunches1DataAccess _attpunches1  
+@inject HRMvc.StartupConfig.ClientTerminalService _terminal
 @inject NavigationManager NavigationManager
 
 @code {
@@ -120,10 +121,11 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         var ad = await _attdaily._01PunchIn(attDaily, uc.SchemaUserPis, uc.Conn!);
 
         //--- Attendance Punches ---------------------------------
-        var ipAdd       = MsdsDataAccess.GetIPAddress();
-        var id          = TimeZoneInfo.Local.Id;
-        var timeZone        = MsdsDataAccess.Get_TimeZone_Id(id);
-        var macAddress  = MsdsDataAccess.GetMacAddress();
+        //--- client terminal ( browser ), not the server
+        var terminal    = await _terminal.GetAsync();
+        var ipAdd       = terminal.IpAddress;
+        var timeZone    = terminal.TimeZoneId;
+        var macAddress  = terminal.MacAddress;
 
         Attpunches1Model? ap1 = new Attpunches1Model(){
             EmpmasId        = uc?.UserId ?? 0,
@@ -184,10 +186,11 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
         var conn = uc.Conn ?? "-";
         var ad = await _attdaily._01PunchOut(attDaily, uc.SchemaUserPis??"-", conn );
 
-        var ipAdd       = MsdsDataAccess.GetIPAddress();
-        var id          = TimeZoneInfo.Local.Id;
-        var timeZone        = MsdsDataAccess.Get_TimeZone_Id(id);
-        var macAddress  = MsdsDataAccess.GetMacAddress();
+        //--- client terminal ( browser ), not the server
+        var terminal    = await _terminal.GetAsync();
+        var ipAdd       = terminal.IpAddress;
+        var timeZone    = terminal.TimeZoneId;
+        var macAddress  = terminal.MacAddress;
 
         Attpunches1Model? ap1 = new Attpunches1Model(){
             EmpmasId        = uc?.UserId ?? 0, 

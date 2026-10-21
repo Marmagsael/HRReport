@@ -38,6 +38,12 @@ public class V12_102Obligation
     public List<LeaveapplicationdtlModel>   LvAppdtls                   { get; set; } = [];
 
 
+    public ObapplicationModel               ObApp                       { get; set; } = new();
+    public List<ObapplicationModel>         ObApps                      { get; set; } = [];
+    public List<ObapplicationdtlModel>      ObAppdtls                   { get; set; } = [];
+    public List<ObdurationModel>            ObDurations                 { get; set; } = [];
+
+
     public bool                             ShowPartiallyApproved_CS    { get; set; } = false; 
     public bool                             ShowPartiallyApproved_PR    { get; set; } = false; 
 

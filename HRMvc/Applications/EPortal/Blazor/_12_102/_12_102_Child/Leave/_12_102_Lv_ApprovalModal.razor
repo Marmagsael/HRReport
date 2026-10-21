@@ -1,4 +1,4 @@
-@using HRApiLibrary.DataAccess._10_Pis
+﻿@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications._00GeneralComponents
@@ -76,6 +76,8 @@
 
 @inject IJSRuntime _js;
 @inject ILeaveapplicationDataAccess _lvapp;
+@inject IAttpunches1DataAccess      _attPunches;
+@inject HRMvc.StartupConfig.ClientTerminalService       _terminal;
 
 
 
@@ -113,6 +115,15 @@
         if (confirmed)
         {
             await _lvapp._03Approve(V.LvApp, Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
+
+            @* --- final approver ( level 2 ) : payable days go to Attpunches1 as LV0 / LV1 / LV2 --- *@
+            if (V.LvApp.ApproverLevel == 2)
+            {
+                var days = V.LvAppdtls.Where(d => d.IsPayableB && d.Date != null)
+                                      .Select(d => (d.Date!.Value, d.LeaveDayTypeId, AttPunchStatus.LV(d.LeaveDayTypeId)));
+                var t    = await _terminal.GetAsync();
+                await _attPunches._01Approved(V.LvApp.EmpmasId, days, Uc.UserId, t.TimeZoneId, t.IpAddress, t.MacAddress, Uc.SchemaUserPis, Uc.Conn);
+            }
             V.LvApps = [];
 
             
