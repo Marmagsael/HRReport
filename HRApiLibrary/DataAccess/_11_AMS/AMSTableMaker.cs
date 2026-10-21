@@ -19,8 +19,8 @@ public class AMSTableMaker : IAMSTableMaker
 
     public async Task _01AMSTable(string schema, string connName = "MySqlConn")
     {
-        try
-        {
+        //try
+        //{
             await _01AttSchedDefault(schema, connName);
             await _01AttSchedWeeklyHdr(schema, connName);
             await _01AttSchedWeeklyDtl(schema, connName);
@@ -35,12 +35,10 @@ public class AMSTableMaker : IAMSTableMaker
             await _01Sites(schema, connName);
             
 
-
-
             await _03Atttemplate_Schedule(schema, connName);
-        }
+        //}
 
-        catch (Exception ex)    {   Console.WriteLine($"Error in _01AttSchedDefault: {ex}"); }
+        //catch (Exception ex)    {   Console.WriteLine($"Error in _01AttSchedDefault: {ex}"); }
 
     }
 

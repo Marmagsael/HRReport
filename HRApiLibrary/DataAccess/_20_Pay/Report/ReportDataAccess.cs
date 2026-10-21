@@ -119,7 +119,6 @@ public class ReportDataAccess : IReportDataAccess
                     }
                     
                     payslip.PayslipDtls.Add(pd);
-                    //Console.WriteLine($" --> {i} ) Earnings : {eacctNumber} * Deductions : {dacctNumber}");
                     
                 }
             }

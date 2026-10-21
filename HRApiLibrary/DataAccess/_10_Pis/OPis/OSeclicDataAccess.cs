@@ -20,7 +20,6 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OSeclicModel?> _01(OSeclicModel seclic, string schema, string conn)
         {
-            Console.WriteLine($"USER  {seclic.User}");
             string sql = $@" INSERT INTO {schema}.Seclic( empnumber, sbrno, opno, validated, vfee, revalidated, valStatus, user, dateModified, licDateIssued)
                             VALUES ( @Empnumber, @Sbrno, @Opno, @Validated, @Vfee, @Revalidated, @ValStatus, @User, @DateModified, @LicDateIssued  )
                             ON DUPLICATE KEY UPDATE

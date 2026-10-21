@@ -296,8 +296,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                          (7, 'Vehicle') ";
             await _sql.ExecuteCmd(cmd, new { }, connName);
         }
-        //Console.WriteLine($"Inv_Type written.");
-
+        
 
         //--- Inv_Category -----------------------------------------------------------
         cmd = $"select * from {equipdb}.Inv_Category limit 1 ";

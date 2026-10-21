@@ -171,8 +171,7 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
                         order by h.Effectivity desc limit 1";
         var res = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { UserId = EmpmasId }, conn);
         var r1 = res?.FirstOrDefault(); 
-        // Console.WriteLine(@$" UserId : {EmpmasId} * res count : {res?.Count}");
-
+        
         if (res == null || res.Count == 0) return;
 
         sql = $@"select * from {pisdb}.Atttemplatereqdtl d 
@@ -212,19 +211,6 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
                  where d.EmpmasId = @EmpmasId  limit 1";
         var res3 = await _sql.FetchData<AtttemplatereqdtlModel, dynamic>(sql, new { EmpmasId = id }, conn);
         var r3 = res3.FirstOrDefault();
-
-        // Console.WriteLine($@" Empoyee Id : {EmpmasId} * Effectivity : {r1.Effectivity?.ToString("MMM dd, yyyy")} - {r1.End?.ToString("MMM dd, yyyy")}
-        //     Hdr Id : {r1.Id} * Dtl Id : {r.Id}
-
-        //     dutytype (AttTemplate 1): {r3?.D1_DutyType} * (Detail 1) : {r.D1_DutyType}
-        //     dutytype (AttTemplate 2): {r3?.D2_DutyType} * (Detail 2) : {r.D2_DutyType}
-        //     dutytype (AttTemplate 3): {r3?.D3_DutyType} * (Detail 3) : {r.D3_DutyType}
-        //     dutytype (AttTemplate 4): {r3?.D4_DutyType} * (Detail 4) : {r.D4_DutyType}
-        //     dutytype (AttTemplate 5): {r3?.D5_DutyType} * (Detail 5) : {r.D5_DutyType}
-        //     dutytype (AttTemplate 6): {r3?.D6_DutyType} * (Detail 6) : {r.D6_DutyType}
-        //     dutytype (AttTemplate 7): {r3?.D7_DutyType} * (Detail 7) : {r.D7_DutyType}
-        // ");
-
     }
 
 

@@ -252,15 +252,7 @@ public class Da605DataAccess : IDa605DataAccess
                      insert into {paydb}.tmppaymainvisacct (trn, AcctNumber) values (@Trn, '{acctNumber}') on duplicate key update trn = @Trn; "; 
             await _sql.ExecuteCmd(sql, new { Trn=trn }, conn!);
 
-            /*sql = @$"select                       t.Trn, t.EmpmasId, e.EmpNumber, '{acctNumber}', 0,   0,    0,          0,      now(),      {idUser}, 'FE' 
-                            from {paydb}.tmptbltranemplist t 
-                            left join  {pisdb}.Empmas e on e.Id = t.EmpmasId
-                        where t.trn = @Trn";
-            var rs = await _sql.FetchData<TbltranModel,dynamic>(sql, new { Trn=trn }, conn!);
-            foreach (var r in rs)
-            {
-                Console.WriteLine($"---> Trn : {r.TRN} * EmpmasId : {r.EmpmasId}");
-            }*/
+           
 
 
 
@@ -334,7 +326,6 @@ public class Da605DataAccess : IDa605DataAccess
                         where t.trn = @Trn 
                       on duplicate key update Source = 'FEG' ; 
                       insert into {paydb}.tmppaymainvisacct (trn, AcctNumber) values (@Trn, '{acctNumber}') on duplicate key update trn = @Trn;";
-            //Console.WriteLine($"trn : {trn} * AcctNumber : {acctNumber} |====> iteration ");
             
             await _sql.ExecuteCmd(sql, new { Trn=trn, AcctNumber = acctNumber, Iduser = idUser }, conn!);
         }

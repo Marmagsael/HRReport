@@ -310,7 +310,6 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         if (res.FirstOrDefault()?.VerCtrl <= 0)
         {
-            //Console.WriteLine("--- Writing SP ------------------");
             //await Sp_02TmpTbltran();
         }
 
@@ -318,7 +317,6 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         {
             string? connName1 = _config.GetConnectionString("MySqlConn"); // resolves actual string
             await using var conn = new MySqlConnection(connName1);
-            Console.WriteLine(conn);
             
             await conn.OpenAsync();
 
