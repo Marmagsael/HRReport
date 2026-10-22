@@ -27,5 +27,9 @@ namespace HRApiLibrary.Models._10_Pis.OPis
         public DateTime?    DateModified    { get; set; }
 
         public DateTime?    LicDateIssued   { get; set; }
+
+        //-------------------------------------
+        public string?      UserName        { get; set; }
+
     }
 }
