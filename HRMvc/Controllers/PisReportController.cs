@@ -30,7 +30,6 @@ public class PisReportController : Controller
         ["2061"] = "_2061_MetroManilaCode",
         ["2062"] = "_2062_EmployeeStatus",
         ["2063"] = "_2063_CivilStatus",
-        ["2064"] = "_2064_EmployeeArchiving",
 
         ["2302"] = "_2302_StatusMgt",
         ["2303"] = "_2303_ReturnToUnit",

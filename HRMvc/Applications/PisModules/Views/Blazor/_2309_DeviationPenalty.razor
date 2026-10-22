@@ -1,8 +1,60 @@
-﻿@using HRMvc.Applications._00GeneralComponents
+﻿@using HRMvc.Applications.PisModules.Vars
+<TelerikRootComponent>
+    <div class="position-relative">
 
-<_00UnderDevelopment Module="Deviation Penalty" />
+        @*--- TELERIK NOTIFICATION ---*@
+        <TelerikNotification @ref="@NotificationRef"
+                             HorizontalPosition="@NotificationHorizontalPosition.Right"
+                             VerticalPosition="@NotificationVerticalPosition.Top"
+                             AnimationType="@AnimationType.SlideLeft" />
+
+        @*--- TELERIK LOADER ---*@
+        <TelerikLoaderContainer Visible="@v.IsLoading"
+                                LoaderType="@LoaderType.ConvergingSpinner" />
+
+        @*--- PARAMETERS ---*@
+        <CascadingValue Value="@Uc">
+                <CascadingValue Value="@rv">
+                    <CascadingValue Value="@NotificationRef">
+                        <_00BT_FullW HdrCaption="Deviation Penalty">
+                            <Details>
+
+                                @*--- REPORT ---*@
+                                <_02BTRep Rv="rv" ChildAction="ChildAction" />
+
+
+                            
+                            </Details>
+                        </_00BT_FullW>
+                    </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+    </div>
+
+</TelerikRootComponent>
 
 @code {
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
+
+    V2309Model  v   = new();
+    V00_RepVars rv  = new();
+
+    private TelerikNotification? NotificationRef;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = false;
+    }
+
+
+
+    private async Task ChildAction()
+    {
+        if (v == null) return;
+
+       
+        v.Action = "";
+    }
 }
