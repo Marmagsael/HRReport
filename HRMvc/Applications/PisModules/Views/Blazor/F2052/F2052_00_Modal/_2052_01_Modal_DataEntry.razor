@@ -27,14 +27,16 @@
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     TabIndex="1"
                                     MaxLength="5"
+                                    Enabled  = "V.IsNewEntry == true"
+                                    ReadOnly = "V.IsNewEntry == false"
                                     Class="@(string.IsNullOrWhiteSpace(V.EmpNoErrMsg) ? "" : "k-invalid")"
                                     OnBlur="OnEmpNumberLostFocus">
 
                         <TextBoxSuffixTemplate>
-                            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray @(EnableAutoGenrateEmpNo ? "" : "disabled")"
+                            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray @((EnableAutoGenrateEmpNo && V.IsNewEntry == true) ? "" : "disabled")"
                                     type="button"
                                     tabindex="2"
-                                    disabled="@(!EnableAutoGenrateEmpNo)"
+                                    disabled="@(!EnableAutoGenrateEmpNo || V.IsNewEntry == false)"
                                     @onclick="GenerateEmpNumber">
 
                                 <div class=" d-flex gap-2 align-items-center">
@@ -185,21 +187,15 @@
 
                     @if (V.IsEmailValid == false)
                     {
-                        <div class="txt-red small">
-                            This email is invalid.
-                        </div>
+                        <div class="txt-red small">  This email is invalid. </div>
                     }
-
-                    @if (V.IsEmailRegistered == true)
+                    else if (V.IsEmailRegistered == true && !string.IsNullOrWhiteSpace(V.EmailRegisteredToUser))
                     {
-                        <div class="txt-red small">
-                            This email is registered to <b>@V.EmailRegisteredToUser</b> in the login portal.
-                        </div>
+                            <div class="txt-red small">  This email is registered to  <b>@V.EmailRegisteredToUser</b> in the login portal. </div>
                     }
                     else if (V.IsEmailLinked == true)
                     {
                         <div class="txt-fcolor small">
-
                             This email is linked to:
                             <ul>
                                 @foreach (var user in V.EmailLinkedToUsers)
@@ -208,14 +204,14 @@
                                 }
                             </ul>
                         </div>
+                        
                     }
-                    else if (isEmailChecked && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email) && V.IsEmailValid == true)
+                    else if (isEmailChecked && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email) &&   V.IsEmailValid == true &&   V.IsEmailRegistered == false &&  V.IsEmailLinked == false)
                     {
                         <div class="txt-fcolor small">
                             This email address is available for use but is not yet registered.
                         </div>
                     }
-                   
                 </div> 
             </div> 
         </div>
@@ -284,8 +280,8 @@
         {
             if (!ValidateFields()) return;
 
-            if (!await OnEmpNumberLostFocus()) return; // stop if empno to be saved  already exists;
-            if (!await OnEmailLostFocus())  return; // stop if email to be saved is already registered;
+            if (!await OnEmpNumberLostFocus()) return; // stop if empno  already exists in empmas and empmasarchived;
+            if (!await OnEmailLostFocus())  return; // stop if email is already registered/associated with other employee;
 
             await SaveEmpmasToOldPis();
             await SaveEmpmasToNewPis();
@@ -380,14 +376,14 @@
             {
                 //Update
                 var res = await _empmas._03EmpmasWithEmpnumber(empmas, Uc.SchemaUserPis, Uc.Conn);
-                empmasId = res.Id;
+                empmasId = res?.Id;
                 Console.WriteLine("Update");
             }
             else
             {
                 // Insert
                 var res = await _empmas._01EmpmasWithSystemId(empmas, Uc.SchemaUserPis, Uc.Conn);
-                empmasId = res.Id;
+                empmasId = res?.Id;
                 Console.WriteLine("Insert");
 
 
@@ -532,7 +528,8 @@
 
         var res = await _oempmas._02EmpnumberOwnedByOthers(V.EmpmasToEdit.EmpNumber, Uc.OpisDb, Uc.Conn);
         var empNumberMatch = res.FirstOrDefault(e => e.EmpNumber == V.EmpmasToEdit.EmpNumber);
-        if (empNumberMatch != null)
+
+        if (empNumberMatch != null && V.IsNewEntry == true)
         {
             V.EmpNoErrMsg = "Employee number already exists.";
             ans = false;
@@ -544,7 +541,7 @@
 
 
 
-    async Task<bool> OnEmailLostFocus()
+    public async Task<bool> OnEmailLostFocus()
     {
         isEmailChecked = false;
 
@@ -563,7 +560,7 @@
             V.IsEmailValid = false;
             V.IsEmailRegistered = false;
             V.IsEmailLinked = false;
-            return false;                      // stop: invalid email
+            return false;                    
         }
 
         V.IsEmailValid = true;
@@ -571,11 +568,16 @@
         if (await CheckIfEmailRegisteredToOtherEmployee())
         {
             V.IsEmailLinked = false;
-            StateHasChanged();
+            NotificationRef.Show("Unable to save. This email is already registered to another employee.", ThemeConstants.Notification.ThemeColor.Warning);
             return false;
         }
 
-        await CheckIfEmailLinkedToOtherEmployee();
+        if (await CheckIfEmailLinkedToOtherEmployee())
+        {
+            NotificationRef.Show("Unable to save because this email is already associated with another employee.", ThemeConstants.Notification.ThemeColor.Warning);
+            return false;
+        }
+
 
         isEmailChecked = true;
         return true;
@@ -600,7 +602,7 @@
         V.EmailLinkedToUsers = new();
 
         var res = await _oempmas._02EmailLinkedToOthers( V.EmpmasToEdit.Email, Uc.OpisDb, Uc.Conn );
-        Console.WriteLine(res.Count());
+
         foreach (var employee in res)
         {
             if (V.IsNewEntry == true)
@@ -630,6 +632,8 @@
 
         foreach (var employee in res)
         {
+            Console.WriteLine($"{employee.LoginName.Trim()}   -- {V.EmpmasToEdit.EmpNumber.Trim()}");
+
             if (V.IsNewEntry == true)
             {
                 V.IsEmailRegistered = true;
@@ -638,16 +642,24 @@
 
                 break;
             }
-            else if (employee.Empnumber.Trim() != V.EmpmasToEdit.EmpNumber.Trim())
+            
+
+            else if (employee.LoginName.Trim() != V.EmpmasToEdit.EmpNumber.Trim())
             {
                 V.IsEmailRegistered = true;
                 V.EmailRegisteredToUser = employee.AFullName;
                 break;
             }
+
+            else if (employee.LoginName.Trim() == V.EmpmasToEdit.EmpNumber.Trim())
+            {
+                V.IsEmailRegistered = true;
+                break;
+            }
             
         }
 
-        return V.IsEmailRegistered ?? false;
+        return V.IsEmailRegistered == true &&  !string.IsNullOrWhiteSpace(V.EmailRegisteredToUser);
     }
 
 

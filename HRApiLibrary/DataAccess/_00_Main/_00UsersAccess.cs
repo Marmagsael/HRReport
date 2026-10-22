@@ -45,7 +45,7 @@ public class _00UsersAccess : I_00UsersAccess
 
     public async Task<List<UsersModel?>?> _02ByEmail_EmployeeEntryModule(string? email, string? mainschema = "Main", string? secpisschema = "Secpis", string? connName = "MySqlConn")
     {
-        string sql = $@" SELECT u.Id, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS AFullName, u.Email
+        string sql = $@" SELECT u.Id, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS AFullName, u.Email, u.LoginName
                     FROM {mainschema}.Users u
                     LEFT JOIN {secpisschema}.empmas e ON e.Empnumber = u.loginname  
                     WHERE LOWER(TRIM(u.Email)) = LOWER(TRIM(@Email))";

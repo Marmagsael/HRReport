@@ -58,7 +58,7 @@
                                 {
                                     <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowDataEntry = false" ModalWidth="50%">
                                         <Content>
-                                            <_2052_01_Modal_DataEntry ChildAction="ChildAction" />
+                                            <_2052_01_Modal_DataEntry ChildAction="ChildAction" @ref="DataEntryRef" />
                                         </Content>
                                     </_00Modal>
                                 }
@@ -121,6 +121,8 @@
     V00_RepVars rv = new();
 
     private TelerikNotification? NotificationRef;
+    
+    private _2052_01_Modal_DataEntry DataEntryRef;
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,7 +179,9 @@
         if (v.Action == "GetAddressArea")            GetAddressArea();
         if (v.Action == "GetGenderAndCivilStatus")   GetGenderAndCivilStatus();
 
-        if (v.Action == "GenerateReport")      await GenerateReport();
+        if (v.Action == "GenerateReport")       await GenerateReport();
+        if (v.Action == "ShowDataEntry")        await ShowDataEntry();
+
         v.Action = "";
     }
 
@@ -312,8 +316,6 @@
 
     private async Task GenerateReport()
     {
-        Console.WriteLine("Print");
-
         rv.ShowModal = true;
 
         await Task.Delay(1000);
@@ -667,10 +669,36 @@
         }
     }
 
-    
 
 
-   // OTHER FUNCTIONS --------------------------------------------------------------
+
+    // OTHER FUNCTIONS --------------------------------------------------------------
+    private async Task ShowDataEntry()
+    {   
+        v.IsLoading = true;
+
+        v.IsEmpNoValid          = true;
+        v.IsEmailValid          = true;
+
+        v.IsEmailLinked         = false;
+        v.IsEmailRegistered     = false;
+
+        v.EmailRegisteredToUser = string.Empty;
+        v.EmailLinkedToUsers    = new();
+
+        v.EmpNoErrMsg           = string.Empty;
+        v.LastNameErrMsg        = string.Empty;
+        v.FirstNameErrMsg       = string.Empty;
+
+
+
+        if (DataEntryRef != null) await DataEntryRef.OnEmailLostFocus();
+
+
+        v.IsLoading = false;
+
+    }
+
     static OEmpmasModel MapEmpmas(OEmpmasModel source)
     {
         var clone = new OEmpmasModel();
