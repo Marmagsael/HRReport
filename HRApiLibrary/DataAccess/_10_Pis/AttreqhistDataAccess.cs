@@ -53,7 +53,6 @@ public class AttreqhistDataAccess : IAttreqhistDataAccess
                         from {pisdb}.Attreqhist h 
                         left join {opisdb}.empmas e on e.empnumber = h.empnumber_approver 
                         where AttReqHdrId = @AttReqHdrId";
-        // Console.WriteLine($"SQL : {sql} * ");                 
         var data = await _sql.FetchData<AttreqhistModel?, dynamic>(sql, new { AttReqHdrId = attreqhdrId }, conn);
         return data ?? [];
     }

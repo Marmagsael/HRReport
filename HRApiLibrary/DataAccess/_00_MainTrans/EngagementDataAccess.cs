@@ -26,9 +26,7 @@ public class EngagementDataAccess : IEngagementDataAccess
     }
     public async Task<EngagementModel?> _01Invite(EngagementModel engagement, string? schema, string? conn)
     {
-	    // Console.WriteLine($"schema : {schema} * conn :{conn} * OwnerId : {engagement.OwnerId} " +
-	    //                   $" * CompanyId : {engagement.CompanyId} * Module:  {engagement.Module}");
-	    //
+
         string? sql = $@"Insert into {schema}.Engagement
 						(OwnerId,  CompanyId,  Module,  RoleId,  DateInvited,   Status) values 
 						(@OwnerId, @CompanyId, @Module, 0,       now(), 		'FA') 

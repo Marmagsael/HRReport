@@ -1,0 +1,208 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._00GeneralComponents
+@using Radzen.Blazor
+
+
+<_00Modal ModuleCaption="Official Business Request" ChildAction="CloseModal" ModalWidth=" w-100 ">
+    <Content>
+
+        <div class="card p-0">
+
+            <div class="d-flex gap-1 p-1 bordered-bottom @(isReturn ? " disabled-div-50 " : "") ">
+                <button @onclick="Approve" class="btn btn-secondary">Approve Request</button>
+                <button @onclick="() => isReturn = true" class="btn btn-danger">Return Request</button>
+            </div>
+
+            @* --- Return : approver remarks ----------------------------- *@
+            @if(isReturn)
+            {
+                <div class="p-2 bordered-bottom">
+                    <div class="fw-bold small mb-1">Reason for returning <span class="text-danger">*</span></div>
+                    <RadzenTextArea @bind-Value="apprRemarks" MaxLength="150" Rows="2" Style="width:100%;" />
+                    <div class="d-flex gap-1 mt-1">
+                        <button @onclick="Return" class="btn btn-sm btn-danger @(string.IsNullOrWhiteSpace(apprRemarks) ? " disabled-div " : "")">Return</button>
+                        <button @onclick="() => { isReturn = false; apprRemarks = string.Empty; }" class="btn btn-sm btn-outline-secondary">Close</button>
+                    </div>
+                </div>
+            }
+
+            @* --- Header ------------------------------------------------ *@
+            <div class="p-2">
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Control No </div>
+                    <div class="p-2 "> @hdr.Id </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Date Requested </div>
+                    <div class="p-2 ">@hdr.DateApplied.ToString("MMM dd, yyyy")</div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Requestor Name </div>
+                    <div class="p-2 "> <h5>@hdr.RequestorName</h5> </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Coverage </div>
+                    <div class="p-2 ">
+                        @hdr.ObStart.ToString("MMM dd, yyyy") -
+                        @hdr.ObEnd.ToString("MMM dd, yyyy")
+                    </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Duration </div>
+                    <div class="d-flex gap-2">
+                        <div class="p-2 w-75p text-center ">@hdr.DaysCnt</div>
+                        <div class="bg mb-a-greenlight p-2 bordered-right bordered-left "> Days With Pay </div>
+                        <div class="p-2 w-75p text-center"> @hdr.DaysWithPay </div>
+                    </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Destination </div>
+                    <div class="p-2 "> @hdr.Destination </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Purpose </div>
+                    <div class="p-2 "> @hdr.Purpose </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Contact </div>
+                    <div class="p-2 "> @hdr.ContactPerson &nbsp; · &nbsp; @hdr.TelNo </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Remarks </div>
+                    <div class="p-2 "> @hdr.Remarks </div>
+                </div>
+
+                <div class="@divHdrcss">
+                    <div class="@lblcss"> Approval Level </div>
+                    <div class="p-2 text-primary"> @(hdr.ApproverLevel == 2 ? "Level 2 - Final Approver" : "Level 1 - Approver") </div>
+                </div>
+            </div>
+
+            @* --- Details ----------------------------------------------- *@
+            <div class="p-2">
+                <div class="border border-1 border-secondary ">
+                    <table class="w-100 table table-sm table-striped">
+                        <thead class="table-light border-0">
+                            <tr>
+                                <th> Date </th>
+                                <th> Day </th>
+                                <th> Duty Type </th>
+                                <th> Day Type </th>
+                                <th> With Pay </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            @foreach(var d in V.ObAppdtls)
+                            {
+                                <tr class="@(d.DutyType == "RD" ? " text-danger " : "")">
+                                    <td> @d.Date?.ToString("MMMM dd, yyyy") </td>
+                                    <td> @d.Date?.DayOfWeek </td>
+                                    <td> @d.DutyType </td>
+                                    <td> @_02Duration(d.ObDurationId) </td>
+                                    <td>
+                                        @if(d.IsPayableB) { <i class="fa fa-check text-success"></i> }
+                                        else              { <i class="fa fa-xmark text-danger"></i> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </Content>
+</_00Modal>
+
+@inject IJSRuntime                      _js;
+@inject IObapplicationDataAccess        _obapp;
+@inject IObapplicationhistDataAccess    _obHist;
+@inject IAttpunches1DataAccess          _attPunches;
+@inject HRMvc.StartupConfig.ClientTerminalService           _terminal;
+
+@code {
+    [CascadingParameter] public UserClaimsModel         Uc { get; set; }
+    [Parameter]          public EventCallback<bool>     Ec { get; set; }
+    [Parameter]          public V12_102Obligation       V  { get; set; } = new();
+
+    ObapplicationModel hdr => V.ObApp;
+    bool    isReturn    = false;
+    string  apprRemarks = string.Empty;
+
+    async Task CloseModal()
+    {
+        V.Action = "";
+        await Ec.InvokeAsync(false);
+    }
+
+    @* --- level 1 -> moves to level 2 ; level 2 -> Approved --- *@
+    async Task Approve()
+    {
+        const string? title = "Approve Request?";
+        const string? icon = "question";
+        var msg = $@"<div><span class='text-primary'> {hdr.RequestorName}  </span> </div> ";
+
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (!confirmed) return;
+
+        await _obapp._03Approve(hdr, Uc.SchemaUserPis, Uc.Conn);
+
+        @* --- final approver ( level 2 ) : payable days go to Attpunches1 as OB0 / OB1 / OB2 --- *@
+        if (hdr.ApproverLevel == 2)
+        {
+            var days = V.ObAppdtls.Where(d => d.IsPayableB && d.Date != null)
+                                  .Select(d => (d.Date!.Value, d.ObDurationId, AttPunchStatus.OB(d.ObDurationId)));
+            var t    = await _terminal.GetAsync();
+            await _attPunches._01Approved(hdr.EmpmasId, days, Uc.UserId, t.TimeZoneId, t.IpAddress, t.MacAddress, Uc.SchemaUserPis, Uc.Conn);
+        }
+        await _obHist._01(hdr.Id, Uc.EmpmasId, "Approved - Level " + hdr.ApproverLevel, Uc.SchemaUserPis, Uc.Conn);
+
+        await Reload("Approve");
+    }
+
+    @* --- FA -> R : back to the requestor with the approver's remarks --- *@
+    async Task Return()
+    {
+        if (string.IsNullOrWhiteSpace(apprRemarks)) return;
+
+        const string? title = "Return Request?";
+        const string? icon = "warning";
+        var msg = $@"<div><span class='text-primary'> {hdr.RequestorName}  </span> </div> ";
+
+        var confirmed = await _js.InvokeAsync<bool>("ConfirmSwal", @title, @msg, @icon);
+        if (!confirmed) return;
+
+        await _obapp._03Return(hdr.Id, apprRemarks, Uc.SchemaUserPis, Uc.Conn);
+        await _obHist._01(hdr.Id, Uc.EmpmasId, "Returned - Level " + hdr.ApproverLevel, Uc.SchemaUserPis, Uc.Conn);
+
+        isReturn    = false;
+        apprRemarks = string.Empty;
+        await Reload("Return");
+    }
+
+    async Task Reload(string action)
+    {
+        var resh = await _obapp._02ForApproval_PerApprover(Uc.EmpmasId, Uc.SchemaUserPis, Uc.Conn);
+        V.ObApps = (resh ?? []).Where(a => a != null).Select(a => a!).ToList();
+        V.ObApp  = new();
+
+        V.Action = action;
+        await Ec.InvokeAsync(false);
+    }
+
+    string? _02Duration(int? id) => V.ObDurations.FirstOrDefault(o => o.Id == id)?.Name ?? "-";
+
+    string?  divHdrcss   => " d-flex bordered-bottom ";
+    string?  lblcss      => " w-150p bg mb-a-greenlight p-2  ";
+}

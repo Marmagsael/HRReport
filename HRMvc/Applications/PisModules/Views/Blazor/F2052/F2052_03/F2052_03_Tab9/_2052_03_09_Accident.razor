@@ -46,9 +46,9 @@
                 @* ----- FaceValue (double(8,2))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20 small">Face Value</div>
-                    <div class="w-40">
+                    <div class="w-30">
                         <RadzenNumeric @bind-Value=@V.InsuranceAccident.FaceValue Format="#,##0.00" Placeholder="0.00" TextAlign="TextAlign.Right"
-                                       Name="FaceValue"
+                                       Name="FaceValue" Max="999999.99m" Style="width:100%"
                                        InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                         <RadzenRequiredValidator Component="FaceValue" Text="Face Value is required" Style="color: red; display:block" />
                     </div>
@@ -57,9 +57,9 @@
                 @* ----- Premium (double(8,2))----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20 small">Premium </div>
-                    <div class="w-40">
+                    <div class="w-30">
                         <RadzenNumeric @bind-Value=@V.InsuranceAccident.Premium Format="#,##0.00" Placeholder="0.00" TextAlign="TextAlign.Right"
-                                       Name="Premium"
+                                       Name="Premium" Max="999999.99m" Style="width:100%"
                                        InputAttributes="@(new Dictionary<string, object>() { { "aria-label", "enter value" } })" />
                         <RadzenRequiredValidator Component="Premium" Text="Premium is required" Style="color: red; display:block" />
                     </div>
@@ -71,8 +71,8 @@
                 @* ----- InsExpire (date)----------*@
                 <div class="w-100 d-flex p-1">
                     <div class="w-20 small">Expiration Date </div>
-                    <div class="w-40">
-                        <RadzenDatePicker @bind-Value=@V.InsuranceAccident.InsExpire Name="InsExpire" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                    <div class="w-30">
+                        <RadzenDatePicker @bind-Value=@V.InsuranceAccident.InsExpire Name="InsExpire" DateFormat="MMMM dd, yyyy" Style="width:100%" />
                         <RadzenRequiredValidator Component="InsExpire" Text="Expiration Date is required" Style="color: red; display:block" />
                     </div>
                 </div>
@@ -86,8 +86,12 @@
 @inject IOInsuranceaccidentDataAccess _empmas
 
 @code {
-    [Parameter]
+    [CascadingParameter]
     public V2052 V { get; set; } = new();
+
+        
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
@@ -104,24 +108,12 @@
 
             await _empmas._03(V.SelectedEmpnumber, V.InsuranceAccident, V.pisdb, V.conn);
 
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Successfully saved",
-                Detail = "Record has been successfully saved.",
-                Duration = 3000
-            });
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            _NotificationService.Notify(new NotificationMessage
-            {
-                Severity = NotificationSeverity.Error,
-                Summary = "Unable to save",
-                Detail = "Something went wrong while saving. Please try again.",
-                Duration = 6000
-            });
+            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 

@@ -15,6 +15,7 @@ public static class HRMvcScope
         services.AddHttpContextAccessor(); // kung kailangan
         services.AddScoped<SessionService>();
         services.AddScoped<UserClaimsContextService>();
+        services.AddScoped<ClientTerminalService>();
         services.AddScoped<L12_102>();
         services.AddScoped<L12_103>();
         services.AddScoped<L12_103NonExlusive>();

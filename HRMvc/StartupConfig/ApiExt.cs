@@ -122,6 +122,10 @@ public static class ApiExt
         builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
         builder.Services.AddScoped<ILeaveapplicationDataAccess, LeaveapplicationDataAccess>();
         builder.Services.AddScoped<ILeaveapplicationdtlDataAccess, LeaveapplicationdtlDataAccess>();
+        builder.Services.AddScoped<IObapplicationDataAccess, ObapplicationDataAccess>();
+        builder.Services.AddScoped<IObapplicationdtlDataAccess, ObapplicationdtlDataAccess>();
+        builder.Services.AddScoped<IObapplicationhistDataAccess, ObapplicationhistDataAccess>();
+        builder.Services.AddScoped<IObdurationDataAccess, ObdurationDataAccess>();
         builder.Services.AddScoped<IEmpmasgrpDataAccess, EmpmasgrpDataAccess>();
 
         builder.Services.AddScoped<IAtttemplatereqdtlDataAccess, AtttemplatereqdtlDataAccess>();
@@ -229,6 +233,9 @@ public static class ApiExt
         builder.Services.AddScoped<IORegionsDataAccess, ORegionsDataAccess>();
         builder.Services.AddScoped<IOOfstaffDataAccess, OOfstaffDataAccess>();
         builder.Services.AddScoped<IOOfstaff2DataAccess, OOfstaff2DataAccess>();
+        builder.Services.AddScoped<IOEmpmas_visible_statusDataAccess, OEmpmas_visible_statusDataAccess>();
+        builder.Services.AddScoped<IOSeclicDataAccess, OSeclicDataAccess>();
+        builder.Services.AddScoped<IOLicverstatusDataAccess, OLicverstatusDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------

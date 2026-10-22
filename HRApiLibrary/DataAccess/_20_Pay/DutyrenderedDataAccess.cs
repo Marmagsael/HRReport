@@ -16,7 +16,6 @@ public class DutyrenderedDataAccess : IDutyrenderedDataAccess
 
     public async Task<DutyrenderedModel?> _01(DutyrenderedModel dutyrendered, string? schema, string? conn)
     {
-        //Console.WriteLine($"AcctNumber: {dutyrendered.AcctNumber} * AcctName :  {dutyrendered.AcctName} * Conn : {conn} * Schema: {schema} ");
         var sql = $@"Insert into {schema}.Dutyrendered (AcctNumber, IsLock) values (@AcctNumber, @IsLock);
                      SELECT * FROM {schema}.Dutyrendered WHERE AcctNumber = @AcctNumber;";
 

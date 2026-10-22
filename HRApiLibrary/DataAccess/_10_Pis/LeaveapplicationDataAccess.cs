@@ -174,7 +174,10 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
         var     date    = DateTime.Now; 
         string?  action  = "Send for Approval";
 
-        string?  sql     = $@"Update {schema}.Leaveapplication set Status      = 'F' where Id = @Id;
+        // no first approver assigned -> go straight to the final approver ( level 2 )
+        string?  sql     = $@"Update {schema}.Leaveapplication set Status        = 'F',
+                                                                ApproverLevel = case when ifnull(Approver1Id,0) > 0 then 1 else 2 end
+                             where Id = @Id;
                              
                              Insert into {schema}.LeaveApplicationHist 
                                 (LvaId, EmpasId,  Date,  Action) values  (@id,   @EmpasId, @Date, @Action); 

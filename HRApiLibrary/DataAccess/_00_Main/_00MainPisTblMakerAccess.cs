@@ -136,6 +136,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _01LeaveCredit(schema, connName);
         await _01LeaveDefaultApprover(schema, connName);
         await _01LeaveApplication(schema, connName);
+        await _01ObApplication(schema, connName);
 
 
         await _01PisSettings(schema, connName);
@@ -296,8 +297,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                          (7, 'Vehicle') ";
             await _sql.ExecuteCmd(cmd, new { }, connName);
         }
-        //Console.WriteLine($"Inv_Type written.");
-
+        
 
         //--- Inv_Category -----------------------------------------------------------
         cmd = $"select * from {equipdb}.Inv_Category limit 1 ";
@@ -500,6 +500,10 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                         PRIMARY KEY (EmpmasId, PunchDate)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { });
 
+        // AttPunches1.Status :
+        //   N   - New                  L   - Lock
+        //   OB0 - OB Whole day         OB1 - OB First Half         OB2 - OB 2nd Half
+        //   LV0 - Leave Whole Day      LV1 - Leave 1st Half        LV2 - Leave Second Half
         sql = @$"CREATE TABLE if not exists {schema}.AttPunches1 (
                             EmpmasId        INTEGER     UNSIGNED,
                             DayNo           Int, 
@@ -517,9 +521,23 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IpAddressOut     Char(20), 
                             MacAddressOut    Char(20),
                             UserIdOut        BigInt, 
-                            Status          Char(1) default '-',
+                            Status          Char(3) default '-',
                         PRIMARY KEY (EmpmasId, PunchInDate)) ENGINE = InnoDB;";
         await _sql.ExecuteCmd(sql, new { });
+
+        // --- existing tables : widen Status from Char(1) to Char(3)
+        string? desc = $@"DESC {schema}.AttPunches1;";
+        var existingColumns = await _sql.FetchData<dynamic, dynamic>(desc, new { });
+
+        // DESC "Type" may come back as byte[] from MySql.Data
+        static string ColType(dynamic c) => c.Type is byte[] b ? System.Text.Encoding.UTF8.GetString(b) : Convert.ToString(c.Type) ?? "";
+        bool isStatusChar1 = existingColumns.Any(c => c.Field == "Status" && ColType(c).ToLower() == "char(1)");
+
+        if (isStatusChar1)
+        {
+            sql = $@"ALTER TABLE {schema}.AttPunches1 MODIFY COLUMN Status Char(3) default '-';";
+            await _sql.ExecuteCmd(sql, new { });
+        }
 
 
     }
@@ -2241,7 +2259,6 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IsDefaultApprover   INTEGER     UNSIGNED DEFAULT 0,
                         PRIMARY KEY (`Id`))ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
-        Console.WriteLine("LeaveGrpApprover table created successfully.");
     }
 
     // private async Task _01LeaveCredit(string? schema, string? conn)
@@ -2345,6 +2362,72 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         if (res == null || res.Count == 0)
         {
             sql = $@"insert into {schema}.LeavedayType (Id, Name) values (1,'Whole day'), (2, 'First-Half'), (3,'Second-Half'); ";
+            await _sql.ExecuteCmd(sql, new { }, conn);
+        }
+    }
+
+    // --- OB ( Official Business ) ---------------------------------------------------------
+    // Status   : N - New, S - Save, FA - For Approval, A - Approved, C - Cancel, R - Returned
+    // DutyType : R - Regular Working, RN - Regular Normal Working, RD - Restday
+    private async Task _01ObApplication(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE if not exists {schema}.ObApplication (
+                              Id            INTEGER         UNSIGNED NOT NULL AUTO_INCREMENT,
+                              Yr            INTEGER         UNSIGNED    DEFAULT 0,
+                              EmpmasId      INTEGER         UNSIGNED    DEFAULT 0,
+                              DateApplied   DATE,
+                              ObStart       DATE,
+                              ObEnd         DATE,
+                              Destination   VARCHAR(150),
+                              Purpose       VARCHAR(250),
+                              ContactPerson VARCHAR(100),
+                              TelNo         VARCHAR(45),
+                              Remarks       VARCHAR(250),
+                              DaysCnt       DOUBLE(12,2)                DEFAULT 0,
+                              DaysWithPay   DOUBLE(12,2)                DEFAULT 0,
+                              Approver1Id   INTEGER         UNSIGNED    DEFAULT 0,
+                              Approver2Id   INTEGER         UNSIGNED    DEFAULT 0,
+                              ApproverLevel INTEGER         UNSIGNED    DEFAULT 1,
+                              Status        CHAR(2)                     DEFAULT 'N',
+                              ApprRemarks   VARCHAR(150),
+                              DateApprove1  DATETIME,
+                              DateApprove2  DATETIME,
+                        PRIMARY KEY(`Id`),
+                        INDEX `idx_EmpmasId_ObStart` (`EmpmasId`, `ObStart`),
+                        INDEX `idx_Approver1Id` (`Approver1Id`),
+                        INDEX `idx_Approver2Id` (`Approver2Id`)) ENGINE = InnoDB;
+
+                    CREATE TABLE if not exists {schema}.ObApplicationDtl (
+                            Id                  INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
+                            ObApplicationId     INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                            EmpmasId            INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
+                            Date                DATE,
+                            DutyType            CHAR(2)                 NOT NULL DEFAULT 'R',
+                            ObDurationId        INTEGER     UNSIGNED    NOT NULL DEFAULT 1,
+                            IsPayable           INTEGER     UNSIGNED    NOT NULL DEFAULT 1,
+                        PRIMARY KEY (`Id`),
+                        INDEX `idx_ObApplicationId` (`ObApplicationId`),
+                        INDEX `idx_EmpmasId_Date` (`EmpmasId`, `Date`)) ENGINE = InnoDB;
+
+                    CREATE TABLE if not exists {schema}.ObApplicationHist (
+                            Id                  INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
+                            ObaId               INTEGER     UNSIGNED,
+                            EmpmasId            INTEGER     UNSIGNED,
+                            Date                DATETIME,
+                            Action              VARCHAR(120),
+                        PRIMARY KEY (`Id`)) ENGINE = InnoDB;
+
+                    CREATE TABLE if not exists {schema}.ObDuration (
+                            Id       INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+                            Name     char(45),
+                        PRIMARY KEY(`Id`))ENGINE = InnoDB;";
+        await _sql.ExecuteCmd(sql, new { }, conn);
+
+        sql = @$"select * from {schema}.ObDuration limit 1 ";
+        var res = await _sql.FetchData<dynamic, dynamic>(sql, new { }, conn);
+        if (res == null || res.Count == 0)
+        {
+            sql = $@"insert into {schema}.ObDuration (Id, Name) values (1,'Whole day'), (2, 'First-Half'), (3,'Second-Half'); ";
             await _sql.ExecuteCmd(sql, new { }, conn);
         }
     }

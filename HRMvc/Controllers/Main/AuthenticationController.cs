@@ -6,6 +6,7 @@ using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._00_MainPis;
+using HRApiLibrary.DataAccess._11_AMS;
 using HRApiLibrary.Models._10_Pis;
 using HRMvc.DataAccess.Main;
 using HRMvc.Models.Authentication;
@@ -35,6 +36,7 @@ public class AuthenticationController : Controller
     private readonly I_09_02_VarsGlobal             _vars;
     private readonly I_00MainPisTblMakerAccess      _mainPisTblMaker;
     private readonly I_20_002_PayTblMaker           _payTblMaker;
+    private readonly IAMSTableMaker                 _amsTblMaker;
     private readonly I_00UserscompanyDataAccess     _userCompany;
     private readonly I_AcctgTableMaker              _acctg;
     private readonly IOEmpmasDataAccess             _oldEmpmas;
@@ -50,6 +52,7 @@ public class AuthenticationController : Controller
                                     I_09_02_VarsGlobal         vars,
                                     ClaimsAccess               claimsAccess,
                                     I_00MainPisTblMakerAccess  mainPisTblMaker,
+                                    IAMSTableMaker             amsTblMaker,
                                     I_10_EmpmasDataAccess      empmas, 
                                     IEmpmasInternalDataAccess  empmasInternal, 
                                     I_20_002_PayTblMaker       payTblMaker, 
@@ -70,7 +73,7 @@ public class AuthenticationController : Controller
         _userCompany        = userCompany;
         _acctg              = acctg;
         _oldEmpmas          = oldEmpmas;
-        
+        _amsTblMaker        = amsTblMaker;
     }
 
 
@@ -454,10 +457,9 @@ public class AuthenticationController : Controller
         
         var userId = user.Id;
         var coId   = user.DefaultCoId;
-        var userDb = "U"+userId.ToString().Trim();
+        var userDb = "U"+ (user.DefaultCoId)?.ToString().Trim();
 
         await _mainPisTblMaker._01UserTable(userDb, conn);
-
 
         if (coId > 1)
         {
@@ -467,8 +469,11 @@ public class AuthenticationController : Controller
             var paydb   = prefix + "pay";
             var acctgdb = prefix + "acctg";
             
+            if(uc.PisSchema.Trim().Length > 0) pisdb   = uc.PisSchema.Trim();
+            if(uc.PaySchema.Trim().Length > 0) paydb   = uc.PaySchema.Trim();
             
             await _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
+            await _amsTblMaker._01AMSTable(pisdb, conn);
             
             await _payTblMaker._01(paydb);
             var x = await _userCompany._02(coId, "Main", conn!);
@@ -476,7 +481,6 @@ public class AuthenticationController : Controller
             
             await _acctg.AccountingTableMaker(acctgdb, conn); 
 
-            
         }
 
         
