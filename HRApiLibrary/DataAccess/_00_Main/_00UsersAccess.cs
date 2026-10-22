@@ -1,6 +1,7 @@
 ﻿using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._00_MainPis;
 
 namespace HRApiLibrary.DataAccess._00_Main;
 
@@ -41,6 +42,16 @@ public class _00UsersAccess : I_00UsersAccess
         return data?.FirstOrDefault();
     }
 
+
+    public async Task<List<UsersModel?>?> _02ByEmail_EmployeeEntryModule(string? email, string? mainschema = "Main", string? secpisschema = "Secpis", string? connName = "MySqlConn")
+    {
+        string sql = $@" SELECT u.Id, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS AFullName, u.Email
+                    FROM {mainschema}.Users u
+                    LEFT JOIN {secpisschema}.empmas e ON e.Empnumber = u.loginname  
+                    WHERE LOWER(TRIM(u.Email)) = LOWER(TRIM(@Email))";
+        var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Email = email }, connName);
+        return data;
+    }
 
 
     public async Task<UsersModel?> _02ByLoginName(string? loginname, string? schema = "Main", string? connName = "MySqlConn")

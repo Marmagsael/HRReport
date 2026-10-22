@@ -48,6 +48,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             return data?.FirstOrDefault();
         }
 
+        public async Task<List<OSeclicModel?>?> _02s(string empnumber, string schema, string conn)
+        {
+            string sql = $@"select  empnumber, sbrno, opno, validated, vfee, revalidated, valStatus, user, dateModified, licDateIssued from {schema}.Seclic where Empnumber = @Empnumber";
+            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            return data;
+        }
+
 
         public async Task<OSeclicModel?> _03(string empnumber, OSeclicModel seclic, string schema, string conn)
         {
@@ -74,6 +81,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
     {
         Task<OSeclicModel?> _01(OSeclicModel seclic, string schema, string conn);
         Task<OSeclicModel?> _02(string empnumber, string schema, string conn);
+        Task<List<OSeclicModel?>?> _02s(string empnumber, string schema, string conn);
         Task<OSeclicModel?> _03(string empnumber, OSeclicModel seclic, string schema, string conn);
         Task<OSeclicModel?> _04(string empnumber, string schema, string conn);
     }

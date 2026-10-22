@@ -165,6 +165,9 @@
 
 @code {
 
+    
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
 
     string? empnumber = string.Empty;
 
@@ -257,7 +260,7 @@
                 var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Penalty Type Deletion");
                 if (!confirmed) return;
 
-                await _empmas._04(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.Relation, Uc.OpisDb!, Uc.Conn!);
                 V.Familys .Remove(rec);
                 NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
             }
@@ -312,7 +315,7 @@
         try
         {
             bool isNew = familyToInsert!.Contains(rec);
-            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Relation, V.pisdb!, V.conn!);
+            var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Relation, Uc.OpisDb!, Uc.Conn!);
             bool exists =  res != null && res.Count > 0;
 
             if (exists)
@@ -330,12 +333,12 @@
 
             if (isNew)
             {
-                await _empmas._01(rec, V.pisdb!, V.conn!);
+                await _empmas._01(rec, Uc.OpisDb!, Uc.Conn!);
                 V.Familys!.Add(rec);
             }
             else
             {
-                await _empmas._03(rec.EmpNumber, rec.Name, rec.Relation, rec, V.pisdb!, V.conn!);
+                await _empmas._03(rec.EmpNumber, rec.Name, rec.Relation, rec, Uc.OpisDb!, Uc.Conn!);
             }
 
             await V.FamilyGrid.UpdateRow(rec);

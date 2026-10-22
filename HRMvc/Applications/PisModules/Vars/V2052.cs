@@ -10,6 +10,7 @@ using Radzen;
 using Radzen.Blazor;
 using System;
 using System.Reflection;
+using Telerik.SvgIcons;
 
 namespace HRMvc.Applications.PisModules.Vars;
 
@@ -19,38 +20,42 @@ namespace HRMvc.Applications.PisModules.Vars;
 public class V2052
 {
 
-
-    public string?  maindb           { get; set; } = string.Empty;
-    public string?  pisdb            { get; set; } = string.Empty;
-    public string?  newpisdb         { get; set; } = string.Empty;
-    public string?  paydb            { get; set; } = string.Empty;
-    public string?  conn             { get; set; } = string.Empty;
-    public int?     defcoid          { get; set; } = 0;
-    public int?     userid           { get; set; } = 0;
-    public string?  username         { get; set; } = string.Empty;
-
-    public bool     IsLoading        { get; set; } = false;
-    public bool     UcLoaded         { get; set; } = false;
+    public string?  Action              { get; set; } = string.Empty;
+    public bool     IsLoading           { get; set; } = false;
+    public string?  ModalCaption        { get; set; } = string.Empty;
+    public bool?    IsNewEntry          { get; set; } = false;
 
 
-    public bool                          ShowDataEntry          { get; set; } = false;
-    public bool                          ShowStatusModal        { get; set; } = false;
-    public string?                       ModalCaption           { get; set; } = string.Empty;
 
-    public string?                       Action                 { get; set; } = string.Empty;
-    public bool?                         IsNewEntry             { get; set; } = false;
-    public string?                       ActionRef              { get; set; } = string.Empty;
-    public int?                          TabNo                  { get; set; } = 1;
-    public int?                          SelectedId             { get; set; } = 0;
-    public string?                       SelectedEmpnumber      { get; set; } = string.Empty;
-    public string?                       LastEmpNumber          { get; set; } = string.Empty;
-    public bool?                         IsEmpNoValid            { get; set; } = true;
-    public bool?                         IsEmailValid           { get; set; } = true;
-    public string?                       EmailDuplicateMessage  { get; set; } = string.Empty;
-    public string?                       EmailRegisteredMessage { get; set; } = string.Empty;
-    public string?                       RegisteredUserOnMain   { get; set; } = string.Empty;
-    public string?                       RelatedUserOnSecpis    { get; set; } = string.Empty;
-    public string?                       SearchValue            { get; set; } = string.Empty;
+    public bool                          ShowDataEntry                          { get; set; } = false;
+    public bool                          ShowStatusModal                        { get; set; } = false;
+    public bool                          ShowLicenseVerficationLogsModal        { get; set; } = false;
+
+   
+    public int?                          TabNo                      { get; set; } = 1;
+    public int?                          SelectedId                 { get; set; } = 0;
+    public string?                       SelectedEmpnumber          { get; set; } = string.Empty;
+    public string?                       LastEmpNumber              { get; set; } = string.Empty;
+
+
+
+    public bool?                         IsEmpNoValid               { get; set; } = true;
+    public bool?                         IsEmailValid               { get; set; } = true;
+
+    public bool?                         IsEmailLinked              { get; set; } = false;
+    public bool?                         IsEmailRegistered          { get; set; } = false;
+
+    public string?                       EmailRegisteredToUser      { get; set; } = string.Empty;
+    public List<string>?                 EmailLinkedToUsers         { get; set; } = new();
+
+
+    public string?                       EmpNoErrMsg                { get; set; } = string.Empty;
+    public string?                       LastNameErrMsg             { get; set; } = string.Empty;
+    public string?                       FirstNameErrMsg            { get; set; } = string.Empty;
+
+
+
+    public string?                       SearchValue                { get; set; } = string.Empty;
 
 
 
@@ -63,6 +68,8 @@ public class V2052
     public OEducateModel?                  Education            { get; set; } = new();
     public OSeclicModel?                   SecLicense           { get; set; } = new();
     public List<OLicverstatusModel?>?      LicverStatuses       { get; set; } = new();
+    public OSecliclogsModel?               SecLicenseLog       { get; set; } = new ();
+
 
     public List<OEmployModel?>?             Employments         { get; set; } = new();
     public List<OEducateModel?>?            Educations          { get; set; } = new();
@@ -74,24 +81,29 @@ public class V2052
     public List<EmpmasRelativesRefModel?>?  RelativesRef        { get; set; } = new();
     public List<OTrainModel?>?              Trainings           { get; set; } = new();
     public List<OReferModel?>?              CharRefs            { get; set; } = new();
-    public OInsuranceaccidentModel?         InsuranceAccident  { get; set; } = new();
+    public OInsuranceaccidentModel?         InsuranceAccident   { get; set; } = new();
 
     public List<OCivstatModel?>?            OCivStats           { get; set; } = new();
     public List<OGenderModel?>?             OGenders            { get; set; } = new();
     public List<CountryModel?>?             Countrys            { get; set; } = new();
-    public List<OMlacodeModel?>?             MlaList             { get; set; } = new();
-    public List<OProcodeModel?>?             ProList             { get; set; } = new();
-    
+    public List<OMlacodeModel?>?            MlaList             { get; set; } = new();
+    public List<OProcodeModel?>?            ProList             { get; set; } = new();
+    public List<OSecliclogsModel?>?         SecLicenseLogs      { get; set; } = new();
+
     public OEmpmasModel?                    EmpmasToEdit        { get; set; } = new();
 
     public List<PisEmpmasModel?>?           Empmass             { get; set; } = new();
     public List<OEmpstatModel?>?            OEmpstats           { get; set; } = new();
-    public List<OEmpstatModel?>?            previousSelectedStatus          { get; set; } = new();
-    public IEnumerable<OEmpstatModel?>      SelectedStatus                  { get; set; } = new List<OEmpstatModel>();
-    public List<OEmpmas_visible_statusModel?>  OEmpstatVisibleStatus        { get; set; } = new();
 
-    public List<OEmpmasModel?>?             EmpmasInitialList   { get; set; } = new();
-    public List<OEmpmasModel?>?             EmpmasList          { get; set; } = new();
+
+    public List<OEmpstatModel?>?            PreviousSelectedStatus          { get; set; } = new();
+    public IEnumerable<OEmpstatModel?>      SelectedStatus                  { get; set; } = new List<OEmpstatModel>();
+
+
+    public List<OEmpmas_visible_statusModel?>   OEmpstatVisibleStatus       { get; set; } = new();
+
+    public List<OEmpmasModel?>?                 EmpmasInitialList           { get; set; } = new();
+    public List<OEmpmasModel?>?                 EmpmasList                  { get; set; } = new();
 
 
     public List<RdivisionModel?>?           Rdivisions          { get; set; } = new();
@@ -99,7 +111,7 @@ public class V2052
     public List<RsectionModel?>?            Rsections           { get; set; } = new();
     public List<LeavegrpModel?>?            Leavegrps           { get; set; } = new();
     public List<PayrollgrpModel?>?          Payrollgprs         { get; set; } = new();
-    public List<OPositionModel?>?           OPositions           { get; set; } = new();
+    public List<OPositionModel?>?           OPositions          { get; set; } = new();
     public List<EmploymenttypeModel?>?      Employmenttypes     { get; set; } = new();
 
     public List<EmpmovementModel?>?         EmpmovementList     { get; set; } = new();

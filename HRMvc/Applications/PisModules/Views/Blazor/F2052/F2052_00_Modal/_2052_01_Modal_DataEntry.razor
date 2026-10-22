@@ -1,95 +1,333 @@
 @using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
-@using HRApiLibrary.Models._10_Pis
 @using System.Text.RegularExpressions;
 
-@inject NotificationService _NotificationService
-@inject DialogService _DialogService
-@inject I_00MainPisAccess _mainpis
-@inject IOEmpmasDataAccess _oempmas
-@inject I_10_EmpmasDataAccess _empmas
 
+<div style="width:100%; overflow:auto;">
+    <EditForm Model="@V.EmpmasToEdit" OnSubmit="@OnSubmit" class="h-100 d-flex flex-column">
 
-<div class="msds-modal">
-    <div class="msds-modal-content" style="max-width: 980px;">
-        <div class="modal-content bg-opacity-75">
-
-            <div class="modal-header bg-opacity-75">
-                <h1 class="modal-title fs-5">
-                    @(V.IsNewEntry == true ? "Add New Employee" : "Update Employee")
-                </h1>
-                <button type="button" class="btn-close"
-                        @onclick="@(() => ShowHideModal(false))"
-                        data-bs-dismiss="modal"
-                        aria-label="Close">
+         <div class="p-0">
+            <div class="card-header d-flex gap-3">
+                <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="submit" tabindex="9">
+                    Save
                 </button>
             </div>
+          </div>
 
-            <div class="modal-body">
-                <_2052_01_DataEntry ChildAction="ChildActionCatcher" />
+        <div class="px-2 ps-md-3 pt-3">
+
+            @* --- Employee Number --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p"> Emp. No.</label>
+
+                <div class="col-12 col-md-7 col-lg-5">
+                    <TelerikTextBox @bind-Value="@V.EmpmasToEdit.EmpNumber"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="1"
+                                    MaxLength="5"
+                                    Class="@(string.IsNullOrWhiteSpace(V.EmpNoErrMsg) ? "" : "k-invalid")"
+                                    OnBlur="OnEmpNumberLostFocus">
+
+                        <TextBoxSuffixTemplate>
+                            <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray @(EnableAutoGenrateEmpNo ? "" : "disabled")"
+                                    type="button"
+                                    tabindex="2"
+                                    disabled="@(!EnableAutoGenrateEmpNo)"
+                                    @onclick="GenerateEmpNumber">
+
+                                <div class=" d-flex gap-2 align-items-center">
+                                    <TelerikFontIcon Icon="@FontIcon.Rotate" Size="@ThemeConstants.FontIcon.Size.Medium" />
+                                    <small>Automate No. </small> &nbsp;
+                                </div>
+                            </button>
+                        </TextBoxSuffixTemplate>
+                    </TelerikTextBox>
+
+
+                    @if (!string.IsNullOrWhiteSpace(V.EmpNoErrMsg))
+                    {
+                        <div class="txt-red small">@V.EmpNoErrMsg</div>
+                    }
+                </div>
             </div>
 
+
+
+
+
+            @* --- Last Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p">Last Name</label>
+
+                <div class="col-12 col-md-7 col-lg-5">
+                    <TelerikTextBox @bind-Value="@V.EmpmasToEdit.EmpLastNm"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="3"
+                                    MaxLength="25"
+                                    Class="@(string.IsNullOrWhiteSpace(V.LastNameErrMsg) ? "" : "k-invalid")"> 
+
+
+
+                    </TelerikTextBox>
+
+                    @if (!string.IsNullOrWhiteSpace(V.LastNameErrMsg))
+                    {
+                        <div class="txt-red small">@V.LastNameErrMsg</div>
+                    } 
+                </div>
+            </div>
+
+
+
+
+
+            @* --- First Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p">First Name</label>
+
+                <div class="col-12 col-md-7 col-lg-5">
+                    <TelerikTextBox @bind-Value="@V.EmpmasToEdit.EmpFirstNm"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="4"
+                                    MaxLength="30"
+                                    Class="@(string.IsNullOrWhiteSpace(V.FirstNameErrMsg) ? "" : "k-invalid")"> 
+
+
+
+                    </TelerikTextBox>
+
+                    @if (!string.IsNullOrWhiteSpace(V.FirstNameErrMsg))
+                    {
+                        <div class="txt-red small">@V.FirstNameErrMsg</div>
+                    }
+                </div>
+            </div>
+
+
+
+
+            @* --- Middle Name --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p">Middle Name</label>
+
+                <div class="col-12 col-md-7 col-lg-5">
+                    <TelerikTextBox @bind-Value="@V.EmpmasToEdit.EmpMidNm"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="5"
+                                    MaxLength="15">
+                    </TelerikTextBox>
+                </div>
+            </div>
+
+
+
+
+
+            @* --- Suffix  --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p">Suffix</label>
+
+                <div class="col-12 col-md-7 col-lg-3">
+                    <TelerikTextBox @bind-Value="@V.EmpmasToEdit.Suffix"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="6"
+                                    MaxLength="3">
+                    </TelerikTextBox>
+
+                </div>
+            </div>
+
+
+
+
+            @* --- Alias  --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p">Alias</label>
+
+                <div class="col-12 col-md-7 col-lg-3">
+                    <TelerikTextBox @bind-Value="@V.EmpmasToEdit.EmpAlias"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="7"
+                                    MaxLength="15">
+                    </TelerikTextBox>
+
+                   
+                </div>
+            </div>
+
+            <hr />
+
+
+
+
+
+            @* --- Email --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p">Email</label>
+
+                <div class="col-12 col-md-7 col-lg-5">
+                    <TelerikTextBox @bind-Value="@V.EmpmasToEdit.Email"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    TabIndex="8"
+                                    MaxLength="150"
+                                    Enabled="@EnableEmail"
+                                    Class="@(V.IsEmailValid == false ? "k-invalid" : "")"
+                                    OnBlur="@OnEmailLostFocus">
+                    </TelerikTextBox>
+
+                    @if (V.IsEmailValid == false)
+                    {
+                        <div class="txt-red small">
+                            This email is invalid.
+                        </div>
+                    }
+
+                    @if (V.IsEmailRegistered == true)
+                    {
+                        <div class="txt-red small">
+                            This email is registered to <b>@V.EmailRegisteredToUser</b> in the login portal.
+                        </div>
+                    }
+                    else if (V.IsEmailLinked == true)
+                    {
+                        <div class="txt-fcolor small">
+
+                            This email is linked to:
+                            <ul>
+                                @foreach (var user in V.EmailLinkedToUsers)
+                                {
+                                    <li><b>@user</b></li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else if (isEmailChecked && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email) && V.IsEmailValid == true)
+                    {
+                        <div class="txt-fcolor small">
+                            This email address is available for use but is not yet registered.
+                        </div>
+                    }
+                   
+                </div> 
+            </div> 
         </div>
-    </div>
+    </EditForm>
+
+
+    @if (V.IsNewEntry == true && !string.IsNullOrEmpty(V.LastEmpNumber))
+    {
+        <div class="alert alert-info d-flex align-items-start mb-0 no-shadow"
+             role="alert">
+            <i class="fas fa-info-circle me-3" style="font-size: 20px;"></i>
+
+            <div>
+                <small>
+                    <strong> Last employee number used: @V.LastEmpNumber</strong>
+                </small>
+
+                <br />
+
+                <small>
+                    Last name and first name are required to enable the Automate No. button.
+                </small>
+            </div>
+        </div>
+    }
+
 </div>
+
+
+@inject I_00UsersAccess         _user
+@inject IOEmpmasDataAccess      _oempmas
+@inject I_10_EmpmasDataAccess   _empmas
+
+
 
 @code {
 
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
     [CascadingParameter] public V2052 V { get; set; } = new();
-    [CascadingParameter] public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
     [Parameter] public EventCallback ChildAction { get; set; }
 
-    private int? empmasId = 0;
-    private int? userId = 0;
-    private bool isSaving = false;
 
-    async Task ChildActionCatcher()
+    private int?  userId            = 0;
+    private bool isBusy             = false;
+    private bool isEmailChecked     = false;
+
+
+    private bool EnableAutoGenrateEmpNo =>!string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpLastNm) && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpFirstNm);
+    private bool EnableEmail => !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpLastNm) && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpFirstNm) && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber);
+
+
+
+    async Task OnSubmit()
     {
-        if (V == null) return;
+        if (isBusy) return;
 
-        if (V.Action == "HideDataEntry") await ShowHideModal(false);
-        if (V.Action == "CheckEmpnoAndEmailOnSecpis") await CheckEmpnoAndEmailOnSecpis();
-        if (V.Action == "SaveEmpmas") await SaveEmpmas();
+        isBusy = true;
 
-        V.Action = "";
+        try
+        {
+            if (!ValidateFields()) return;
+
+            if (!await OnEmpNumberLostFocus()) return; // stop if empno to be saved  already exists;
+            if (!await OnEmailLostFocus())  return; // stop if email to be saved is already registered;
+
+            await SaveEmpmasToOldPis();
+            await SaveEmpmasToNewPis();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+
+            NotificationRef?.Show("Unable to save. Something went wrong while saving the employee record. Please try again or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            isBusy = false;
+            await ChildAction.InvokeAsync();
+        }
     }
 
-
-    async Task SaveEmpmas()
-    {
-        await CheckEmpnoAndEmailOnSecpis();
-        if (V.IsEmpNoValid == false || V.IsEmailValid == false) return;
-
-        await SaveEmpmasToSecpis();
-        await DomainApplication_Update201();
-        await ChildAction.InvokeAsync();
-    }
-
-    async Task SaveEmpmasToSecpis()
+    async Task SaveEmpmasToOldPis()
     {
 
 
         try
         {
             var res = new OEmpmasModel();
-            if(V.IsNewEntry == true)
+            if (V.IsNewEntry == true)
             {
                 V.EmpmasToEdit.EmpStat_ = "_"; // set status to newly hired
 
-                res = await _oempmas._01(V.EmpmasToEdit, V.pisdb, V.conn);
-                if(res != null)
+                res = await _oempmas._01(V.EmpmasToEdit, Uc.OpisDb, Uc.Conn);
+                if (res != null)
                 {
                     V.EmpmasList.Insert(0, res);
-                    V.ShowDataEntry = false;
-                    V.Action = "SelectEmpmas";
-                    V.SelectedEmpnumber = res.EmpNumber;
+                    V.ShowDataEntry         = false;
+                    V.Action                = "SelectEmpmas";
+                    V.SelectedEmpnumber     = res.EmpNumber;
                 }
 
             }
             else
             {
-                res = await _oempmas._03_EmployeeName(V.SelectedEmpnumber, V.EmpmasToEdit, V.pisdb, V.conn);
+                res = await _oempmas._03_EmployeeName(V.SelectedEmpnumber, V.EmpmasToEdit, Uc.OpisDb, Uc.Conn);
                 UpdateRecordOnEmpmas(res);
                 UpdateRecordOnEmpmasList(res);
             }
@@ -97,189 +335,252 @@
 
             if (res != null && !string.IsNullOrWhiteSpace(res.EmpNumber))
             {
-                ShowSuccess("Successfully Saved", "Record has been successfully saved.");
+                NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
+
             }
             else
             {
-                ShowError("Unable to Save Entry", "Something went wrong. Please try again.");
+                NotificationRef.Show("Unable to save entry. Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+
             }
         }
         catch (Exception ex)
         {
 
             Console.WriteLine(ex);
-            ShowError("Unable to save entry", "Something went wrong. Please try again.");
-        }
-
-        await ChildAction.InvokeAsync();
-    }
-
-
-    async Task DomainApplication_Update201()
-    {
-        try
-        {
-            var res = await _empmas._02Empmas_EmpnumberOwnedByOthers(0, V.SelectedEmpnumber, V.newpisdb, V.conn);
-            EmpmasModel empmas = V.OldEmpmasToNewEmpmasMapper(V.EmpmasToEdit, new EmpmasModel());
-
-            empmas.SystemId = userId;
-            if (res.Any())
-            {
-                // Update
-                var rec = await _empmas._03EmpmasWithSystemId(res.FirstOrDefault().Id, empmas, V.newpisdb, V.conn);
-                if (rec != null)
-                {
-                    await _empmas._01EmpmasAddress_EmailOnly(rec.Id, V.EmpmasToEdit.Email, V.newpisdb, V.conn);
-                }
-
-            }
-            else
-            {
-
-                // Insert
-                var rec = await _empmas._01EmpmasWithSystemId(empmas, V.newpisdb, V.conn);
-                if (rec != null)
-                {
-                    await _empmas._01EmpmasAddress_EmailOnly(rec.Id, V.EmpmasToEdit.Email, V.newpisdb, V.conn);
-                }
-
-            }
-
-        }
-        catch (Exception)
-        {
-
-            throw;
+            NotificationRef.Show("Unable to save entry. Something went wrong.Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
 
     }
 
 
-    async Task CheckEmpnoAndEmailOnSecpis()
-    {
-        V.IsEmpNoValid              = true;
-        V.IsEmailValid              = true;
-        V.EmailDuplicateMessage     = string.Empty;
-        V.EmailRegisteredMessage    = string.Empty;
-        V.RegisteredUserOnMain      = string.Empty;
-        V.RelatedUserOnSecpis       = string.Empty;
-
-
-        try
-        {
-
-
-            var res                 = await _oempmas._02EmpnumberAndEmailOwnedByOthers(V.EmpmasToEdit.EmpNumber, V.EmpmasToEdit.Email, V.pisdb, V.conn);
-            var empNumberMatch      = res.FirstOrDefault(e => e.EmpNumber == V.EmpmasToEdit.EmpNumber);
-            var emailMatch          = res.FirstOrDefault(e => e.Email == V.EmpmasToEdit.Email);
-            bool emailHasChanged    = !string.IsNullOrWhiteSpace(V.Empmas.Email) && (V.Empmas.Email != V.EmpmasToEdit.Email);
-
-            if (V.IsNewEntry == true)
-            {
-                V.IsEmpNoValid = empNumberMatch == null;
-                V.IsEmailValid = emailMatch     == null;
-            }
-            else if (emailHasChanged)
-            {
-                V.IsEmpNoValid = true; // set to true since the empno textbox during update is disabled
-                if (emailMatch != null && emailMatch.EmpNumber != V.EmpmasToEdit.EmpNumber)
-                {
-                    V.IsEmailValid = false;
-                }
-            }
-
-
-            bool emailIsEmpty = string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email);
-
-            if (emailIsEmpty) return;
-            if (!CheckIfEMailIsValid(V.EmpmasToEdit.Email)) return;
-
-
-            if (V.IsEmailValid == false)
-            {
-                V.RelatedUserOnSecpis = emailMatch.Fullname;
-            }
-            else
-            {
-                await CheckIfEmailIsOnMain();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            ShowError("Unable to verify empnumber and email", "Something went wrong. Please try again.");
-        }
-    }
-
-
-    async Task CheckIfEmailIsOnMain()
+    async Task SaveEmpmasToNewPis()
     {
         userId = 0;
+
         try
         {
-            var res = await _mainpis._02ByEmailWithMainPisEmpmas(V.EmpmasToEdit.Email, V.maindb, "MainPis", V.conn);
-            var user = res.FirstOrDefault();
+            var main        = await _user._02ByLoginName(V.Empmas.EmpNumber, Uc.SchemaMain, Uc.Conn);
+            var empmasrec   = await _empmas._02Empmas_Empnumber(V.Empmas.EmpNumber, Uc.SchemaUserPis, Uc.Conn);
 
-            if (user == null)
+
+            EmpmasModel empmas = V.OldEmpmasToNewEmpmasMapper(V.EmpmasToEdit, new EmpmasModel());
+
+            if(main != null)
             {
-                V.EmailRegisteredMessage = "This email address is available for use but is not yet registered.";
+                userId = main.Id;
+            }
+
+            empmas.SystemId = userId ;
+            int? empmasId = 0;
+
+            // Empmas --------------------
+            if (empmasrec.Any())
+            {
+                //Update
+                var res = await _empmas._03EmpmasWithEmpnumber(empmas, Uc.SchemaUserPis, Uc.Conn);
+                empmasId = res.Id;
+                Console.WriteLine("Update");
             }
             else
             {
-                userId = user.Id ?? 0;
-                V.RegisteredUserOnMain = user.FullName;
+                // Insert
+                var res = await _empmas._01EmpmasWithSystemId(empmas, Uc.SchemaUserPis, Uc.Conn);
+                empmasId = res.Id;
+                Console.WriteLine("Insert");
+
+
             }
+
+
+            Console.WriteLine($"empmasId {empmasId}");
+            if(empmasId != 0)
+            {
+                //Addresss ---------------------
+                await _empmas._01EmpmasAddress_EmailOnly(empmasId, V.EmpmasToEdit.Email, Uc.SchemaUserPis, Uc.Conn);
+            }
+            else
+            {
+                NotificationRef.Show("Unable to save email. Something went wrong.Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+
+
+
+
         }
         catch (Exception ex)
         {
+
             Console.WriteLine(ex);
-            ShowError("Unable to verify email", "Something went wrong. Please try again.");
+            NotificationRef.Show("Unable to save entry. Something went wrong.Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
+
     }
+
 
     void UpdateRecordOnEmpmas(OEmpmasModel source)
     {
-        V.Empmas.UserId     = userId;
-        V.Empmas.EmpFirstNm = source.EmpFirstNm;
-        V.Empmas.EmpLastNm  = source.EmpLastNm;
-        V.Empmas.EmpMidNm   = source.EmpMidNm;
-        V.Empmas.Suffix     = source.Suffix;
-        V.Empmas.EmpAlias   = source.EmpAlias;
-        V.Empmas.Email      = source.Email;
+        V.Empmas.UserId         = userId;
+        V.Empmas.EmpFirstNm     = source.EmpFirstNm;
+        V.Empmas.EmpLastNm      = source.EmpLastNm;
+        V.Empmas.EmpMidNm       = source.EmpMidNm;
+        V.Empmas.Suffix         = source.Suffix;
+        V.Empmas.EmpAlias       = source.EmpAlias;
+        V.Empmas.Email          = source.Email;
     }
 
     void UpdateRecordOnEmpmasList(OEmpmasModel source)
     {
         var rec = V.EmpmasList.FirstOrDefault(e => e.EmpNumber == V.SelectedEmpnumber);
 
-        rec.EmpFirstNm  = source.EmpFirstNm;
-        rec.EmpLastNm   = source.EmpLastNm;
-        rec.EmpMidNm    = source.EmpMidNm;
-        rec.Suffix      = source.Suffix;
-        rec.EmpAlias    = source.EmpAlias;
-        rec.Email       = source.Email;
+        rec.EmpFirstNm      = source.EmpFirstNm;
+        rec.EmpLastNm       = source.EmpLastNm;
+        rec.EmpMidNm        = source.EmpMidNm;
+        rec.Suffix          = source.Suffix;
+        rec.EmpAlias        = source.EmpAlias;
+        rec.Email           = source.Email;
     }
 
-    async Task ShowHideModal(bool show)
+
+    private bool ValidateFields()
     {
-        if (show) return;
+        V.LastNameErrMsg    = string.Empty;
+        V.FirstNameErrMsg   = string.Empty;
+        V.EmpNoErrMsg       = string.Empty;
 
-        V.IsNewEntry                = false;
-        V.EmpmasToEdit              = new OEmpmasModel();
+        var ans = true;
 
-        V.IsEmpNoValid              = true;
-        V.IsEmailValid              = true;
-        V.EmailDuplicateMessage     = string.Empty;
-        V.EmailRegisteredMessage    = string.Empty;
-        V.RegisteredUserOnMain      = string.Empty;
-        V.RelatedUserOnSecpis       = string.Empty;
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpLastNm))
+        {
+            V.LastNameErrMsg = "Last name is required.";
+            ans = false;
+        }
 
-        userId                      = 0;
-        V.ShowDataEntry             = false;
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpFirstNm))
+        {
+            V.FirstNameErrMsg = "First name is required.";
+            ans = false;
+        }
 
+        if (ans)
+        {
+            if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber))
+            {
+                V.EmpNoErrMsg = "Employee number is required.";
+                ans = false;
+            }
+        }
 
-        await ChildAction.InvokeAsync();
+        return ans;
     }
+
+
+
+
+    async Task GenerateEmpNumber()
+    {
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpLastNm) && string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpFirstNm) && isBusy) return;
+
+
+        isBusy = true;
+
+        try
+        {
+            int lastNo = 0;
+            lastNo = int.Parse(V.LastEmpNumber);
+
+
+            int MaxEmpNumber = 99999;
+
+            if (lastNo >= MaxEmpNumber)
+            {
+                NotificationRef.Show("Employee number limit reached. The maximum employee number (99999) has been reached. Please assign a new number manually or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            int nextNo = lastNo + 1;
+            V.EmpmasToEdit.EmpNumber = nextNo.ToString("D5");
+
+            await OnEmpNumberLostFocus();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to generate number.Something went wrong while generating the employee number. Please try again or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+
+
+
+
+    async Task<bool> OnEmpNumberLostFocus()
+    {
+        var ans = true;
+
+        V.EmpNoErrMsg = string.Empty;
+        if (string.IsNullOrWhiteSpace(V.EmpmasToEdit.EmpNumber)) return true;
+
+
+        var res = await _oempmas._02EmpnumberOwnedByOthers(V.EmpmasToEdit.EmpNumber, Uc.OpisDb, Uc.Conn);
+        var empNumberMatch = res.FirstOrDefault(e => e.EmpNumber == V.EmpmasToEdit.EmpNumber);
+        if (empNumberMatch != null)
+        {
+            V.EmpNoErrMsg = "Employee number already exists.";
+            ans = false;
+        }
+
+        return ans;
+
+    }
+
+
+
+    async Task<bool> OnEmailLostFocus()
+    {
+        isEmailChecked = false;
+
+        var email = V.EmpmasToEdit.Email?.Trim();
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            V.IsEmailValid = true;
+            V.IsEmailRegistered = false;
+            V.IsEmailLinked = false;
+            return true;                       // optional ang email
+        }
+
+        if (!CheckIfEMailIsValid(email))
+        {
+            V.IsEmailValid = false;
+            V.IsEmailRegistered = false;
+            V.IsEmailLinked = false;
+            return false;                      // stop: invalid email
+        }
+
+        V.IsEmailValid = true;
+
+        if (await CheckIfEmailRegisteredToOtherEmployee())
+        {
+            V.IsEmailLinked = false;
+            StateHasChanged();
+            return false;
+        }
+
+        await CheckIfEmailLinkedToOtherEmployee();
+
+        isEmailChecked = true;
+        return true;
+    }
+
 
 
     bool CheckIfEMailIsValid(string email)
@@ -291,39 +592,75 @@
         return Regex.IsMatch(email, pattern);
     }
 
-    void ShowSuccess(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Success,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
 
-    void ShowInfo(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Info,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
 
-    void ShowError(string summary, string detail, int duration = 5000) =>
-        _NotificationService.Notify(new NotificationMessage
-        {
-            Severity = NotificationSeverity.Error,
-            Summary = summary,
-            Detail = detail,
-            Duration = duration
-        });
-
-    void ShowWarning(string summary, string detail, int duration = 5000) =>
-    _NotificationService.Notify(new NotificationMessage
+    async Task<bool> CheckIfEmailLinkedToOtherEmployee()
     {
-        Severity = NotificationSeverity.Warning,
-        Summary = summary,
-        Detail = detail,
-        Duration = duration
-    });
+        V.IsEmailLinked = false;
+        V.EmailLinkedToUsers = new();
+
+        var res = await _oempmas._02EmailLinkedToOthers( V.EmpmasToEdit.Email, Uc.OpisDb, Uc.Conn );
+        Console.WriteLine(res.Count());
+        foreach (var employee in res)
+        {
+            if (V.IsNewEntry == true)
+            {
+
+                V.IsEmailLinked = true;
+                V.EmailLinkedToUsers.Add(employee.Fullname);
+            }
+            else if (employee.EmpNumber.Trim() != V.EmpmasToEdit.EmpNumber.Trim())
+            {
+                V.IsEmailLinked = true;
+                V.EmailLinkedToUsers.Add(employee.Fullname);
+            }
+        }
+
+        return V.IsEmailLinked ?? false;
+    }
+
+
+
+    async Task<bool> CheckIfEmailRegisteredToOtherEmployee()
+    {
+        V.IsEmailRegistered = false;
+        V.EmailRegisteredToUser = string.Empty;
+
+        var res = await _user._02ByEmail_EmployeeEntryModule( V.EmpmasToEdit.Email, Uc.SchemaMain, Uc.OpisDb, Uc.Conn );
+
+        foreach (var employee in res)
+        {
+            if (V.IsNewEntry == true)
+            {
+                V.IsEmailRegistered = true;
+                V.EmailRegisteredToUser = employee.AFullName;
+
+
+                break;
+            }
+            else if (employee.Empnumber.Trim() != V.EmpmasToEdit.EmpNumber.Trim())
+            {
+                V.IsEmailRegistered = true;
+                V.EmailRegisteredToUser = employee.AFullName;
+                break;
+            }
+            
+        }
+
+        return V.IsEmailRegistered ?? false;
+    }
+
+
+    
 }
+
+<style>
+    .mb-cbtn-outline-blue {
+        color: rgb(0, 128, 192);
+        background: rgba(0, 128, 192, 0.13);
+    }
+
+        .mb-cbtn-outline-blue:focus {
+            outline: none !important;
+        }
+</style>

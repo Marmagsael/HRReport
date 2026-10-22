@@ -5,31 +5,28 @@
 
 <div class="w-100" style="border:1px solid lightgray; margin-left:5px; margin-top:5px; display:flex; flex-direction:column; height:calc(100vh - 140px);">
 
-    @* --- New Entry Button *@
     <div class="w-100 p-2" style="border-bottom:1px solid #d9dde2; flex-shrink:0;">
 
         <div class="d-flex justify-content-between">
             <div class="d-flex gap-1">
+                @* --- New Entry Button *@
                 <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="NewEntry">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
-                        <span class="fw-semibold"><small>New Entry</small></span>
+                        <span class="fw-semibold"><small>Add Employee</small></span>
                     </div>
                 </button>
 
-                <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 "
-                        @onclick="GenerateReport">
+                @* --- Generate Report Button *@
+                <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 " @onclick="GenerateReport">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
                         <span class="fw-semibold"><small>Print</small></span>
                     </div>
                 </button>
             </div>
 
-
-            <div >
-
-                <button class="btn btn-secondary "
-                        title="Status Settings"
-                        @onclick="OpenStatusSettingsModal">
+            @* --- Open Status Settings Button *@
+            <div>
+                <button class="btn btn-secondary " title="Status Settings" @onclick="OpenStatusSettingsModal">
                     <i class="fa-solid fa-gear"></i>
                 </button>
             </div>
@@ -44,7 +41,7 @@
 
     @* --- Empmas Info *@
     <div style="background-color:#f5f6f7; border-bottom:1px solid #d9dde2; flex-shrink:0;">
-        <_2052_03_EmpmasInfo  ChildAction="ChildAction" />
+        <_2052_03_01_EmpName ChildAction="ChildAction" />
     </div>
 
     @* --- Tabs *@
@@ -110,11 +107,18 @@
 
 @code
 {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
     [CascadingParameter]
     public V2052 V { get; set; } = new();
 
     [CascadingParameter]
     public V00_RepVars Rv { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
@@ -122,38 +126,51 @@
 
     async Task NewEntry()
     {
-        V.Action        = "New Entry";
-        V.EmpmasToEdit  = new OEmpmasModel();
-        V.IsNewEntry    = true;
+        V.SelectedEmpnumber = string.Empty;
+        V.EmpmasToEdit      = new OEmpmasModel();
+
+        V.ModalCaption      = "Add New Employee";
+        V.Action            = "New Entry";
+        V.IsNewEntry        = true;
+        V.ShowDataEntry     = true;
+
 
         await GetLastEmpNumber();
-
-        V.ShowDataEntry = true;
 
         await ChildAction.InvokeAsync();
     }
 
-
     async Task GetLastEmpNumber()
     {
-        if (V.IsNewEntry == true)
-        {
-            var maxEmpNo = await _empmas._02MaxEmpnumber( V.pisdb, V.conn );
+        V.LastEmpNumber = string.Empty;
 
+        try
+        {
+            var maxEmpNo = await _empmas._02MaxEmpnumber(Uc.OpisDb, Uc.Conn);
             if (!string.IsNullOrWhiteSpace(maxEmpNo.EmpNumber))
             {
-                V.LastEmpNumber = maxEmpNo.EmpNumber;
+                V.LastEmpNumber = maxEmpNo.EmpNumber ?? "0";
             }
         }
+        catch (Exception)
+        {
+            NotificationRef.Show("Unable to get the last used employee number.", ThemeConstants.Notification.ThemeColor.Warning);
+        }
+        
+
     }
+
+
+
+
 
 
     async Task OpenStatusSettingsModal()
     {
-        V.ModalCaption      = "Employee Settings";
-        V.ShowStatusModal   = true;
+        V.PreviousSelectedStatus    = V.SelectedStatus.ToList();
+        V.ModalCaption              = "Employee Status Settings";
+        V.ShowStatusModal           = true;
 
-        V.previousSelectedStatus = V.SelectedStatus.ToList();
 
         await ChildAction.InvokeAsync();
     }
@@ -161,13 +178,13 @@
 
     private async Task GenerateReport()
     {
-        if (string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))  return;
+        if (string.IsNullOrWhiteSpace(V.SelectedEmpnumber)) return;
 
         V.IsLoading = true;
 
-        Rv.MCaption         = "Personal Data Sheet";
-        Rv.RelativePath     = "";
-        Rv.ReportData       = [];
+        Rv.MCaption = "Personal Data Sheet";
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
 
         // Parents
         var mother = V.Parents.LastOrDefault(p => p.Code == "M");
@@ -219,11 +236,12 @@
 
         // Report settings
         Rv.ReportParams["ReportTitle"] = "Personal Data Sheet";
-        Rv.RelativePath         = "Reports/_01Pis/K_2052_201.trdp";
-        Rv.SelectedFormat       = "PDF";
+        Rv.RelativePath = "Reports/_01Pis/K_2052_201.trdp";
+        Rv.SelectedFormat = "PDF";
 
         V.Action = "GenerateReport";
 
         await ChildAction.InvokeAsync();
     }
 }
+
