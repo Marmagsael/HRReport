@@ -113,6 +113,8 @@ public class PisReportController : Controller
         if (RecordMgtViews.TryGetValue(key, out var deView)) return View($"~/Applications/PisModules/Views/Pages/{deView}.cshtml");
         
         if (TransactionViews.TryGetValue(key, out var trntView)) return View($"~/Applications/PisModules/Views/Pages/{trntView}.cshtml");
+
+        if (InventoryMgtViews.TryGetValue(key, out var invView)) return View($"~/Applications/PisModules/Views/Pages/{invView}.cshtml");
                                                                              
         if (ReportViews.TryGetValue(key, out var reportView))   return View($"~/Applications/PisReport/Views/Pages/{reportView}.cshtml");
 
