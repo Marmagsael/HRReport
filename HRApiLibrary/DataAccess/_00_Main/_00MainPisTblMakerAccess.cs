@@ -647,6 +647,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             ApprRemarks         VARCHAR(120),
                             Status              char(1),
                             EmpNumber_Approver  Char(5),
+                            AttSchedWeeklyHdrId INTEGER UNSIGNED,
                             PRIMARY KEY (`Id`) ) ENGINE = InnoDB;
 
                         CREATE TABLE if not exists  {schema}.AtttemplateReqdtl (
@@ -686,6 +687,21 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             Empnumber_Approver      Char(5),
                             Remarks                 VARCHAR(120),
                             PRIMARY KEY (`Id`) ) ENGINE = InnoDB; ";
+        await _sql.ExecuteCmd(sql, new { });
+
+        // --- existing tables : add AttSchedWeeklyHdrId ( selected schedule template )
+        string? desc = $@"DESC {schema}.AtttemplateReqHdr;";
+        var existingColumns = await _sql.FetchData<dynamic, dynamic>(desc, new { });
+
+        if (!existingColumns.Any(c => c.Field == "AttSchedWeeklyHdrId"))
+        {
+            sql = $@"ALTER TABLE {schema}.AtttemplateReqHdr ADD COLUMN AttSchedWeeklyHdrId INTEGER UNSIGNED AFTER EmpNumber_Approver;";
+            await _sql.ExecuteCmd(sql, new { });
+        }
+
+        // --- applied requests ( moved here once the schedule is applied to Atttemplate ) ; same structure
+        sql = $@"CREATE TABLE if not exists {schema}.AtttemplateReqHdr_Applied LIKE {schema}.AtttemplateReqHdr;
+                 CREATE TABLE if not exists {schema}.AtttemplateReqdtl_Applied LIKE {schema}.AtttemplateReqdtl;";
         await _sql.ExecuteCmd(sql, new { });
     }
 

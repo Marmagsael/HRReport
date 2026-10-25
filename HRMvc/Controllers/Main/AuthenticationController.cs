@@ -1,5 +1,6 @@
 ﻿using HRApiLibrary.DataAccess._00_Main;
 using HRApiLibrary.DataAccess._00_Main.Interface;
+using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
@@ -40,6 +41,7 @@ public class AuthenticationController : Controller
     private readonly I_00UserscompanyDataAccess     _userCompany;
     private readonly I_AcctgTableMaker              _acctg;
     private readonly IOEmpmasDataAccess             _oldEmpmas;
+    private readonly IAtttemplatereqhdrDataAccess   _attTemplateReqhdr;
     
             
 
@@ -58,7 +60,8 @@ public class AuthenticationController : Controller
                                     I_20_002_PayTblMaker       payTblMaker, 
                                     I_00UserscompanyDataAccess userCompany, 
                                     I_AcctgTableMaker          acctg, 
-                                    IOEmpmasDataAccess         oldEmpmas )
+                                    IOEmpmasDataAccess         oldEmpmas, 
+                                    IAtttemplatereqhdrDataAccess attTemplateReqhdr )
     {
         _config             = config;
         _userAccess         = userAccess;
@@ -74,6 +77,7 @@ public class AuthenticationController : Controller
         _acctg              = acctg;
         _oldEmpmas          = oldEmpmas;
         _amsTblMaker        = amsTblMaker;
+        _attTemplateReqhdr  = attTemplateReqhdr;
     }
 
 
@@ -725,6 +729,14 @@ public class AuthenticationController : Controller
         }
 
 
+
+        // --- apply approved change schedule request once its Effectivity has arrived
+        try
+        {
+            if (int.TryParse(empmasId, out int eId) && eId > 0)
+                await _attTemplateReqhdr._03AttTemplateReqhdr_to_AttTemplate(user.Id, eId, pisSchema, conn);
+        }
+        catch (Exception ex) { Console.WriteLine($"Apply change schedule failed : {ex.Message}"); }
 
         var loginName               = user.LoginName ?? "-1";
         var defCoId                 = user.DefaultCoId.ToString() ?? "0";
