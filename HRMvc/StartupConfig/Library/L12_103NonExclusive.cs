@@ -18,13 +18,15 @@ namespace HRMvc.StartupConfig.Library;
 public class L12_103NonExlusive
 {
     private readonly I_10_EmpmasDataAccess _empmas;
+    private readonly IOEmpmasDataAccess _oempmas;
     private readonly IOGenderDataAccess _ogender;
     private readonly IOCivstatDataAccess _ocivstat;
 
 
-    public L12_103NonExlusive(I_10_EmpmasDataAccess empmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender )
+    public L12_103NonExlusive(I_10_EmpmasDataAccess empmas, IOEmpmasDataAccess oempmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender )
     {
         _empmas         = empmas;
+        _oempmas        = oempmas;
         _ogender        = ogender;
         _ocivstat       = ocivstat;
 
@@ -68,7 +70,13 @@ public class L12_103NonExlusive
         var secLicFirst             = secLics.FirstOrDefault() ?? new EmpmasSecLicModel();
 
 
-        v12_103.OEmpmass = new List<OEmpmasModel?>()
+        // -- Employee details : old PIS Empmas is the source; the new Empmas only when the old record is missing --
+        var oEmpNumber              = !string.IsNullOrWhiteSpace(empmasFirst.EmpNumber) ? empmasFirst.EmpNumber : empno;
+        var oEmpmass                = string.IsNullOrWhiteSpace(oEmpNumber) ? null : await _oempmas._02(oEmpNumber?.Trim(), oldschema, conn);
+        oEmpmass?.ForEach(p => { if (p != null) p.Age = ComputeAgeByDOB(p.EmpBirth).ToString(); });
+
+        if (oEmpmass?.Any() == true) v12_103.OEmpmass = oEmpmass;
+        else v12_103.OEmpmass = new List<OEmpmasModel?>()
         {
             new OEmpmasModel()
             {
