@@ -10,8 +10,8 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
     public async Task _01(AtttemplatereqhdrModel atttemplatereqhdr, string? schema, string? conn)
     {
         string? sql = $@"Insert into {schema}.Atttemplatereqhdr 
-							(UserId,  EmpNumber,  DateRequested,  Effectivity,  Remarks,  Status,  EmpNumber_Approver) values 
-							(@UserId, @EmpNumber, @DateRequested, @Effectivity, @Remarks, @Status, @EmpNumber_Approver)";
+							(UserId,  EmpNumber,  DateRequested,  Effectivity,  Remarks,  Status,  EmpNumber_Approver,  AttSchedWeeklyHdrId) values 
+							(@UserId, @EmpNumber, @DateRequested, @Effectivity, @Remarks, @Status, @EmpNumber_Approver, @AttSchedWeeklyHdrId)";
         await _sql.ExecuteCmd<dynamic>(sql, atttemplatereqhdr, conn);
     }
 
@@ -71,8 +71,8 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
     public async Task<AtttemplatereqhdrModel?> _01_02(AtttemplatereqhdrModel atttemplatereqhdr, string? schema, string? conn)
     {
         string? sql = $@"Insert into {schema}.Atttemplatereqhdr 
-							(UserId,  EmpNumber,  DateRequested,  Effectivity,  Remarks,  Status,  EmpNumber_Approver) values 
-							(@UserId, @EmpNumber, @DateRequested, @Effectivity, @Remarks, @Status, @EmpNumber_Approver); 
+							(UserId,  EmpNumber,  DateRequested,  Effectivity,  Remarks,  Status,  EmpNumber_Approver,  AttSchedWeeklyHdrId) values 
+							(@UserId, @EmpNumber, @DateRequested, @Effectivity, @Remarks, @Status, @EmpNumber_Approver, @AttSchedWeeklyHdrId); 
                         select * from {schema}.Atttemplatereqhdr where Id = (SELECT @@IDENTITY); ";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, atttemplatereqhdr, conn);   
         return data.FirstOrDefault();
@@ -81,7 +81,7 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
 
     public async Task<List<AtttemplatereqhdrModel?>?> _02s(int? id, string? schema, string? conn)
     {
-        string? sql = $@"select  Id, UserId, EmpNumber, DateRequested, Effectivity, Remarks, Status, EmpNumber_Approver 
+        string? sql = $@"select  Id, UserId, EmpNumber, DateRequested, Effectivity, Remarks, ApprRemarks, Status, EmpNumber_Approver, AttSchedWeeklyHdrId 
                             from {schema}.Atttemplatereqhdr where Id = @Id";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { Id = id }, conn);
         return data;
@@ -91,7 +91,7 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
     {
         string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName, h.*
                         from      {pisdb}.Atttemplatereqhdr h
-                        left join {pisdb}.empmas e on e.Id = h.UserId    
+                        left join {pisdb}.empmas e on e.SystemId = h.UserId    
                         where h.Empnumber_Approver = @EmpNumber_Approver and Status in ('F', 'FA') ";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql,
                         new { EmpNumber_Approver = approver_empnumber }, conn);
@@ -121,6 +121,21 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
         return data;
     }
     
+    // --- approvals ( partial + final ) of a request, oldest first ; only those after the latest Return
+    public async Task<List<AtttemplatereqhistModel?>?> _02ApprovalsByHdrId(int? hdrId, string? pisdb, string? opisdb, string? conn)
+    {
+        string? sql = $@"select CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS ApproverName, h.*
+                        from {pisdb}.Atttemplatereqhist h
+                        left join {opisdb}.Empmas e on e.empnumber = h.Empnumber_Approver
+                        where h.AtttemplateReqHdrId = @HdrId
+                          and (h.SetStatusTo = 'A' or h.Remarks like 'Partially%' or h.Remarks = 'Aproved')
+                          and h.DActionTaken >= ifnull((select max(r.DActionTaken) from {pisdb}.Atttemplatereqhist r
+                                                        where r.AtttemplateReqHdrId = @HdrId and r.SetStatusTo = 'R'), '1900-01-01')
+                        order by h.DActionTaken, h.Id";
+        var data = await _sql.FetchData<AtttemplatereqhistModel?, dynamic>(sql, new { HdrId = hdrId }, conn);
+        return data ?? [];
+    }
+
     public async Task<List<AtttemplatereqhdrModel?>?> _02ChkMayEntry(int? userId, string? pisdb, string? conn)
     {
         string? sql = $@"select * from {pisdb}.Atttemplatereqhdr h 
@@ -138,7 +153,8 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
 							Effectivity 		= @Effectivity, 
 							Remarks 			= @Remarks, 
 							Status 				= @Status, 
-							EmpNumber_Approver 	= @EmpNumber_Approver where Id = @Id;
+							EmpNumber_Approver 	= @EmpNumber_Approver, 
+							AttSchedWeeklyHdrId 	= @AttSchedWeeklyHdrId where Id = @Id;
 						select  * from {schema}.Atttemplatereqhdr x where x.Id = @Id ;";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, atttemplatereqhdr, conn);
         return data?.FirstOrDefault();
@@ -153,7 +169,7 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
         {
             AtttemplateReqHdrId     = atrh.Id,
             DActionTaken            = DateTime.Now,
-            SetStatusTo             = "F",
+            SetStatusTo             = "A",
             Empnumber_Approver      = empNumber,
             Remarks                 = "Aproved"
         };
@@ -163,54 +179,57 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
                     (@AtttemplateReqHdrId, @DActionTaken, @SetStatusTo, @Empnumber_Approver, @Remarks);";
         await _sql.ExecuteCmd<dynamic>(sql, h, conn);
     }
-    public async Task _03AttTemplateReqhdr_to_AttTemplate(int? EmpmasId, string? pisdb, string? conn)
+    // --- runs at login : approved request whose Effectivity has arrived is applied to Atttemplate,
+    //     then hdr / dtl are moved to AtttemplateReqHdr_Applied / AtttemplateReqdtl_Applied
+    //     userId   : Users.Id   ( AtttemplateReqHdr.UserId )
+    //     empmasId : Empmas.Id  ( Atttemplate.EmpmasId )
+    public async Task _03AttTemplateReqhdr_to_AttTemplate(int? userId, int? empmasId, string? pisdb, string? conn)
     {
-        
+        if ((userId ?? 0) <= 0 || (empmasId ?? 0) <= 0) return;
+
         string? sql = $@"select * from {pisdb}.Atttemplatereqhdr h 
-                        where h.UserId = @UserId and Status = 'A' and (Date(now()) >= Date(effectivity) and Date(now()) <= Date(h.End))
-                        order by h.Effectivity desc limit 1";
-        var res = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { UserId = EmpmasId }, conn);
-        var r1 = res?.FirstOrDefault(); 
-        
-        if (res == null || res.Count == 0) return;
+                        where h.UserId = @UserId and h.Status = 'A' and Date(h.Effectivity) <= Date(now())
+                        order by h.Effectivity desc, h.Id desc";
+        var hdrs = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, new { UserId = userId }, conn);
+        if (hdrs == null || hdrs.Count == 0) return;
 
-        sql = $@"select * from {pisdb}.Atttemplatereqdtl d 
-                 where d.AtttemplateReqHdrId = @AtttemplateReqHdrId 
-                 order by d.Id desc limit 1";
-        var res2 = await _sql.FetchData<AtttemplatereqdtlModel, dynamic>(sql, new { AtttemplateReqHdrId = res.First().Id }, conn);
-        if (res2 == null || res2.Count == 0) return;
-
-        var r = res2.First();
-        AtttemplateModel at = new()
+        // --- 1) apply the latest one still within its End date
+        var latest = hdrs.FirstOrDefault(h => (h?.End ?? DateTime.MaxValue).Date >= DateTime.Now.Date);
+        if (latest != null)
         {
-            EmpmasId = EmpmasId,
-            AttendancetypeId = r?.AttendanceTypeId??1,
-            D1_in = r.D1_In??800, D1_hrslength = r.D1_HrsLength??900, D1_dutytype = r.D1_DutyType??"R",
-            D2_in = r.D2_In??800, D2_hrslength = r.D2_HrsLength??900, D2_dutytype = r.D2_DutyType??"R",
-            D3_in = r.D3_In??800, D3_hrslength = r.D3_HrsLength??900, D3_dutytype = r.D3_DutyType??"R",
-            D4_in = r.D4_In??800, D4_hrslength = r.D4_HrsLength??900, D4_dutytype = r.D4_DutyType??"R",
-            D5_in = r.D5_In??800, D5_hrslength = r.D5_HrsLength??900, D5_dutytype = r.D5_DutyType??"R",
-            D6_in = r.D6_In??800, D6_hrslength = r.D6_HrsLength??900, D6_dutytype = r.D6_DutyType??"R",
-            D7_in = r.D7_In??800, D7_hrslength = r.D7_HrsLength??900, D7_dutytype = r.D7_DutyType??"R"
-        }; 
-        
-        sql = $@"UPDATE {pisdb}.Atttemplate set
-                    AttendancetypeId = @AttendancetypeId, 
-                    D1_in = @D1_in, D1_hrslength = @D1_hrslength, D1_dutytype = @D1_dutytype, 
-                    D2_in = @D2_in, D2_hrslength = @D2_hrslength, D2_dutytype = @D2_dutytype, 
-                    D3_in = @D3_in, D3_hrslength = @D3_hrslength, D3_dutytype = @D3_dutytype, 
-                    D4_in = @D4_in, D4_hrslength = @D4_hrslength, D4_dutytype = @D4_dutytype, 
-                    D5_in = @D5_in, D5_hrslength = @D5_hrslength, D5_dutytype = @D5_dutytype, 
-                    D6_in = @D6_in, D6_hrslength = @D6_hrslength, D6_dutytype = @D6_dutytype, 
-                    D7_in = @D7_in, D7_hrslength = @D7_hrslength, D7_dutytype = @D7_dutytype
-                    WHERE EmpmasId = @EmpmasId; ";
-        await _sql.ExecuteCmd<dynamic>(sql, at, conn);
+            sql = $@"select * from {pisdb}.Atttemplatereqdtl d 
+                     where d.AtttemplateReqHdrId = @AtttemplateReqHdrId 
+                     order by d.Id desc limit 1";
+            var dtl = (await _sql.FetchData<AtttemplatereqdtlModel, dynamic>(sql, new { AtttemplateReqHdrId = latest.Id }, conn))?.FirstOrDefault();
 
-        int? id = EmpmasId;
-        sql = $@"select * from {pisdb}.Atttemplate d 
-                 where d.EmpmasId = @EmpmasId  limit 1";
-        var res3 = await _sql.FetchData<AtttemplatereqdtlModel, dynamic>(sql, new { EmpmasId = id }, conn);
-        var r3 = res3.FirstOrDefault();
+            if (dtl != null)
+            {
+                sql = $@"INSERT IGNORE INTO {pisdb}.Atttemplate (EmpmasId) values (@EmpmasId);
+
+                         UPDATE {pisdb}.Atttemplate t
+                         INNER JOIN {pisdb}.Atttemplatereqdtl d on d.Id = @DtlId
+                         INNER JOIN {pisdb}.Atttemplatereqhdr h on h.Id = d.AtttemplateReqHdrId
+                         set t.AttendanceTypeId     = ifnull(d.AttendanceTypeId, 1),
+                             t.D1_In = d.D1_In, t.D1_HrsLength = d.D1_HrsLength, t.D1_DutyType = d.D1_DutyType,
+                             t.D2_In = d.D2_In, t.D2_HrsLength = d.D2_HrsLength, t.D2_DutyType = d.D2_DutyType,
+                             t.D3_In = d.D3_In, t.D3_HrsLength = d.D3_HrsLength, t.D3_DutyType = d.D3_DutyType,
+                             t.D4_In = d.D4_In, t.D4_HrsLength = d.D4_HrsLength, t.D4_DutyType = d.D4_DutyType,
+                             t.D5_In = d.D5_In, t.D5_HrsLength = d.D5_HrsLength, t.D5_DutyType = d.D5_DutyType,
+                             t.D6_In = d.D6_In, t.D6_HrsLength = d.D6_HrsLength, t.D6_DutyType = d.D6_DutyType,
+                             t.D7_In = d.D7_In, t.D7_HrsLength = d.D7_HrsLength, t.D7_DutyType = d.D7_DutyType,
+                             t.AttschedweeklyhdrId  = ifnull(h.AttSchedWeeklyHdrId, 0)
+                         where t.EmpmasId = @EmpmasId;";
+                await _sql.ExecuteCmd<dynamic>(sql, new { EmpmasId = empmasId, DtlId = dtl.Id }, conn);
+            }
+        }
+
+        // --- 2) move all approved + effective requests to the _Applied tables ( save first, then delete )
+        var ids = hdrs.Where(h => h?.Id != null).Select(h => h!.Id).ToList();
+        sql = $@"INSERT INTO {pisdb}.AtttemplateReqHdr_Applied select * from {pisdb}.AtttemplateReqHdr where Id in @Ids;
+                 INSERT INTO {pisdb}.AtttemplateReqdtl_Applied select * from {pisdb}.AtttemplateReqdtl where AtttemplateReqHdrId in @Ids;
+                 DELETE from {pisdb}.AtttemplateReqdtl where AtttemplateReqHdrId in @Ids;
+                 DELETE from {pisdb}.AtttemplateReqHdr where Id in @Ids;";
+        await _sql.ExecuteCmd<dynamic>(sql, new { Ids = ids }, conn);
     }
 
 
@@ -262,7 +281,8 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
 							Effectivity 		= @Effectivity, 
 							Remarks 			= @Remarks, 
 							Status 				= 'F', 
-							EmpNumber_Approver 	= @EmpNumber_Approver where Id = @Id;
+							EmpNumber_Approver 	= @EmpNumber_Approver, 
+							AttSchedWeeklyHdrId 	= @AttSchedWeeklyHdrId where Id = @Id;
 						select  * from {schema}.Atttemplatereqhdr x where x.Id = @Id ;";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql, atttemplatereqhdr, conn);
 
@@ -299,6 +319,7 @@ public interface IAtttemplatereqhdrDataAccess
     Task<List<AtttemplatereqhdrModel?>?>    _02s(int? id, string? schema, string? conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ByUserIds(int? userId, string? pisdb, string? opisdb, string? conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ForApproval_PerApprover(string? approver_empnumber, string? pisdb, string? conn);
+    Task<List<AtttemplatereqhistModel?>?>   _02ApprovalsByHdrId(int? hdrId, string? pisdb, string? opisdb, string? conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ChkMayEntry(int? userId, string? pisdb, string? conn);
     Task<List<AtttemplatereqhdrModel?>?>    _02ByUserId_ByEffectivity(int? userId, DateTime effectivity, string? pisdb, string? conn); 
     Task<AtttemplatereqhdrModel?>           _03(AtttemplatereqhdrModel atttemplatereqhdr, string? schema, string? conn);
@@ -306,6 +327,6 @@ public interface IAtttemplatereqhdrDataAccess
     Task                                    _03PartiallyApprove(AtttemplatereqhdrModel atrh, string? empNumber, string? schema, string? conn);
     Task<AtttemplatereqhdrModel?>           _03SendForApproval(AtttemplatereqhdrModel atttemplatereqhdr, string? schema, string? conn);
     Task                                    _03Return(AtttemplatereqhdrModel treqhdr, string? empNumber, string? schema, string? conn);
-    Task                                    _03AttTemplateReqhdr_to_AttTemplate(int? EmpmasId, string? pisdb, string? conn);
+    Task                                    _03AttTemplateReqhdr_to_AttTemplate(int? userId, int? empmasId, string? pisdb, string? conn);
     Task                                    _04(int? id, string? schema, string? conn);
 }

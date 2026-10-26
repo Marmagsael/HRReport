@@ -16,7 +16,8 @@ public class UserCompanyModel
     public string?      ApplicantSchema     { get; set; } = string.Empty;
     public string?      PisSchema           { get; set; } = string.Empty;
     public string?      PaySchema           { get; set; } = string.Empty;
-    public string?      OldPis              { get; set; } = string.Empty;
+    public string?      AcctgSchema         { get; set; } = string.Empty;
+    public string?      OldPis             { get; set; } = string.Empty;
     public string?      OldPay              { get; set; } = string.Empty;
 
     //--------------------------------------------------------------------

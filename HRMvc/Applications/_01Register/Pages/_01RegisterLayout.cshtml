@@ -1,0 +1,95 @@
+@{
+    Layout      = "~/Views/Shared/Authentication/_AuthenticationLayout.cshtml";
+    var coName  = ViewData["CoName"];
+}
+
+@*---- Same frame as Login.cshtml : form on the left, green panel on the right ----*@
+<div class="position-relative bg-white w-100 h-100 d-flex overflow-hidden">
+    <div class="right rounded col-12 col-lg-7 p-3 p-lg-4 d-flex flex-column align-items-center h-100 gap-5 overflow-auto">
+        <div class="backdrop d-flex flex-column h-100 w-100">
+            <div class="border-bottom border-2 text-center w-100 p-1">
+                <h1>@coName</h1>
+                <div class="bg-success mt-2" style="height:5px">&nbsp;</div>
+            </div>
+
+            <div class="d-flex flex-column justify-content-center align-items-center w-100 flex-grow-1 py-4">
+                <div class="d-flex flex-column gap-4 reg01-width">
+                    @RenderBody()
+                </div>
+            </div>
+
+            <div class="text-center small pb-2">
+                Already have an account? <a href="~/login" class="reg01-link">Login</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="left border border-left col-12 col-lg-5" style="padding-top: 95px; background:#047959;">
+        <div class="bg-white p-md-3 h-100">
+            <h2 class="p-3 text-center">Business Solution Application</h2>
+            <div class="card rounded">
+                <img src="~/images/login-bg.jpg" class="h-100 opacity-75" style="object-fit:cover">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script>
+        // -- Step 1 Verify : step 2 stays disabled until the server check passes --------------
+        // -- An existing email shows the login prompt instead (existing users add companies after login) --
+        window.reg01Verify = function (o) {
+            const $form     = $(o.form);
+            const $btn      = $(o.button);
+            const $ok       = $(o.verified);
+            const $existing = $(o.existing);
+
+            function setVerified(on, text) {
+                $(o.step2).prop('disabled', !on);
+                $(o.submit).prop('disabled', !on);
+                $ok.toggleClass('d-none', !on).find('span').text(on ? text : '');
+                if (!on) $(o.step2).find('input[type=password]').val('');
+            }
+
+            function showError(field, msg) {
+                $form.find('[data-valmsg-for="' + field + '"]')
+                     .text(msg || '')
+                     .toggleClass('field-validation-error', !!msg)
+                     .toggleClass('field-validation-valid', !msg);
+            }
+
+            // -- Any change to a verified field needs a new Verify --
+            o.fields.forEach(f => $('#' + f).on('input', () => { setVerified(false); $existing.addClass('d-none'); }));
+
+            $btn.on('click', function () {
+                const validator = $form.validate();
+                let valid = true;
+                o.fields.forEach(f => { if (!validator.element('#' + f)) valid = false; });
+                if (!valid) return;
+
+                const data = { __RequestVerificationToken: $form.find('input[name="__RequestVerificationToken"]').val() };
+                o.fields.forEach(f => { data[f] = $('#' + f).val(); showError(f, ''); });
+                $existing.addClass('d-none');
+
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Verifying...');
+
+                $.post(o.url, data)
+                    .done(function (r) {
+                        if (r.ok) {
+                            setVerified(true, o.verifiedText(r));
+                            $(o.step2).find('input, select').first().trigger('focus');
+                            return;
+                        }
+                        setVerified(false);
+                        if (r.existing) { $existing.removeClass('d-none'); return; }
+                        for (const k in r.errors) showError(k, r.errors[k]);
+                    })
+                    .fail(() => showError(o.fields[0], 'Unable to verify right now. Please try again.'))
+                    .always(() => $btn.prop('disabled', false).text('Verify'));
+            });
+        };
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+}
