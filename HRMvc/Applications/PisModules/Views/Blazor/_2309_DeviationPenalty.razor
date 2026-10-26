@@ -1,8 +1,69 @@
-﻿@using HRMvc.Applications._00GeneralComponents
+﻿@using HRMvc.Applications.PisModules.Vars
+@using HRMvc.Applications.PisModules.Views.Blazor._2309
 
-<_00UnderDevelopment Module="Deviation Penalty" />
+<TelerikRootComponent>
+    <div class="position-relative">
+
+        @*--- TELERIK NOTIFICATION ---*@
+        <TelerikNotification @ref="@NotificationRef"
+                             HorizontalPosition="@NotificationHorizontalPosition.Right"
+                             VerticalPosition="@NotificationVerticalPosition.Top"
+                             AnimationType="@AnimationType.SlideLeft" />
+
+        @*--- TELERIK LOADER ---*@
+        <TelerikLoaderContainer Visible="@v.IsLoading"
+                                LoaderType="@LoaderType.ConvergingSpinner" />
+
+        @*--- PARAMETERS ---*@
+        <CascadingValue Value="@Uc">
+            <CascadingValue Value="@v">
+                <CascadingValue Value="@NotificationRef">
+                    <_00BT_FullW HdrCaption="Deviation Penalty">
+                        <Details>
+                            <div class="p-2">
+                                <TelerikTabStrip @bind-ActiveTabId="@TabStripActiveTabId">
+                                    <TabStripTab Id="tab1" Title="Deviation Entry">
+                                        <_2309_DeviationEntry />
+                                    </TabStripTab>
+
+
+                                    <TabStripTab Id="tab2" Title="Deviation Line-Up">
+                                        <_2309_DeviationLineUp />
+                                    </TabStripTab>
+                                </TelerikTabStrip>
+                            </div>
+                        </Details>
+                    </_00BT_FullW>
+                </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+    </div>
+
+</TelerikRootComponent>
 
 @code {
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
+
+    V2302Model v = new();
+    V00_RepVars rv = new();
+
+    private TelerikNotification? NotificationRef;
+
+    private string TabStripActiveTabId { get; set; } = "tab1";
+
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = false;
+    }
+
+
+
+    private async Task ChildAction()
+    {
+        if (v == null) return;
+
+
+        v.Action = "";
+    }
 }

@@ -30,7 +30,6 @@ public class PisReportController : Controller
         ["2061"] = "_2061_MetroManilaCode",
         ["2062"] = "_2062_EmployeeStatus",
         ["2063"] = "_2063_CivilStatus",
-        ["2064"] = "_2064_EmployeeArchiving",
 
         ["2302"] = "_2302_StatusMgt",
         ["2303"] = "_2303_ReturnToUnit",
@@ -114,6 +113,8 @@ public class PisReportController : Controller
         if (RecordMgtViews.TryGetValue(key, out var deView)) return View($"~/Applications/PisModules/Views/Pages/{deView}.cshtml");
         
         if (TransactionViews.TryGetValue(key, out var trntView)) return View($"~/Applications/PisModules/Views/Pages/{trntView}.cshtml");
+
+        if (InventoryMgtViews.TryGetValue(key, out var invView)) return View($"~/Applications/PisModules/Views/Pages/{invView}.cshtml");
                                                                              
         if (ReportViews.TryGetValue(key, out var reportView))   return View($"~/Applications/PisReport/Views/Pages/{reportView}.cshtml");
 

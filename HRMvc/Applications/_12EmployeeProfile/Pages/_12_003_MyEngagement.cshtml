@@ -1,25 +1,188 @@
-@using System.Security.Claims
 @using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRApiLibrary.Models._00_Main
 @using Microsoft.Extensions.Configuration
 
-@inject I_00MainDA                  _mainDA
-@inject IConfiguration              _config;
+@inject I_00EngagementDataAccess    _engagement
+@inject IConfiguration              _config
 
 @{
-    Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
+    Layout = "~/Views/Shared/_EPortalLayout.cshtml";
+    ViewData["Title"] = "My Engagement";
 
-    var userid = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault();
-    IEnumerable<Claim?> claims = User.Claims;
-    UserClaimsModel userClaims = _mainDA._02UserClaimsContent(claims);
+    // -- Companies the logged-in user belongs to (main.companyusers) --
+    var conn        = _config.GetSection("Schema:DefConn").Value;
+    var schema      = _config.GetSection("Schema:Main").Value;
+    int.TryParse(User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value, out var userId);
 
+    List<MyEngagementModel> companies = userId > 0 ? await _engagement._02ByUserId(userId, schema, conn) : [];
+    List<MyInvitationModel> invites   = userId > 0 ? await _engagement._02InvitesByUserId(userId, schema, conn) : [];
 
+    // -- Invite User / Registration Requests : the approved Owner (1) or System Admin (5) of the current company --
+    bool adminCurrent = companies.Any(c => c.IsDefault == 1 && (c.CompanyUserTypeId == 1 || c.CompanyUserTypeId == 5) && c.Status == "A");
 
+    // -- Exclusive server (one company only) : no Create New Company and no Invite User --
+    bool exclusive   = _config.GetSection("CompanyInfo:Exclusive").Value == "true";
+
+    // -- Registration Requests : also on an exclusive server --
+    var current      = companies.FirstOrDefault(c => c.IsDefault == 1);
+    int requestCount = adminCurrent && current != null ? await _engagement._02RequestCount(current.CompanyId, schema, conn) : 0;
+
+    string StatusText(string? s) => s switch { "A" => "Approved", "P" => "Pending", "R" => "Rejected", _ => s ?? "-" };
+    string StatusCss(string? s)  => s switch { "A" => "eng12-ok",  "P" => "eng12-wait", "R" => "eng12-no", _ => "" };
 }
 
+<div class="ms-2 mt-1 vh-95min body-wrapper eng12">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+            <h3 class="m-0">My Engagement</h3>
+        </div>
 
-<div>
-    @* @(await Html.RenderComponentAsync<_12_003MyEngagement>(RenderMode.ServerPrerendered, new { UserClaims = userClaims }))  *@
-   
-    
+        <div class="d-flex flex-wrap gap-2">
+            @if (adminCurrent)
+            {
+                <a href="~/company/users" class="btn btn-sm btn-outline-success" title="Roles and access of the users of your current company">
+                    <i class="fa-solid fa-users-gear"></i> Company Users
+                </a>
+                <a href="~/company/requests" class="btn btn-sm btn-outline-success" title="Employees who registered and wait for your approval">
+                    <i class="fa-solid fa-user-clock"></i> Registration Requests
+                    @if (requestCount > 0)
+                    {
+                        <span class="badge rounded-pill bg-danger ms-1">@requestCount</span>
+                    }
+                </a>
+            }
+            @if (!exclusive)
+            {
+                @if (adminCurrent)
+                {
+                    <a href="~/company/invite" class="btn btn-sm btn-outline-success" title="Invite an employee of your current company">
+                        <i class="fa-solid fa-user-plus"></i> Invite User
+                    </a>
+                }
+                <a href="~/company/new" class="btn btn-sm btn-outline-success">
+                    <i class="fa-solid fa-plus"></i> Create New Company
+                </a>
+            }
+        </div>
+    </div>
+
+    @if (TempData["EngOk"] is string ok)
+    {
+        <div class="reg01-alert reg01-alert-info mb-3"><i class="fa-solid fa-circle-check"></i><span>@ok</span></div>
+    }
+    @if (TempData["EngError"] is string err)
+    {
+        <div class="reg01-alert eng12-alert-error mb-3"><i class="fa-solid fa-triangle-exclamation"></i><span>@err</span></div>
+    }
+
+    @if (companies.Count == 0)
+    {
+        <div class="eng12-empty">
+            <i class="fa-regular fa-building"></i>
+            <div>You don't belong to any company yet.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle eng12-table">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Code</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Since</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in companies)
+                    {
+                        <tr>
+                            <td>
+                                <span class="fw-semibold">@c.CompanyName</span>
+                                @if (c.IsDefault == 1)
+                                {
+                                    <span class="eng12-badge eng12-current" title="The company you are logged in to">Current</span>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrEmpty(c.CompanyCode) ? "-" : c.CompanyCode)</td>
+                            <td>@(c.UserType ?? "-")</td>
+                            <td><span class="eng12-badge @StatusCss(c.Status)">@StatusText(c.Status)</span></td>
+                            <td>@((c.DateAccepted ?? c.DateInvited)?.ToString("MMM d, yyyy") ?? "-")</td>
+                            <td class="text-end">
+                                @*---- Switch : also becomes the default company (users.DefaultCoId) ----*@
+                                @if (c.IsDefault != 1 && c.Status == "A")
+                                {
+                                    <form action="~/company/switch/@c.CompanyId" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="Work in this company and make it your default">
+                                            <i class="fa-solid fa-right-left"></i> Switch
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @*---- MY INVITATIONS : invites sent to this user, shown only when there is one ----*@
+    @if (invites.Count > 0)
+    {
+        <div class="mt-4">
+            <h5 class="mb-2">My Invitation</h5>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle eng12-table">
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Code</th>
+                            <th>Invited By</th>
+                            <th>Date</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var i in invites)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@i.CompanyName</td>
+                                <td>@(string.IsNullOrEmpty(i.CompanyCode) ? "-" : i.CompanyCode)</td>
+                                <td>@(i.InvitedBy ?? "-")</td>
+                                <td>@(i.DateInvited?.ToString("MMM d, yyyy") ?? "-")</td>
+                                <td class="text-end text-nowrap">
+                                    <form action="~/company/invite/accept/@i.CompanyId" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success"><i class="fa-solid fa-check"></i> Accept</button>
+                                    </form>
+                                    <form action="~/company/invite/decline/@i.CompanyId" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-xmark"></i> Decline</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @*---- TEMP : current login claims, to check that Switch changes them (remove after checking) ----*@
+    <div class="mt-4">
+        <div class="eng12-sub mb-1"><i class="fa-solid fa-bug"></i> Current claims (temporary)</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle small mb-0">
+                <thead><tr><th style="width:30%">Claim</th><th>Value</th></tr></thead>
+                <tbody>
+                    @foreach (var claim in User.Claims)
+                    {
+                        <tr><td>@claim.Type</td><td class="text-break">@claim.Value</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+

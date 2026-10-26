@@ -1,0 +1,140 @@
+@model List<HRApiLibrary.Models._00_Main.CompanyMemberModel>
+
+@{
+    Layout              = "~/Views/Shared/_EPortalLayout.cshtml";
+    ViewData["Title"]   = "Company Users";
+    bool isOwner        = ViewData["IsOwner"] as bool? ?? false;
+    int me              = ViewData["Me"] as int? ?? 0;
+
+    // -- Access the owner / system admin can change : portal only when nothing is checked --
+    (string Name, string Label, Func<HRApiLibrary.Models._00_Main.CompanyMemberModel, bool> On)[] access =
+    [
+        ("WithPISAccess",        "PIS",        m => m.WithPISAccess),
+        ("WithPayAccess",        "Payroll",    m => m.WithPayAccess),
+        ("WithAMSAccess",        "Attendance", m => m.WithAMSAccess),
+        ("WithAccountingAccess", "Accounting", m => m.WithAccountingAccess),
+        ("WithApplicantAccess",  "Applicant",  m => m.WithApplicantAccess)
+    ];
+
+    string StatusText(string? s) => s switch { "A" => "Approved", "P" => "Pending", "R" => "Rejected", _ => s ?? "-" };
+    string StatusCss(string? s)  => s switch { "A" => "eng12-ok",  "P" => "eng12-wait", "R" => "eng12-no", _ => "" };
+}
+
+<div class="ms-2 mt-1 vh-95min body-wrapper eng12">
+    <div class="mb-3">
+        <a href="~/12/003" class="reg01-link small"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <h3 class="m-0 mt-2">Company Users</h3>
+    </div>
+
+    @if (TempData["UsrOk"] is string ok)
+    {
+        <div class="reg01-alert reg01-alert-info mb-3"><i class="fa-solid fa-circle-check"></i><span>@ok</span></div>
+    }
+    @if (TempData["UsrError"] is string err)
+    {
+        <div class="reg01-alert eng12-alert-error mb-3"><i class="fa-solid fa-triangle-exclamation"></i><span>@err</span></div>
+    }
+
+    @if (Model.Count == 0)
+    {
+        <div class="eng12-empty">
+            <i class="fa-regular fa-user"></i>
+            <div>No users in this company yet.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle eng12-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Role</th>
+                        <th>Access</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var u in Model)
+                    {
+                        // -- The Owner row and your own row are read-only --
+                        bool locked = u.CompanyUserTypeId == 1 || u.UserId == me;
+                        string formId = $"usrForm{u.UserId}";
+                        <tr>
+                            <td>
+                                <span class="fw-semibold">@(u.LastName ?? "-")@(string.IsNullOrEmpty(u.FirstName) ? "" : ", " + u.FirstName)</span>
+                                @if (!string.IsNullOrEmpty(u.EmpNumber))
+                                {
+                                    <div class="small text-muted">@u.EmpNumber</div>
+                                }
+                            </td>
+                            <td>@u.Email</td>
+                            <td><span class="eng12-badge @StatusCss(u.Status)">@StatusText(u.Status)</span></td>
+                            <td>
+                                @if (locked || !isOwner)
+                                {
+                                    <span class="eng12-badge @(u.CompanyUserTypeId == 1 ? "eng12-current" : "")">@(u.UserType ?? "-")</span>
+                                    @if (u.UserId == me)
+                                    {
+                                        <span class="small text-muted ms-1">(you)</span>
+                                    }
+                                    <input type="hidden" form="@formId" name="CompanyUserTypeId" value="@u.CompanyUserTypeId" />
+                                }
+                                else
+                                {
+                                    <select form="@formId" name="CompanyUserTypeId" class="form-select form-select-sm" style="min-width:150px"
+                                            data-role data-group="@formId">
+                                        <option value="3" selected="@(u.CompanyUserTypeId == 3)">Employee</option>
+                                        <option value="2" selected="@(u.CompanyUserTypeId == 2)">User</option>
+                                        <option value="5" selected="@(u.CompanyUserTypeId == 5)">System Admin</option>
+                                    </select>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var a in access)
+                                    {
+                                        string id = $"{a.Name}{u.UserId}";
+                                        <div class="form-check form-check-inline m-0">
+                                            <input type="checkbox" form="@formId" name="@a.Name" value="true" id="@id" class="form-check-input"
+                                                   checked="@a.On(u)" disabled="@(locked || u.CompanyUserTypeId == 3)" data-group="@formId" />
+                                            <label for="@id" class="form-check-label small">@a.Label</label>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                @if (!locked)
+                                {
+                                    <form id="@formId" action="~/company/users/@u.UserId" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        // -- Employee (3) is portal only : its access checkboxes are cleared and disabled --
+        document.querySelectorAll('select[data-role]').forEach(function (sel) {
+            const sync = function () {
+                document.querySelectorAll('input[data-group="' + sel.dataset.group + '"]').forEach(function (c) {
+                    const off = sel.value === '3';
+                    c.disabled = off;
+                    if (off) c.checked = false;
+                });
+            };
+            sel.addEventListener('change', sync);
+            sync();
+        });
+    </script>
+}

@@ -12,6 +12,7 @@ public class AtttemplatereqhdrModel
 	public  string?         ApprRemarks             { get; set; } = string.Empty; 
 	public  string?         Status                  { get; set; } = "N"; 
 	public  string?         EmpNumber_Approver      { get; set; } = string.Empty; 
+	public  int?            AttSchedWeeklyHdrId     { get; set; } 
 
 	// Other fields ---------------------------------------------------
 	public  string?         ApproverName            { get; set; } = string.Empty;

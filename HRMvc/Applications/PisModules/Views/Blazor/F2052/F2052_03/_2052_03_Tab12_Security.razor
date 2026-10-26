@@ -93,13 +93,17 @@
             @* ----- By  -----------------------*@
             <div class="w-100 d-flex p-1">
                 <div class="w-20 small">By</div>
-                <div class="w-30">
-                    <RadzenTextBox @bind-Value=@V.SecLicense.User  Style="width:100%"  Disabled />
+                <div class="w-50">
+                    <RadzenTextBox Value="@(string.IsNullOrWhiteSpace(V.SecLicense.UserName)
+                                           ? V.SecLicense.User
+                                           : V.SecLicense.UserName)"
+                                   Style="width:100%"
+                                   Disabled/>
                 </div>
             </div>
 
 
-            @* ----- By  -----------------------*@
+            @* ----- Show Logs button  -----------------------*@
             <div class="w-100 d-flex p-1">
                 <div class="w-20 small">&nbsp;</div>
                 <div class="w-30">
@@ -197,7 +201,7 @@
 @inject IOSeclicDataAccess _seclic
 @inject IOSecliclogsDataAccess _secliclogs
 @code {
-    
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
@@ -214,7 +218,6 @@
     async Task OnSubmit(OEmpmasModel model)
     {
         if (model == null) return;
-
 
 
         try
@@ -235,6 +238,8 @@
 
             if(!string.IsNullOrWhiteSpace(resLic.Empnumber)){
 
+                V.SecLicense = resLic;
+
                 var log = new OSecliclogsModel()
                 {
                     EmpNumber      = resLic.Empnumber,
@@ -251,7 +256,8 @@
 
 
                 // Insert  security logs records in secliclogs table ------
-                var resLogs = await _secliclogs._01(log, Uc.OpisDb!, Uc.Conn!);
+                var resLogs  = await _secliclogs._01(log, Uc.OpisDb!, Uc.Conn!);
+
             }
 
             NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);

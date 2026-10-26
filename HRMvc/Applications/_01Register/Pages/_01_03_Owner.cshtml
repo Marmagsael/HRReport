@@ -1,0 +1,149 @@
+@model V01RegisterOwner
+
+@{
+    Layout              = "~/Applications/_01Register/Pages/_01RegisterLayout.cshtml";
+    ViewData["Title"]   = "Register as Company Owner";
+    var countries       = ViewData["Country"]  as IEnumerable<HRApiLibrary.Models._00_Main.CountryModel>  ?? [];
+    var currencies      = ViewData["Currency"] as IEnumerable<HRApiLibrary.Models._00_Main.CurrencyModel> ?? [];
+}
+
+<div>
+    <a href="~/signup" class="reg01-link small"><i class="fa-solid fa-arrow-left"></i> Back</a>
+    <h2 class="page-title mt-2">Register as Company Owner</h2>
+    <p class="body-text-lg mt-2">Create your account and set up your company.</p>
+</div>
+
+<form id="regOwnForm" action="~/signup/owner" method="post" class="d-flex flex-column gap-2">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    @*---- STEP 1 : EMAIL + COMPANY CODE, verified before the rest is enabled ----*@
+    <div class="reg01-section">Step 1 &middot; Email and Company Code</div>
+    <div class="row g-3">
+        <div class="col-md-7">
+            <label asp-for="Email" class="reg01-label reg01-req"></label>
+            <input asp-for="Email" type="email" class="form-control" />
+            <span asp-validation-for="Email" class="err-input-msg text-danger"></span>
+        </div>
+        <div class="col-md-5">
+            <label asp-for="CompanyCode" class="reg01-label reg01-req"></label>
+            <input asp-for="CompanyCode" class="form-control text-uppercase" autocomplete="off" />
+            <span asp-validation-for="CompanyCode" class="err-input-msg text-danger"></span>
+        </div>
+        <div class="col-12 d-flex align-items-center gap-3 flex-wrap">
+            <button type="button" id="regOwnVerify" class="btn btn-outline-success">Verify</button>
+            <div id="regOwnVerified" class="reg01-alert reg01-alert-info d-none py-1">
+                <i class="fa-solid fa-circle-check"></i><span></span>
+            </div>
+        </div>
+        <div class="col-12">
+            <div id="regOwnExisting" class="reg01-alert reg01-alert-warn d-none">
+                <i class="fa-solid fa-user-check"></i>
+                <span><b>Account already exists.</b> Please click the Login button to sign in, then add your new company from your account.</span>
+                <a href="~/login" class="btn btn-sm b-btn-primary ms-auto">Login</a>
+            </div>
+        </div>
+    </div>
+
+    @*---- STEP 2 : OWNER, PASSWORD, COMPANY ----*@
+    <fieldset id="regOwnStep2" class="reg01-step2" disabled>
+        <div class="reg01-section mt-3">Step 2 &middot; Owner</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="FirstName" class="reg01-label reg01-req"></label>
+                <input asp-for="FirstName" class="form-control" />
+                <span asp-validation-for="FirstName" class="err-input-msg text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="MiddleName" class="reg01-label"></label>
+                <input asp-for="MiddleName" class="form-control" />
+                <span asp-validation-for="MiddleName" class="err-input-msg text-danger"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="LastName" class="reg01-label reg01-req"></label>
+                <input asp-for="LastName" class="form-control" />
+                <span asp-validation-for="LastName" class="err-input-msg text-danger"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Suffix" class="reg01-label"></label>
+                <input asp-for="Suffix" class="form-control" />
+                <span asp-validation-for="Suffix" class="err-input-msg text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Password" class="reg01-label reg01-req"></label>
+                <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Password" class="err-input-msg text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="ConfirmPassword" class="reg01-label reg01-req"></label>
+                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="err-input-msg text-danger"></span>
+            </div>
+        </div>
+
+        <div class="reg01-section mt-4">Company</div>
+        <div class="row g-3">
+            <div class="col-12">
+                <label asp-for="CompanyName" class="reg01-label reg01-req"></label>
+                <input asp-for="CompanyName" class="form-control" />
+                <span asp-validation-for="CompanyName" class="err-input-msg text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="CountryId" class="reg01-label reg01-req"></label>
+                <select asp-for="CountryId" class="form-select">
+                    <option value="">-- Select --</option>
+                    @foreach (var c in countries)
+                    {
+                        <option value="@c.Id" data-code="@c.Code">@c.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="CountryId" class="err-input-msg text-danger"></span>
+                <div id="regOwnCountryNa" class="reg01-alert reg01-alert-warn d-none mt-2 py-1">
+                    <i class="fa-solid fa-triangle-exclamation"></i><span></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="CurrencyId" class="reg01-label reg01-req"></label>
+                <select asp-for="CurrencyId" class="form-select">
+                    <option value="">-- Select --</option>
+                    @foreach (var c in currencies)
+                    {
+                        <option value="@c.Id">@c.Code - @c.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="CurrencyId" class="err-input-msg text-danger"></span>
+            </div>
+        </div>
+    </fieldset>
+
+    <input type="submit" id="regOwnSubmit" value="Continue" class="btn b-btn-primary w-100 mt-4" disabled />
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+
+    <script>
+        $(function () {
+            reg01Verify({
+                form:           '#regOwnForm',
+                fields:         ['Email', 'CompanyCode'],
+                url:            '@Url.Content("~/signup/owner/check")',
+                button:         '#regOwnVerify',
+                verified:       '#regOwnVerified',
+                existing:       '#regOwnExisting',
+                step2:          '#regOwnStep2',
+                submit:         '#regOwnSubmit',
+                verifiedText:   () => 'Verified · company code is available'
+            });
+
+            // -- Only the Philippines is available for now --
+            $('#CountryId').on('change', function () {
+                const $opt  = $(this).find(':selected');
+                const na    = $opt.val() && $opt.data('code') !== 'PHL';
+                $('#regOwnCountryNa').toggleClass('d-none', !na)
+                    .find('span').text(na ? $opt.text() + ' is not available yet. Only the Philippines is supported for now.' : '');
+                $('#regOwnSubmit').prop('disabled', na || $('#regOwnStep2').prop('disabled'));
+            });
+        });
+    </script>
+}

@@ -26,7 +26,7 @@
                         <_00BT_FullW HdrCaption="Employee Entry">
                             <Details>
 
-                                 @*--- REPORT ---*@
+                                @*--- REPORT ---*@
                                  <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
@@ -121,7 +121,7 @@
     V00_RepVars rv = new();
 
     private TelerikNotification? NotificationRef;
-    
+
     private _2052_01_Modal_DataEntry DataEntryRef;
 
     protected override async Task OnInitializedAsync()
@@ -164,6 +164,7 @@
 
         if (v.Action == "ReLoadEmployeeList")           await LoadEmployeeList();
         if (v.Action == "SelectEmpmas")                 await SelectEmpmas();
+
         if (v.Action == "ShowLicVerificationLogsModal") await LoadSecurityLicenseVerificationLogs();
 
         if (v.Action == "SplitHeight")              SplitHeight();
@@ -210,6 +211,25 @@
 
             var res = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, Uc.OpisDb, Uc.Conn);
             v.EmpmasList = res;
+
+            var employeeExistInList = v.EmpmasList.Any(e => e.EmpNumber == v.SelectedEmpnumber);
+
+            if (!employeeExistInList)
+            {
+                v.SelectedEmpnumber = string.Empty;
+                v.Empmas            = new();
+                v.Employments       = [];
+                v.Educations        = [];
+                v.Parents           = [];
+                v.Children          = [];
+                v.EmergencyContacts = [];
+                v.Familys           = [];
+                v.Trainings         = [];
+                v.CharRefs          = [];
+                v.InsuranceAccident = new();
+                v.SecLicense        = new();
+                v.SecLicenseLogs    = [];
+            }
         }
         catch (Exception ex)
         {
@@ -230,6 +250,7 @@
 
         v.IsLoading = true;
 
+        v.Empmas            = new();
         v.Employments       = [];
         v.Educations        = [];
         v.Parents           = [];
@@ -239,6 +260,8 @@
         v.Trainings         = [];
         v.CharRefs          = [];
         v.InsuranceAccident = new();
+        v.SecLicense        = new();
+        v.SecLicenseLogs    = [];
 
 
         try
@@ -265,9 +288,6 @@
                 GetGenderAndCivilStatus();
                 ComputeParentsAge();
                 ComputeEmployeesAge();
-
-
-
             }
 
 

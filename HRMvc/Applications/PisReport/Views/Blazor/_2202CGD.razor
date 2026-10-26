@@ -1,9 +1,8 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
-@using HRMvc.Applications.PisReport.Vars
-@using HRMvc.Applications.PisReport.Views.Blazor._2202
+﻿@using HRMvc.Applications.PisReport.Vars
 
 <TelerikRootComponent>
     <div class="position-relative">
+
         @*--- TELERIK NOTIFICATION ---*@
         <TelerikNotification @ref="@NotificationRef"
                              HorizontalPosition="@NotificationHorizontalPosition.Right"
@@ -16,126 +15,44 @@
 
         @*--- PARAMETERS ---*@
         <CascadingValue Value="@Uc">
-            <CascadingValue Value="@v">
-                <CascadingValue Value="@rv">
-                    <CascadingValue Value="@NotificationRef">
+            <CascadingValue Value="@rv">
+                <CascadingValue Value="@NotificationRef">
+                    <_00BT_FullW HdrCaption="Client Guard Detail">
+                        <Details>
+
+                            @*--- REPORT ---*@
+                            <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
-                        <_00BT_FullW HdrCaption="Employee Entry">
-                            <Details>
 
-                                @*--- REPORT ---*@
-                                <_02BTRep Rv="rv" ChildAction="ChildAction" />
-
-                                <button class="btn btn-primary" @onclick="GenerateReport"> Generate Report </button>
-
-                                @*--- GRID ---*@
-                                <_2202_Dtl ChildAction="ChildAction" />
-
-                            </Details>
-                        </_00BT_FullW>
-                    </CascadingValue>
+                        </Details>
+                    </_00BT_FullW>
                 </CascadingValue>
             </CascadingValue>
         </CascadingValue>
-
-
     </div>
 
 </TelerikRootComponent>
 
-@inject IOPisReportDataAccess _pisRep;
-
 @code {
     [Parameter]
-    public UserClaimsModel Uc { get; set; }
+    public UserClaimsModel Uc { get; set; } = new();
 
-    V2202Model v = new();
-    V00_RepVars rv = new();
-
+    V2202Model  v   = new();
+    V00_RepVars rv  = new();
 
     private TelerikNotification? NotificationRef;
 
     protected override async Task OnInitializedAsync()
     {
-        v.IsLoading = true;
-
-
-        await LoadClients();
-
-        _00InitializeReport();
-        await _02LoadCompanyInfo();
-
         v.IsLoading = false;
-
     }
 
-    // REPORT DATA --------------------------------------------------------------------
-    private void _00InitializeReport()
+    private async Task ChildAction()
     {
-        rv.MCaption = "Client Guard Detail Summary";
-        rv.RefreshToken = 2202000;
-        rv.ReportParams = new()
-        {
-            ["CoName"] = "-",
-            ["CoAddress"] = "-",
-            ["ReportTitle"] = "",
-            ["RunDate"] = DateTime.Now
-        };
+        // if (v == null) return;
+
+
+        // v.Action = "";
     }
-
-    private async Task _02LoadCompanyInfo()
-    {
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        if (!(res ?? []).Any()) return;
-
-        var r = res!.First();
-        rv.ReportParams["CoName"] = r.CoName ?? "";
-        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
-    }
-
-    private void ChildAction()
-    {
-
-    }
-
-
-    private async Task LoadClients()
-    {
-        var res = await _pisRep._02Client( Uc.OpisDb!, Uc.Conn!);
-
-         if ((res ?? []).Any())
-            {
-                v.RepDtls = res!.Select(r => new R2202Model
-                {
-                    ClName       = r.ClName
-                }).ToList();
-            };
-    }
-
-    private async Task GenerateReport()
-    {
-        if (!v.RepDtls.Any()) { return; }
-
-        rv.RelativePath = "";
-        rv.ReportData = [];
-        rv.ReportData = v.RepDtls;
-
-        rv.RelativePath = "Reports/_01Pis/K_2202_CGD.trdp";
-
-        // int? monthNumber = Convert.ToInt32(rv.Month);
-        // string? monthName = new DateTime(1, monthNumber ?? 0, 1).ToString("MMMM", CultureInfo.InvariantCulture);
-
-        // rv.ReportParams["MonthYearCoverage"] = $"For the Month of {monthName} {rv.Year}";
-
-        rv.ShowModal = true;
-
-        // if (rv.SelectedFormat == "XLSX")
-        // {
-        //     await Task.Delay(1000);
-        //     rv.ShowModal = false;
-        //     Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
-        // }
-    }
-
 }

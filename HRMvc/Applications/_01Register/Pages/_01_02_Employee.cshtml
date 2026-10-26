@@ -1,0 +1,95 @@
+@model V01RegisterEmployee
+
+@{
+    Layout              = "~/Applications/_01Register/Pages/_01RegisterLayout.cshtml";
+    ViewData["Title"]   = "Register as Employee";
+    string backUrl      = ViewData["Exclusive"] as string == "true" ? "~/login" : "~/signup";
+}
+
+<div>
+    <a href="@Url.Content(backUrl)" class="reg01-link small"><i class="fa-solid fa-arrow-left"></i> Back</a>
+    <h2 class="page-title mt-2">Register as Employee</h2>
+    <p class="body-text-lg mt-2">Your account will be active once your company approves it.</p>
+</div>
+
+<form id="regEmpForm" action="~/signup/employee" method="post" class="d-flex flex-column gap-2">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    @*---- STEP 1 : COMPANY + EMAIL, verified before the password is enabled ----*@
+    <div class="reg01-section">Step 1 &middot; Company and Email</div>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="CompanyCode" class="reg01-label reg01-req"></label>
+            <input asp-for="CompanyCode" class="form-control text-uppercase" autocomplete="off" />
+            <span asp-validation-for="CompanyCode" class="err-input-msg text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="EmpNumber" class="reg01-label reg01-req"></label>
+            <input asp-for="EmpNumber" class="form-control" autocomplete="off" />
+            <span asp-validation-for="EmpNumber" class="err-input-msg text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="LastName" class="reg01-label reg01-req"></label>
+            <input asp-for="LastName" class="form-control" />
+            <span asp-validation-for="LastName" class="err-input-msg text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Email" class="reg01-label reg01-req"></label>
+            <input asp-for="Email" type="email" class="form-control" />
+            <span asp-validation-for="Email" class="err-input-msg text-danger"></span>
+        </div>
+        <div class="col-12 d-flex align-items-center gap-3 flex-wrap">
+            <button type="button" id="regEmpVerify" class="btn btn-outline-success">Verify</button>
+            <div id="regEmpVerified" class="reg01-alert reg01-alert-info d-none py-1">
+                <i class="fa-solid fa-circle-check"></i><span></span>
+            </div>
+        </div>
+        <div class="col-12">
+            <div id="regEmpExisting" class="reg01-alert reg01-alert-warn d-none">
+                <i class="fa-solid fa-user-check"></i>
+                <span><b>Account already exists.</b> Please click the Login button to sign in, then join this company from your account.</span>
+                <a href="~/login" class="btn btn-sm b-btn-primary ms-auto">Login</a>
+            </div>
+        </div>
+    </div>
+
+    @*---- STEP 2 : PASSWORD ----*@
+    <fieldset id="regEmpStep2" class="reg01-step2" disabled>
+        <div class="reg01-section mt-3">Step 2 &middot; Password</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Password" class="reg01-label reg01-req"></label>
+                <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Password" class="err-input-msg text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="ConfirmPassword" class="reg01-label reg01-req"></label>
+                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="err-input-msg text-danger"></span>
+            </div>
+        </div>
+    </fieldset>
+
+    <input type="submit" id="regEmpSubmit" value="Continue" class="btn b-btn-primary w-100 mt-4" disabled />
+</form>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+
+    <script>
+        $(function () {
+            reg01Verify({
+                form:           '#regEmpForm',
+                fields:         ['CompanyCode', 'EmpNumber', 'LastName', 'Email'],
+                url:            '@Url.Content("~/signup/employee/check")',
+                button:         '#regEmpVerify',
+                verified:       '#regEmpVerified',
+                existing:       '#regEmpExisting',
+                step2:          '#regEmpStep2',
+                submit:         '#regEmpSubmit',
+                verifiedText:   r => 'Verified · ' + r.companyName
+            });
+        });
+    </script>
+}

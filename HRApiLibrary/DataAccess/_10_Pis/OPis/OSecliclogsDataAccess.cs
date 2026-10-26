@@ -41,7 +41,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<List<OSecliclogsModel?>?> _02s(string empnumber, string schema, string conn)
         {
-            string sql = $@"select  empnumber, sbrno, opno, validated, vfee, revalidated, valStatus, user, dateModified, licDateIssued from {schema}.Secliclogs where Empnumber = @Empnumber ORDER BY dateModified DESC"  ;
+            string sql = $@"select  s.*,  CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName  from {schema}.Secliclogs s
+                            LEFT JOIN {schema}.empmas e ON e.EMPNUMBER = s.User
+                            where s.Empnumber = @Empnumber ORDER BY s.dateModified DESC"  ;
             var data = await _sql.FetchData<OSecliclogsModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
