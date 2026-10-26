@@ -17,7 +17,7 @@ public class _00MainPisMasterfileMaker : I_00MainPisMasterfileMaker
 
     public async Task _01MainPisMasterfile(string? schema = "MainPis", string? connName = "MySqlConn")
     {
-        await _sql.ExecuteCmd($"CREATE SCHEMA IF NOT EXISTS {schema};", new { }, connName);
+        await _sql.ExecuteCmd($"CREATE SCHEMA IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1;", new { }, connName);
 
         await _01Sex(schema, connName);
         await _01Civstat(schema, connName);

@@ -66,6 +66,8 @@ public static class MigrationExt
                 log.LogInformation("Migrations : {Schema} masterfiles", mainPis);
                 await sp.GetRequiredService<I_00MainPisMasterfileMaker>()._01MainPisMasterfile(mainPis, conn);
 
+                await CharsetLatin1(sp, log, conn, main, mainPis, "MainPay");
+
                 log.LogInformation("Migrations : done in {Seconds:0} s", (DateTime.Now - started).TotalSeconds);
             }
             finally
@@ -145,6 +147,15 @@ public static class MigrationExt
             new { Id = companyId }, conn)).FirstOrDefault();
         if (c == null) return;
 
+        // -- First : '0000-00-00' defaults block every ALTER in strict mode (e.g. AttDaily.PunchDate) --
+        var tblMaker = sp.GetRequiredService<I_00MainTblMakerAccess>();
+        foreach (var schema in new[] { c.PISSchema, c.AMSSchema, c.PaySchema, c.AcctgSchema, c.OldPis, c.OldPay }
+                                   .Where(Exists).Select(s => s!.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            log.LogInformation("Migrations : zero-date defaults {Schema}", schema);
+            await tblMaker._03ZeroDateDefaults(schema, conn);
+        }
+
         if (Pick(c.PISSchema))
         {
             log.LogInformation("Migrations : PIS {Schema}", c.PISSchema);
@@ -179,6 +190,22 @@ public static class MigrationExt
         {
             log.LogInformation("Migrations : old Pay {Schema}", c.OldPay);
             await oldPay._01OldPayTable(c.OldPay!.Trim(), conn);
+        }
+
+        if (amsSchema != null) done.Add(amsSchema);
+        await CharsetLatin1(sp, log, conn, done.ToArray());
+    }
+
+    // -- Patch : utf8mb4 tables left by the older table makers are converted to latin1 (MySQL 5.5 and 8) --
+    // -- Tables with text that latin1 cannot hold are only logged; they stay as they are --
+    private static async Task CharsetLatin1(IServiceProvider sp, ILogger log, string conn, params string[] schemas)
+    {
+        var maker = sp.GetRequiredService<I_00MainTblMakerAccess>();
+        foreach (var schema in schemas.Where(s => !string.IsNullOrWhiteSpace(s)).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var skipped = await maker._03CharsetLatin1(schema.Trim(), conn);
+            if (skipped.Count > 0)
+                log.LogWarning("Migrations : {Schema} kept in utf8mb4, text does not fit latin1 : {Tables}", schema, string.Join(", ", skipped));
         }
     }
 

@@ -23,7 +23,7 @@ public class VmsDataAccess
     //*********************************************************************************
     private async Task _01SchemaMaker(string? db, string? conn)
     {
-        var sql = $"CREATE DATABASE IF NOT EXISTS {db}";
+        var sql = $"CREATE DATABASE IF NOT EXISTS {db} DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 

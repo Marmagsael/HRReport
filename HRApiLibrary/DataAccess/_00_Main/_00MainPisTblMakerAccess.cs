@@ -231,7 +231,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     // --- Schema User Profiles ------------------------------------------------------
     private async Task _01Schema(string? schema, string? connName)
     {
-        var sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        var sql = $"CREATE DATABASE IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -529,7 +529,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             MacAddressOut    Char(20),
                             UserIdOut        BigInt, 
                             Status          Char(3) default '-',
-                        PRIMARY KEY (EmpmasId, PunchInDate)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                        PRIMARY KEY (EmpmasId, PunchInDate)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { });
 
         // --- existing tables : widen Status from Char(1) to Char(3)
@@ -538,11 +538,25 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
 
         // DESC "Type" may come back as byte[] from MySql.Data
         static string ColType(dynamic c) => c.Type is byte[] b ? System.Text.Encoding.UTF8.GetString(b) : Convert.ToString(c.Type) ?? "";
+        static string ColDefault(dynamic c) => c.Default is byte[] b ? System.Text.Encoding.UTF8.GetString(b) : Convert.ToString(c.Default) ?? "";
         bool isStatusChar1 = existingColumns.Any(c => c.Field == "Status" && ColType(c).ToLower() == "char(1)");
 
-        if (isStatusChar1)
+        // --- existing tables : zero-date defaults ('0000-00-00 00:00:00') are invalid in strict mode and block every ALTER
+        //     PunchInDate is part of the PK so it stays NOT NULL without a default; PunchOutDate defaults to NULL
+        var fixes = new List<string>();
+        foreach (var c in existingColumns)
         {
-            sql = $@"ALTER TABLE {schema}.AttPunches1 MODIFY COLUMN Status Char(3) default '-';";
+            if (!ColDefault(c).StartsWith("0000-00-00")) continue;
+            string field = c.Field;
+            if (field == "PunchInDate") fixes.Add("MODIFY COLUMN PunchInDate DATETIME NOT NULL");
+            else fixes.Add($"MODIFY COLUMN `{field}` {ColType(c)} NULL DEFAULT NULL");
+        }
+
+        if (isStatusChar1) fixes.Add("MODIFY COLUMN Status Char(3) default '-'");
+
+        if (fixes.Count > 0)
+        {
+            sql = $@"ALTER TABLE {schema}.AttPunches1 {string.Join(", ", fixes)};";
             await _sql.ExecuteCmd(sql, new { });
         }
 
@@ -589,7 +603,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             Status              char(1),
                             EmpNumber_Approver  Char(5),
                             TotHrs              Double(6,2) default 0 , 
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
                         CREATE TABLE if not exists  {schema}.AttReqDtl (
                             Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -598,14 +612,14 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             DEnd            DATETIME,
                             TotHrs          DOUBLE(6,2),
                             AttReqTypeId    INTEGER UNSIGNED NOT NULL,
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; 
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; 
                         
                         CREATE TABLE if not exists  {schema}.AttReqType (
                             Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Code            Char(5),
                             Category        Char(10),
                             Name            VARCHAR(45),
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; 
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; 
 
                         CREATE TABLE if not exists  {schema}.AttReqHist (
                             Id                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -614,7 +628,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             SetStatusTo             Char(1),
                             Empnumber_Approver      Char(5),
                             Remarks                 VARCHAR(120),
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; ";
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { });
 
         sql = @$"select * from {schema}.AttReqType limit 1 ";
@@ -655,7 +669,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             Status              char(1),
                             EmpNumber_Approver  Char(5),
                             AttSchedWeeklyHdrId INTEGER UNSIGNED,
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
                         CREATE TABLE if not exists  {schema}.AtttemplateReqdtl (
                             Id                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -693,7 +707,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             SetStatusTo             Char(1),
                             Empnumber_Approver      Char(5),
                             Remarks                 VARCHAR(120),
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; ";
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { });
 
         // --- existing tables : add AttSchedWeeklyHdrId ( selected schedule template )
@@ -732,7 +746,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             PayYear             int, 
                             PayMo               char(2), 
                             PayPP               char(2), 
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
                         CREATE TABLE  if not exists  {schema}.OTReqDtl (
                             OtReqHdrId      int             unsigned,
@@ -741,20 +755,20 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             TotHrs          double(6,2)                 DEFAULT 0,
                             DutyTypeId      int             unsigned    DEFAULT 1,
                             DayTypeId       int                         DEFAULT 1,
-                            PRIMARY KEY (`EmpmasId`,`PunchIn`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; 
+                            PRIMARY KEY (`EmpmasId`,`PunchIn`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; 
 
                         
                         CREATE TABLE if not exists  {schema}.OTDutyType (
                             Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Code            Char(5),
                             Name            VARCHAR(45),
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; 
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; 
                         
                         CREATE TABLE if not exists  {schema}.OTDayType (
                             Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Code            Char(5),
                             Name            VARCHAR(45),
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; 
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; 
                         
                         CREATE TABLE if not exists  {schema}.OTReqHist (
                             Id                      INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -763,7 +777,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             SetStatusTo             Char(1),
                             Empnumber_Approver      Char(5),
                             Remarks                 VARCHAR(60),
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; ";
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { });
 
         sql = @$"select * from {schema}.OTDayType limit 1 ";
@@ -948,7 +962,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     // --- Schema Main Pis ------------------------------------------------------
     private async Task _01MainPisSchema(string? schema, string? connName)
     {
-        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -1135,7 +1149,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                               Mode          INTEGER     UNSIGNED    NOT NULL DEFAULT 1 COMMENT '0-inactive, 1-active',
                               Created       DATETIME,
                               UploadedBy    INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
-                              PRIMARY KEY (Id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                              PRIMARY KEY (Id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
@@ -1397,6 +1411,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.EmpmasInsurance (
                             Id              INTEGER UNSIGNED                    NOT NULL,
+                            EmpmasId         INTEGER UNSIGNED                   DEFAULT NULL,
                             INSURANCE        varchar(60)                        DEFAULT NULL,
                             PolicyNo         varchar(15)                        DEFAULT NULL,
                             FaceValue        double(9,2)                        DEFAULT NULL,
@@ -1404,6 +1419,8 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             InsExpire        date                               DEFAULT NULL,
                         PRIMARY KEY     (Id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, conn);
+
+        await AddColumnIfMissing(schema, "EmpmasInsurance", "EmpmasId", "EmpmasId INTEGER UNSIGNED DEFAULT NULL AFTER Id", conn);
     }
     // ************************************************************************
 
@@ -2223,7 +2240,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                         AnivStart     DATE,
                         AnivEnd       DATE,
                         DefValue      double(5,2)   DEFAULT '0.00',
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; ";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
 
@@ -2289,8 +2306,10 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             ApproverId          INTEGER     UNSIGNED DEFAULT 0,
                             ApproverLevel       INTEGER     UNSIGNED DEFAULT 0,
                             IsDefaultApprover   INTEGER     UNSIGNED DEFAULT 0,
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; ";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
+
+        await AddColumnIfMissing(schema, "LeaveGrpApprover", "IsDefaultApprover", "IsDefaultApprover INTEGER UNSIGNED DEFAULT 0 AFTER ApproverLevel", conn);
     }
 
     // private async Task _01LeaveCredit(string? schema, string? conn)
@@ -2303,7 +2322,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     //                       AnnivEnd      DATE,
     //                       Credit        DOUBLE(12,2)        Default 0,
     //                       Consumed      DOUBLE(12,2)        Default 0,
-    //                     PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `AnnivStart`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; ";
+    //                     PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `AnnivStart`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
     //     await _sql.ExecuteCmd(sql, new { }, conn);
     // }
 
@@ -2316,7 +2335,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                           CreditStart   DATE,
                           CreditEnd     DATE,
                           Credit        DOUBLE(12,2)        Default 0,
-                        PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `CreditStart`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; ";
+                        PRIMARY KEY(`Year`, `EmpmasId`,`LeaveTypeId`, `CreditStart`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -2359,7 +2378,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                               DateApprove2  DATETIME,
                               DateApprove3  DATETIME,
                               ApproverLevel INTEGER         UNSIGNED    DEFAULT 1,
-                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
+                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; 
                     
                     CREATE TABLE if not exists  {schema}.LeaveApplicationHist (
                             Id                  INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -2367,7 +2386,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             EmpasId             INTEGER UNSIGNED,
                             Date                DATETIME,
                             Action              VARCHAR(120),
-                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; ";
+                            PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = $@"CREATE TABLE if not exists {schema}.LeaveApplicationDtl (
@@ -2379,14 +2398,14 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                     DutyType            CHAR(2)                 NOT NULL DEFAULT 'R',
                     IsPayable           INTEGER     UNSIGNED    NOT NULL DEFAULT 0,
                     LeavedayTypeId      INTEGER     UNSIGNED    NOT NULL DEFAULT 1,
-                    PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                    PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
 
         sql = $@"CREATE TABLE if not exists {schema}.LeavedayType (
                             Id       INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Name     char(45),
-                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {schema}.LeavedayType limit 1 ";
@@ -2427,7 +2446,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                         PRIMARY KEY(`Id`),
                         INDEX `idx_EmpmasId_ObStart` (`EmpmasId`, `ObStart`),
                         INDEX `idx_Approver1Id` (`Approver1Id`),
-                        INDEX `idx_Approver2Id` (`Approver2Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                        INDEX `idx_Approver2Id` (`Approver2Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
                     CREATE TABLE if not exists {schema}.ObApplicationDtl (
                             Id                  INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -2439,7 +2458,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IsPayable           INTEGER     UNSIGNED    NOT NULL DEFAULT 1,
                         PRIMARY KEY (`Id`),
                         INDEX `idx_ObApplicationId` (`ObApplicationId`),
-                        INDEX `idx_EmpmasId_Date` (`EmpmasId`, `Date`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                        INDEX `idx_EmpmasId_Date` (`EmpmasId`, `Date`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
                     CREATE TABLE if not exists {schema}.ObApplicationHist (
                             Id                  INTEGER     UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -2447,12 +2466,12 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             EmpmasId            INTEGER     UNSIGNED,
                             Date                DATETIME,
                             Action              VARCHAR(120),
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
                     CREATE TABLE if not exists {schema}.ObDuration (
                             Id       INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                             Name     char(45),
-                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {schema}.ObDuration limit 1 ";
@@ -3267,7 +3286,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                         `Credit` double(12,2) DEFAULT '0.00',
                         `Consumed` double(12,2) DEFAULT '0.00',
                         PRIMARY KEY (`Year`,`EmpmasId`,`LeaveTypeId`,`AnnivStart`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 

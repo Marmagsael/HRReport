@@ -1,4 +1,5 @@
-﻿using HRApiLibrary.DataAccess._00_Main.Interface;
+﻿using Dapper;
+using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._90_Utils;
@@ -51,7 +52,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     //--- Schema Main ------------------------------------------------------
     private async Task _01MainSchema(string? schema, string? connName)
     {
-        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
     
@@ -60,7 +61,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     private async Task _01UsersSchema(string? userId, string? companyId, string? schemaPrefix)
     {
         string? schema = $"u{userId}c{companyId}_{schemaPrefix}";
-        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { });
     }
 
@@ -457,9 +458,10 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     OldPis          VARCHAR (60)    NULL,
                     CompanyCode     VARCHAR (10)    NULL,
                     PRIMARY KEY (`Id`),
-                    UNIQUE KEY uq_userscompany_companycode (CompanyCode),
-                    CONSTRAINT ck_userscompany_companycode_alnum CHECK (CompanyCode REGEXP '^[A-Za-z0-9]+$')) Engine = InnoDB;";
+                    UNIQUE KEY uq_userscompany_companycode (CompanyCode)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- MySQL 5.5 : no CHECK constraints; CompanyCode (letters and numbers only) is checked by the forms --
 
         // -- Columns added after the table was created --
         var columns = await _sql.FetchData<dynamic, dynamic>($@"DESC {schema}.UsersCompany", new { }, connName);
@@ -467,25 +469,12 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         {
             sql = $@"ALTER TABLE {schema}.UsersCompany
                         ADD COLUMN CompanyCode VARCHAR (10) NULL,
-                        ADD UNIQUE KEY uq_userscompany_companycode (CompanyCode),
-                        ADD CONSTRAINT ck_userscompany_companycode_alnum CHECK (CompanyCode REGEXP '^[A-Za-z0-9]+$')";
+                        ADD UNIQUE KEY uq_userscompany_companycode (CompanyCode)";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
         if (!columns.Any(c => c.Field == "AcctgSchema"))
         {
             sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN AcctgSchema VARCHAR (60) NULL AFTER PaySchema";
-            await _sql.ExecuteCmd(sql, new { }, connName);
-        }
-
-        // -- CompanyCode is the schema prefix : letters and numbers only (replaces the earlier no-space check) --
-        sql = $@"SELECT CONSTRAINT_NAME FROM information_schema.CHECK_CONSTRAINTS
-                 WHERE lower(CONSTRAINT_SCHEMA) = lower(@Schema) AND CONSTRAINT_NAME = 'ck_userscompany_companycode_nospace'";
-        var oldCheck = await _sql.FetchData<string, dynamic>(sql, new { Schema = schema }, connName);
-        if (oldCheck.Count > 0)
-        {
-            sql = $@"ALTER TABLE {schema}.UsersCompany
-                        DROP CHECK ck_userscompany_companycode_nospace,
-                        ADD CONSTRAINT ck_userscompany_companycode_alnum CHECK (CompanyCode REGEXP '^[A-Za-z0-9]+$')";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
@@ -607,7 +596,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                             ExpiresAt   datetime        NOT NULL,
                             Attempts    int unsigned    NOT NULL     DEFAULT 0,
                             UsedAt      datetime                     DEFAULT NULL,
-                            CreatedAt   datetime        NOT NULL     DEFAULT CURRENT_TIMESTAMP,
+                            CreatedAt   timestamp       NOT NULL     DEFAULT CURRENT_TIMESTAMP     COMMENT 'timestamp : MySQL 5.5 defaults only TIMESTAMP to now',
                         PRIMARY KEY (Id),
                         KEY ix_emailotp_email (Email, Purpose)) ENGINE=InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -659,6 +648,88 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                             (1501, 'SHdr-EPortal', 1000, 1, 'fa-solid fa-serve',  'Applications',       '12/501', NULL),
                             (1502, 'Dtl-EPortal',  1501, 2, 'fa-solid fa-server', 'System Application', '15/502', NULL);";
         await _sql.ExecuteCmd(sql, new { }, connName);
+    }
+
+    // -- 03 Patch : every table maker now makes latin1 tables (works on MySQL 5.5 and 8) -----------------------
+    // -- Tables of this schema still in utf8mb4 (table or any column) are converted to latin1. A table whose ----
+    // -- text does not fit latin1 (emoji, CJK ...) is left as it is and returned, so nothing is lost silently --
+    public async Task<List<string>> _03CharsetLatin1(string schema, string? connName)
+    {
+        var skipped = new List<string>();
+
+        // -- The schema's own default too, so tables made without a CHARSET clause are latin1 --
+        var charset = await _sql.FetchData<string, dynamic>(
+            "select DEFAULT_CHARACTER_SET_NAME from information_schema.SCHEMATA where SCHEMA_NAME = @Schema", new { Schema = schema }, connName);
+        if (charset.Count == 0) return skipped;
+        if (!string.Equals(charset.First(), "latin1", StringComparison.OrdinalIgnoreCase))
+            await _sql.ExecuteCmd($"ALTER DATABASE `{schema}` DEFAULT CHARACTER SET latin1", new { }, connName);
+
+        string sql = @"select distinct t.TABLE_NAME
+                       from   information_schema.TABLES t
+                              left join information_schema.COLUMNS c on c.TABLE_SCHEMA = t.TABLE_SCHEMA and c.TABLE_NAME = t.TABLE_NAME
+                       where  t.TABLE_SCHEMA = @Schema and t.TABLE_TYPE = 'BASE TABLE'
+                              and (t.TABLE_COLLATION like 'utf8mb4%' or c.CHARACTER_SET_NAME = 'utf8mb4')";
+        var tables = await _sql.FetchData<string, dynamic>(sql, new { Schema = schema }, connName);
+
+        foreach (var table in tables)
+        {
+            // -- Text columns whose values change when put in latin1 --
+            var columns = await _sql.FetchData<string, dynamic>(
+                @"select COLUMN_NAME from information_schema.COLUMNS
+                  where  TABLE_SCHEMA = @Schema and TABLE_NAME = @Table and CHARACTER_SET_NAME = 'utf8mb4'",
+                new { Schema = schema, Table = table }, connName);
+
+            if (columns.Count > 0)
+            {
+                string lossy = string.Join(" or ", columns.Select(c => $"binary `{c}` <> binary convert(convert(`{c}` using latin1) using utf8mb4)"));
+                var bad = await _sql.FetchData<long, dynamic>($"select count(*) from `{schema}`.`{table}` where {lossy}", new { }, connName);
+                if (bad.FirstOrDefault() > 0)
+                {
+                    skipped.Add(table);
+                    continue;
+                }
+            }
+
+            await _sql.ExecuteCmd($"ALTER TABLE `{schema}`.`{table}` CONVERT TO CHARACTER SET latin1", new { }, connName);
+        }
+
+        return skipped;
+    }
+
+    // -- Patch : '0000-00-00' defaults are invalid in strict mode (NO_ZERO_DATE) and block every ALTER on the table --
+    // -- Key columns stay NOT NULL without a default; the others default to NULL --
+    public async Task _03ZeroDateDefaults(string schema, string? connName)
+    {
+        string sql = @"select TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_KEY
+                       from   information_schema.COLUMNS
+                       where  TABLE_SCHEMA = @Schema and DATA_TYPE in ('date', 'datetime', 'timestamp')
+                              and COLUMN_DEFAULT like '0000-00-00%'";
+        var columns = await _sql.FetchData<dynamic, dynamic>(sql, new { Schema = schema }, connName);
+        if (columns.Count == 0) return;
+
+        // -- Own connection : zero dates already in the rows must not stop the table copy, and the pooled session gets its mode back --
+        using var cn = _sql.GetConnString(connName);
+        cn.Open();
+        string oldMode = await cn.ExecuteScalarAsync<string>("select @@SESSION.sql_mode") ?? "";
+        string relaxed = string.Join(",", oldMode.Split(',').Where(m => m != "NO_ZERO_DATE" && m != "NO_ZERO_IN_DATE"));
+
+        try
+        {
+            await cn.ExecuteAsync("SET SESSION sql_mode = @Mode", new { Mode = relaxed });
+
+            foreach (var table in columns.GroupBy(c => (string)c.TABLE_NAME))
+            {
+                var fixes = table.Select(c => (string)c.COLUMN_KEY == "PRI" || (string)c.IS_NULLABLE == "NO"
+                                                ? $"MODIFY COLUMN `{c.COLUMN_NAME}` {c.COLUMN_TYPE} NOT NULL"
+                                                : $"MODIFY COLUMN `{c.COLUMN_NAME}` {c.COLUMN_TYPE} NULL DEFAULT NULL");
+
+                await cn.ExecuteAsync($"ALTER TABLE `{schema}`.`{table.Key}` {string.Join(", ", fixes)}");
+            }
+        }
+        finally
+        {
+            await cn.ExecuteAsync("SET SESSION sql_mode = @Mode", new { Mode = oldMode });
+        }
     }
 
     public async Task<SchemaStructureModel?> _02_TableExists(string? schema, string? tableName, string? connName)

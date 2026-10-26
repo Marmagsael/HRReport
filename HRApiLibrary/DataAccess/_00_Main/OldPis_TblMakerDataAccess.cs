@@ -72,7 +72,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
 
     public async Task _01OldPisTable(string? schema, string? connName = "MySqlConn")
     {
-        await _sql.ExecuteCmd($"CREATE SCHEMA IF NOT EXISTS {schema};", new { }, connName);
+        await _sql.ExecuteCmd($"CREATE SCHEMA IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1;", new { }, connName);
 
         await _01Area(schema, connName);
         await _01Bi(schema, connName);
@@ -1312,12 +1312,12 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Id` int unsigned NOT NULL AUTO_INCREMENT,
                         `Name` varchar(45) DEFAULT NULL,
                         `PolicyNo` varchar(25) DEFAULT NULL,
-                        `InsuranceType` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'Life' COMMENT 'Life and Accident',
+                        `InsuranceType` varchar(15) CHARACTER SET latin1 NOT NULL DEFAULT 'Life' COMMENT 'Life and Accident',
                         `FaceValue` double(12,2) NOT NULL COMMENT '0',
                         `Premiums` double(12,2) NOT NULL,
                         `InsExpire` date DEFAULT NULL,
                         PRIMARY KEY (`Id`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
     }
 
@@ -2097,12 +2097,12 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
     {
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`client_rate_settings` (
                         `Id` int unsigned NOT NULL AUTO_INCREMENT,
-                        `Pursuant` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT 'Article ...',
+                        `Pursuant` varchar(150) DEFAULT 'Article ...',
                         `Effectivity` date DEFAULT NULL,
-                        `SignatoryName` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT 'Signatory',
-                        `SignatoryDesignation` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT 'Designation',
+                        `SignatoryName` varchar(60) DEFAULT 'Signatory',
+                        `SignatoryDesignation` varchar(120) DEFAULT 'Designation',
                         PRIMARY KEY (`Id`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
     }
 
@@ -2110,15 +2110,15 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
     {
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`client_rateatrail` (
                         `Id` int unsigned NOT NULL AUTO_INCREMENT,
-                        `ClNumber` char(5) COLLATE utf8mb4_unicode_ci DEFAULT '',
-                        `SGCodeOld` char(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-                        `SGCodeNew` char(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+                        `ClNumber` char(5) DEFAULT '',
+                        `SGCodeOld` char(10) DEFAULT NULL,
+                        `SGCodeNew` char(10) DEFAULT NULL,
                         `RateOld` double(9,2) DEFAULT '0.00',
                         `RateNew` double(9,2) DEFAULT '0.00',
                         `DateChanged` datetime DEFAULT NULL,
-                        `ChangedBy` varchar(25) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+                        `ChangedBy` varchar(25) DEFAULT NULL,
                         PRIMARY KEY (`Id`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
     }
 
@@ -2126,9 +2126,9 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
     {
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`client_rateatrail_empmas` (
                         `CRTId` int NOT NULL DEFAULT '0',
-                        `EmpNumber` char(5) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+                        `EmpNumber` char(5) NOT NULL DEFAULT '',
                         PRIMARY KEY (`CRTId`,`EmpNumber`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
     }
 
@@ -2150,7 +2150,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Empnumber` varchar(5) NOT NULL,
                         `Status` varchar(25) DEFAULT NULL,
                         `CreatedBy` int unsigned DEFAULT NULL,
-                        `DateCreated` datetime DEFAULT CURRENT_TIMESTAMP,
+                        `DateCreated` timestamp NULL DEFAULT CURRENT_TIMESTAMP,     -- MySQL 5.5 : only TIMESTAMP defaults to now
                         PRIMARY KEY (`Empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
