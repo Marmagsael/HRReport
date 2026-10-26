@@ -12,10 +12,10 @@ namespace HRMvc.Applications.PisModules.Vars
 
 
 
-        public OEmpmasModel? OEmpmas                        { get; set; } = new();
-        public List<OEmpmasModel?>? OEmployees              { get; set; } = new();
-        public List<OEmpstatModel?>? OEmpStatuses           { get; set; } = new();
-        public OEmpstatModel?       OEmpStatus              { get; set; } = new();
+        public OEmpmasModel?            OEmpmas                { get; set; } = new();
+        public List<OEmpmasModel?>?     OEmployees             { get; set; } = new();
+        public List<OEmpstatModel?>?    OEmpStatuses           { get; set; } = new();
+        public OEmpstatModel?           OEmpStatus             { get; set; } = new();
 
         
     }

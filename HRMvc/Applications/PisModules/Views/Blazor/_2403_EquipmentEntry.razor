@@ -1,4 +1,5 @@
 ﻿@using HRMvc.Applications.PisModules.Vars
+@using HRMvc.Applications.PisModules.Views.Blazor._2403
 
 <TelerikRootComponent>
     <div class="position-relative">
@@ -15,18 +16,32 @@
 
         @*--- PARAMETERS ---*@
         <CascadingValue Value="@Uc">
-            <CascadingValue Value="@rv">
-                <CascadingValue Value="@NotificationRef">
-                    <_00BT_FullW HdrCaption="Equipment Entry">
-                        <Details>
+            <CascadingValue Value="@v">
+                <CascadingValue Value="@rv">
+                    <CascadingValue Value="@NotificationRef">
+                        <_00BT_FullW HdrCaption="Equipment Entry">
+                            <Details>
 
-                            @*--- REPORT ---*@
-                            <_02BTRep Rv="rv" ChildAction="ChildAction" />
+                                @*--- REPORT ---*@
+                                <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
+                                @if (v.ShowEntryModal == true)
+                                {
+                                    <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="80vh">
+                                        <Content>
+                                            <_2403_EquipmentsEntry ChildAction="ChildAction" />
+                                        </Content>
+                                    </_00Modal>
+                                }
 
-                        </Details>
-                    </_00BT_FullW>
+
+                                <_2403_EquipmentList ChildAction="ChildAction" />
+
+
+                            </Details>
+                        </_00BT_FullW>
+                    </CascadingValue>
                 </CascadingValue>
             </CascadingValue>
         </CascadingValue>
@@ -38,8 +53,8 @@
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
 
-    V2403Model  v   = new();
-    V00_RepVars rv  = new();
+    V2403Model v = new();
+    V00_RepVars rv = new();
 
     private TelerikNotification? NotificationRef;
 
@@ -50,10 +65,10 @@
     }
 
 
+
     private async Task ChildAction()
     {
         if (v == null) return;
-
 
         v.Action = "";
     }
