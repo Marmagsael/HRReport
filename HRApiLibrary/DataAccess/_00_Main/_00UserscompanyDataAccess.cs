@@ -37,10 +37,10 @@ public class _00UserscompanyDataAccess : I_00UserscompanyDataAccess
             string? schemaPis = uco!.PisSchema!;
             string? schemaPay = uco!.PaySchema!;
 
-            string? sql1 = @$"create database if not exists {schemaAms};
-                             create database if not exists {schemaApp};
-                             create database if not exists {schemaPis};
-                             create database if not exists {schemaPay};";
+            string? sql1 = @$"create database if not exists {schemaAms} DEFAULT CHARACTER SET latin1;
+                             create database if not exists {schemaApp} DEFAULT CHARACTER SET latin1;
+                             create database if not exists {schemaPis} DEFAULT CHARACTER SET latin1;
+                             create database if not exists {schemaPay} DEFAULT CHARACTER SET latin1;";
 
             await _sql.ExecuteCmd<dynamic>(sql1, new { }, conn);
         }
