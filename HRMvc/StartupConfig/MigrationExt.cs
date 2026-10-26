@@ -147,6 +147,15 @@ public static class MigrationExt
             new { Id = companyId }, conn)).FirstOrDefault();
         if (c == null) return;
 
+        // -- First : '0000-00-00' defaults block every ALTER in strict mode (e.g. AttDaily.PunchDate) --
+        var tblMaker = sp.GetRequiredService<I_00MainTblMakerAccess>();
+        foreach (var schema in new[] { c.PISSchema, c.AMSSchema, c.PaySchema, c.AcctgSchema, c.OldPis, c.OldPay }
+                                   .Where(Exists).Select(s => s!.Trim()).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            log.LogInformation("Migrations : zero-date defaults {Schema}", schema);
+            await tblMaker._03ZeroDateDefaults(schema, conn);
+        }
+
         if (Pick(c.PISSchema))
         {
             log.LogInformation("Migrations : PIS {Schema}", c.PISSchema);

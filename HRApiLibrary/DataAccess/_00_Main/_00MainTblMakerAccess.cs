@@ -1,4 +1,5 @@
-﻿using HRApiLibrary.DataAccess._00_Main.Interface;
+﻿using Dapper;
+using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._90_Utils;
@@ -693,6 +694,42 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         }
 
         return skipped;
+    }
+
+    // -- Patch : '0000-00-00' defaults are invalid in strict mode (NO_ZERO_DATE) and block every ALTER on the table --
+    // -- Key columns stay NOT NULL without a default; the others default to NULL --
+    public async Task _03ZeroDateDefaults(string schema, string? connName)
+    {
+        string sql = @"select TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_KEY
+                       from   information_schema.COLUMNS
+                       where  TABLE_SCHEMA = @Schema and DATA_TYPE in ('date', 'datetime', 'timestamp')
+                              and COLUMN_DEFAULT like '0000-00-00%'";
+        var columns = await _sql.FetchData<dynamic, dynamic>(sql, new { Schema = schema }, connName);
+        if (columns.Count == 0) return;
+
+        // -- Own connection : zero dates already in the rows must not stop the table copy, and the pooled session gets its mode back --
+        using var cn = _sql.GetConnString(connName);
+        cn.Open();
+        string oldMode = await cn.ExecuteScalarAsync<string>("select @@SESSION.sql_mode") ?? "";
+        string relaxed = string.Join(",", oldMode.Split(',').Where(m => m != "NO_ZERO_DATE" && m != "NO_ZERO_IN_DATE"));
+
+        try
+        {
+            await cn.ExecuteAsync("SET SESSION sql_mode = @Mode", new { Mode = relaxed });
+
+            foreach (var table in columns.GroupBy(c => (string)c.TABLE_NAME))
+            {
+                var fixes = table.Select(c => (string)c.COLUMN_KEY == "PRI" || (string)c.IS_NULLABLE == "NO"
+                                                ? $"MODIFY COLUMN `{c.COLUMN_NAME}` {c.COLUMN_TYPE} NOT NULL"
+                                                : $"MODIFY COLUMN `{c.COLUMN_NAME}` {c.COLUMN_TYPE} NULL DEFAULT NULL");
+
+                await cn.ExecuteAsync($"ALTER TABLE `{schema}`.`{table.Key}` {string.Join(", ", fixes)}");
+            }
+        }
+        finally
+        {
+            await cn.ExecuteAsync("SET SESSION sql_mode = @Mode", new { Mode = oldMode });
+        }
     }
 
     public async Task<SchemaStructureModel?> _02_TableExists(string? schema, string? tableName, string? connName)

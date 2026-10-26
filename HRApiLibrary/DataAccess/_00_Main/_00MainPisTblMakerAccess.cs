@@ -1411,6 +1411,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.EmpmasInsurance (
                             Id              INTEGER UNSIGNED                    NOT NULL,
+                            EmpmasId         INTEGER UNSIGNED                   DEFAULT NULL,
                             INSURANCE        varchar(60)                        DEFAULT NULL,
                             PolicyNo         varchar(15)                        DEFAULT NULL,
                             FaceValue        double(9,2)                        DEFAULT NULL,
@@ -1418,6 +1419,8 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             InsExpire        date                               DEFAULT NULL,
                         PRIMARY KEY     (Id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, conn);
+
+        await AddColumnIfMissing(schema, "EmpmasInsurance", "EmpmasId", "EmpmasId INTEGER UNSIGNED DEFAULT NULL AFTER Id", conn);
     }
     // ************************************************************************
 
