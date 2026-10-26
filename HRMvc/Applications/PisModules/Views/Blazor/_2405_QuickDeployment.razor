@@ -1,7 +1,64 @@
-﻿@using HRMvc.Applications._00GeneralComponents
+﻿@using HRMvc.Applications.PisModules.Vars
+@using HRMvc.Applications.PisModules.Views.Blazor._2405
 
-<_00UnderDevelopment Module="Quick Deployment" />
+<TelerikRootComponent>
+    <div class="position-relative">
+
+        @*--- TELERIK NOTIFICATION ---*@
+        <TelerikNotification @ref="@NotificationRef"
+                             HorizontalPosition="@NotificationHorizontalPosition.Right"
+                             VerticalPosition="@NotificationVerticalPosition.Top"
+                             AnimationType="@AnimationType.SlideLeft" />
+
+        @*--- TELERIK LOADER ---*@
+        <TelerikLoaderContainer Visible="@v.IsLoading"
+                                LoaderType="@LoaderType.ConvergingSpinner" />
+
+        @*--- PARAMETERS ---*@
+        <CascadingValue Value="@Uc">
+            <CascadingValue Value="@v">
+                <CascadingValue Value="@rv">
+                    <CascadingValue Value="@NotificationRef">
+                        <_00BT_FullW HdrCaption="Quick Deployment">
+                            <Details>
+
+                                @*--- REPORT ---*@
+                                <_02BTRep Rv="rv" ChildAction="ChildAction" />
+
+                                <_2405_DeployedEquipmentList    ChildAction="ChildAction" />
+                                <_2405_UndeployedEquipmentList  ChildAction="ChildAction" />
+
+                            </Details>
+                        </_00BT_FullW>
+                    </CascadingValue>
+                </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+    </div>
+
+</TelerikRootComponent>
+
 @code {
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
+
+    V2404Model v = new();
+    V00_RepVars rv = new();
+
+    private TelerikNotification? NotificationRef;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        v.IsLoading = false;
+    }
+
+
+
+    private async Task ChildAction()
+    {
+        if (v == null) return;
+
+        v.Action = "";
+    }
 }

@@ -2,6 +2,9 @@
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.Models._10_Pis
+
+
+
 <div>
     @if (!disableAction)
     {
@@ -29,6 +32,8 @@
             <div style="width: 70%;">
                 <input type="text" @oninput="@(() => StateHasChanged())" @bind-value="V.SearchValue" placeholder="Lastname" class="form-control">
             </div>
+
+
             <div style="width: 30%;">
                 <button onclick="@(() => SearchEmployee())"  type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
                     <div class="d-flex gap-1 align-items-center justify-content-center">
@@ -47,6 +52,8 @@
             </div>
         }
     }
+
+
     <div class="p-2 bg-lightgray" style="border:1px;">
         <h6 class="mb-0">Name</h6>
     </div>
@@ -82,6 +89,9 @@
             </div>
         }
     </div>
+
+
+
     <div class="bg-lightgray" style="color:#2c2f33; padding: 5px 10px; font-size: small; border:1px solid #d9dde2; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;">
         <span class="fw-bold">Visible Status: </span>
 
@@ -109,6 +119,8 @@
         }
     </div>
 </div>
+
+
 @inject IOEmpmasDataAccess _empmas
 @inject DA2052 _da;
 @inject I_00MainDA _main;
@@ -133,10 +145,16 @@
     DA2052? da;
 
     [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
     public V2052 V { get; set; } = new();
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
+
+
 
     async void ChangeClass(int classNo)
     {
@@ -165,23 +183,23 @@
         {
             case 1:
                 class1 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, V.pisdb!, V.conn!);
+                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, Uc.OpisDb!, Uc.Conn!);
                 break;
 
 
             case 2:
                 class2 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("K", "N", statuses, V.pisdb!, V.conn!);
+                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("K", "N", statuses, Uc.OpisDb!, Uc.Conn!);
                 break;
 
             case 3:
                 class3 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("O", "T", statuses, V.pisdb!, V.conn!);
+                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("O", "T", statuses, Uc.OpisDb!, Uc.Conn!);
                 break;
 
             case 4:
                 class4 = "c-222-selected";
-                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("U", "Z", statuses, V.pisdb!, V.conn!);
+                V.EmpmasList = await _empmas._02By1stLetterRangeByStatus("U", "Z", statuses, Uc.OpisDb!, Uc.Conn!);
                 break;
 
             default:
@@ -205,6 +223,8 @@
     {
         V.SelectedEmpnumber = e.EmpNumber;
         V.Action = "SelectEmpmas";
+
+
         await ChildAction.InvokeAsync();
     }
 
@@ -228,7 +248,7 @@
             statuses.Add(s.Code);
         }
 
-        V.EmpmasList = await _empmas._02SearchNameByStatus(V.SearchValue, statuses, V.pisdb!, V.conn!);
+        V.EmpmasList = await _empmas._02SearchNameByStatus(V.SearchValue, statuses, Uc.OpisDb!, Uc.Conn!);
         await ChildAction.InvokeAsync();
     }
 

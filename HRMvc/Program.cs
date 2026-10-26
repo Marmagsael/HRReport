@@ -1,6 +1,7 @@
 using Blazored.LocalStorage;
 using HRApiLibrary.Reporting.Providers.Payroll;
 using HRMvc.StartupConfig;
+using HRMvc.Applications.PayrollTransaction.Vars;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +23,9 @@ builder.AddApiInjectionServices();
 builder.AddApiServices();
 
 var app = builder.Build();
+await app.RunMigrations();      // -- table makers (main, MainPis), when appsettings "Migrations" is "true"; company schemas run after login --
+PayClaimsHelper.Init(app.Configuration);
+
 app.UseSession();  
 app.UseSwagger();
 app.UseSwaggerUI();

@@ -1,0 +1,32 @@
+@using HRMvc.Applications._00GeneralComponents
+
+@* --- Shown when the user has no Empmas record mapped to the system user ( Empmas.SystemId ) ---
+       Modal shows once per opening of the module; wrapped content ( ChildContent ) stays disabled. *@
+@if (!IsMapped && showModal)
+{
+    <_00Modal ModuleCaption="System ID not mapped" ModalWidth="520px" ChildAction="@(() => showModal = false)">
+        <Content>
+            <div class="p-2">
+                <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
+                You're not allowed to @Action until your <b><em>SYSTEM ID</em></b> has been fully mapped.
+            </div>
+        </Content>
+    </_00Modal>
+}
+
+@if (ChildContent != null)
+{
+    <div class="@(IsMapped ? "" : " disabled-div-50 ")">
+        @ChildContent
+    </div>
+}
+
+@code {
+    [Parameter] public UserClaimsModel?     Uc              { get; set; }
+    [Parameter] public RenderFragment?      ChildContent    { get; set; }
+    [Parameter] public string?              Action          { get; set; } = "approve request";
+
+    bool showModal = true;
+
+    bool IsMapped => (Uc?.EmpmasId ?? 0) > 0;
+}

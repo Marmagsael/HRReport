@@ -66,6 +66,8 @@ public class _00MainPisAccess : I_00MainPisAccess
         return data;
     }
 
+
+
     public async Task<EmpmasModel?> _03Empmas(int? id, EmpmasModel empmas, string? schema, string? conn)
     {
         string? sql = $@"Update {schema}.Empmas set 

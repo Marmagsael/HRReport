@@ -20,22 +20,25 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _01MainSchema("MainPay", connName);
         await _01MainSchema("MainPis", connName);
 
-        _01Users(schema, connName);
-        _01Menus("Menus10User", schema, connName);
-        _01Menus("Menus20Employment", schema, connName);
-        _01Menus("Menus30AMS", schema, connName);
-        _01Menus("Menus40Pis", schema, connName);
-        _01Menus("Menus50Pay", schema, connName);
-        _01OtherAccess(schema, connName);
-        _01Country(schema, connName);
-        _01ProvinceState(schema, connName);
-        _01City(schema, connName);
-        _01Currency(schema, connName);
-        _01UsersCompany(schema, connName);
-        _01UC_AccessReq(schema, connName);
-        _01UsersCompanyAddress(schema, connName);
-        _01CompanyUsers(schema, connName);
-        _01CompanyUserType(schema, connName);
+        await _01Users(schema, connName);
+        await _01Menus("Menus10User", schema, connName);
+        await _01Menus("Menus20Employment", schema, connName);
+        await _01Menus("Menus30AMS", schema, connName);
+        await _01Menus("Menus40Pis", schema, connName);
+        await _01Menus("Menus50Pay", schema, connName);
+        await _01OtherAccess(schema, connName);
+        await _01Country(schema, connName);
+        await _01ProvinceState(schema, connName);
+        await _01City(schema, connName);
+        await _01Currency(schema, connName);
+        await _01UsersCompany(schema, connName);
+        await _01UC_AccessReq(schema, connName);
+        await _01UsersCompanyAddress(schema, connName);
+        await _01CompanyUsers(schema, connName);
+        await _01CompanyInvite(schema, connName);
+        await _01CompanyUserType(schema, connName);
+        await _01EmailOtp(schema, connName);
+        await _01MenuSystemApplication(schema, connName);
 
 
     }
@@ -54,7 +57,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     
     }
 
-    private async void _01UsersSchema(string? userId, string? companyId, string? schemaPrefix)
+    private async Task _01UsersSchema(string? userId, string? companyId, string? schemaPrefix)
     {
         string? schema = $"u{userId}c{companyId}_{schemaPrefix}";
         string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
@@ -63,7 +66,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
     //--- Tables ------------------------------------------------------
 
-    private void _01Users(string? schema, string? connName)
+    private async Task _01Users(string? schema, string? connName)
     {
         // UserType => 0 = Ordinary Users, 1 = System Users 
         string? sql = @$"CREATE TABLE if not exists {schema}.Users (
@@ -76,10 +79,10 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                           Status        Char(1)         DEFAULT 'A',
                           DefaultCoId   INTEGER UNSIGNED NOT NULL DEFAULT 1,
                           PRIMARY KEY(`Id`))ENGINE = InnoDB;";
-        _sql.ExecuteCmd(sql, new { }, connName);
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async void _01Menus(string? menuName, string? schema, string? connName)
+    private async Task _01Menus(string? menuName, string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.{menuName}
         (
@@ -104,7 +107,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     }
     
 
-    private async void _01OtherAccess(string? schema, string? connName)
+    private async Task _01OtherAccess(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.OtherAccess
         (
@@ -117,7 +120,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     }
     
 
-    private async void _01Country(string? schema, string? connName)
+    private async Task _01Country(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.Country ( 
                             Id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -139,7 +142,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         }
     }
 
-    private async void _01Currency(string? schema, string? connName)
+    private async Task _01Currency(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists  {schema}.Currency
                         (
@@ -162,7 +165,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         }
     }
 
-    private async void _01ProvinceState(string? schema, string? connName)
+    private async Task _01ProvinceState(string? schema, string? connName)
     {
         string? sql = $@"CREATE TABLE if not exists  {schema}.ProvinceState
             (
@@ -222,7 +225,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
     }
 
-    private async void _01City(string? schema, string? connName)
+    private async Task _01City(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists  {schema}.City
                 (
@@ -431,7 +434,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
     }
 
-    private async void _01UsersCompany(string? schema, string? connName)
+    private async Task _01UsersCompany(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.UsersCompany
                 (
@@ -449,13 +452,45 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     ApplicantSchema VARCHAR (60)    NULL,
                     PISSchema       VARCHAR (60)    NULL,
                     PaySchema       VARCHAR (60)    NULL,
+                    AcctgSchema     VARCHAR (60)    NULL,
                     OldPay          VARCHAR (60)    NULL,
                     OldPis          VARCHAR (60)    NULL,
-                    PRIMARY KEY (`Id`)) Engine = InnoDB;";
+                    CompanyCode     VARCHAR (10)    NULL,
+                    PRIMARY KEY (`Id`),
+                    UNIQUE KEY uq_userscompany_companycode (CompanyCode),
+                    CONSTRAINT ck_userscompany_companycode_alnum CHECK (CompanyCode REGEXP '^[A-Za-z0-9]+$')) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- Columns added after the table was created --
+        var columns = await _sql.FetchData<dynamic, dynamic>($@"DESC {schema}.UsersCompany", new { }, connName);
+        if (!columns.Any(c => c.Field == "CompanyCode"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany
+                        ADD COLUMN CompanyCode VARCHAR (10) NULL,
+                        ADD UNIQUE KEY uq_userscompany_companycode (CompanyCode),
+                        ADD CONSTRAINT ck_userscompany_companycode_alnum CHECK (CompanyCode REGEXP '^[A-Za-z0-9]+$')";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+        if (!columns.Any(c => c.Field == "AcctgSchema"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN AcctgSchema VARCHAR (60) NULL AFTER PaySchema";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+
+        // -- CompanyCode is the schema prefix : letters and numbers only (replaces the earlier no-space check) --
+        sql = $@"SELECT CONSTRAINT_NAME FROM information_schema.CHECK_CONSTRAINTS
+                 WHERE lower(CONSTRAINT_SCHEMA) = lower(@Schema) AND CONSTRAINT_NAME = 'ck_userscompany_companycode_nospace'";
+        var oldCheck = await _sql.FetchData<string, dynamic>(sql, new { Schema = schema }, connName);
+        if (oldCheck.Count > 0)
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany
+                        DROP CHECK ck_userscompany_companycode_nospace,
+                        ADD CONSTRAINT ck_userscompany_companycode_alnum CHECK (CompanyCode REGEXP '^[A-Za-z0-9]+$')";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
     }
     
-    private async void _01UC_AccessReq(string? schema, string? connName)
+    private async Task _01UC_AccessReq(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists {schema}.`UC_AccessReq` (
                             `Id`                BIGINT      UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -480,7 +515,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         
     }
 
-    private async void _01UsersCompanyAddress(string? schema, string? connName)
+    private async Task _01UsersCompanyAddress(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists  {schema}.UserCompanyAdd (
                             Id      INTEGER         UNSIGNED NOT NULL,
@@ -491,7 +526,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async void _01CompanyUsers(string? schema, string? connName)
+    private async Task _01CompanyUsers(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists  {schema}.CompanyUsers (
                             UserId              int unsigned    NOT NULL,
@@ -499,13 +534,86 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                             Status              char(2)         NOT NULL     DEFAULT 'FA',
                             DateInvited         datetime                     DEFAULT NULL,
                             DateAccepted        datetime                     DEFAULT NULL,
-                            CompanyUserTypeId   int unsigned                 DEFAULT 0    COMMENT '1 - Owner, 2 - System User, 3 - Employee, 4 - Developer',
+                            CompanyUserTypeId   int unsigned                 DEFAULT 0    COMMENT '1 - Owner, 2 - User, 3 - Employee, 5 - System Admin',
                             InvitedById         int unsigned                 Default 0 ,
+                            WithPISAccess        tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithPayAccess        tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithAMSAccess        tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithAccountingAccess tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithApplicantAccess  tinyint(1)     NOT NULL     DEFAULT 0,
+                            EmpmasId            int unsigned                 DEFAULT 0    COMMENT '{{PISSchema}}.Empmas.Id of the user in this company',
                         PRIMARY KEY (UserId,CompanyId)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- Columns added after the table was created --
+        var columns     = await _sql.FetchData<dynamic, dynamic>($@"DESC {schema}.CompanyUsers", new { }, connName);
+        var columnNames = new List<string> { "WithPISAccess", "WithPayAccess", "WithAMSAccess", "WithAccountingAccess", "WithApplicantAccess" };
+
+        foreach (var columnName in columnNames)
+        {
+            if (columns.Any(c => c.Field == columnName)) continue;
+
+            sql = $@"ALTER TABLE {schema}.CompanyUsers ADD COLUMN `{columnName}` tinyint(1) NOT NULL DEFAULT 0";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+
+        if (!columns.Any(c => c.Field == "EmpmasId"))
+        {
+            sql = $@"ALTER TABLE {schema}.CompanyUsers ADD COLUMN EmpmasId int unsigned DEFAULT 0 COMMENT '{{PISSchema}}.Empmas.Id of the user in this company'";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+
+        // -- User types used : 1 Owner, 2 User, 3 Employee (portal only), 5 System Admin (invites and approves like the owner) --
+        sql = $@"ALTER TABLE {schema}.CompanyUsers MODIFY COLUMN CompanyUserTypeId int unsigned DEFAULT 0 COMMENT '1 - Owner, 2 - User, 3 - Employee, 5 - System Admin'";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
-    private async void _01CompanyUserType(string? schema, string? connName)
+    // -- Invites sent by a company to an existing user : same columns as CompanyUsers -----------
+    // -- Status I invited, A accepted (row copied to CompanyUsers), D declined -----------------
+    // -- P pending : the employee registered (InvitedById 0) and waits for the company ----------
+    private async Task _01CompanyInvite(string? schema, string? connName)
+    {
+        string? sql = @$"CREATE TABLE if not exists  {schema}.CompanyInvite (
+                            UserId              int unsigned    NOT NULL,
+                            CompanyId           int unsigned    NOT NULL,
+                            Status              char(2)         NOT NULL     DEFAULT 'I'  COMMENT 'I - Invited, P - Pending (registered), A - Accepted, D - Declined',
+                            DateInvited         datetime                     DEFAULT NULL,
+                            DateAccepted        datetime                     DEFAULT NULL COMMENT 'accepted or declined',
+                            CompanyUserTypeId   int unsigned                 DEFAULT 2    COMMENT '1 - Owner, 2 - User, 3 - Employee, 5 - System Admin',
+                            InvitedById         int unsigned                 Default 0 ,
+                            WithPISAccess        tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithPayAccess        tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithAMSAccess        tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithAccountingAccess tinyint(1)     NOT NULL     DEFAULT 0,
+                            WithApplicantAccess  tinyint(1)     NOT NULL     DEFAULT 0,
+                            EmpmasId            int unsigned                 DEFAULT 0    COMMENT '{{PISSchema}}.Empmas.Id of the invited employee',
+                        PRIMARY KEY (UserId,CompanyId)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- Status P and roles 3 / 5 were added after the table was created --
+        sql = $@"ALTER TABLE {schema}.CompanyInvite
+                     MODIFY COLUMN Status            char(2)      NOT NULL DEFAULT 'I' COMMENT 'I - Invited, P - Pending (registered), A - Accepted, D - Declined',
+                     MODIFY COLUMN CompanyUserTypeId int unsigned          DEFAULT 2   COMMENT '1 - Owner, 2 - User, 3 - Employee, 5 - System Admin'";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+    }
+
+    private async Task _01EmailOtp(string? schema, string? connName)
+    {
+        string? sql = @$"CREATE TABLE if not exists  {schema}.EmailOtp (
+                            Id          int unsigned    NOT NULL     AUTO_INCREMENT,
+                            Email       varchar(60)     NOT NULL,
+                            Code        varchar(150)    NOT NULL     COMMENT 'sha2(otp,512)',
+                            Purpose     varchar(20)     NOT NULL     COMMENT 'REG-EMP, REG-OWNER',
+                            ExpiresAt   datetime        NOT NULL,
+                            Attempts    int unsigned    NOT NULL     DEFAULT 0,
+                            UsedAt      datetime                     DEFAULT NULL,
+                            CreatedAt   datetime        NOT NULL     DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (Id),
+                        KEY ix_emailotp_email (Email, Purpose)) ENGINE=InnoDB;";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+    }
+
+    private async Task _01CompanyUserType(string? schema, string? connName)
     {
         string? sql = @$"CREATE TABLE if not exists  {schema}.CompanyUserType (
                           Id        INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -522,13 +630,36 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     (Id,    Name,           IsVisible) values 
                     (1,     'Owner',        1),
                     (2,     'SystemUser',   1),
-                    (3,     'Employee',     0),
-                    (4,     'Developer',    0)";
+                    (3,     'Employee',     1),
+                    (4,     'Developer',    0),
+                    (5,     'SystemAdmin',  1)";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
+
+        // -- Types added after the table was filled; Employee (3) is now used --
+        sql = @$"insert into {schema}.CompanyUserType (Id, Name, IsVisible)
+                 select 5, 'SystemAdmin', 1 from dual
+                 where not exists (select 1 from {schema}.CompanyUserType where Id = 5)";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        sql = @$"update {schema}.CompanyUserType set IsVisible = 1 where Id = 3 and IsVisible <> 1";
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
 
+
+    // -- System Application (15/502) in the left menu; main.Menu itself is not made here --
+    private async Task _01MenuSystemApplication(string? schema, string? connName)
+    {
+        var exists = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.tables where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu'", new { Schema = schema }, connName);
+        if (exists.FirstOrDefault() == 0) return;
+
+        string? sql = $@"INSERT IGNORE INTO {schema}.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (1501, 'SHdr-EPortal', 1000, 1, 'fa-solid fa-serve',  'Applications',       '12/501', NULL),
+                            (1502, 'Dtl-EPortal',  1501, 2, 'fa-solid fa-server', 'System Application', '15/502', NULL);";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+    }
 
     public async Task<SchemaStructureModel?> _02_TableExists(string? schema, string? tableName, string? connName)
     {

@@ -7,6 +7,11 @@ public class LoginUiModel
     [Required(ErrorMessage = "Please enter your username.")]
     public string EmpNumber { get; set; } = string.Empty;
 
+    [Display(Name = "Email")]
+    [Required(ErrorMessage = "Please enter your email address.")]
+    [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
+    public string Email { get; set; } = string.Empty;
+
     [DataType(DataType.Password)]
     [Display(Name = "Password")]
     [Required(ErrorMessage = "Please enter your password.")]

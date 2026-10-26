@@ -48,7 +48,7 @@ public class OtbltranDataAccess : IOtbltranDataAccess
                         left join {schema}.Tbltrandtl dt on t.trn = dt.trn and t.acctnumber = left(dt.dtlCd,4) and t.empnumber = dt.empnumber
                         left join {schema}.ChartofAcct c on c.AcctNumber = t.AcctNumber  
                         where left(t.Trn,6) = @Trn and t.Empnumber = @Empnumber ;";
-        //Console.WriteLine(sql);
+        
         var data = await _sql.FetchData<GTbltranModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         return data;
     }

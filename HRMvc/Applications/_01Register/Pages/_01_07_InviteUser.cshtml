@@ -1,0 +1,150 @@
+@model V01InviteUser
+
+@{
+    Layout              = "~/Views/Shared/_EPortalLayout.cshtml";
+    ViewData["Title"]   = "Invite User";
+    var setupError      = ViewData["SetupError"] as string;
+    var pickedText      = ViewData["PickedText"] as string;
+}
+
+<div class="ms-2 mt-1 vh-95min body-wrapper eng12">
+    <div class="mb-3">
+        <a href="~/12/003" class="reg01-link small"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <h3 class="m-0 mt-2">Invite User</h3>
+    </div>
+
+    <form id="invForm" action="~/company/invite" method="post" class="d-flex flex-column gap-2 eng12-form">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        @if (setupError != null)
+        {
+            <div class="reg01-alert reg01-alert-warn py-1"><i class="fa-solid fa-triangle-exclamation"></i><span>@setupError</span></div>
+        }
+
+        @*---- EMPLOYEE : searched on the server (30 rows at most), then the picked one is checked ----*@
+        <div class="position-relative">
+            <label for="invSearch" class="reg01-label reg01-req">Employee</label>
+            <input id="invSearch" class="form-control" autocomplete="off" value="@pickedText"
+                   placeholder="Type the employee no. or name (at least 2 characters)" @(setupError != null ? "disabled" : "") />
+            <input asp-for="EmpNumber" type="hidden" />
+            <div id="invResults" class="list-group position-absolute w-100 shadow-sm d-none inv07-results"></div>
+            <span asp-validation-for="EmpNumber" class="err-input-msg text-danger"></span>
+        </div>
+
+        <div>
+            <label class="reg01-label">Email</label>
+            <input id="invEmail" class="form-control" readonly placeholder="Taken from the employee's record" />
+            <div id="invChecking" class="small text-muted d-none mt-1"><span class="spinner-border spinner-border-sm"></span> Checking...</div>
+            <div id="invOk" class="small text-success d-none mt-1"><i class="fa-solid fa-circle-check"></i> Account found. The invitation can be sent.</div>
+            <div id="invNa" class="reg01-alert reg01-alert-warn d-none mt-2 py-1"><i class="fa-solid fa-triangle-exclamation"></i><span></span></div>
+        </div>
+
+        @*---- ROLE : Employee is portal only, User can be given modules ----*@
+        <div class="mt-2">
+            <label asp-for="CompanyUserTypeId" class="reg01-label"></label>
+            <select asp-for="CompanyUserTypeId" class="form-select" style="max-width:260px" data-role data-group="inv">
+                <option value="3">Employee (portal only)</option>
+                <option value="2">User</option>
+            </select>
+        </div>
+
+        @*---- ACCESS : portal only when nothing is checked ----*@
+        <div class="mt-2">
+            <label class="reg01-label">Access</label>
+            <div class="d-flex flex-wrap gap-3">
+                <div class="form-check"><input asp-for="WithPISAccess"        class="form-check-input" data-group="inv" /><label asp-for="WithPISAccess"        class="form-check-label"></label></div>
+                <div class="form-check"><input asp-for="WithPayAccess"        class="form-check-input" data-group="inv" /><label asp-for="WithPayAccess"        class="form-check-label"></label></div>
+                <div class="form-check"><input asp-for="WithAMSAccess"        class="form-check-input" data-group="inv" /><label asp-for="WithAMSAccess"        class="form-check-label"></label></div>
+                <div class="form-check"><input asp-for="WithAccountingAccess" class="form-check-input" data-group="inv" /><label asp-for="WithAccountingAccess" class="form-check-label"></label></div>
+                <div class="form-check"><input asp-for="WithApplicantAccess"  class="form-check-input" data-group="inv" /><label asp-for="WithApplicantAccess"  class="form-check-label"></label></div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-3">
+            <input type="submit" id="invSubmit" value="Send Invite" class="btn b-btn-primary" disabled />
+            <a href="~/12/003" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+
+    <script>
+        // -- Employee (3) is portal only : its access checkboxes are cleared and disabled --
+        document.querySelectorAll('select[data-role]').forEach(function (sel) {
+            const sync = function () {
+                document.querySelectorAll('input[data-group="' + sel.dataset.group + '"]').forEach(function (c) {
+                    const off = sel.value === '3';
+                    c.disabled = off;
+                    if (off) c.checked = false;
+                });
+            };
+            sel.addEventListener('change', sync);
+            sync();
+        });
+    </script>
+
+    <script>
+        $(function () {
+            const $search   = $('#invSearch');
+            const $results  = $('#invResults');
+            const $id       = $('#EmpNumber');
+            const searchUrl = '@Url.Content("~/company/invite/search")';
+            const checkUrl  = '@Url.Content("~/company/invite/check")';
+            let timer, lastTerm = '', req;
+
+            // -- Send Invite stays disabled until the picked employee passes the check (the save checks it again) --
+            function showCheck(r) {
+                $('#invChecking').addClass('d-none');
+                $('#invEmail').val(r && r.email ? r.email : '');
+                $('#invOk').toggleClass('d-none', !(r && r.ok));
+                $('#invNa').toggleClass('d-none', !(r && !r.ok)).find('span').text(r && !r.ok ? r.error : '');
+                $('#invSubmit').prop('disabled', !(r && r.ok));
+            }
+
+            function pick(id, text) {
+                $id.val(id);
+                $search.val(text);
+                $results.addClass('d-none').empty();
+                showCheck(null);
+                $('#invChecking').removeClass('d-none');
+
+                $.getJSON(checkUrl, { empNumber: id })
+                    .done(showCheck)
+                    .fail(() => showCheck({ ok: false, error: 'Unable to check right now. Please try again.' }));
+            }
+
+            // -- Typing clears the pick; the search waits 300 ms after the last key --
+            $search.on('input', function () {
+                $id.val('');
+                showCheck(null);
+
+                const term = $search.val().trim();
+                clearTimeout(timer);
+                if (term.length < 2) { $results.addClass('d-none').empty(); lastTerm = ''; return; }
+
+                timer = setTimeout(function () {
+                    if (term === lastTerm) return;
+                    lastTerm = term;
+                    if (req) req.abort();
+
+                    req = $.getJSON(searchUrl, { term: term }).done(function (rows) {
+                        $results.empty();
+                        if (rows.length === 0) $results.append('<div class="list-group-item small text-muted">No employee found</div>');
+                        rows.forEach(r => $('<button type="button" class="list-group-item list-group-item-action small"></button>')
+                                            .text(r.text).on('click', () => pick(r.id, r.text)).appendTo($results));
+                        $results.removeClass('d-none');
+                    });
+                }, 300);
+            });
+
+            // -- Close the list when clicking elsewhere --
+            $(document).on('click', e => { if (!$(e.target).closest('#invSearch, #invResults').length) $results.addClass('d-none'); });
+
+            // -- Coming back from a failed save : check the picked employee again --
+            if ($id.val()) pick($id.val(), $search.val());
+        });
+    </script>
+}

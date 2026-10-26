@@ -1,0 +1,117 @@
+@model List<HRApiLibrary.Models._00_Main.RegistrationRequestModel>
+
+@{
+    Layout              = "~/Views/Shared/_EPortalLayout.cshtml";
+    ViewData["Title"]   = "Registration Requests";
+    var setupError      = ViewData["SetupError"] as string;
+
+    // -- Access the owner can give on approve : portal only when nothing is checked --
+    (string Name, string Label)[] access =
+    [
+        ("WithPISAccess", "PIS"), ("WithPayAccess", "Payroll"), ("WithAMSAccess", "Attendance"),
+        ("WithAccountingAccess", "Accounting"), ("WithApplicantAccess", "Applicant")
+    ];
+}
+
+<div class="ms-2 mt-1 vh-95min body-wrapper eng12">
+    <div class="mb-3">
+        <a href="~/12/003" class="reg01-link small"><i class="fa-solid fa-arrow-left"></i> Back</a>
+        <h3 class="m-0 mt-2">Registration Requests</h3>
+    </div>
+
+    @if (TempData["ReqOk"] is string ok)
+    {
+        <div class="reg01-alert reg01-alert-info mb-3"><i class="fa-solid fa-circle-check"></i><span>@ok</span></div>
+    }
+    @if (TempData["ReqError"] is string err)
+    {
+        <div class="reg01-alert eng12-alert-error mb-3"><i class="fa-solid fa-triangle-exclamation"></i><span>@err</span></div>
+    }
+    @if (setupError != null)
+    {
+        <div class="reg01-alert reg01-alert-warn mb-3"><i class="fa-solid fa-triangle-exclamation"></i><span>@setupError</span></div>
+    }
+
+    @if (Model.Count == 0)
+    {
+        <div class="eng12-empty">
+            <i class="fa-regular fa-circle-check"></i>
+            <div>No registration is waiting for approval.</div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm align-middle eng12-table">
+                <thead>
+                    <tr>
+                        <th>Emp No.</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Registered</th>
+                        <th>Role</th>
+                        <th>Access</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model)
+                    {
+                        string formId = $"reqForm{r.UserId}";
+                        <tr>
+                            <td>@(r.EmpNumber ?? "-")</td>
+                            <td class="fw-semibold">@r.LastName, @r.FirstName @r.MiddleName</td>
+                            <td>@r.Email</td>
+                            <td>@(r.DateInvited?.ToString("MMM d, yyyy") ?? "-")</td>
+                            <td>
+                                <select form="@formId" name="CompanyUserTypeId" class="form-select form-select-sm" style="min-width:150px"
+                                        data-role data-group="@formId">
+                                    <option value="3">Employee (portal only)</option>
+                                    <option value="2">User</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var a in access)
+                                    {
+                                        string id = $"{a.Name}{r.UserId}";
+                                        <div class="form-check form-check-inline m-0">
+                                            <input type="checkbox" form="@formId" name="@a.Name" value="true" id="@id" class="form-check-input" data-group="@formId" />
+                                            <label for="@id" class="form-check-label small">@a.Label</label>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <form id="@formId" action="~/company/requests/approve/@r.UserId" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-success"><i class="fa-solid fa-check"></i> Approve</button>
+                                </form>
+                                <form action="~/company/requests/decline/@r.UserId" method="post" class="d-inline"
+                                      onsubmit="return confirm('Decline this registration?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fa-solid fa-xmark"></i> Decline</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // -- Employee (3) is portal only : its access checkboxes are cleared and disabled --
+        document.querySelectorAll('select[data-role]').forEach(function (sel) {
+            const sync = function () {
+                document.querySelectorAll('input[data-group="' + sel.dataset.group + '"]').forEach(function (c) {
+                    const off = sel.value === '3';
+                    c.disabled = off;
+                    if (off) c.checked = false;
+                });
+            };
+            sel.addEventListener('change', sync);
+            sync();
+        });
+    </script>
+}

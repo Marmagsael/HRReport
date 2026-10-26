@@ -10,4 +10,7 @@ public class AtttemplatereqhistModel
 	public string?      SetStatusTo             { get; set; } 
 	public string?      Empnumber_Approver      { get; set; } 
 	public string?      Remarks                 { get; set; } 
+
+	// Other fields ---------------------------------------------------
+	public string?      ApproverName            { get; set; } 
 }

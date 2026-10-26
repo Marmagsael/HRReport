@@ -52,6 +52,10 @@
     string? empnumber = string.Empty;
     bool isLoading = true;
 
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
     [CascadingParameter] public V2052 V { get; set; } = new();
 
         
@@ -83,13 +87,12 @@
             {
                 if (string.IsNullOrWhiteSpace(edu.School)) continue; 
 
-                var res = await _empmas._02ByEmpnumberAndCode(
-                              V.SelectedEmpnumber, edu.Code, V.pisdb!, V.conn!);
+                var res = await _empmas._02ByEmpnumberAndCode( V.SelectedEmpnumber, edu.Code, Uc.OpisDb!, Uc.Conn!);
 
                 if (res.Any())
-                    await _empmas._03(V.SelectedEmpnumber, edu, V.pisdb!, V.conn!);
+                    await _empmas._03(V.SelectedEmpnumber, edu, Uc.OpisDb!, Uc.Conn!);
                 else
-                    await _empmas._01(edu, V.pisdb!, V.conn!);
+                    await _empmas._01(edu, Uc.OpisDb!, Uc.Conn!);
             }
 
             NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);

@@ -1,0 +1,586 @@
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRMvc.Applications._00GeneralComponents
+@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
+@using HRMvc.Applications.Vars
+@using Radzen
+@using Radzen.Blazor
+
+@* =====================================================================================
+   OB ( Official Business ) Request
+   Tables : ObApplication, ObApplicationDtl, ObApplicationHist, ObDuration
+   Status : N - New, S - Save, FA - For Approval, A - Approved, C - Cancel, R - Returned
+   ===================================================================================== *@
+
+<RadzenDialog />
+<RadzenNotification />
+@inject DialogService       _DialogService
+@inject NotificationService _NotificationService
+
+@if(msg.Length > 0) { <div class="text-primary p-2 border-bottom small"> @msg </div> }
+
+@* --- Print : Reports/_02HR/ObApplication.trdp ( same flow as Leave ) --- *@
+@if(showPrint)
+{
+    <_00Modal ModuleCaption="Official Business Request" Maximized="true" ChildAction="@(() => showPrint = false)">
+        <Content>
+            <_ReportRenderer DataSource         ="@rv.ReportData"
+                             ReportRelativePath ="@rv.RelativePath"
+                             OutputFormat       ="@rv.SelectedFormat"
+                             Parameters         ="@rv.ReportParams"
+                             AutoGenerate       ="@(rv.ReportData?.Any() == true)"
+                             RefreshToken       ="@rv.RefreshToken" />
+        </Content>
+    </_00Modal>
+}
+
+<div class="d-flex gap-1 p-1 border-bottom ">
+    <div @onclick="New" class="p-1 mb-cbtn mb-cbtn-gray card w-100p ">Clear Form </div>
+    <div @onclick="SaveClick" class="p-1 mb-cbtn mb-cbtn-blue card w-75p @(CanSave ? "" : " disabled-div ") "> Save </div>
+    <div @onclick="SendForApproval" class="p-1 mb-cbtn mb-cbtn-blue card w-165p @(CanSend ? "" : " disabled-div ") "> Send For Approval </div>
+    <div @onclick="CancelOB" class="p-1 mb-cbtn mb-cbtn-red card w-100p @(ob.Status=="S" ? "" : " disabled-div ")"> Cancel </div>
+    <div @onclick="ShowMyRequest" class="p-1 mb-cbtn mb-cbtn-gray card w-140p "> Show My Request </div>
+    <div @onclick="Print" class="p-1 mb-cbtn mb-cbtn-blue card w-80p @(CanPrint ? "" : " disabled-div ") "> Print </div>
+</div>
+
+@* --- My Requests ( Saved / For Approval ) : same modal flow as Leave ------------- *@
+@if(showMyRequest)
+{
+    <_00Modal ModuleCaption="OB Request" ChildAction="@(() => CloseMyRequest())" >
+        <Content>
+            @if (isLoading)
+            {
+                <div class="d-flex flex-column justify-content-center align-items-center gap-2" style="height: 200px;">
+                    <i class="fa-solid fa-circle-notch fa-spin fa-2x text-primary"></i>
+                    <small class="text-muted">Loading...</small>
+                </div>
+            }
+            else if (myRequests.Any())
+            {
+                <div class="card p-0 small ">
+                    <div class="d-flex card-header px-1 gap-1 fw-bold ">
+                        <div class="w-75p text-center">TRN </div>
+                        <div class="w-130p">Date Covered </div>
+                        <div class="w-75p text-center">With Pay</div>
+                        <div class="w-120p text-center">Status</div>
+                        <div class="w-200p">Approvers </div>
+                        <div class="w-150p">Approval Level </div>
+                        <div class="">Destination </div>
+                    </div>
+
+                    @{int i=0; }
+                    @foreach(var r in myRequests) {
+                        i++;
+                        string? css = i % 2 == 0 ? " bg mb-a-graylight " : " ";
+
+                        <div @onclick="() => SelectRequest(r)" class="py-2 d-flex card-body p-1 gap-1 @css bordered-bottom " style="cursor:pointer;">
+                            <div class="w-75p text-center"> @r?.Id </div>
+                            <div class="w-130p"> @r?.ObStart.ToString("MMM dd").Trim() - @r?.ObEnd.ToString("MMM dd").Trim() </div>
+                            <div class="w-75p text-center"> @(r?.DaysWithPay==0 ? "-" : r?.DaysWithPay.ToString("N2")) </div>
+                            <div class="w-120p text-center"> @_02Status(r?.Status) </div>
+                            <div class="w-200p">
+                                <div> 1 : @(string.IsNullOrWhiteSpace(r?.Approver1Name) ? "-" : r?.Approver1Name) </div>
+                                <div> 2 : @(string.IsNullOrWhiteSpace(r?.Approver2Name) ? "-" : r?.Approver2Name) </div>
+                            </div>
+                            <div class="w-150p text-primary"> @_02ApprovalLevel(r) </div>
+                            <div class=""> @r?.Destination </div>
+                        </div>
+                        @if(r?.Status == "R") {
+                            <div class="w-100 d-flex border-bottom ps-4 pb-1 small @css">
+                                <div class="w-150p fw-bold text-danger"><i>Returned remarks : </i></div>
+                                <div class="text-muted">@r.ApprRemarks</div>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info m-3" role="alert">
+                    No OB requests found.
+                </div>
+            }
+        </Content>
+    </_00Modal>
+}
+
+@* --- Returned by the approver : show the reason --- *@
+@if(ob.Status == "R" && !string.IsNullOrWhiteSpace(ob.ApprRemarks))
+{
+    <div class="p-2 border-bottom small bg-danger bg-opacity-10">
+        <span class="fw-bold text-danger">Returned by approver : </span> @ob.ApprRemarks
+        <div class="text-muted">Edit the request, Save, then Send For Approval again.</div>
+    </div>
+}
+
+<div class="card-body p-0 @(IsLocked ? "" : " disabled-div-75 ")">
+    <table class="table table-small table-bordered">
+        <tbody>
+            @* --- Control No. / Status ------------------------------------ *@
+            <tr>
+                <td class="w-150p p-2">
+                    <div class="mt-1">TRN #</div>
+                </td>
+                <td class="p-2 d-flex justify-content-between">
+                    <div class="border-bottom w-100p text-center p-1">
+                        <h6> @(ob.Id < 1 ? "-" : ob.Id) </h6>
+                    </div>
+                    <div class="w-175p d-flex p-1">
+                        <div> Status : </div>
+                        <div class="ms-2 bordered-bottom text-center text-primary"> @_02Status(ob.Status) </div>
+                    </div>
+                </td>
+            </tr>
+
+            @* --- Date Filed ------------------------------------ *@
+            <tr>
+                <td class="w-150p align-middle">Date Filed<span class="txt-red">*</span></td>
+                <td class="p-1">
+                    <RadzenDatePicker @bind-Value="ob.DateApplied"
+                        DateFormat="MM/dd/yyyy"
+                        AllowInput="false"
+                        class="mb-date-accent w-150p" />
+                </td>
+            </tr>
+
+            @* --- Date Covered ------------------------------------ *@
+            <tr>
+                <td class="align-middle">Date Covered<span class="txt-red">*</span></td>
+                <td class="p-1">
+                    <div class="d-flex gap-2">
+                        <div class="w-50p p-2 d-flex align-items-center">Start<span class="txt-red">*</span></div>
+                        <div class="w-150p">
+                            <RadzenDatePicker @bind-Value="ob.ObStart"
+                                Change="PopulateDtls"
+                                DateFormat="MM/dd/yyyy"
+                                AllowInput="false"
+                                class="mb-date-accent w-150p" />
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-1">
+                        <div class="w-50p p-2 d-flex align-items-center">End<span class="txt-red">*</span></div>
+                        <div class="w-150p">
+                            <RadzenDatePicker @bind-Value="ob.ObEnd"
+                                Change="PopulateDtls"
+                                DateFormat="MM/dd/yyyy"
+                                AllowInput="false"
+                                class="mb-date-accent w-150p" />
+                        </div>
+                    </div>
+                </td>
+            </tr>
+
+            @* --- Destination ------------------------------------ *@
+            <tr>
+                <td class="w-150p">Destination<span class="txt-red">*</span></td>
+                <td class="p-1">
+                    <RadzenTextArea @bind-Value="ob.Destination" MaxLength="150" Rows="2" Style="width:100%;" />
+                </td>
+            </tr>
+
+            @* --- Purpose ------------------------------------ *@
+            <tr>
+                <td class="w-150p">Purpose<span class="txt-red">*</span></td>
+                <td class="p-1">
+                    <RadzenTextArea @bind-Value="ob.Purpose" MaxLength="250" Rows="3" Style="width:100%;" />
+                </td>
+            </tr>
+
+            @* --- Contact Person ------------------------------------ *@
+            <tr>
+                <td class="w-150p">Contact Person<span class="txt-red">*</span></td>
+                <td class="p-1">
+                    <RadzenTextBox @bind-Value="ob.ContactPerson" MaxLength="100" Style="width:250px;" />
+                </td>
+            </tr>
+
+            @* --- Contact # ------------------------------------ *@
+            <tr>
+                <td class="w-150p">Contact #<span class="txt-red">*</span></td>
+                <td class="p-1">
+                    <RadzenTextBox @bind-Value="ob.TelNo" MaxLength="45" Style="width:250px;" />
+                </td>
+            </tr>
+
+            @* --- Remarks ------------------------------------ *@
+            <tr>
+                <td class="w-150p">Remarks</td>
+                <td class="p-1">
+                    <RadzenTextArea @bind-Value="ob.Remarks" MaxLength="250" Rows="2" Style="width:100%;" />
+                </td>
+            </tr>
+
+            @* --- Approvers ------------------------------------ *@
+            <tr>
+                <td>Approvers</td>
+                <td class="p-0">
+                    <div class="w-100 d-flex">
+                        @* --- First Approver *@
+                        <div class="w-50 p-1">
+                            <RadzenDropDown Data="@firstApprovers"
+                                TextProperty="ApproverName"
+                                ValueProperty="ApproverId"
+                                @bind-Value="ob.Approver1Id"
+                                Placeholder="First Approver"
+                                Style="width:100%"
+                                PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;" >
+                                <Template Context="item">
+                                    <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
+                                        @item.ApproverName
+                                    </div>
+                                </Template>
+                            </RadzenDropDown>
+                            <div class="text-center">Approver</div>
+                        </div>
+
+                        @* --- Final Approver *@
+                        <div class="w-50 p-1">
+                            <RadzenDropDown Data="@finalApprovers"
+                                TextProperty="ApproverName"
+                                ValueProperty="ApproverId"
+                                @bind-Value="ob.Approver2Id"
+                                Placeholder="Final Approver"
+                                Style="width:100%"
+                                PopupStyle="min-height: 200px; max-height: 600px;  overflow-y: auto;" >
+                                <Template Context="item">
+                                    <div class="@(item.ApproverId == 0 ? " text-secondary text-opacity-50 " : "")">
+                                        @item.ApproverName
+                                    </div>
+                                </Template>
+                            </RadzenDropDown>
+                            <div class="text-center">Final Approver <span class="text-danger">*</span></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+
+            @* --- Parameters ------------------------------------ *@
+            <tr>
+                <td>Parameter</td>
+                <td>
+                    <div class="d-flex gap-2">
+                        <div class="text-primary">Days Count : </div>
+                        <div class="text-center">@dtls.Count</div>
+                        <div class="text-primary ms-3">Days With Pay : </div>
+                        <div class="text-center">@DaysWithPay.ToString("N2")</div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+@* --- OB Details ( one row per day ) ----------------------------------------- *@
+<div class="@(IsLocked ? "" : " disabled-div-75 ")">
+    <div class="card-header bg mb-a-green fw-bold">OB Details</div>
+
+    <div class="card-body p-0">
+        <div class="w-100 d-flex gap-1 py-2 border-bottom">
+            <div class="w-130p text-center">Date</div>
+            <div class="w-75p text-center text-primary">Day</div>
+            <div class="w-75p text-center text-primary">Duty Type</div>
+            <div class="w-155p text-center">Day Type</div>
+            <div class="w-75p text-center">Payable</div>
+        </div>
+
+        @if(!dtls.Any()) {
+            <div class="text-center text-danger small p-3"> Select the Date Covered to generate the OB details. </div>
+        }
+
+        @foreach(var d in dtls)
+        {
+            var isRD = d.DutyType == "RD";
+            <div class="w-100 d-flex p-0 mt-1 gap-1 @(isRD ? " text-danger " : "")">
+                <div class="w-130p @center_xy">@d.Date?.ToString("MMM dd, yyyy")</div>
+                <div class="w-75p @center_xy">@d.Date?.ToString("ddd")</div>
+                <div class="w-75p @center_xy">@d.DutyType</div>
+                <div class="w-155p">
+                    <RadzenDropDown
+                        Data="@obDurations"
+                        TValue="int?"
+                        TextProperty="Name"
+                        ValueProperty="Id"
+                        @bind-Value="d.ObDurationId"
+                        Style="width:150px" />
+                </div>
+                <div class="w-75p @center_xy">
+                    <input class="form-check-input" type="checkbox" @bind="d.IsPayableB" />
+                </div>
+            </div>
+        }
+
+    </div>
+</div>
+
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; } = new();
+
+    ObapplicationModel                  ob              = new();
+    List<ObapplicationdtlModel>         dtls            = [];
+    List<ObapplicationModel?>           myRequests      = [];
+    List<ObdurationModel?>              obDurations     = [];
+    AtttemplateModel?                   at              = null;
+    List<LeavegrpapproverModel?>        firstApprovers  = [];
+    List<LeavegrpapproverModel?>        finalApprovers  = [];
+    string                              msg             = string.Empty;
+    bool                                showMyRequest   = false;
+    bool                                isLoading       = false;
+    bool                                showPrint       = false;
+    V00_RepVars                         rv              = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        @* --- Employee schedule ( same source as "My Schedule Template" ) --- *@
+        at = await _attTemplate._02(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn) ?? _attTemplate._02NoSchedule(Uc?.EmpmasId);
+
+        @* --- Day Type dropdown : ObDuration ( 1 Whole day, 2 First-Half, 3 Second-Half ) --- *@
+        obDurations = await _obDuration._02s(Uc?.SchemaUserPis, Uc?.Conn) ?? [];
+
+        PopulateDtls();
+
+        @* --- Approvers ( same as Leave: LeaveGrpApprover, level 1 = first, level 2 = final ) --- *@
+        var resApprovers = await _lvgrpApprover._02ByEmpmasId(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn) ?? [];
+
+        firstApprovers = resApprovers.Where(a => a?.ApproverLevel == 1).ToList();
+        firstApprovers.Insert(0, new() { ApproverId = 0, ApproverName = "No Assigned Approver" });
+
+        finalApprovers = resApprovers.Where(a => a?.ApproverLevel == 2).ToList();
+        finalApprovers.Insert(0, new() { ApproverId = 0, ApproverName = "No Assigned Approver" });
+    }
+
+    void New() { ob = new(); dtls = []; msg = string.Empty; showMyRequest = false; PopulateDtls(); }
+
+    void PopulateDtls()
+    {
+        var existing = dtls.Where(d => d.Date != null).ToDictionary(d => d.Date!.Value.Date);
+        dtls = [];
+        if (ob.ObStart.Date > ob.ObEnd.Date) return;
+
+        for (var date = ob.ObStart.Date; date <= ob.ObEnd.Date; date = date.AddDays(1))
+        {
+            // keep what the user already typed for dates still in range
+            if (existing.TryGetValue(date, out var keep)) { dtls.Add(keep); continue; }
+
+            var dutyType = _02DutyType(date.DayOfWeek);
+            dtls.Add(new ObapplicationdtlModel {
+                Date            = date,
+                DutyType        = dutyType,
+                ObDurationId    = 1,
+                IsPayable       = dutyType == "RD" ? 0 : 1      // rest day is allowed but unchecked by default
+            });
+        }
+    }
+
+    string? _02DutyType(DayOfWeek dow) => dow switch {
+        DayOfWeek.Sunday    => at?.D1_dutytype,
+        DayOfWeek.Monday    => at?.D2_dutytype,
+        DayOfWeek.Tuesday   => at?.D3_dutytype,
+        DayOfWeek.Wednesday => at?.D4_dutytype,
+        DayOfWeek.Thursday  => at?.D5_dutytype,
+        DayOfWeek.Friday    => at?.D6_dutytype,
+        _                   => at?.D7_dutytype,
+    };
+
+    @* --- Save button: Save(), plus a notification of the result --- *@
+    async Task SaveClick()
+    {
+        try {
+            if (!await Save()) return;
+            Notify(NotificationSeverity.Success, "Saved", "OB request has been saved.");
+        }
+        catch (Exception ex) {
+            Notify(NotificationSeverity.Error, "Save Failed", ex.Message);
+        }
+    }
+
+    async Task<bool> Save()
+    {
+        @* --- Check for Overlapping OB ( For Approval / Approved ) --- *@
+        var resOverlapping = await _obApplication._02Overlapping(Uc?.EmpmasId, ob.Id, ob.ObStart, ob.ObEnd, Uc?.SchemaUserPis, Uc?.Conn);
+        if (resOverlapping != null && resOverlapping.Any()) {
+            await _DialogService.Alert(
+                @"The OB request could not be saved because the selected dates overlap with an existing OB request.
+                  Please review your current OB requests and modify the dates to avoid any overlap.",
+                "Overlapping OB Request", new AlertOptions() { OkButtonText = "OK" });
+            return false;
+        }
+
+        bool isNew      = (ob.Id ?? 0) == 0;
+        ob.Status       = "S";
+        ob.EmpmasId     = Uc?.EmpmasId;
+        ob.Yr           = ob.ObStart.Year;
+        ob.DaysCnt      = dtls.Count;
+        ob.DaysWithPay  = DaysWithPay;
+
+        /*--- Header ----------------------------------------------------*/
+        if (isNew) {
+            var res = await _obApplication._01(ob, Uc?.SchemaUserPis, Uc?.Conn);
+            ob.Id = res?.Id ?? 0;
+        }
+        else {
+            await _obApplication._03(ob.Id, ob, Uc?.SchemaUserPis, Uc?.Conn);
+        }
+
+        /*--- Details : clear then re-insert the current ObStart..ObEnd rows ---*/
+        await _obApplicationDtl._04ByObApplicationId(ob.Id, Uc?.SchemaUserPis, Uc?.Conn);
+        foreach (var d in dtls) {
+            d.ObApplicationId   = ob.Id;
+            d.EmpmasId          = Uc?.EmpmasId;
+            await _obApplicationDtl._01(d, Uc?.SchemaUserPis, Uc?.Conn);
+        }
+
+        await _obHist._01(ob.Id, Uc?.EmpmasId, isNew ? "Saved" : "Updated", Uc?.SchemaUserPis, Uc?.Conn);
+
+        dtls = (await _obApplicationDtl._02ByObApplicationId(ob.Id, Uc?.SchemaUserPis, Uc?.Conn) ?? [])
+                    .Where(d => d != null).Select(d => d!).ToList();
+        msg = string.Empty;
+        return true;
+    }
+
+    async Task SendForApproval()
+    {
+        var option = await _DialogService.Confirm("Send Request for Approval?", "Send for Approval",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (option != true) return;
+
+        try {
+            if (!await Save()) return;
+            var res = await _obApplication._03SendForApproval(ob, Uc?.SchemaUserPis, Uc?.Conn);
+            await _obHist._01(ob.Id, Uc?.EmpmasId, "Send for Approval", Uc?.SchemaUserPis, Uc?.Conn);
+            if (res != null) ob = res;
+            Notify(NotificationSeverity.Success, "Sent", "OB request has been sent for approval.");
+        }
+        catch (Exception ex) {
+            Notify(NotificationSeverity.Error, "Send Failed", ex.Message);
+        }
+    }
+
+    async Task CancelOB()
+    {
+        var option = await _DialogService.Confirm("Cancel current OB Request?", "Cancel OB Request",
+                    new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (option != true) return;
+
+        try {
+            await _obApplication._03Cancel(ob.Id, Uc?.SchemaUserPis, Uc?.Conn);
+            await _obHist._01(ob.Id, Uc?.EmpmasId, "Cancelled", Uc?.SchemaUserPis, Uc?.Conn);
+            ob.Status = "C";
+            Notify(NotificationSeverity.Success, "Cancelled", "OB request has been cancelled.");
+        }
+        catch (Exception ex) {
+            Notify(NotificationSeverity.Error, "Cancel Failed", ex.Message);
+        }
+    }
+
+    async Task ShowMyRequest()
+    {
+        showMyRequest = true;
+
+        isLoading  = true;
+        myRequests = await _obApplication._02ByRequest(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn) ?? [];
+        isLoading  = false;
+    }
+
+    void CloseMyRequest() => showMyRequest = false;
+
+    async Task SelectRequest(ObapplicationModel? r)
+    {
+        if (r == null) return;
+        ob   = r;
+        dtls = (await _obApplicationDtl._02ByObApplicationId(r.Id, Uc?.SchemaUserPis, Uc?.Conn) ?? [])
+                    .Where(d => d != null).Select(d => d!).ToList();
+        showMyRequest = false;
+        msg = string.Empty;
+    }
+
+    @* --- Print : header values go as report parameters, the OB details as the data source --- *@
+    async Task Print()
+    {
+        var co          = await _settings._02(1, Uc?.SchemaUserPay, Uc?.Conn);
+        var emp         = await _empmasInternal._02(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn);
+        var deprecs     = await _empmas._02Deprecs(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn);
+
+        string? appr1   = firstApprovers.FirstOrDefault(a => a?.ApproverId == ob.Approver1Id && ob.Approver1Id > 0)?.ApproverName;
+        string? appr2   = finalApprovers.FirstOrDefault(a => a?.ApproverId == ob.Approver2Id && ob.Approver2Id > 0)?.ApproverName;
+
+        rv.RelativePath = "Reports/_02HR/ObApplication.trdp";
+        rv.ReportData   = dtls.Select(d => new ObPrintRow(
+                                d.Date ?? DateTime.MinValue,
+                                d.Date?.ToString("ddd") ?? "",
+                                d.DutyType ?? "",
+                                obDurations.FirstOrDefault(o => o?.Id == d.ObDurationId)?.Name ?? "-",
+                                d.IsPayableB ? "Yes" : "No")).ToList();
+
+        rv.ReportParams = new() {
+            ["CoName"]          = co?.CoFullName ?? "-",
+            ["CoAddress"]       = co?.CoAddress ?? "-",
+            ["ReportTitle"]     = "Official Business Request",
+            ["RunDate"]         = DateTime.Now,
+            ["TRN"]             = ob.Id ?? 0,
+            ["DateFiled"]       = ob.DateApplied.ToString("MMM dd, yyyy"),
+            ["DateCovered"]     = $"{ob.ObStart:MMM dd, yyyy} - {ob.ObEnd:MMM dd, yyyy}",
+            ["Status"]          = _02Status(ob.Status) ?? "-",
+            ["EmpName"]         = emp?.Fullname ?? "-",
+            ["Position"]        = deprecs?.FirstOrDefault()?.Positionname ?? "-",
+            ["Destination"]     = ob.Destination ?? "",
+            ["Purpose"]         = ob.Purpose ?? "",
+            ["ContactPerson"]   = ob.ContactPerson ?? "",
+            ["TelNo"]           = ob.TelNo ?? "",
+            ["Remarks"]         = ob.Remarks ?? "",
+            ["Approver1Name"]   = appr1 ?? "-",
+            ["Approver2Name"]   = appr2 ?? "-",
+            ["DaysCount"]       = dtls.Count.ToString(),
+            ["DaysWithPay"]     = DaysWithPay.ToString("N2"),
+        };
+
+        rv.RefreshToken = (rv.RefreshToken ?? 0) + 1;
+        showPrint = true;
+    }
+
+    public record ObPrintRow(DateTime Date, string Day, string DutyType, string DayType, string Payable);
+
+    void Notify(NotificationSeverity severity, string summary, string detail) =>
+        _NotificationService.Notify(new NotificationMessage {
+            Severity = severity,
+            Summary  = summary,
+            Detail   = detail,
+            Duration = severity == NotificationSeverity.Error ? 6000 : 4000
+        });
+
+    double DaysWithPay => dtls.Where(d => d.IsPayableB)
+                              .Sum(d => d.ObDurationId == 1 ? 1 : .5);
+
+    string? _02Status(string? code) => code switch { "N" => "New", "S" => "Saved", "FA" => "For Approval", "A" => "Approved", "C" => "Cancelled", "R" => "Returned", _ => "Unknown" };
+    @* --- Where the request is now : only For Approval has a pending level --- *@
+    string? _02ApprovalLevel(ObapplicationModel? r) => r?.Status switch {
+        "FA" => r.ApproverLevel == 2 ? "Level 2 - Final Approver" : "Level 1 - Approver",
+        "S"  => "Not yet sent",
+        "R"  => "Returned - edit and re-send",
+        _    => "-"
+    };
+    string  center_xy => "d-flex justify-content-center align-items-center";
+
+    bool IsLocked => ob.Status is "N" or "S" or "R";      // R : returned, requestor may edit again
+    bool IsHdrValid => ob.ObEnd.Date >= ob.ObStart.Date
+                    && dtls.Any()
+                    && !string.IsNullOrWhiteSpace(ob.Destination)
+                    && !string.IsNullOrWhiteSpace(ob.Purpose)
+                    && !string.IsNullOrWhiteSpace(ob.ContactPerson)
+                    && !string.IsNullOrWhiteSpace(ob.TelNo);
+    bool CanSave => IsLocked && IsHdrValid;
+    bool CanPrint => (ob.Id ?? 0) > 0 && dtls.Any();
+    bool CanSend => ob.Status is "S" && IsHdrValid && ob.Approver2Id > 0;
+}
+
+@inject IAtttemplateDataAccess          _attTemplate
+@inject ILeavegrpapproverDataAccess     _lvgrpApprover
+@inject IObapplicationDataAccess        _obApplication
+@inject IObapplicationdtlDataAccess     _obApplicationDtl
+@inject IObapplicationhistDataAccess    _obHist
+@inject IObdurationDataAccess           _obDuration
+@inject ISettingsDataAccess             _settings
+@inject IEmpmasInternalDataAccess       _empmasInternal
+@inject I_10_EmpmasDataAccess           _empmas

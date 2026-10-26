@@ -14,11 +14,11 @@ namespace HRApiLibrary.Models._10_Pis.OPis
 
         public string? Opno                 { get; set; }
 
-        public DateTime Validated          { get; set; }
+        public DateTime? Validated          { get; set; }
 
         public double? Vfee                 { get; set; }
 
-        public DateTime Revalidated        { get; set; }
+        public DateTime? Revalidated        { get; set; }
 
         public string? ValStatus            { get; set; }
 
@@ -26,8 +26,10 @@ namespace HRApiLibrary.Models._10_Pis.OPis
 
         public DateTime? DateModified       { get; set; }
 
-        public DateTime LicDateIssued      { get; set; }
+        public DateTime? LicDateIssued      { get; set; }
         //------------------------------------------------------
+        public string? UserName              { get; set; }
+
 
 
 

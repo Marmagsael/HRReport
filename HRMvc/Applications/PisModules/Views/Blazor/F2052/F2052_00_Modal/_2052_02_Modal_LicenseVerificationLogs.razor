@@ -1,0 +1,88 @@
+<div class="vh-max vh60">
+    <TelerikGrid TItem="OSecliclogsModel"
+                 Data="V.SecLicenseLogs"
+                 @ref="@LicVerifGridRef"
+                 Navigable="true"
+                 Pageable="true"
+                 @bind-PageSize="@PageSize"
+                 Sortable="true"
+                 FilterMode="@GridFilterMode.FilterMenu"
+                 Height="100%">
+
+        <GridSettings>
+            <GridPagerSettings PageSizes="@PageSizes" />
+        </GridSettings>
+
+
+
+        <GridColumns>
+
+            @* --- Validation Status --- *@
+            <GridColumn Field="@nameof(OSecliclogsModel.ValStatus)"
+                        Title="Validation Status"
+                        Width="100px" />
+
+            @* --- Date Validated --- *@
+            <GridColumn Field="@nameof(OSecliclogsModel.Validated)"
+                        Title="Date Validated"
+                        DisplayFormat="{0:MM/dd/yyyy}"
+                        Width="100px" />
+
+            @* --- Date Re-Validated --- *@
+            <GridColumn Field="@nameof(OSecliclogsModel.Revalidated)"
+                        Title="Date Re-validated"
+                        DisplayFormat="{0:MM/dd/yyyy}"
+                        Width="100px" />
+
+            @* --- Date LicDateIssued --- *@
+            <GridColumn Field="@nameof(OSecliclogsModel.LicDateIssued)"
+                        Title="Lic. Date Issued"
+                        DisplayFormat="{0:MM/dd/yyyy}"
+                        Width="100px" />
+
+            @* --- Modified By --- *@
+            <GridColumn Field="@nameof(OSecliclogsModel.UserName)"
+                        Title="Modified By"
+                        Width="100px" />
+
+            @* --- Date Modified --- *@
+            <GridColumn Field="@nameof(OSecliclogsModel.DateModified)"
+                        Title="Date Modified"
+                        Width="100px" />
+
+
+
+
+        </GridColumns>
+
+        <NoDataTemplate>
+            <div class="text-center text-secondary p-4">
+                No license verification records found.
+            </div>
+        </NoDataTemplate>
+
+    </TelerikGrid>
+</div>
+
+@code {
+
+    [CascadingParameter] public V2052 V { get; set; } = new();
+    [CascadingParameter] public UserClaimsModel Uc { get; set; } = new();
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+
+    private TelerikGrid<OSecliclogsModel> LicVerifGridRef;
+
+    private int PageSize { get; set; } = 25;
+
+    private List<int?> PageSizes = new()
+    {
+        25,
+        50,
+        75,
+        100,
+        null
+    };
+
+   
+}

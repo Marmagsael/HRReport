@@ -1,17 +1,24 @@
-﻿@using HRApiLibrary.DataAccess._00_Main.Interface
-@using HRApiLibrary.DataAccess._10_Pis.Interface
-@using HRApiLibrary.DataAccess._10_Pis.OPis
-@using HRApiLibrary.DataAccess._20_Pay.Interface
+﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_00_Modal
 
 
 <TelerikRootComponent>
     <div class="position-relative">
-        <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
 
-        <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+        @*--- TELERIK NOTIFICATION ---*@
+        <TelerikNotification @ref="@NotificationRef" 
+            HorizontalPosition="@NotificationHorizontalPosition.Right" 
+            VerticalPosition="@NotificationVerticalPosition.Top" 
+            AnimationType="@AnimationType.SlideLeft" />
 
+        @*--- TELERIK LOADER ---*@
+        <TelerikLoaderContainer 
+            Visible="@v.IsLoading" 
+            LoaderType="@LoaderType.ConvergingSpinner" />
+
+        @*--- PARAMETERS ---*@
         <CascadingValue Value="@Uc">
             <CascadingValue Value="@v">
                 <CascadingValue Value="@rv">
@@ -19,35 +26,53 @@
                         <_00BT_FullW HdrCaption="Employee Entry">
                             <Details>
 
-
                                 @*--- REPORT ---*@
                                  <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
-                                @if (v.ShowDataEntry)
-                                {
-                                    <_2052_01_Modal_DataEntry ChildAction="ChildAction" />
-                                } 
 
-                                @*--- EMPLOYESS STATUS MODAL ---*@
-                                 @if (v.ShowStatusModal == true)
+                                @*--- EMPLOYEE STATUS SETTINGS MODAL ---*@
+                                @if (v.ShowStatusModal == true)
                                 {
                                     <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowStatusModal = false" ModalWidth="50%">
-
                                         <Content>
                                             <_2052_02_Modal_StatusSettings ChildAction="ChildAction" />
                                         </Content>
-
                                     </_00Modal>
-                                } 
+                                }
 
+
+
+                                @*--- SECURITY LICENSE VERIFICATION LOGS ---*@
+                                @if (v.ShowLicenseVerficationLogsModal)
+                                {
+                                    <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowLicenseVerficationLogsModal = false" ModalWidth="50%">
+                                        <Content>
+                                            <_2052_02_Modal_LicenseVerificationLogs ChildAction="ChildAction" />
+                                        </Content>
+                                    </_00Modal>
+                                }
+
+
+                                @*--- EMPLOYEE DATA ENTRY MODAL ---*@
+                                @if (v.ShowDataEntry)
+                                {
+                                    <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowDataEntry = false" ModalWidth="50%">
+                                        <Content>
+                                            <_2052_01_Modal_DataEntry ChildAction="ChildAction" @ref="DataEntryRef" />
+                                        </Content>
+                                    </_00Modal>
+                                }
+
+                                @*--- EMPLOYEE LIST AND EMPLOYEE RECORDS ---*@
                                 <div class="p-2 flex-grow-1 overflow-hidden">
                                     <div class="d-flex gap-2 w-100 h-100">
                                         <div class="pe-1  h-100 overflow-hidden" style="width:28%; min-width:0;">
-                                            <_2052_02_EmpList ChildAction="ChildAction" />
+                                             <_2052_02_EmpList ChildAction="ChildAction" /> 
                                         </div>
-                                         <div class="ps-1 pe-2 hide-scroll  w-85 h-100" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
+
+                                        <div class="ps-1 pe-2 hide-scroll  w-85 h-100" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
                                             <_2052_03_RecordsEntry ChildAction="ChildAction" />
-                                        </div> 
+                                        </div>
                                     </div>
                                 </div>
 
@@ -58,22 +83,20 @@
             </CascadingValue>
         </CascadingValue>
     </div>
-  
+
 </TelerikRootComponent>
 
 
-
-
 @inject IOEmpmasDataAccess _empmas
+@inject IOEmpstatDataAccess _oempstat
+@inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
+
 @inject IOCivstatDataAccess _ocivstat
 @inject IOGenderDataAccess _ogender
 @inject I_00CountryDataAccess _ocountry
 @inject IOMlacodeDataAccess _omla
-@inject IOPositionDataAccess _oposition
-@inject IOEmpstatDataAccess _oempstat
-@inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
 @inject IOProcodeDataAccess _opro
-@inject IOPisReportDataAccess _pisRep;
+@inject IOPositionDataAccess _oposition
 
 @inject IOEmployDataAccess _employemt
 @inject IOEducateDataAccess _education
@@ -86,22 +109,23 @@
 @inject IOInsuranceaccidentDataAccess _insuranceacc
 @inject IOLicverstatusDataAccess _licverstatus
 @inject IOSeclicDataAccess _seclic
+@inject IOSecliclogsDataAccess _secliclog
+
+@inject IOPisReportDataAccess _pisRep
 
 @code {
-
-    V2052 v { get; set; } = new();
-
     [Parameter]
     public UserClaimsModel? Uc { get; set; } = new();
 
+    V2052       v  = new();
     V00_RepVars rv = new();
 
     private TelerikNotification? NotificationRef;
 
+    private _2052_01_Modal_DataEntry DataEntryRef;
 
     protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine($"Uc.UserName {Uc.UserName}");
 
         if (Uc.Conn == null || Uc.OpisDb == null || Uc.OpayDb == null)
         {
@@ -109,27 +133,11 @@
             return;
         }
 
-
-        if(v.UcLoaded == true ) return;
-
-
-        v.UcLoaded      = true; //to prevent double calling of this function
-
-        v.maindb        = Uc.SchemaMain;
-        v.pisdb         = Uc.OpisDb;
-        v.newpisdb      = Uc.SchemaUserPis;
-        v.paydb         = Uc.OpayDb;
-        v.conn          = Uc.Conn;
-        v.userid        = Uc.UserId;
-        v.username      = Uc.UserName;
-        v.defcoid = int.Parse( string.IsNullOrEmpty(Uc.DefCompanyId) ? "0" : Uc.DefCompanyId  );
-
-        Console.WriteLine($"UserName {Uc.UserName}");
         v.IsLoading = true;
 
         try
         {
-            // Load Status ---------
+            // Load Employee Status ---------
             await LoadSelectedStatus();
             await LoadEmployeeStatus();
 
@@ -138,59 +146,47 @@
             await LoadDropdownValues();
 
 
-            // Report ---------
+            // Report DATA ---------
             _00InitializeReport();
             await _02LoadCompanyInfo();
         }
-        finally  
+        finally
         {
             v.IsLoading = false;
         }
 
 
-
-
     }
 
-
-
-    private async Task LoadSelectedStatus()
+    private async Task ChildAction()
     {
-        try
+        if (v == null) return;
+
+        if (v.Action == "ReLoadEmployeeList")           await LoadEmployeeList();
+        if (v.Action == "SelectEmpmas")                 await SelectEmpmas();
+
+        if (v.Action == "ShowLicVerificationLogsModal") await LoadSecurityLicenseVerificationLogs();
+
+        if (v.Action == "SplitHeight")              SplitHeight();
+        if (v.Action == "ComputeEmployeesAge")      ComputeEmployeesAge();
+        if (v.Action == "ComputeParentsAge")        ComputeParentsAge();
+
+        if (v.Action == "GetGenderAndCivilStatus_SplitHeight")
         {
-            v.OEmpstatVisibleStatus = await _oselectedEmpstat._02s(v.pisdb, v.conn) ?? new();
+            SplitHeight();
+            GetGenderAndCivilStatus();
         }
 
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load selected statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-            return;
-        }
+        if (v.Action == "GetAddressArea")            GetAddressArea();
+        if (v.Action == "GetGenderAndCivilStatus")   GetGenderAndCivilStatus();
+
+        if (v.Action == "GenerateReport")       await GenerateReport();
+        if (v.Action == "ShowDataEntry")        await ShowDataEntry();
+
+        v.Action = "";
     }
 
 
-
-    private async Task LoadEmployeeStatus()
-    {
-        try
-        {
-            var empstats = await _oempstat._02s(v.pisdb, v.conn) ?? new();
-            v.OEmpstats = empstats.Where(e => !string.IsNullOrWhiteSpace(e.Name)).ToList();
-            if (v.OEmpstatVisibleStatus.Any())
-            {
-                v.SelectedStatus = v.OEmpstats.Where(e => v.OEmpstatVisibleStatus.Any(a => (e.Code).Trim() == (a.Empstat_).Trim() )).ToList();
-            }
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load employee statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-            return;
-
-        }
-    }
 
     private async Task LoadEmployeeList()
     {
@@ -213,10 +209,26 @@
                 statuses.Add(s.Code);
             }
 
-            var res = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, v.pisdb, v.conn);
-            if (res.Any())
+            var res = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, Uc.OpisDb, Uc.Conn);
+            v.EmpmasList = res;
+
+            var employeeExistInList = v.EmpmasList.Any(e => e.EmpNumber == v.SelectedEmpnumber);
+
+            if (!employeeExistInList)
             {
-                v.EmpmasList = res;
+                v.SelectedEmpnumber = string.Empty;
+                v.Empmas            = new();
+                v.Employments       = [];
+                v.Educations        = [];
+                v.Parents           = [];
+                v.Children          = [];
+                v.EmergencyContacts = [];
+                v.Familys           = [];
+                v.Trainings         = [];
+                v.CharRefs          = [];
+                v.InsuranceAccident = new();
+                v.SecLicense        = new();
+                v.SecLicenseLogs    = [];
             }
         }
         catch (Exception ex)
@@ -232,121 +244,73 @@
 
     }
 
-    private async Task LoadDropdownValues()
+    private async Task SelectEmpmas()
     {
-        await LoadCivilStatuses();
-        await LoadGenders();
-        await LoadCountries();
-        await LoadMlaCodes();
-        await LoadProCodes();
-        await LoadPositions();
-        await LoadSecLicStatus();
-    }
+        if (string.IsNullOrWhiteSpace(v.SelectedEmpnumber)) return;
 
-    private async Task LoadCivilStatuses()
-    {
+        v.IsLoading = true;
+
+        v.Empmas            = new();
+        v.Employments       = [];
+        v.Educations        = [];
+        v.Parents           = [];
+        v.Children          = [];
+        v.EmergencyContacts = [];
+        v.Familys           = [];
+        v.Trainings         = [];
+        v.CharRefs          = [];
+        v.InsuranceAccident = new();
+        v.SecLicense        = new();
+        v.SecLicenseLogs    = [];
+
+
         try
         {
-            v.OCivStats = await _ocivstat._02(v.pisdb, v.conn) ?? new();
+            var res = await _empmas._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.SchemaMain, Uc.SchemaUserPis, Uc.Conn);
+            if (res.Any())
+            {
+                v.Empmas = res.FirstOrDefault();
+                v.EmpmasToEdit  = MapEmpmas(res.FirstOrDefault());
+
+                await LoadEmployments();
+                await LoadEducations();
+                await LoadParents();
+                await LoadChildren();
+                await LoadEmergencyContacts();
+                await LoadRelatives();
+                await LoadTrainings();
+                await LoadCharRefs();
+                await LoadInsuranceAccident();
+                await LoadSecLicense();
+
+                SplitHeight();
+                GetAddressArea();
+                GetGenderAndCivilStatus();
+                ComputeParentsAge();
+                ComputeEmployeesAge();
+            }
+
+
+
         }
         catch (Exception ex)
         {
-
             Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load civil status. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Something went wrong while loading the employee records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
+        finally
+        {
+            await Task.Delay(1000);
+            v.IsLoading = false;
+        }
+
+
+
     }
 
-    private async Task LoadGenders()
-    {
-        try
-        {
-            v.OGenders = await _ogender._02(v.pisdb, v.conn) ?? new();
-        }
-        catch (Exception ex)
-        {
 
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load gender. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
 
-    private async Task LoadCountries()
-    {
-        try
-        {
-            v.Countrys = await _ocountry._02(v.maindb, v.conn) ?? new();
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load countries. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
-
-    private async Task LoadMlaCodes()
-    {
-        try
-        {
-            v.MlaList = await _omla._02(v.pisdb, v.conn) ?? new();
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load Metro Manila codes. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-
-        }
-    }
-
-    private async Task LoadProCodes()
-    {
-        try
-        {
-            v.ProList = await _opro._02(v.pisdb, v.conn) ?? new();
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load Provincial codes. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-
-        }
-    }
-
-    private async Task LoadPositions()
-    {
-        try
-        {
-            var positions = await _oposition._02(v.pisdb, v.conn) ?? new();
-            v.OPositions = positions.Where(p => !string.IsNullOrWhiteSpace(p.Code) && !string.IsNullOrWhiteSpace(p.Name)).ToList();
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load positions. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-
-        }
-    }
-
-    private async Task LoadSecLicStatus()
-    {
-        try
-        {
-            var res = await _licverstatus._02s(v.pisdb, v.conn) ?? new();
-            v.LicverStatuses = res;
-        }
-        catch (Exception ex)
-        {
-
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load License Verification Statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-
-        }
-    }
-
+    // REPORT DATA --------------------------------------------------------------------
     private void _00InitializeReport()
     {
         rv.MCaption = "";
@@ -370,121 +334,186 @@
         rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
     }
 
-
-
-
-
-    private async Task ChildAction()
-    {
-        if (v == null) return;
-
-        v.ActionRef = string.Empty;
-
-        if (v.Action == "SelectEmpmas") await SelectEmpmas();
-        if (v.Action == "SplitHeight") SplitHeight();
-        if (v.Action == "ComputeEmployeesAge") ComputeEmployeesAge();
-        if (v.Action == "ComputeParentsAge") ComputeParentsAge();
-
-        if (v.Action == "GetGenderAndCivilStatus_SplitHeight") {
-            SplitHeight();
-            GetGenderAndCivilStatus();
-        }
-
-        if (v.Action == "GetAddressArea") GetAddressArea();
-        if (v.Action == "GetGenderAndCivilStatus") GetGenderAndCivilStatus();
-        if (v.Action == "ReLoadEmployeeList") await LoadEmployeeList();
-        if (v.Action == "GenerateReport") await GenerateReport();
-
-        v.Action = "";
-    }
-
     private async Task GenerateReport()
     {
         rv.ShowModal = true;
+
         await Task.Delay(1000);
         v.IsLoading = false;
     }
 
 
-    private async Task SelectEmpmas()
+
+    // STATUS SETTINGS DATA -------------------------------------------------------------
+    private async Task LoadSelectedStatus()
     {
-
-
-        if (string.IsNullOrWhiteSpace(v.SelectedEmpnumber)) return;
-
-        v.IsLoading = true;
-
-        v.Employments = [];
-        v.Educations = [];
-        v.Parents = [];
-        v.Children = [];
-        v.EmergencyContacts = [];
-        v.Familys = [];
-        v.Trainings = [];
-        v.CharRefs = [];
-        v.InsuranceAccident = new();
-
-
+        v.OEmpstatVisibleStatus = new();
 
         try
         {
-            var res = await _empmas._02(v.SelectedEmpnumber, v.pisdb, v.maindb, v.newpisdb, v.conn);
+            v.OEmpstatVisibleStatus = await _oselectedEmpstat._02s(Uc.OpisDb, Uc.Conn) ?? new();
+        }
 
-            var emp = res?.FirstOrDefault();
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load selected statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
 
-            if (emp != null)
+    private async Task LoadEmployeeStatus()
+    {
+
+        v.OEmpstats = new();
+        v.SelectedStatus = new List<OEmpstatModel>();
+
+        try
+        {
+            var empstats = await _oempstat._02s(Uc.OpisDb, Uc.Conn) ?? new();
+            v.OEmpstats = empstats.Where(e => !string.IsNullOrWhiteSpace(e.Name)).ToList();
+
+            if (v.OEmpstatVisibleStatus.Any())
             {
-                v.IsNewEntry    = false;
-                v.Empmas        = emp;
-                v.EmpmasToEdit  = MapEmpmas(emp);
-
-
-                await LoadEmployments();
-                await LoadEducations();
-                await LoadParents();
-                await LoadChildren();
-                await LoadEmergencyContacts();
-                await LoadRelatives();
-                await LoadTrainings();
-                await LoadCharRefs();
-                await LoadInsuranceAccident();
-                await LoadSecLicense();
-
-                SplitHeight();
-                GetAddressArea();
-                GetGenderAndCivilStatus();
-                ComputeParentsAge();
-                ComputeEmployeesAge();
-
-
-            }
-            else
-            {
-                v.IsNewEntry = true;
-                v.Empmas = new OEmpmasModel();
-                v.EmpmasToEdit = new OEmpmasModel();
-
+                v.SelectedStatus = v.OEmpstats.Where(e => v.OEmpstatVisibleStatus.Any(a => (e.Code).Trim() == (a.Empstat_).Trim())).ToList();
             }
         }
         catch (Exception ex)
         {
+
             Console.WriteLine(ex);
-            NotificationRef.Show("Something went wrong while loading the employee records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Unable to load employee statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+
         }
-
-        await Task.Delay(1000);
-        v.IsLoading = false;
-
     }
 
 
 
+    //  TAB DATA -----------------------------------------------------------------------
+    private async Task LoadInsuranceAccident()
+    {
 
-    private  async Task LoadEmployments()
+        try
+        {
+            v.InsuranceAccident = await _insuranceacc._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load insurance accident records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadSecLicense()
+    {
+
+        try
+        {
+            v.SecLicense = await _seclic._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load security license records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadParents()
+    {
+
+        try
+        {
+            v.Parents = await _parent._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load parents records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadChildren()
+    {
+
+        try
+        {
+            v.Children = await _children._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load children records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private async Task LoadEmergencyContacts()
+    {
+
+        try
+        {
+            v.EmergencyContacts = await _emergency._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load emergency contact records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadRelatives()
     {
         try
         {
-            v.Employments = await _employemt._02(v.SelectedEmpnumber, v.pisdb!, v.conn!) ?? new();
+            v.Familys = await _family._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load family records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadTrainings()
+    {
+
+        try
+        {
+            v.Trainings = await _training._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load training records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadCharRefs()
+    {
+        try
+        {
+            v.CharRefs = await _charref._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load character reference records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task LoadEmployments()
+    {
+        try
+        {
+            v.Employments = await _employemt._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -498,7 +527,7 @@
     {
         try
         {
-            var res = await _education._02(v.SelectedEmpnumber, v.pisdb, v.conn) ?? new();
+            var res = await _education._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
             var codes = new[] { "E", "H", "C", "V", "P" };
             foreach (var code in codes)
@@ -516,143 +545,195 @@
         }
     }
 
-    private  async Task LoadParents()
+    private async Task LoadSecurityLicenseVerificationLogs()
     {
+
+        v.IsLoading = true;
 
         try
         {
-            v.Parents = await _parent._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
+            var res             = await _secliclog._02s(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.SecLicenseLogs    = res;
+
+            v.ModalCaption      = "License Verification Logs";
+            v.ShowLicenseVerficationLogsModal = true;
 
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load parents records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Unable to load security license verification logs. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
+        finally
+        {
+            v.IsLoading = false;
+        }
+
     }
 
-    private  async Task LoadChildren()
+
+
+    // --- DROP DOWN DATA ------------------------------------------------------------
+    private async Task LoadDropdownValues()
     {
-
-        try
-        {
-            v.Children = await _children._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
-
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load children records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-        }
+        await LoadCivilStatuses();
+        await LoadGenders();
+        await LoadCountries();
+        await LoadMlaCodes();
+        await LoadProCodes();
+        await LoadPositions();
+        await LoadSecLicStatus();
     }
 
-
-    private  async Task LoadEmergencyContacts()
-    {
-
-        try
-        {
-            v.EmergencyContacts = await _emergency._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
-
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load emergency contact records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
-
-    private async Task  LoadRelatives()
+    private async Task LoadCivilStatuses()
     {
         try
         {
-            v.Familys = await _family._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
-
+            v.OCivStats = await _ocivstat._02(Uc.OpisDb, Uc.Conn) ?? new();
         }
         catch (Exception ex)
         {
+
             Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load family records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Unable to load civil status. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
-    private async Task LoadTrainings()
-    {
-
-        try
-        {
-            v.Trainings = await _training._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
-
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load training records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
-
-
-    private async Task  LoadCharRefs()
+    private async Task LoadGenders()
     {
         try
         {
-            v.CharRefs = await _charref._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
-
+            v.OGenders = await _ogender._02(Uc.OpisDb, Uc.Conn) ?? new();
         }
         catch (Exception ex)
         {
+
             Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load character reference records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Unable to load gender. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
-
-    private async Task  LoadInsuranceAccident()
+    private async Task LoadCountries()
     {
-
         try
         {
-            v.InsuranceAccident = await _insuranceacc._02(v.SelectedEmpnumber,v.pisdb!,v.conn!) ?? new();
-
+            v.Countrys = await _ocountry._02(Uc.SchemaMain, Uc.Conn) ?? new();
         }
         catch (Exception ex)
         {
+
             Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load insurance accident records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Unable to load countries. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
-    private async Task LoadSecLicense()
+    private async Task LoadMlaCodes()
     {
-
         try
         {
-            v.SecLicense = await _seclic._02(v.SelectedEmpnumber, v.pisdb!, v.conn!) ?? new();
-
+            v.MlaList = await _omla._02(Uc.OpisDb, Uc.Conn) ?? new();
         }
         catch (Exception ex)
         {
+
             Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load insurance accident records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Unable to load Metro Manila codes. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+
         }
     }
 
+    private async Task LoadProCodes()
+    {
+        try
+        {
+            v.ProList = await _opro._02(Uc.OpisDb, Uc.Conn) ?? new();
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load Provincial codes. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+
+        }
+    }
+
+    private async Task LoadPositions()
+    {
+        try
+        {
+            var positions = await _oposition._02(Uc.OpisDb, Uc.Conn) ?? new();
+            v.OPositions = positions.Where(p => !string.IsNullOrWhiteSpace(p.Code) && !string.IsNullOrWhiteSpace(p.Name)).ToList();
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load positions. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+
+        }
+    }
+
+    private async Task LoadSecLicStatus()
+    {
+        try
+        {
+            var res = await _licverstatus._02s(Uc.OpisDb, Uc.Conn) ?? new();
+            v.LicverStatuses = res;
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load License Verification Statuses. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+
+        }
+    }
+
+
+
+
+    // OTHER FUNCTIONS --------------------------------------------------------------
+    private async Task ShowDataEntry()
+    {   
+        v.IsLoading = true;
+
+        v.IsEmpNoValid          = true;
+        v.IsEmailValid          = true;
+
+        v.IsEmailLinked         = false;
+        v.IsEmailRegistered     = false;
+
+        v.EmailRegisteredToUser = string.Empty;
+        v.EmailLinkedToUsers    = new();
+
+        v.EmpNoErrMsg           = string.Empty;
+        v.LastNameErrMsg        = string.Empty;
+        v.FirstNameErrMsg       = string.Empty;
+
+
+
+        if (DataEntryRef != null) await DataEntryRef.OnEmailLostFocus();
+
+
+        v.IsLoading = false;
+
+    }
 
     static OEmpmasModel MapEmpmas(OEmpmasModel source)
     {
         var clone = new OEmpmasModel();
 
-        clone.EmpmasId      = source.EmpmasId;
-        clone.EmpNumber     = source.EmpNumber;
-        clone.UserId        = source.UserId;
-        clone.EmpLastNm     = source.EmpLastNm;
-        clone.EmpFirstNm    = source.EmpFirstNm;
-        clone.EmpMidNm      = source.EmpMidNm;
-        clone.EmpAlias      = source.EmpAlias;
-        clone.Suffix        = source.Suffix;
-        clone.Email         = source.Email;
-        clone.Height        = source.Height;
-        clone.HeightInches  = source.HeightInches;
+        clone.EmpmasId = source.EmpmasId;
+        clone.EmpNumber = source.EmpNumber;
+        clone.UserId = source.UserId;
+        clone.EmpLastNm = source.EmpLastNm;
+        clone.EmpFirstNm = source.EmpFirstNm;
+        clone.EmpMidNm = source.EmpMidNm;
+        clone.EmpAlias = source.EmpAlias;
+        clone.Suffix = source.Suffix;
+        clone.Email = source.Email;
+        clone.Height = source.Height;
+        clone.HeightInches = source.HeightInches;
 
         return clone;
     }
@@ -663,13 +744,13 @@
 
         if (height == null)
         {
-            v.Empmas.HeightFt  = 0;
+            v.Empmas.HeightFt = 0;
             v.Empmas.HeightInches = 0;
             return;
         }
 
         int feet = (int)height.Value;
-        int inches = (int)Math.Round( (height.Value - feet) * 100);
+        int inches = (int)Math.Round((height.Value - feet) * 100);
 
         v.Empmas.HeightFt = feet;
         v.Empmas.HeightInches = inches;
@@ -739,7 +820,7 @@
             return 0;
 
         DateTime today = DateTime.Today;
-        DateTime birthDate = date!.Value ;
+        DateTime birthDate = date!.Value;
 
         int age = today.Year - birthDate.Year;
 
@@ -751,12 +832,6 @@
         return age;
     }
 }
-
-
-
-
-
-
 
 
 <style>
@@ -775,11 +850,11 @@
         margin-inline: 0 !important;
     }
 
-    .emp-entry .page-header h1 {
-        padding-left: 0;
-        padding: 1rem;
-        padding-bottom: 0;
-    }
+        .emp-entry .page-header h1 {
+            padding-left: 0;
+            padding: 1rem;
+            padding-bottom: 0;
+        }
 
 
 
@@ -822,22 +897,21 @@
 
 
     @@media (min-width: 768px) {
-    .display-sm-grid
-    {
-        display: none;
-    }
+        .display-sm-grid {
+            display: none;
+        }
 
-    .display-md-grid {
-        display: block;
-    }
+        .display-md-grid {
+            display: block;
+        }
 
-    .custom-grid .custom-grid-md {
-        display: inline-block !important;
-    }
+        .custom-grid .custom-grid-md {
+            display: inline-block !important;
+        }
 
-    .custom-grid .custom-grid-sm {
-        display: none !important;
-    }
-
+        .custom-grid .custom-grid-sm {
+            display: none !important;
+        }
     }
 </style>
+

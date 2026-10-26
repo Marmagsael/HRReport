@@ -45,6 +45,11 @@ public static class ApiExt
         builder.Services.AddScoped<I_00MainDataMakerAccess, _00MainDataMakerAccess>();
 
         builder.Services.AddScoped<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
+        builder.Services.AddScoped<IOldPis_TblMakerDataAccess, OldPis_TblMakerDataAccess>();
+        builder.Services.AddScoped<IOldPay_TblMakerDataAccess, OldPay_TblMakerDataAccess>();
+        builder.Services.AddScoped<I_00MainPisMasterfileMaker, _00MainPisMasterfileMaker>();
+        builder.Services.AddScoped<I_00RegisterDataAccess, _00RegisterDataAccess>();
+        builder.Services.AddScoped<I_00EngagementDataAccess, _00EngagementDataAccess>();
         builder.Services.AddScoped<I_00_CTDataAccess, _00_CTDataAccess>();
         builder.Services.AddScoped<IMsdsDataAccess, MsdsDataAccess>();
 
@@ -122,6 +127,10 @@ public static class ApiExt
         builder.Services.AddScoped<IAttdutytypeDataAccess, AttdutytypeDataAccess>();
         builder.Services.AddScoped<ILeaveapplicationDataAccess, LeaveapplicationDataAccess>();
         builder.Services.AddScoped<ILeaveapplicationdtlDataAccess, LeaveapplicationdtlDataAccess>();
+        builder.Services.AddScoped<IObapplicationDataAccess, ObapplicationDataAccess>();
+        builder.Services.AddScoped<IObapplicationdtlDataAccess, ObapplicationdtlDataAccess>();
+        builder.Services.AddScoped<IObapplicationhistDataAccess, ObapplicationhistDataAccess>();
+        builder.Services.AddScoped<IObdurationDataAccess, ObdurationDataAccess>();
         builder.Services.AddScoped<IEmpmasgrpDataAccess, EmpmasgrpDataAccess>();
 
         builder.Services.AddScoped<IAtttemplatereqdtlDataAccess, AtttemplatereqdtlDataAccess>();
@@ -232,6 +241,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOEmpmas_visible_statusDataAccess, OEmpmas_visible_statusDataAccess>();
         builder.Services.AddScoped<IOSeclicDataAccess, OSeclicDataAccess>();
         builder.Services.AddScoped<IOLicverstatusDataAccess, OLicverstatusDataAccess>();
+        builder.Services.AddScoped<IOSecliclogsDataAccess, OSecliclogsDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------
