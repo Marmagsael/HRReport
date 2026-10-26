@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 
@@ -10,6 +11,63 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
     public OldPis_TblMakerDataAccess(I_90_001_MySqlDataAccess sql)
     {
         _sql = sql;
+    }
+
+    // -- The legacy tables use '0000-00-00' date defaults, which strict mode rejects --
+    // -- Zero dates are allowed for this statement only, then the session goes back to the global sql_mode --
+    private Task ExecLegacy(string? sql, string? conn)
+    {
+        string mode = "TRIM(BOTH ',' FROM REPLACE(REPLACE(REPLACE(REPLACE(@@SESSION.sql_mode, 'NO_ZERO_IN_DATE', ''), 'NO_ZERO_DATE', ''), ',,', ','), ',,', ','))";
+        return _sql.ExecuteCmd($"SET SESSION sql_mode = {mode}; {sql?.TrimEnd().TrimEnd(';')}; SET SESSION sql_mode = @@GLOBAL.sql_mode;", new { }, conn);
+    }
+
+    // -- Masterfile tables whose rows are copied from MainPis into a new old PIS schema --
+    private static readonly string[] DefaultTables =
+    [
+        "sex", "civstat", "empstat", "clientstatus", "licverstatus", "insurancestatus", "empremarksstatus",
+        "dpastatusincluded", "empstat_statmgt", "empmas_nbi_clearance_empstat", "movehdr_status", "employmentmode",
+        "empremarkscategory", "empcompliancecategory", "empcompliancelist", "college", "traincategory", "trainprogram",
+        "skills", "regions", "area", "position", "designation", "levtbl", "devdata"
+    ];
+
+    // -- Default rows : MainPis -> {Code}_OPis, run after _01OldPisTable ------------------------------
+    // -- Only empty tables are filled, and only the columns both tables have, so it is safe to run again --
+    public async Task _01OldPisDefaults(string? schema, string? sourceSchema, string? connName = "MySqlConn")
+    {
+        if (string.IsNullOrEmpty(schema) || string.IsNullOrEmpty(sourceSchema)) return;
+        if (!Regex.IsMatch(schema, @"^\w+$") || !Regex.IsMatch(sourceSchema, @"^\w+$")) return;
+
+        var columns = await _sql.FetchData<LegacyColumn, dynamic>(
+            @"select lower(table_schema) as SchemaName, lower(table_name) as TableName, column_name as ColumnName
+              from   information_schema.columns
+              where  lower(table_schema) in (lower(@Schema), lower(@Source)) and lower(table_name) in @Tables
+              order by ordinal_position",
+            new { Schema = schema, Source = sourceSchema, Tables = DefaultTables }, connName);
+
+        foreach (var table in DefaultTables)
+        {
+            var target  = columns.Where(c => c.SchemaName == schema.ToLower()       && c.TableName == table).Select(c => c.ColumnName).ToList();
+            var source  = columns.Where(c => c.SchemaName == sourceSchema.ToLower() && c.TableName == table).Select(c => c.ColumnName).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var shared  = target.Where(source.Contains).Select(c => $"`{c}`").ToList();
+            if (shared.Count == 0) continue;                                            // table missing on either side
+
+            var rows = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`{table}`", new { }, connName);
+            if (rows.FirstOrDefault() > 0) continue;                                    // already has data
+
+            // -- Zero dates allowed, and an Id of 0 stays 0 (some masterfiles use it) --
+            string cols = string.Join(", ", shared);
+            string mode = "CONCAT_WS(',', TRIM(BOTH ',' FROM REPLACE(REPLACE(@@SESSION.sql_mode, 'NO_ZERO_IN_DATE', ''), 'NO_ZERO_DATE', '')), 'NO_AUTO_VALUE_ON_ZERO')";
+            await _sql.ExecuteCmd($@"SET SESSION sql_mode = {mode};
+                                     insert into {schema}.`{table}` ({cols}) select {cols} from {sourceSchema}.`{table}`;
+                                     SET SESSION sql_mode = @@GLOBAL.sql_mode;", new { }, connName);
+        }
+    }
+
+    private class LegacyColumn
+    {
+        public string SchemaName    { get; set; } = string.Empty;
+        public string TableName     { get; set; } = string.Empty;
+        public string ColumnName    { get; set; } = string.Empty;
     }
 
     public async Task _01OldPisTable(string? schema, string? connName = "MySqlConn")
@@ -132,6 +190,14 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
         await _01Usrmenu(schema, connName);
         await _01Usrrights(schema, connName);
         await _01Version(schema, connName);
+
+        // -- Added from the reference (192.168.0.103 secpis) --
+        await _01ClientRateSettings(schema, connName);
+        await _01ClientRateatrail(schema, connName);
+        await _01ClientRateatrailEmpmas(schema, connName);
+        await _01Domainaccess(schema, connName);
+        await _01Domainusr(schema, connName);
+        await _01EmpmasVisibleStatus(schema, connName);
     }
 
     private async Task _01Area(string? schema, string? conn)
@@ -141,7 +207,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `AREANAME` varchar(20) DEFAULT NULL,
                         PRIMARY KEY (`AREACODE`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Bi(string? schema, string? conn)
@@ -183,7 +249,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Sch_Remarks` varchar(200) DEFAULT NULL,
                         PRIMARY KEY (`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Children(string? schema, string? conn)
@@ -193,7 +259,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `name` varchar(60) NOT NULL,
                         `bday` date NOT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Civstat(string? schema, string? conn)
@@ -202,7 +268,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CODE` varchar(1) DEFAULT NULL,
                         `NAME` varchar(10) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Client(string? schema, string? conn)
@@ -262,7 +328,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `withSIL` int unsigned DEFAULT '1',
                         PRIMARY KEY (`CLNUMBER`)
                         ) ENGINE=MyISAM DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Clientarchieved(string? schema, string? conn)
@@ -312,7 +378,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `region` char(15) NOT NULL DEFAULT '',
                         `ecolaRevised` int unsigned NOT NULL DEFAULT '0'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Clientcontrep(string? schema, string? conn)
@@ -326,7 +392,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `OtherCnt` int unsigned DEFAULT NULL,
                         PRIMARY KEY (`clNumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Clientstatus(string? schema, string? conn)
@@ -335,7 +401,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `ClStatus` varchar(15) NOT NULL,
                         PRIMARY KEY (`ClStatus`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Coinfo(string? schema, string? conn)
@@ -369,7 +435,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `isHeadOffice` tinyint unsigned DEFAULT '0',
                         PRIMARY KEY (`CoName`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01College(string? schema, string? conn)
@@ -378,7 +444,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CODE` varchar(8) DEFAULT NULL,
                         `NAME` varchar(15) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Compliancerec(string? schema, string? conn)
@@ -390,7 +456,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Source` varchar(45) DEFAULT NULL,
                         PRIMARY KEY (`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Counter(string? schema, string? conn)
@@ -401,7 +467,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `ctr` int unsigned NOT NULL,
                         PRIMARY KEY (`idcounter`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Databags(string? schema, string? conn)
@@ -411,7 +477,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `OBJECT` varchar(25) DEFAULT NULL,
                         `RDD` varchar(6) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Datadict(string? schema, string? conn)
@@ -426,7 +492,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `HIDDEN` varchar(1) DEFAULT NULL,
                         `BAGNAME` varchar(8) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Dataords(string? schema, string? conn)
@@ -437,7 +503,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `TAGKEY` varchar(60) DEFAULT NULL,
                         `TAGDESCEND` varchar(1) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Deprec(string? schema, string? conn)
@@ -477,7 +543,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `IdInvestigate` int DEFAULT '0',
                         PRIMARY KEY (`EmpNumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Designation(string? schema, string? conn)
@@ -487,7 +553,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Name` varchar(45) DEFAULT NULL,
                         PRIMARY KEY (`Code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Devdata(string? schema, string? conn)
@@ -499,7 +565,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `DEV_LEVEL` varchar(1) DEFAULT NULL,
                         `DEV_PARENT` varchar(10) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Devnum(string? schema, string? conn)
@@ -507,7 +573,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`devnum` (
                         `CONTROL_NO` varchar(10) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Devtran(string? schema, string? conn)
@@ -527,7 +593,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `devstart` date NOT NULL DEFAULT '0000-00-00',
                         `devend` date NOT NULL DEFAULT '0000-00-00'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Dpastatusincluded(string? schema, string? conn)
@@ -536,7 +602,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `dpaStatusIncluded` char(2) NOT NULL DEFAULT '',
                         PRIMARY KEY (`dpaStatusIncluded`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Drugtest(string? schema, string? conn)
@@ -548,7 +614,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `DRUCENTER` varchar(30) DEFAULT NULL,
                         `DRUREMARK` varchar(20) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Educate(string? schema, string? conn)
@@ -562,7 +628,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `COURSE` varchar(75) DEFAULT NULL,
                         `LEVEL` varchar(8) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Emergenc(string? schema, string? conn)
@@ -574,7 +640,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `RELA` varchar(20) DEFAULT NULL,
                         `TEL` varchar(15) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empcompliance(string? schema, string? conn)
@@ -590,7 +656,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CompDeadline` date DEFAULT NULL,
                         PRIMARY KEY (`Empnumber`,`EmpComplianceListId`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empcompliancecategory(string? schema, string? conn)
@@ -600,7 +666,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Name` varchar(60) DEFAULT NULL,
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empcompliancelist(string? schema, string? conn)
@@ -611,7 +677,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Name` varchar(45) DEFAULT ' ',
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empentryflds(string? schema, string? conn)
@@ -622,7 +688,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Description` char(100) NOT NULL,
                         PRIMARY KEY (`grp`,`fldname`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Employ(string? schema, string? conn)
@@ -640,7 +706,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `REM1` varchar(60) DEFAULT NULL,
                         `REM2` varchar(60) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Employmentmode(string? schema, string? conn)
@@ -650,7 +716,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Name` varchar(60) NOT NULL,
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empmas(string? schema, string? conn)
@@ -809,8 +875,8 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `desig_` char(5) DEFAULT 'EMP',
                         `IsMigrated` int DEFAULT '0',
                         PRIMARY KEY (`EMPNUMBER`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 9216 kB;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='InnoDB free: 9216 kB';";
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01EmpmasNbiClearance(string? schema, string? conn)
@@ -829,7 +895,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `bi_case` char(250) NOT NULL,
                         PRIMARY KEY (`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01EmpmasNbiClearanceEmpstat(string? schema, string? conn)
@@ -838,7 +904,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `code` char(1) NOT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empmasaccess(string? schema, string? conn)
@@ -849,7 +915,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `code` char(15) NOT NULL,
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empmasarchieved(string? schema, string? conn)
@@ -1008,7 +1074,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `desig_` char(5) DEFAULT 'EMP',
                         PRIMARY KEY (`EMPNUMBER`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empremarks(string? schema, string? conn)
@@ -1024,7 +1090,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `remstatus` varchar(45) NOT NULL,
                         PRIMARY KEY (`idEmpRemarks`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empremarkscategory(string? schema, string? conn)
@@ -1034,7 +1100,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `category` varchar(45) NOT NULL,
                         PRIMARY KEY (`idempRemarksCategory`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empremarksstatus(string? schema, string? conn)
@@ -1044,7 +1110,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `RemStatus` varchar(45) NOT NULL,
                         PRIMARY KEY (`idempRemarksStatus`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empstat(string? schema, string? conn)
@@ -1062,7 +1128,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `isDeviation` smallint unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`CODE`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01EmpstatIn(string? schema, string? conn)
@@ -1071,7 +1137,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `code` char(1) NOT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01EmpstatOut(string? schema, string? conn)
@@ -1080,7 +1146,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `code` char(1) NOT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01EmpstatStatmgt(string? schema, string? conn)
@@ -1090,7 +1156,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `name` varchar(30) DEFAULT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01EmpstatUserAccess(string? schema, string? conn)
@@ -1100,7 +1166,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `empstat_` char(1) NOT NULL,
                         PRIMARY KEY (`empno`,`empstat_`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empstatforarchive(string? schema, string? conn)
@@ -1109,7 +1175,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `code` varchar(5) NOT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Empstatmovement(string? schema, string? conn)
@@ -1124,7 +1190,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `module` varchar(30) DEFAULT NULL,
                         PRIMARY KEY (`id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01EmpstatmovementBak(string? schema, string? conn)
@@ -1138,7 +1204,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `module` varchar(30) DEFAULT NULL,
                         PRIMARY KEY (`id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Family(string? schema, string? conn)
@@ -1149,7 +1215,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `BIRTH` date DEFAULT NULL,
                         `RELATION` varchar(15) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Filedata(string? schema, string? conn)
@@ -1161,7 +1227,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `user` varchar(25) NOT NULL,
                         PRIMARY KEY (`Filename`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Floatnotice(string? schema, string? conn)
@@ -1179,7 +1245,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `d4no` varchar(10) NOT NULL DEFAULT '',
                         PRIMARY KEY (`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Freeuniform(string? schema, string? conn)
@@ -1190,7 +1256,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `dateGiven` date NOT NULL,
                         PRIMARY KEY (`FUkey`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Govexam(string? schema, string? conn)
@@ -1201,7 +1267,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `RATING` double(6,2) DEFAULT NULL,
                         `TAKEN` varchar(10) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Grdbirth(string? schema, string? conn)
@@ -1213,7 +1279,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `MIDDLENAME` varchar(15) DEFAULT NULL,
                         `BIRTHDATE` date DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Idissuance(string? schema, string? conn)
@@ -1226,7 +1292,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `expiration` date DEFAULT '0000-00-00',
                         PRIMARY KEY (`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Info(string? schema, string? conn)
@@ -1237,7 +1303,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `YES` varchar(1) DEFAULT NULL,
                         `REM` varchar(60) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Insurance(string? schema, string? conn)
@@ -1252,7 +1318,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `InsExpire` date DEFAULT NULL,
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01InsuranceAccident(string? schema, string? conn)
@@ -1266,7 +1332,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `INSEXPIRE` date DEFAULT NULL,
                         PRIMARY KEY (`EMPNUMBER`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Insurancestatus(string? schema, string? conn)
@@ -1275,7 +1341,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `code` char(2) NOT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Language(string? schema, string? conn)
@@ -1286,7 +1352,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `READ_` varchar(9) DEFAULT NULL,
                         `SPOKEN_` varchar(9) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Lastrefused(string? schema, string? conn)
@@ -1297,7 +1363,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `EmpNumber` varchar(10) NOT NULL DEFAULT '',
                         PRIMARY KEY (`ClCode`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Leave1(string? schema, string? conn)
@@ -1318,7 +1384,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `POSTED` varchar(1) DEFAULT NULL,
                         `mode` varchar(1) NOT NULL DEFAULT 'L'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Levmonletter(string? schema, string? conn)
@@ -1336,7 +1402,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `letter4by` char(15) DEFAULT '',
                         PRIMARY KEY (`lvnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Levmonpara(string? schema, string? conn)
@@ -1349,7 +1415,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `day4Duration` int unsigned NOT NULL,
                         PRIMARY KEY (`idlevMonpara`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Levtbl(string? schema, string? conn)
@@ -1360,7 +1426,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `EARNCODE` varchar(2) DEFAULT NULL,
                         `NO_INCDATE` varchar(1) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Licverstatus(string? schema, string? conn)
@@ -1369,7 +1435,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `licverStatus` char(15) NOT NULL,
                         PRIMARY KEY (`licverStatus`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Loghist(string? schema, string? conn)
@@ -1381,7 +1447,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `date` datetime NOT NULL,
                         PRIMARY KEY (`ctrlNo`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Mdr(string? schema, string? conn)
@@ -1398,7 +1464,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `InsAmt` double(18,2) DEFAULT '0.00',
                         PRIMARY KEY (`empnumber`,`clnumber`,`trn`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01MdrClient(string? schema, string? conn)
@@ -1408,7 +1474,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `mrk` int unsigned DEFAULT '0',
                         PRIMARY KEY (`trn`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Mdrcaption(string? schema, string? conn)
@@ -1424,7 +1490,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `email` varchar(60) NOT NULL,
                         PRIMARY KEY (`idmdrCaption`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Mdrfirearms(string? schema, string? conn)
@@ -1440,7 +1506,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `odr` int DEFAULT NULL,
                         PRIMARY KEY (`yr`,`mo`,`serialno`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Mdrhdr(string? schema, string? conn)
@@ -1452,7 +1518,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `secLicExp` date NOT NULL,
                         PRIMARY KEY (`yr`,`month`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Menubars(string? schema, string? conn)
@@ -1462,7 +1528,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `command_` varchar(254) NOT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Mlacode(string? schema, string? conn)
@@ -1471,7 +1537,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CODE` varchar(5) DEFAULT NULL,
                         `NAME` varchar(30) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Movedtl(string? schema, string? conn)
@@ -1485,7 +1551,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `SADATE` date DEFAULT NULL,
                         `REASON` varchar(254) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Movehdr(string? schema, string? conn)
@@ -1500,7 +1566,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `EXPDATE` date DEFAULT NULL,
                         `grpNo` varchar(10) NOT NULL DEFAULT ''
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01MovehdrStatus(string? schema, string? conn)
@@ -1509,7 +1575,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Code` char(1) NOT NULL,
                         PRIMARY KEY (`Code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01MovehdrStatusTrail(string? schema, string? conn)
@@ -1522,7 +1588,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `activity` datetime DEFAULT NULL,
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Neuroexm(string? schema, string? conn)
@@ -1535,7 +1601,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `NEURATING` double(6,2) DEFAULT NULL,
                         `NEUREMARK` varchar(20) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Notice(string? schema, string? conn)
@@ -1550,7 +1616,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `msg` longtext,
                         PRIMARY KEY (`control_no`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Ofstaff(string? schema, string? conn)
@@ -1562,7 +1628,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `defa` int unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`staff_id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Ofstaff2(string? schema, string? conn)
@@ -1574,7 +1640,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `defa` int unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`staff_id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Ofstaff3(string? schema, string? conn)
@@ -1586,7 +1652,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `defa` int unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`staff_id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Ofstaff4(string? schema, string? conn)
@@ -1598,7 +1664,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `defa` int unsigned NOT NULL,
                         PRIMARY KEY (`staff_id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Para(string? schema, string? conn)
@@ -1608,7 +1674,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `desigTblCreated` smallint unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Parent(string? schema, string? conn)
@@ -1622,7 +1688,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `ADDR` varchar(60) DEFAULT NULL,
                         `dob` datetime NOT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Penalty(string? schema, string? conn)
@@ -1636,7 +1702,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `isterminated` varchar(1) NOT NULL DEFAULT '0',
                         `days` double(6,0) NOT NULL DEFAULT '0'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Position(string? schema, string? conn)
@@ -1648,7 +1714,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `sort` varchar(2) NOT NULL DEFAULT '99',
                         PRIMARY KEY (`CODE`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Procode(string? schema, string? conn)
@@ -1657,7 +1723,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CODE` varchar(5) DEFAULT NULL,
                         `NAME` varchar(30) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Qrynum(string? schema, string? conn)
@@ -1665,7 +1731,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`qrynum` (
                         `NUMBER` varchar(8) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Query(string? schema, string? conn)
@@ -1675,7 +1741,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `DBFNAME` varchar(8) DEFAULT NULL,
                         `TITLE` varchar(50) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Refer(string? schema, string? conn)
@@ -1687,7 +1753,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `TEL` varchar(15) DEFAULT NULL,
                         `POSITION` varchar(75) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Regions(string? schema, string? conn)
@@ -1698,7 +1764,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `odr` int NOT NULL,
                         PRIMARY KEY (`code`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Seclic(string? schema, string? conn)
@@ -1707,16 +1773,23 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `empnumber` char(5) NOT NULL,
                         `sbrno` char(25) DEFAULT '',
                         `opno` char(25) DEFAULT '',
-                        `validated` date DEFAULT '0000-00-00',
+                        `validated` date DEFAULT NULL,
                         `vfee` double(18,2) DEFAULT '0.00',
-                        `revalidated` date DEFAULT '0000-00-00',
+                        `revalidated` date DEFAULT NULL,
                         `valStatus` char(15) DEFAULT '',
                         `user` char(25) DEFAULT NULL,
                         `dateModified` datetime DEFAULT NULL,
-                        `licDateIssued` date DEFAULT '0000-00-00',
+                        `licDateIssued` date DEFAULT NULL,
                         PRIMARY KEY (`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
+
+        // -- Existing tables : the dates default to NULL, as in the reference (192.168.0.103 secpis) --
+        sql = $@"ALTER TABLE {schema}.`seclic`
+                    ALTER COLUMN `validated`     SET DEFAULT NULL,
+                    ALTER COLUMN `revalidated`   SET DEFAULT NULL,
+                    ALTER COLUMN `licDateIssued` SET DEFAULT NULL;";
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01SeclicSignatory(string? schema, string? conn)
@@ -1730,7 +1803,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `desig3` varchar(80) DEFAULT NULL,
                         PRIMARY KEY (`sig1`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Secliclogs(string? schema, string? conn)
@@ -1747,7 +1820,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `dateModified` datetime DEFAULT NULL,
                         `licDateIssued` date DEFAULT '0000-00-00'
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Sex(string? schema, string? conn)
@@ -1756,7 +1829,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CODE` varchar(1) DEFAULT NULL,
                         `NAME` varchar(10) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Skills(string? schema, string? conn)
@@ -1765,7 +1838,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CODE` varchar(2) DEFAULT NULL,
                         `NAME` varchar(20) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Ssstbl(string? schema, string? conn)
@@ -1777,7 +1850,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `FSSSER` double(6,2) DEFAULT NULL,
                         `FECC` double(6,2) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Status(string? schema, string? conn)
@@ -1795,7 +1868,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CHANGEDT` varchar(10) DEFAULT NULL,
                         `POSTED` varchar(1) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Statusremarks(string? schema, string? conn)
@@ -1806,7 +1879,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `ResignedRem` char(200) DEFAULT '',
                         PRIMARY KEY (`EmpNumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Sysmenu(string? schema, string? conn)
@@ -1823,7 +1896,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `withchild` int unsigned DEFAULT '0',
                         PRIMARY KEY (`idsysmenu`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Tbloperators(string? schema, string? conn)
@@ -1833,7 +1906,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `OP` varchar(5) NOT NULL,
                         PRIMARY KEY (`Desc_`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Tblqueries(string? schema, string? conn)
@@ -1845,7 +1918,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `logname` varchar(25) DEFAULT ' ',
                         PRIMARY KEY (`nQueryID`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Train(string? schema, string? conn)
@@ -1859,7 +1932,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `TYPE` varchar(9) DEFAULT NULL,
                         `idtrainhdr` int unsigned NOT NULL DEFAULT '0'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Traincategory(string? schema, string? conn)
@@ -1869,7 +1942,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `category` varchar(80) NOT NULL,
                         PRIMARY KEY (`idtraincategory`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Traindtl(string? schema, string? conn)
@@ -1880,7 +1953,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `remarks` varchar(80) DEFAULT '',
                         PRIMARY KEY (`IdTrainHdr`,`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Trainhdr(string? schema, string? conn)
@@ -1904,7 +1977,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Remarks` varchar(80) DEFAULT NULL,
                         PRIMARY KEY (`idtrainhdr`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Trainingconfig(string? schema, string? conn)
@@ -1919,7 +1992,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `DefType` varchar(10) DEFAULT 'Internal',
                         PRIMARY KEY (`id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Trainprogram(string? schema, string? conn)
@@ -1929,7 +2002,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Program` varchar(100) NOT NULL,
                         PRIMARY KEY (`idtrainProgram`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Traintransno(string? schema, string? conn)
@@ -1939,7 +2012,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `transno` int unsigned NOT NULL,
                         PRIMARY KEY (`idtraintransno`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Trainvaliduser(string? schema, string? conn)
@@ -1949,7 +2022,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `logname` varchar(25) NOT NULL,
                         PRIMARY KEY (`idtrainvaliduser`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01TransCtr(string? schema, string? conn)
@@ -1962,7 +2035,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `ctr` bigint unsigned DEFAULT '0',
                         PRIMARY KEY (`id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Useraccess(string? schema, string? conn)
@@ -1973,7 +2046,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `idsysmenu` int unsigned DEFAULT NULL,
                         PRIMARY KEY (`iduserAccess`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Usr(string? schema, string? conn)
@@ -1987,7 +2060,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `Email` varchar(45) DEFAULT NULL,
                         PRIMARY KEY (`LogName`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Usrmenu(string? schema, string? conn)
@@ -1996,7 +2069,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `user` varchar(25) NOT NULL,
                         `menucode_` varchar(5) NOT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Usrrights(string? schema, string? conn)
@@ -2007,7 +2080,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `rDesc` varchar(45) NOT NULL,
                         PRIMARY KEY (`idusrRights`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
     }
 
     private async Task _01Version(string? schema, string? conn)
@@ -2016,6 +2089,80 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `version` int unsigned NOT NULL AUTO_INCREMENT,
                         PRIMARY KEY (`version`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
-        await _sql.ExecuteCmd(sql, new { }, conn);
+        await ExecLegacy(sql, conn);
+    }
+
+    // -- Tables added from the reference (192.168.0.103 secpis) --------------------
+    private async Task _01ClientRateSettings(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`client_rate_settings` (
+                        `Id` int unsigned NOT NULL AUTO_INCREMENT,
+                        `Pursuant` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT 'Article ...',
+                        `Effectivity` date DEFAULT NULL,
+                        `SignatoryName` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT 'Signatory',
+                        `SignatoryDesignation` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT 'Designation',
+                        PRIMARY KEY (`Id`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        await ExecLegacy(sql, conn);
+    }
+
+    private async Task _01ClientRateatrail(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`client_rateatrail` (
+                        `Id` int unsigned NOT NULL AUTO_INCREMENT,
+                        `ClNumber` char(5) COLLATE utf8mb4_unicode_ci DEFAULT '',
+                        `SGCodeOld` char(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+                        `SGCodeNew` char(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+                        `RateOld` double(9,2) DEFAULT '0.00',
+                        `RateNew` double(9,2) DEFAULT '0.00',
+                        `DateChanged` datetime DEFAULT NULL,
+                        `ChangedBy` varchar(25) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+                        PRIMARY KEY (`Id`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        await ExecLegacy(sql, conn);
+    }
+
+    private async Task _01ClientRateatrailEmpmas(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`client_rateatrail_empmas` (
+                        `CRTId` int NOT NULL DEFAULT '0',
+                        `EmpNumber` char(5) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+                        PRIMARY KEY (`CRTId`,`EmpNumber`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+        await ExecLegacy(sql, conn);
+    }
+
+    private async Task _01Domainaccess(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`domainaccess` (
+                        `iduserAccess` int unsigned NOT NULL AUTO_INCREMENT,
+                        `username` varchar(25) DEFAULT NULL,
+                        `idsysmenu` int unsigned DEFAULT NULL,
+                        `module` char(10) DEFAULT NULL,
+                        PRIMARY KEY (`iduserAccess`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+    }
+
+    private async Task _01Domainusr(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`domainusr` (
+                        `Empnumber` varchar(5) NOT NULL,
+                        `Status` varchar(25) DEFAULT NULL,
+                        `CreatedBy` int unsigned DEFAULT NULL,
+                        `DateCreated` datetime DEFAULT CURRENT_TIMESTAMP,
+                        PRIMARY KEY (`Empnumber`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+    }
+
+    // -- Statuses shown in Employee Entry (2052); empty = all statuses --
+    private async Task _01EmpmasVisibleStatus(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`empmas_visible_status` (
+                        `empstat_` char(2) NOT NULL,
+                        PRIMARY KEY (`empstat_`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
     }
 }

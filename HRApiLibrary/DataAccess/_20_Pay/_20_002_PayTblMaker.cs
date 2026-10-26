@@ -387,7 +387,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             RevPagibig          char(7) NOT NULL DEFAULT '2019-01',
                             PremContSourceId    int DEFAULT '1',
                             LogoAddress         varchar(150) DEFAULT '',
-                            PRIMARY             KEY (Id)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;";
+                            PRIMARY             KEY (Id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 
 
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -412,7 +412,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           `Closedby`        INTEGER     UNSIGNED                                COMMENT 'UserId',
                           `DateClosed`      DATETIME,
                           `Status`          CHAR(1)                 DEFAULT 'O'                 COMMENT 'A-Active, O-Open, C-Close',
-                          PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
+                          PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 
 
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -469,7 +469,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           DateInvited       DATETIME         NOT NULL,
                           DateAccepted      DATETIME         NOT NULL,
                           IsApproved        int                         Default 0,
-                          PRIMARY KEY(`SystemId`)) ENGINE = InnoDB;";
+                          PRIMARY KEY(`SystemId`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -478,7 +478,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         var sql = @$"CREATE TABLE if not exists {schema}.`SystemUserModuleAccess` (
                           SystemId          INTEGER UNSIGNED NOT NULL,
                           Menus10userId     INTEGER UNSIGNED NOT NULL,
-                          PRIMARY KEY(`SystemId`, `Menus10userId`))  ENGINE = InnoDB;";
+                          PRIMARY KEY(`SystemId`, `Menus10userId`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -487,8 +487,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         var sql = @$"CREATE TABLE if not exists {schema}.SystemUserOtherAccess (
                           SystemId          INTEGER     UNSIGNED NOT NULL,
                           OtherAccessId     INTEGER     UNSIGNED NOT NULL,
-                          PRIMARY KEY(`SystemId`, `OtherAccessId`))
-                        ENGINE = InnoDB;";
+                          PRIMARY KEY(`SystemId`, `OtherAccessId`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -511,7 +510,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
             sql += sql1 + "A   DOUBLE(12,4)        DEFAULT 0, ";
 
         }
-        sql += "  PRIMARY KEY(`Trn`,`EmpmasId`) ) ENGINE = InnoDB;";
+        sql += "  PRIMARY KEY(`Trn`,`EmpmasId`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
     }
@@ -521,7 +520,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         string? sql = @$"CREATE TABLE if not exists {schema}.PremContSource (
                         Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         Source          CHAR(25)             Default ' ',
-                        PRIMARY KEY(`Id`)) ENGINE = InnoDB;";
+                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@"select * from {schema}.PremContSource limit 1 ";
@@ -551,7 +550,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             Controller   VARCHAR(50) NULL, 
                             Action       VARCHAR(50) NULL, 
                             Odr          SMALLINT NULL DEFAULT 0,
-                            PRIMARY KEY (`Id`)) Engine = InnoDB;";
+                            PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -568,7 +567,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         MinDailyRate       DOUBLE(12,4)        DEFAULT 0,
                         Status          Char(1)             Default 'A',
                         PayRateId       int                 DEFAULT 0,
-                        PRIMARY KEY(`Id`)) ENGINE = InnoDB;";
+                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@"select * from {schema}.PayrollGrp limit 1 ";
@@ -600,7 +599,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         string? sql = @$"CREATE TABLE if not exists {schema}.PayRate (
                         Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         RateName        VARCHAR(80)         Default '',
-                        PRIMARY KEY(`Id`)) ENGINE = InnoDB;";
+                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@"select * from {schema}.PayRate limit 1 ";
@@ -621,8 +620,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           RateDay           DOUBLE(12,4)        ,
                           RateMonth         DOUBLE(12,4)        ,
                           RateYr            DOUBLE(12,4)        ,
-                          PRIMARY           KEY (`PayrollgrpId`, `coaAcctnumber`))
-                        ENGINE = InnoDB; ";
+                          PRIMARY           KEY (`PayrollgrpId`, `coaAcctnumber`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -638,7 +636,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             Yr              int, 
                             Month           char(2),
                             Period          char(2),
-                            PRIMARY KEY(`UserId`) ) ENGINE = InnoDB;";
+                            PRIMARY KEY(`UserId`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
     }
@@ -675,7 +673,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           RatePerDay        DOUBLE(12,4)                DEFAULT 0,
                           RatePerMonth      DOUBLE(12,4)                DEFAULT 0,
                           RatePerYr         DOUBLE(12,4)                DEFAULT 0,
-                          PRIMARY KEY (`EmpmasId`,`PayrollgrpId`) )    ENGINE = InnoDB;";
+                          PRIMARY KEY (`EmpmasId`,`PayrollgrpId`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = @$"CREATE TABLE  if not exists {schema}.EmpRatesHist (
@@ -693,7 +691,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           Created           Datetime                    ,
                           UserId            INTEGER         UNSIGNED    DEFAULT 0,
                           Action            char(10)                    DEFAULT ' ',
-                          PRIMARY KEY (`Id`) )    ENGINE = InnoDB;";
+                          PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 
         await _sql.ExecuteCmd(sql, new { }, connName);
 
@@ -710,7 +708,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           `Wpagibig`        int(10) unsigned DEFAULT 1,
                           `Wphic`           int(10) unsigned DEFAULT 1,
                           PRIMARY KEY (`EmpmasId`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = @$"insert into {schema}.deprecSettings (EmpmasId) 
@@ -729,8 +727,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           AcctNumber    CHAR(5)                     NOT NULL,
                           Rate          DOUBLE(12,4)                DEFAULT 0,
                           PayrateId     INTEGER         UNSIGNED    DEFAULT 0,
-                          PRIMARY KEY(`EmpmasId`, `AcctNumber`, `PayrollGrpId`))
-                        ENGINE = InnoDB;";
+                          PRIMARY KEY(`EmpmasId`, `AcctNumber`, `PayrollGrpId`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -740,7 +737,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         var sql = @$"CREATE TABLE if not exists {schema}.DutyRendered (
                             AcctNumber          char(5)                 NOT NULL,
                             IsLock              int        unsigned     NOT NULL DEFAULT 0,
-                            PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                            PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $"select * from {schema}.DutyRendered limit 1";
@@ -782,7 +779,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             IsLock              int        unsigned     NOT NULL DEFAULT 0,
                             IsSelected          smallint   DEFAULT 0,
                             PRIMARY KEY (`AcctNumber`)
-                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         if (country == "PH")
@@ -872,25 +869,25 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     private async Task _01_101_CoaTax(string? schema, string? connName, string? country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaTax (AcctNumber char(5) NOT NULL,
-                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     private async Task _01_101_CoaSSS(string? schema, string? connName, string? country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaSSS (AcctNumber char(5) NOT NULL,
-                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     private async Task _01_101_CoaPHIC(string? schema, string? connName, string? country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaPHIC (AcctNumber char(5) NOT NULL,
-                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     private async Task _01_101_CoaPagibig(string? schema, string? connName, string? country)
     {
         var sql = @$"CREATE TABLE if not exists {schema}.CoaPagibig (AcctNumber char(5) NOT NULL,
-                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                     PRIMARY KEY (`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $"select * from {schema}.CoaPagibig limit 1";
@@ -1021,7 +1018,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             Fix             double(10,4) NOT NULL   default 0,
                             Percentage      double(10,4)             default 0,
                             PRIMARY KEY (`Id`)
-                      ) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=latin1;";
+                      ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
             await _sql.ExecuteCmd(sql, new { }, connName);
 
             sql = $@"select * from {schema}.MatrixWTax limit 1 ";
@@ -1089,7 +1086,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             Er              double(6,2)             DEFAULT 0.00,
                             Ecc             double(6,2)             DEFAULT 0.00,
                             Compensation   double(10,2)             Default 0.00,
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
 
@@ -1179,7 +1176,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             Ee              double(6,2)             DEFAULT 0.00,
                             Er              double(6,2)             DEFAULT 0.00,
                             Percent         double(6,2)             DEFAULT 0.00,
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
 
@@ -1211,7 +1208,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             FEnd            double(12,2) NOT NULL    DEFAULT 0.00,
                             Ee              double(6,2)             DEFAULT 0.00,
                             Er              double(6,2)             DEFAULT 0.00,
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
 
@@ -1253,7 +1250,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         P5                      int(10)                 unsigned    DEFAULT 0,
                         Status                  char(1)                             DEFAULT 'A',
                         TrnPosted               char(12)                            DEFAULT '',
-                        PRIMARY KEY (`Id`)) Engine = InnoDB;";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
     }
@@ -1286,7 +1283,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         P5                      int(10)                 unsigned    DEFAULT 0,
                         Status                  char(1)                             DEFAULT 'A',
                         TrnPosted               char(12)                            DEFAULT '',
-                        PRIMARY KEY (`Id`)) Engine = InnoDB;";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
             await _sql.ExecuteCmd(sql, new { }, connName);
 
         }
@@ -1313,7 +1310,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                       PerdayEarnings    int(11)         DEFAULT 0,
                       TRNPosted         char(12)        DEFAULT '',
                       PRIMARY KEY (`id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;";
+                    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -1322,8 +1319,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         var sql = $@"CREATE TABLE if not exists {schema}.FixedEarnings_Grp_Emp (
                           FixedEarnings_grpId   INTEGER UNSIGNED NOT NULL,
                           EmpmasId              INTEGER UNSIGNED NOT NULL,
-                      PRIMARY KEY (`FixedEarnings_grpId`, `EmpmasId`))
-                    ENGINE = InnoDB;";
+                      PRIMARY KEY (`FixedEarnings_grpId`, `EmpmasId`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -1358,7 +1354,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                               p5 int(10)        unsigned                    DEFAULT '0',
                               TRNLastPosted     char(12)                    DEFAULT '',
                               PRIMARY KEY (Id)
-                            ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;"; 
+                            ) ENGINE=InnoDB DEFAULT CHARSET=latin1;"; 
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = @$"CREATE TABLE if not exists {schema}.loanhdr (
@@ -1371,7 +1367,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                     remarks     varchar(100)                DEFAULT NULL,
                     acctcode    varchar(5)                  DEFAULT NULL,
                     PRIMARY KEY (id)
-                ) ENGINE=InnoDB AUTO_INCREMENT=244 DEFAULT CHARSET=latin1;";
+                ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = @$"CREATE TABLE if not exists {schema}.loandtl (
@@ -1384,8 +1380,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         loandate    date                        NOT NULL,
                         amort       double(18,4)                NOT NULL,
                         balance     double(18,4)                NOT NULL,
-                        PRIMARY KEY (Id)) 
-                ENGINE=InnoDB AUTO_INCREMENT=10336 DEFAULT CHARSET=latin1;";
+                        PRIMARY KEY (Id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
     }
@@ -1416,7 +1411,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           P3                    int(10)             unsigned    DEFAULT '0',
                           P4                    int(10)             unsigned    DEFAULT '0',
                           P5                    int(10)             unsigned    DEFAULT '0',
-                        PRIMARY KEY (`Id`) ) ENGINE=InnoDB AUTO_INCREMENT=1     DEFAULT CHARSET=latin1;";
+                        PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     private async Task _01_252_DedMandatoryTran(string? schema, string? connName) {
@@ -1425,7 +1420,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           AcctNumber            varchar(45)                     NOT NULL DEFAULT '-',
                           Amount                double(12, 4)                   DEFAULT NULL,
                           RefId                 int(10)             unsigned    NOT NULL DEFAULT '0',
-                        PRIMARY KEY (EmpmasId, AcctNumber, RefId) ) ENGINE=InnoDB AUTO_INCREMENT=1     DEFAULT CHARSET=latin1;"; 
+                        PRIMARY KEY (EmpmasId, AcctNumber, RefId) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;"; 
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     
@@ -1599,8 +1594,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           UserId    INTEGER UNSIGNED NOT NULL,
                           Posted    DATETIME,
                           Action    VARCHAR(60),
-                          PRIMARY KEY(`Id`))
-                        ENGINE = InnoDB;";
+                          PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -1611,7 +1605,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             Id          INTEGER         UNSIGNED    NOT NULL AUTO_INCREMENT,
                             Code        CHAR(5)                     NOT NULL,
                             Name        VARCHAR(45)                 NOT NULL,
-                            PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
+                            PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $"select * from {schema}.PayrateType limit 1";
@@ -1634,7 +1628,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             PayrateTypeId   Integer, 
                             Name            VARCHAR(45)                 NOT NULL,
                             PeriodCode      Char(2), 
-                            PRIMARY KEY (`Id`)) ENGINE = InnoDB;";
+                            PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $"select * from {schema}.PayrateTypeDtls limit 1";
@@ -1718,14 +1712,14 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                       Emprate       DOUBLE(12,4) NOT NULL,
                       PayrateId     INTEGER UNSIGNED NOT NULL,
                       PayrollgrpId  INTEGER UNSIGNED NOT NULL,
-                      PRIMARY KEY(`trn`,`empmasId`)) ENGINE = InnoDB;";
+                      PRIMARY KEY(`trn`,`empmasId`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@"CREATE TABLE  if not exists {schema}.TmpTbltranCoaList (
                       trn           CHAR(12) NOT NULL,
                       AcctNumber    CHAR(5) NOT NULL,
-                      PRIMARY KEY(`trn`,`AcctNumber`)) ENGINE = InnoDB;";
+                      PRIMARY KEY(`trn`,`AcctNumber`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
 
         await _sql.ExecuteCmd(sql, new { }, connName);
 

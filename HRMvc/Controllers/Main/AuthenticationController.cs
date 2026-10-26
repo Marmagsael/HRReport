@@ -13,6 +13,7 @@ using HRMvc.DataAccess.Main;
 using HRMvc.Models.Authentication;
 using HRMvc.Models.Main;
 using HRMvc.Models.Main.LoginSignUp;
+using HRMvc.StartupConfig;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -42,6 +43,7 @@ public class AuthenticationController : Controller
     private readonly I_AcctgTableMaker              _acctg;
     private readonly IOEmpmasDataAccess             _oldEmpmas;
     private readonly IAtttemplatereqhdrDataAccess   _attTemplateReqhdr;
+    private readonly I_00EngagementDataAccess       _engagement;
     
             
 
@@ -61,8 +63,10 @@ public class AuthenticationController : Controller
                                     I_00UserscompanyDataAccess userCompany, 
                                     I_AcctgTableMaker          acctg, 
                                     IOEmpmasDataAccess         oldEmpmas, 
-                                    IAtttemplatereqhdrDataAccess attTemplateReqhdr )
+                                    IAtttemplatereqhdrDataAccess attTemplateReqhdr,
+                                    I_00EngagementDataAccess   engagement )
     {
+        _engagement         = engagement;
         _config             = config;
         _userAccess         = userAccess;
         _mysql              = mysql;
@@ -365,7 +369,7 @@ public class AuthenticationController : Controller
         {
             string isExclusive = _config.GetSection("CompanyInfo:Exclusive").Value;
          
-            UsersModel? user = await _mainDA._02UsersLoginLoginName(login.EmpNumber, login.Password);
+            UsersModel? user = await _mainDA._02UsersLoginEmail(login.Email, login.Password);
 
             if (user == null)
             {
@@ -374,15 +378,26 @@ public class AuthenticationController : Controller
                 return View("Login", login);
             }
 
-
-
-            // -- Get User Company -------------------------------------------------------
             var conn = _config.GetSection("Schema:DefConn").Value.ToString();
             var schema = _config.GetSection("Schema:Main").Value.ToString();
-            var uc = await _02UserCompany(user, schema, conn);
 
-            // Create Schema and Tables --------------------------------------------------
-            _01SchemaAndTables(uc?.PisSchema, conn);
+            // -- Registered employee not approved yet ----------------------------------
+            string? approvalMsg = await _02ApprovalMsg(user, isExclusive, schema, conn);
+            if (approvalMsg != null)
+            {
+                LoadLoginViewData();
+                ViewData["ErrorMsg"] = approvalMsg;
+                return View("Login", login);
+            }
+
+            // -- Get User Company -------------------------------------------------------
+            var uc = await _02UserCompany(user, schema, conn);
+            if (uc == null)
+            {
+                LoadLoginViewData();
+                ViewData["ErrorMsg"] = "Your account is not linked to any company yet.";
+                return View("Login", login);
+            }
 
             if (isExclusive == "true")
             {
@@ -390,12 +405,14 @@ public class AuthenticationController : Controller
             }
 
             await CreateClaims(user, uc);
-            await CreateCompany(user, uc, conn);
+
+            // Tables of the current company : only when appsettings "Migrations" is "true" --
+            await _01CurrentCompanyTables(user, uc, conn);
 
             HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
             HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
 
-            if (uc.OldPis.Length <= 0) return Redirect("~/13");
+            if (string.IsNullOrEmpty(uc.OldPis)) return Redirect("~/13");
 
             var empmas = await _oldEmpmas._02ByEmail(user.Email ?? "00000", uc.OldPis, conn ?? "");
             if (empmas.Count > 0)
@@ -419,6 +436,24 @@ public class AuthenticationController : Controller
     }
 
 
+    // -- 10.01 Registered employee : CompanyInvite (UserId + CompanyId + Status) ----------------
+    // -- P pending / D declined (self-registered, InvitedById 0) block the login, unless the user is already in CompanyUsers (A) --
+    // -- Exclusive : the deployment company; otherwise only users with no company yet ------------
+    private async Task<string?> _02ApprovalMsg(UsersModel user, string isExclusive, string schema, string conn)
+    {
+        int? companyId;
+        if (isExclusive == "true")      companyId = int.Parse(_config.GetSection("CompanyInfo:DefaultCoId").Value);
+        else if (user.DefaultCoId == 0) companyId = null;
+        else                            return null;
+
+        var statuses    = await _engagement._02ApprovalStatus(user.Id ?? 0, companyId, schema, conn);
+
+        if (statuses.Contains("M")) return null;    // -- member already --
+        if (statuses.Contains("P")) return "Your registration is still waiting for company approval.";
+        if (statuses.Contains("D")) return "Your registration was not approved. Please contact your company.";
+        return null;
+    }
+
     private void LoadLoginViewData()
     {
         ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
@@ -431,20 +466,26 @@ public class AuthenticationController : Controller
     {
         //ViewData["CoName"] = _config.GetSection("CompanyInfo:CompanyName").Value;
 
-        var uid     = int.Parse(userid); 
+        // -- Only the logged-in user's own claims are rebuilt; the userid in the URL must be that user --
+        int.TryParse(User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value, out var uid);
+        if (uid <= 0 || userid?.Trim() != uid.ToString()) return StatusCode(StatusCodes.Status403Forbidden);
+
         var user    = await _mainDA._02UsersById(uid);
+        if (user == null) return StatusCode(StatusCodes.Status403Forbidden);
         var uc      = await _mainDA._02UserCompany(user?.DefaultCoId ?? 0);
 
-        await CreateClaims(user ?? new UsersModel(){Id=0}, uc); 
+        await CreateClaims(user, uc);
         HttpContext.Session.Clear();
-        
+
+        var conn     = _config.GetSection("Schema:DefConn").Value.ToString();
+        await _01CurrentCompanyTables(user, uc, conn);
+
         HttpContext.Session.SetString("OldPis", uc.OldPis ?? "");
         HttpContext.Session.SetString("OldPay", uc.OldPay ?? "");
         HttpContext.Session.SetString("EmpNumber", "00000");
 
         if (uc.OldPis.Length <= 0) return Redirect("~/13");
-        
-        var conn     = _config.GetSection("Schema:DefConn").Value.ToString();
+
         var empmas = await _oldEmpmas._02ByEmail(user.Email??"00000", uc.OldPis,  conn??"");
         if(empmas.Count > 0 ) HttpContext.Session.SetString("EmpNumber", empmas.First().EmpNumber ?? "00000");
         
@@ -453,6 +494,21 @@ public class AuthenticationController : Controller
         
         //return Content($"user id : {uc?.CompanyName} ** link {link}");
         
+    }
+
+    // -- 02.05 Tables of the current company (login / switch company) : only when appsettings "Migrations" is "true" --
+    // -- a new company gets its tables + initial data in L01CompanySetup.CreateSchemas --
+    private async Task _01CurrentCompanyTables(UsersModel? user, UserCompanyModel? uc, string conn)
+    {
+        if (!MigrationExt.On(_config) || user == null || uc == null) return;
+
+        try
+        {
+            await _mainPisTblMaker._01UserTable("U" + (user.DefaultCoId)?.ToString().Trim(), conn);
+        }
+        catch (Exception ex) { Console.WriteLine($"Migrations : user tables failed : {ex.Message}"); }
+
+        await MigrationExt.RunCompany(HttpContext.RequestServices, uc.Id);
     }
 
     private async Task CreateCompany(UsersModel user, UserCompanyModel? uc, string conn)
@@ -475,7 +531,8 @@ public class AuthenticationController : Controller
             
             if(uc.PisSchema.Trim().Length > 0) pisdb   = uc.PisSchema.Trim();
             if(uc.PaySchema.Trim().Length > 0) paydb   = uc.PaySchema.Trim();
-            
+            if(!string.IsNullOrWhiteSpace(uc.AcctgSchema)) acctgdb = uc.AcctgSchema.Trim();
+
             await _mainPisTblMaker._01MainPisTableInternal(pisdb, conn);
             await _amsTblMaker._01AMSTable(pisdb, conn);
             
@@ -498,34 +555,30 @@ public class AuthenticationController : Controller
     //**********************************************************************************************
     // -- Left Menu ------------------------------------------------------------------------------------
 
-    // -- 20.00 ------------------------------------------------------------------------------------
-    public async Task<IActionResult> _200ChangeCompany(int userCompanyId)
+    // -- 20.03 Switch company : the only way to change company; it is also the default on the next login --
+    // -- (replaces the old GET _200ChangeCompany, which had no membership check) --
+    [HttpPost("company/switch/{companyId:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> _203SwitchCompany(int companyId)
     {
+        var conn    = _config.GetSection("Schema:DefConn").Value!;
+        var schema  = _config.GetSection("Schema:Main").Value!;
+        int.TryParse(User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value, out var userId);
 
-        var conn    = _config.GetSection("Schema:DefConn").Value.ToString();
-        var schema  = _config.GetSection("Schema:Main").Value.ToString();
-
-        if (userCompanyId == -1)
+        // -- Only to a company where the user is approved --
+        if (userId <= 0 || !await _engagement._03DefaultCompany(userId, companyId, schema, conn))
         {
-            return RedirectToAction("_202RegisterNewCompany");
+            TempData["EngError"] = "You can only switch to a company where your access is approved.";
+            return Redirect("~/12/003");
         }
 
-        var empmasId = User.Claims.Where(c => c.Type == "UserId").FirstOrDefault()?.Value;
-        var empId       = int.Parse(empmasId!);
-        //string? defCompanyId    = User.Claims.Where(c => c.Type == "DefCompayId").FirstOrDefault()?.Value;
-        //int defCoId = int.Parse(defCompanyId!);
-        UsersModel? user = await _mainDA._02UsersById(empId, schema, conn);
-        user!.DefaultCoId = userCompanyId;
+        UsersModel? user        = await _mainDA._02UsersById(userId, schema, conn);
+        UserCompanyModel? uc    = await _02UserCompany(user!, schema, conn);
+        await CreateClaims(user!, uc);
+        await _01CurrentCompanyTables(user, uc, conn);
 
-        await _mainDA._03Users(userCompanyId, user, schema, conn);
-
-        UserCompanyModel? uc = await _02UserCompany(user, schema, conn);
-        await CreateClaims(user, uc);
-
-        if (userCompanyId <= 0) 
-            return  Redirect("~/main/my-profile/my-201-records");
-        return      Redirect("~/main/company-records/personnel-information");
-
+        TempData["EngOk"] = $"You are now working in {uc?.CompanyName}.";
+        return Redirect("~/12/003");
     }
 
     public IActionResult _201PersonalProfile()
@@ -533,10 +586,6 @@ public class AuthenticationController : Controller
         return View();
     }
 
-    public IActionResult _202RegisterNewCompany()
-    {
-        return View();
-    }
 
     // -- Left Menu ------------------------------------------------------------------------------------
     //**********************************************************************************************
@@ -586,12 +635,10 @@ public class AuthenticationController : Controller
         ViewData["CoName"]  = _config.GetSection("CompanyInfo:CompanyName").Value;
 
         //-- Country -----------------------------------------------
-        string sql = $@"SELECT c.* FROM {schema}.Country c order by Name";
-        IEnumerable<CountryUiModel> country = await _mysql.FetchData<CountryUiModel, dynamic>(sql, new { }, conn);
+        var country     = await _mainDA._02CountryList(schema, conn);
 
         //-- Currency -----------------------------------------------
-        sql = $@"SELECT c.* FROM {schema}.Currency c order by Name";
-        IEnumerable<CurrencyUiModel> currency = await _mysql.FetchData<CurrencyUiModel, dynamic>(sql, new { }, conn);
+        var currency    = await _mainDA._02CurrencyList(schema, conn);
 
 
         CreateUserCompanyUiModel userCompany = new CreateUserCompanyUiModel();
@@ -620,8 +667,15 @@ public class AuthenticationController : Controller
             if (user.DefaultCoId == 0)
             {
                 //  -- Walang naka assign na company 
-                var res = await _mainDA._02UserCompanyPerOwnerId(user.Id); 
+                var res = await _mainDA._02UserCompanyPerOwnerId(user.Id);
                 uc = res.FirstOrDefault();
+
+                // -- Not an owner : first company where the user is an approved member --
+                if (uc == null)
+                {
+                    int? coId = await _engagement._02FirstMemberCompany(user.Id ?? 0, schema, conn);
+                    if (coId != null) uc = await _mainDA._02UserCompany(coId, schema, conn);
+                }
             }
             else
             {
@@ -723,7 +777,7 @@ public class AuthenticationController : Controller
             prefix      = "U" + userId + "C" + uc?.Id.ToString().Trim()??"0"; 
             pisSchema   = uc?.PisSchema;
             paySchema   = uc?.PaySchema;
-            acctgSchema = prefix+"Acctg";
+            acctgSchema = string.IsNullOrWhiteSpace(uc?.AcctgSchema) ? prefix + "Acctg" : uc.AcctgSchema;   // registered companies : {CompanyCode}_Acctg
             appSchema   = uc?.ApplicantSchema;
             amsSchema   = uc?.AmsSchema;
         }
@@ -741,6 +795,11 @@ public class AuthenticationController : Controller
         var loginName               = user.LoginName ?? "-1";
         var defCoId                 = user.DefaultCoId.ToString() ?? "0";
         var isExclusiveCompany      = _config.GetSection("CompanyInfo:Exclusive").Value;
+
+        // --- Role in the current company (main.CompanyUsers); users with no row keep the User role
+        int? companyUserType        = (user.Id ?? 0) > 0 && (uc?.Id ?? 0) > 0
+                                    ? await _engagement._02CompanyUserType(user.Id!.Value, uc!.Id!.Value, _config.GetSection("Schema:Main").Value, conn)
+                                    : null;
 
         if (isExclusiveCompany == "true")
         {
@@ -768,8 +827,9 @@ public class AuthenticationController : Controller
             new("OldPay",               oldPay  ?? "pay"),  
             
             new("IsExclusiveCompany",   isExclusiveCompany),
-            new("ExclusiveCompany",    exclusiveCompany) // For GSIA
-        }; 
+            new("ExclusiveCompany",    exclusiveCompany), // For GSIA
+            new(CompanyRole.ClaimType,  (companyUserType ?? CompanyRole.User).ToString())
+        };
 
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var claimPrincipal = new ClaimsPrincipal(claimsIdentity);
@@ -783,10 +843,9 @@ public class AuthenticationController : Controller
         var conn     = _config.GetSection("Schema:DefConn").Value.ToString();
         var schema   = _config.GetSection("Schema:Main").Value.ToString();
 
-        var sql = $"SELECT * FROM {schema}.`Currency` order by Code";
-        var currency = await _mysql.FetchData<CurrencyModel, dynamic>(sql, new { }, conn);
+        var currency = await _mainDA._02CurrencyList(schema, conn);
 
-        return currency;
+        return currency.OrderBy(c => c?.Code).ToList()!;
 
     }
 

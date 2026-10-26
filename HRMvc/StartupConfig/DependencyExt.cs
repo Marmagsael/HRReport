@@ -24,7 +24,7 @@ public static class DependencyExt
 {
     public static void AddServices(this WebApplicationBuilder builder)
     {
-        builder.Services.AddControllersWithViews();
+        builder.Services.AddControllersWithViews(o => o.Filters.Add<EmployeePortalOnlyFilter>());   // -- Employee : portal only --
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         // ---- Blazor Components -----

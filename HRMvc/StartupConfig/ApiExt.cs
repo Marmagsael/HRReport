@@ -46,6 +46,10 @@ public static class ApiExt
 
         builder.Services.AddScoped<I_00MainPisTblMakerAccess, _00MainPisTblMakerAccess>();
         builder.Services.AddScoped<IOldPis_TblMakerDataAccess, OldPis_TblMakerDataAccess>();
+        builder.Services.AddScoped<IOldPay_TblMakerDataAccess, OldPay_TblMakerDataAccess>();
+        builder.Services.AddScoped<I_00MainPisMasterfileMaker, _00MainPisMasterfileMaker>();
+        builder.Services.AddScoped<I_00RegisterDataAccess, _00RegisterDataAccess>();
+        builder.Services.AddScoped<I_00EngagementDataAccess, _00EngagementDataAccess>();
         builder.Services.AddScoped<I_00_CTDataAccess, _00_CTDataAccess>();
         builder.Services.AddScoped<IMsdsDataAccess, MsdsDataAccess>();
 

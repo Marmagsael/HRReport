@@ -50,16 +50,16 @@ public class AMSTableMaker : IAMSTableMaker
                           D1_HrsLength          int             DEFAULT 0,
                           D1_DutyType           char(2)         DEFAULT 'RD',
                           D2_In                 int             DEFAULT 800,
-                          D2_HrsLength          int             DEFAULT 900,
+                          D2_HrsLength          int             DEFAULT 9,
                           D2_DutyType           char(2)         DEFAULT 'R',
                           D3_In                 int             DEFAULT 800,
-                          D3_HrsLength          int             DEFAULT 900,
+                          D3_HrsLength          int             DEFAULT 9,
                           D3_DutyType           char(2)         DEFAULT 'R',
                           D4_In                 int             DEFAULT 800,
-                          D4_HrsLength          int             DEFAULT 900,
+                          D4_HrsLength          int             DEFAULT 9,
                           D4_DutyType           char(2)         DEFAULT 'R',
                           D5_In                 int             DEFAULT 800,
-                          D5_HrsLength          int             DEFAULT 900,
+                          D5_HrsLength          int             DEFAULT 9,
                           D5_DutyType           char(2)         DEFAULT 'R',
                           D6_In                 int             DEFAULT 800,
                           D6_HrsLength          int             DEFAULT 9,
@@ -68,7 +68,7 @@ public class AMSTableMaker : IAMSTableMaker
                           D7_HrsLength          int             DEFAULT 0,
                           D7_DutyType           char(2)         DEFAULT 'RN',
                           PRIMARY KEY(`Id`)
-                        ) ENGINE = InnoDB DEFAULT CHARSET = latin1;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     
@@ -101,7 +101,7 @@ public class AMSTableMaker : IAMSTableMaker
                           Code                  char(15)         DEFAULT '-',
                           Description           char(60)         DEFAULT 'R',
                           PRIMARY KEY(`Id`)
-                        ) ENGINE = InnoDB DEFAULT CHARSET = latin1;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     private async Task _01AttSchedWeeklyDtl(string schema, string connName)
@@ -139,7 +139,7 @@ public class AMSTableMaker : IAMSTableMaker
                             D7_Out                  int                 DEFAULT 0,
                             PRIMARY KEY (`Id`),
                             KEY `idx_AttSchedWeeklyHdrId` (`AttSchedWeeklyHdrId`)
-                        ) ENGINE = InnoDB DEFAULT CHARSET = latin1;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -154,7 +154,7 @@ public class AMSTableMaker : IAMSTableMaker
                       POut          INTEGER         DEFAULT 0,
                       Nd            DOUBLE(5,2)     DEFAULT 0,
                       PRIMARY KEY (`Id`)
-                    ) ENGINE = InnoDB;";
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     
@@ -170,7 +170,7 @@ public class AMSTableMaker : IAMSTableMaker
                         `Duration`          INTEGER         UNSIGNED,
                         `Pout`              INTEGER         UNSIGNED,
                         `ND`                DOUBLE(5,2),
-                        PRIMARY KEY (`Id`) ) ENGINE = InnoDB;";
+                        PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     private async Task _01Atttemplate_Schedule(string schema, string connName)
@@ -210,7 +210,7 @@ public class AMSTableMaker : IAMSTableMaker
                           Empnumber        CHAR(5) NOT NULL,
                           NeedsOTFiling    INTEGER UNSIGNED DEFAULT 1,
                           MaxOTHour        DOUBLE(8,2) DEFAULT 0,
-                          PRIMARY KEY (`Empnumber`)) ENGINE = InnoDB; ";
+                          PRIMARY KEY (`Empnumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; ";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -235,7 +235,7 @@ public class AMSTableMaker : IAMSTableMaker
                     Absent          DOUBLE(8,2)     NULL,
                     PRIMARY KEY (EmpNumber, Date),
                     INDEX idx_biodailypunches_payrollgrp (PayrollGrpId),
-                    INDEX idx_biodailypunches_date       (Date));";
+                    INDEX idx_biodailypunches_date       (Date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -248,7 +248,7 @@ public class AMSTableMaker : IAMSTableMaker
                     CoverageEnd     DATE            NOT NULL,
                     Remarks         VARCHAR(200)    NULL,
                     PRIMARY KEY (Id),
-                    UNIQUE INDEX uidx_biomanhourHdr (PayrollGrpId, CoverageStart));";
+                    UNIQUE INDEX uidx_biomanhourHdr (PayrollGrpId, CoverageStart)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -276,7 +276,7 @@ public class AMSTableMaker : IAMSTableMaker
                     DhOt                DOUBLE(8,2)     NULL,
                     PRIMARY KEY (Id),
                     UNIQUE INDEX uidx_biomanhour (BioManHourHdrId, EmpNumber),
-                    INDEX idx_biomanhour_hdr (BioManHourHdrId));";
+                    INDEX idx_biomanhour_hdr (BioManHourHdrId)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -302,7 +302,7 @@ public class AMSTableMaker : IAMSTableMaker
             DhTardiness     CHAR(5)     NULL,
             DhOt            CHAR(5)     NULL,
             PRIMARY KEY (Id)
-        );
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
         INSERT INTO {schema}.BioManHourMapping (Id)
         SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM {schema}.BioManHourMapping WHERE Id = 1 ); ";
@@ -324,7 +324,7 @@ public class AMSTableMaker : IAMSTableMaker
             Status          CHAR(1)         NOT NULL DEFAULT 'A',
             PRIMARY KEY (Id),
             UNIQUE KEY UQ_Sites_Code (Code)
-        );" ;
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" ;
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@" CREATE TABLE IF NOT EXISTS {schema}.EmpSites (
@@ -332,7 +332,7 @@ public class AMSTableMaker : IAMSTableMaker
                     EmpmasId    INT NOT NULL,
                     SiteId      INT NOT NULL,
                     PRIMARY KEY (Id),
-                    UNIQUE KEY UQ_EmpSites (EmpmasId, SiteId));";  
+                    UNIQUE KEY UQ_EmpSites (EmpmasId, SiteId)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";  
 
         await _sql.ExecuteCmd(sql, new { }, connName);
     }

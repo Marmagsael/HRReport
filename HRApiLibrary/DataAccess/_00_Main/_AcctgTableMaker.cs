@@ -110,7 +110,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                               `Reportformat`  varchar(45)               DEFAULT ' ',
                               `Coaid`         varchar(15)               DEFAULT ' ',
                               `Description`   varchar(150)              DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
@@ -135,7 +135,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                               `Discountamt`         double(25,4)                        DEFAULT 0.0000,
                               `Billcostcenterid`    int(10)         unsigned            DEFAULT 0,
                               `Period`              varchar(10)                         DEFAULT ' ',
-                        PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                        PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -157,7 +157,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Discountperc`      double(10,4)                          DEFAULT 0.0000,
                           `Discountamt`       double(25,4)                          DEFAULT 0.0000,
                           `Billcostcenterid`  int(10)           unsigned            DEFAULT 0,
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -172,7 +172,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Paymentmethodid`  tinyint(3)         unsigned        DEFAULT 0,
                           `Coaid`            int(10)            unsigned        DEFAULT 0,
                           `Remarks`          varchar(120)                       DEFAULT ' ',
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -185,7 +185,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                             `Targetamt`     double(25,4)    DEFAULT 0.0000,
                             `Maxamt`        double(25,4)    DEFAULT 0.0000,
                             `Minamt`        double(25,4)    DEFAULT 0.0000,
-                        PRIMARY KEY (`Id`)) ENGINE=InnoDB   DEFAULT CHARSET=utf8mb4;";
+                        PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -207,7 +207,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `CoaType_id`      int(10)             unsigned        DEFAULT 0,
                           `Description`     longtext,          
                           `Editable`        tinyint(1)          NOT NULL        DEFAULT 1,
-                          PRIMARY KEY (`Id`)) ENGINE=InnoDB AUTO_INCREMENT=85 DEFAULT CHARSET=utf8mb4; ";
+                          PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select Id from {db}.Coa limit 1 ";
@@ -360,7 +360,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Equitycode`          varchar(20)         DEFAULT '30000000',
                           `Expensescode`        varchar(20)         DEFAULT '40000000',
                           `Incomecode`          varchar(20)         DEFAULT '50000000',
-                          PRIMARY KEY (`Id`)) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;";
+                          PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {db}.Coasettings limit 1 ";
@@ -386,7 +386,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
         string? sql = $@"CREATE TABLE if not exists {db}.`Collectioncategory` (
                           `Id`                  int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Collectioncategory`  varchar(45)     DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {db}.Collectioncategory limit 1 ";
@@ -411,7 +411,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Invoicehdrid`        int(10) unsigned DEFAULT 0,
                           `Amount`              double(25,4) DEFAULT 0.0000,
                           `Forexpayamt`         double(12,4) DEFAULT 0.0000,
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -444,7 +444,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Inputtaxamount`              double(18, 4)                   DEFAULT 0.0000,
                           `Conversionamount`            double(16, 4)                   DEFAULT 0.0000,
                           `Remarks`                     varchar(120)                    DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -457,7 +457,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Created`             datetime                    DEFAULT NULL,      
                           `Userid`              int(10)         unsigned    DEFAULT 0,
                           `Remarks`             varchar(45)                 DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -468,7 +468,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
         string? sql = $@"CREATE TABLE if not exists {db}.`Collectiontype` (
                           `Id`                  int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Collectiontype`      varchar(45)                     DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {db}.Collectiontype limit 1 ";
@@ -491,7 +491,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Code`            varchar(5)          DEFAULT ' ',
                           `Name`            varchar(45)         DEFAULT ' ',
                           `Symbol`          varchar(5)          DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {db}.Currency limit 1 ";
@@ -530,7 +530,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Shortname`               varchar(15)                 DEFAULT ' ',
                           `Creditlimit`             decimal(18,2)               DEFAULT 0.00,
                           `Taxrate`                 decimal(5, 2)               DEFAULT 0.00,
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
@@ -553,7 +553,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Shipprovince`            varchar(80)             DEFAULT ' ',
                           `Shipcityid`              int(10)        unsigned DEFAULT 0,
                           `Shipzipcode`             varchar(15)             DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
@@ -574,7 +574,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Netamt`                  double(16, 4)                       DEFAULT 0.0000,
                           `Taxid`                   int(10)                 unsigned    DEFAULT 0,
                           PRIMARY KEY (`id`)
-                        ) ENGINE=InnoDB AUTO_INCREMENT=184 DEFAULT CHARSET=utf8mb4;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
@@ -597,7 +597,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `userid`              int(10)             unsigned    DEFAULT 0,
                           `remarks`             varchar(15)                     DEFAULT '',
                           `created`             datetime DEFAULT NULL,          
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
@@ -628,7 +628,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Created`                 datetime                        DEFAULT NULL,
                           `Datesent`                datetime                        DEFAULT NULL,
                           `Conversionamount`        double(16,4)                    DEFAULT 0.0000,
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=91 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
     }
@@ -655,7 +655,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Id`              int(10)             unsigned NOT NULL AUTO_INCREMENT,
                           `Shortname`       varchar(10)         DEFAULT '',
                           `Name`            varchar(80)         NOT NULL,
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {db}.Invoicetype limit 1 ";
@@ -695,7 +695,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Idtax`               int(10)         unsigned NOT NULL   DEFAULT 0,
                           `Reorder`             int(10)         unsigned            DEFAULT 0,
                           `Status`              char(1)                             DEFAULT 'A',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
 
@@ -723,7 +723,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Idbuyacct`           int(10)             unsigned NOT NULL   DEFAULT 0,
                           `Idtax`               int(10)             unsigned NOT NULL   DEFAULT 0,
                           `Reorder`             double(12, 4)       unsigned            DEFAULT 0.0000,
-                          PRIMARY KEY (`Id`)) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -733,7 +733,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
         string? sql = $@"CREATE TABLE if not exists {db}.`Itemcategorysales` (
                           `Id`              int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Name`            varchar(45)     DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -749,7 +749,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Cr`              double(18, 4)               DEFAULT 0.0000,
                           `Created`         datetime                    DEFAULT NULL,          
                           `Userid`          int(10)         unsigned    DEFAULT 0,
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -777,7 +777,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
         string? sql = $@"CREATE TABLE if not exists {db}.`Paymentmethod` (
                           `Id`          int(10)         unsigned NOT NULL AUTO_INCREMENT,
                           `Name`        varchar(45)     DEFAULT ' ',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {db}.Paymentmethod limit 1 ";
@@ -802,7 +802,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
         string? sql = $@"CREATE TABLE if not exists {db}.`Paymentreftype` (
                           `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                           `name` varchar(45) DEFAULT ' ',
-                        PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                        PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -816,7 +816,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Createdby`       int(10)                     DEFAULT 0,
                           `Datecreated`     datetime                    DEFAULT NULL,      
                           `Islocked`        tinyint(3)      unsigned    DEFAULT 0,
-                          PRIMARY KEY (`Id`)) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -832,7 +832,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `BankbatchpaymentId`      int(10)       unsigned DEFAULT 0,
                           `Checkname`               varchar(60)   DEFAULT ' ',
                           `Status`                  char(1)       DEFAULT 'A',
-                          PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=latin1;";
+                          PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
 
@@ -868,7 +868,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
                           `Conv`                double(18, 4)       NOT NULL DEFAULT 0.0000,
                           `Coaid`               int(10)             unsigned DEFAULT 0,
                           PRIMARY KEY (`id`)
-                        ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;";
+                        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
 
         sql = @$"select * from {db}.Tax limit 1 ";
@@ -890,7 +890,7 @@ public class _AcctgTableMaker : I_AcctgTableMaker
         string? sql = $@"CREATE TABLE if not exists {db}.`Vendorcurrency` (
                           `Vendorid`        int(10) unsigned NOT NULL,
                           `Currencycode`    char(5)             DEFAULT '',
-                          PRIMARY KEY (`vendorid`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+                          PRIMARY KEY (`vendorid`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
         await _sql.ExecuteCmd(sql, new { }, conn);
     }
     
