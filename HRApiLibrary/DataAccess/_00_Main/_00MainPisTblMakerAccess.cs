@@ -538,11 +538,25 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
 
         // DESC "Type" may come back as byte[] from MySql.Data
         static string ColType(dynamic c) => c.Type is byte[] b ? System.Text.Encoding.UTF8.GetString(b) : Convert.ToString(c.Type) ?? "";
+        static string ColDefault(dynamic c) => c.Default is byte[] b ? System.Text.Encoding.UTF8.GetString(b) : Convert.ToString(c.Default) ?? "";
         bool isStatusChar1 = existingColumns.Any(c => c.Field == "Status" && ColType(c).ToLower() == "char(1)");
 
-        if (isStatusChar1)
+        // --- existing tables : zero-date defaults ('0000-00-00 00:00:00') are invalid in strict mode and block every ALTER
+        //     PunchInDate is part of the PK so it stays NOT NULL without a default; PunchOutDate defaults to NULL
+        var fixes = new List<string>();
+        foreach (var c in existingColumns)
         {
-            sql = $@"ALTER TABLE {schema}.AttPunches1 MODIFY COLUMN Status Char(3) default '-';";
+            if (!ColDefault(c).StartsWith("0000-00-00")) continue;
+            string field = c.Field;
+            if (field == "PunchInDate") fixes.Add("MODIFY COLUMN PunchInDate DATETIME NOT NULL");
+            else fixes.Add($"MODIFY COLUMN `{field}` {ColType(c)} NULL DEFAULT NULL");
+        }
+
+        if (isStatusChar1) fixes.Add("MODIFY COLUMN Status Char(3) default '-'");
+
+        if (fixes.Count > 0)
+        {
+            sql = $@"ALTER TABLE {schema}.AttPunches1 {string.Join(", ", fixes)};";
             await _sql.ExecuteCmd(sql, new { });
         }
 
@@ -2291,6 +2305,8 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             IsDefaultApprover   INTEGER     UNSIGNED DEFAULT 0,
                         PRIMARY KEY (`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { }, conn);
+
+        await AddColumnIfMissing(schema, "LeaveGrpApprover", "IsDefaultApprover", "IsDefaultApprover INTEGER UNSIGNED DEFAULT 0 AFTER ApproverLevel", conn);
     }
 
     // private async Task _01LeaveCredit(string? schema, string? conn)
