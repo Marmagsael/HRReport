@@ -24,7 +24,7 @@ public class _00MTTableMakerAccess : I_00MTTableMakerAccess
     // --- Schema Main Pis ------------------------------------------------------
     private async Task _01CreateSchema(string? schema, string? connName)
     {
-        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 

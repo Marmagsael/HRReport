@@ -6,5 +6,6 @@ namespace HRApiLibrary.DataAccess._00_Main.Interface
     {
         Task _01MainTable(string? schema = "Main", string? connName = "MySqlConn");
         Task<SchemaStructureModel?> _02_TableExists(string? schema, string? tableName, string? connName);
+        Task<List<string>>          _03CharsetLatin1(string schema, string? connName);
     }
 }

@@ -284,7 +284,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     //--- Schema Main ------------------------------------------------------
     private async Task _01_001_MainPay(string? connName, string? schema="MainPay")
     {
-        string? sql = $"CREATE DATABASE IF NOT EXISTS MainPay";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS MainPay DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@"CREATE TABLE if not exists  {schema}.VerUpdate (
@@ -353,7 +353,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     //--- Schema Main ------------------------------------------------------
     private async Task _01_001_Schema(string? schema, string? connName)
     {
-        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema}";
+        string? sql = $"CREATE DATABASE IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -520,7 +520,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         string? sql = @$"CREATE TABLE if not exists {schema}.PremContSource (
                         Id              INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
                         Source          CHAR(25)             Default ' ',
-                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                        PRIMARY KEY(`Id`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@"select * from {schema}.PremContSource limit 1 ";

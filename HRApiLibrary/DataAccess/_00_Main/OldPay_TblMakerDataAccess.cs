@@ -22,7 +22,7 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
 
     public async Task _01OldPayTable(string? schema, string? connName = "MySqlConn")
     {
-        await _sql.ExecuteCmd($"CREATE SCHEMA IF NOT EXISTS {schema};", new { }, connName);
+        await _sql.ExecuteCmd($"CREATE SCHEMA IF NOT EXISTS {schema} DEFAULT CHARACTER SET latin1;", new { }, connName);
 
         await _0113thmogrp(schema, connName);
         await _0113thmosched(schema, connName);
@@ -2735,7 +2735,7 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         `Empnumber` varchar(5) NOT NULL,
                         `Status` varchar(25) DEFAULT NULL,
                         `CreatedBy` int unsigned DEFAULT NULL,
-                        `DateCreated` datetime DEFAULT CURRENT_TIMESTAMP,
+                        `DateCreated` timestamp NULL DEFAULT CURRENT_TIMESTAMP,     -- MySQL 5.5 : only TIMESTAMP defaults to now
                         PRIMARY KEY (`Empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);

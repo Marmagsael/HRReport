@@ -84,7 +84,7 @@ public class AMSTableMaker : IAMSTableMaker
                         AttState        TINYINT         NOT NULL DEFAULT 0,
                         WorkCode        VARCHAR(20)     NULL,
                         ImportBatch     VARCHAR(50)     NOT NULL,
-                        ImportedOn      DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        ImportedOn      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,   -- MySQL 5.5 : only TIMESTAMP defaults to now
                         IsProcessed     TINYINT(1)      NOT NULL DEFAULT 0,
                         PRIMARY KEY (Id),
                         UNIQUE INDEX uidx_biolog_emp_datetime  (BiometricEmpNo, LogDatetime),
@@ -154,7 +154,7 @@ public class AMSTableMaker : IAMSTableMaker
                       POut          INTEGER         DEFAULT 0,
                       Nd            DOUBLE(5,2)     DEFAULT 0,
                       PRIMARY KEY (`Id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                    ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     
@@ -170,7 +170,7 @@ public class AMSTableMaker : IAMSTableMaker
                         `Duration`          INTEGER         UNSIGNED,
                         `Pout`              INTEGER         UNSIGNED,
                         `ND`                DOUBLE(5,2),
-                        PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;";
+                        PRIMARY KEY (`Id`) ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
     private async Task _01Atttemplate_Schedule(string schema, string connName)
@@ -210,7 +210,7 @@ public class AMSTableMaker : IAMSTableMaker
                           Empnumber        CHAR(5) NOT NULL,
                           NeedsOTFiling    INTEGER UNSIGNED DEFAULT 1,
                           MaxOTHour        DOUBLE(8,2) DEFAULT 0,
-                          PRIMARY KEY (`Empnumber`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; ";
+                          PRIMARY KEY (`Empnumber`)) ENGINE=InnoDB DEFAULT CHARSET=latin1; ";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -235,7 +235,7 @@ public class AMSTableMaker : IAMSTableMaker
                     Absent          DOUBLE(8,2)     NULL,
                     PRIMARY KEY (EmpNumber, Date),
                     INDEX idx_biodailypunches_payrollgrp (PayrollGrpId),
-                    INDEX idx_biodailypunches_date       (Date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                    INDEX idx_biodailypunches_date       (Date)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -248,7 +248,7 @@ public class AMSTableMaker : IAMSTableMaker
                     CoverageEnd     DATE            NOT NULL,
                     Remarks         VARCHAR(200)    NULL,
                     PRIMARY KEY (Id),
-                    UNIQUE INDEX uidx_biomanhourHdr (PayrollGrpId, CoverageStart)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                    UNIQUE INDEX uidx_biomanhourHdr (PayrollGrpId, CoverageStart)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -276,7 +276,7 @@ public class AMSTableMaker : IAMSTableMaker
                     DhOt                DOUBLE(8,2)     NULL,
                     PRIMARY KEY (Id),
                     UNIQUE INDEX uidx_biomanhour (BioManHourHdrId, EmpNumber),
-                    INDEX idx_biomanhour_hdr (BioManHourHdrId)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+                    INDEX idx_biomanhour_hdr (BioManHourHdrId)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -302,10 +302,10 @@ public class AMSTableMaker : IAMSTableMaker
             DhTardiness     CHAR(5)     NULL,
             DhOt            CHAR(5)     NULL,
             PRIMARY KEY (Id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
         INSERT INTO {schema}.BioManHourMapping (Id)
-        SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM {schema}.BioManHourMapping WHERE Id = 1 ); ";
+        SELECT 1 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM {schema}.BioManHourMapping WHERE Id = 1 ); ";   // -- MySQL 5.5 needs FROM DUAL
 
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
@@ -324,7 +324,7 @@ public class AMSTableMaker : IAMSTableMaker
             Status          CHAR(1)         NOT NULL DEFAULT 'A',
             PRIMARY KEY (Id),
             UNIQUE KEY UQ_Sites_Code (Code)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;" ;
+        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;" ;
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = $@" CREATE TABLE IF NOT EXISTS {schema}.EmpSites (
@@ -332,7 +332,7 @@ public class AMSTableMaker : IAMSTableMaker
                     EmpmasId    INT NOT NULL,
                     SiteId      INT NOT NULL,
                     PRIMARY KEY (Id),
-                    UNIQUE KEY UQ_EmpSites (EmpmasId, SiteId)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";  
+                    UNIQUE KEY UQ_EmpSites (EmpmasId, SiteId)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";  
 
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
