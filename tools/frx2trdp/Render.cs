@@ -335,6 +335,54 @@ static class Render
                     Console.WriteLine($"months={mons.Count} diffs={bad} rows without ssstbl match={unmatched}");
                     return;
                 }
+            case "sssloan":
+                {
+                    // <trdp> <out.pdf> <yymm> [acct]: every client of the month; acct = another loan account (the local DB has no SSS loans)
+                    var cls = (await rep._02MonthClients(args[3], paydb, pisdb, conn)).Select(c => c.Clnumber!).ToList();
+                    var rows = args.Length > 4 ? await rep._02LoanRefRemit(args[4], args[3], cls, paydb, pisdb, conn) : await rep._02SssLoanRemit(args[3], cls, paydb, pisdb, conn);
+                    prm["MonthYear"] = "May, 2026"; prm["EmployerSss"] = "03-0000000-0";
+                    Console.WriteLine($"clients={cls.Count} rows={rows.Count} amort={rows.Sum(r => r.Amort):N2}");
+                    data = rows;
+                    break;
+                }
+            case "sssloancheck":
+                {
+                    // each month, every client: employees and amortization vs plain SQL (loansref joined to tbltran)
+                    var mons = await sql.FetchData<string, dynamic>($"select distinct left(TRN,4) from {paydb}.loansref where trim(DednCode) = 'D078' order by 1", new { }, conn);   // D005 has no loansref rows locally
+                    int bad = 0;
+                    foreach (var m in mons)
+                    {
+                        var cls = (await rep._02MonthClients(m, paydb, pisdb, conn)).Select(c => c.Clnumber!).ToList();
+                        var rows = await rep._02LoanRefRemit("D078", m, cls, paydb, pisdb, conn);
+                        var exp = await sql.FetchData<(long N, double Amt), dynamic>($"select count(distinct a.EmpNumber), ifnull(sum(round(a.Amort,2)),0) + 0e0 from {paydb}.loansref a where trim(a.DednCode) = 'D078' and left(a.TRN,4) = @M and exists (select 1 from {paydb}.tbltran x where x.TRN = a.TRN and x.EmpNumber = a.EmpNumber and x.AcctNumber = a.DednCode)", new { M = m }, conn);
+                        if (rows.Count != exp[0].N || Math.Abs(rows.Sum(r => r.Amort) - exp[0].Amt) > 0.01 * Math.Max(1, rows.Count)) { bad++; Console.WriteLine($"DIFF {m} {rows.Count} vs {exp[0].N}  {rows.Sum(r => r.Amort):N2} vs {exp[0].Amt:N2}"); }
+                    }
+                    Console.WriteLine($"months={mons.Count} diffs={bad}");
+                    return;
+                }
+            case "sssloancounts":
+                {
+                    foreach (var t in new[] { "loansref", "loandtl", "loans", "sssloandtl" })
+                    {
+                        try { var n = await sql.FetchData<long, dynamic>($"select count(*) from {paydb}.{t}", new { }, conn); Console.WriteLine($"{t}: {n[0]}"); }
+                        catch (Exception e) { Console.WriteLine($"{t}: {e.Message[..Math.Min(80, e.Message.Length)]}"); }
+                    }
+                    foreach (var r in await sql.FetchData<(string C, long N, string Mn, string Mx), dynamic>($"select trim(DednCode), count(*), min(left(TRN,6)), max(left(TRN,6)) from {paydb}.loansref group by 1 order by 2 desc limit 8", new { }, conn)) Console.WriteLine($"loansref {r.C}: {r.N} trn {r.Mn}..{r.Mx}");
+                    foreach (var r in await sql.FetchData<(string T, string E), dynamic>($"select trim(TRN), trim(EmpNumber) from {paydb}.tbltran where trim(AcctNumber) = 'D005'", new { }, conn)) Console.WriteLine($"tbltran D005 {r.T} {r.E}");
+                    var d5 = await sql.FetchData<long, dynamic>($"select count(*) from {paydb}.tbltran where trim(AcctNumber) = 'D005'", new { }, conn);
+                    Console.WriteLine($"tbltran D005: {d5[0]}");
+                    return;
+                }
+            case "sysmenu":
+                {
+                    // every row of {paydb}.sysmenu, columns as they come
+                    var cols = await sql.FetchData<string, dynamic>($"select column_name from information_schema.columns where table_schema = @S and table_name = 'sysmenu' order by ordinal_position", new { S = paydb }, conn);
+                    Console.WriteLine("columns: " + string.Join(", ", cols));
+                    var rows = await sql.FetchData<string, dynamic>($"select concat_ws(' | ', {string.Join(", ", cols.Select(c => $"ifnull(cast(`{c}` as char),'')"))}) from {paydb}.sysmenu", new { }, conn);
+                    Console.WriteLine($"rows={rows.Count}");
+                    foreach (var r in rows) Console.WriteLine(r);
+                    return;
+                }
             case "hdmfcert":
             case "phiccert":
                 {

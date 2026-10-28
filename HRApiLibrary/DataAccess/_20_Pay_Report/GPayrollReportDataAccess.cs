@@ -803,6 +803,33 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         return rows;
     }
 
+    // --- SSS Loan Remittance (MBPay frmsssloanremittance -> rptSSSREmit) -------------------------------------------------
+    // --- Clients of the month's TRNs (MBPay filled its client list from them) ---
+    public async Task<List<RSssLoanRemitModel>> _02MonthClients(string yymm, string? opaydb, string? opisdb, string? conn)
+        => await _sql.FetchData<RSssLoanRemitModel, dynamic>($@"SELECT DISTINCT RIGHT(TRIM(a.TRN),5) Clnumber, c.ClName Clname FROM {opaydb}.tbltran a
+                  LEFT JOIN {opisdb}.client c ON c.ClNumber = RIGHT(TRIM(a.TRN),5) WHERE LEFT(a.TRN,4) = @Yymm ORDER BY c.ClName", new { Yymm = yymm }, conn);
+
+    // --- loansref rows of the SSS loan account (ACCT_SSSLOAN) whose TRN is of the month and was really deducted (same TRN, employee and
+    // --- account in tbltran), clients: those TRNs only; amortization added per employee ---
+    public async Task<List<RSssLoanRemitModel>> _02SssLoanRemit(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn)
+        => await _02LoanRefRemit(await _02ReportSetting("ACCT_SSSLOAN", opaydb, conn), yymm, clients, opaydb, opisdb, conn);
+
+    public async Task<List<RSssLoanRemitModel>> _02LoanRefRemit(string acct, string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn)
+    {
+        if (clients.Count == 0) return [];
+        string? sql = $@"SELECT  TRIM(a.EmpNumber) Empnumber, DATE_FORMAT(a.Date,'%m/%d/%y') Date, IFNULL(a.Amount,0) Amount, IFNULL(a.Amort,0) Amort,
+                                 TRIM(b.EmpLastNm) Emplastnm, TRIM(b.EmpFirstNm) Empfirstnm, LEFT(TRIM(b.EmpMidNm),1) Empmidnm, b.SSS Sss
+                         FROM    {opaydb}.loansref a
+                                 LEFT JOIN {opisdb}.empmas b ON b.EmpNumber = a.EmpNumber
+                         WHERE   TRIM(a.DednCode) = @Acct AND LEFT(a.TRN,4) = @Yymm AND RIGHT(TRIM(a.TRN),5) IN @Cls
+                                 AND EXISTS (SELECT 1 FROM {opaydb}.tbltran x WHERE x.TRN = a.TRN AND x.EmpNumber = a.EmpNumber AND x.AcctNumber = a.DednCode)
+                         ORDER BY a.TRN, a.Date ";
+        var lines = await _sql.FetchData<RSssLoanRemitModel, dynamic>(sql, new { Acct = acct, Yymm = yymm, Cls = clients }, conn);
+        return lines.GroupBy(l => l.Empnumber!)
+                    .Select(g => { var f = g.First(); f.Amort = Cents(g.Sum(l => Cents(l.Amort))); f.Amount = Cents(f.Amount); return f; })
+                    .OrderBy(r => r.Emplastnm).ThenBy(r => r.Empfirstnm).ToList();
+    }
+
     // --- Report settings ({opaydb}.reportsettings, made by OldPay_TblMaker._01ReportSettings) ---------------------------
     public async Task<Dictionary<string, string>> _02ReportSettings(string? opaydb, string? conn)
         => (await _sql.FetchData<(string Code, string Value), dynamic>($"SELECT TRIM(Code), IFNULL(Value,'') FROM {opaydb}.reportsettings", new { }, conn))
@@ -853,6 +880,9 @@ public interface IGPayrollReportDataAccess
     Task<List<R13thMonthModel>> _02ActiveClients(string? opisdb, string? conn);
     Task<List<R13thMonthModel>> _02ThirteenthMonth(string half, int year, List<string>? statuses, List<string>? clients, bool noClient, string? empNumber, string? opaydb, string? opisdb, string? conn);
     Task<List<RSssRemitModel>> _02SssRemit(string yymm, bool adjusted, string? opaydb, string? opisdb, string? conn);
+    Task<List<RSssLoanRemitModel>> _02MonthClients(string yymm, string? opaydb, string? opisdb, string? conn);
+    Task<List<RSssLoanRemitModel>> _02SssLoanRemit(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
+    Task<List<RSssLoanRemitModel>> _02LoanRefRemit(string acct, string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RPayslipModel>> _02Payslip(List<string> trns, string? opaydb, string? opisdb, string? conn);
 
 }
