@@ -2,7 +2,8 @@
 @using HRMvc.Applications.PisReport.Vars
 
 @* --- SSS Contribution Remittance (MBPay frmssscontremit -> rptSSSContRemit, the SSS R3 form). Mode sss: the amounts as posted;
-       sssadj: frmssscontremit2, the amounts moved to the nearest ssstbl employee share. Employer SSS ID = coinfo.sss --- *@
+       sssadj: frmssscontremit2, the amounts moved to the nearest ssstbl employee share; ssscl: frmssscontremitperclient, only the
+       chosen payroll groups (clients of the month's TRNs). Employer SSS ID = coinfo.sss --- *@
 
 @inject NotificationService _NotificationService;
 
@@ -69,11 +70,21 @@
             <div class="card-header">
                 <div class="d-flex gap-2 align-items-center">
                     <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    @if (PerClient)
+                    {
+                        @*--- Clients of the month ------------------------------------------------*@
+                        <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Search"> Search</div>
+                    }
                     @*--- Fetch Button ------------------------------------------------*@
                     <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
                 </div>
             </div>
         </div>
+
+        @if (PerClient)
+        {
+            <div class="w-100"><div class="fw-bold p-1">Payroll Groups</div><_00TClientList Clients="@clients" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+        }
     </Details>
 </_00BT_FullW>
 
@@ -89,14 +100,19 @@
     List<RSssRemitModel>                reps    = [];
 
     private bool Adj => Mode == "sssadj";
+    private bool PerClient => Mode == "ssscl";
+
+    //--- Client list reuses the client list component: ClNumber holds the client code ---
+    List<OClientModel>                  clients     = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
     private string yymm => $"{rv.Year.ToString()!.Substring(2, 2)}{rv.Month}";
 
     protected override async Task OnInitializedAsync()
     {
         if (!HasConnection()) return;
 
-        rv.RefreshToken = Adj ? 12630000 : 12620000;
-        rv.MCaption     = Adj ? "SSS Contribution Remittance (Adjusted)" : "SSS Contribution Remittance";
+        rv.RefreshToken = PerClient ? 12640000 : Adj ? 12630000 : 12620000;
+        rv.MCaption     = PerClient ? "SSS Contribution per Payroll Group" : Adj ? "SSS Contribution Remittance (Adjusted)" : "SSS Contribution Remittance";
         rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["MM"] = "", ["YY"] = "", ["EmployerSss"] = "" };
 
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
@@ -111,6 +127,15 @@
 
     void ChildActionCatcher(){}
 
+    //--- Clients of the month's TRNs, all selected ---
+    private async Task Search()
+    {
+        if (!HasConnection()) return;
+        var res = await _payRep._02MonthClients(yymm, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        clients = res.Select(c => new OClientModel { ClNumber = c.Clnumber, ClName = c.Clname, IsSelectedB = true }).ToList();
+        if (!clients.Any()) Notify(NotificationSeverity.Info, "Info", "No clients found for this month.");
+    }
+
     private async Task FetchData()
     {
         reps = [];
@@ -118,10 +143,13 @@
         rv.ShowReport = false;
         if (!HasConnection()) return;
 
+        var cls = PerClient ? clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber!).ToList() : null;
+        if (PerClient && !cls!.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Please search and select the payroll groups."); return; }
+
         try
         {
             rv.Isloaded = true;
-            reps = await _payRep._02SssRemit(yymm, Adj, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            reps = await _payRep._02SssRemit(yymm, Adj, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!, cls);
             rv.ReportParams["MM"] = new DateTime(rv.Year ?? DateTime.Now.Year, int.Parse(rv.Month!), 1).ToString("MMMM");
             rv.ReportParams["YY"] = rv.Year.ToString()!;
         }

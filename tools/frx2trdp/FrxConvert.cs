@@ -206,6 +206,13 @@ static class FrxConvert
             // 0.002in spare: the 3-decimal inch values in the XML must not round back over the band (Telerik drops a page
             // header/footer item that crosses the bottom)
             if (t is 5 or 8 && top + hh > SecH(sec) - 0.002) { hh = Math.Min(hh, SecH(sec) - 0.002); top = Math.Max(0, SecH(sec) - 0.002 - hh); }
+            //--- A line or box in the detail band must not be taller than a row (it would grow every row); one that starts below the
+            //--- band belongs to the page footer in FoxPro (it only begins a little early) and is dropped ---
+            if (t is 6 or 7 && sec == "detail")
+            {
+                if (top >= SecH(sec) - 0.002) continue;
+                hh = Math.Min(hh, SecH(sec) - 0.002 - top);
+            }
             string name = "i" + (++seq);
             string expr = r["EXPR"].Replace("\r", " ").Replace("\n", " ");
             if (replace.TryGetValue($"{expr.ToLower()}@{(N(r, "HPOS") / 10000).ToString("0.000", inv)}", out var rep)) expr = rep;

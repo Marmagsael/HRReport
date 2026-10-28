@@ -383,6 +383,33 @@ static class Render
                     foreach (var r in rows) Console.WriteLine(r);
                     return;
                 }
+            case "phmo":
+                {
+                    // <trdp> <out.pdf> <yymm>: every client of the month
+                    var cls = (await rep._02MonthClients(args[3], paydb, pisdb, conn)).Select(c => c.Clnumber!).ToList();
+                    var rows = await rep._02PhicMonthly(args[3], cls, paydb, pisdb, conn);
+                    prm["MM"] = "May"; prm["YY"] = "2026";
+                    Console.WriteLine($"clients={cls.Count} rows={rows.Count} amount={rows.Sum(r => r.Amount):N2}");
+                    data = rows;
+                    break;
+                }
+            case "phmocheck":
+                {
+                    // each month, every client: employees and total vs plain SQL; one client alone still gives the employee's whole month
+                    var mons = await sql.FetchData<string, dynamic>($"select distinct left(TRN,4) from {paydb}.tbltran where trim(AcctNumber) = 'D003' order by 1", new { }, conn);
+                    int bad = 0;
+                    foreach (var m in mons)
+                    {
+                        var cls = (await rep._02MonthClients(m, paydb, pisdb, conn)).Select(c => c.Clnumber!).ToList();
+                        var rows = await rep._02PhicMonthly(m, cls, paydb, pisdb, conn);
+                        var exp = await sql.FetchData<(long N, double Amt), dynamic>($"select count(distinct EmpNumber), sum(round(Amount,2)) + 0e0 from {paydb}.tbltran where trim(AcctNumber) = 'D003' and left(TRN,4) = @M", new { M = m }, conn);
+                        if (rows.Count != exp[0].N || Math.Abs(rows.Sum(r => r.Amount) - exp[0].Amt) > 0.01 * Math.Max(1, rows.Count)) { bad++; Console.WriteLine($"DIFF {m} {rows.Count} vs {exp[0].N}"); }
+                        var one = await rep._02PhicMonthly(m, [cls[0]], paydb, pisdb, conn);
+                        if (one.Any(o => Math.Abs(o.Amount - rows.First(r => r.Empnumber == o.Empnumber).Amount) > 0.001)) { bad++; Console.WriteLine($"ONE {m}"); }
+                    }
+                    Console.WriteLine($"months={mons.Count} diffs={bad}");
+                    return;
+                }
             case "hdmfcert":
             case "phiccert":
                 {

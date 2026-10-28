@@ -770,8 +770,9 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
     // --- SSS Contribution Remittance (MBPay frmssscontremit / frmssscontremit2 -> rptSSSContRemit) -----------------------
     // --- Employee share of the month (ACCT_SSS) per employee; the employer share and EC come from ssstbl where its employee
     // --- share equals the amount (none = 0). adjusted: first the amount is moved to the nearest ssstbl employee share (MBPay
-    // --- frmssscontremit2; kept as is when no share is within 1000) ---
-    public async Task<List<RSssRemitModel>> _02SssRemit(string yymm, bool adjusted, string? opaydb, string? opisdb, string? conn)
+    // --- frmssscontremit2; kept as is when no share is within 1000). clients: only the TRNs of these clients (MBPay
+    // --- frmssscontremitperclient: the employee share is the total of those clients, the employer share looked up from it) ---
+    public async Task<List<RSssRemitModel>> _02SssRemit(string yymm, bool adjusted, string? opaydb, string? opisdb, string? conn, List<string>? clients = null)
     {
         string acct = await _02ReportSetting("ACCT_SSS", opaydb, conn);
         string? sql = $@"SELECT  TRIM(a.EmpNumber) Empnumber, a.Amount,
@@ -779,8 +780,8 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                                  CONCAT(TRIM(b.EmpLastNm),', ',TRIM(b.EmpFirstNm),' ',TRIM(b.EmpMidNm)) Empname
                          FROM    {opaydb}.tbltran a
                                  LEFT JOIN {opisdb}.empmas b ON b.EmpNumber = a.EmpNumber
-                         WHERE   TRIM(a.AcctNumber) = @Acct AND LEFT(a.TRN,4) = @Yymm ";
-        var lines = await _sql.FetchData<RSssRemitModel, dynamic>(sql, new { Acct = acct, Yymm = yymm }, conn);
+                         WHERE   TRIM(a.AcctNumber) = @Acct AND LEFT(a.TRN,4) = @Yymm {(clients == null ? "" : "AND RIGHT(TRIM(a.TRN),5) IN @Cls")} ";
+        var lines = await _sql.FetchData<RSssRemitModel, dynamic>(sql, new { Acct = acct, Yymm = yymm, Cls = clients ?? [] }, conn);
         var rows = lines.GroupBy(l => l.Empnumber!)
                         .Select(g => { var f = g.First(); f.Amount = Cents(g.Sum(l => Cents(l.Amount))); return f; })
                         .OrderBy(r => r.Emplastnm).ThenBy(r => r.Empfirstnm).ToList();
@@ -828,6 +829,27 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         return lines.GroupBy(l => l.Empnumber!)
                     .Select(g => { var f = g.First(); f.Amort = Cents(g.Sum(l => Cents(l.Amort))); f.Amount = Cents(f.Amount); return f; })
                     .OrderBy(r => r.Emplastnm).ThenBy(r => r.Empfirstnm).ToList();
+    }
+
+    // --- Monthly PHIC Report per payroll group (MBPay frmphmoperclient -> rptPhMo) ----------------------------------------
+    // --- Employees with a PhilHealth premium (ACCT_PHIC) in a TRN of the chosen clients; their premium is the total of the
+    // --- whole month (MBPay took every TRN of the month, not only those of the clients) ---
+    public async Task<List<RPhicMonthlyModel>> _02PhicMonthly(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn)
+    {
+        if (clients.Count == 0) return [];
+        string acct = await _02ReportSetting("ACCT_PHIC", opaydb, conn);
+        string? sql = $@"SELECT  TRIM(a.EmpNumber) Empnumber, a.Amount, RIGHT(TRIM(a.TRN),5) Clnumber,
+                                 CONCAT(TRIM(IFNULL(b.EmpLastNm,'')), ', ', TRIM(IFNULL(b.EmpFirstNm,'')), ' ', TRIM(IFNULL(b.EmpMidNm,''))) Empname, b.PHIC Phic,
+                                 b.EmpLastNm, b.EmpFirstNm
+                         FROM    {opaydb}.tbltran a
+                                 LEFT JOIN {opisdb}.empmas b ON b.EmpNumber = a.EmpNumber
+                         WHERE   TRIM(a.AcctNumber) = @Acct AND LEFT(a.TRN,4) = @Yymm ";
+        var lines = await _sql.FetchData<RPhicLineModel, dynamic>(sql, new { Acct = acct, Yymm = yymm }, conn);
+        var inGroup = lines.Where(l => clients.Contains(l.Clnumber!)).Select(l => l.Empnumber!).ToHashSet();
+        return lines.Where(l => inGroup.Contains(l.Empnumber!))
+                    .GroupBy(l => l.Empnumber!)
+                    .Select(g => { var f = g.First(); return new { f.EmpLastNm, f.EmpFirstNm, Row = new RPhicMonthlyModel { Empnumber = g.Key, Empname = f.Empname, Phic = f.Phic, Amount = Cents(g.Sum(l => Cents(l.Amount))) } }; })
+                    .OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm).Select(x => x.Row).ToList();
     }
 
     // --- Report settings ({opaydb}.reportsettings, made by OldPay_TblMaker._01ReportSettings) ---------------------------
@@ -879,10 +901,11 @@ public interface IGPayrollReportDataAccess
     Task<List<RLoanSummaryModel>> _02LoanSummary(string loanCode, List<string> emps, string? opaydb, string? opisdb, string? conn);
     Task<List<R13thMonthModel>> _02ActiveClients(string? opisdb, string? conn);
     Task<List<R13thMonthModel>> _02ThirteenthMonth(string half, int year, List<string>? statuses, List<string>? clients, bool noClient, string? empNumber, string? opaydb, string? opisdb, string? conn);
-    Task<List<RSssRemitModel>> _02SssRemit(string yymm, bool adjusted, string? opaydb, string? opisdb, string? conn);
+    Task<List<RSssRemitModel>> _02SssRemit(string yymm, bool adjusted, string? opaydb, string? opisdb, string? conn, List<string>? clients = null);
     Task<List<RSssLoanRemitModel>> _02MonthClients(string yymm, string? opaydb, string? opisdb, string? conn);
     Task<List<RSssLoanRemitModel>> _02SssLoanRemit(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RSssLoanRemitModel>> _02LoanRefRemit(string acct, string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
+    Task<List<RPhicMonthlyModel>> _02PhicMonthly(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RPayslipModel>> _02Payslip(List<string> trns, string? opaydb, string? opisdb, string? conn);
 
 }

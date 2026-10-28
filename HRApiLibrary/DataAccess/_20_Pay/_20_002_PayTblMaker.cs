@@ -1048,6 +1048,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (1261, 'Dtl-Report',  1251, 1, 'payments',               'Pag-IBIG Contribution Remit.',   '13/1261',        1261),
                             (1262, 'Dtl-Report',  1251, 1, 'shield',                 'SSS Contribution Remittance',    '13/1262',        1262),
                             (1263, 'Dtl-Report',  1251, 1, 'shield',                 'SSS Contribution Remit. (Adj.)', '13/1263',        1263),
+                            (1264, 'Dtl-Report',  1251, 1, 'shield',                 'SSS Contribution per Pay Group', '13/1264',        1264),
+                            (1265, 'Dtl-Report',  1251, 1, 'local_hospital',         'PHIC Monthly per Pay Group',     '13/1265',        1265),
                             (1301, 'SHdr-Report', 1000, 1, NULL,                     'Others',                         NULL,             1301),
                             (1302, 'Dtl-Report',  1301, 1, 'calculate',              'Tax Annualization',              '13/1302',        1302),
                             (1303, 'Dtl-Report',  1301, 1, 'schedule',               'Duty Rendered',                  '13/1303',        1303),
