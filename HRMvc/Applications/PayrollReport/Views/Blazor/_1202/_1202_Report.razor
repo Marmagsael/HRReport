@@ -1,0 +1,132 @@
+@using HRMvc.Applications.PisReport.Vars
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_02BTModal MCaption="@Rv.MCaption" ShowModal="Rv.ShowModal" ChildAction="CloseReportModal">
+    <Details>
+
+        @if (Rv.ShowReport)
+        {
+            <IframeReportRenderer DataSource="@Rv.ReportData"
+                                  ReportRelativePath="@Rv.RelativePath"
+                                  OutputFormat="@Rv.SelectedFormat"
+                                  Parameters="@Rv.ReportParams"
+                                  AutoGenerate="@(Rv.ReportData?.Any() == true)"
+                                  RefreshToken="@Rv.RefreshToken" />
+        }
+        else
+        {
+            <div class="">
+                <div class="sticky-top bg-white ">
+                    <div class=" border-bottom">
+                        <div class="p-0">
+                            <div class="card-header">
+                                <div class="d-flex gap-2">
+                                    <_01ReportFormat Rv="@Rv" ChildAction="ValueChanged" />
+                                    @*--- Fetch Button ------------------------------------------------*@
+                                    <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 py-2 border-bottom fw-bold  bg-lightgray ">
+                        <div class=" w-75p text-center">No.</div>
+                        <div class=" w-300p">Payroll Group</div>
+                        <div class=" w-75p">Emp No.</div>
+                        <div class=" w-250p">Employee</div>
+                        <div class=" w-125p text-end">Gross Pay</div>
+                        <div class=" w-125p text-end">Deductions</div>
+                        <div class=" w-125p text-end">Net Pay</div>
+                    </div>
+                </div>
+
+                @if (slips.Any())
+                {
+                    int? row = 0;
+                    foreach (var s in slips)
+                    {
+                        row++;
+                        var h = s.First();
+
+                        <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "") ">
+                            <div class=" w-75p text-center ">@row.</div>
+                            <div class=" w-300p">@h.Clname</div>
+                            <div class=" w-75p">@h.Empnumber</div>
+                            <div class=" w-250p">@($"{h.Emplastnm?.Trim()}, {h.Empfirstnm?.Trim()} {h.Empmidnm?.Trim()}")</div>
+                            <div class=" w-125p text-end">@s.Sum(x => x.Amount).ToString("N2")</div>
+                            <div class=" w-125p text-end">@s.Sum(x => x.Amount2).ToString("N2")</div>
+                            <div class=" w-125p text-end">@s.Sum(x => x.Amount - x.Amount2).ToString("N2")</div>
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2 border-bottom py-1 fw-bold">
+                        <div class=" w-75p"></div>
+                        <div class=" w-300p">TOTAL</div>
+                        <div class=" w-75p"></div>
+                        <div class=" w-250p"></div>
+                        <div class=" w-125p text-end">@V.Sum(x => x.Amount).ToString("N2")</div>
+                        <div class=" w-125p text-end">@V.Sum(x => x.Amount2).ToString("N2")</div>
+                        <div class=" w-125p text-end">@V.Sum(x => x.Amount - x.Amount2).ToString("N2")</div>
+                    </div>
+                }
+
+            </div>
+        }
+
+    </Details>
+</_02BTModal>
+
+@code {
+    [Parameter] public V00_RepVars              Rv          { get; set; } = new();
+    [Parameter] public List<RPayslipModel>      V           { get; set; } = new();
+    [Parameter] public EventCallback<object>    ChildAction { get; set; }
+
+    //--- V has one row per payslip line; the preview shows one row per payslip ---
+    private List<IGrouping<(string?, string?), RPayslipModel>> slips => V.GroupBy(x => (x.Trn, x.Empnumber)).ToList();
+
+
+    private async Task CreateReport()
+    {
+        Rv.RelativePath = "";
+        Rv.ReportData   = V;
+        Rv.RelativePath = "Reports/_03Payroll/K_Payslip.trdp";
+        Rv.RefreshToken++;
+        Rv.ShowReport   = true;
+
+        if (Rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2000);
+            Rv.ShowReport = false;
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
+        }
+    }
+
+
+    private async Task CloseReportModal(bool ans)
+    {
+        if (Rv.ShowReport) Rv.ShowReport = ans;
+        else Rv.ShowModal = ans;
+
+        await ChildAction.InvokeAsync(ans);
+    }
+
+    private async Task ValueChanged()
+    {
+        await ChildAction.InvokeAsync(Rv.SelectedFormat);
+    }
+
+
+    void Notify(NotificationSeverity severity, string? summary, string? detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+}

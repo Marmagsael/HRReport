@@ -26,7 +26,7 @@ TRN format (from `MsdsDataAccess.Extract_FieldPrd`): chars 1–4 = year+month, c
 | 14 | Computation order | Premiums first, then tax (tax needs D002–D004) | Each account computed separately by caller; order not enforced | Tax can run before premiums | Medium |
 | 15 | Loans re-run | Skips a loan already deducted this period (same amount saved) | Check uses `LEFT(trn,4) = LEFT(@Trn,6)` (never true) and the result is unused | No duplicate protection | Medium |
 | 16 | Loan closing | n/a | After posting: `Status = 'I' where Amount < 1` — should be `Balance < 1` | Paid-off loans stay Active | Medium |
-| 17 | Posting | Saves all rows, including negative ones (absent is a negative earning) | `insert into TblTran … where Amount > 0` | Negative entries (absences, adjustments) are dropped | High |
+| 17 | Posting | `save_01_tmpdata` and `post_tbltran_tbltrandtl` keep only `amount > 0` | `insert into TblTran … where Amount > 0` | None — same as FoxPro (earlier finding was wrong) | Low |
 | 18 | `_01Acct_per_Trn` | n/a | SQL has 3 values for 2 columns and missing parameters | Would fail if called (currently unused) | Low |
 | 19 | Overtime | Hourly = daily rate / 8 × OT rate × hours; non-daily uses salary-grade daily rate; ROT can use fixed amount from `ratesamt` | Not implemented | Missing | High |
 | 20 | Absent | −(hours × daily rate / 8), daily rate from salary grade or client rate | Not implemented | Missing | High |
@@ -72,7 +72,7 @@ TRN format (from `MsdsDataAccess.Extract_FieldPrd`): chars 1–4 = year+month, c
 | 14 | Fixed | `_01_Tax` computes missing premiums first |
 | 15 | Fixed | Period check uses `LEFT(trn,6)`; already-deducted loans skipped |
 | 16 | Fixed | Closes on `Balance < 1` |
-| 17 | Fixed | Posts `Amount != 0` |
+| 17 | Won't fix | Corrected: FoxPro also saves only amount > 0. Change reverted |
 | 18 | Open | Unused method, left as is |
 | 19 | In progress | `PayrollCalculator.Overtime` done and tested |
 | 20 | In progress | `PayrollCalculator.Absent` done and tested |

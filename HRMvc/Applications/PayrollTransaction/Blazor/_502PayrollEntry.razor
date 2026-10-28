@@ -12,12 +12,14 @@
     .r-content { width: 250px; flex-shrink: 0; }
 </style>
 
+<TelerikRootComponent>
 <CascadingValue Value="Uc" IsFixed="true">
     <CascadingValue Value="v502">
         <div class="card body-content ">
 
             <BodyHdr pageTitle="Payroll Entry" />
 
+            <_502_select />
             <_502_buttons />
             <_502_shdr />
 
@@ -44,6 +46,7 @@
         </div>
     </CascadingValue>
 </CascadingValue>
+</TelerikRootComponent>
     
 
 
@@ -57,17 +60,8 @@
 
     protected override void OnInitialized()
     {
-        SetTestData();
-    }
-
-    private void SetTestData()
-    {
-        v502.Paymaindtls = new List<PaymaindtlModel?>
-        {
-            new PaymaindtlModel { Empmasid = 1, EmpName = "Mar Lopez Magsael",   Daywrk = 20.5, Rot = 164.0 },
-            new PaymaindtlModel { Empmasid = 2, EmpName = "John Doe",            Daywrk = 18.0, Rot = 144.0 },
-            new PaymaindtlModel { Empmasid = 3, EmpName = "Jane Smith",          Daywrk = 22.0, Rot = 176.0 }
-        };
+        //--- Child components change v502 and call this to refresh the whole page (buttons, grid, figures) ----------------
+        v502.Changed = () => InvokeAsync(StateHasChanged);
     }
 
 }

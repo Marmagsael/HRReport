@@ -1,13 +1,17 @@
 <div class="w-100 p-2  bg-white bordered-bottom ">
     <div class=" d-flex gap-2 mt-2  ">
-        <div class="fw-bold small">PAYROLL CODE : </div> @v502.TRN 
-        <div class="fw-bold small">PAYROLL GROUP : </div> @v502.PayrollgrpCode - @v502.PayrollgrpName
-        <div class="fw-bold small">PAYROLL PERIOD : </div> @v502.Prd
+        <div class="fw-bold small">PAYROLL CODE : </div> @(v502.Session?.Trn ?? v502.TRN)
+        <div class="fw-bold small">PAYROLL GROUP : </div> @v502.Session?.Client.ClNumber - @v502.Session?.Client.ClName
+        <div class="fw-bold small">PAYROLL PERIOD : </div> @v502.Session?.AttStart.ToString("MMM dd") - @v502.Session?.AttEnd.ToString("MMM dd, yyyy")
+        <div class="fw-bold small">STATUS : </div>
+        <span class="@(v502.Session?.IsLocked == true ? "txt-maroon fw-bold" : "")">@v502.Session?.Status</span>
     </div>
+    @if (!string.IsNullOrEmpty(v502.Msg))
+    {
+        <div class="small mt-1 @(v502.Msg.StartsWith("Error") || v502.Msg.StartsWith("Unable") || v502.Msg.StartsWith("Load failed") ? "text-danger" : "text-secondary")">@v502.Msg</div>
+    }
 </div>
 
 @code {
-    @* [Parameter] public UserClaimsModel? UserClaims { get; set; } *@
     [CascadingParameter]    public  V502? v502 { get; set; } = new();
-
 }

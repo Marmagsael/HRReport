@@ -1,0 +1,313 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1205
+@using HRMvc.Applications.PayrollReport.Class
+
+@* --- Bank reports (MBPay frmbankadvise, frmbankcharge, frmbanktextfile). Mode: advise (Bank Advise / Cash Basis),
+       charge (Bank Charge), textfile (bank upload sheet) --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        @if (reps.Any() && Mode != "textfile")
+        {
+            @*--- Report ------------------------------------------------*@
+            <_1205_Report Rv="rv" V="@reps" ReportPath="@ReportPath" FixedAmount="@(Mode == "charge" ? bankCharge : null)" ChildAction="ChildActionCatcher" />
+        }
+
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center">
+                    @*--- Period ------------------------------------------------*@
+                    <_01YYMMPP Rv="rv" ChildAction="PeriodChanged" />
+
+                    @if (Mode == "advise")
+                    {
+                        <RadzenRadioButtonList @bind-Value="cashBasis" TValue="bool" Change="@(_ => reps = [])">
+                            <Items>
+                                <RadzenRadioButtonListItem Text="Bank Advise (ATM)" Value="false" />
+                                <RadzenRadioButtonListItem Text="Cash Basis" Value="true" />
+                            </Items>
+                        </RadzenRadioButtonList>
+                    }
+                    @if (Mode == "charge")
+                    {
+                        @*--- Default from reportsettings BANKCHARGE, can be changed here ---*@
+                        <div class="p-2">Charge per Employee</div>
+                        <RadzenNumeric @bind-Value="bankCharge" TValue="double" Format="N2" Style="width:110px" />
+                    }
+                    @if (Mode == "textfile")
+                    {
+                        @*--- From coinfo.acctno ---*@
+                        <div class="p-2">Mother Account Number: <b>@motherAcct</b></div>
+                    }
+
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                    @if (Mode == "textfile" && reps.Any())
+                    {
+                        <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="DownloadTextFile"> Download Excel</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (Mode == "textfile" && reps.Any())
+        {
+            @*--- Bank upload sheet preview ------------------------------------------------*@
+            <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                <div class=" w-75p text-center">No.</div>
+                <div class=" w-150p">Emp. Acct. #</div>
+                <div class=" w-200p">Surname</div>
+                <div class=" w-200p">First Name</div>
+                <div class=" w-125p text-end">Amount</div>
+            </div>
+            int row = 0;
+            foreach (var r in reps)
+            {
+                row++;
+                <div class="d-flex gap-2 border-bottom py-1 @(row % 2 == 0 ? "bg-light" : "")">
+                    <div class=" w-75p text-center">@row.</div>
+                    <div class=" w-150p">@BankAcct(r.Acctcode)</div>
+                    <div class=" w-200p">@r.EmpLastNm</div>
+                    <div class=" w-200p">@r.EmpFirstNm</div>
+                    <div class=" w-125p text-end">@r.Amt.ToString("N2")</div>
+                </div>
+            }
+            <div class="d-flex gap-2 border-bottom py-1 fw-bold">
+                <div class=" w-75p"></div>
+                <div class=" w-150p">TOTAL</div>
+                <div class=" w-200p"></div>
+                <div class=" w-200p"></div>
+                <div class=" w-125p text-end">@reps.Sum(x => x.Amt).ToString("N2")</div>
+            </div>
+        }
+
+        @*--- Payroll groups (TRNs) of the period ------------------------------------------------*@
+        <div class="w-100"> <_00TClientList Clients="@rv.Clients" ClassParams="@clientClass" ChildAction="ChildActionCatcher" /> </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+@inject IJSRuntime                  _js;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
+    [Parameter] public string           Mode    { get; set; } = "advise";
+
+    V00_RepVars                         rv          = new();
+    List<RBankAdviseModel>              reps        = [];
+    bool                                cashBasis   = false;
+    string?                             motherAcct  = "";
+    string?                             coShort     = "";
+    double                              bankCharge  = 0;
+    Dictionary<string, string>          settings    = [];
+
+    //--- The list shows one row per TRN: ClNumber holds the TRN ---
+    private List<string> trns => rv.Clients?.Where(x => x.IsSelectedB).Select(x => x.ClNumber!).ToList() ?? new();
+    private string yymmpp => $"{rv.Year.ToString()!.Substring(2, 2)}{rv.Month}{rv.Period}";
+    private string ReportPath => Mode == "charge" ? "Reports/_03Payroll/K_BankCharge.trdp"
+                               : cashBasis ? "Reports/_03Payroll/K_CashBasis.trdp" : "Reports/_03Payroll/K_BankAdvise.trdp";
+
+    Dictionary<string, object> clientClass = new(){ ["VH"] = "vh77"};
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        InitializeReport();
+        await LoadCompanyInfo();
+        await LoadSettings();
+        await LoadTrns();
+    }
+
+    //--- reportsettings of the user's pay schema; a missing setting stops the page with a message ---
+    private async Task LoadSettings()
+    {
+        settings = await _payRep._02ReportSettings(Uc.OpayDb!, Uc.Conn!);
+        if (Mode == "charge" && double.TryParse(Setting("BANKCHARGE"), out var c)) bankCharge = c;
+    }
+
+    private string Setting(string code)
+    {
+        if (settings.TryGetValue(code, out var v)) return v;
+        Notify(NotificationSeverity.Error, "Missing setting", $"Report setting {code} is missing in {Uc.OpayDb}.reportsettings.");
+        return "";
+    }
+
+    //===================================
+    // Initial Data =====================
+    private void InitializeReport()
+    {
+        rv.RefreshToken     = Mode == "charge" ? 12040000 : Mode == "textfile" ? 12110000 : 12050000;
+        rv.MCaption         = Mode == "charge" ? "Bank Charge" : Mode == "textfile" ? "Bank Text File" : "Bank Advise";
+        rv.ReportParams     = new()
+        {
+            ["CoName"]      = "-",
+            ["CoAddress"]   = "-",
+            ["Period"]      = "",
+            ["Batch"]       = "",
+            ["BankCharge"]  = 0d,
+            ["RunDate"]     = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"]    = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        coShort                      = r.Shortname?.Trim();
+        motherAcct                   = r.AcctNo?.Trim();
+    }
+
+    private async Task LoadTrns()
+    {
+        var res = await _payRep._02PayrollRegisterTrns(yymmpp, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        rv.Clients = res.Select(t => new OClientModel { ClNumber = t.Trn, ClName = $"{t.ClName}   [Batch {t.Batch}]  {t.Trn}" }).ToList();
+    }
+
+    async Task PeriodChanged()
+    {
+        reps = [];
+        await LoadTrns();
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task FetchData()
+    {
+        ResetVars();
+
+        if (!HasConnection() || !ValidateFilters()) return;
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = Mode switch
+            {
+                "charge"   => await _payRep._02BankCharge(trns, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!),
+                "textfile" => await _payRep._02BankTextFile(trns, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!),
+                _          => await _payRep._02BankAdvise(trns, cashBasis, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!)
+            };
+
+            //--- Bank Advise / Cash Basis show the attendance dates (MBPay MDY(attStart) - MDY(attEnd)); Bank Charge the
+            //--- calendar period ("May 16-31, 2026") ---
+            rv.ReportParams["RunDate"] = DateTime.Now;
+            rv.ReportParams["Batch"]   = string.Join(", ", reps.Select(r => r.Batch).Distinct());
+            rv.ReportParams["Period"]  = Mode == "charge" ? CalendarPeriod() : reps.FirstOrDefault()?.Period ?? "";
+            rv.ReportParams["BankCharge"] = bankCharge;
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any())
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period and payroll group.");
+            return;
+        }
+
+        if (Mode != "textfile") rv.ShowModal = true;
+    }
+
+    private string CalendarPeriod()
+    {
+        int y = rv.Year ?? DateTime.Now.Year, m = int.Parse(rv.Month!);
+        string days = rv.Period == "01" ? "1-15" : $"16-{DateTime.DaysInMonth(y, m)}";
+        return $"{new DateTime(y, m, 1):MMMM} {days}, {y}";
+    }
+
+    private int AcctLen => int.TryParse(settings.GetValueOrDefault("BANKACCTLEN"), out var n) ? n : int.MaxValue;
+    private string BankAcct(string? acct) => BankTextFileSheet.BankAcct(acct, AcctLen);
+
+    //--- Bank upload sheet; the file is named like MBPay's (company short name + yymmpp + batch) ---
+    private async Task DownloadTextFile()
+    {
+        if (string.IsNullOrWhiteSpace(motherAcct))
+        {
+            Notify(NotificationSeverity.Warning, "Warning", $"The Mother Account Number (acctno) is empty in {Uc.OpisDb}.coinfo.");
+            return;
+        }
+        string currency = Setting("BANKCURRENCY"), payCode = Setting(rv.Period == "01" ? "BANKPAYCODE01" : "BANKPAYCODE02"), len = Setting("BANKACCTLEN");
+        if (currency == "" || payCode == "" || len == "") return;
+
+        try
+        {
+            var bytes = BankTextFileSheet.Build(reps, motherAcct, currency, payCode, AcctLen);
+            var batch = string.Join("", reps.Select(r => r.Batch).Distinct());
+            await _js.InvokeVoidAsync("downloadFile", $"{coShort}{yymmpp}{batch}.xlsx", Convert.ToBase64String(bytes));
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Excel download failed", ex.Message);
+            Console.WriteLine(ex);
+        }
+    }
+
+
+    private bool ValidateFilters()
+    {
+        if (!trns.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select payroll group from the list.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void ResetVars()
+    {
+        reps = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+
+}

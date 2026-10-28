@@ -96,6 +96,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         await Menus("MainPis", connName, country);
         await Menus("MainPay", connName, country);
+        await MenusMainPayData(connName);
         await _01_102_MatrixWTax(schema, connName, country);
         await _01_103_MatrixSss(schema, connName, country);
         await _01_104_MatrixPhic(schema, connName, country);
@@ -995,6 +996,77 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           Action        VARCHAR (45),
                           Odr           INTEGER,
                           PRIMARY KEY (`Id`))   ENGINE = InnoDB; ";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+    }
+
+    // -- MainPay.Menu rows (Payroll / Report left menus); INSERT IGNORE keeps rows that already exist --
+    private async Task MenusMainPayData(string? connName)
+    {
+        string? sql = @"INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (101,  'Hdr',         0,    0, NULL,                     'Settings',                       NULL,             101),
+                            (500,  'Hdr',         0,    0, NULL,                     'Transaction',                    NULL,             500),
+                            (501,  'SHdr-Pay',    500,  1, NULL,                     'Payroll',                        NULL,             501),
+                            (502,  'Dtl-Pay',     501,  1, 'payments',               'Payroll Entry',                  '13T/502',        502),
+                            (1000, 'Hdr',         0,    0, NULL,                     'Report',                         NULL,             1000),
+                            (1101, 'SHdr-Report', 1000, 1, NULL,                     'Earnings Report',                NULL,             1101),
+                            (1102, 'Dtl-Report',  1101, 1, 'account_balance_wallet', 'Earnings Summary',               '13/1102',        1102),
+                            (1103, 'Dtl-Report',  1101, 1, 'history',                'Earnings History',               '13/1103',        1103),
+                            (1104, 'Dtl-Report',  1101, 1, 'event_note',             'Monthly Earnings Report',        '13/1104',        1104),
+                            (1151, 'SHdr-Report', 1000, 1, NULL,                     'Deductions Report',              NULL,             1151),
+                            (1152, 'Dtl-Report',  1151, 1, 'remove_circle_outline',  'Deduction Summary',              '13/1152',        1152),
+                            (1153, 'Dtl-Report',  1151, 1, 'rule',                   'Consolidated Deduction Summary', '13/1153',        1153),
+                            (1154, 'Dtl-Report',  1151, 1, 'history',                'Deduction History',              '13/1154',        1154),
+                            (1155, 'Dtl-Report',  1151, 1, 'calendar_month',         'Monthly Deduction Summary',      '13/1155',        1155),
+                            (1201, 'SHdr-Report', 1000, 1, NULL,                     'Standard Report',                NULL,             1201),
+                            (1202, 'Dtl-Report',  1201, 1, 'receipt_long',           'Payslip',                        '13/1202',        1202),
+                            (1203, 'Dtl-Report',  1201, 1, 'list_alt',               'Payroll Register',               '13/1203',        1203),
+                            (1204, 'Dtl-Report',  1201, 1, 'account_balance',        'Bank Charge',                    '13/1204',        1204),
+                            (1205, 'Dtl-Report',  1201, 1, 'notifications',          'Bank Advise',                    '13/1205',        1205),
+                            (1206, 'Dtl-Report',  1201, 1, 'groups',                 'Payroll Summary per Group',      '13/1206',        1206),
+                            (1207, 'Dtl-Report',  1201, 1, 'event_available',        '13th Month Summary',             '13/1207',        1207),
+                            (1208, 'Dtl-Report',  1201, 1, 'payments',               '13th Month Bank Advise',         '13/1208',        1208),
+                            (1209, 'Dtl-Report',  1201, 1, 'description',            '13th Month Detailed',            '13/1209',        1209),
+                            (1210, 'Dtl-Report',  1201, 1, 'table_view',             'Payroll Register (Per Account)', '13/1210',        1210),
+                            (1211, 'Dtl-Report',  1201, 1, 'upload_file',            'Bank Text File',                 '13/1211',        1211),
+                            (1212, 'Dtl-Report',  1201, 1, 'assignment',             '13th Month Register',            '13/1212',        1212),
+                            (1213, 'Dtl-Report',  1201, 1, 'request_quote',          '13th Month Payslip',             '13/1213',        1213),
+                            (1214, 'Dtl-Report',  1201, 1, 'description', '13th Month Detailed (Per Client)', '13/1214',        1214),
+                            (1215, 'Dtl-Report',  1201, 1, 'description', '13th Month Detailed (Per Employee)', '13/1215',        1215),
+                            (1216, 'Dtl-Report',  1201, 1, 'event_available', '13th Month Summary (Per Client)', '13/1216',        1216),
+                            (1217, 'Dtl-Report',  1201, 1, 'event_available', '13th Month Summary (Per Employee)', '13/1217',        1217),
+                            (1218, 'Dtl-Report',  1201, 1, 'assignment', '13th Month Register (Per Client)', '13/1218',        1218),
+                            (1251, 'SHdr-Report', 1000, 1, NULL,                     'Compliance Report',              NULL,             1251),
+                            (1252, 'Dtl-Report',  1251, 1, 'shield',                 'SSS Contribution',               '13/1252',        1252),
+                            (1253, 'Dtl-Report',  1251, 1, 'sync_alt',               'SSS Loan Remittance',            '13/1253',        1253),
+                            (1254, 'Dtl-Report',  1251, 1, 'home',                   'Pagibig Contribution',           '13/1254',        1254),
+                            (1255, 'Dtl-Report',  1251, 1, 'home_work',              'Pagibig Loan Remittance',        '13/1255',        1255),
+                            (1256, 'Dtl-Report',  1251, 1, 'warning_amber',          'Calamity Loan Remittance',       '13/1256',        1256),
+                            (1257, 'Dtl-Report',  1251, 1, 'local_hospital',         'PHIC Contribution',              '13/1257',        1257),
+                            (1258, 'Dtl-Report',  1251, 1, 'savings',                'Pag-IBIG Contribution Summary',  '13/1258',        1258),
+                            (1259, 'Dtl-Report',  1251, 1, 'verified_user',          'PhilHealth Contribution Cert.',  '13/1259',        1259),
+                            (1260, 'Dtl-Report',  1251, 1, 'account_balance',        'HDMF Loan Remittance',           '13/1260',        1260),
+                            (1261, 'Dtl-Report',  1251, 1, 'payments',               'Pag-IBIG Contribution Remit.',   '13/1261',        1261),
+                            (1262, 'Dtl-Report',  1251, 1, 'shield',                 'SSS Contribution Remittance',    '13/1262',        1262),
+                            (1263, 'Dtl-Report',  1251, 1, 'shield',                 'SSS Contribution Remit. (Adj.)', '13/1263',        1263),
+                            (1301, 'SHdr-Report', 1000, 1, NULL,                     'Others',                         NULL,             1301),
+                            (1302, 'Dtl-Report',  1301, 1, 'calculate',              'Tax Annualization',              '13/1302',        1302),
+                            (1303, 'Dtl-Report',  1301, 1, 'schedule',               'Duty Rendered',                  '13/1303',        1303),
+                            (1304, 'Dtl-Report',  1301, 1, 'assignment_return',      'Quit Claims',                    '13/1304',        1304),
+                            (1305, 'Dtl-Report',  1301, 1, 'verified',               'Compliance Report',              '13/1305',        1305),
+                            (1306, 'Dtl-Report',  1301, 1, 'fact_check',             'PIS Validation',                 '13/1306',        1306),
+                            (1307, 'Dtl-Report',  1301, 1, 'elderly',                'Retirement',                     '13/1307',        1307),
+                            (1308, 'Dtl-Report',  1301, 1, 'diversity_3',            'Group Retirement',               '13/1308',        1308),
+                            (1309, 'Dtl-Report',  1301, 1, 'account_balance_wallet', 'Account Total',                  '13/1309',        1309),
+                            (1310, 'Dtl-Report',  1301, 1, 'request_quote',          'Loan Summary',                   '13/1310',        1310),
+                            (1312, 'Dtl-Report',  1301, 1, 'functions',              'Grand Total',                    '13/1312',        1312);";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- Corrections for tables seeded before; each only touches the old wrong value --
+        sql = @"UPDATE MainPay.Menu SET IdParent = 1151 WHERE Id IN (1152, 1153, 1154, 1155) AND IdParent = 1051;
+                UPDATE MainPay.Menu SET DispText = 'SSS Contribution'  WHERE Id = 1252 AND DispText = 'SSS Contribution ';
+                UPDATE MainPay.Menu SET DispText = 'Tax Annualization' WHERE Id = 1302 AND DispText = 'Tax Annunalization';
+                DELETE FROM MainPay.Menu WHERE Id = 1313 AND DispText = 'Account Total' AND Action IN ('13/PayRep_1313', '13/1313');
+                UPDATE MainPay.Menu SET Action = CONCAT('13/', SUBSTRING(Action, 11)) WHERE Action LIKE '13/PayRep\_%';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 

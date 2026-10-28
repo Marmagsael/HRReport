@@ -25,5 +25,13 @@ public class V502
     public List<CoaModel?>?             Coas                { get; set; } = [] ;
     public List<PaymaindtlModel?>?      Paymaindtls         { get; set; } = [] ;
 
+    //--- Payroll Entry on MBPay tables (PayrollTransaction/_502) ---------------------------------------------------------
+    public HRApiLibrary.Models._20_Pay.OPay.OPayrollSession?   Session      { get; set; }
+    public HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult?     CurrentEmp   { get; set; }
+    public string?                      Msg                 { get; set; } = string.Empty;
+    public bool                         IsBusy              { get; set; }
+    public bool                         IsProcessed         { get; set; }
+    public Func<Task>?                  Changed             { get; set; }       //--- re-render the page after a child changes state
+
 
 }

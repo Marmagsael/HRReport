@@ -185,6 +185,7 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
 
         // -- Added from the reference (192.168.0.103 pay) --
         await _01Domainusr(schema, connName);
+        await _01ReportSettings(schema, connName);
     }
 
     private async Task _0113thmogrp(string? schema, string? conn)
@@ -2739,5 +2740,47 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         PRIMARY KEY (`Empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+    }
+
+    // -- Report settings (values MBPay had in its forms/reports); the first values are MBPay's, edits are kept ----------
+    public async Task _01ReportSettings(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`reportsettings` (
+                        `Code`        varchar(30)  NOT NULL,
+                        `Value`       varchar(255) DEFAULT NULL,
+                        `Description` varchar(255) DEFAULT NULL,
+                        PRIMARY KEY (`Code`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+
+        sql = $@"INSERT IGNORE INTO {schema}.`reportsettings` (Code, Value, Description) VALUES
+                 ('BANKCHARGE',      '50.00', 'Bank Charge: charge per employee (can be changed on the page)'),
+                 ('BANKCURRENCY',    '001',   'Bank Text File: CURRENCY column'),
+                 ('BANKPAYCODE01',   '1',     'Bank Text File: PAY CODE for the 1st period'),
+                 ('BANKPAYCODE02',   '2',     'Bank Text File: PAY CODE for the 2nd period'),
+                 ('BANKACCTLEN',     '12',    'Bank Text File: employee account number length (dashes removed, then cut)'),
+                 ('REGISTERACK',     'We hereby acknowledge to have received from {{company}} the sum specified opposite our respective name as full compensation for our service rendered.',
+                                              'Payroll Register: text above the employees; {{company}} = company name'),
+                 ('PAYSLIPMINLINES', '13',    'Payslip: minimum lines per payslip'),
+                 ('PAYSLIPFONT',     'Arial Narrow', 'Payslip: font (MBPay used the printer font Draft 20cpi)'),
+                 ('ACCT_SSS',        'D002',  'Account code of the SSS premium (employee share)'),
+                 ('ACCT_PHIC',       'D003',  'Account code of the PhilHealth premium (employee share)'),
+                 ('ACCT_HDMF',       'D004',  'Account code of the Pag-IBIG premium (employee share)'),
+                 ('HOURSPERDAY',     '8',     'Hours in a day: a duration counted in days (code not ending in 1) x this = hours'),
+                 ('ACCTTOTAL_EXCLUDEDTL', 'TH,RATE,E016_2', 'Account Total: tbltrandtl codes left out of the hours'),
+                 ('ACCTTOTAL_EMPLABEL',   'NUMBER OF GUARDS', 'Account Total: caption of the employee count'),
+                 ('CERT_HDMF_TEXT1',  'This certification is being issued upon the request of the aforementioned party in connection with his/her', 'Pag-IBIG Contribution Summary: certification, line 1'),
+                 ('CERT_HDMF_TEXT2',  'application for Pag-Ibig Multipurpose Loan.', 'Pag-IBIG Contribution Summary: certification, line 2'),
+                 ('CERT_HDMF_SIGNATORY',      'Ma Salome B. Ballerda', 'Pag-IBIG Contribution Summary: name of the signatory'),
+                 ('CERT_HDMF_SIGNATORYTITLE', 'Benefits Officer',      'Pag-IBIG Contribution Summary: position of the signatory'),
+                 ('CERT_PHIC_TEXT1',  'This is to certify that this office has remitted the following contributions to PhilHealth for the above-named employee.', 'PhilHealth Contribution Certification: text above the table'),
+                 ('CERT_PHIC_TEXT2',  'This certification is issued for whatever legal purpose it may serve.', 'PhilHealth Contribution Certification: text below the table'),
+                 ('CERT_PHIC_SIGNATORY',      'MA LUZ L. MELLA',    'PhilHealth Contribution Certification: name of the signatory'),
+                 ('CERT_PHIC_SIGNATORYTITLE', 'Accounting Manager', 'PhilHealth Contribution Certification: position of the signatory'),
+                 ('ACCT_HDMFLOAN',   'D006',  'Account code of the HDMF loan'),
+                 ('ACCT_PAGIBIGLOAN','D007',  'Account code of the Pag-IBIG loan'),
+                 ('ACCT_SSSLOAN',    'D005',  'Account code of the SSS loan'),
+                 ('PAGIBIG_ER_MAX',  '200',   'Pag-IBIG Contribution Remittance: employer share = employee share up to this amount');";
+        await _sql.ExecuteCmd(sql, new { }, conn);
     }
 }

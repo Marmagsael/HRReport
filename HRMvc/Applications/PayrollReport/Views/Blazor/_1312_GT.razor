@@ -1,0 +1,197 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- Grand Total (MBPay frmtotalded -> rptGTCL (Group By Client) / rptGTTT (Grand Total)) --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (rv.ShowReport)
+                {
+                    <IframeReportRenderer DataSource="@rv.ReportData"
+                                          ReportRelativePath="@rv.RelativePath"
+                                          OutputFormat="@rv.SelectedFormat"
+                                          Parameters="@rv.ReportParams"
+                                          AutoGenerate="@(rv.ReportData?.Any() == true)"
+                                          RefreshToken="@rv.RefreshToken" />
+                }
+                else
+                {
+                    <div class="sticky-top bg-white border-bottom">
+                        <div class="card-header">
+                            <div class="d-flex gap-2">
+                                <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                                <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                            <div class=" w-300p">Client</div>
+                            <div class=" w-300p">Account</div>
+                            <div class=" w-150p text-end">Amount</div>
+                        </div>
+                    </div>
+                    @foreach (var r in reps)
+                    {
+                        <div class="d-flex gap-2 border-bottom py-1">
+                            <div class=" w-300p">@r.Clname</div>
+                            <div class=" w-300p">@r.Acctname</div>
+                            <div class=" w-150p text-end">@r.Amount.ToString("#,##0.00;(#,##0.00)")</div>
+                        </div>
+                    }
+                    <div class="d-flex gap-2 py-1 fw-bold">
+                        <div class=" w-300p"></div><div class=" w-300p">Net Pay</div>
+                        <div class=" w-150p text-end">@reps.Sum(x => x.Amount).ToString("#,##0.00;(#,##0.00)")</div>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="p-2 fw-bold">From</div>
+                    <_01YYMMPP Rv="rv" ChildAction="ChildActionCatcher" />
+                    <div class="p-2 fw-bold">To</div>
+                    <_01YYMMPP Rv="rvTo" ChildAction="ChildActionCatcher" />
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Search"> Search</div>
+                    <RadzenRadioButtonList @bind-Value="byClient" TValue="bool">
+                        <Items>
+                            <RadzenRadioButtonListItem Text="Group By Client" Value="true" />
+                            <RadzenRadioButtonListItem Text="Grand Total" Value="false" />
+                        </Items>
+                    </RadzenRadioButtonList>
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Earnings to show / Deductions to show / Clients ------------------------------------------------*@
+        <div class="d-flex gap-2 w-100">
+            <div class="flex-fill"><div class="fw-bold p-1">Earnings to show</div><_00TClientList Clients="@earnings" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+            <div class="flex-fill"><div class="fw-bold p-1">Deductions to show</div><_00TClientList Clients="@deductions" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+            <div class="flex-fill"><div class="fw-bold p-1">Clients</div><_00TClientList Clients="@clients" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+        </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    V00_RepVars                         rvTo        = new();
+    List<RGrandTotalModel>              reps        = [];
+    bool                                byClient    = true;
+
+    //--- Account / client lists reuse the client list component: ClNumber holds the code ---
+    List<OClientModel>                  earnings    = [];
+    List<OClientModel>                  deductions  = [];
+    List<OClientModel>                  clients     = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+
+    private static string Prd(V00_RepVars v) => $"{v.Year.ToString()!.Substring(2, 2)}{v.Month}{v.Period}";
+    private List<string> accts => earnings.Concat(deductions).Where(x => x.IsSelectedB).Select(x => x.ClNumber!).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.RefreshToken = 13120000;
+        rv.MCaption     = "Grand Total";
+        rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["From"] = "", ["To"] = "", ["RunDate"] = DateTime.Now };
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if ((res ?? []).Any())
+        {
+            rv.ReportParams["CoName"]    = res!.First()!.CoName ?? "";
+            rv.ReportParams["CoAddress"] = res!.First()!.CoAdd ?? "";
+        }
+
+        var coa = await _payRep._02s(Uc.OpayDb!, Uc.Conn!) ?? [];
+        OClientModel Item(GChartofacctModel? a) => new() { ClNumber = a!.AcctNumber?.Trim(), ClName = $"{a.AcctNumber?.Trim()}  {a.AcctName?.Trim()}" };
+        earnings   = coa.Where(a => a?.AcctNumber?.StartsWith("E") == true).OrderBy(a => a!.AcctNumber).Select(Item).ToList();
+        deductions = coa.Where(a => a?.AcctNumber?.StartsWith("D") == true).OrderBy(a => a!.AcctNumber).Select(Item).ToList();
+    }
+
+    void ChildActionCatcher(){}
+
+    //--- Clients of the TRNs in the period range that have the chosen accounts (MBPay "SEARCH") ---
+    private async Task Search()
+    {
+        if (!accts.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Please select the earnings / deductions to show."); return; }
+        var res = await _payRep._02GrandTotalClients(Prd(rv), Prd(rvTo), accts, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        clients = res.Select(c => new OClientModel { ClNumber = c.Clnumber, ClName = c.Clname }).ToList();
+        if (!clients.Any()) Notify(NotificationSeverity.Info, "Info", "No clients found for this period range.");
+    }
+
+    private async Task FetchData()
+    {
+        reps = [];
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        var cls = clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber!).ToList();
+        if (!accts.Any() || !cls.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Please select the accounts and clients to show."); return; }
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02GrandTotal(Prd(rv), Prd(rvTo), accts, cls, byClient, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            //--- MBPay cFrom / cTo: "2026, May PERIOD: 02" ---
+            rv.ReportParams["From"]    = $"{rv.Year}, {new DateTime(2000, int.Parse(rv.Month!), 1):MMMM} PERIOD: {rv.Period}";
+            rv.ReportParams["To"]      = $"{rvTo.Year}, {new DateTime(2000, int.Parse(rvTo.Month!), 1):MMMM} PERIOD: {rvTo.Period}";
+            rv.ReportParams["RunDate"] = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any()) { Notify(NotificationSeverity.Info, "Info", "No data found."); return; }
+        rv.ShowModal = true;
+    }
+
+    private void CreateReport()
+    {
+        rv.ReportData   = reps;
+        rv.RelativePath = byClient ? "Reports/_03Payroll/K_GrandTotalByClient.trdp" : "Reports/_03Payroll/K_GrandTotal.trdp";
+        rv.RefreshToken++;
+        rv.ShowReport   = true;
+    }
+
+    private void CloseReportModal(bool ans)
+    {
+        if (rv.ShowReport) rv.ShowReport = ans;
+        else rv.ShowModal = ans;
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

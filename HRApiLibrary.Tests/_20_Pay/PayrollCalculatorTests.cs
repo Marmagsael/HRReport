@@ -182,6 +182,14 @@ public class PayrollCalculatorTests
     }
 
     [TestMethod]
+    public void RateBasis_MapsFoxProRateIds()
+    {
+        Assert.AreEqual(PayRateBasis.Monthly,     PayrollCalculator.RateBasisFromFoxProRateId(1));
+        Assert.AreEqual(PayRateBasis.Daily,       PayrollCalculator.RateBasisFromFoxProRateId(2));
+        Assert.AreEqual(PayRateBasis.SemiMonthly, PayrollCalculator.RateBasisFromFoxProRateId(3));
+    }
+
+    [TestMethod]
     public void RateBasis_MapsHrSysPayrateIds()
     {
         Assert.AreEqual(PayRateBasis.Hourly,   PayrollCalculator.RateBasisFromPayrateId(1));

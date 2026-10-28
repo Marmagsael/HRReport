@@ -27,8 +27,15 @@ namespace HRMvc.Controllers
             ["1207"] = "_1207_13thMonthSummary",
             ["1208"] = "_1208_13thMonthBankAdvise",
             ["1209"] = "_1209_13thMonthDetailed",
+            ["1210"] = "_1210_PayrollRegisterPerAcct",
+            ["1211"] = "_1211_BankTextFile",
             ["1212"] = "_1212_13thMonthRegister",
             ["1213"] = "_1213_13thMonthPayslip",
+            ["1214"] = "_1214_13thMonthDetailedPerClient",
+            ["1215"] = "_1215_13thMonthDetailedPerEmployee",
+            ["1216"] = "_1216_13thMonthSummaryPerClient",
+            ["1217"] = "_1217_13thMonthSummaryPerEmployee",
+            ["1218"] = "_1218_13thMonthRegisterPerClient",
 
             // Compliance
             ["1252"] = "_1252_SSSContribution",
@@ -37,6 +44,12 @@ namespace HRMvc.Controllers
             ["1255"] = "_1255_PagibigLoanRemittance",
             ["1256"] = "_1256_CalamityLoanRemittance",
             ["1257"] = "_1257_PHICContribution",
+            ["1258"] = "_1258_PagibigContSummary",
+            ["1259"] = "_1259_PhicContCert",
+            ["1260"] = "_1260_HDMFLoanRemit",
+            ["1261"] = "_1261_PagibigContRemit",
+            ["1262"] = "_1262_SSSContRemit",
+            ["1263"] = "_1263_SSSContRemitAdjusted",
 
             // Others
             ["1302"] = "_1302_TaxAnnualization",
@@ -47,6 +60,7 @@ namespace HRMvc.Controllers
             ["1307"] = "_1307_Retirement",
             ["1308"] = "_1308_GroupRetirement",
             ["1309"] = "_1309_AccountTotal",
+            ["1310"] = "_1310_LoanSummary",
             ["1312"] = "_1312_GrandTotal",
             ["1313"] = "_1313_AccountTotal"
         };

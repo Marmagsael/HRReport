@@ -848,7 +848,7 @@ public class Da605DataAccess : IDa605DataAccess
                           Delete from {ppaydb}.TblTran where trn = @Trn;
 
                           Insert into {ppaydb}.TblTran 
-                          select * from {ppaydb}.Tmptbltran where trn = @Trn and Amount != 0
+                          select * from {ppaydb}.Tmptbltran where trn = @Trn and Amount > 0
                           on duplicate key update Status = 'P'; 
 
                           update {ppaydb}.paymainhdr set status = 'Posted', DatePosted = now() where Trn = @Trn "; 

@@ -476,6 +476,16 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
             sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN AcctgSchema VARCHAR (60) NULL AFTER PaySchema";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
+        if (!columns.Any(c => c.Field == "OldPay"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN OldPay VARCHAR (60) NULL";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+        if (!columns.Any(c => c.Field == "OldPis"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN OldPis VARCHAR (60) NULL";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
     }
     
     private async Task _01UC_AccessReq(string? schema, string? connName)

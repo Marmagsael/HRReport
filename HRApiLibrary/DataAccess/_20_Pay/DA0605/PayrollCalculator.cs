@@ -182,6 +182,14 @@ public static class PayrollCalculator
         return net < o.MinimumNetTarget ? NetPayStatus.BelowMinimum : NetPayStatus.Ok;
     }
 
+    //--- empmas.rateID used by MBPay (FoxPro): 1 monthly, 2 daily, 3 semi-monthly ---------------------------------------
+    public static PayRateBasis RateBasisFromFoxProRateId(int? rateId) => rateId switch
+    {
+        1 => PayRateBasis.Monthly,
+        3 => PayRateBasis.SemiMonthly,
+        _ => PayRateBasis.Daily
+    };
+
     //--- Payrate.Id used by HRSys (see _0504_02_EmpRates.razor); anything else is treated as daily ----------------------
     public static PayRateBasis RateBasisFromPayrateId(int? payrateId) => payrateId switch
     {

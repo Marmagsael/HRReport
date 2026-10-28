@@ -1,275 +1,124 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay.M0605
+@using HRApiLibrary.Models._20_Pay.OPay
 
 <style>
     /* First 3 TD - frozen horizontally */
     .payroll-table td:nth-child(1) { position: sticky; left: 0; background: white; z-index: 10; }
     .payroll-table td:nth-child(2) { position: sticky; left: 50px; background: white; z-index: 10; }
     .payroll-table td:nth-child(3) { position: sticky; left: 85px; background: white; z-index: 10; box-shadow: inset -1px 0 0 #198754;}
+
     /* Header - frozen vertically */
     .payroll-table thead th { position: sticky; top: 0; background-color: white; z-index: 20; box-shadow: inset 0 -1px 0 #198754; }
+
     /* Header + first 3 columns = highest layer */
     .payroll-table thead th:nth-child(1) { left: 0; z-index: 30; }
     .payroll-table thead th:nth-child(2) { left: 50px; z-index: 30; }
     .payroll-table thead th:nth-child(3) { left: 85px; z-index: 30; border-right: 1px solid #dee2e6;}
+
     /* Remove gaps between cells */
     .payroll-table { border-collapse: collapse !important; border-spacing: 0 !important; }
 
     .payroll-table th:nth-child(n+4),
     .payroll-table td:nth-child(n+4) { border-right: 1px solid #dee2e6; }
+
+    .payroll-table tr.current td { background-color: #e8f4ec; }
+
+    /* Numbers right-aligned inside the Telerik numeric inputs */
+    .payroll-table .k-numerictextbox input.k-input-inner { text-align: right; }
 </style>
 
-<div  style="width: 100%; overflow-x: auto; max-height: 80vh; overflow-y: auto; padding-bottom: .5rem;">
-    <table class="p-0 payroll-table " style="width: max-content;">
-        <thead>
-            <tr>
-                <th class="w-50p text-center p-0 "  > No.</th>
-                <th class="w-35p text-center p-0 "  > Mrk</th>
-                <th class="w-250p p-0"              >Name ↔</th>
-                <th class="w-100p text-center"      >Days Wrk<br>(Basic)</th>
-                <th class="w-100p text-center"      >Hours Work<br>(Basic)</th>
-                <th class="w-100p text-center"      >Ordinary<br>Days</th>
-                <th class="w-100p text-center"      >Absent</th>
-                <th class="w-100p text-center"      >ROT</th>
-                <th class="w-100p text-center"      >RD</th>
-                <th class="w-100p text-center"      >RDOT</th>
-                <th class="w-100p text-center"      >ND</th>
-                <th class="w-100p text-center"      >LH</th>
-                <th class="w-100p text-center"      >LHOT</th>
-                <th class="w-100p text-center"      >RDLH</th>
-                <th class="w-100p text-center"      >RDLHOT</th>
-                <th class="w-100p text-center"      >SH</th>
-                <th class="w-100p text-center"      >SHOT</th>
-                <th class="w-100p text-center"      >RDSH</th>
-                <th class="w-100p text-center"      >RDSHOT</th>
-                <th class="w-100p text-center"      >SEA</th>
-                <th class="w-100p text-center"      >SEALH</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{
-                int rowNumber = 0;
-            }
-
-            @foreach (PaymaindtlModel pm in v502.Paymaindtls ?? [])
-            {
-                rowNumber++;
-
+@if (s != null)
+{
+    <div id="manhourGridContainer" style="width: 100%; overflow-x: auto; max-height: 80vh; overflow-y: auto; padding-bottom: .5rem;">
+        <table class="p-0 payroll-table " style="width: max-content;">
+            <thead>
                 <tr>
-
-                    @*--- No ---*@
-                    <td class="text-center"> 
-                        <span> @rowNumber ) </span>
-                    </td>
-
-                    @*--- Mrk ---*@
-                    <td class="text-center"> 
-                        <TelerikCheckBox @bind-Value="@pm.IsSelected" />
-                    </td>
-
-                    @*--- Name ---*@
-                    <td class="text-left">
-                        @pm.EmpName
-                    </td>
-                    
-                    @*--- Days ---*@
-                    <td class="text-end">                     
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Daywrk"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />          
-                    </td>   
-
-                    @*--- Ordinary ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Ordinary"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />          
-                    </td>   
-
-                    <td class="text-end"> @*--- Tardiness ---*@
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Tardiness"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>
-
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Rot"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>@*--- ROT ---*@
-
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Rd"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>@*--- RD ---*@
-
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Rdot"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>@*--- RDOT ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Nd"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>@*--- ND ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Lh"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>@*--- LH ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Lhot"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>@*--- LHOT ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                        @bind-Value="@pm.Rdlh"
-                        Decimals="2"
-                        Format="N2"
-                        Arrows="false"
-                        Step="0.00"
-                        FillMode="flat"
-                        Width="100%" />
-                    </td>@*--- RDLH ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                            @bind-Value="@pm.Rdlhot"
-                            Decimals="2"
-                            Format="N2"
-                            Arrows="false"
-                            Step="0.00"
-                            FillMode="flat"
-                            Width="100%" />
-                    </td>@*--- RDLHOT ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                            @bind-Value="@pm.Sh"
-                            Decimals="2"
-                            Format="N2"
-                            Arrows="false"
-                            Step="0.00"
-                            FillMode="flat"
-                            Width="100%" />
-                    </td>@*--- SH ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                            @bind-Value="@pm.Shot"
-                            Decimals="2"
-                            Format="N2"
-                            Arrows="false"
-                            Step="0.00"
-                            FillMode="flat"
-                            Width="100%" />
-                    </td>@*--- SHOT ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                            @bind-Value="@pm.Rdsh"
-                            Decimals="2"
-                            Format="N2"
-                            Arrows="false"
-                            Step="0.00"
-                            FillMode="flat"
-                            Width="100%" />
-                    </td>@*--- RDSH ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                            @bind-Value="@pm.Rdshot"
-                            Decimals="2"
-                            Format="N2"
-                            Arrows="false"
-                            Step="0.00"
-                            FillMode="flat"
-                            Width="100%" />
-                    </td>@*--- RDSHOT ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                            @bind-Value="@pm.Sea"
-                            Decimals="2"
-                            Format="N2"
-                            Arrows="false"
-                            Step="0.00"
-                            FillMode="flat"
-                            Width="100%" />
-                    </td>@*--- SEA ---*@
-                    <td class="text-end">
-                        <TelerikNumericTextBox T="double?"
-                            @bind-Value="@pm.Sealh"
-                            Decimals="2"
-                            Format="N2"
-                            Arrows="false"
-                            Step="0.00"
-                            FillMode="flat"
-                            Width="100%" />
-                    </td>@*--- SEALH ---*@
+                    <th class="w-50p text-center p-0 "  > No.</th>
+                    <th class="w-35p text-center p-0 "  > Mrk</th>
+                    <th class="w-250p p-0"              >Name ↔</th>
+                    @foreach (var c in cols)
+                    {
+                        <th class="w-100p text-center" title="@OPayrollCompute.Acct(s, c)">@((MarkupString)Label(c))</th>
+                    }
+                    <th class="w-100p text-center">Earnings</th>
+                    <th class="w-100p text-center">Deductions</th>
+                    <th class="w-100p text-center">Net Pay</th>
                 </tr>
-            }
-            
-            
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @{ int rowNumber = 0; }
+                @foreach (var r in s.Results)
+                {
+                    rowNumber++;
+                    <tr class="@(r == v502.CurrentEmp ? "current" : "")" @onclick="() => Select(r)">
+                        <td class="text-center"> <span> @rowNumber ) </span> </td>
+                        <td class="text-center"> <TelerikCheckBox @bind-Value="@r.IsSelected" Enabled="@(!s.IsLocked)" /> </td>
+                        <td class="text-left"> @r.Name </td>
+                        @foreach (var c in cols)
+                        {
+                            var col = c;
+                            <td class="text-end">
+                                <TelerikNumericTextBox T="double"
+                                                       Value="@(r.Hours.TryGetValue(col, out var h) ? h : 0)"
+                                                       ValueChanged="@((double v) => SetHours(r, col, v))"
+                                                       Enabled="@(!s.IsLocked)"
+                                                       Decimals="2"
+                                                       Format="N2"
+                                                       Arrows="false"
+                                                       Step="0"
+                                                       FillMode="flat"
+                                                       Width="100%" />
+                            </td>
+                        }
+                        <td class="text-end pe-1">@r.Earnings.ToString("N2")</td>
+                        <td class="text-end pe-1">@r.Deductions.ToString("N2")</td>
+                        <td class="text-end pe-1 @(r.NetStatus == NetPayStatus.Negative ? "text-danger fw-bold" : r.NetStatus == NetPayStatus.BelowMinimum ? "text-warning fw-bold" : "")">@r.Net.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+else
+{
+    <div class="p-3 text-secondary">Select a client and period, then Load.</div>
+}
 
-
-</div>
-
-@using HRApiLibrary.Models._20_Pay
+@inject IJSRuntime JSRuntime
 
 @code {
-
-    @* [Parameter] public UserClaimsModel? UserClaims { get; set; } *@
-    @* [Parameter] public List<PaymaindtlModel> Paymaindetails  { get; set; } = []; *@
     [CascadingParameter]    public  V502? v502 { get; set; } = new();
 
+    //--- Up/Down/Enter move between rows, Left/Right between cells (wwwroot/js/grid-nav.js) ------------------------------
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (s != null) await JSRuntime.InvokeVoidAsync("attachGridKeyboardNav", "manhourGridContainer");
+    }
 
-    decimal DaysWorked { get; set; } = 0m;
-    
+    OPayrollSession? s => v502?.Session;
+    List<string> cols  => s == null ? [] : OPayrollCompute.InputColumns(s);
 
+    static string Label(string c) => c switch
+    {
+        "daywrk" => "Days Wrk<br>(Basic)",
+        "rn"     => "Ordinary<br>(Hrs)",
+        "absent" => "Absent<br>(Hrs)",
+        _        => c.ToUpper()
+    };
 
-    
+    //--- Inputs changed: figures are stale until Process, as in payroll4 ------------------------------------------------
+    async Task SetHours(OPayEmpResult r, string col, double v)
+    {
+        r.Hours[col] = v;
+        v502!.IsProcessed = false;
+        await Select(r);
+    }
 
+    async Task Select(OPayEmpResult r)
+    {
+        if (v502!.CurrentEmp == r && v502.IsProcessed) return;
+        v502.CurrentEmp = r;
+        if (v502.Changed != null) await v502.Changed();
+    }
 }
