@@ -1,0 +1,42 @@
+@* -- 12/102 Employee Dashboard as a Razor page (replaces the _12Controller "102" action);
+      data is loaded the same way as _12_102_Dashboard.cshtml, the dashboard itself stays interactive -- *@
+@page "/12/102"
+@layout HRMvc.Components.Layout.ReportLayout2
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.Vars
+@using HRMvc.StartupConfig
+@using HRMvc.StartupConfig.Library
+
+@inject UserClaimsContextService ClaimsContext
+@inject L12_102 L102
+
+<div>
+    @if (loaded)
+    {
+        <HRMvc.Applications.EPortal.Blazor._12_102DB @rendermode="InteractiveServer" UserClaims="userClaims" OEmpmass="OEmpmas" V12_102="V12_102" />
+    }
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    UserClaimsModel?        userClaims;
+    List<OEmpmasModel?>?    OEmpmas;
+    V12_102?                V12_102;
+    bool                    loaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext == null) return;
+
+        userClaims  = ClaimsContext.Build(HttpContext.User);
+        OEmpmas     = await L102._02OEmpmass(userClaims);
+        V12_102     = await L102.V12_102(userClaims);
+        loaded      = true;
+    }
+}

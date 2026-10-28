@@ -1,0 +1,21 @@
+@* -- From Views/Shared/Main/ReportLayout/_Header.cshtml -- *@
+@using HRApiLibrary.DataAccess._00_Main
+@inject I_00UserscompanyDataAccess _userCompany
+
+<div class="px-3 py-2 bg-dark text-white">
+    <h5 class="mb-0">@coName</h5>
+</div>
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    string coName = "Loading...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc == null) return;
+
+        var userCompany = await _userCompany._02ByUserDefaultCoId(Uc.UserId);
+        coName = string.IsNullOrWhiteSpace(userCompany?.CompanyName) ? "Undefined" : userCompany.CompanyName;
+    }
+}

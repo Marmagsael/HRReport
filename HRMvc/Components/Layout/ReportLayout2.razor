@@ -1,0 +1,38 @@
+@* -- Razor version of Views/Shared/Main/_ReportLayout2.cshtml : header + left menu + page (static SSR) -- *@
+@inherits LayoutComponentBase
+@using HRMvc.StartupConfig
+@inject UserClaimsContextService ClaimsContext
+
+<div class="main-wrapper d-flex flex-column vh-100 w-100 bg-light">
+
+    <!-- 🔹 HEADER -->
+    <header class="bg-gray-10 txt-white sticky-top p-0 ">
+        <ReportHeader Uc="userClaims" />
+    </header>
+
+    <!-- 🔹 BODY -->
+    <div class="d-flex flex-grow-1 w-100 p-0 ">
+
+        <!-- 🔹 LEFT MENU -->
+        <aside class="border-end bg-white" style="width:240px;">
+            <ReportLeftMenu Uc="userClaims" />
+        </aside>
+
+        <!-- 🔹 MAIN CONTENT -->
+        <main class="bg-gray-95 overflow-auto w-100 flex-fill  bg-gray-95 ">
+            @Body
+        </main>
+
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    UserClaimsModel? userClaims;
+
+    protected override void OnInitialized()
+    {
+        if (HttpContext != null) userClaims = ClaimsContext.Build(HttpContext.User);
+    }
+}
