@@ -1,0 +1,63 @@
+@* -- From Views/Shared/Main/ReportLayout/_ReportLeftMenuMainParentDtl.cshtml -- *@
+@if (menuParent != null && menuDtls.Any())
+{
+    var logoutItem  = menuDtls.FirstOrDefault(x => x!.DispText == "Logout");
+    var menuItems   = menuDtls.Where(x => x!.DispText != "Logout");
+
+    <li class="menu-item bordered">
+
+        <a class="report-menu-section-header" href="#" onclick="event.preventDefault();" style="font-size:14px !important;">
+            <div class="d-flex gap-2 align-items-center">
+                <span>@menuParent.DispText</span>
+            </div>
+
+            <i class="fa fa-chevron-right arrow"></i>
+        </a>
+        <ul class="submenu">
+            @foreach (var d in menuItems)
+            {
+                <li>
+                    <a href="@d!.Action" class="border-bottom">
+                        <div class="d-flex align-items-center p-1 gap-2">
+                            <i class="@d.Icon fs-6"></i>
+                            @d.DispText
+                        </div>
+                    </a>
+                </li>
+            }
+            @if (logoutItem != null)
+            {
+                @* -- asp-controller="Main" asp-action="_404Logout" in the .cshtml (conventional route) -- *@
+                <li>
+                    <a href="/Main/_404Logout" class="border-bottom">
+                        <div class="d-flex align-items-center p-1 gap-2">
+                            <i class="@logoutItem.Icon fs-6"></i>
+                            @logoutItem.DispText
+                        </div>
+                    </a>
+                </li>
+            }
+        </ul>
+    </li>
+
+    <style>
+        .report-menu-section-header {
+            background-color: #f1f3f5 !important;
+            color: #6c757d !important;
+            font-size: 0.75rem !important;
+            font-weight: 600 !important;
+            letter-spacing: 0.06em !important;
+            text-transform: uppercase !important;
+            padding: 10px 12px !important;
+            border-bottom: 1px solid #e9ecef !important;
+        }
+    </style>
+}
+
+@code {
+    [Parameter] public List<MainmenuModel?> Menus { get; set; } = new();
+    [Parameter] public int ParentId { get; set; }
+
+    MainmenuModel? menuParent => Menus.FirstOrDefault(m => m?.Id == ParentId);
+    List<MainmenuModel?> menuDtls => Menus.Where(m => m?.IdParent == ParentId && !string.IsNullOrEmpty(m.Action)).ToList();
+}
