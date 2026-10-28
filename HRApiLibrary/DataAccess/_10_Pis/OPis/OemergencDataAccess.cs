@@ -46,6 +46,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OEmergencModel?> _03(int? id, OEmergencModel emergenc, string? schema, string? conn)
         {
+
             string? sql = $@"Update {schema}.Emergenc set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, RELA = @RELA, TEL = @TEL where Id = @Id;";
             await _sql.ExecuteCmd<dynamic>(sql, emergenc, conn);
 
@@ -57,7 +58,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OEmergencModel?> _03(string? empnumber, string? name, string? relationship,  OEmergencModel emergenc, string? schema, string? conn)
         {
-            string? sql = $@"Update {schema}.Emergenc set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, RELA = @RELA, TEL = @TEL where Empnumber = @Empnumber AND Name = @Name AND Rela = @Rela;";
+
             var parameters = new
             {
                 emergenc.EmpNumber,
@@ -69,6 +70,9 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 OldName = name,
                 OldRela = relationship
             };
+
+
+            string? sql = $@"Update {schema}.Emergenc set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, RELA = @RELA, TEL = @TEL where  LOWER(TRIM(Empnumber))  =  LOWER(TRIM(@OldEmpnumber))  AND LOWER(TRIM(Name)) = LOWER(TRIM(@OldName)) AND Rela = LOWER(TRIM(@OldRela));";
             await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
 
             sql = $@" select  * from {schema}.Emergenc x where x.Empnumber = @Empnumber ;";

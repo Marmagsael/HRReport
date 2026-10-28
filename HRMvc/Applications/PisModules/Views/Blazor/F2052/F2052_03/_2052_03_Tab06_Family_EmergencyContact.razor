@@ -210,12 +210,12 @@
 @code {
 
     string? empnumber = string.Empty;
-    
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
     [CascadingParameter] public V2052 V { get; set; } = new();
-        
+
     [CascadingParameter]
     public TelerikNotification? NotificationRef { get; set; } = new();
 
@@ -245,7 +245,7 @@
         var rec = new OEmergencModel();
         rec.EmpNumber = V.SelectedEmpnumber;
 
-       
+
         emergencycontactToInsert!.Add(rec);
         await V.EmergencyContactGrid!.InsertRow(rec);
         editMode = true;
@@ -303,9 +303,9 @@
                 var confirmed = await DialogsRef?.ConfirmAsync($"Are you sure you want to delete '{rec.Name}' record?", "Confirm Record Deletion");
                 if (!confirmed) return;
 
-                    await _empmas._04(rec.EmpNumber, rec.Name, rec.Rela, Uc.OpisDb!, Uc.Conn!);
-                    V.EmergencyContacts.Remove(rec);
-                    NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
+                await _empmas._04(rec.EmpNumber, rec.Name, rec.Rela, Uc.OpisDb!, Uc.Conn!);
+                V.EmergencyContacts.Remove(rec);
+                NotificationRef.Show("Record has been successfully deleted.", ThemeConstants.Notification.ThemeColor.Success);
 
             }
         }
@@ -351,7 +351,9 @@
     //-- Save Row ----------------
     private async Task SaveRow(OEmergencModel rec)
     {
+
         if (V.EmergencyContactGrid == null || rec == null) return;
+
         if (!SafeToSave(rec))
         {
             await V.EmergencyContactGrid.UpdateRow(rec);
@@ -363,6 +365,7 @@
             var res = await _empmas._02CheckExisting(rec.EmpNumber, rec.Name, rec.Rela, Uc.OpisDb!, Uc.Conn!);
             bool exists = res != null && res.Count > 0;
 
+
             if (exists)
             {
                 bool isSameAsOriginal = !isNew && recBackup != null
@@ -372,19 +375,20 @@
                 if (!isSameAsOriginal)
                 {
                     NotificationRef.Show("A record with the same name and relationship already exists.", ThemeConstants.Notification.ThemeColor.Warning);
-
                     return;
                 }
             }
 
             if (isNew)
             {
+
                 await _empmas._01(rec, Uc.OpisDb!, Uc.Conn!);
                 V.EmergencyContacts!.Add(rec);
             }
             else
             {
-                await _empmas._03(rec.EmpNumber, rec.Name, rec.Rela, rec, Uc.OpisDb!, Uc.Conn!);
+
+                await _empmas._03(recBackup.EmpNumber, recBackup.Name, recBackup.Rela, rec, Uc.OpisDb!, Uc.Conn!);
             }
 
             await V.EmergencyContactGrid.UpdateRow(rec);

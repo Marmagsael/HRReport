@@ -261,6 +261,7 @@
         v.CharRefs          = [];
         v.InsuranceAccident = new();
         v.SecLicense        = new();
+        v.PrevSecLicense = new();
         v.SecLicenseLogs    = [];
 
 
@@ -411,6 +412,21 @@
         try
         {
             v.SecLicense = await _seclic._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+
+            v.PrevSecLicense = new OSeclicModel
+            {
+                Empnumber       = v.SecLicense.Empnumber,
+                Sbrno           = v.SecLicense.Sbrno,
+                Opno            = v.SecLicense.Opno,
+                Validated       = v.SecLicense.Validated,
+                Vfee            = v.SecLicense.Vfee,
+                Revalidated     = v.SecLicense.Revalidated,
+                ValStatus       = v.SecLicense.ValStatus,
+                User            = v.SecLicense.User,
+                DateModified    = v.SecLicense.DateModified,
+                LicDateIssued   = v.SecLicense.LicDateIssued,
+                UserName        = v.SecLicense.UserName
+            };
 
         }
         catch (Exception ex)
@@ -803,6 +819,8 @@
 
             c.Age = ComputeAge(c.DoB);
         }
+
+
     }
 
     private void ComputeEmployeesAge()

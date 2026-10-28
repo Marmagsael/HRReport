@@ -219,61 +219,82 @@
     {
         if (model == null) return;
 
-
         try
         {
-            // Update  security records in empmas table ------
-            var res = await _empmas._03_Security(V.SelectedEmpnumber, V.Empmas, Uc.OpisDb!, Uc.Conn!);
+            // Update security records in empmas table ------
+            var res = await _empmas._03_Security(  V.SelectedEmpnumber, V.Empmas,  Uc.OpisDb!, Uc.Conn!  );
 
 
-            V.SecLicense.Empnumber      = V.Empmas.EmpNumber;
-            V.SecLicense.User           = Uc.OempNumber;
-            V.SecLicense.DateModified   = DateTime.Now;
+
+            // Check if any security license field has changed ----------------
+            if (
+                V.PrevSecLicense.ValStatus != V.SecLicense.ValStatus ||
+                V.PrevSecLicense.Validated != V.SecLicense.Validated ||
+                V.PrevSecLicense.Revalidated != V.SecLicense.Revalidated ||
+                V.PrevSecLicense.LicDateIssued != V.SecLicense.LicDateIssued
+            )
+            {
+                V.SecLicense.Empnumber      = V.Empmas.EmpNumber;
+                V.SecLicense.User           = Uc.OempNumber;
+                V.SecLicense.DateModified   = DateTime.Now;
 
 
-            Console.WriteLine($"{Uc.OempNumber}");
-            return;
+                // Insert or update security records in seclic table ------
+                var resLic = await _seclic._01( V.SecLicense, Uc.OpisDb!, Uc.Conn! );
 
-            // Insert or update  security records in seclic table ------
-            var resLic      = await _seclic._01(V.SecLicense, Uc.OpisDb!, Uc.Conn!);
-
-            if(!string.IsNullOrWhiteSpace(resLic.Empnumber)){
-
-                V.SecLicense = resLic;
-
-                var log = new OSecliclogsModel()
+                if (!string.IsNullOrWhiteSpace(resLic.Empnumber))
                 {
-                    EmpNumber      = resLic.Empnumber,
-                    Sbrno          = resLic.Sbrno,
-                    Opno           = resLic.Opno,
-                    Validated      = resLic.Validated,
-                    Vfee           = resLic.Vfee,
-                    Revalidated    = resLic.Revalidated,
-                    ValStatus      = resLic.ValStatus,
-                    User           = resLic.User,
-                    UserName       = resLic.UserName,
-                    DateModified   = resLic.DateModified,
-                    LicDateIssued  = resLic.LicDateIssued
-                };
+                    V.SecLicense = resLic;
 
+                    var log = new OSecliclogsModel()
+                    {
+                        EmpNumber   = resLic.Empnumber,
+                        Sbrno       = resLic.Sbrno,
+                        Opno        = resLic.Opno,
+                        Validated   = resLic.Validated,
+                        Vfee        = resLic.Vfee,
+                        Revalidated = resLic.Revalidated,
+                        ValStatus   = resLic.ValStatus,
+                        User        = resLic.User,
+                        UserName    = resLic.UserName,
+                        DateModified = resLic.DateModified,
+                        LicDateIssued = resLic.LicDateIssued
+                    };
 
-                // Insert  security logs records in secliclogs table ------
-                var resLogs  = await _secliclogs._01(log, Uc.OpisDb!, Uc.Conn!);
+                    // Insert security logs records in secliclogs table ------
+                    var resLogs = await _secliclogs._01(log, Uc.OpisDb!, Uc.Conn!
+                    );
 
+                    // Update previous values after successful logging ------
+                    if (!string.IsNullOrWhiteSpace(resLogs.EmpNumber))
+                    {
+                        V.PrevSecLicense = new OSeclicModel
+                        {
+                            Empnumber       = resLic.Empnumber,
+                            Sbrno           = resLic.Sbrno,
+                            Opno            = resLic.Opno,
+                            Validated       = resLic.Validated,
+                            Vfee            = resLic.Vfee,
+                            Revalidated     = resLic.Revalidated,
+                            ValStatus       = resLic.ValStatus,
+                            User            = resLic.User,
+                            DateModified    = resLic.DateModified,
+                            LicDateIssued   = resLic.LicDateIssued,
+                            UserName        = resLic.UserName
+                        };
+                    }
+                }
             }
 
-            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
-
-
+            NotificationRef.Show( "Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success
+            );
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
 
+            NotificationRef.Show( "Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error );
         }
-
-
     }
 
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
