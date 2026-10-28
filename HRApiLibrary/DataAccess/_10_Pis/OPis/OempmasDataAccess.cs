@@ -547,6 +547,17 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data?.FirstOrDefault();
     }
 
+    // -- From the PIS detailed address : full address / phone / email only (MLACODE_, PROCODE_ stay as they are) --
+    public async Task _03_AddressDetailed(string empnumber, string? addr1, string? tel1, string? addr2, string? tel2, string? email, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                        ADDR1 = @Addr1, TEL1 = @Tel1,
+                        ADDR2 = @Addr2, TEL2 = @Tel2,
+                        EMAIL = @Email
+                        WHERE EMPNUMBER = @EmpNumber";
+        await _sql.ExecuteCmd<dynamic>(sql, new { EmpNumber = empnumber, Addr1 = addr1, Tel1 = tel1, Addr2 = addr2, Tel2 = tel2, Email = email }, conn);
+    }
+
     public async Task<OEmpmasModel?> _03_Deployment(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
@@ -837,6 +848,7 @@ public interface IOEmpmasDataAccess
     Task<OEmpmasModel?>         _03_EmployeeName(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_PersonalData(string empnumber, OEmpmasModel mempmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Address(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task                        _03_AddressDetailed(string empnumber, string? addr1, string? tel1, string? addr2, string? tel2, string? email, string schema, string conn);
     Task<OEmpmasModel?>         _03_Deployment(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Government(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Insurance(string empnumber, OEmpmasModel empmas, string schema, string conn);

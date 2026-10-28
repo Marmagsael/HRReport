@@ -13,6 +13,13 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         private readonly I_90_001_MySqlDataAccess _sql;
 
+        // -- Old PIS dates may hold '0000-00-00', which has no .NET DateTime : read those as NULL (the data is left as is) --
+        public static string ReadFlds(string a = "")
+        {
+            static string D(string a, string c) => $"IF(CAST({a}{c} AS CHAR) LIKE '0000-00-00%', NULL, {a}{c}) AS {c}";
+            return $"{a}empnumber, {a}sbrno, {a}opno, {D(a, "validated")}, {a}vfee, {D(a, "revalidated")}, {a}valStatus, {a}user, {D(a, "dateModified")}, {D(a, "licDateIssued")}";
+        }
+
         public OSeclicDataAccess(I_90_001_MySqlDataAccess sql)
         {
             _sql = sql;
@@ -35,7 +42,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             await _sql.ExecuteCmd<dynamic>(sql, seclic, conn);
 
 
-            sql = $@"select  s.*, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
+            sql = $@"select  {ReadFlds("s.")}, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
                         LEFT JOIN {schema}.empmas e ON e.EMPNUMBER = s.User
                         where s.Empnumber = @Empnumber";
 
@@ -47,7 +54,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<OSeclicModel?> _02(string empnumber, string schema, string conn)
         {
-            string sql = $@"select  s.*, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
+            string sql = $@"select  {ReadFlds("s.")}, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
                         LEFT JOIN {schema}.empmas e ON e.EMPNUMBER = s.User
                         where s.Empnumber = @Empnumber";
             var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
@@ -56,7 +63,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
         public async Task<List<OSeclicModel?>?> _02s(string empnumber, string schema, string conn)
         {
-            string sql = $@"select  empnumber, sbrno, opno, validated, vfee, revalidated, valStatus, user, dateModified, licDateIssued from {schema}.Seclic where Empnumber = @Empnumber";
+            string sql = $@"select  {ReadFlds()} from {schema}.Seclic where Empnumber = @Empnumber";
             var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
@@ -67,7 +74,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string sql = $@"Update {schema}.Seclic set empnumber = @empnumber, sbrno = @sbrno, opno = @opno, validated = @validated, vfee = @vfee, revalidated = @revalidated, valStatus = @valStatus, user = @user, dateModified = @dateModified, licDateIssued = @licDateIssued where Empnumber = @Empnumber;";
             await _sql.ExecuteCmd<dynamic>(sql, seclic, conn);
 
-            sql = $@" select  * from {schema}.Seclic x where x.Id = @Id ;";
+            sql = $@" select  {ReadFlds("x.")} from {schema}.Seclic x where x.Id = @Id ;";
             var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
@@ -77,7 +84,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string sql = $@"Delete from {schema}.Seclic where Empnumber = @Empnumber;";
             await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
 
-            sql = $@" select  * from {schema}.Seclic x where x.Empnumber = @Empnumber ;";
+            sql = $@" select  {ReadFlds("x.")} from {schema}.Seclic x where x.Empnumber = @Empnumber ;";
             var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }

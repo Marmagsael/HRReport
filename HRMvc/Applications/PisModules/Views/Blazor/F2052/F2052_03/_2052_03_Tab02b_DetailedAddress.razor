@@ -1,0 +1,321 @@
+@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.Models._00_MainPis
+@using HRApiLibrary.Models._10_Pis
+
+@* -- Detailed Address : entry for {Code}_Pis.EmpmasAddress; the full address is the parts joined and also goes to OPis ADDR1 / ADDR2 -- *@
+<div class="p-2">
+    <RadzenTemplateForm TItem="EmpmasAddressModel" Data=@A Submit=@OnSubmit>
+        <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Detailed Address" />
+
+        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            <div class="d-flex p-2 border-bottom">
+                <button type="submit" class="card text-center h-40p mb-btn mb-btn-blue p-2 px-4">
+                    <div class="d-flex gap-1 align-items-center justify-content-center">
+                        <span class="fw-semibold"><small>Save</small></span>
+                    </div>
+                </button>
+            </div>
+        }
+
+        @* -- Present first, Provincial below it; Country -> Region -> Province -> City / Municipality -> Barangay from Main.Psgc (PH only for now) -- *@
+        <div class="d-flex flex-column gap-3 pt-2">
+            @* ----- Present ----------*@
+            <div class="d-flex flex-column">
+                <div class="fw-semibold p-1">Present</div>
+                @Row("Country",                 Drop(Countries, "Name", () => A.PresAddCountryId, v => CountryChanged(Pres, v)))
+                @Row("Region",                  DropCode(Pres.Regions,   () => Code(A.PresAddStateId, 2), v => RegionChanged(Pres, v)))
+                @Row("Province",                DropCode(Pres.Provinces, () => Code(A.PresAddProvId, 4),  v => ProvinceChanged(Pres, v), Code(A.PresAddStateId, 2) != null && Pres.Provinces.Count == 0))
+                @Row("City / Municipality",     DropCode(Pres.CityMuns,  () => Code(A.PresAddCityId, 6),  v => CityMunChanged(Pres, v)))
+                @Row("Barangay",                DropCode(Pres.Barangays, () => Pres.BrgyCode,           v => BarangayChanged(Pres, v)))
+                @Row("Village / Subdivision",   Text(() => A.PresAddVillage, v => A.PresAddVillage = v, 45))
+                @Row("Street / House no.",      Text(() => A.PresAddStreet,  v => A.PresAddStreet  = v, 45))
+                @Row("ZIP code",                Text(() => A.PresAddZipCode, v => A.PresAddZipCode = v, 10))
+                @Row("Telephone no.",           Text(() => A.PresAddTelNo,   v => A.PresAddTelNo   = v, 15))
+                @Row("Full Address",            FullAddress(Present()))
+            </div>
+
+            @* ----- Provincial ----------*@
+            <div class="d-flex flex-column border-top pt-2">
+                <div class="fw-semibold p-1">Provincial</div>
+                @Row("Country",                 Drop(Countries, "Name", () => A.ProvAddCountryId, v => CountryChanged(Prov, v)))
+                @Row("Region",                  DropCode(Prov.Regions,   () => Code(A.ProvAddStateId, 2), v => RegionChanged(Prov, v)))
+                @Row("Province",                DropCode(Prov.Provinces, () => Code(A.ProvAddProvId, 4),  v => ProvinceChanged(Prov, v), Code(A.ProvAddStateId, 2) != null && Prov.Provinces.Count == 0))
+                @Row("City / Municipality",     DropCode(Prov.CityMuns,  () => Code(A.ProvAddCityId, 6),  v => CityMunChanged(Prov, v)))
+                @Row("Barangay",                DropCode(Prov.Barangays, () => Prov.BrgyCode,           v => BarangayChanged(Prov, v)))
+                @Row("Village / Subdivision",   Text(() => A.ProvAddVillage, v => A.ProvAddVillage = v, 45))
+                @Row("Street / House no.",      Text(() => A.ProvAddStreet,  v => A.ProvAddStreet  = v, 45))
+                @Row("ZIP code",                Text(() => A.ProvAddZipCode, v => A.ProvAddZipCode = v, 10))
+                @Row("Telephone no.",           Text(() => A.ProvAddTelNo,   v => A.ProvAddTelNo   = v, 15))
+                @Row("Full Address",            FullAddress(Provincial()))
+            </div>
+        </div>
+
+        @* ----- Contact ----------*@
+        <div class="d-flex flex-column border-top pt-2 mt-3">
+            <div class="fw-semibold p-1">Contact</div>
+            @Row("Primary email",           Text(() => A.EmailAdd,       v => A.EmailAdd       = v, 45))
+            @Row("Secondary email",         Text(() => A.EmailAdd1,      v => A.EmailAdd1      = v, 45))
+            @Row("Primary mobile",          Text(() => A.CellNo,         v => A.CellNo         = v, 45))
+            @Row("Secondary mobile",        Text(() => A.CellNo1,        v => A.CellNo1        = v, 45))
+        </div>
+    </RadzenTemplateForm>
+</div>
+
+
+@inject IOEmpmasDataAccess _oempmas
+@inject I_10_EmpmasDataAccess _pisEmpmas
+@inject I_00PsgcDataAccess _psgc
+
+@code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2052 V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    // -- Old ADDR1 / ADDR2 hold 150 characters --
+    const int OldAddrMax = 150;
+
+    EmpmasAddressModel A => V.Empmasaddress;
+    string? loadedFor;
+
+    // -- Load the PIS address whenever another employee is selected --
+    protected override async Task OnParametersSetAsync()
+    {
+        var empno = V.SelectedEmpnumber;
+        if (string.IsNullOrWhiteSpace(empno) || empno == loadedFor) return;
+        loadedFor = empno;
+
+        var empmas  = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
+        var address = empmas?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(empmas.Id, Uc.SchemaUserPis, Uc.Conn);
+
+        // -- Nothing in PIS yet : start from the old phone numbers / email --
+        V.Empmasaddress = address ?? new EmpmasAddressModel
+        {
+            PresAddTelNo    = V.Empmas.Tel1,
+            ProvAddTelNo    = V.Empmas.Tel2,
+            EmailAdd        = V.Empmas.Email,
+        };
+        V.EmpmasaddressFor = empno;
+
+        // -- PH only for now : no country yet means Philippines --
+        var ph = Countries.FirstOrDefault();
+        if (A.PresAddCountryId == null && ph != null) { A.PresAddCountryId = ph.Id; A.PresAddCountry = ph.Name; }
+        if (A.ProvAddCountryId == null && ph != null) { A.ProvAddCountryId = ph.Id; A.ProvAddCountry = ph.Name; }
+
+        await LoadLists(Pres);
+        await LoadLists(Prov);
+    }
+
+    // -- One side of the form : Present or Provincial; the address fields are reached through the model --
+    class Side
+    {
+        public bool                 IsPresent;
+        public List<PsgcModel?>     Regions     = new();
+        public List<PsgcModel?>     Provinces   = new();
+        public List<PsgcModel?>     CityMuns    = new();
+        public List<PsgcModel?>     Barangays   = new();
+        public string?              BrgyCode;               // EmpmasAddress keeps the barangay name only
+    }
+
+    Side Pres = new() { IsPresent = true };
+    Side Prov = new() { IsPresent = false };
+
+    List<CountryModel?> Countries => (V.Countrys ?? new()).Where(c => c?.Code == "PHL").ToList();
+
+    // -- PSGC codes are kept in the int Id columns : Region -> StateId, Province -> ProvId, City / Mun -> CityId --
+    static string? Code(int? id, int len) => id == null || id == 0 ? null : id.Value.ToString().PadLeft(len, '0');
+    static int?    Id(string? code)       => int.TryParse(code, out var n) ? n : null;
+
+    async Task LoadLists(Side s)
+    {
+        var regCode     = Code(s.IsPresent ? A.PresAddStateId : A.ProvAddStateId, 2);
+        var provCode    = Code(s.IsPresent ? A.PresAddProvId  : A.ProvAddProvId,  4);
+        var cityCode    = Code(s.IsPresent ? A.PresAddCityId  : A.ProvAddCityId,  6);
+        var brgyName    = s.IsPresent ? A.PresAddBrgy : A.ProvAddBrgy;
+
+        s.Regions       = await _psgc._02Regions(Uc.SchemaMain, Uc.Conn) ?? new();
+        s.Provinces     = regCode  == null ? new() : await _psgc._02Provinces(regCode, Uc.SchemaMain, Uc.Conn) ?? new();
+        s.CityMuns      = regCode  == null ? new() : await _psgc._02CityMuns(regCode, provCode, Uc.SchemaMain, Uc.Conn) ?? new();
+        s.Barangays     = cityCode == null ? new() : await _psgc._02Barangays(cityCode, Uc.SchemaMain, Uc.Conn) ?? new();
+        s.BrgyCode      = s.Barangays.FirstOrDefault(b => string.Equals(b?.Name, brgyName, StringComparison.OrdinalIgnoreCase))?.PsgcCode;
+    }
+
+    // -- Country -> Region -> Province -> City / Municipality -> Barangay : a change clears what is below it --
+    Task CountryChanged(Side s, int? id)
+    {
+        var name = Countries.FirstOrDefault(c => c?.Id == id)?.Name;
+        if (s.IsPresent) { A.PresAddCountryId = id; A.PresAddCountry = name; } else { A.ProvAddCountryId = id; A.ProvAddCountry = name; }
+        return Task.CompletedTask;
+    }
+
+    async Task RegionChanged(Side s, string? code)
+    {
+        var name = s.Regions.FirstOrDefault(r => r?.PsgcCode == code)?.Name;
+        if (s.IsPresent) { A.PresAddStateId = Id(code); A.PresAddState = name; } else { A.ProvAddStateId = Id(code); A.ProvAddState = name; }
+        SetProvince(s, null, null);
+        SetCityMun(s, null, null);
+        SetBarangay(s, null, null);
+        s.Provinces = code == null ? new() : await _psgc._02Provinces(code, Uc.SchemaMain, Uc.Conn) ?? new();
+        s.CityMuns  = code == null ? new() : await _psgc._02CityMuns(code, null, Uc.SchemaMain, Uc.Conn) ?? new();
+        s.Barangays = new();
+    }
+
+    async Task ProvinceChanged(Side s, string? code)
+    {
+        SetProvince(s, code, s.Provinces.FirstOrDefault(p => p?.PsgcCode == code)?.Name);
+        SetCityMun(s, null, null);
+        SetBarangay(s, null, null);
+        var regCode = Code(s.IsPresent ? A.PresAddStateId : A.ProvAddStateId, 2);
+        s.CityMuns  = regCode == null ? new() : await _psgc._02CityMuns(regCode, code, Uc.SchemaMain, Uc.Conn) ?? new();
+        s.Barangays = new();
+    }
+
+    async Task CityMunChanged(Side s, string? code)
+    {
+        SetCityMun(s, code, s.CityMuns.FirstOrDefault(c => c?.PsgcCode == code)?.Name);
+        SetBarangay(s, null, null);
+        s.Barangays = code == null ? new() : await _psgc._02Barangays(code, Uc.SchemaMain, Uc.Conn) ?? new();
+    }
+
+    Task BarangayChanged(Side s, string? code)
+    {
+        SetBarangay(s, code, s.Barangays.FirstOrDefault(b => b?.PsgcCode == code)?.Name);
+        return Task.CompletedTask;
+    }
+
+    void SetProvince(Side s, string? code, string? name)
+    {
+        if (s.IsPresent) { A.PresAddProvId = Id(code); A.PresAddProv = name; } else { A.ProvAddProvId = Id(code); A.ProvAddProv = name; }
+    }
+
+    void SetCityMun(Side s, string? code, string? name)
+    {
+        if (s.IsPresent) { A.PresAddCityId = Id(code); A.PresAddCity = name; } else { A.ProvAddCityId = Id(code); A.ProvAddCity = name; }
+    }
+
+    void SetBarangay(Side s, string? code, string? name)
+    {
+        s.BrgyCode = code;
+        if (s.IsPresent) A.PresAddBrgy = name; else A.ProvAddBrgy = name;
+    }
+
+    // -- Region is not part of a PH address line; also used by the read-only Address sub tab --
+    public static string?[] PresentParts(EmpmasAddressModel a)    => new[] { a.PresAddStreet, a.PresAddVillage, a.PresAddBrgy, a.PresAddCity, a.PresAddProv, a.PresAddZipCode, a.PresAddCountry };
+    public static string?[] ProvincialParts(EmpmasAddressModel a) => new[] { a.ProvAddStreet, a.ProvAddVillage, a.ProvAddBrgy, a.ProvAddCity, a.ProvAddProv, a.ProvAddZipCode, a.ProvAddCountry };
+
+    string?[] Present()     => PresentParts(A);
+    string?[] Provincial()  => ProvincialParts(A);
+
+    public static string Join(string?[] parts) => string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)).Select(p => p!.Trim()));
+
+    RenderFragment Row(string label, RenderFragment field) => __builder =>
+    {
+        <div class="d-flex align-items-center gap-2 p-1" style="min-height:36px;">
+            <div class="small" style="width:160px; flex-shrink:0;">@label</div>
+            <div style="flex:1; max-width:420px;">@field</div>
+        </div>
+    };
+
+    RenderFragment Text(Func<string?> get, Action<string?> set, int max) => __builder =>
+    {
+        <RadzenTextBox Value="@get()" ValueChanged="@((string v) => set(v))" MaxLength="@max" class="form-control" Style="width:100%" />
+    };
+
+    RenderFragment Drop<T>(IEnumerable<T> data, string textProperty, Func<int?> get, Func<int?, Task> changed) => __builder =>
+    {
+        <RadzenDropDown TValue="int?" Value="@get()" ValueChanged="@((int? v) => changed(v))" Data="@data"
+                        TextProperty="@textProperty" ValueProperty="Id" AllowClear="true" AllowFiltering="true"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Style="width:100%" />
+    };
+
+    RenderFragment DropCode(List<PsgcModel?> data, Func<string?> get, Func<string?, Task> changed, bool disabled = false) => __builder =>
+    {
+        <RadzenDropDown TValue="string" Value="@get()" ValueChanged="@((string v) => changed(v))" Data="@data"
+                        TextProperty="Name" ValueProperty="PsgcCode" AllowClear="true" AllowFiltering="true" Disabled="@disabled"
+                        Placeholder="@(disabled ? "None (independent city)" : "")"
+                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Style="width:100%" />
+    };
+
+    RenderFragment FullAddress(string?[] parts) => __builder =>
+    {
+        var full = Join(parts);
+        <RadzenTextBox Value="@full" Disabled class="form-control" Style="width:100%" />
+        @if (full.Length > OldAddrMax)
+        {
+            <div class="small text-danger">@full.Length / @OldAddrMax characters : too long for the old PIS address</div>
+        }
+    };
+
+    async Task OnSubmit(EmpmasAddressModel model)
+    {
+        var presFull = Join(Present());
+        var provFull = Join(Provincial());
+
+        if (presFull.Length > OldAddrMax || provFull.Length > OldAddrMax)
+        {
+            NotificationRef?.Show($"Full Address is longer than {OldAddrMax} characters. Please shorten it.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        try
+        {
+            var schema  = Uc.SchemaUserPis;
+            var empno   = V.SelectedEmpnumber;
+
+            // -- PIS : Empmas link by EmpNumber (made when missing), then EmpmasAddress insert or update --
+            var empmas = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, schema, Uc.Conn);
+            if (empmas == null)
+            {
+                await _pisEmpmas._01EmpmasInternal(new EmpmasInternalModel
+                {
+                    EmpNumber   = empno,
+                    EmpLastNm   = V.Empmas.EmpLastNm,
+                    EmpFirstNm  = V.Empmas.EmpFirstNm,
+                    EmpMidNm    = V.Empmas.EmpMidNm,
+                    Suffix      = V.Empmas.Suffix ?? "",
+                    EmpAlias    = V.Empmas.EmpAlias,
+                }, schema, Uc.Conn);
+                empmas = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, schema, Uc.Conn);
+            }
+            if (empmas?.Id == null) throw new InvalidOperationException($"PIS Empmas for {empno} could not be created.");
+
+            A.Id        = empmas.Id;
+            A.PresAdd   = presFull;
+            A.ProvAdd   = provFull;
+
+            if (await _pisEmpmas._02EmpmasAddress(empmas.Id, schema, Uc.Conn) == null)
+                await _pisEmpmas._01EmpmasAddress(empmas.Id, A, schema, Uc.Conn);
+            else
+                await _pisEmpmas._03EmpmasAddress(empmas.Id, A, schema, Uc.Conn);
+
+            // -- OPis : full address, phone and email --
+            await _oempmas._03_AddressDetailed(empno, presFull, A.PresAddTelNo, provFull, A.ProvAddTelNo, A.EmailAdd, Uc.OpisDb, Uc.Conn);
+
+            V.Empmas.Addr1  = presFull;
+            V.Empmas.Tel1   = A.PresAddTelNo;
+            V.Empmas.Addr2  = provFull;
+            V.Empmas.Tel2   = A.ProvAddTelNo;
+            V.Empmas.Email  = A.EmailAdd;
+
+            NotificationRef?.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+}

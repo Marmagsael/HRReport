@@ -31,6 +31,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _01Country(schema, connName);
         await _01ProvinceState(schema, connName);
         await _01City(schema, connName);
+        await _01Psgc(schema, connName);
         await _01Currency(schema, connName);
         await _01UsersCompany(schema, connName);
         await _01UC_AccessReq(schema, connName);
@@ -224,6 +225,62 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         }
 
 
+    }
+
+    // -- PSGC (PSA Q4 2024) : regions, provinces, cities / municipalities, barangays; seeded once from the embedded TSV --
+    private const string PsgcVersion  = "Q4_2024";
+    private const string PsgcResource = "HRApiLibrary.Data.psgc-q4-2024.tsv";
+
+    private async Task _01Psgc(string? schema, string? connName)
+    {
+        string? sql = @$"CREATE TABLE if not exists {schema}.Psgc (
+                            PsgcCode        VARCHAR(9)      NOT NULL,
+                            Name            VARCHAR(100)    NOT NULL DEFAULT '',
+                            Level           VARCHAR(4)      NOT NULL DEFAULT '',
+                            RegCode         CHAR(2)         NOT NULL DEFAULT '',
+                            ProvCode        VARCHAR(4)      NOT NULL DEFAULT '',
+                            CityMunCode     VARCHAR(6)      NOT NULL DEFAULT '',
+                            Version         VARCHAR(10)     NOT NULL DEFAULT '',
+                        PRIMARY KEY (PsgcCode),
+                        KEY IxLevelReg (Level, RegCode),
+                        KEY IxCityMun (CityMunCode)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        var count = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.Psgc", new { }, connName);
+        if (count.FirstOrDefault() > 0) return;
+
+        using var stream = typeof(_00MainTblMakerAccess).Assembly.GetManifestResourceStream(PsgcResource)
+                           ?? throw new InvalidOperationException($"Embedded resource {PsgcResource} is missing.");
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+
+        var batch = new List<string[]>();
+        string? line;
+        while ((line = await reader.ReadLineAsync()) != null)
+        {
+            if (line.Length == 0 || line.StartsWith("#")) continue;
+            batch.Add(line.Split('\t'));
+            if (batch.Count == 500) { await InsertPsgc(schema, batch, connName); batch.Clear(); }
+        }
+        if (batch.Count > 0) await InsertPsgc(schema, batch, connName);
+    }
+
+    // -- One multi-row insert per batch (Level, PsgcCode, Name, RegCode, ProvCode, CityMunCode) --
+    private async Task InsertPsgc(string? schema, List<string[]> rows, string? connName)
+    {
+        var p      = new DynamicParameters();
+        var values = new List<string>();
+        for (int i = 0; i < rows.Count; i++)
+        {
+            var r = rows[i];
+            values.Add($"(@c{i}, @n{i}, @l{i}, @r{i}, @p{i}, @m{i}, @v)");
+            p.Add($"l{i}", r[0]); p.Add($"c{i}", r[1]); p.Add($"n{i}", r[2]);
+            p.Add($"r{i}", r[3]); p.Add($"p{i}", r[4]); p.Add($"m{i}", r[5]);
+        }
+        p.Add("v", PsgcVersion);
+
+        string sql = $@"INSERT INTO {schema}.Psgc (PsgcCode, Name, Level, RegCode, ProvCode, CityMunCode, Version)
+                        VALUES {string.Join(", ", values)}";
+        await _sql.ExecuteCmd(sql, p, connName);
     }
 
     private async Task _01City(string? schema, string? connName)

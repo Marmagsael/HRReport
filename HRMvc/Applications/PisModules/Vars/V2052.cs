@@ -64,6 +64,7 @@ public class V2052
     
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
+    public string?                         EmpmasaddressFor     { get; set; }      // -- EmpNumber the PIS address above was loaded for --
     public DeprecModel?                    Deprec               { get; set; } = new();
     public OEducateModel?                  Education            { get; set; } = new();
     public OSeclicModel?                   SecLicense           { get; set; } = new();

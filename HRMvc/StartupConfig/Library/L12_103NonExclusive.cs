@@ -75,6 +75,10 @@ public class L12_103NonExlusive
         var oEmpmass                = string.IsNullOrWhiteSpace(oEmpNumber) ? null : await _oempmas._02(oEmpNumber?.Trim(), oldschema, conn);
         oEmpmass?.ForEach(p => { if (p != null) p.Age = ComputeAgeByDOB(p.EmpBirth).ToString(); });
 
+        // -- Personal Information : same source as 14/2052 Personal Data (old PIS Empmas) --
+        var o = oEmpmass?.FirstOrDefault();
+        if (o != null) v12_103.PIs = new List<EmpmasPIModel?> { OEmpmasToPI(o, empmasFirst.Id) };
+
         if (oEmpmass?.Any() == true) v12_103.OEmpmass = oEmpmass;
         else v12_103.OEmpmass = new List<OEmpmasModel?>()
         {
@@ -127,6 +131,36 @@ public class L12_103NonExlusive
 
 
         return v12_103;
+    }
+
+    // -- Old HEIGHT is feet.inches (5.06 = 5 ft 6 in), split the same way as 14/2052 --
+    private EmpmasPIModel OEmpmasToPI(OEmpmasModel o, int? id)
+    {
+        int? feet   = o.Height == null ? null : (int)o.Height.Value;
+        int? inches = o.Height == null ? null : (int)Math.Round((o.Height.Value - (int)o.Height.Value) * 100);
+
+        return new EmpmasPIModel
+        {
+            Id          = id,
+            EmpBirth    = o.EmpBirth ?? default,
+            BirthPlace  = o.BirthPlace,
+            Sex_        = o.Sex_,
+            CivStat_    = o.CivStat_,
+            Citizen     = o.Citizen,
+            Religion    = o.Religion,
+            Height      = feet,
+            HeightInch  = inches,
+            Weight      = o.Weight,
+            Hair        = o.Hair,
+            Eyes        = o.Eyes,
+            Complexion  = o.Complexion,
+            Marks       = o.Marks,
+            BloodType   = o.BloodType,
+            Spouse      = o.Spouse,
+            Occupation  = o.Occupation,
+            NoChildren  = (int?)o.NoChildren,
+            Age         = ComputeAgeByDOB(o.EmpBirth),
+        };
     }
 
     private int? ComputeAgeByDOB(DateTime? dob)

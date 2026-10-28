@@ -7,57 +7,64 @@
 
 
 
-<div class="p-2">
-    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+@* -- Sub tabs : Detailed first (PIS EmpmasAddress, also updates the old PIS address), then Address (old PIS) -- *@
+<div class="d-flex gap-1 px-2 pt-2">
+    <div class="card text-center h-40p mb-btn mb-btn-gray px-4 @(subTab == 2 ? "mb-btn-active" : "")" @onclick="(() => subTab = 2)">
+        <div class="d-flex gap-1 align-items-center justify-content-center h-100">
+            <span class="fw-semibold"><small>Detailed</small></span>
+        </div>
+    </div>
+    <div class="card text-center h-40p mb-btn mb-btn-gray px-4 @(subTab == 1 ? "mb-btn-active" : "")" @onclick="(() => subTab = 1)">
+        <div class="d-flex gap-1 align-items-center justify-content-center h-100">
+            <span class="fw-semibold"><small>Address</small></span>
+        </div>
+    </div>
+</div>
 
-    <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
+@if (subTab == 2)
+{
+    <_2052_03_Tab02b_DetailedAddress ChildAction="ChildAction" />
+}
+else
+{
+    @* -- Read only : what Detailed holds (Country, Province, City / Municipality, joined Full Address, Telephone);
+          the old PIS values only while the employee has no detailed address yet -- *@
+    <div class="p-2">
         <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Address" />
 
-        <div class="h-10p"></div>
-        @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        @if (!HasDetailed)
         {
-            <div class="p-2 bordered mb-2 w-100">
-                <button type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
-                    <div class="d-flex gap-1 align-items-center justify-content-center">
-                        <span class="fw-semibold"><small>Save</small></span>
-                    </div>
-                </button>
-            </div>
+            <div class="small text-muted p-2">No detailed address yet : showing the old PIS address. Use the Detailed tab to update it.</div>
         }
+
+        <div class="d-flex flex-column gap-3 pt-2">
+            <div class="d-flex flex-column">
+                <div class="fw-semibold p-1">Present Address</div>
+                @Show("Country",               PresCountry)
+                @Show("Province",              HasDetailed ? A.PresAddProv : null)
+                @Show("City / Municipality",   HasDetailed ? A.PresAddCity : V.MlaList?.FirstOrDefault(m => m?.Code == V.Empmas.MlaCode_)?.Name)
+                @Show("Address",               HasDetailed ? _2052_03_Tab02b_DetailedAddress.Join(_2052_03_Tab02b_DetailedAddress.PresentParts(A)) : V.Empmas.Addr1)
+                @Show("Telephone No.",         HasDetailed ? A.PresAddTelNo : V.Empmas.Tel1)
+            </div>
+
+            <div class="d-flex flex-column border-top pt-2">
+                <div class="fw-semibold p-1">Provincial Address</div>
+                @Show("Country",               ProvCountry)
+                @Show("Province",              HasDetailed ? A.ProvAddProv : V.ProList?.FirstOrDefault(p => p?.Code == V.Empmas.ProCode_)?.Name)
+                @Show("City / Municipality",   HasDetailed ? A.ProvAddCity : null)
+                @Show("Address",               HasDetailed ? _2052_03_Tab02b_DetailedAddress.Join(_2052_03_Tab02b_DetailedAddress.ProvincialParts(A)) : V.Empmas.Addr2)
+                @Show("Telephone No.",         HasDetailed ? A.ProvAddTelNo : V.Empmas.Tel2)
+            </div>
         </div>
+    </div>
+}
 
-        <div class="h-10p"></div>
-        <RadzenFieldset Text="*****">
-            <div class="w-100 d-flex p-1 align-items-center">
-                <div class="w-20  small">Country</div>
-                <div class="w-40">
-                    <RadzenDropDown TValue="string" @bind-Value=@V.Empmas.CountryCode Data=@V.Countrys
-                                    TextProperty="Name" ValueProperty="Code" Name="ddCountrys"
-                                    class="form-control" Style="max-width:400px" />
-                </div>
-            </div>
-        </RadzenFieldset>
-
-        <div class="h-25p"></div>
-        <RadzenFieldset Text="Present Address" class="fw-bold"> 
-            <div class="fw-normal">
-                <_2052_03_Tab2_PHL_PresentAddress ChildAction="ChildAction" V="@V" V03="v2203" />
-            </div>
-        </RadzenFieldset>
-
-        <div class="h-25p"></div>
-        <RadzenFieldset Text="Provincial Address" class="fw-bold">
-            <div class="fw-normal">
-                <_2052_03_Tab2_PHL_ProvincialAddress ChildAction="ChildAction" V="@V" V03="v2203" />
-            </div>
-        </RadzenFieldset>
-    </RadzenTemplateForm>
-</div>
-@inject IOEmpmasDataAccess _empmas
-
-
+@inject I_10_EmpmasDataAccess _pisEmpmas
 
 @code {
+
+    int subTab = 2;   // -- Detailed opens first --
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
@@ -71,47 +78,32 @@
     [Parameter]
     public EventCallback    ChildAction     { get; set; }
 
-    V2052_03 v2203 = new();
+    EmpmasAddressModel A => V.Empmasaddress;
 
+    // -- A saved detailed address exists in PIS --
+    bool HasDetailed => A.Id != null;
 
+    string? PresCountry => HasDetailed ? A.PresAddCountry : V.Countrys?.FirstOrDefault(c => c?.Code == V.Empmas.CountryCode)?.Name;
+    string? ProvCountry => HasDetailed ? A.ProvAddCountry : V.Countrys?.FirstOrDefault(c => c?.Code == V.Empmas.CountryCode)?.Name;
 
-    async Task OnSubmit(OEmpmasModel model)
+    protected override async Task OnParametersSetAsync()
     {
-        if (model == null) return;
+        var empno = V.SelectedEmpnumber;
+        if (string.IsNullOrWhiteSpace(empno) || V.EmpmasaddressFor == empno) return;
 
-
-        if (await ValidateEmail() == false) return;
-
-        try
-        {
-            await _empmas._03_Address(V.SelectedEmpnumber, model, Uc.OpisDb, Uc.Conn);
-            V.Action = "GetAddressArea";
-            await ChildAction.InvokeAsync();
-            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-        }
+        var empmas  = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
+        var address = empmas?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(empmas.Id, Uc.SchemaUserPis, Uc.Conn);
+        V.Empmasaddress     = address ?? new();
+        V.EmpmasaddressFor  = empno;
     }
 
-    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    RenderFragment Show(string label, string? value) => __builder =>
     {
-    }
-
-    async Task<bool?> ValidateEmail()
-    {
-        V.Action = "ValidateEmail";
-        await ChildAction.InvokeAsync();
-        return V.IsEmailValid;
-    }
-
-
-
-
-
- 
+        <div class="d-flex align-items-center gap-2 p-1" style="min-height:36px;">
+            <div class="small" style="width:160px; flex-shrink:0;">@label</div>
+            <div class="fw-semibold" style="flex:1; max-width:520px;">@(string.IsNullOrWhiteSpace(value) ? "—" : value)</div>
+        </div>
+    };
 }
 
 

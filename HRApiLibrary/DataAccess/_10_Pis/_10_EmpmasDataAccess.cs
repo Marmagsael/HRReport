@@ -217,6 +217,13 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
         return res.FirstOrDefault();
     }
 
+    public async Task<EmpmasInternalModel?> _02EmpmasInternalByEmpNumber(string? empNumber, string? schema, string? conn)
+    {
+        string? sql = $@"SELECT * FROM {schema}.Empmas WHERE EmpNumber = @EmpNumber ORDER BY Id LIMIT 1";
+        var res = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { EmpNumber = empNumber }, conn);
+        return res.FirstOrDefault();
+    }
+
 
     public async Task<EmpmasInternalModel?> _02EmpmasInternal(int? id, string? schema, string? conn)
     {
@@ -1005,9 +1012,9 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     //**********************************************************************************************
     public async Task<EmpmasPIModel?> _01EmpmasPI(int? id, EmpmasPIModel empmaspi, string? schema, string? conn)
     {
-        string? sql = $@"Insert into {schema}.Empmaspi (Id,    EmpBirth,  BirthPlace,  Sex_,   CivStat_,   Citizen,  Religion,    Height,  Weight, 
-                                                       Hair,  Eyes,      Complexion,  Marks,  BloodType,  Spouse,   Occupation,  NoChildren) values 
-                                                      (@Id,   @EmpBirth, @BirthPlace, @Sex_,  @CivStat_,  @Citizen, @Religion,   @Height, @Weight, 
+        string? sql = $@"Insert into {schema}.Empmaspi (Id,    EmpBirth,  BirthPlace,  Sex_,   CivStat_,   Citizen,  Religion,    Height,  HeightInch,  Weight,
+                                                       Hair,  Eyes,      Complexion,  Marks,  BloodType,  Spouse,   Occupation,  NoChildren) values
+                                                      (@Id,   @EmpBirth, @BirthPlace, @Sex_,  @CivStat_,  @Citizen, @Religion,   @Height, @HeightInch, @Weight,
                                                        @Hair, @Eyes,     @Complexion, @Marks, @BloodType, @Spouse,  @Occupation, @NoChildren) ; 
                         SELECT * FROM {schema}.Empmaspi WHERE Id = @Id; ";
         var res = await _sql.FetchData<EmpmasPIModel?, dynamic>(sql, empmaspi, conn);
