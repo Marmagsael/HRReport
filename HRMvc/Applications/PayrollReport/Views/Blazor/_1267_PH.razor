@@ -1,0 +1,63 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- Monthly PHIC Report (MBPay FRMPHMO). FORM ONLY: the MBPay form is not in the zip, so what it computed is not known yet
+       (see the TODO in FetchData). The layout follows the monthly PHIC report per payroll group (rptPhMo): month, and the
+       employees with PHIC No., employee / employer share and total --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="Monthly PHIC Report" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Show Report</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+            <div class=" w-150p">PHIC No.</div>
+            <div class=" w-250p">Name of Employees</div>
+            <div class=" w-125p text-end">Employee</div>
+            <div class=" w-125p text-end">Employer</div>
+            <div class=" w-125p text-end">Total</div>
+        </div>
+        @foreach (var r in reps)
+        {
+            <div class="d-flex gap-2 border-bottom py-1">
+                <div class=" w-150p">@r.Phic</div>
+                <div class=" w-250p">@r.Empname</div>
+                <div class=" w-125p text-end">@r.Amount.ToString("N2")</div>
+                <div class=" w-125p text-end">@r.Amount.ToString("N2")</div>
+                <div class=" w-125p text-end">@((r.Amount * 2).ToString("N2"))</div>
+            </div>
+        }
+    </Details>
+</_00BT_FullW>
+
+
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    List<RPhicMonthlyModel>             reps        = [];
+
+    void ChildActionCatcher(){}
+
+    //--- TODO: the data of FRMPHMO (not in the zip); then the report K_PhicMonthly (rptPhMo) like the per payroll group one ---
+    private void FetchData()
+    {
+        _NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Pending", Detail = "The Monthly PHIC Report is not ported yet (the MBPay form FRMPHMO is missing).", Duration = 5000 });
+    }
+}

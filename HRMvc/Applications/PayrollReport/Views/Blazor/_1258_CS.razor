@@ -1,0 +1,174 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- Contribution summary / certification of employees. Mode hdmf: MBPay frmpagibigcontribution (every TRN);
+       phic: frmphilhealthcontribution (per month). Texts and signatory come from reportsettings CERT_HDMF_* / CERT_PHIC_* --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (rv.ShowReport)
+                {
+                    <IframeReportRenderer DataSource="@rv.ReportData"
+                                          ReportRelativePath="@rv.RelativePath"
+                                          OutputFormat="@rv.SelectedFormat"
+                                          Parameters="@rv.ReportParams"
+                                          AutoGenerate="@(rv.ReportData?.Any() == true)"
+                                          RefreshToken="@rv.RefreshToken" />
+                }
+                else
+                {
+                    <div class="sticky-top bg-white border-bottom">
+                        <div class="card-header">
+                            <div class="d-flex gap-2">
+                                <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                                <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                            <div class=" w-250p">Employee</div>
+                            <div class=" w-75p">Year</div>
+                            <div class=" w-125p">Month</div>
+                            <div class=" w-125p text-end">Contribution</div>
+                        </div>
+                    </div>
+                    @foreach (var r in reps)
+                    {
+                        <div class="d-flex gap-2 border-bottom py-1">
+                            <div class=" w-250p">@r.Empname</div>
+                            <div class=" w-75p">@r.Year</div>
+                            <div class=" w-125p">@r.MonthName</div>
+                            <div class=" w-125p text-end">@r.Amount.ToString("N2")</div>
+                        </div>
+                    }
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="p-2 fw-bold">From</div>
+                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    <div class="p-2 fw-bold">To</div>
+                    <_01YYMM Rv="rvTo" ChildAction="ChildActionCatcher" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Employees (ClNumber holds the employee number) ------------------------------------------------*@
+        <div class="w-100"> <_00TClientList Clients="@emps" ClassParams="@listClass" ChildAction="ChildActionCatcher" /> </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
+    [Parameter] public string           Mode    { get; set; } = "hdmf";
+
+    V00_RepVars                         rv      = new();
+    V00_RepVars                         rvTo    = new();
+    List<RContributionSummaryModel>     reps    = [];
+    List<OClientModel>                  emps    = [];
+    Dictionary<string, object>          listClass = new() { ["VH"] = "vh70" };
+
+    bool Phic => Mode == "phic";
+    private static string Yymm(V00_RepVars v) => $"{v.Year.ToString()!.Substring(2, 2)}{v.Month}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.RefreshToken = Phic ? 12590000 : 12580000;
+        rv.MCaption     = Phic ? "PhilHealth Contribution Certification" : "Pag-IBIG Contribution Summary";
+        rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["CertText1"] = "", ["CertText2"] = "", ["Signatory"] = "", ["SignatoryTitle"] = "", ["RunDate"] = DateTime.Now };
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if ((res ?? []).Any())
+        {
+            rv.ReportParams["CoName"]    = res!.First()!.CoName ?? "";
+            rv.ReportParams["CoAddress"] = res!.First()!.CoAdd ?? "";
+        }
+        emps = (await _payRep._02ReportEmployees(Uc.OpisDb!, Uc.Conn!)).Select(e => new OClientModel { ClNumber = e.Empnumber?.Trim(), ClName = $"{e.Empname}   ({e.Empnumber?.Trim()})" }).ToList();
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task FetchData()
+    {
+        reps = [];
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        var picked = emps.Where(e => e.IsSelectedB).Select(e => e.ClNumber!).ToList();
+        if (!picked.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Please select the employees."); return; }
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02ContributionSummary(Phic ? "ACCT_PHIC" : "ACCT_HDMF", Yymm(rv), Yymm(rvTo), picked, Phic, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            var set = await _payRep._02ReportSettings(Uc.OpayDb!, Uc.Conn!);
+            string k = Phic ? "CERT_PHIC_" : "CERT_HDMF_";
+            foreach (var (p, code) in new[] { ("CertText1", "TEXT1"), ("CertText2", "TEXT2"), ("Signatory", "SIGNATORY"), ("SignatoryTitle", "SIGNATORYTITLE") })
+                rv.ReportParams[p] = set.TryGetValue(k + code, out var v) ? v : throw new InvalidOperationException($"Report setting {k + code} is missing in {Uc.OpayDb}.reportsettings.");
+            rv.ReportParams["RunDate"] = DateTime.Now;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify(NotificationSeverity.Error, "Missing setting", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any()) { Notify(NotificationSeverity.Info, "Info", "No records found, nothing to report."); return; }
+        rv.ShowModal = true;
+    }
+
+    private void CreateReport()
+    {
+        rv.ReportData   = reps;
+        rv.RelativePath = Phic ? "Reports/_03Payroll/K_PhicContCert.trdp" : "Reports/_03Payroll/K_PagibigContSummary.trdp";
+        rv.RefreshToken++;
+        rv.ShowReport   = true;
+    }
+
+    private void CloseReportModal(bool ans)
+    {
+        if (rv.ShowReport) rv.ShowReport = ans;
+        else rv.ShowModal = ans;
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

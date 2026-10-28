@@ -1,0 +1,152 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PayrollReport.Class
+
+@* --- Loan Summary (MBPay loans_management): one loan, the latest loan of each chosen employee. Screen grid + Excel
+       (MBPay only had the Excel export). Employees are all selected at first; MBPay started with none --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="Loan Summary" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    @*--- Loan ------------------------------------------------*@
+                    <RadzenDropDown @bind-Value="loanCode" Data="@loans" TextProperty="Name" ValueProperty="Code"
+                                    AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    Placeholder="Select loan" Style="width: 320px;" />
+                    <RadzenCheckBox TValue="bool" Value="includeResigned" Change="@(async (bool v) => { includeResigned = v; await LoadEmployees(); })" />
+                    <span>View Resigned Employees</span>
+                    @*--- Fetch / Excel ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="DownloadExcel"> Export to Excel</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Employees ------------------------------------------------*@
+        <div class="w-100"><div class="fw-bold p-1">Employees (@emps.Count)</div><_00TClientList Clients="@emps" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+
+        @*--- Result ------------------------------------------------*@
+        @if (reps.Any())
+        {
+            <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                <div class=" w-250p">Emp. Name</div>
+                <div class=" w-125p">Loan Date</div>
+                <div class=" w-125p text-end">Loan Amt</div>
+                <div class=" w-125p text-end">Pay Pymt</div>
+                <div class=" w-125p text-end">Pay Bal.</div>
+                <div class=" w-125p text-end">Actual Pymt</div>
+                <div class=" w-125p text-end">Balance</div>
+                <div class=" w-75p">Stat.</div>
+                <div class=" w-200p">Client</div>
+            </div>
+            @foreach (var r in reps)
+            {
+                <div class="d-flex gap-2 border-bottom py-1">
+                    <div class=" w-250p">@r.Empname</div>
+                    <div class=" w-125p">@r.Date?.ToString("MM/dd/yyyy")</div>
+                    <div class=" w-125p text-end">@r.Amount.ToString("N2")</div>
+                    <div class=" w-125p text-end">@r.PayrollDeduction.ToString("N2")</div>
+                    <div class=" w-125p text-end">@r.Balance.ToString("N2")</div>
+                    <div class=" w-125p text-end">@r.Pymt.ToString("N2")</div>
+                    <div class=" w-125p text-end">@r.Unpaid.ToString("N2")</div>
+                    <div class=" w-75p">@r.Status</div>
+                    <div class=" w-200p">@r.Clname</div>
+                </div>
+            }
+        }
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IGPayrollReportDataAccess   _payRep;
+@inject IJSRuntime                  _js;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    List<RLoanSummaryModel>             reps        = [];
+    List<RLoanSummaryModel>             loans       = [];
+    string?                             loanCode;
+    bool                                includeResigned;
+
+    //--- Employee list reuses the client list component: ClNumber holds the employee number ---
+    List<OClientModel>                  emps        = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.MCaption = "Loan Summary";
+        loans = await _payRep._02LoanTypes(Uc.OpayDb!, Uc.Conn!);
+        await LoadEmployees();
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task LoadEmployees()
+        => emps = (await _payRep._02LoanEmployees(includeResigned, Uc.OpisDb!, Uc.Conn!))
+                    .Select(e => new OClientModel { ClNumber = e.Empnumber, ClName = $"{e.Empname}   ({e.Clname})", IsSelectedB = true }).ToList();
+
+    private async Task FetchData()
+    {
+        reps = [];
+        if (!HasConnection()) return;
+        if (string.IsNullOrWhiteSpace(loanCode)) { Notify(NotificationSeverity.Warning, "Warning", "Please select loan from the list."); return; }
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02LoanSummary(loanCode, emps.Where(e => e.IsSelectedB).Select(e => e.ClNumber!).ToList(), Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any()) Notify(NotificationSeverity.Info, "Info", "No records found in database!");
+    }
+
+    private async Task DownloadExcel()
+    {
+        if (!reps.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Nothing to export."); return; }
+        try
+        {
+            string loanName = loans.FirstOrDefault(l => l.Code == loanCode)?.Name ?? "";
+            var bytes = LoanSummarySheet.Build(reps, loanName);
+            await _js.InvokeVoidAsync("downloadFile", $"LoanSummary_{loanCode}.xlsx", Convert.ToBase64String(bytes));
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Excel download failed", ex.Message);
+            Console.WriteLine(ex);
+        }
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

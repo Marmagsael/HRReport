@@ -1,0 +1,174 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- PhilHealth Employer's Quarterly Remittance Report (MBPay frmphicquarterly -> rptphquarter). Quarter + year; the PhilHealth
+       premium (ACCT_PHIC) of each employee for the 3 months of the quarter. Employer share = employee share --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (rv.ShowReport)
+                {
+                    <IframeReportRenderer DataSource="@rv.ReportData"
+                                          ReportRelativePath="@rv.RelativePath"
+                                          OutputFormat="@rv.SelectedFormat"
+                                          Parameters="@rv.ReportParams"
+                                          AutoGenerate="@(rv.ReportData?.Any() == true)"
+                                          RefreshToken="@rv.RefreshToken" />
+                }
+                else
+                {
+                    <div class="sticky-top bg-white border-bottom">
+                        <div class="card-header">
+                            <div class="d-flex gap-2">
+                                <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                                <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                            <div class=" w-150p">SSS</div>
+                            <div class=" w-250p">Name of Employees</div>
+                            <div class=" w-125p text-end">@rv.ReportParams["M1"]</div>
+                            <div class=" w-125p text-end">@rv.ReportParams["M2"]</div>
+                            <div class=" w-125p text-end">@rv.ReportParams["M3"]</div>
+                            <div class=" w-125p text-end">Total (EE + ER)</div>
+                        </div>
+                    </div>
+                    @foreach (var r in reps)
+                    {
+                        <div class="d-flex gap-2 border-bottom py-1">
+                            <div class=" w-150p">@r.Sss</div>
+                            <div class=" w-250p">@r.Ln, @r.Fn @r.Mi.</div>
+                            <div class=" w-125p text-end">@r.P1ee.ToString("N2")</div>
+                            <div class=" w-125p text-end">@r.P2ee.ToString("N2")</div>
+                            <div class=" w-125p text-end">@r.P3ee.ToString("N2")</div>
+                            <div class=" w-125p text-end">@(((r.P1ee + r.P2ee + r.P3ee) * 2).ToString("N2"))</div>
+                        </div>
+                    }
+                    <div class="d-flex gap-2 py-1 fw-bold">
+                        <div class=" w-150p"></div><div class=" w-250p">Grand Total (@reps.Count)</div>
+                        <div class=" w-125p text-end">@reps.Sum(x => x.P1ee).ToString("N2")</div>
+                        <div class=" w-125p text-end">@reps.Sum(x => x.P2ee).ToString("N2")</div>
+                        <div class=" w-125p text-end">@reps.Sum(x => x.P3ee).ToString("N2")</div>
+                        <div class=" w-125p text-end">@(((reps.Sum(x => x.P1ee) + reps.Sum(x => x.P2ee) + reps.Sum(x => x.P3ee)) * 2).ToString("N2"))</div>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    @*--- Coverage ------------------------------------------------*@
+                    <RadzenDropDown @bind-Value="quarter" Data="@quarters" TextProperty="Text" ValueProperty="Value" Style="width: 160px;" />
+                    <RadzenDropDown @bind-Value="year" Data="@years" Style="width: 100px;" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    List<RPhicQuarterModel>             reps        = [];
+
+    int                                 quarter     = (DateTime.Today.Month - 1) / 3 + 1;
+    int                                 year        = DateTime.Today.Year;
+    List<object>                        quarters    = [new { Text = "1st Quarter", Value = 1 }, new { Text = "2nd Quarter", Value = 2 }, new { Text = "3rd Quarter", Value = 3 }, new { Text = "4th Quarter", Value = 4 }];
+    List<int>                           years       = Enumerable.Range(2000, 28).Reverse().ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.RefreshToken = 12660000;
+        rv.MCaption     = "PhilHealth Quarterly Remittance";
+        rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["M1"] = "", ["M2"] = "", ["M3"] = "" };
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if ((res ?? []).Any())
+        {
+            rv.ReportParams["CoName"]    = res!.First()!.CoName ?? "";
+            rv.ReportParams["CoAddress"] = res!.First()!.CoAdd ?? "";
+        }
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task FetchData()
+    {
+        reps = [];
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        if (!HasConnection()) return;
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02PhicQuarter(quarter, year, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            //--- MBPay cM1 / cM2 / cM3 ---
+            for (int k = 0; k < 3; k++)
+                rv.ReportParams[$"M{k + 1}"] = new DateTime(year, (quarter - 1) * 3 + 1 + k, 1).ToString("MMMM");
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify(NotificationSeverity.Error, "Missing setting", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any()) { Notify(NotificationSeverity.Info, "Info", "No data found for this quarter."); return; }
+        rv.ShowModal = true;
+    }
+
+    private void CreateReport()
+    {
+        rv.ReportData   = reps;
+        rv.RelativePath = "Reports/_03Payroll/K_PhicQuarter.trdp";
+        rv.RefreshToken++;
+        rv.ShowReport   = true;
+    }
+
+    private void CloseReportModal(bool ans)
+    {
+        if (rv.ShowReport) rv.ShowReport = ans;
+        else rv.ShowModal = ans;
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

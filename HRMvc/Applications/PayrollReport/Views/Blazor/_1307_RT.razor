@@ -1,0 +1,123 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+
+@* --- Retirement Computation (MBPay rptretirement): one employee. FORM ONLY, the computation is not ported yet
+       (see the TODO in Fetch / Compute). Fields follow the MBPay form --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="Retirement Computation" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    @*--- Employee ------------------------------------------------*@
+                    <RadzenDropDown @bind-Value="empNumber" Data="@emps" TextProperty="ClName" ValueProperty="ClNumber"
+                                    AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    Placeholder="Select employee" Style="width: 320px;" />
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Fetch"> Fetch Details</div>
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Compute"> Compute</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-2 d-flex flex-column gap-3" style="max-width: 640px;">
+
+            @*--- Employee details ------------------------------------------------*@
+            <div class="card p-2">
+                <div class="fw-bold pb-1">Employee</div>
+                <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Status</div><RadzenTextBox Value="@status" ReadOnly="true" Style="width: 200px;" /></div>
+                <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Date Hired</div><RadzenDatePicker @bind-Value="dateHired" DateFormat="MM/dd/yyyy" Style="width: 200px;" /></div>
+                <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Last Movement Date</div><RadzenDatePicker @bind-Value="lastMoveDate" DateFormat="MM/dd/yyyy" Style="width: 200px;" /></div>
+                <div class="d-flex gap-2 align-items-center"><div class="w-200p">Gap (Days)</div><RadzenNumeric TValue="decimal?" @bind-Value="gapDays" ReadOnly="true" Style="width: 200px;" /></div>
+            </div>
+
+            @*--- Rate ------------------------------------------------*@
+            <div class="card p-2">
+                <div class="fw-bold pb-1">Daily Rate</div>
+                <div class="d-flex gap-2 align-items-center pb-1">
+                    <div class="w-200p">Current Rate</div>
+                    <RadzenNumeric TValue="decimal?" @bind-Value="currentRate" Style="width: 120px;" />
+                    <span>x</span>
+                    <RadzenNumeric TValue="decimal?" @bind-Value="factor" Style="width: 90px;" />
+                    <span>/</span>
+                    <RadzenNumeric TValue="decimal?" @bind-Value="divisor" Style="width: 90px;" />
+                </div>
+                <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Monthly Rate</div><RadzenNumeric TValue="decimal?" @bind-Value="monthlyRate" ReadOnly="true" Style="width: 200px;" /></div>
+                <div class="d-flex gap-2 align-items-center"><div class="w-200p">Daily Rate</div><RadzenNumeric TValue="decimal?" @bind-Value="dailyRate" ReadOnly="true" Style="width: 200px;" /></div>
+            </div>
+
+            @*--- Days ------------------------------------------------*@
+            <div class="card p-2">
+                <div class="fw-bold pb-1">Total Days</div>
+                <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Based on GAP Days</div><RadzenNumeric TValue="decimal?" @bind-Value="daysGap" ReadOnly="true" Style="width: 200px;" /></div>
+                <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Added Manday</div><RadzenNumeric TValue="decimal?" @bind-Value="addedManday" Style="width: 200px;" /></div>
+                <div class="d-flex gap-2 align-items-center"><div class="w-200p">With Added Manday</div><RadzenNumeric TValue="decimal?" @bind-Value="daysTotal" ReadOnly="true" Style="width: 200px;" /></div>
+            </div>
+
+            @*--- Result ------------------------------------------------*@
+            <div class="card p-2">
+                <div class="fw-bold pb-1">Retirement Fee</div>
+                <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Based on GAP Days</div><RadzenNumeric TValue="decimal?" @bind-Value="feeGap" ReadOnly="true" Style="width: 200px;" /></div>
+                <div class="d-flex gap-2 align-items-center"><div class="w-200p">With Added Manday</div><RadzenNumeric TValue="decimal?" @bind-Value="feeTotal" ReadOnly="true" Style="width: 200px;" /></div>
+            </div>
+        </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    List<OClientModel>                  emps        = [];
+    string?                             empNumber;
+
+    string?                             status;
+    DateTime?                           dateHired;
+    DateTime?                           lastMoveDate;
+    decimal?                            gapDays;
+    decimal?                            currentRate, factor, divisor, monthlyRate, dailyRate;
+    decimal?                            daysGap, addedManday, daysTotal, feeGap, feeTotal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.MCaption = "Retirement Computation";
+        emps = (await _payRep._02ReportEmployees(Uc.OpisDb!, Uc.Conn!)).Select(e => new OClientModel { ClNumber = e.Empnumber?.Trim(), ClName = $"{e.Empname}   ({e.Empnumber?.Trim()})" }).ToList();
+    }
+
+    //--- TODO: fetch the employee's status, date hired, last movement date and rate (MBPay get_emprate / get_firstmovdate) ---
+    private void Fetch()
+    {
+        if (string.IsNullOrWhiteSpace(empNumber)) { Notify(NotificationSeverity.Warning, "Warning", "Please select an employee."); return; }
+        Notify(NotificationSeverity.Info, "Pending", "The retirement computation is not ported yet.");
+    }
+
+    //--- TODO: MBPay compute (rates, days and retirement fee) ---
+    private void Compute()
+    {
+        Notify(NotificationSeverity.Info, "Pending", "The retirement computation is not ported yet.");
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

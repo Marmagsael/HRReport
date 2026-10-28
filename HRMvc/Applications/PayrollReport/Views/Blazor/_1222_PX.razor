@@ -1,0 +1,186 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PayrollReport.Class
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- Payroll Excel sheets MBPay builds in code (no FRX). Mode sum: Payroll Summary (Masterlist, payroll_summary4) of one TRN, an Earnings
+       and a Deductions sheet; reg2: Payroll Register (2 liner, payroll_register4V2) of one TRN; grp: Payroll Summary per Payroll Group
+       of a period (payroll_summary_per_client4); grpmo: of a month (payroll_summary_perclient_permo4). Output: xlsx --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    @if (Month)
+                    {
+                        <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    }
+                    else
+                    {
+                        <_01YYMMPP Rv="rv" ChildAction="ChildActionCatcher" />
+                    }
+                    @*--- Search: the TRNs / the clients of the period ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Search"> @(PerTrn ? "Fetch Data" : "Search")</div>
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Generate"> Generate Excel</div>
+                </div>
+            </div>
+        </div>
+
+        @if (PerTrn)
+        {
+            <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                <div class=" w-150p">TRN</div>
+                <div class=" w-300p">Payroll Group</div>
+                <div class=" w-200p">Batch</div>
+            </div>
+            @foreach (var t in trns)
+            {
+                <div class="d-flex gap-2 border-bottom py-1 @(selected?.Trn == t.Trn ? "bg-lightgray fw-bold" : "")" style="cursor:pointer" @onclick="() => selected = t">
+                    <div class=" w-150p">@t.Trn</div>
+                    <div class=" w-300p">@t.ClName</div>
+                    <div class=" w-200p">@t.Batch</div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="w-100"><div class="fw-bold p-1">Payroll Groups</div><_00TClientList Clients="@clients" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+        }
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+@inject IJSRuntime                  _js;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    [Parameter] public string           Mode        { get; set; } = "sum";
+    V00_RepVars                         rv          = new();
+    List<RPayrollRegisterTrnModel>      trns        = [];
+    RPayrollRegisterTrnModel?           selected;
+
+    //--- Client list reuses the client list component: ClNumber holds the client code ---
+    List<OClientModel>                  clients     = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+
+    private bool PerTrn => Mode is "sum" or "reg2";
+    private bool Month  => Mode == "grpmo";
+    private string yymm   => $"{rv.Year.ToString()!.Substring(2, 2)}{rv.Month}";
+    private string prefix => Month ? yymm : $"{yymm}{rv.Period}";
+    private string monthName => new DateTime(rv.Year ?? DateTime.Now.Year, int.Parse(rv.Month!), 1).ToString("MMMM");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+        rv.MCaption = Mode switch { "sum" => "Payroll Summary (Masterlist)", "reg2" => "Payroll Register (2 liner)", "grp" => "Payroll Summary per Payroll Group", _ => "Payroll Summary per Payroll Group and Month" };
+        await Task.CompletedTask;
+    }
+
+    void ChildActionCatcher(){}
+
+    //--- MBPay filled its grid on a period / month change ---
+    private async Task Search()
+    {
+        trns = [];
+        clients = [];
+        selected = null;
+        if (!HasConnection()) return;
+        try
+        {
+            rv.Isloaded = true;
+            if (PerTrn) trns = await _payRep._02PayrollRegisterTrns(prefix, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            else clients = (await _payRep._02MonthClients(prefix, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!)).Select(c => new OClientModel { ClNumber = c.Clnumber, ClName = c.Clname, IsSelectedB = true }).ToList();
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+        if (!trns.Any() && !clients.Any()) Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+    }
+
+    private async Task Generate()
+    {
+        if (!HasConnection()) return;
+        List<RSheetLineModel> lines;
+        try
+        {
+            rv.Isloaded = true;
+            if (PerTrn)
+            {
+                if (selected == null) { Notify(NotificationSeverity.Warning, "Warning", "Please select the payroll group (TRN)."); return; }
+                lines = await _payRep._02TrnSheetLines(selected.Trn!, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            }
+            else
+            {
+                var cls = clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber!).ToList();
+                if (!cls.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Please search and select the payroll groups."); return; }
+                lines = await _payRep._02ClientSheetLines(prefix, cls, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            }
+            if (!lines.Any()) { Notify(NotificationSeverity.Info, "Info", "No records found in database!"); return; }
+
+            //--- MBPay period wording: "1st", "2nd", "3rd", "4th" ---
+            string nth = rv.Period switch { "01" => "1st", "02" => "2nd", "03" => "3rd", "04" => "4th", _ => rv.Period ?? "" };
+            byte[] bytes;
+            string name;
+            switch (Mode)
+            {
+                case "sum":
+                    bytes = PayrollSheets.Summary(lines, $"For the {nth} period of {monthName} {rv.Year}");
+                    name  = $"PayrollSummary_{selected!.Trn}.xlsx";
+                    break;
+                case "reg2":
+                    var co = (await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!))?.FirstOrDefault();
+                    bytes = PayrollSheets.Register2Liner(lines, co?.CoName ?? "", co?.CoAdd ?? "", $"{(rv.Period is "01" or "02" ? nth + " of " : "")}{monthName}, {rv.Year}");
+                    name  = $"PayrollRegister_{selected!.Trn}.xlsx";
+                    break;
+                case "grp":
+                    bytes = PayrollSheets.ClientSummary(lines, " Payroll Summary Report ", $" For the period covered : Year [ {rv.Year} ]  Month [ {monthName} ]  Period [ {rv.Period} ]");
+                    name  = $"PayrollSummary_{prefix}.xlsx";
+                    break;
+                default:
+                    bytes = PayrollSheets.ClientSummary(lines, $" Payroll Summary Report for the month of {monthName}", $" For the period covered : Year [ {rv.Year} ]");
+                    name  = $"PayrollSummary_{prefix}.xlsx";
+                    break;
+            }
+            await _js.InvokeVoidAsync("downloadFile", name, Convert.ToBase64String(bytes));
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Excel download failed", ex.Message);
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

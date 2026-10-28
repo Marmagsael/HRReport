@@ -1,0 +1,200 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- SSS Contribution Remittance (MBPay frmssscontremit -> rptSSSContRemit, the SSS R3 form). Mode sss: the amounts as posted;
+       sssadj: frmssscontremit2, the amounts moved to the nearest ssstbl employee share; ssscl: frmssscontremitperclient, only the
+       chosen payroll groups (clients of the month's TRNs). Employer SSS ID = coinfo.sss --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (rv.ShowReport)
+                {
+                    <IframeReportRenderer DataSource="@rv.ReportData"
+                                          ReportRelativePath="@rv.RelativePath"
+                                          OutputFormat="@rv.SelectedFormat"
+                                          Parameters="@rv.ReportParams"
+                                          AutoGenerate="@(rv.ReportData?.Any() == true)"
+                                          RefreshToken="@rv.RefreshToken" />
+                }
+                else
+                {
+                    <div class="sticky-top bg-white border-bottom">
+                        <div class="card-header">
+                            <div class="d-flex gap-2">
+                                <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                                <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                            <div class=" w-150p">SSS Number</div>
+                            <div class=" w-250p">Name of Employees</div>
+                            <div class=" w-125p text-end">Employee</div>
+                            <div class=" w-125p text-end">Employer</div>
+                            <div class=" w-100p text-end">ECC</div>
+                            <div class=" w-125p text-end">Total</div>
+                        </div>
+                    </div>
+                    @foreach (var r in reps)
+                    {
+                        <div class="d-flex gap-2 border-bottom py-1">
+                            <div class=" w-150p">@r.Sss</div>
+                            <div class=" w-250p">@r.Empname</div>
+                            <div class=" w-125p text-end">@r.Amount.ToString("N2")</div>
+                            <div class=" w-125p text-end">@r.Fssser.ToString("N2")</div>
+                            <div class=" w-100p text-end">@r.Fecc.ToString("N2")</div>
+                            <div class=" w-125p text-end">@((r.Amount + r.Fssser + r.Fecc).ToString("N2"))</div>
+                        </div>
+                    }
+                    <div class="d-flex gap-2 py-1 fw-bold">
+                        <div class=" w-150p"></div><div class=" w-250p">GRAND TOTAL (@reps.Count)</div>
+                        <div class=" w-125p text-end">@reps.Sum(x => x.Amount).ToString("N2")</div>
+                        <div class=" w-125p text-end">@reps.Sum(x => x.Fssser).ToString("N2")</div>
+                        <div class=" w-100p text-end">@reps.Sum(x => x.Fecc).ToString("N2")</div>
+                        <div class=" w-125p text-end">@reps.Sum(x => x.Amount + x.Fssser + x.Fecc).ToString("N2")</div>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center">
+                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    @if (PerClient)
+                    {
+                        @*--- Clients of the month ------------------------------------------------*@
+                        <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Search"> Search</div>
+                    }
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+        @if (PerClient)
+        {
+            <div class="w-100"><div class="fw-bold p-1">Payroll Groups</div><_00TClientList Clients="@clients" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+        }
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
+    [Parameter] public string           Mode    { get; set; } = "sss";
+    V00_RepVars                         rv      = new();
+    List<RSssRemitModel>                reps    = [];
+
+    private bool Adj => Mode == "sssadj";
+    private bool PerClient => Mode == "ssscl";
+
+    //--- Client list reuses the client list component: ClNumber holds the client code ---
+    List<OClientModel>                  clients     = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+    private string yymm => $"{rv.Year.ToString()!.Substring(2, 2)}{rv.Month}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.RefreshToken = PerClient ? 12640000 : Adj ? 12630000 : 12620000;
+        rv.MCaption     = PerClient ? "SSS Contribution per Payroll Group" : Adj ? "SSS Contribution Remittance (Adjusted)" : "SSS Contribution Remittance";
+        rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["MM"] = "", ["YY"] = "", ["EmployerSss"] = "" };
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if ((res ?? []).Any())
+        {
+            var c = res!.First()!;
+            rv.ReportParams["CoName"]      = c.CoName ?? "";
+            rv.ReportParams["CoAddress"]   = c.CoAdd ?? "";
+            rv.ReportParams["EmployerSss"] = c.Sss ?? "";
+        }
+    }
+
+    void ChildActionCatcher(){}
+
+    //--- Clients of the month's TRNs, all selected ---
+    private async Task Search()
+    {
+        if (!HasConnection()) return;
+        var res = await _payRep._02MonthClients(yymm, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        clients = res.Select(c => new OClientModel { ClNumber = c.Clnumber, ClName = c.Clname, IsSelectedB = true }).ToList();
+        if (!clients.Any()) Notify(NotificationSeverity.Info, "Info", "No clients found for this month.");
+    }
+
+    private async Task FetchData()
+    {
+        reps = [];
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        if (!HasConnection()) return;
+
+        var cls = PerClient ? clients.Where(c => c.IsSelectedB).Select(c => c.ClNumber!).ToList() : null;
+        if (PerClient && !cls!.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Please search and select the payroll groups."); return; }
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02SssRemit(yymm, Adj, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!, cls);
+            rv.ReportParams["MM"] = new DateTime(rv.Year ?? DateTime.Now.Year, int.Parse(rv.Month!), 1).ToString("MMMM");
+            rv.ReportParams["YY"] = rv.Year.ToString()!;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify(NotificationSeverity.Error, "Missing setting", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any()) { Notify(NotificationSeverity.Info, "Info", "No data found for this month."); return; }
+        rv.ShowModal = true;
+    }
+
+    private void CreateReport()
+    {
+        rv.ReportData   = reps;
+        rv.RelativePath = "Reports/_03Payroll/K_SSSContRemit.trdp";
+        rv.RefreshToken++;
+        rv.ShowReport   = true;
+    }
+
+    private void CloseReportModal(bool ans)
+    {
+        if (rv.ShowReport) rv.ShowReport = ans;
+        else rv.ShowModal = ans;
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

@@ -1,7 +1,3 @@
-@using HRApiLibrary.Models._00_Main
-
-
-
 <table border="1" class="w-100 table table-striped table-bordered table-hover">
     <thead>
         <tr>
@@ -9,36 +5,38 @@
             <th class="w-40">Amount</th>
         </tr>
     </thead>
-
     <tbody>
-        <tr>
-            <td>W. Tax</td>
-            <td class="text-end">0</td>
-        </tr>
-
-        <tr>
-            <td>SSS</td>
-            <td class="text-end">0</td>
-        </tr>
-
-        <tr>
-            <td>PHIC</td>
-            <td class="text-end">0</td>
-        </tr>
-
+        @foreach (var a in rows)
+        {
+            <tr>
+                <td title="@a.Key">@AcctName(a.Key)</td>
+                <td class="text-end">@a.Value.ToString("N2")</td>
+            </tr>
+        }
     </tbody>
-
     <tfoot>
         <tr>
-            <th class="txt-fcolor">Total Deductions</th>
-            <th class="text-end txt-fcolor"> 0 </th>
+            <th>Total</th>
+            <th class="text-end">@rows.Sum(a => a.Value).ToString("N2")</th>
         </tr>
+        @if (v502.CurrentEmp != null)
+        {
+            <tr>
+                <td class="small text-secondary" colspan="2">
+                    Employer share: SSS @v502.CurrentEmp.SssEr.ToString("N2"), PHIC @v502.CurrentEmp.PhicEr.ToString("N2"), Pag-IBIG @v502.CurrentEmp.PagibigEr.ToString("N2")
+                </td>
+            </tr>
+        }
     </tfoot>
 </table>
 
-
 @code {
-    [CascadingParameter] public UserClaimsModel     Uc { get; set; } = new();
-    
+    [CascadingParameter] public V502 v502 { get; set; } = new();
 
+    //--- Sorted by chartofacct.dedSort, as in payroll4.fill_grddeductions --------------------------------------------------
+    List<KeyValuePair<string, double>> rows =>
+        v502.CurrentEmp?.Amounts.Where(a => a.Key.StartsWith("D") && a.Value != 0)
+            .OrderBy(a => v502.Session?.Coas.FirstOrDefault(c => c.AcctNumber == a.Key)?.DedSort ?? 999).ThenBy(a => a.Key).ToList() ?? [];
+
+    string AcctName(string acct) => v502.Session?.Coas.FirstOrDefault(c => c.AcctNumber == acct)?.AcctName?.Trim() ?? acct;
 }

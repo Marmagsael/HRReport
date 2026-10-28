@@ -1,0 +1,134 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+
+@* --- Group Retirement Computation (MBPay rptretirement_grp): employees of the chosen statuses, a grid and Excel.
+       FORM ONLY, the computation is not ported yet (see the TODO in FetchData). Columns follow the MBPay grid --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="Group Retirement Computation" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="p-2 fw-bold">Rate Factor</div>
+                    <RadzenNumeric TValue="decimal?" @bind-Value="rateFactor" Style="width: 100px;" />
+                    <div class="p-2 fw-bold">Age Coverage</div>
+                    <RadzenNumeric TValue="int?" @bind-Value="ageFrom" Style="width: 80px;" />
+                    <span>-</span>
+                    <RadzenNumeric TValue="int?" @bind-Value="ageTo" Style="width: 80px;" />
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Based on Status</div>
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="DownloadExcel"> Excel</div>
+                    <div class="p-2 fw-bold">Total Amount</div>
+                    <RadzenNumeric TValue="decimal" Value="@totalAmount" ReadOnly="true" Style="width: 160px;" />
+                </div>
+            </div>
+        </div>
+
+        @*--- Employee statuses ------------------------------------------------*@
+        <div class="w-100"><div class="fw-bold p-1">Employee status</div><_00TClientList Clients="@statuses" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+
+        @*--- Result ------------------------------------------------*@
+        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+            <div class=" w-100p">Emp. No.</div>
+            <div class=" w-250p">Name</div>
+            <div class=" w-100p">Hired</div>
+            <div class=" w-100p">DOB</div>
+            <div class=" w-75p text-end">Age</div>
+            <div class=" w-125p text-end">Mo. Rate</div>
+            <div class=" w-125p text-end">Daily Rate</div>
+            <div class=" w-100p text-end">Days Work</div>
+            <div class=" w-100p text-end">Ret Rate</div>
+            <div class=" w-150p text-end">Retirement</div>
+        </div>
+        @foreach (var r in rows)
+        {
+            <div class="d-flex gap-2 border-bottom py-1">
+                <div class=" w-100p">@r.Empnumber</div>
+                <div class=" w-250p">@r.Empname</div>
+                <div class=" w-100p">@r.DateHired?.ToString("MM/dd/yyyy")</div>
+                <div class=" w-100p">@r.Dob?.ToString("MM/dd/yyyy")</div>
+                <div class=" w-75p text-end">@r.Age</div>
+                <div class=" w-125p text-end">@r.MoRate?.ToString("N2")</div>
+                <div class=" w-125p text-end">@r.DailyRate?.ToString("N2")</div>
+                <div class=" w-100p text-end">@r.DaysWork?.ToString("N2")</div>
+                <div class=" w-100p text-end">@r.RetRate?.ToString("N2")</div>
+                <div class=" w-150p text-end">@r.Retirement?.ToString("N2")</div>
+            </div>
+        }
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+
+    //--- One row of the grid; the values are filled by the computation (TODO) ---
+    private class RetirementRow
+    {
+        public string?      Empnumber   { get; set; }
+        public string?      Empname     { get; set; }
+        public DateTime?    DateHired   { get; set; }
+        public DateTime?    Dob         { get; set; }
+        public int?         Age         { get; set; }
+        public decimal?     MoRate      { get; set; }
+        public decimal?     DailyRate   { get; set; }
+        public decimal?     DaysWork    { get; set; }
+        public decimal?     RetRate     { get; set; }
+        public decimal?     Retirement  { get; set; }
+    }
+
+    List<RetirementRow>                 rows        = [];
+    decimal                             totalAmount => rows.Sum(r => r.Retirement ?? 0);
+    decimal?                            rateFactor;
+    int?                                ageFrom, ageTo;
+
+    //--- Status list reuses the client list component: ClNumber holds the status code ---
+    List<OClientModel>                  statuses    = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.MCaption = "Group Retirement Computation";
+        statuses = (await _payRep._02EmpStatuses(Uc.OpisDb!, Uc.Conn!)).Select(s => new OClientModel { ClNumber = s.Code, ClName = s.Name }).ToList();
+    }
+
+    void ChildActionCatcher(){}
+
+    //--- TODO: the employees of the chosen statuses and the retirement computation (MBPay rptretirement_grp) ---
+    private void FetchData()
+    {
+        if (!statuses.Any(s => s.IsSelectedB)) { Notify(NotificationSeverity.Warning, "Warning", "Please select the employee status."); return; }
+        Notify(NotificationSeverity.Info, "Pending", "The retirement computation is not ported yet.");
+    }
+
+    //--- TODO: Excel of the grid (MBPay columns: Emp. No., Name, Hired, DOB, Age, Mo. Rate, Daily Rate, Days Work, Ret Rate, Retirement) ---
+    private void DownloadExcel()
+    {
+        Notify(NotificationSeverity.Info, "Pending", "The retirement computation is not ported yet.");
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

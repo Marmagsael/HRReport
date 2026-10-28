@@ -1,0 +1,117 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+
+@* --- Deduction Summary (MBPay rptdedsummary): a screen grid, no printed report. Employee statuses + deduction accounts ->
+       total per employee of every TRN ever posted (MBPay had no period filter) --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="Deduction Summary" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Employee statuses / Deductions ------------------------------------------------*@
+        <div class="d-flex gap-2 w-100">
+            <div class="flex-fill"><div class="fw-bold p-1">Employee status</div><_00TClientList Clients="@statuses" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+            <div class="flex-fill"><div class="fw-bold p-1">Deductions</div><_00TClientList Clients="@accounts" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+        </div>
+
+        @*--- Result ------------------------------------------------*@
+        @if (reps.Any())
+        {
+            <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                <div class=" w-400p">Name</div>
+                <div class=" w-150p text-end">Amount</div>
+            </div>
+            @foreach (var r in reps)
+            {
+                <div class="d-flex gap-2 border-bottom py-1">
+                    <div class=" w-400p">@r.Empname</div>
+                    <div class=" w-150p text-end">@r.Amount.ToString("N2")</div>
+                </div>
+            }
+            <div class="d-flex gap-2 py-1 fw-bold">
+                <div class=" w-400p">Total (@reps.Count)</div>
+                <div class=" w-150p text-end">@reps.Sum(x => x.Amount).ToString("N2")</div>
+            </div>
+        }
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    List<RConsolDedModel>               reps        = [];
+
+    //--- Lists reuse the client list component: ClNumber holds the status code / account code ---
+    List<OClientModel>                  statuses    = [];
+    List<OClientModel>                  accounts    = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.MCaption = "Deduction Summary";
+        statuses = (await _payRep._02EmpStatuses(Uc.OpisDb!, Uc.Conn!)).Select(s => new OClientModel { ClNumber = s.Code, ClName = s.Name }).ToList();
+        accounts = (await _payRep._02ByAcctTypes("D", Uc.OpayDb!, Uc.Conn!) ?? []).Select(a => new OClientModel { ClNumber = a!.AcctNumber?.Trim(), ClName = a.AcctName?.Trim() }).ToList();
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task FetchData()
+    {
+        reps = [];
+        if (!HasConnection()) return;
+
+        var st    = statuses.Where(s => s.IsSelectedB).Select(s => s.ClNumber!).ToList();
+        var accts = accounts.Where(a => a.IsSelectedB).Select(a => a.ClNumber!).ToList();
+        if (!st.Any() || !accts.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Please select the employee status and the deductions."); return; }
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02ConsolidatedDeduction(st, accts, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any()) Notify(NotificationSeverity.Info, "Info", "No records found in database!");
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

@@ -1,0 +1,171 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- Payslip per Employee (MBPay frmpsperemployee -> payslip.frx). Period (yymmpp), the TRN + employee list of it; click a row and
+       print that one payslip. Company short name and the payslip font come from coinfo and reportsettings (PAYSLIPFONT) --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (rv.ShowReport)
+                {
+                    <IframeReportRenderer DataSource="@rv.ReportData"
+                                          ReportRelativePath="@rv.RelativePath"
+                                          OutputFormat="@rv.SelectedFormat"
+                                          Parameters="@rv.ReportParams"
+                                          AutoGenerate="@(rv.ReportData?.Any() == true)"
+                                          RefreshToken="@rv.RefreshToken" />
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    @*--- Period ------------------------------------------------*@
+                    <_01YYMMPP Rv="rv" ChildAction="ChildActionCatcher" />
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                    <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Payslip</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+            <div class=" w-150p">TRN</div>
+            <div class=" w-100p">Emp. No.</div>
+            <div class=" w-250p">Employee</div>
+            <div class=" w-300p">Client</div>
+        </div>
+        @foreach (var r in list)
+        {
+            bool sel = selected?.Trn == r.Trn && selected?.Empnumber == r.Empnumber;
+            <div class="d-flex gap-2 border-bottom py-1 @(sel ? "bg-lightgray fw-bold" : "")" style="cursor:pointer" @onclick="() => selected = r">
+                <div class=" w-150p">@r.Trn</div>
+                <div class=" w-100p">@r.Empnumber</div>
+                <div class=" w-250p">@r.Empname</div>
+                <div class=" w-300p">@r.Clname2</div>
+            </div>
+        }
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    List<RPayslipEmpModel>              list        = [];
+    RPayslipEmpModel?                   selected;
+
+    private string yymmpp => $"{rv.Year.ToString()!.Substring(2, 2)}{rv.Month}{rv.Period}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.RefreshToken = 12200000;
+        rv.MCaption     = "Payslip (Per Employee)";
+        rv.ReportParams = new() { ["CoName"] = "-", ["CoNameShort"] = "-", ["PayslipFont"] = "" };
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if ((res ?? []).Any())
+        {
+            var c = res!.First()!;
+            rv.ReportParams["CoName"]      = c.CoName ?? "";
+            rv.ReportParams["CoNameShort"] = c.Shortname ?? "";
+        }
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task FetchData()
+    {
+        list = [];
+        selected = null;
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        if (!HasConnection()) return;
+
+        try
+        {
+            rv.Isloaded = true;
+            list = await _payRep._02PayslipEmployees(yymmpp, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!list.Any()) Notify(NotificationSeverity.Info, "Info", "No data found for this period.");
+    }
+
+    private async Task CreateReport()
+    {
+        if (selected == null) { Notify(NotificationSeverity.Warning, "Warning", "Please select the employee."); return; }
+        try
+        {
+            rv.Isloaded = true;
+            var rows = await _payRep._02Payslip([selected.Trn!], Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            rv.ReportData = rows.Where(r => r.Empnumber == selected.Empnumber).ToList();
+            rv.ReportParams["PayslipFont"] = await _payRep._02ReportSetting("PAYSLIPFONT", Uc.OpayDb!, Uc.Conn!);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify(NotificationSeverity.Error, "Missing setting", ex.Message);
+            return;
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+            return;
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!rv.ReportData.Any()) { Notify(NotificationSeverity.Info, "Info", "TRANSACTION CODE DOES NOT EXIST"); return; }
+        rv.RelativePath = "Reports/_03Payroll/K_PayslipPerEmployee.trdp";
+        rv.RefreshToken++;
+        rv.ShowReport   = true;
+        rv.ShowModal    = true;
+    }
+
+    private void CloseReportModal(bool ans)
+    {
+        if (rv.ShowReport) rv.ShowReport = ans;
+        else rv.ShowModal = ans;
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

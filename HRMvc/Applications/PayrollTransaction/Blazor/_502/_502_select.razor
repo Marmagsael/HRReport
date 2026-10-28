@@ -1,0 +1,79 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay.OPay
+
+@* --- Client and period selection, then load (MBPay forms/payrollnew4.scx) --- *@
+<div class="w-100 p-2 bg-white bordered-bottom d-flex gap-2 align-items-end flex-wrap">
+    <div>
+        <div class="small fw-bold">PAYROLL GROUP</div>
+        <TelerikDropDownList Data="@clients" TItem="OPayClient" TValue="string"
+                             TextField="@nameof(OPayClient.ClName)" ValueField="@nameof(OPayClient.ClNumber)"
+                             @bind-Value="@clNumber" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains"
+                             Width="320px" DefaultText="Select payroll group">
+            <DropDownListSettings>
+                <DropDownListPopupSettings Height="60vh" />
+            </DropDownListSettings>
+        </TelerikDropDownList>
+    </div>
+    <div>
+        <div class="small fw-bold">YEAR</div>
+        <TelerikDropDownList Data="@years" @bind-Value="@year" Width="90px" />
+    </div>
+    <div>
+        <div class="small fw-bold">MONTH</div>
+        <TelerikDropDownList Data="@months" @bind-Value="@month" Width="75px" />
+    </div>
+    <div>
+        <div class="small fw-bold">PERIOD</div>
+        <TelerikDropDownList Data="@periods" @bind-Value="@period" Width="75px" />
+    </div>
+    <div>
+        <button class="btn btn-sm btn-primary" disabled="@(string.IsNullOrEmpty(clNumber) || v502.IsBusy)" @onclick="Load">
+            <i class="fa-solid fa-download"></i> Load
+        </button>
+    </div>
+</div>
+
+@inject IOPayrollDataAccess _payroll
+
+@code {
+    [CascadingParameter] public UserClaimsModel Uc   { get; set; } = new();
+    [CascadingParameter] public V502            v502 { get; set; } = new();
+
+    List<OPayClient> clients = [];
+    List<string> years   = Enumerable.Range(DateTime.Now.Year - 2, 4).Select(y => y.ToString()).ToList();
+    List<string> months  = Enumerable.Range(1, 12).Select(m => m.ToString("00")).ToList();
+    List<string> periods = ["01", "02"];
+    string? clNumber;
+    string year   = DateTime.Now.Year.ToString();
+    string month  = DateTime.Now.Month.ToString("00");
+    string period = DateTime.Now.Day > 15 ? "02" : "01";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Uc.OpisDb) || string.IsNullOrEmpty(Uc.Conn)) return;
+        clients = await _payroll._02Clients(Uc.OpisDb, Uc.Conn);
+    }
+
+    async Task Load()
+    {
+        v502.IsBusy = true; v502.Msg = "Loading payroll..."; await Notify();
+        try
+        {
+            var y = int.Parse(year); var m = int.Parse(month);
+            var attStart = new DateTime(y, m, period == "01" ? 1 : 16);
+            var attEnd   = period == "01" ? new DateTime(y, m, 15) : new DateTime(y, m, DateTime.DaysInMonth(y, m));
+
+            var s = await _payroll._01Load(year, month, period, clNumber!, attStart, attEnd, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            if (!s.IsLocked) OPayrollCompute.Compute(s);
+            v502.Session     = s;
+            v502.CurrentEmp  = s.Results.FirstOrDefault();
+            v502.IsProcessed = s.Status != "New";
+            v502.TRN         = s.Trn;
+            v502.Msg         = $"{s.Results.Count} employee(s) loaded. Status: {s.Status}.";
+        }
+        catch (Exception ex) { v502.Msg = "Load failed: " + ex.Message; }
+        finally { v502.IsBusy = false; await Notify(); }
+    }
+
+    async Task Notify() { if (v502.Changed != null) await v502.Changed(); }
+}

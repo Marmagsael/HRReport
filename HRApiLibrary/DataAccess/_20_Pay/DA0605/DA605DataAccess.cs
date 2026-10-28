@@ -470,155 +470,134 @@ public class Da605DataAccess : IDa605DataAccess
         }
     }
 
-    private async Task _01_PremPHIC(string? trn, string? source, int? idUser, string? paydb, string? pisdb, string? conn)
+    //--- Premiums and Tax ---------------------------------------------------------------------------------------------------
+    //--- Data is loaded here; the computation itself is in PayrollCalculator (rules ported from FoxPro payroll4.scx).
+    private class PremEmp
     {
-        var sql =
-            $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
-                     with
-                        empmas1 as 
-                           (select distinct e.EmpNumber, t.EmpmasId, ifnull(s.Wtax,0) Wtax, ifnull(s.Wsss,0) Wsss, ifnull(s.Wgsis,0) Wgsis, ifnull(s.Wpagibig,0) Wpagibig, ifnull(s.Wphic,0) Wphic 
-                            from {paydb}.Tmptbltran t 
-		                        left join {paydb}.deprecsettings s    on s.EmpmasId = t.EmpmasId                                                
-		                        left join {pisdb}.Empmas e            on e.Id = t.EmpmasId                                                
-		                        where Trn = @Trn ),
-
-                        PHIC as 
-	                        (select * from {paydb}.matrixPHIC where revision = (select revPHIC from {paydb}.settings limit 1)),   
-
-                        PremDeducted as 
-                            (select EmpmasId, ifnull(sum(Amount),0) Amount from {paydb}.Tmptbltran 
-		                        Where AcctNumber = 'D003' and Status = 'P' and Trn != @Trn and left(trn,4) = left(@Trn,4) 
-                                group by empmasId),                       
-
-                        currT as 
-	                        (select t.EmpmasId,  sum(ifnull(t.Amount,0)) Amount from {paydb}.TmpTbltran t
-			                        where trn = @Trn and AcctNumber in (select AcctNumber from {paydb}.coaPHIC)
-			                        group by t.EmpmasId ), 
-                                    
-                         currT2 as 
-	                        (select e.EmpNumber, t.*, pd.Amount DedAmt, e.wphic, 
-			                        if(e.wphic!=1, 0, p.ee + ifnull((t.Amount*p.percent/100),0)) - ifnull(pd.Amount,0) Cont 
-			                        from currT t
-                                    left join empmas1 e on e.EmpmasId = t.EmpmasId
-                                    left join PremDeducted pd on pd.EmpmasId = t.EmpmasId
-			                        left join PHIC p on t.Amount between p.FStart and p.FEnd ) 
-                                    
-                         /* TRN,      EmpmasId, EmpNumber, acctNumber,        Qty,   Rate,                RateTypeId, Amount,                     dTimeStamp, postedby,   Source*/ 
-                     select @Trn Trn, EmpmasId, EmpNumber, 'D003' AcctNumber, 1 Qty, ifnull(Cont,0) Cont, 0 RTI,      ifnull(Cont,0) Cont,        now(),      @Iduser PB, 'PHIC' from currT2 ;  ";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Trn = trn, IdUser = idUser, Source = source }, conn!);
+        public int?    EmpmasId  { get; set; }
+        public string? EmpNumber { get; set; }
+        public int?    Wtax      { get; set; }
+        public int?    Wsss      { get; set; }
+        public int?    Wphic     { get; set; }
+        public int?    Wpagibig  { get; set; }
+    }
+    private class PremLine
+    {
+        public int?    EmpmasId   { get; set; }
+        public string? AcctNumber { get; set; }
+        public double  Amount     { get; set; }
     }
 
-
-    private async Task _01_PremSSS(string? trn, string? source, int? idUser,string paydb,string pisdb,string conn)
+    private async Task<(List<PremEmp> emps, List<PremLine> curr, List<PremLine> saved)> _01_PremData(string? trn, string paydb, string pisdb, string conn)
     {
-        var sql = $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
-                     with
-                     empmas as 
-                        (select distinct e.EmpNumber, t.EmpmasId, ifnull(s.Wtax,0) Wtax, ifnull(s.Wsss,0) Wsss, ifnull(s.Wgsis,0) Wgsis, ifnull(s.Wpagibig,0) Wpagibig, ifnull(s.Wphic,0) Wphic 
-                         from {paydb}.Tmptbltran t 
-                         left join {pisdb}.Empmas e           on t.EmpmasId = e.Id
-                         left join {paydb}.deprecsettings s   on s.EmpmasId = e.Id                                                
-                         where Trn = @Trn ),
+        var sql = $@"select t.EmpmasId, max(e.EmpNumber) EmpNumber,
+                            max(ifnull(s.Wtax,0)) Wtax, max(ifnull(s.Wsss,0)) Wsss, max(ifnull(s.Wphic,0)) Wphic, max(ifnull(s.Wpagibig,0)) Wpagibig
+                     from {paydb}.Tmptbltran t
+                     left join {pisdb}.Empmas e          on e.Id       = t.EmpmasId
+                     left join {paydb}.deprecsettings s  on s.EmpmasId = t.EmpmasId
+                     where t.Trn = @Trn
+                     group by t.EmpmasId";
+        var emps = await _sql.FetchData<PremEmp, dynamic>(sql, new { Trn = trn }, conn);
 
-                     SSS as 
-                        (  select * from {paydb}.matrixSSS where revision = (select revSSS from {paydb}.settings limit 1) ), 
+        sql = $@"select EmpmasId, AcctNumber, ifnull(Amount,0) Amount from {paydb}.Tmptbltran where Trn = @Trn";
+        var curr = await _sql.FetchData<PremLine, dynamic>(sql, new { Trn = trn }, conn);
 
-                     PremDeducted as 
-                        (select EmpmasId, sum(Amount) Amount from {paydb}.Tmptbltran 
-                         Where AcctNumber = 'D002' and Status = 'P' and Trn != @Trn and left(trn,4) = left(@Trn,4) 
-                         group by empmasId),
+        //--- Posted earlier this month (same yyMM) ----------------------------------------------------------------------
+        sql = $@"select EmpmasId, AcctNumber, ifnull(Amount,0) Amount from {paydb}.Tmptbltran
+                 where Status = 'P' and Trn != @Trn and left(Trn,4) = left(@Trn,4) and
+                       EmpmasId in (select EmpmasId from {paydb}.Tmptbltran where Trn = @Trn)";
+        var saved = await _sql.FetchData<PremLine, dynamic>(sql, new { Trn = trn }, conn);
 
-                     currT as 
-                        (select t.EmpmasId, sum(if(e.wSSS=1, ifnull(t.Amount,0), 0)) as  Amount 
-                         from {paydb}.TmpTbltran t 
-                         left join empmas e on  t.EmpmasId = e.EmpmasId
-                         where t.Trn = @Trn and AcctNumber in (select AcctNumber from {paydb}.coaSSS)
-                         group by EmpmasId), 
-
-                     cmd as 
-                        (select t.*, e.EmpNumber, s.ee, ifnull(pd.Amount,0) DedAmt, (s.EE - ifnull(pd.Amount,0)) cont 
-                         from currT  t 
-                         left join sss          s  on t.amount between s.fstart and s.fend    
-                         left join premDeducted pd on pd.EmpmasId = t.EmpmasId
-                         left join empmas e        on e.EmpmasId = t.EmpmasId) 
-                          /*TRN,      EmpmasId, EmpNumber, acctNumber,        Qty,   Rate,                RateTypeId, Amount,             dTimeStamp, postedby,   Source*/    
-                     select @Trn Trn, EmpmasId, EmpNumber, 'D002' AcctNumber, 1 Qty, ifnull(Cont,0) Rate, 0 RTI,      ifnull(Cont,0) Amt, now(),      @Iduser PB, 'SSS' from cmd;  ";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Trn= trn, IdUser = idUser, Source = source }, conn!); 
+        return (emps, curr, saved);
     }
-    private async Task _01_PremPagibig(string? trn, string? source, int? idUser,string paydb,string pisdb,string conn)
+
+    private async Task<HashSet<string>> _01_CoaList(string coaTbl, string paydb, string conn)
     {
-        var sql = $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
-                     with 
-                        empmas1 as 
-	                        (select distinct e.EmpNumber, t.EmpmasId, ifnull(s.Wtax,0) Wtax, ifnull(s.Wsss,0) Wsss, ifnull(s.Wgsis,0) Wgsis, ifnull(s.Wpagibig,0) Wpagibig, ifnull(s.Wphic,0) Wphic 
-	                         from {paydb}.Tmptbltran t 
-		                        left join {paydb}.deprecsettings s    on s.EmpmasId = t.EmpmasId                                                
-                                left join {pisdb}.Empmas e            on e.Id = t.EmpmasId                                                
-	                        where Trn = @Trn ), 
-                        Pagibig as 
-	                        (select * from {paydb}.matrixPagibig where revision = (select revPagibig from {paydb}.settings limit 1)), 
-                            
-                        PremDeducted as 
-                            (select EmpmasId, ifnull(sum(Amount),0) Amount from {paydb}.Tmptbltran 
-	                         Where AcctNumber = 'D004' and Status = 'P' and Trn != @Trn and left(trn,4) = left(@Trn,4) 
-                             group by empmasId), 
-                        CurrT as 
-	                        (select t.EmpmasId,  sum(ifnull(t.Amount,0)) Amount 
-	                         from {paydb}.TmpTbltran t where trn = @Trn and AcctNumber in (select AcctNumber from {paydb}.coaPagibig )
-			                 group by t.EmpmasId ),
-                        Curr2 as 
-	                        (select e.*, t.Amount as CurrAmt, p.ee, p.er, if(pd.Amount>t.Amount,0, ifnull(p.ee,0) - ifnull(pd.Amount,0)) Cont  from empmas1 e
-		                        left join CurrT 	t on t.EmpmasId = e.EmpmasId
-		                        left join pagibig 	p on t.t.Amount between p.fstart and p.fend 
-		                        left join PremDeducted pd on pd.EmpmasId = e.EmpmasId)  
-                          /*TRN,      EmpmasId, EmpNumber, acctNumber,        Qty,   Rate,                RateTypeId, Amount,              dTimeStamp, postedby,   Source*/    
-                     select @Trn Trn, EmpmasId, EmpNumber, 'D004' AcctNumber, 1 Qty, ifnull(Cont,0) Cont, 0 RTI,      ifnull(Cont,0) Cont, now(),      @Iduser PB, 'Pibig' from Curr2;  ";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Trn= trn, IdUser = idUser, Source = source }, conn!); 
+        var res = await _sql.FetchData<string, dynamic>($"select AcctNumber from {paydb}.{coaTbl}", new { }, conn);
+        return res.Where(a => a != null).ToHashSet();
     }
-    
-    
-    private async Task _01_Tax(string? trn, string? source, int? idUser,string paydb,string pisdb,string conn)
+
+    private static double SumAmt(IEnumerable<PremLine> lines, int? empmasId, ICollection<string> accts)
+        => lines.Where(l => l.EmpmasId == empmasId && accts.Contains(l.AcctNumber ?? "")).Sum(l => l.Amount);
+
+    private async Task _01_InsertComputed(string? trn, string acctNumber, string source, int? idUser, string paydb, string conn,
+                                          IEnumerable<(PremEmp e, double amt)> rows)
     {
         var sql = $@"insert into {paydb}.tmptbltran (TRN, EmpmasId, EmpNumber, acctNumber, Qty, Rate, RateTypeId, Amount, dTimeStamp, postedby, Source)
-                     with 
-                        Empmas1 as 
-	                        ( select distinct t.EmpmasId, e.EmpNumber, d.Wtax from {paydb}.tmptbltran t 
-		                        left join {pisdb}.Empmas e            on e.Id         = t.EmpmasId
-	                            left join {paydb}.deprecsettings d    on d.EmpmasId   = t.EmpmasId                                       
-		                        where t.trn = @Trn ), 
-                        tax as 
-	                        ( select * from {paydb}.MatrixWTax 
-                              where Revision   = (select RevTax        from {paydb}.Settings limit 1) and 
-			                        PeriodCode = (select TaxPeriodCode from {paydb}.Settings limit 1)
-                            ),
-                        t1 as 
-	                        ( select t.EmpmasId, Sum(Amount) Amount from {paydb}.tmptbltran t 
-		                        where ( trn = @Trn or Status = 'P') and 
-			                          t.AcctNumber in (select acctNumber from {paydb}.coaTax) 
-		                        group by t.EmpmasId 
-                            ),
-                        DedTax as 
-	                        (
-		                        select EmpmasId, ifnull(Sum(Amount),0) DedTax from {paydb}.TmpTbltran 
-                                where AcctNumber = 'D001' and 
-			                          Trn != @Trn and 
-                                      left(trn,6) = left(@Trn,6) and 
-                                      Status = 'P'
-		                        group by EmpmasId
-                            ),    
-                        CurrTax as 
-	                        ( Select e.*, t.Amount TaxableAmt, tax.Fix, (t.Amount - tax.SAmt) as Excess, tax.Percentage, (t.Amount - tax.SAmt) * tax.Percentage TaxPercent,
-		                        if(e.wTax!=1, 0, (ifnull(tax.Fix,0) + ( (t.Amount - tax.SAmt) * tax.Percentage )) - (ifnull(dt.DedTax,0)))  as TaxAmt  
-	                          from Empmas1 e 
-		                        left join t1 t on t.EmpmasId = e.EmpmasId 
-		                        left join tax  on t.Amount between tax.SAmt and tax.EAmt
-                                left join DedTax dt on dt.EmpmasId = e.EmpmasId ) 
-                          /*select ct.EmpmasId, ct.TaxAmt from CurrTax ct */  
-                          /*TRN,      EmpmasId, EmpNumber, acctNumber,        Qty,   Rate,                    RateTypeId, Amount,                   dTimeStamp, postedby,   Source*/    
-                     select @Trn Trn, EmpmasId, EmpNumber, 'D001' AcctNumber, 1 Qty, ifnull(TaxAmt,0) TaxAmt, 0 RTI,      ifnull(TaxAmt,0) TaxAmt,  now(),      @Iduser PB, 'Tax' from CurrTax ct;  ";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Trn= trn, IdUser = idUser, Source = source }, conn!);
-        
-        
+                     values (@Trn, @EmpmasId, @EmpNumber, @AcctNumber, 1, @Amount, 0, @Amount, now(), @IdUser, @Source)";
+        var prm = rows.Select(r => new { Trn = trn, r.e.EmpmasId, r.e.EmpNumber, AcctNumber = acctNumber, Amount = r.amt, IdUser = idUser, Source = source }).ToList();
+        if (prm.Count > 0) await _sql.ExecuteCmd(sql, prm, conn);
+    }
+
+    private async Task _01_Premium(string? trn, string acctNumber, int? idUser, string paydb, string pisdb, string conn)
+    {
+        var (coaTbl, matrixTbl, revFld, cols, source) = acctNumber switch
+        {
+            "D002" => ("coaSSS",     "matrixSSS",     "RevSSS",     "FStart, FEnd, EE Ee, ER Er, ECC Ecc, 0 Percent", "SSS"),
+            "D003" => ("coaPHIC",    "matrixPHIC",    "RevPHIC",    "FStart, FEnd, EE Ee, ER Er, 0 Ecc, Percent",     "PHIC"),
+            _      => ("coaPagibig", "matrixPagibig", "RevPagibig", "FStart, FEnd, EE Ee, ER Er, 0 Ecc, 0 Percent",   "Pibig")
+        };
+
+        var sql = $"select {cols} from {paydb}.{matrixTbl} where Revision = (select {revFld} from {paydb}.Settings limit 1) order by FStart";
+        var table = await _sql.FetchData<PremiumBracket, dynamic>(sql, new { }, conn);
+
+        var accts = await _01_CoaList(coaTbl, paydb, conn);
+        var (emps, curr, saved) = await _01_PremData(trn, paydb, pisdb, conn);
+        var premAcct = new[] { acctNumber };
+
+        var rows = emps.Select(e =>
+        {
+            var calcEmp  = new PayCalcEmployee { WithSss = e.Wsss == 1, WithPhic = e.Wphic == 1, WithPagibig = e.Wpagibig == 1 };
+            var mtd      = SumAmt(curr, e.EmpmasId, accts) + SumAmt(saved, e.EmpmasId, accts);
+            var deducted = SumAmt(saved, e.EmpmasId, premAcct);
+            var r = acctNumber switch
+            {
+                "D002" => PayrollCalculator.Sss(calcEmp, mtd, deducted, 0, table),
+                "D003" => PayrollCalculator.Phic(calcEmp, mtd, deducted, 0, table),
+                _      => PayrollCalculator.Pagibig(calcEmp, mtd, deducted, 0, table)
+            };
+            return (e, r.Ee);
+        });
+
+        await _01_InsertComputed(trn, acctNumber, source, idUser, paydb, conn, rows);
+    }
+
+    private Task _01_PremSSS(string? trn, string? source, int? idUser, string paydb, string pisdb, string conn)
+        => _01_Premium(trn, "D002", idUser, paydb, pisdb, conn);
+
+    private Task _01_PremPHIC(string? trn, string? source, int? idUser, string? paydb, string? pisdb, string? conn)
+        => _01_Premium(trn, "D003", idUser, paydb ?? "-", pisdb ?? "-", conn ?? "-");
+
+    private Task _01_PremPagibig(string? trn, string? source, int? idUser, string paydb, string pisdb, string conn)
+        => _01_Premium(trn, "D004", idUser, paydb, pisdb, conn);
+
+    //--- Tax needs the current-period premiums, so they are computed first when missing (FoxPro order) ---------------------
+    private async Task _01_Tax(string? trn, string? source, int? idUser, string paydb, string pisdb, string conn)
+    {
+        foreach (var prem in new[] { "D002", "D003", "D004" })
+            await _01_Account_to_Tmptbltran(trn, prem, source, idUser, paydb, pisdb, conn);
+
+        var sql = $@"select SAmt, EAmt, Fix, Percentage from {paydb}.MatrixWTax
+                     where Revision   = (select RevTax        from {paydb}.Settings limit 1) and
+                           PeriodCode = (select TaxPeriodCode from {paydb}.Settings limit 1)
+                     order by SAmt";
+        var table = await _sql.FetchData<TaxBracket, dynamic>(sql, new { }, conn);
+
+        var taxAccts = await _01_CoaList("coaTax", paydb, conn);
+        var (emps, curr, _) = await _01_PremData(trn, paydb, pisdb, conn);
+
+        var rows = emps.Select(e =>
+        {
+            var calcEmp = new PayCalcEmployee { WithTax = e.Wtax == 1 };
+            var taxable = SumAmt(curr, e.EmpmasId, taxAccts);
+            var tax = PayrollCalculator.Tax(calcEmp, taxable,
+                                            SumAmt(curr, e.EmpmasId, ["D002"]),
+                                            SumAmt(curr, e.EmpmasId, ["D003"]),
+                                            SumAmt(curr, e.EmpmasId, ["D004"]), table);
+            return (e, tax);
+        });
+
+        await _01_InsertComputed(trn, "D001", "Tax", idUser, paydb, conn, rows);
     }
     
     private async Task _01_Account_to_Tmptbltran_D001(string? trn, string? acctNumber, string? source, int? idUser, string? paydb, string? pisdb, string? conn)
@@ -742,13 +721,15 @@ public class Da605DataAccess : IDa605DataAccess
                           where Trn = @Trn;";
         var emplist = await _sql.FetchData<TbltranModel, dynamic>(sql, new { Trn = trn }, conn!);
 
-        // 4) --- Deducted Loans ---------------------------------------------------------------------------------------
-        sql = $@"SELECT * FROM {paydb}.tmptbltran WHERE trn            != @Trn 
-                                                  AND   LEFT(trn,4)    =  LEFT(@Trn,6) 
+        // 4) --- Loans already deducted in this period by another TRN (FoxPro calc_loans skips these) -----------------
+        sql = $@"SELECT * FROM {paydb}.tmptbltran WHERE trn            != @Trn
+                                                  AND   LEFT(trn,6)    =  LEFT(@Trn,6)
                                                   AND   Status         =  'P'
                                                   AND   Source         =  'Loans'";
         var ploans = await _sql.FetchData<TbltranModel, dynamic>(sql, new { Trn = trn }, conn!);
-        
+        var deductedIds = ploans.Where(p => p.RefId > 0).Select(p => p.RefId!.Value).ToHashSet();
+        loans = loans.Where(l => !(l.Id.HasValue && deductedIds.Contains(l.Id.Value))).ToList();
+
         foreach (var ll in loanList)
         {
             var rateTypeId    = 0;  
@@ -867,7 +848,7 @@ public class Da605DataAccess : IDa605DataAccess
                           Delete from {ppaydb}.TblTran where trn = @Trn;
 
                           Insert into {ppaydb}.TblTran 
-                          select * from {ppaydb}.Tmptbltran where trn = @Trn and Amount > 0 
+                          select * from {ppaydb}.Tmptbltran where trn = @Trn and Amount > 0
                           on duplicate key update Status = 'P'; 
 
                           update {ppaydb}.paymainhdr set status = 'Posted', DatePosted = now() where Trn = @Trn "; 
@@ -901,7 +882,7 @@ public class Da605DataAccess : IDa605DataAccess
                             (Select RefId from {paydb}.TmpTblTran Where Trn = @Trn and RefId > 0 and Source = 'Loans' )
                         
                         update {paydb}.Loans set  Status = 'I'
-                        where Id in (select RefId from IdList ) and Amount < 1 ; 
+                        where Id in (select RefId from IdList ) and Balance < 1 ;
 
                            "; 
             await  _sql.ExecuteCmd<dynamic>(psql, new {  Trn = trn }, conn!);

@@ -1,0 +1,197 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- Earnings History (MBPay frmearnsumemp -> rptEarnHist) / Deductions History (frmdedsumemp -> rptDedHist). Mode earn / ded;
+       one employee, date range (period 01 = 1st of the month, period 02 = 16th) and the chosen accounts --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (rv.ShowReport)
+                {
+                    <IframeReportRenderer DataSource="@rv.ReportData"
+                                          ReportRelativePath="@rv.RelativePath"
+                                          OutputFormat="@rv.SelectedFormat"
+                                          Parameters="@rv.ReportParams"
+                                          AutoGenerate="@(rv.ReportData?.Any() == true)"
+                                          RefreshToken="@rv.RefreshToken" />
+                }
+                else
+                {
+                    <div class="sticky-top bg-white border-bottom">
+                        <div class="card-header">
+                            <div class="d-flex gap-2">
+                                <_01ReportFormat Rv="@rv" ChildAction="ChildActionCatcher" />
+                                <button class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="CreateReport"> Show Report</button>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                            <div class=" w-100p">Year</div>
+                            <div class=" w-150p">Month</div>
+                            <div class=" w-100p">Period</div>
+                            <div class=" w-300p">Description</div>
+                            <div class=" w-150p text-end">Amount</div>
+                            <div class=" w-200p">Transaction Reference No.</div>
+                        </div>
+                    </div>
+                    @foreach (var r in reps)
+                    {
+                        <div class="d-flex gap-2 border-bottom py-1">
+                            <div class=" w-100p">@r.Year</div>
+                            <div class=" w-150p">@r.MonthName</div>
+                            <div class=" w-100p">@r.Pp</div>
+                            <div class=" w-300p">@r.Acctname</div>
+                            <div class=" w-150p text-end">@r.Amount.ToString("N2")</div>
+                            <div class=" w-200p">@r.Trn</div>
+                        </div>
+                    }
+                    <div class="d-flex gap-2 py-1 fw-bold">
+                        <div class=" w-100p">Count: @reps.Count</div><div class=" w-150p"></div><div class=" w-100p"></div><div class=" w-300p">Total</div>
+                        <div class=" w-150p text-end">@reps.Sum(x => x.Amount).ToString("N2")</div>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    @*--- Employee ------------------------------------------------*@
+                    <RadzenDropDown @bind-Value="empNumber" Data="@emps" TextProperty="ClName" ValueProperty="ClNumber"
+                                    AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    Placeholder="Select employee" Style="width: 320px;" />
+                    @*--- Date range ------------------------------------------------*@
+                    <div class="p-2 fw-bold">From</div>
+                    <RadzenDatePicker @bind-Value="dateFrom" DateFormat="MM/dd/yyyy" />
+                    <div class="p-2 fw-bold">To</div>
+                    <RadzenDatePicker @bind-Value="dateTo" DateFormat="MM/dd/yyyy" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Accounts to show ------------------------------------------------*@
+        <div class="w-100"><div class="fw-bold p-1">@(IsEarn ? "Earnings" : "Deductions") to show</div><_00TClientList Clients="@accounts" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    [Parameter] public string           Mode        { get; set; } = "earn";
+    V00_RepVars                         rv          = new();
+    List<REarnDedHistoryModel>          reps        = [];
+
+    //--- Employee and account lists: ClNumber holds the employee number / account code ---
+    List<OClientModel>                  emps        = [];
+    List<OClientModel>                  accounts    = [];
+    Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+    string?                             empNumber;
+    DateTime?                           dateFrom    = new DateTime(DateTime.Today.Year, 1, 1);
+    DateTime?                           dateTo      = DateTime.Today;
+
+    private bool IsEarn => Mode == "earn";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!HasConnection()) return;
+
+        rv.RefreshToken = IsEarn ? 11030000 : 11540000;
+        rv.MCaption     = IsEarn ? "Earnings History" : "Deductions History";
+        rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["EmpName"] = "", ["From"] = "", ["To"] = "", ["RunDate"] = DateTime.Now };
+
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if ((res ?? []).Any())
+        {
+            rv.ReportParams["CoName"]    = res!.First()!.CoName ?? "";
+            rv.ReportParams["CoAddress"] = res!.First()!.CoAdd ?? "";
+        }
+
+        emps = (await _payRep._02ReportEmployees(Uc.OpisDb!, Uc.Conn!)).Select(e => new OClientModel { ClNumber = e.Empnumber?.Trim(), ClName = $"{e.Empname}   ({e.Empnumber?.Trim()})" }).ToList();
+
+        var coa = await _payRep._02s(Uc.OpayDb!, Uc.Conn!) ?? [];
+        string type = IsEarn ? "E" : "D";
+        accounts = coa.Where(a => a?.AcctNumber?.StartsWith(type, StringComparison.OrdinalIgnoreCase) == true)
+                      .OrderBy(a => a!.AcctName)
+                      .Select(a => new OClientModel { ClNumber = a!.AcctNumber?.Trim(), ClName = a.AcctName?.Trim() }).ToList();
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task FetchData()
+    {
+        reps = [];
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+        if (!HasConnection()) return;
+
+        var accts = accounts.Where(a => a.IsSelectedB).Select(a => a.ClNumber!).ToList();
+        if (string.IsNullOrWhiteSpace(empNumber)) { Notify(NotificationSeverity.Warning, "Warning", "Please select an employee."); return; }
+        if (!accts.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Nothing to process. Please select the accounts to show."); return; }
+        if (dateFrom == null || dateTo == null) { Notify(NotificationSeverity.Warning, "Warning", "Please select the date range."); return; }
+
+        try
+        {
+            rv.Isloaded = true;
+            reps = await _payRep._02EarnDedHistory(empNumber, dateFrom.Value, dateTo.Value, accts, Uc.OpayDb!, Uc.Conn!);
+            //--- MBPay lcEmpName / MDY(date) ---
+            rv.ReportParams["EmpName"] = emps.FirstOrDefault(e => e.ClNumber == empNumber)?.ClName?.Split("   (")[0] ?? "";
+            rv.ReportParams["From"]    = dateFrom.Value.ToString("MMMM d, yyyy");
+            rv.ReportParams["To"]      = dateTo.Value.ToString("MMMM d, yyyy");
+            rv.ReportParams["RunDate"] = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (!reps.Any()) { Notify(NotificationSeverity.Info, "Info", "No records found in database!"); return; }
+        rv.ShowModal = true;
+    }
+
+    private void CreateReport()
+    {
+        rv.ReportData   = reps;
+        rv.RelativePath = IsEarn ? "Reports/_03Payroll/K_EarnHistory.trdp" : "Reports/_03Payroll/K_DedHistory.trdp";
+        rv.RefreshToken++;
+        rv.ShowReport   = true;
+    }
+
+    private void CloseReportModal(bool ans)
+    {
+        if (rv.ShowReport) rv.ShowReport = ans;
+        else rv.ShowModal = ans;
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = severity, Summary = summary, Detail = detail, Duration = 5000 });
+}

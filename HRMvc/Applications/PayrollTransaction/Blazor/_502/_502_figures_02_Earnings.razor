@@ -1,7 +1,3 @@
-@using HRApiLibrary.Models._00_Main
-
-
-
 <table border="1" class="w-100 table table-striped table-bordered table-hover">
     <thead>
         <tr>
@@ -9,36 +5,28 @@
             <th class="w-40">Amount</th>
         </tr>
     </thead>
-
     <tbody>
-        <tr>
-            <td>Basic Pay</td>
-            <td class="text-end">0</td>
-        </tr>
-        
-        <tr>
-            <td>Reg. OT</td>
-            <td class="text-end">0</td>
-        </tr>
-        
-        <tr>
-            <td>Legal Holiday</td>
-            <td class="text-end">0</td>
-        </tr>
-           
+        @foreach (var a in rows)
+        {
+            <tr>
+                <td title="@a.Key">@AcctName(a.Key)</td>
+                <td class="text-end">@a.Value.ToString("N2")</td>
+            </tr>
+        }
     </tbody>
-
     <tfoot>
         <tr>
-            <th class="txt-fcolor">Gross Earnings</th>
-            <th class="text-end txt-fcolor"> 0 </th>
+            <th>Total</th>
+            <th class="text-end">@rows.Sum(a => a.Value).ToString("N2")</th>
         </tr>
     </tfoot>
 </table>
 
-
 @code {
-    [CascadingParameter] public UserClaimsModel     Uc { get; set; } = new();
-    
+    [CascadingParameter] public V502 v502 { get; set; } = new();
 
+    List<KeyValuePair<string, double>> rows =>
+        v502.CurrentEmp?.Amounts.Where(a => a.Key.StartsWith("E") && a.Value != 0).OrderBy(a => a.Key).ToList() ?? [];
+
+    string AcctName(string acct) => v502.Session?.Coas.FirstOrDefault(c => c.AcctNumber == acct)?.AcctName?.Trim() ?? acct;
 }

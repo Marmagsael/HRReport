@@ -1,71 +1,183 @@
-﻿@using HRApiLibrary.DataAccess._20_Pay.Interface
-@using HRApiLibrary.Models._00_Main
-@using HRApiLibrary.Models._20_Pay
-@using HRMvc.Applications.PayrollReport.Views.Blazor.Components
-@using HRMvc.Applications._03Payroll.Views.BlazorPages._06._0600
-@using System.Threading.Tasks
+﻿@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PayrollReport.Views.Blazor._1203
 
-<div>
-    <button class="btn btn-success" @onclick="Create" >Generate Report </button>
-</div>
+@* --- Payroll Register (MBPay frmpayrollregister: per Client / per Batch -> rptPYR_04b) --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
 
 
-<IframeReportRenderer
-    DataSource          ="sample"
-    ReportRelativePath  ="@relativePath"
-    OutputFormat        ="@selectedFormat"
-    Parameters          ="reportParams"
-    AutoGenerate        ="@(sample?.Any() == true)"
-    RefreshToken        ="@refreshToken" />
+<_00BT_FullW HdrCaption="@rv.MCaption" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
 
-@inject IPayrollgrpDataAccess _pg; 
+        @if ((reps ?? []).Any())
+        {
+            @*--- Report ------------------------------------------------*@
+            <_1203_Report Rv="rv" V="@reps" ChildAction="ChildActionCatcher" />
+        }
 
-@code {
 
-    private class SampleModel
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2">
+                    @*--- Period ------------------------------------------------*@
+                    <_01YYMMPP Rv="rv" ChildAction="PeriodChanged" />
+                    @*--- Fetch Button ------------------------------------------------*@
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Payroll groups (TRNs) of the period ------------------------------------------------*@
+        <div class="w-100"> <_00TClientList Clients="@rv.Clients" ClassParams="@clientClass" ChildAction="ChildActionCatcher" /> </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+
+
+@inject IOPisReportDataAccess       _pisRep;
+@inject IGPayrollReportDataAccess   _payRep;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc      { get; set; } = new();
+    V00_RepVars                         rv      = new();
+    List<RPayrollRegisterModel>         reps    = [];
+
+    //--- The list shows one row per TRN: ClNumber holds the TRN ---
+    private List<string> trns => rv.Clients?.Where(x => x.IsSelectedB).Select(x => x.ClNumber!).ToList() ?? new();
+    private string yymmpp => $"{rv.Year.ToString()!.Substring(2, 2)}{rv.Month}{rv.Period}";
+
+    Dictionary<string, object> clientClass = new(){ ["VH"] = "vh77"};
+
+    protected override async Task OnInitializedAsync()
     {
-        public string?  No      { get; set; }
-        public string?  Desc    { get; set; }
-        public double   Amount  { get; set; } = 0;
+        if (!HasConnection()) return;
 
+        InitializeReport();
+        await LoadCompanyInfo();
+        await LoadTrns();
+    }
+
+    //===================================
+    // Initial Data =====================
+    private void InitializeReport()
+    {
+        rv.RefreshToken     = 12030000;
+        rv.MCaption         = "Payroll Register";
+        rv.ReportParams     = new()
+        {
+            ["CoName"]      = "-",
+            ["CoAddress"]   = "-",
+            ["RunDate"]     = DateTime.Now
+        };
+    }
+
+    private async Task LoadCompanyInfo()
+    {
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
+
+        var r = res!.First();
+        rv.ReportParams["CoName"]    = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+    }
+
+    private async Task LoadTrns()
+    {
+        var res = await _payRep._02PayrollRegisterTrns(yymmpp, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        rv.Clients = res.Select(t => new OClientModel { ClNumber = t.Trn, ClName = $"{t.ClName}   [Batch {t.Batch}]  {t.Trn}" }).ToList();
+    }
+
+    async Task PeriodChanged()
+    {
+        reps = [];
+        await LoadTrns();
+    }
+
+    void ChildActionCatcher(){}
+
+    private async Task FetchData()
+    {
+        ResetVars();
+
+        if (!HasConnection() || !ValidateFilters()) return;
+
+        try
+        {
+            rv.Isloaded = true;
+            rv.ReportParams["RunDate"] = DateTime.Now;
+            reps = await _payRep._02PayrollRegister(trns, yymmpp, rv.ReportParams["CoName"]?.ToString(), Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Notify(NotificationSeverity.Error, "Missing setting", ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            rv.Isloaded = false;
+        }
+
+        if (reps?.Any() != true)
+        {
+            Notify(NotificationSeverity.Info, "Info", "No data found for this period and payroll group.");
+            return;
+        }
+
+        rv.ShowModal = true;
     }
 
 
-    [Parameter] public UserClaimsModel? UserClaims { get; set; }
-
-    List<PayrollgrpModel?>? payrollgrps = []; 
-    List<PayrollgrpModel?>? pg          = [];
-    List<SampleModel?>?     sample      = [];
-
-    private int? refreshToken        = 1202000;
-
-    private string?                      selectedFormat  = "PDF";                                // PDF | XLSX
-    private string?                      relativePath    = "Reports/_03Payroll/mSample.trdp"; //"{path}{filename}"
-    private Dictionary<string, object>  reportParams    = new() {   ["pCompanyName"]    = "Morpheusbox Inc.",
-                                                                    ["pPrintedBy"]      = "SYSTEM",
-                                                                    ["pPrintDate"]      = DateTime.Now
-                                                                };
-
-    private async Task Create()
+    private bool ValidateFilters()
     {
-        sample = [];
-        sample.Add(new SampleModel { No = "1", Desc="Desc 1", Amount=11123.33 });
-        sample.Add(new SampleModel { No = "2", Desc="Desc 2", Amount=22223.33 });
-        sample.Add(new SampleModel { No = "3", Desc="Desc 3", Amount=33323.33 });
-        sample.Add(new SampleModel { No = "4", Desc="Desc 4", Amount=14423.33 });
-        
-        
-        return;
-        string? conn = UserClaims?.Conn??"";
-        string? paydb = UserClaims?.SchemaUserPay??"";
+        if (!trns.Any())
+        {
+            Notify(NotificationSeverity.Warning, "Warning", "Please select payroll group from the list.");
+            return false;
+        }
 
-
-        pg = await _pg._02(paydb!, conn!);
-        if (pg.Count > 0) payrollgrps = pg; 
-
-        refreshToken++;
-        StateHasChanged(); 
-        
+        return true;
     }
+
+    private void ResetVars()
+    {
+        reps = new();
+        rv.ShowModal = false;
+        rv.ShowReport = false;
+
+        if (rv.ReportFormats?.Any() == true) rv.SelectedFormat = "PDF";
+    }
+
+    private bool HasConnection()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.OpayDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            Notify(NotificationSeverity.Error, "Failed to connect", "Please refresh or contact administrator.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void Notify(NotificationSeverity severity, string? summary, string? detail)
+    {
+        _NotificationService.Notify(new NotificationMessage
+        {
+            Severity = severity,
+            Summary = summary,
+            Detail = detail,
+            Duration = 5000
+        });
+    }
+
 }
-
