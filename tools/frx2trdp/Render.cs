@@ -303,6 +303,7 @@ static class Render
                     if (opt == "atm") rows = rows.Where(r => r.Acctcode != "" && r.Amount > 0).ToList();
                     if (opt == "cash") rows = rows.Where(r => r.Acctcode == "" && r.Amount > 0).OrderBy(r => r.Clname).ThenBy(r => r.Emplastnm).ToList();
                     prm["PP"] = half == "02" ? $"December, {year - 1} - May, {year}" : $"June, {year} - November, {year}";
+                    prm["Particulars"] = "In payment of 13th month pay for the period " + (half == "02" ? $"December 1, {year - 1}, to May 31, {year}" : $"June 1, {year}, to November 30, {year}");
                     Console.WriteLine($"rows={rows.Count} total={rows.Sum(r => r.Total):N2}");
                     data = rows;
                     break;
@@ -443,6 +444,17 @@ static class Render
                         if (rows.Count != emps || Math.Abs(rows.Sum(r => r.P1ee) - exp[0]) > 0.01 * Math.Max(1, rows.Count) || Math.Abs(rows.Sum(r => r.P2ee) - exp[1]) > 0.01 * Math.Max(1, rows.Count) || Math.Abs(rows.Sum(r => r.P3ee) - exp[2]) > 0.01 * Math.Max(1, rows.Count)) { bad++; Console.WriteLine($"DIFF {y} Q{q}"); }
                     }
                     Console.WriteLine($"quarters={n} diffs={bad}");
+                    return;
+                }
+            case "psemps":
+                {
+                    // <yymmpp>: the TRN + employee list, and each payslip of the first TRN alone equals its rows of the whole list
+                    var list = await rep._02PayslipEmployees(args[1], paydb, pisdb, conn);
+                    var trn = list.First().Trn!;
+                    var all = await rep._02Payslip([trn], paydb, pisdb, conn);
+                    int bad = 0;
+                    foreach (var e in list.Where(x => x.Trn == trn)) if (!all.Any(r => r.Empnumber == e.Empnumber)) bad++;
+                    Console.WriteLine($"list={list.Count} firstTrn={trn} employees={list.Count(x => x.Trn == trn)} slips={all.Select(r => r.Empnumber).Distinct().Count()} missing={bad} sample={list.First().Empname} / {list.First().Clname2}");
                     return;
                 }
             case "hdmfcert":

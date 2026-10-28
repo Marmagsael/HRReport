@@ -875,6 +875,21 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         return res.OrderBy(r => r.Ln).ThenBy(r => r.Fn).ToList();
     }
 
+    // --- Payslip per Employee (MBPay frmpsperemployee -> payslip.frx): TRN + employee of a period (yymmpp), the client with its area ---
+    public async Task<List<RPayslipEmpModel>> _02PayslipEmployees(string yymmpp, string? opaydb, string? opisdb, string? conn)
+    {
+        string? sql = $@"SELECT  DISTINCT a.TRN Trn, TRIM(a.EmpNumber) Empnumber,
+                                 IFNULL(CONCAT(TRIM(b.ClName),' - ',c.AreaName), b.ClName) Clname2,
+                                 CONCAT(TRIM(d.EmpLastNm),', ',TRIM(d.EmpFirstNm)) Empname
+                         FROM    {opaydb}.tbltran a
+                                 LEFT JOIN {opisdb}.client b ON b.ClNumber = RIGHT(a.TRN,5)
+                                 LEFT JOIN {opisdb}.area   c ON c.AreaCode = b.AreaCode
+                                 LEFT JOIN {opisdb}.empmas d ON d.EmpNumber = a.EmpNumber
+                         WHERE   LEFT(a.TRN,6) = @Prd
+                         ORDER BY Empname, Trn ";
+        return await _sql.FetchData<RPayslipEmpModel, dynamic>(sql, new { Prd = yymmpp }, conn);
+    }
+
     // --- Report settings ({opaydb}.reportsettings, made by OldPay_TblMaker._01ReportSettings) ---------------------------
     public async Task<Dictionary<string, string>> _02ReportSettings(string? opaydb, string? conn)
         => (await _sql.FetchData<(string Code, string Value), dynamic>($"SELECT TRIM(Code), IFNULL(Value,'') FROM {opaydb}.reportsettings", new { }, conn))
@@ -930,6 +945,7 @@ public interface IGPayrollReportDataAccess
     Task<List<RSssLoanRemitModel>> _02LoanRefRemit(string acct, string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RPhicMonthlyModel>> _02PhicMonthly(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RPhicQuarterModel>> _02PhicQuarter(int quarter, int year, string? opaydb, string? opisdb, string? conn);
+    Task<List<RPayslipEmpModel>> _02PayslipEmployees(string yymmpp, string? opaydb, string? opisdb, string? conn);
     Task<List<RPayslipModel>> _02Payslip(List<string> trns, string? opaydb, string? opisdb, string? conn);
 
 }

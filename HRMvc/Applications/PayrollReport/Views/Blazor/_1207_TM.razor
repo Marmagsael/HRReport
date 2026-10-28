@@ -1,7 +1,7 @@
 @using HRApiLibrary.Models._10_Pis.OPis
 
 @* --- 13th Month reports (MBPay: frm13thmonthdetailed / frm13dtlperclient / frm13dtlperemp, frm13thmonthsummary / frm13summaryclient /
-       frm13summaryemp, frm13register / frm132register, frmba13). Kind: detailed | summary | register | bank.
+       frm13summaryemp, frm13register / frm132register, frmba13). Kind: detailed | summary | register | bank | voucher (frm13thmonthvoucher -> rpt13voucher, a petty cash voucher per employee).
        Scope: all (statuses + clients) | client (one client) | emp (one employee). Basic pay (E001) of June-November (01) or
        December-May (02); 13th month = total / 12. Statuses and clients are all selected at first (MBPay started with none) --- *@
 
@@ -83,7 +83,7 @@
                                         AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
                                         Placeholder="Select employee" Style="width: 300px;" />
                     }
-                    else if (Kind != "bank")
+                    else if (Kind != "bank" && Kind != "voucher")
                     {
                         <RadzenCheckBox TValue="bool" @bind-Value="noClient" />
                         <span>View employees with no deployment</span>
@@ -154,9 +154,9 @@
         if (!HasConnection()) return;
 
         string scopeCap = Scope == "client" ? " (Per Client)" : Scope == "emp" ? " (Per Employee)" : "";
-        rv.MCaption = Kind switch { "summary" => "13th Month Summary", "register" => "13th Month Register", "bank" => "13th Month Bank Advice", _ => "13th Month Detailed" } + scopeCap;
+        rv.MCaption = Kind switch { "summary" => "13th Month Summary", "register" => "13th Month Register", "bank" => "13th Month Bank Advice", "voucher" => "13th Month Voucher", _ => "13th Month Detailed" } + scopeCap;
         rv.RefreshToken = 1207000 + (Kind.Length * 10) + (Scope == "all" ? 0 : Scope == "client" ? 1 : 2);
-        rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["PP"] = "" };
+        rv.ReportParams = new() { ["CoName"] = "-", ["CoAddress"] = "-", ["PP"] = "", ["Particulars"] = "" };
 
         var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
         if ((res ?? []).Any())
@@ -202,9 +202,11 @@
         {
             rv.Isloaded = true;
             //--- MBPay's bank advice always took the employees with no client; the client report only that client ---
-            reps = await _payRep._02ThirteenthMonth(half, year, st, cls, Scope == "client" ? false : (Kind == "bank" || noClient), emp, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            reps = await _payRep._02ThirteenthMonth(half, year, st, cls, Scope == "client" || Kind == "voucher" ? false : (Kind == "bank" || noClient), emp, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
             //--- MBPay lcPP ---
             rv.ReportParams["PP"] = half == "02" ? $"December, {year - 1} - May, {year}" : $"June, {year} - November, {year}";
+            //--- MBPay cparticulars (it printed "Nov. 31"; November has 30 days) ---
+            rv.ReportParams["Particulars"] = "In payment of 13th month pay for the period " + (half == "02" ? $"December 1, {year - 1}, to May 31, {year}" : $"June 1, {year}, to November 30, {year}");
         }
         catch (Exception ex)
         {
@@ -233,6 +235,7 @@
             ("summary", "emp")     => "K_13SummaryEmp.trdp",
             ("summary", _)         => "K_13Summary.trdp",
             ("register", _)        => "K_13Register.trdp",
+            ("voucher", _)         => "K_13Voucher.trdp",
             _                      => isAtm ? "K_13BankAdvise.trdp" : "K_13CashBasis.trdp"
         };
         rv.RefreshToken++;

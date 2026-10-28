@@ -52,3 +52,12 @@ public class RPayslipDtlModel
 	public string?  	DtlCd 			{ get; set; }
 	public double?  	NVal 			{ get; set; }
 }
+
+//--- Payslip per Employee (MBPay frmpsperemployee): the TRN + employee list of a period ---
+public class RPayslipEmpModel
+{
+	public string?  	Trn 			{ get; set; }
+	public string?  	Empnumber 		{ get; set; }
+	public string?  	Clname2 		{ get; set; }
+	public string?  	Empname 		{ get; set; }
+}

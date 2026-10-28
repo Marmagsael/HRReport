@@ -35,6 +35,7 @@ static class FrxConvert
         var rename = Map("Rename");
         var labels = Map("Labels");
         var printWhen = Map("PrintWhen");
+        var widen = Map("Widen");
         // ParamTypes: report parameter -> Telerik type (Float, Integer...); FontParam: FRX font -> report parameter that
         // gives the font at run time (the FontMap font stays as the design-time font)
         var paramTypes = Map("ParamTypes");
@@ -263,7 +264,10 @@ static class FrxConvert
                         int ofs = I(r, "OFFSET");
                         string align = codes.Contains('I') || ofs == 2 ? "Center"
                                      : codes.Contains('J') || ofs == 1 || (ofs == 0 && (fmt.StartsWith("{0:#") || fmt.StartsWith("{0:'"))) ? "Right" : "Left";
-                        sections[sec].Add($"<TextBox Width=\"{In(w + 0.02)}\" Height=\"{In(hh)}\" Left=\"{In(h)}\" Top=\"{In(top)}\" Value=\"{X(value)}\"{(fmt != "" ? $" Format=\"{X(fmt)}\"" : "")} CanGrow=\"{(r["STRETCH"] == "T" && !noGrow)}\" TextWrap=\"{(r["STRETCH"] == "T" && !noGrow)}\" Name=\"{name}\"><Style TextAlign=\"{align}\">{font}</Style>{fontBind}</TextBox>");
+                        //--- Widen: a literal field that is too narrow in Telerik's font -> its width (inches); a field of 2+ text lines wraps ---
+                        double fw = widen.TryGetValue(expr.Trim().Trim('"').ToLower(), out var wv) ? double.Parse(wv, inv) : w;
+                        bool multiLine = hh * 72 > N(r, "FONTSIZE") * 2.1;
+                        sections[sec].Add($"<TextBox Width=\"{In(fw + 0.02)}\" Height=\"{In(hh)}\" Left=\"{In(h)}\" Top=\"{In(top)}\" Value=\"{X(value)}\"{(fmt != "" ? $" Format=\"{X(fmt)}\"" : "")} CanGrow=\"{(r["STRETCH"] == "T" && !noGrow)}\" TextWrap=\"{((r["STRETCH"] == "T" && !noGrow) || multiLine)}\" Name=\"{name}\"><Style TextAlign=\"{align}\">{font}</Style>{fontBind}</TextBox>");
                         break;
                     }
                 case 6: // line
