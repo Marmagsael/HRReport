@@ -808,7 +808,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
     // --- Clients of the month's TRNs (MBPay filled its client list from them) ---
     public async Task<List<RSssLoanRemitModel>> _02MonthClients(string yymm, string? opaydb, string? opisdb, string? conn)
         => await _sql.FetchData<RSssLoanRemitModel, dynamic>($@"SELECT DISTINCT RIGHT(TRIM(a.TRN),5) Clnumber, c.ClName Clname FROM {opaydb}.tbltran a
-                  LEFT JOIN {opisdb}.client c ON c.ClNumber = RIGHT(TRIM(a.TRN),5) WHERE LEFT(a.TRN,4) = @Yymm ORDER BY c.ClName", new { Yymm = yymm }, conn);
+                  LEFT JOIN {opisdb}.client c ON c.ClNumber = RIGHT(TRIM(a.TRN),5) WHERE LEFT(a.TRN, CHAR_LENGTH(@Yymm)) = @Yymm ORDER BY c.ClName", new { Yymm = yymm }, conn);
 
     // --- loansref rows of the SSS loan account (ACCT_SSSLOAN) whose TRN is of the month and was really deducted (same TRN, employee and
     // --- account in tbltran), clients: those TRNs only; amortization added per employee ---
@@ -890,6 +890,41 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
         return await _sql.FetchData<RPayslipEmpModel, dynamic>(sql, new { Prd = yymmpp }, conn);
     }
 
+    // --- Payroll Summary (Masterlist) / Register (2 liner) Excel (MBPay payroll_summary4 / payroll_register4V2): one TRN, per employee and account.
+    // --- An account twice for the same employee in the TRN is added (MBPay's Excel cell kept the last one) ---
+    public async Task<List<RSheetLineModel>> _02TrnSheetLines(string trn, string? opaydb, string? opisdb, string? conn)
+    {
+        string? sql = $@"SELECT  TRIM(a.EmpNumber) `Key`, CONCAT(TRIM(e.EmpLastNm),', ',TRIM(e.EmpFirstNm),' ',TRIM(e.EmpMidNm)) Name,
+                                 TRIM(a.AcctNumber) Acctnumber, TRIM(c.AcctName) Acctname, TRIM(c.ShortDesc) Shortdesc, a.Amount, TRIM(d.ClName) Clname
+                         FROM    {opaydb}.tbltran a
+                                 LEFT JOIN {opaydb}.chartofacct c ON c.AcctNumber = a.AcctNumber
+                                 LEFT JOIN {opisdb}.empmas      e ON e.EmpNumber  = a.EmpNumber
+                                 LEFT JOIN {opisdb}.client      d ON d.ClNumber   = RIGHT(TRIM(a.TRN),5)
+                         WHERE   a.TRN = @Trn
+                         ORDER BY e.EmpLastNm, e.EmpFirstNm ";
+        return Sum(await _sql.FetchData<RSheetLineModel, dynamic>(sql, new { Trn = trn }, conn));
+    }
+
+    // --- Payroll Summary per Payroll Group (MBPay payroll_summary_per_client4 / _perclient_permo4): the chosen clients, every TRN whose
+    // --- start is prefix (yymmpp, or yymm for the month), per client and account ---
+    public async Task<List<RSheetLineModel>> _02ClientSheetLines(string prefix, List<string> clients, string? opaydb, string? opisdb, string? conn)
+    {
+        if (clients.Count == 0) return [];
+        string? sql = $@"SELECT  RIGHT(TRIM(a.TRN),5) `Key`, TRIM(d.ClName) Name, TRIM(a.AcctNumber) Acctnumber, TRIM(c.AcctName) Acctname, a.Amount
+                         FROM    {opaydb}.tbltran a
+                                 LEFT JOIN {opaydb}.chartofacct c ON c.AcctNumber = a.AcctNumber
+                                 LEFT JOIN {opisdb}.client      d ON d.ClNumber   = RIGHT(TRIM(a.TRN),5)
+                         WHERE   LEFT(a.TRN, CHAR_LENGTH(@Prefix)) = @Prefix AND RIGHT(TRIM(a.TRN),5) IN @Cls
+                         ORDER BY d.ClName ";
+        return Sum(await _sql.FetchData<RSheetLineModel, dynamic>(sql, new { Prefix = prefix, Cls = clients }, conn));
+    }
+
+    //--- One line per key (employee / client) and account, the amounts added, each rounded to cents as MBPay's n(12,2) cursors ---
+    private static List<RSheetLineModel> Sum(List<RSheetLineModel> lines)
+        => lines.GroupBy(l => (l.Key, l.Acctnumber))
+                .Select(g => { var f = g.First(); f.Amount = Cents(g.Sum(l => Cents(l.Amount))); return f; })
+                .OrderBy(l => l.Name).ThenBy(l => l.Acctnumber).ToList();
+
     // --- Report settings ({opaydb}.reportsettings, made by OldPay_TblMaker._01ReportSettings) ---------------------------
     public async Task<Dictionary<string, string>> _02ReportSettings(string? opaydb, string? conn)
         => (await _sql.FetchData<(string Code, string Value), dynamic>($"SELECT TRIM(Code), IFNULL(Value,'') FROM {opaydb}.reportsettings", new { }, conn))
@@ -946,6 +981,8 @@ public interface IGPayrollReportDataAccess
     Task<List<RPhicMonthlyModel>> _02PhicMonthly(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RPhicQuarterModel>> _02PhicQuarter(int quarter, int year, string? opaydb, string? opisdb, string? conn);
     Task<List<RPayslipEmpModel>> _02PayslipEmployees(string yymmpp, string? opaydb, string? opisdb, string? conn);
+    Task<List<RSheetLineModel>> _02TrnSheetLines(string trn, string? opaydb, string? opisdb, string? conn);
+    Task<List<RSheetLineModel>> _02ClientSheetLines(string prefix, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RPayslipModel>> _02Payslip(List<string> trns, string? opaydb, string? opisdb, string? conn);
 
 }

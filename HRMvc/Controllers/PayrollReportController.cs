@@ -39,6 +39,10 @@ namespace HRMvc.Controllers
             ["1219"] = "_1219_13thMonthVoucher",
             ["1220"] = "_1220_PayslipPerEmployee",
             ["1221"] = "_1221_PayrollRegisterMasterlist",
+            ["1222"] = "_1222_PayrollSummaryMasterlist",
+            ["1223"] = "_1223_PayrollRegister2Liner",
+            ["1224"] = "_1224_PayrollSummaryPerGroup",
+            ["1225"] = "_1225_PayrollSummaryPerGroupMonth",
 
             // Compliance
             ["1252"] = "_1252_SSSContribution",

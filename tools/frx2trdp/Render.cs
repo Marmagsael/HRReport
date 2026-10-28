@@ -457,6 +457,25 @@ static class Render
                     Console.WriteLine($"list={list.Count} firstTrn={trn} employees={list.Count(x => x.Trn == trn)} slips={all.Select(r => r.Empnumber).Distinct().Count()} missing={bad} sample={list.First().Empname} / {list.First().Clname2}");
                     return;
                 }
+            case "xlsheets":
+                {
+                    // <yymmpp> <outdir>: the 4 Excel files of the Payroll Standard group for the first TRN / every client of the period
+                    string prd = args[1], dir = args[2];
+                    Directory.CreateDirectory(dir);
+                    var trn = (await rep._02PayrollRegisterTrns(prd, paydb, pisdb, conn)).First().Trn!;
+                    var lines = await rep._02TrnSheetLines(trn, paydb, pisdb, conn);
+                    File.WriteAllBytes(Path.Combine(dir, "summary.xlsx"), HRMvc.Applications.PayrollReport.Class.PayrollSheets.Summary(lines, "For the 2nd period of May 2026"));
+                    File.WriteAllBytes(Path.Combine(dir, "register2.xlsx"), HRMvc.Applications.PayrollReport.Class.PayrollSheets.Register2Liner(lines, "Morpheusbox Inc.", "GF Suntrade Bldg.", "2nd of May, 2026"));
+                    var cls = (await rep._02MonthClients(prd, paydb, pisdb, conn)).Select(c => c.Clnumber!).ToList();
+                    var cl = await rep._02ClientSheetLines(prd, cls, paydb, pisdb, conn);
+                    File.WriteAllBytes(Path.Combine(dir, "group.xlsx"), HRMvc.Applications.PayrollReport.Class.PayrollSheets.ClientSummary(cl, " Payroll Summary Report ", " For the period covered "));
+                    var clm = await rep._02ClientSheetLines(prd[..4], cls, paydb, pisdb, conn);
+                    File.WriteAllBytes(Path.Combine(dir, "groupmonth.xlsx"), HRMvc.Applications.PayrollReport.Class.PayrollSheets.ClientSummary(clm, " Payroll Summary Report for the month of May", " x"));
+                    // totals vs plain SQL
+                    var exp = await sql.FetchData<double, dynamic>($"select sum(round(Amount,2)) + 0e0 from {paydb}.tbltran where left(TRN,6) = @P", new { P = prd }, conn);
+                    Console.WriteLine($"trn={trn} lines={lines.Count} clients={cls.Count} periodTotal={cl.Sum(l => l.Amount):N2} vs sql={exp[0]:N2} monthTotal={clm.Sum(l => l.Amount):N2}");
+                    return;
+                }
             case "hdmfcert":
             case "phiccert":
                 {
