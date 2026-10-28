@@ -852,6 +852,29 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
                     .OrderBy(x => x.EmpLastNm).ThenBy(x => x.EmpFirstNm).Select(x => x.Row).ToList();
     }
 
+    // --- PhilHealth Employer's Quarterly Remittance Report (MBPay frmphicquarterly -> rptphquarter) ----------------------
+    // --- quarter 1..4 of year; the premium (ACCT_PHIC) of each employee per month of the quarter (all TRNs of the month added) ---
+    public async Task<List<RPhicQuarterModel>> _02PhicQuarter(int quarter, int year, string? opaydb, string? opisdb, string? conn)
+    {
+        string acct = await _02ReportSetting("ACCT_PHIC", opaydb, conn);
+        int m1 = (quarter - 1) * 3 + 1;
+        var months = new[] { m1, m1 + 1, m1 + 2 }.Select(m => $"{year % 100:00}{m:00}").ToList();
+        string? sql = $@"SELECT  LEFT(TRIM(a.TRN),4) Trn, TRIM(a.EmpNumber) Empnumber, a.Amount, b.SSS Sss,
+                                 TRIM(IFNULL(b.EmpLastNm,'')) Ln, TRIM(IFNULL(b.EmpFirstNm,'')) Fn, LEFT(TRIM(IFNULL(b.EmpMidNm,'')),1) Mi
+                         FROM    {opaydb}.tbltran a
+                                 LEFT JOIN {opisdb}.empmas b ON b.EmpNumber = a.EmpNumber
+                         WHERE   TRIM(a.AcctNumber) = @Acct AND LEFT(a.TRN,4) IN @Months ";
+        var lines = await _sql.FetchData<RPhicQuarterModel, dynamic>(sql, new { Acct = acct, Months = months }, conn);
+        var res = new List<RPhicQuarterModel>();
+        foreach (var g in lines.GroupBy(l => l.Empnumber!))
+        {
+            var f = g.First();
+            double Sum(string m) => Cents(g.Where(l => l.Trn == m).Sum(l => Cents(l.Amount)));
+            res.Add(new RPhicQuarterModel { Empnumber = g.Key, Sss = f.Sss, Ln = f.Ln, Fn = f.Fn, Mi = f.Mi, P1ee = Sum(months[0]), P2ee = Sum(months[1]), P3ee = Sum(months[2]) });
+        }
+        return res.OrderBy(r => r.Ln).ThenBy(r => r.Fn).ToList();
+    }
+
     // --- Report settings ({opaydb}.reportsettings, made by OldPay_TblMaker._01ReportSettings) ---------------------------
     public async Task<Dictionary<string, string>> _02ReportSettings(string? opaydb, string? conn)
         => (await _sql.FetchData<(string Code, string Value), dynamic>($"SELECT TRIM(Code), IFNULL(Value,'') FROM {opaydb}.reportsettings", new { }, conn))
@@ -906,6 +929,7 @@ public interface IGPayrollReportDataAccess
     Task<List<RSssLoanRemitModel>> _02SssLoanRemit(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RSssLoanRemitModel>> _02LoanRefRemit(string acct, string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
     Task<List<RPhicMonthlyModel>> _02PhicMonthly(string yymm, List<string> clients, string? opaydb, string? opisdb, string? conn);
+    Task<List<RPhicQuarterModel>> _02PhicQuarter(int quarter, int year, string? opaydb, string? opisdb, string? conn);
     Task<List<RPayslipModel>> _02Payslip(List<string> trns, string? opaydb, string? opisdb, string? conn);
 
 }

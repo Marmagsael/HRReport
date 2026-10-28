@@ -410,6 +410,41 @@ static class Render
                     Console.WriteLine($"months={mons.Count} diffs={bad}");
                     return;
                 }
+            case "phquarter":
+                {
+                    // <trdp> <out.pdf> <quarter> <year>
+                    int q = int.Parse(args[3]), y = int.Parse(args[4]);
+                    var rows = await rep._02PhicQuarter(q, y, paydb, pisdb, conn);
+                    var names = new[] { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+                    prm["M1"] = names[(q - 1) * 3]; prm["M2"] = names[(q - 1) * 3 + 1]; prm["M3"] = names[(q - 1) * 3 + 2];
+                    Console.WriteLine($"rows={rows.Count} m1={rows.Sum(r => r.P1ee):N2} m2={rows.Sum(r => r.P2ee):N2} m3={rows.Sum(r => r.P3ee):N2}");
+                    data = rows;
+                    break;
+                }
+            case "phquartercheck":
+                {
+                    // each quarter of each year with D003: employees and the three month totals vs plain SQL
+                    var yrs = await sql.FetchData<int, dynamic>($"select distinct 2000 + cast(left(TRN,2) as unsigned) from {paydb}.tbltran where trim(AcctNumber) = 'D003' order by 1", new { }, conn);
+                    int bad = 0, n = 0;
+                    foreach (var y in yrs) for (int q = 1; q <= 4; q++)
+                    {
+                        var rows = await rep._02PhicQuarter(q, y, paydb, pisdb, conn);
+                        string yy = (y % 100).ToString("00");
+                        double[] exp = new double[3]; long emps = 0;
+                        for (int k = 0; k < 3; k++)
+                        {
+                            var e = await sql.FetchData<(long N, double A), dynamic>($"select count(distinct EmpNumber), ifnull(sum(round(Amount,2)),0) + 0e0 from {paydb}.tbltran where trim(AcctNumber) = 'D003' and left(TRN,4) = @M", new { M = yy + ((q - 1) * 3 + 1 + k).ToString("00") }, conn);
+                            exp[k] = e[0].A;
+                        }
+                        var allEmps = await sql.FetchData<long, dynamic>($"select count(distinct EmpNumber) from {paydb}.tbltran where trim(AcctNumber) = 'D003' and left(TRN,4) in @M", new { M = new[] { 1, 2, 3 }.Select(k => yy + ((q - 1) * 3 + k).ToString("00")).ToList() }, conn);
+                        emps = allEmps[0];
+                        if (rows.Count == 0 && emps == 0) continue;
+                        n++;
+                        if (rows.Count != emps || Math.Abs(rows.Sum(r => r.P1ee) - exp[0]) > 0.01 * Math.Max(1, rows.Count) || Math.Abs(rows.Sum(r => r.P2ee) - exp[1]) > 0.01 * Math.Max(1, rows.Count) || Math.Abs(rows.Sum(r => r.P3ee) - exp[2]) > 0.01 * Math.Max(1, rows.Count)) { bad++; Console.WriteLine($"DIFF {y} Q{q}"); }
+                    }
+                    Console.WriteLine($"quarters={n} diffs={bad}");
+                    return;
+                }
             case "hdmfcert":
             case "phiccert":
                 {

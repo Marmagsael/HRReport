@@ -1,0 +1,93 @@
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRMvc.Applications.PisReport.Vars
+
+@* --- SSS Payment Module (MBPay paymentsss). FORM ONLY: it is a data entry screen (not a report) that records the SSS premium paid
+       for a month and a client in sssprempayhdr (O.R. no., payment date, total, remarks) and sssprempaydtl (employees with EE / ER / ECC).
+       Saving and the lists are not ported yet (see the TODO) --- *@
+
+@inject NotificationService _NotificationService;
+
+<RadzenNotification />
+
+
+<_00BT_FullW HdrCaption="SSS Payment Module" Rv="@rv">
+    <Details>
+        @*--- Looader ------------------------------------------------*@
+        <_00Loader Rv="@rv" />
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <_01YYMM Rv="rv" ChildAction="ChildActionCatcher" />
+                    <RadzenDropDown @bind-Value="clientCode" Data="@clients" TextProperty="ClName" ValueProperty="ClNumber"
+                                    AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                    Placeholder="Select client" Style="width: 280px;" />
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Pending"> Fetch</div>
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="Pending"> Save</div>
+                </div>
+            </div>
+        </div>
+
+        @*--- Payment header (sssprempayhdr) ------------------------------------------------*@
+        <div class="card p-2 m-2" style="max-width: 720px;">
+            <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">O.R. No.</div><RadzenTextBox @bind-Value="orNo" Style="width: 200px;" /></div>
+            <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Payment Date</div><RadzenDatePicker @bind-Value="paymentDate" DateFormat="MM/dd/yyyy" Style="width: 200px;" /></div>
+            <div class="d-flex gap-2 align-items-center pb-1"><div class="w-200p">Total Payment</div><RadzenNumeric TValue="decimal?" @bind-Value="totalPayment" Style="width: 200px;" /></div>
+            <div class="d-flex gap-2 align-items-center"><div class="w-200p">Remarks</div><RadzenTextBox @bind-Value="remarks" Style="width: 400px;" /></div>
+        </div>
+
+        @*--- Included personnel / Available employees ------------------------------------------------*@
+        <div class="d-flex gap-2 w-100 p-2">
+            <div class="flex-fill">
+                <div class="fw-bold p-1">Included Personnel</div>
+                <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                    <div class=" w-250p">Name</div>
+                    <div class=" w-100p text-end">EE</div>
+                    <div class=" w-100p text-end">ER</div>
+                    <div class=" w-100p text-end">ECC</div>
+                    <div class=" w-100p text-end">Total</div>
+                    <div class=" w-150p">Deployment</div>
+                </div>
+                <div class="d-flex gap-2 py-1 fw-bold"><div class=" w-250p">Total Payment</div><div class=" w-100p text-end">0.00</div><div class=" w-100p text-end">0.00</div><div class=" w-100p text-end">0.00</div><div class=" w-100p text-end">0.00</div></div>
+            </div>
+            <div class="flex-fill">
+                <div class="fw-bold p-1">Available Employees (based on Client)</div>
+                <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
+                    <div class=" w-250p">Available Employee</div>
+                    <div class=" w-100p text-end">Amount</div>
+                </div>
+            </div>
+        </div>
+    </Details>
+</_00BT_FullW>
+
+
+
+@inject IOClientDataAccess          _client;
+
+@code{
+    [Parameter] public UserClaimsModel  Uc          { get; set; } = new();
+    V00_RepVars                         rv          = new();
+    List<OClientModel>                  clients     = [];
+    string?                             clientCode;
+    string?                             orNo;
+    DateTime?                           paymentDate = DateTime.Today;
+    decimal?                            totalPayment;
+    string?                             remarks;
+
+    void ChildActionCatcher(){}
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn)) return;
+        var cl = await _client._02ByStatuss("Active", Uc.OpisDb!, Uc.Conn!);
+        clients = (cl ?? []).Select(c => new OClientModel { ClNumber = c!.ClNumber, ClName = c.ClName }).ToList();
+    }
+
+    //--- TODO: MBPay paymentsss: load / save sssprempayhdr + sssprempaydtl for the month and client; the available employees are those with
+    //--- an SSS premium (ACCT_SSS) in a TRN of the client that are not in the payment yet ---
+    private void Pending()
+    {
+        _NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Info, Summary = "Pending", Detail = "The SSS Payment Module is not ported yet.", Duration = 5000 });
+    }
+}

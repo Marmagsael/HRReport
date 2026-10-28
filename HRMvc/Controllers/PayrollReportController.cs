@@ -52,6 +52,9 @@ namespace HRMvc.Controllers
             ["1263"] = "_1263_SSSContRemitAdjusted",
             ["1264"] = "_1264_SSSContPerGroup",
             ["1265"] = "_1265_PhicMonthlyPerGroup",
+            ["1266"] = "_1266_PhicQuarterly",
+            ["1267"] = "_1267_PhicMonthly",
+            ["1268"] = "_1268_SSSPaymentModule",
 
             // Others
             ["1302"] = "_1302_TaxAnnualization",
