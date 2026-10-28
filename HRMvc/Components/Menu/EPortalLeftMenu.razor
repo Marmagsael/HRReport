@@ -1,0 +1,62 @@
+@* -- From Views/Shared/EPortal/_EPortalLeftMenu.cshtml : same HTML / CSS classes -- *@
+@inject IMainmenuDataAccess _menu
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="css/ReportLayout/report-left-menu.css" />
+<div class="leftmenu-header ams-leftmenu-header ">
+    <h6>AMS System</h6>
+</div>
+
+@* =======================================================================================*@
+@* --- Employee Portal Menus -------------------------------------------------------------*@
+@* =======================================================================================*@
+<div class="report-left-menu">
+    <ul>
+        @*---- System Application : not for an Employee (portal only) ----*@
+        @if (HttpContext != null && !HRMvc.StartupConfig.CompanyRole.IsEmployee(HttpContext.User))
+        {
+            <div class="text-primary">
+                <ReportLeftMenuMain Menus="menus" ParentId="1501" />
+            </div>
+        }
+
+        <ReportLeftMenuMainParentDtl Menus="menus" ParentId="1001" />
+        <ReportLeftMenuMain Menus="menus" ParentId="1101" />
+        <ReportLeftMenuMain Menus="menus" ParentId="1201" />
+
+
+    </ul>
+</div>
+
+
+
+
+
+
+
+<style>
+    .report-menu-section-header {
+        background-color: #f1f3f5;
+        color: #6c757d;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        border-bottom: 1px solid #e9ecef;
+    }
+</style>
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    List<MainmenuModel?> menus = new();
+
+    // -- Load the menu list once --
+    protected override async Task OnInitializedAsync()
+    {
+        menus = await _menu._02("Main", Uc?.Conn ?? "") ?? [];
+    }
+}
