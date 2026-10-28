@@ -2,6 +2,7 @@ using Blazored.LocalStorage;
 using HRApiLibrary.Reporting.Providers.Payroll;
 using HRMvc.StartupConfig;
 using HRMvc.Applications.PayrollTransaction.Vars;
+using HRMvc.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +17,10 @@ builder.AddInjectServices();
 builder.AddHttpClient();
 builder.AddCors();
 builder.AddAuthenticationServices();
-builder.Services.AddHRMvcScope(); 
+builder.Services.AddHRMvcScope();
+
+// -- Blazor Web App : .razor pages (Components/) next to the legacy .cshtml pages --
+builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 //Api Injection -------------------------
 builder.AddApiInjectionServices();
@@ -42,12 +46,14 @@ app.AddReportProviders();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 //app.UseStaticFiles();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.MapBlazorHub();
+// -- Replaces MapBlazorHub : also serves the Blazor hub for the components hosted in .cshtml pages --
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.Run();
