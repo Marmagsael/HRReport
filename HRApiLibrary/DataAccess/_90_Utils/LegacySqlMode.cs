@@ -2,7 +2,8 @@ namespace HRApiLibrary.DataAccess._90_Utils;
 
 // -- Legacy schemas ({Code}_OPis / {Code}_OPay : MBPay, made for MySQL 5.5) run in the sql_mode they were made for :
 //    no strict mode and zero dates allowed. Inserts that leave out a NOT NULL date get '0000-00-00' as MBPay expects,
-//    and '0000-00-00' can be compared in a where. The session gets the server mode back before the pooled connection is reused --
+//    and '0000-00-00' can be compared in a where. The session gets the server mode back before the pooled connection is reused.
+//    Legacy connections also read zero dates as DateTime.MinValue (Convert Zero Datetime) instead of failing --
 public static class LegacySqlMode
 {
     public const string Set =

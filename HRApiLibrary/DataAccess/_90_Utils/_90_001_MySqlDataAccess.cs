@@ -69,9 +69,11 @@ public class _90_001_MySqlDataAccess : I_90_001_MySqlDataAccess
     public async Task<List<T>> FetchLegacy<T, U>(string? sql, U parameters, string? db, string? connName)
         => (await Legacy($"{_config.GetConnectionString(connName)}; database={db}", cn => cn.QueryAsync<T>(sql, parameters))).ToList();
 
+    //--- Zero dates read back as DateTime.MinValue (Convert Zero Datetime) instead of failing in MySql.Data ---------------
     private static async Task<TR> Legacy<TR>(string? connString, Func<IDbConnection, Task<TR>> work)
     {
-        using var cn = new MySqlConnection(connString);
+        var csb = new MySqlConnectionStringBuilder(connString) { ConvertZeroDateTime = true };
+        using var cn = new MySqlConnection(csb.ConnectionString);
         await cn.OpenAsync();
         await cn.ExecuteAsync(LegacySqlMode.Set);
         try     { return await work(cn); }
