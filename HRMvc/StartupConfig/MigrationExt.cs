@@ -190,6 +190,7 @@ public static class MigrationExt
         {
             log.LogInformation("Migrations : old Pay {Schema}", c.OldPay);
             await oldPay._01OldPayTable(c.OldPay!.Trim(), conn);
+            if (Exists(c.OldPis)) await oldPay._01OldPayDefaults(c.OldPay!.Trim(), c.OldPis!.Trim(), conn);
         }
 
         if (amsSchema != null) done.Add(amsSchema);

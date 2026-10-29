@@ -16,7 +16,7 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
     public async Task<List<GTbltrandtlModel>> _02ByTrnAndEmpnumber(string? trn, string? empnumber, string? schema, string? conn)
     {
         string? sql = $@"select * from {schema}.Tbltrandtl where left(Trn,6) = left(@Trn,6) and EmpNumber = @EmpNumber";
-        var data = await _sql.FetchData<GTbltrandtlModel, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<GTbltrandtlModel, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         return data ?? [];
     }
 
@@ -65,14 +65,14 @@ public class OEmpportalDataAccess : IOEmpportalDataAccess
                          left join {paydb}.ChartOfAcct c on c.AcctNumber = t.AcctNumber
                          where t.AcctNumber = @AcctNumber and t.EmpNumber = @EmpNumber";
 
-        var data = await _sql.FetchData<GTbltranModel, dynamic>(sql, new { AcctNumber = acctnumber, EmpNumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<GTbltranModel, dynamic>(sql, new { AcctNumber = acctnumber, EmpNumber = empnumber }, conn);
         return data ?? [];
     }
 
     private async Task<List<T>> _02EP_ByEmpNumber_ByAcctNumber<T>(string? empnumber, string? tblName, string? paydb, string? conn)
     {
         string? sql = $@" SELECT t.* FROM {paydb}.{tblName} t WHERE t.EmpNumber = @EmpNumber ORDER BY Trn";
-        var data = await _sql.FetchData<T, dynamic>(sql, new { EmpNumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<T, dynamic>(sql, new { EmpNumber = empnumber }, conn);
         return data ?? [];
     }
 }

@@ -33,5 +33,14 @@ public class V502
     public bool                         IsProcessed         { get; set; }
     public Func<Task>?                  Changed             { get; set; }       //--- re-render the page after a child changes state
 
+    //--- Upload Excel (same process as 1100/12002) : rows read from the file, split by what they do to the grid ----------
+    public bool                         IsUploadExcelOpen   { get; set; }
+    public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToUpdate { get; set; } = [];
+    public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToAdd    { get; set; } = [];
+    public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToRemove { get; set; } = [];
+    public List<string>                 ExcelIgnoredCols    { get; set; } = [];
+    public bool                         AllowAddFromExcel   { get; set; }
+    public bool                         AllowRemoveFromExcel { get; set; }
+
 
 }

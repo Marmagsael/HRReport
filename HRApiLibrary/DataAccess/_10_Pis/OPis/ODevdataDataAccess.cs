@@ -21,10 +21,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<ODevdataModel?> _01(ODevdataModel devdata, string schema, string conn)
         {
             string sql = $@"Insert into {schema}.Devdata (DEV_NO, DEV_NAME, DEV_TYPE, DEV_LEVEL, DEV_PARENT) values (@DEV_NO, @DEV_NAME, @DEV_TYPE, @DEV_LEVEL, @DEV_PARENT)";
-            await _sql.ExecuteCmd<dynamic>(sql, devdata, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, devdata, conn);
 
             sql = $@"SELECT * FROM {schema}.Devdata WHERE TRIM(UPPER(DEV_NO)) = TRIM(UPPER(@Dev_No))";
-            var res = await _sql.FetchData<ODevdataModel?, dynamic>(sql, new { devdata.Dev_No }, conn);
+            var res = await _sql.FetchLegacy<ODevdataModel?, dynamic>(sql, new { devdata.Dev_No }, conn);
             return res.FirstOrDefault();
         }
 
@@ -32,21 +32,21 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         {
 
             var sql = $@"select  LPAD(MAX(CAST(DEV_NO AS UNSIGNED)) + 1, 5, 0) from {schema}.Devdata ";
-            var clnumber = await _sql.FetchData<int?, dynamic>(sql, new { }, conn);
+            var clnumber = await _sql.FetchLegacy<int?, dynamic>(sql, new { }, conn);
             return clnumber.FirstOrDefault();
         }
 
         public async Task<ODevdataModel?> _02(int id, string schema, string conn)
         {
             string sql = $@"select  DEV_NO, DEV_NAME, DEV_TYPE, DEV_LEVEL, DEV_PARENT from {schema}.Devdata where Id = @Id";
-            var data = await _sql.FetchData<ODevdataModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<ODevdataModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<List<ODevdataModel?>?> _02(string schema, string conn)
         {
             string sql = $@"select  * from {schema}.Devdata";
-            var data = await _sql.FetchData<ODevdataModel?, dynamic>(sql, new { }, conn);
+            var data = await _sql.FetchLegacy<ODevdataModel?, dynamic>(sql, new { }, conn);
             return data;
         }
 
@@ -54,7 +54,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         {
             string sql = $@"SELECT * FROM {schema}.Devdata  WHERE TRIM(UPPER(DEV_NAME)) = TRIM(UPPER(@DEV_NAME))  ";
 
-            var data = await _sql.FetchData<ODevdataModel?, dynamic>(sql, new { DEV_NAME = devname }, conn);
+            var data = await _sql.FetchLegacy<ODevdataModel?, dynamic>(sql, new { DEV_NAME = devname }, conn);
             return data;
         }
 
@@ -63,11 +63,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
             string sql = $@"UPDATE {schema}.Devdata SET Dev_No = @Dev_No, Dev_Name = @Dev_Name WHERE TRIM(UPPER(Dev_No)) =  TRIM(UPPER(@Dev_No));";
 
-            await _sql.ExecuteCmd<dynamic>(sql, dev, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, dev, conn);
 
             sql = $@"SELECT * FROM {schema}.Devdata x WHERE TRIM(UPPER(x.Dev_No)) = TRIM(UPPER(@Dev_No)) ;";
 
-            var data = await _sql.FetchData<ODevdataModel?, dynamic>( sql,new {  dev.Dev_No}, conn);
+            var data = await _sql.FetchLegacy<ODevdataModel?, dynamic>( sql,new {  dev.Dev_No}, conn);
 
             return data?.FirstOrDefault();
         }
@@ -75,10 +75,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<ODevdataModel?> _04(string dev_no, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Devdata WHERE TRIM(UPPER(Dev_No)) = TRIM(UPPER(@Dev_No)) ;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Dev_No = dev_no }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Dev_No = dev_no }, conn);
 
             sql = $@" select  * from {schema}.Devdata x WHERE TRIM(UPPER(Dev_No)) = TRIM(UPPER(@Dev_No)) ;";
-            var data = await _sql.FetchData<ODevdataModel?, dynamic>(sql, new { Dev_No = dev_no}, conn);
+            var data = await _sql.FetchLegacy<ODevdataModel?, dynamic>(sql, new { Dev_No = dev_no}, conn);
             return data?.FirstOrDefault();
         }
     }

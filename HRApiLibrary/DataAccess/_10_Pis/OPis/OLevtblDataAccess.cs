@@ -17,11 +17,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OLevtblModel?> _01(OLevtblModel levtbl, string schema, string conn)
         {
             string sql = $@"Insert into {schema}.Levtbl (LVCODE, LVNAME, EARNCODE, NO_INCDATE) values (@LvCode, @LvName, @EarnCode, @No_Indicate)";
-            await _sql.ExecuteCmd<dynamic>(sql, levtbl, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, levtbl, conn);
 
             sql = $@"SELECT * FROM {schema}.Levtbl WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@LVCODE))";
 
-            var res = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { levtbl.LvCode }, conn);
+            var res = await _sql.FetchLegacy<OLevtblModel?, dynamic>(sql, new { levtbl.LvCode }, conn);
 
             return res.FirstOrDefault();
         }
@@ -30,14 +30,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OLevtblModel?> _02(int id, string schema, string conn)
         {
             string sql = $@"select  LVCODE, LVNAME, EARNCODE, NO_INCDATE from {schema}.Levtbl where Id = @Id";
-            var data = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OLevtblModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<List<OLevtblModel?>?> _02(string schema, string conn)
         {
             string sql = $@"select  LVCODE, LVNAME, EARNCODE, NO_INCDATE from {schema}.Levtbl ORDER BY LVNAME";
-            var data = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { }, conn);
+            var data = await _sql.FetchLegacy<OLevtblModel?, dynamic>(sql, new { }, conn);
             return data;
         }
 
@@ -46,7 +46,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         {
             string sql = $@"SELECT * FROM {schema}.Levtbl  WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@Code))   OR TRIM(UPPER(LVNAME)) = TRIM(UPPER(@Name))";
 
-            var data = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
+            var data = await _sql.FetchLegacy<OLevtblModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
             return data;
         }
 
@@ -62,21 +62,21 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
             string sql = $@"UPDATE {schema}.Levtbl  SET LVCODE = @LvCode, LVNAME = @LvName  WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@oldCode));";
 
-            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, parameters, conn);
 
             sql = $@"SELECT * FROM {schema}.Levtbl x WHERE TRIM(UPPER(x.LVCODE)) = TRIM(UPPER(@LvCode)) AND   TRIM(UPPER(x.LVNAME)) = TRIM(UPPER(@LvName));";
 
-            var data = await _sql.FetchData<OLevtblModel?, dynamic>( sql, new {  levtbl.LvCode, levtbl.LvName },conn);
+            var data = await _sql.FetchLegacy<OLevtblModel?, dynamic>( sql, new {  levtbl.LvCode, levtbl.LvName },conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OLevtblModel?> _04(string code, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Levtbl  WHERE TRIM(UPPER(LVCODE)) = TRIM(UPPER(@Code));";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Code = code }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Code = code }, conn);
 
             sql = $@" select  * from {schema}.Levtbl x  WHERE TRIM(UPPER(x.LVCODE)) = TRIM(UPPER(@Code)) ;";
-            var data = await _sql.FetchData<OLevtblModel?, dynamic>(sql, new { Code = code }, conn);
+            var data = await _sql.FetchLegacy<OLevtblModel?, dynamic>(sql, new { Code = code }, conn);
             return data?.FirstOrDefault();
         }
     }

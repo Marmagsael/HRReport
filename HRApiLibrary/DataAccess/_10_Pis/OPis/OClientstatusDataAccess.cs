@@ -16,11 +16,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OClientstatusModel?> _01(OClientstatusModel clientstatus, string schema, string conn)
         {
             string sql = $@"Insert into {schema}.Clientstatus (ClStatus) values (@ClStatus)";
-            await _sql.ExecuteCmd<dynamic>(sql, clientstatus, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, clientstatus, conn);
 
             sql = $@"SELECT * FROM {schema}.Clientstatus WHERE ID = (SELECT @@IDENTITY)";
 
-            var res = await _sql.FetchData<OClientstatusModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchLegacy<OClientstatusModel?, dynamic>(sql, new { }, conn);
 
             return res.FirstOrDefault();
         }
@@ -29,7 +29,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OClientstatusModel?>?> _02(string schema, string conn)
         {
             string sql = $@"select  ClStatus from {schema}.Clientstatus";
-            var data = await _sql.FetchData<OClientstatusModel?, dynamic>(sql, new { }, conn);
+            var data = await _sql.FetchLegacy<OClientstatusModel?, dynamic>(sql, new { }, conn);
             return data;
         }
 
@@ -37,20 +37,20 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OClientstatusModel?> _03(int id, OClientstatusModel clientstatus, string schema, string conn)
         {
             string sql = $@"Update {schema}.Clientstatus set ClStatus = @ClStatus where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, clientstatus, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, clientstatus, conn);
 
             sql = $@" select  * from {schema}.Clientstatus x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OClientstatusModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OClientstatusModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OClientstatusModel?> _04(int id, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Clientstatus where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = id }, conn);
 
             sql = $@" select  * from {schema}.Clientstatus x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OClientstatusModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OClientstatusModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
     }

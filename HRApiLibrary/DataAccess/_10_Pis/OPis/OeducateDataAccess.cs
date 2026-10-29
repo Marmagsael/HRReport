@@ -16,11 +16,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OEducateModel?> _01(OEducateModel educate, string? schema, string? conn)
         {
             string? sql = $@"Insert into {schema}.Educate (EMPNUMBER, CODE, SCHOOL, FROM_, TO_, COURSE, LEVEL) values (@EMPNUMBER, @CODE, @SCHOOL, @FROM_, @TO_, @COURSE, @LEVEL)";
-            await _sql.ExecuteCmd<dynamic>(sql, educate, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, educate, conn);
 
             sql = $@"SELECT * FROM {schema}.Educate WHERE EMPNUMBER = @EMPNUMBER";
 
-            var res = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { educate.EmpNumber }, conn);
+            var res = await _sql.FetchLegacy<OEducateModel?, dynamic>(sql, new { educate.EmpNumber }, conn);
 
             return res.FirstOrDefault();
         }
@@ -29,14 +29,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OEducateModel?>?> _02(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"select  EMPNUMBER, CODE, SCHOOL, FROM_, TO_, COURSE, LEVEL from {schema}.Educate where Empnumber = @Empnumber";
-            var data = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
 
         public async Task<List<OEducateModel?>?> _02ByEmpnumberAndCode(string? empnumber, string code, string? schema, string? conn)
         {
             string? sql = $@"select EMPNUMBER, CODE, SCHOOL, FROM_, TO_, COURSE, LEVEL from {schema}.Educate where Empnumber = @Empnumber and LOWER(TRIM(Code)) = LOWER(TRIM(@Code))";
-            var data = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber, Code = code?.Trim().ToLower() }, conn);
+            var data = await _sql.FetchLegacy<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber, Code = code?.Trim().ToLower() }, conn);
             return data;
         }
 
@@ -45,20 +45,20 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OEducateModel?> _03(string? empnumber, OEducateModel educate, string? schema, string? conn)
         {
             string? sql = $@"Update {schema}.Educate set EMPNUMBER = @EMPNUMBER, CODE = @CODE, SCHOOL = @SCHOOL, FROM_ = @FROM_, TO_ = @TO_, COURSE = @COURSE, LEVEL = @LEVEL where Empnumber = @Empnumber and Code = @Code;";
-            await _sql.ExecuteCmd<dynamic>(sql, educate, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, educate, conn);
 
             sql = $@" select  * from {schema}.Educate x where x.Empnumber = @Empnumber;";
-            var data = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber, educate.Code }, conn);
+            var data = await _sql.FetchLegacy<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber, educate.Code }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OEducateModel?> _04(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Educate where Empnumber = @Empnumber;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
 
             sql = $@" select  * from {schema}.Educate x where x.Empnumber = @Empnumber ;";
-            var data = await _sql.FetchData<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OEducateModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
     }

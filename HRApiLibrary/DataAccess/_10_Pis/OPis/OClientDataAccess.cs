@@ -31,9 +31,9 @@ public class OClientDataAccess : IOClientDataAccess
 							 @withSEA, @payprd, @sgcode, @isTrucking, @isLumpsum)";
 
 
-        await _sql.ExecuteCmd<dynamic>(sql, client, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, client, conn);
         sql = $@"Select * FROM {schema}.client WHERE TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { client.ClNumber }, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { client.ClNumber }, conn);
         return data.FirstOrDefault();
 
 
@@ -44,14 +44,14 @@ public class OClientDataAccess : IOClientDataAccess
     {
 
         var sql = $@"select  LPAD(MAX(CAST(clnumber AS UNSIGNED)) + 1, 5, 0) from {schema}.Client ";
-        var clnumber = await _sql.FetchData<int?, dynamic>(sql, new {  }, conn);
+        var clnumber = await _sql.FetchLegacy<int?, dynamic>(sql, new {  }, conn);
         return clnumber.FirstOrDefault();
     }
 
     public async Task<List<OClientModel?>?> _02ByClNumbersCheckIfRecordExistOnTransactionTbl(string? clnumber, string? schema, string? conn)
     {
         string sql = $@"select * from {schema}.empmas where TRIM(UPPER(client_)) = TRIM(UPPER(@ClNumber)) ";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { clnumber }, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { clnumber }, conn);
         return data;
     }
 
@@ -60,7 +60,7 @@ public class OClientDataAccess : IOClientDataAccess
     {
        
         var sql = $@"select  * from {schema}.Client where ClNumber = @ClNumber order by ClName ";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
         return data;
     }
 
@@ -69,7 +69,7 @@ public class OClientDataAccess : IOClientDataAccess
 
 
         var sql         = $@"select  * from {schema}.Client where Status = @Status order by ClName ";
-        var data    = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = status }, conn);
+        var data    = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { Status = status }, conn);
         return data;
     }
 
@@ -79,7 +79,7 @@ public class OClientDataAccess : IOClientDataAccess
    
 
         var sql = $@"select  * from {schema}.Client  order by ClName ";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new {  }, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
 
@@ -91,14 +91,14 @@ public class OClientDataAccess : IOClientDataAccess
      
 
         var sql = $@"select  * from {schema}.Client where Status in @Status order by ClName ";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { Status = statuses }, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { Status = statuses }, conn);
         return data;
     }
 
     public async Task<List<OClientModel?>?> _02ByClientName(string? clname, string?  schema, string? conn)
     {
         string? sql = @$"select * from {schema}.Client where TRIM(UPPER(clname)) = TRIM(UPPER(@ClName))";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { ClName = clname }, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { ClName = clname }, conn);
         return data;
     }
 
@@ -153,7 +153,7 @@ public class OClientDataAccess : IOClientDataAccess
                         LEFT JOIN {schema}.Client p ON p.ClNumber = c.ParentCd
                         {where}";
 
-        var totalResult = await _sql.FetchData<int, dynamic>( countSql, parameters, conn );
+        var totalResult = await _sql.FetchLegacy<int, dynamic>( countSql, parameters, conn );
         var total = totalResult?.FirstOrDefault() ?? 0;
 
         // DATA
@@ -165,7 +165,7 @@ public class OClientDataAccess : IOClientDataAccess
                         ORDER BY {sortColumn} {sortOrder}
                         LIMIT @Offset, @PageSize";
 
-        var data = await _sql.FetchData<OClientModel, dynamic>( sql1,parameters,conn);
+        var data = await _sql.FetchLegacy<OClientModel, dynamic>( sql1,parameters,conn);
 
         return new GridResultModel<OClientModel>
         {
@@ -224,7 +224,7 @@ public class OClientDataAccess : IOClientDataAccess
                                 {where}";
 
 
-        var totalResult = await _sql.FetchData<int, dynamic>(countSql, parameters, conn);
+        var totalResult = await _sql.FetchLegacy<int, dynamic>(countSql, parameters, conn);
         var total = totalResult?.FirstOrDefault() ?? 0;
 
         // DATA
@@ -245,7 +245,7 @@ public class OClientDataAccess : IOClientDataAccess
                             LIMIT @Offset, @PageSize";
 
 
-        var data = await _sql.FetchData<OClientModel, dynamic>(sql1, parameters, conn);
+        var data = await _sql.FetchLegacy<OClientModel, dynamic>(sql1, parameters, conn);
 
         return new GridResultModel<OClientModel>
         {
@@ -271,7 +271,7 @@ public class OClientDataAccess : IOClientDataAccess
 							withSEA = @withSEA, payprd = @payprd, sgcode = @sgcode, isTrucking = @isTrucking, 
 							isLumpsum = @isLumpsum  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber));
 						select  * from {schema}.Client  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber)) ;";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, client, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, client, conn);
         return data?.FirstOrDefault();
     }
 
@@ -280,10 +280,10 @@ public class OClientDataAccess : IOClientDataAccess
     public async Task<OClientModel?> _04(string? clNumber, string? schema, string? conn)
     {
         string? sql = $@"Delete from {schema}.Client where TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { ClNumber = clNumber }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { ClNumber = clNumber }, conn);
 
         sql = $@" select  * from {schema}.Client x where TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ;";
-        var data = await _sql.FetchData<OClientModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
+        var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { ClNumber = clNumber }, conn);
         return data?.FirstOrDefault();
     }
 }

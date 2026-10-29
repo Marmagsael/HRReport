@@ -1418,6 +1418,20 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await ExecLegacy(sql, conn);
     }
 
+    // -- Data from the company's old PIS : payrollgrp from client when payrollgrp is empty (13T/502 payroll groups) --
+    public async Task _01OldPayDefaults(string? schema, string? pisSchema, string? connName = "MySqlConn")
+    {
+        var count = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`payrollgrp`", new { }, connName);
+        if (count.FirstOrDefault() > 0) return;
+
+        await _sql.ExecuteCmd($@"INSERT INTO {schema}.`payrollgrp` (`Code`, `ClNumber`, `Name`, `RatePerDay`, `MinDailyRate`, `Status`)
+                                 SELECT trim(CLNUMBER), trim(CLNUMBER), trim(CLNAME), ifnull(RATE,0), ifnull(MinRate,0),
+                                        IF(trim(ifnull(STATUS,'')) = 'Active', 'A', 'I')
+                                 FROM {pisSchema}.`client`
+                                 WHERE trim(ifnull(CLNUMBER,'')) != ''
+                                 ORDER BY CLNUMBER;", new { }, connName);
+    }
+
     private async Task _01Payrollgrp(string? schema, string? conn)
     {
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`payrollgrp` (
@@ -1466,6 +1480,14 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         PRIMARY KEY (`PdNumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        // -- Seed when empty : same rows as the MBPay pay.period (13T/502 period list) --
+        var count = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`period`", new { }, conn);
+        if (count.FirstOrDefault() > 0) return;
+
+        await _sql.ExecuteCmd($@"INSERT INTO {schema}.`period` (`PdNumber`, `PdName`) VALUES
+                                ('00', 'Every payday'), ('01', '1st period'), ('02', '2nd period'),
+                                ('03', '3rd period'),   ('04', '4th period'), ('05', '5th period');", new { }, conn);
     }
 
     private async Task _01Phicpaydtl(string? schema, string? conn)

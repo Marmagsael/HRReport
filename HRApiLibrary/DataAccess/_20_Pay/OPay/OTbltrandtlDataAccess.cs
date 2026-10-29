@@ -18,7 +18,7 @@ public class OTbltrandtlDataAccess : IOTbltrandtlDataAccess
         string? sql = $@"Insert into {schema}.Tbltrandtl 
 						(TRN,  EmpNumber,  DtlCd,  nVal,  uom) values 
 						(@TRN, @EmpNumber, @DtlCd, @nVal, @uom)";
-        await _sql.ExecuteCmd<dynamic>(sql, tbltrandtl, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, tbltrandtl, conn);
 
     }
 
@@ -26,7 +26,7 @@ public class OTbltrandtlDataAccess : IOTbltrandtlDataAccess
     public async Task<List<GTbltrandtlModel?>?> _02ByTrnAndEmpnumber(string? trn, string? empnumber, string? schema, string? conn)
     {
         string? sql  = $@"select  * from {schema}.Tbltrandtl where left(Trn,6) = left(@Trn,6) and EmpNumber = @EmpNumber";
-        var data    = await _sql.FetchData<GTbltrandtlModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
+        var data    = await _sql.FetchLegacy<GTbltrandtlModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         
         return data??[];
     }
@@ -38,7 +38,7 @@ public class OTbltrandtlDataAccess : IOTbltrandtlDataAccess
 								nVal = @nVal, 
 								uom = @uom where TRN = @TRN and EmpNumber = @EmpNumber and DtlCd = @DtlCd; 
 						select  * from {schema}.Tbltrandtl where TRN = @TRN and EmpNumber = @EmpNumber and DtlCd = @DtlCd;";
-        var data = await _sql.FetchData<GTbltrandtlModel?, dynamic>(sql, tbltrandtl, conn);
+        var data = await _sql.FetchLegacy<GTbltrandtlModel?, dynamic>(sql, tbltrandtl, conn);
         return data?.FirstOrDefault();
     }
 
@@ -46,7 +46,7 @@ public class OTbltrandtlDataAccess : IOTbltrandtlDataAccess
     {
         string? sql = $@"Delete from {schema}.Tbltrandtl 	where TRN = @TRN and EmpNumber = @EmpNumber and DtlCd = @DtlCd;
 						 Select  * from {schema}.Tbltrandtl where TRN = @TRN and EmpNumber = @EmpNumber and DtlCd = @DtlCd ;";
-        var data = await _sql.FetchData<GTbltrandtlModel?, dynamic>(sql, tbltrandtl, conn);
+        var data = await _sql.FetchLegacy<GTbltrandtlModel?, dynamic>(sql, tbltrandtl, conn);
         return data?.FirstOrDefault();
     }
 }

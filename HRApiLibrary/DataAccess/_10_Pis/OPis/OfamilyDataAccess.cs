@@ -16,11 +16,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OFamilyModel?> _01(OFamilyModel family, string? schema, string? conn)
         {
             string? sql = $@"Insert into {schema}.Family (EMPNUMBER, NAME, BIRTH, RELATION) values (@EMPNUMBER, @NAME, @BIRTH, @RELATION)";
-            await _sql.ExecuteCmd<dynamic>(sql, family, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, family, conn);
 
             sql = $@"SELECT * FROM {schema}.Family WHERE EMPNUMBER = @EMPNUMBER";
 
-            var res = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { family.EmpNumber}, conn);
+            var res = await _sql.FetchLegacy<OFamilyModel?, dynamic>(sql, new { family.EmpNumber}, conn);
 
             return res.FirstOrDefault();
         }
@@ -29,7 +29,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OFamilyModel?>?> _02(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"select  EMPNUMBER, NAME, BIRTH, RELATION from {schema}.Family where Empnumber = @Empnumber";
-            var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
 
@@ -37,7 +37,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OFamilyModel?>?> _02CheckExisting(string? empnumber, string? name, string? Relation, string? schema, string? conn)
         {
             string? sql = $@"select  EMPNUMBER, NAME, BIRTH, RELATION from {schema}.Family  where Empnumber = @Empnumber AND NAME = @Name AND Relation = @Relation";
-            var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber, Name = name, Relation = Relation }, conn);
+            var data = await _sql.FetchLegacy<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber, Name = name, Relation = Relation }, conn);
             return data;
         }
 
@@ -45,10 +45,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OFamilyModel?> _03(int? id, OFamilyModel family, string? schema, string? conn)
         {
             string? sql = $@"Update {schema}.Family set EMPNUMBER = @EMPNUMBER, NAME = @NAME, BIRTH = @BIRTH, RELATION = @RELATION where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, family, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, family, conn);
 
             sql = $@" select  * from {schema}.Family x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OFamilyModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -65,28 +65,28 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 OldName = name,
                 OldRela = relation
             };
-            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, parameters, conn);
             sql = $@"select * from {schema}.Family where Empnumber = @Empnumber;";
-            var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
         public async Task<OFamilyModel?> _04(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Family where Empnumber = @Empnumber;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
 
             sql = $@" select  * from {schema}.Family x where x.Empnumber = @Empnumber ;";
-            var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OFamilyModel?> _04(string? empnumber, string? name, string? Relation, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Family where Empnumber = @Empnumber AND NAME = @Name AND Relation = @Relation;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber, Name = name, Relation = Relation }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Empnumber = empnumber, Name = name, Relation = Relation }, conn);
 
             sql = $@" select  * from {schema}.Family x where x.Empnumber = @Empnumber ;";
-            var data = await _sql.FetchData<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OFamilyModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
     }

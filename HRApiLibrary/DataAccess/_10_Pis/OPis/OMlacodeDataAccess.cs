@@ -16,11 +16,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OMlacodeModel?> _01(OMlacodeModel mlacode, string? schema, string? conn)
         {
             string? sql = $@"Insert into {schema}.Mlacode (CODE, NAME) values (@CODE, @NAME)";
-            await _sql.ExecuteCmd<dynamic>(sql, mlacode, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, mlacode, conn);
 
             sql = $@"SELECT * FROM {schema}.Mlacode WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))";
 
-            var res = await _sql.FetchData<OMlacodeModel?, dynamic>(sql, new { Code = mlacode.Code }, conn);
+            var res = await _sql.FetchLegacy<OMlacodeModel?, dynamic>(sql, new { Code = mlacode.Code }, conn);
 
             return res.FirstOrDefault();
         }
@@ -29,7 +29,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OMlacodeModel?>?> _02(string? schema, string? conn)
         {
             string? sql = $@"select  CODE, NAME from {schema}.Mlacode ORDER BY NAME";
-            var data = await _sql.FetchData<OMlacodeModel?, dynamic>(sql, new {}, conn);
+            var data = await _sql.FetchLegacy<OMlacodeModel?, dynamic>(sql, new {}, conn);
             return data;
         }
 
@@ -38,7 +38,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         {
             string sql = $@"SELECT * FROM {schema}.Mlacode  WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))  OR TRIM(UPPER(Name)) = TRIM(UPPER(@Name))";
 
-            var data = await _sql.FetchData<OMlacodeModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
+            var data = await _sql.FetchLegacy<OMlacodeModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
             return data;
         }
 
@@ -54,21 +54,21 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
             string sql = $@"UPDATE {schema}.Mlacode  SET Code = @Code, Name = @Name WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@oldCode));";
 
-            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, parameters, conn);
 
             sql = $@"SELECT * FROM {schema}.Mlacode x WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code));";
 
-            var data = await _sql.FetchData<OMlacodeModel?, dynamic>(sql, new { Code = mla.Code}, conn);
+            var data = await _sql.FetchLegacy<OMlacodeModel?, dynamic>(sql, new { Code = mla.Code}, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OMlacodeModel?> _04(string? code, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Mlacode WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code));";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Code = code }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Code = code }, conn);
 
             sql = $@" select  * from {schema}.Mlacode x WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code)) ;";
-            var data = await _sql.FetchData<OMlacodeModel?, dynamic>(sql, new { Code = code }, conn);
+            var data = await _sql.FetchLegacy<OMlacodeModel?, dynamic>(sql, new { Code = code }, conn);
             return data?.FirstOrDefault();
         }
     }

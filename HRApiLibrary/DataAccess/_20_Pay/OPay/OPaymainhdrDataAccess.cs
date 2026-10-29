@@ -19,7 +19,7 @@ public class OPaymainhdrDataAccess : IOPaymainhdrDataAccess
 						(trn, clrate, minrate, withSEA, SEARate, withCTPA, CTPARate, ecolaRevised, billrate, user, status, datecreated, dateposted, attStart, attEnd) values 
 						(@trn, @clrate, @minrate, @withSEA, @SEARate, @withCTPA, @CTPARate, @ecolaRevised, @billrate, @user, @status, @datecreated, @dateposted, @attStart, @attEnd); 
 						SELECT * FROM {schema}.Paymainhdr WHERE Trn = @Trn; ";
-        var res = await _sql.FetchData<GPaymainhdrModel?, dynamic>(sql, paymainhdr, conn);
+        var res = await _sql.FetchLegacy<GPaymainhdrModel?, dynamic>(sql, paymainhdr, conn);
         return res.FirstOrDefault();
     }
 
@@ -30,7 +30,7 @@ public class OPaymainhdrDataAccess : IOPaymainhdrDataAccess
 						from {paydb}.Paymainhdr h 
 						left join {pisdb}.Client c on c.clNumber = right(trim(h.trn),5) 
 						where Left(t.Trn,6) = left(@Trn,6) ";
-        var data = await _sql.FetchData<GPaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
+        var data = await _sql.FetchLegacy<GPaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
         return data;
     }
 
@@ -41,7 +41,7 @@ public class OPaymainhdrDataAccess : IOPaymainhdrDataAccess
 						left join {pisdb}.Client c on c.clNumber = right(trim(h.trn),5) 
 						where Trn = @Trn ";
         
-        var data = await _sql.FetchData<GPaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
+        var data = await _sql.FetchLegacy<GPaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
         return data.FirstOrDefault();
         
     }
@@ -65,7 +65,7 @@ public class OPaymainhdrDataAccess : IOPaymainhdrDataAccess
 							attEnd 			= @AttEnd 
 						where Trn 			= @Trn; 
 						select  * from {schema}.Paymainhdr x where x.Id = @Id ;";
-        var data = await _sql.FetchData<GPaymainhdrModel?, dynamic>(sql, paymainhdr, conn);
+        var data = await _sql.FetchLegacy<GPaymainhdrModel?, dynamic>(sql, paymainhdr, conn);
         return data?.FirstOrDefault();
     }
 
@@ -73,7 +73,7 @@ public class OPaymainhdrDataAccess : IOPaymainhdrDataAccess
     {
         string? sql = $@"Delete from {schema}.Paymainhdr where Trn = @Trn;
 		 				select  * from {schema}.Paymainhdr where Trn = @Trn ;";
-        var data = await _sql.FetchData<GPaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
+        var data = await _sql.FetchLegacy<GPaymainhdrModel?, dynamic>(sql, new { Trn = trn }, conn);
         return data?.FirstOrDefault();
     }
 }

@@ -18,11 +18,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OEmployModel?> _01(OEmployModel employ, string? schema, string? conn)
         {
             string? sql = $@"Insert into {schema}.Employ (EMPNUMBER, COMP, ADDR1, ADDR2, TEL, POSI, FROM_, TO_, SAL, REM1, REM2) values (@EMPNUMBER, @COMP, @ADDR1, @ADDR2, @TEL, @POSI, @FROM_, @TO_, @SAL, @REM1, @REM2)";
-            await _sql.ExecuteCmd<dynamic>(sql, employ, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, employ, conn);
 
             sql = $@"SELECT * FROM {schema}.Employ WHERE Empnumber = @Empnumber";
 
-            var res = await _sql.FetchData<OEmployModel?, dynamic>(sql, new { employ.EmpNumber }, conn);
+            var res = await _sql.FetchLegacy<OEmployModel?, dynamic>(sql, new { employ.EmpNumber }, conn);
 
             return res.FirstOrDefault();
         }
@@ -31,7 +31,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OEmployModel?>?> _02(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"select  * from {schema}.Employ where EMPNUMBER = @Empnumber";
-            var data = await _sql.FetchData<OEmployModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OEmployModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
 
@@ -42,7 +42,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                               AND LOWER(TRIM(COMP)) = LOWER(TRIM(@Company))
                               AND LOWER(TRIM(POSI)) = LOWER(TRIM(@Position));";
 
-            var data = await _sql.FetchData<OEmployModel?, dynamic>(sql, new {
+            var data = await _sql.FetchLegacy<OEmployModel?, dynamic>(sql, new {
                                                                                 Empnumber   = empnumber,
                                                                                 Company     = company,
                                                                                 Position    = position,
@@ -61,10 +61,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                             POSI = @POSI, FROM_ = @FROM_, TO_ = @TO_, SAL = @SAL, REM1 = @REM1, REM2 = @REM2
                         WHERE EMPNUMBER = @EMPNUMBER;";
 
-            await _sql.ExecuteCmd<dynamic>(sql, employ, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, employ, conn);
 
             sql = $@"SELECT * FROM {schema}.Employ x WHERE x.Empnumber = @Empnumber;";
-            var data = await _sql.FetchData<OEmployModel?, dynamic>(sql, new { Empnumber = employ.EmpNumber }, conn);
+            var data = await _sql.FetchLegacy<OEmployModel?, dynamic>(sql, new { Empnumber = employ.EmpNumber }, conn);
 
             return data?.FirstOrDefault();
         }
@@ -98,10 +98,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 OldPosition = position,
             };
 
-            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, parameters, conn);
 
             sql = $@"SELECT * FROM {schema}.Employ x WHERE x.Empnumber = @Empnumber;";
-            var data = await _sql.FetchData<OEmployModel?, dynamic>(sql, new { Empnumber = employ.EmpNumber }, conn);
+            var data = await _sql.FetchLegacy<OEmployModel?, dynamic>(sql, new { Empnumber = employ.EmpNumber }, conn);
 
             return data?.FirstOrDefault();
         }
@@ -110,10 +110,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OEmployModel?> _04(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Employ where Empnumber = @Empnumber;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
 
             sql = $@" select  * from {schema}.Employ x where x.Empnumber = @Empnumber ;";
-            var data = await _sql.FetchData<OEmployModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OEmployModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -124,10 +124,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                                     AND LOWER(TRIM(COMP)) = LOWER(TRIM(@Company))
                                     AND LOWER(TRIM(POSI)) = LOWER(TRIM(@Position));";
 
-            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber, Company = company, Position = position }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Empnumber = empnumber, Company = company, Position = position }, conn);
 
             sql = $@"SELECT * FROM {schema}.Employ x WHERE x.Empnumber = @Empnumber;";
-            var data = await _sql.FetchData<OEmployModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OEmployModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
 
             return data?.FirstOrDefault();
         }

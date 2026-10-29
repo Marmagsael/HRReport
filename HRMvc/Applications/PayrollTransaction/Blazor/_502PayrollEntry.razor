@@ -10,18 +10,38 @@
 <style>
     .l-content { flex: 1; min-height: 0; overflow-y: auto; background-color: white; }
     .r-content { width: 250px; flex-shrink: 0; }
+
+    /* -- No light gray under the card : the main area takes the card color on this page only -- */
+    main:has(.pay502-card) { background-color: rgb(247, 253, 247) !important; }
+
+    /* -- Busy overlay : shown while v502.IsBusy (load / save / process) -- */
+    .busy-overlay { position: absolute; inset: 0; z-index: 50; background-color: rgba(255,255,255,.7);
+                    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; }
 </style>
 
 <TelerikRootComponent>
 <CascadingValue Value="Uc" IsFixed="true">
     <CascadingValue Value="v502">
-        <div class="card body-content ">
+        @* -- Full width; the layout's light gray below it takes the card color (pay502-card style) -- *@
+        <div class="card body-content position-relative pay502-card" style="width:100%; margin-bottom:0;">
+
+            @if (v502.IsBusy)
+            {
+                @* -- Three rings (global.css reg01-loading-*, same as the login) and the step being loaded -- *@
+                <div class="busy-overlay">
+                    <div class="reg01-loading-box">
+                        <div class="reg01-loading-rings"><span></span><span></span><span></span><i class="fa-solid fa-coins"></i></div>
+                        <div class="fw-semibold">@(string.IsNullOrWhiteSpace(v502.Msg) ? "Loading..." : v502.Msg)</div>
+                    </div>
+                </div>
+            }
 
             <BodyHdr pageTitle="Payroll Entry" />
 
             <_502_select />
             <_502_buttons />
             <_502_shdr />
+            <_502_UploadExcelModal />
 
             <div class="d-flex gap-1 w-100 p-1" style="max-width: 100%;">
                 @* --- Manhour Entry ------------------------------ *@

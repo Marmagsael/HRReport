@@ -19,7 +19,7 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
 							(CODE, NAME, ISRESIGNED, isonleaved, isfloating, issuspended, isInPayroll, inLicVer, inOE, isDeviation) values 
 							(@Code, @Name, @IsResigned, @IsOnLeaved, @IsFloating, @IsSuspended, @IsInPayroll, @InLicVer, @InOe, @IsDeviation); 
 						SELECT * FROM {schema}.Empstat WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code)); ";
-        var res = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, empstat, conn);
+        var res = await _sql.FetchLegacy<OEmpstatModel?, dynamic>(sql, empstat, conn);
         return res.FirstOrDefault();
     }
 
@@ -28,7 +28,7 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
     {
         string? sql = $@"select  CODE, NAME, ISRESIGNED, isonleaved, isfloating, issuspended, isInPayroll, inLicVer, inOE, isDeviation 
 						from {schema}.Empstat where Code = @Code";
-        var data = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, new { Code = code }, conn);
+        var data = await _sql.FetchLegacy<OEmpstatModel?, dynamic>(sql, new { Code = code }, conn);
         return data;
     }
 
@@ -36,7 +36,7 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
     {
         string sql = $@"SELECT * FROM {schema}.Empstat  WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))  OR TRIM(UPPER(Name)) = TRIM(UPPER(@Name))";
 
-        var data = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
+        var data = await _sql.FetchLegacy<OEmpstatModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
         return data;
     }
 
@@ -44,7 +44,7 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
     public async Task<List<OEmpstatModel?>?> _02s(string? schema, string? conn)
     {
         string? sql = $@"select  *  from {schema}.Empstat order by Name ";
-        var data = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, new {  }, conn);
+        var data = await _sql.FetchLegacy<OEmpstatModel?, dynamic>(sql, new {  }, conn);
         return data;
     }
 
@@ -77,12 +77,12 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
 							inLicVer = @inLicVer, 
 							inOE = @inOE, 
 							isDeviation = @isDeviation WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@oldCode));";
-     await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+     await _sql.ExecuteLegacyCmd<dynamic>(sql, parameters, conn);
 
 
         sql = $@"SELECT * FROM {schema}.Empstat x WHERE TRIM(UPPER(x.Code)) = TRIM(UPPER(@Code));";
 
-        var data = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, new { Code = empstat.Code }, conn);
+        var data = await _sql.FetchLegacy<OEmpstatModel?, dynamic>(sql, new { Code = empstat.Code }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -90,10 +90,10 @@ public class OEmpstatDataAccess : IOEmpstatDataAccess
     public async Task<OEmpstatModel?> _04(string? code, string? schema, string? conn)
     {
         string sql = $@"Delete from {schema}.Empstat x WHERE TRIM(UPPER(CODE)) = TRIM(UPPER(@CODE)) ;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { CODE = code }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { CODE = code }, conn);
 
         sql = $@" select  * from {schema}.Empstat x WHERE TRIM(UPPER(CODE)) = TRIM(UPPER(@CODE)) ;";
-        var data = await _sql.FetchData<OEmpstatModel?, dynamic>(sql, new { CODE = code }, conn);
+        var data = await _sql.FetchLegacy<OEmpstatModel?, dynamic>(sql, new { CODE = code }, conn);
         return data?.FirstOrDefault();
 
     }

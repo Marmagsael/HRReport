@@ -15,11 +15,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OProcodeModel?> _01(OProcodeModel procode, string? schema, string? conn)
         {
             string? sql = $@"Insert into {schema}.Procode (CODE, NAME) values (@CODE, @NAME)";
-            await _sql.ExecuteCmd<dynamic>(sql, procode, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, procode, conn);
 
             sql = $@"SELECT * FROM {schema}.Procode  WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))";
 
-            var res = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = procode.Code }, conn);
+            var res = await _sql.FetchLegacy<OProcodeModel?, dynamic>(sql, new { Code = procode.Code }, conn);
 
             return res.FirstOrDefault();
         }
@@ -28,7 +28,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OProcodeModel?>?> _02( string? schema, string? conn)
         {
             string? sql = $@"select  CODE, NAME from {schema}.Procode ORDER BY Name ";
-            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new {  }, conn);
+            var data = await _sql.FetchLegacy<OProcodeModel?, dynamic>(sql, new {  }, conn);
             return data;
         }
 
@@ -36,7 +36,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         {
             string sql = $@"SELECT * FROM {schema}.Procode  WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code))  OR TRIM(UPPER(Name)) = TRIM(UPPER(@Name))";
 
-            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
+            var data = await _sql.FetchLegacy<OProcodeModel?, dynamic>(sql, new { Code = code, Name = name }, conn);
             return data;
         }
 
@@ -52,11 +52,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
 
             string sql = $@"UPDATE {schema}.Procode  SET Code = @Code, Name = @Name WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@oldCode));";
 
-            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, parameters, conn);
 
             sql = $@"SELECT * FROM {schema}.Procode x WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code));";
 
-            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = prov.Code?.Trim().ToUpper() }, conn);
+            var data = await _sql.FetchLegacy<OProcodeModel?, dynamic>(sql, new { Code = prov.Code?.Trim().ToUpper() }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -65,10 +65,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OProcodeModel?> _04(string? code, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Procode WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code));";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Code = code?.Trim().ToUpper() }, conn);
 
             sql = $@" select  * from {schema}.Procode x WHERE TRIM(UPPER(Code)) = TRIM(UPPER(@Code)) ;";
-            var data = await _sql.FetchData<OProcodeModel?, dynamic>(sql, new { Code = code }, conn);
+            var data = await _sql.FetchLegacy<OProcodeModel?, dynamic>(sql, new { Code = code }, conn);
             return data?.FirstOrDefault();
         }
     }

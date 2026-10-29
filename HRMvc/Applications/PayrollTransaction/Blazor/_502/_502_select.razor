@@ -1,13 +1,13 @@
 @using HRApiLibrary.DataAccess._20_Pay.OPay
 @using HRApiLibrary.Models._20_Pay.OPay
 
-@* --- Client and period selection, then load (MBPay forms/payrollnew4.scx) --- *@
+@* --- Client, period and attendance coverage, then load (MBPay forms/payrollnew4.scx) --- *@
 <div class="w-100 p-2 bg-white bordered-bottom d-flex gap-2 align-items-end flex-wrap">
     <div>
         <div class="small fw-bold">PAYROLL GROUP</div>
         <TelerikDropDownList Data="@clients" TItem="OPayClient" TValue="string"
-                             TextField="@nameof(OPayClient.ClName)" ValueField="@nameof(OPayClient.ClNumber)"
-                             @bind-Value="@clNumber" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains"
+                             TextField="@nameof(OPayClient.ClName)" ValueField="@nameof(OPayClient.Code)"
+                             Value="@grpCode" ValueChanged="@((string v) => GroupChanged(v))" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains"
                              Width="320px" DefaultText="Select payroll group">
             <DropDownListSettings>
                 <DropDownListPopupSettings Height="60vh" />
@@ -16,19 +16,30 @@
     </div>
     <div>
         <div class="small fw-bold">YEAR</div>
-        <TelerikDropDownList Data="@years" @bind-Value="@year" Width="90px" />
+        <TelerikDropDownList Data="@years" TItem="string" TValue="string" Value="@year" ValueChanged="@((string v) => { year = v; SetDefaultDates(); })" Width="110px" />
     </div>
     <div>
         <div class="small fw-bold">MONTH</div>
-        <TelerikDropDownList Data="@months" @bind-Value="@month" Width="75px" />
+        <TelerikDropDownList Data="@months" TItem="string" TValue="string" Value="@month" ValueChanged="@((string v) => { month = v; SetDefaultDates(); })" Width="90px" />
     </div>
     <div>
         <div class="small fw-bold">PERIOD</div>
-        <TelerikDropDownList Data="@periods" @bind-Value="@period" Width="75px" />
+        <TelerikDropDownList Data="@periods" TItem="OPayPeriod" TValue="string"
+                             TextField="@nameof(OPayPeriod.PdNumber)" ValueField="@nameof(OPayPeriod.PdNumber)"
+                             Value="@period" ValueChanged="@((string v) => { period = v; SetDefaultDates(); })" Width="80px" />
+    </div>
+    @* --- Attendance coverage : entered by the user like payrollnew4 (t6 / t7); 01 / 02 get a default --- *@
+    <div>
+        <div class="small fw-bold">ATTENDANCE START</div>
+        <TelerikDatePicker @bind-Value="@attStart" Format="MMM dd, yyyy" Width="180px" />
     </div>
     <div>
-        <button class="btn btn-sm btn-primary" disabled="@(string.IsNullOrEmpty(clNumber) || v502.IsBusy)" @onclick="Load">
-            <i class="fa-solid fa-download"></i> Load
+        <div class="small fw-bold">ATTENDANCE END</div>
+        <TelerikDatePicker @bind-Value="@attEnd" Format="MMM dd, yyyy" Width="180px" />
+    </div>
+    <div>
+        <button class="btn btn-primary d-flex align-items-center justify-content-center px-4" style="height:38px; min-width:110px;" disabled="@(string.IsNullOrEmpty(grpCode) || v502.IsBusy)" @onclick="Load">
+            Load
         </button>
     </div>
 </div>
@@ -42,33 +53,102 @@
     List<OPayClient> clients = [];
     List<string> years   = Enumerable.Range(DateTime.Now.Year - 2, 4).Select(y => y.ToString()).ToList();
     List<string> months  = Enumerable.Range(1, 12).Select(m => m.ToString("00")).ToList();
-    List<string> periods = ["01", "02"];
-    string? clNumber;
+
+    // -- Until {OldPay}.period is seeded by the migration --
+    static readonly List<OPayPeriod> DefaultPeriods =
+    [
+        new() { PdNumber = "01", PdName = "1st period" }, new() { PdNumber = "02", PdName = "2nd period" },
+        new() { PdNumber = "03", PdName = "3rd period" }, new() { PdNumber = "04", PdName = "4th period" },
+        new() { PdNumber = "05", PdName = "5th period" },
+    ];
+    List<OPayPeriod> periods = DefaultPeriods;
+
+    string? grpCode;
     string year   = DateTime.Now.Year.ToString();
     string month  = DateTime.Now.Month.ToString("00");
     string period = DateTime.Now.Day > 15 ? "02" : "01";
+    DateTime? attStart;
+    DateTime? attEnd;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized() => SetDefaultDates();
+
+    // -- Payroll groups and periods load after the page shows (not in prerender), with the busy overlay --
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (string.IsNullOrEmpty(Uc.OpisDb) || string.IsNullOrEmpty(Uc.Conn)) return;
-        clients = await _payroll._02Clients(Uc.OpisDb, Uc.Conn);
+        if (!firstRender || string.IsNullOrEmpty(Uc.OpayDb) || string.IsNullOrEmpty(Uc.OpisDb) || string.IsNullOrEmpty(Uc.Conn)) return;
+
+        v502.IsBusy = true; v502.Msg = "Loading payroll groups..."; await Notify();
+        try
+        {
+            clients = await _payroll._02Clients(Uc.OpayDb, Uc.OpisDb, Uc.Conn);
+            var fromDb = await _payroll._02Periods(Uc.OpayDb, Uc.Conn);
+            if (fromDb.Count > 0) periods = fromDb;
+            v502.Msg = null;
+        }
+        catch (Exception ex) { v502.Msg = "Unable to load payroll groups: " + ex.Message; }
+        finally { v502.IsBusy = false; await Notify(); StateHasChanged(); }
+    }
+
+    // -- 01 : 1-15, 02 : 16 to month end; other periods have no fixed range, the user enters it --
+    void SetDefaultDates()
+    {
+        if (!int.TryParse(year, out var y) || !int.TryParse(month, out var m)) return;
+
+        (attStart, attEnd) = period switch
+        {
+            "01" => (new DateTime(y, m, 1),  new DateTime(y, m, 15)),
+            "02" => (new DateTime(y, m, 16), new DateTime(y, m, DateTime.DaysInMonth(y, m))),
+            _    => ((DateTime?)null, (DateTime?)null),
+        };
+    }
+
+    // -- Another payroll group starts clean, like a newly opened page : nothing loaded until Load --
+    async Task GroupChanged(string? v)
+    {
+        if (v == grpCode) return;
+        grpCode = v;
+
+        v502.Session                = null;
+        v502.CurrentEmp             = null;
+        v502.IsProcessed            = false;
+        v502.TRN                    = "YYMMPP-00000";
+        v502.Msg                    = null;
+        v502.IsUploadExcelOpen      = false;
+        v502.ExcelToUpdate          = [];
+        v502.ExcelToAdd             = [];
+        v502.ExcelToRemove          = [];
+        v502.ExcelIgnoredCols       = [];
+        v502.AllowAddFromExcel      = false;
+        v502.AllowRemoveFromExcel   = false;
+        SetDefaultDates();
+
+        await Notify();
     }
 
     async Task Load()
     {
+        // -- Same checks as payrollnew4 --
+        if (attStart == null)    { v502.Msg = "Error : Start of Attendance is invalid."; await Notify(); return; }
+        if (attEnd == null)      { v502.Msg = "Error : End of Attendance is invalid.";   await Notify(); return; }
+        if (attEnd < attStart)   { v502.Msg = "Error : Invalid attendance date range.";  await Notify(); return; }
+
         v502.IsBusy = true; v502.Msg = "Loading payroll..."; await Notify();
         try
         {
-            var y = int.Parse(year); var m = int.Parse(month);
-            var attStart = new DateTime(y, m, period == "01" ? 1 : 16);
-            var attEnd   = period == "01" ? new DateTime(y, m, 15) : new DateTime(y, m, DateTime.DaysInMonth(y, m));
-
-            var s = await _payroll._01Load(year, month, period, clNumber!, attStart, attEnd, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            // -- Each load step shows on the busy overlay --
+            var progress = new StepProgress(m => { v502.Msg = m; _ = Notify(); });
+            var s = await _payroll._01Load(year, month, period, grpCode!, attStart.Value, attEnd.Value, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!, progress);
+            v502.Msg = "Computing payroll...";
+            await Notify();
             if (!s.IsLocked) OPayrollCompute.Compute(s);
             v502.Session     = s;
             v502.CurrentEmp  = s.Results.FirstOrDefault();
             v502.IsProcessed = s.Status != "New";
             v502.TRN         = s.Trn;
+
+            // -- A saved draft keeps its own coverage --
+            attStart         = s.AttStart;
+            attEnd           = s.AttEnd;
             v502.Msg         = $"{s.Results.Count} employee(s) loaded. Status: {s.Status}.";
         }
         catch (Exception ex) { v502.Msg = "Load failed: " + ex.Message; }
@@ -76,4 +156,10 @@
     }
 
     async Task Notify() { if (v502.Changed != null) await v502.Changed(); }
+
+    // -- Runs on the caller's thread (not posted like Progress<T>), so a late step never replaces the final message --
+    sealed class StepProgress(Action<string> report) : IProgress<string>
+    {
+        public void Report(string value) => report(value);
+    }
 }

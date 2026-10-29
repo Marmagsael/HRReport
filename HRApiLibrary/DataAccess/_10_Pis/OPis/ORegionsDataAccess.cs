@@ -21,11 +21,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<ORegionsModel?> _01(ORegionsModel regions, string schema, string conn)
         {
             string sql = $@"Insert into {schema}.Regions (code, name, odr) values (@code, @name, @odr)";
-            await _sql.ExecuteCmd<dynamic>(sql, regions, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, regions, conn);
 
             sql = $@"SELECT * FROM {schema}.Regions WHERE ID = (SELECT @@IDENTITY)";
 
-            var res = await _sql.FetchData<ORegionsModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchLegacy<ORegionsModel?, dynamic>(sql, new { }, conn);
 
             return res.FirstOrDefault();
         }
@@ -34,14 +34,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<ORegionsModel?> _02(int id, string schema, string conn)
         {
             string sql = $@"select  code, name, odr from {schema}.Regions where Id = @Id";
-            var data = await _sql.FetchData<ORegionsModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<ORegionsModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<List<ORegionsModel?>?> _02(string schema, string conn)
         {
             string sql = $@"select  code, name, odr from {schema}.Regions  ORDER BY Name";
-            var data = await _sql.FetchData<ORegionsModel?, dynamic>(sql, new { }, conn);
+            var data = await _sql.FetchLegacy<ORegionsModel?, dynamic>(sql, new { }, conn);
             return data;
         }
 
@@ -50,20 +50,20 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<ORegionsModel?> _03(int id, ORegionsModel regions, string schema, string conn)
         {
             string sql = $@"Update {schema}.Regions set code = @code, name = @name, odr = @odr where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, regions, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, regions, conn);
 
             sql = $@" select  * from {schema}.Regions x where x.Id = @Id ;";
-            var data = await _sql.FetchData<ORegionsModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<ORegionsModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<ORegionsModel?> _04(int id, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Regions where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = id }, conn);
 
             sql = $@" select  * from {schema}.Regions x where x.Id = @Id ;";
-            var data = await _sql.FetchData<ORegionsModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<ORegionsModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
     }

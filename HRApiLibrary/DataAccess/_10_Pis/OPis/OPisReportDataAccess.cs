@@ -25,7 +25,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             HavTax, MinRate, MealAllow, 
                             withUniform, withRetirement, region, ecolaRevised, ctpaRate, withCTPA, seaRate, withSEA, payprd, sgcode, isTrucking, isLumpsum
                         from {schema}.Client order by ClName ";
-        var data = await _sql.FetchData<OClientModel, dynamic>(sql, new { }, conn);
+        var data = await _sql.FetchLegacy<OClientModel, dynamic>(sql, new { }, conn);
         return data ?? [];
     }
 
@@ -41,7 +41,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         WHERE e.Empstat_ IN @Statuses 
                         AND COALESCE(NULLIF(TRIM(e.client_), ''), '-') IN @ClNumbers 
                         ORDER BY e.EmpLastNm, e.EmpFirstNm;";
-        var data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers = clnumbers, Statuses = statuses }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { ClNumbers = clnumbers, Statuses = statuses }, conn);
         return data ?? [];
     }
 
@@ -57,14 +57,14 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             HavTax, MinRate, MealAllow, 
                             withUniform, withRetirement, region, ecolaRevised, ctpaRate, withCTPA, seaRate, withSEA, payprd, sgcode, isTrucking, isLumpsum 
                         from {schema}.Client where Status = @Status order by ClName ";
-        var data = await _sql.FetchData<OClientModel, dynamic>(sql, new { Status = status }, conn);
+        var data = await _sql.FetchLegacy<OClientModel, dynamic>(sql, new { Status = status }, conn);
         return data ?? [];
     }
 
     public async Task<List<OEmpstatModel>> _02Empstats(string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Empstat order by Name ";
-        var data = await _sql.FetchData<OEmpstatModel, dynamic>(sql, new { }, conn);
+        var data = await _sql.FetchLegacy<OEmpstatModel, dynamic>(sql, new { }, conn);
         return data ?? [];
     }
 
@@ -86,7 +86,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             where e.Empstat_ in 
                                     (select code from {schema}.EmpStat where isResigned = 0 ) 
                             order by empLastNm, EmpFirstNm ";
-            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
+            data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
 
         }
         else
@@ -95,7 +95,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             left join {schema}.EmpStat s on s.Code = e.Empstat_  
                             where e.Client_ = @Clnumber 
                             order by empLastNm, EmpFirstNm ";
-            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
+            data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Clnumber = mclnumber }, conn);
         }
         return data ?? [];
     }
@@ -144,7 +144,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                       AND d.date >= @StartDate
                       AND d.date <= @EndDate
                     ORDER BY e.emplastnm, e.empfirstnm;";
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, }, conn);
 
         return data ?? [];
     }
@@ -169,7 +169,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             WHERE COALESCE(NULLIF(TRIM(e.client_), ''), '-') in @Clients and e.empstat_ in @Statuses and e.LicExpire between @StartDate and @EndDate 
                             order by empLastNm, EmpFirstNm ";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clients = clients, Statuses = statuses, StartDate = mstartDate, EndDate = mendDate }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Clients = clients, Statuses = statuses, StartDate = mstartDate, EndDate = mendDate }, conn);
 
         return data ?? [];
     }
@@ -188,7 +188,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         order by emplastnm, empfirstnm
                         ";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year }, conn);
         return data ?? [];
     }
 
@@ -206,7 +206,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         order by emplastnm, empfirstnm
                         ";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year, Statuses = statuses }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year, Statuses = statuses }, conn);
         return data ?? [];
     }
 
@@ -231,7 +231,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                     WHERE e.insexpire between @StartDate and @EndDate AND e.empstat_ IN @statuses
                     order by e.emplastnm, e.empfirstnm";
 
-            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, Statuses = statuses }, conn);
+            data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { StartDate = mstartDate, EndDate = mendDate, Statuses = statuses }, conn);
         }
         else if (filterValue == 2)
         {
@@ -242,7 +242,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                     order by e.emplastnm, e.empfirstnm";
 
 
-            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses }, conn);
+            data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Statuses = statuses }, conn);
         }
         else
         {
@@ -252,7 +252,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                     WHERE e.insurance IS NOT NULL AND TRIM(e.insurance) <> '' AND empstat_ IN @statuses
                     order by e.emplastnm, e.empfirstnm";
 
-            data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses }, conn);
+            data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Statuses = statuses }, conn);
         }
         return data ?? [];
     }
@@ -270,7 +270,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                 AND e.empstat_ in @Statuses
                 AND e.movmode = 'A'
             ORDER BY c.clname, e.emplastnm, e.empfirstnm;";
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { ClNumbers = clnumbers, Statuses = statuses }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { ClNumbers = clnumbers, Statuses = statuses }, conn);
         return data ?? [];
     }
 
@@ -287,7 +287,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         WHERE Month(e.separate) = @Month AND Year(e.separate) = @Year
                         order by emplastnm, empfirstnm";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Month = month, Year = year }, conn);
         return data ?? [];
     }
 
@@ -321,7 +321,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                           AND e.datehired < @EndDate
                         ORDER BY emplastnm, empfirstnm;";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Clients = clients, Statuses = statuses, StartDate = startDate, EndDate = endDate }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Clients = clients, Statuses = statuses, StartDate = startDate, EndDate = endDate }, conn);
         return data ?? [];
     }
 
@@ -343,13 +343,13 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                             AND (e.regref IS NULL OR e.regref <= '1901-01-01')
                         ORDER BY e.emplastnm, e.empfirstnm; ";
 
-        data = await _sql.FetchData<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, StartDate = startDate, EndDate = endDate }, conn);
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, StartDate = startDate, EndDate = endDate }, conn);
         return data ?? [];
     }
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Coinfo ";
-        var data = await _sql.FetchData<OCompanyInfoModel?, dynamic>(sql, new { }, conn);
+        var data = await _sql.FetchLegacy<OCompanyInfoModel?, dynamic>(sql, new { }, conn);
         return data ?? [];
     }
 
@@ -570,7 +570,7 @@ public class OPisReportDataAccess : IOPisReportDataAccess
                         OR regref       < '1800-01-01'
                         OR SEPARATE     < '1800-01-01'
                         OR STATUSDATE   < '1800-01-01';";
-        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { }, conn);
     }
 
 

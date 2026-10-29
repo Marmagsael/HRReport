@@ -21,11 +21,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OLicverstatusModel?> _01(OLicverstatusModel licverstatus, string schema, string conn)
         {
             string sql = $@"Insert into {schema}.Licverstatus (licverStatus) values (@licverStatus)";
-            await _sql.ExecuteCmd<dynamic>(sql, licverstatus, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, licverstatus, conn);
 
             sql = $@"SELECT * FROM {schema}.Licverstatus WHERE ID = (SELECT @@IDENTITY)";
 
-            var res = await _sql.FetchData<OLicverstatusModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchLegacy<OLicverstatusModel?, dynamic>(sql, new { }, conn);
 
             return res.FirstOrDefault();
         }
@@ -34,14 +34,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OLicverstatusModel?> _02(int id, string schema, string conn)
         {
             string sql = $@"select  licverStatus from {schema}.Licverstatus where Id = @Id";
-            var data = await _sql.FetchData<OLicverstatusModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OLicverstatusModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<List<OLicverstatusModel?>?> _02s(string schema, string conn)
         {
             string sql = $@"select  licverStatus from {schema}.Licverstatus ";
-            var data = await _sql.FetchData<OLicverstatusModel?, dynamic>(sql, new { }, conn);
+            var data = await _sql.FetchLegacy<OLicverstatusModel?, dynamic>(sql, new { }, conn);
             return data;
         }
 
@@ -49,20 +49,20 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OLicverstatusModel?> _03(int id, OLicverstatusModel licverstatus, string schema, string conn)
         {
             string sql = $@"Update {schema}.Licverstatus set licverStatus = @licverStatus where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, licverstatus, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, licverstatus, conn);
 
             sql = $@" select  * from {schema}.Licverstatus x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OLicverstatusModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OLicverstatusModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OLicverstatusModel?> _04(int id, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Licverstatus where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = id }, conn);
 
             sql = $@" select  * from {schema}.Licverstatus x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OLicverstatusModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OLicverstatusModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
     }

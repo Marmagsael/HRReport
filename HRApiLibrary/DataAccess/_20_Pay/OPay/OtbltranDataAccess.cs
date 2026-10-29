@@ -19,9 +19,9 @@ public class OtbltranDataAccess : IOtbltranDataAccess
         string? sql = $@"Insert into {schema}.Tbltran 
                         (TRN,  acctNumber,  empNumber,  amount,  dTimeStamp,  source,  postedby) values 
                         (@TRN, @acctNumber, @empNumber, @amount, @dTimeStamp, @source, @postedby)";
-        await _sql.ExecuteCmd<dynamic>(sql, tbltran, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, tbltran, conn);
         sql = $@"SELECT * FROM {schema}.Tbltran WHERE ID = (SELECT @@IDENTITY)";
-        var res = await _sql.FetchData<GTbltranModel?, dynamic>(sql, new { }, conn);
+        var res = await _sql.FetchLegacy<GTbltranModel?, dynamic>(sql, new { }, conn);
 
         return res.FirstOrDefault();
     }
@@ -49,7 +49,7 @@ public class OtbltranDataAccess : IOtbltranDataAccess
                         left join {schema}.ChartofAcct c on c.AcctNumber = t.AcctNumber  
                         where left(t.Trn,6) = @Trn and t.Empnumber = @Empnumber ;";
         
-        var data = await _sql.FetchData<GTbltranModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<GTbltranModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         return data;
     }
 
@@ -60,7 +60,7 @@ public class OtbltranDataAccess : IOtbltranDataAccess
                         GROUP BY LEFT(TRN,6)
                         order by LEFT(t.TRN,6) desc
                         limit 48 ;";
-        var data = await _sql.FetchData<GTbltranModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<GTbltranModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }
 
@@ -73,17 +73,17 @@ public class OtbltranDataAccess : IOtbltranDataAccess
                             Source      = @Source, 
                             Postedby    = @Postedby 
                         where Trn = @Trn and AcctNumber and @AcctNumber and EmpNumber and @EmpNumber ;";
-        await _sql.ExecuteCmd<dynamic>(sql, tbltran, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, tbltran, conn);
 
         sql = $@" select  * from {schema}.Tbltran where Trn = @Trn and AcctNumber and @AcctNumber and EmpNumber and @EmpNumber ;";
-        var data = await _sql.FetchData<GTbltranModel?, dynamic>(sql, tbltran, conn);
+        var data = await _sql.FetchLegacy<GTbltranModel?, dynamic>(sql, tbltran, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task _04(GTbltranModel tbltran, string? schema, string? conn)
     {
         string? sql = $@"Delete from {schema}.Tbltran where  Trn = @Trn and AcctNumber and @AcctNumber and EmpNumber and @EmpNumber;";
-        await _sql.ExecuteCmd<dynamic>(sql, tbltran, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, tbltran, conn);
 
     }
 }

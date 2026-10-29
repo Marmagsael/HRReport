@@ -23,15 +23,15 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         var sql = $@"Insert into {schema}.Payrollgrp (Code, ClNumber,  Name, MinDailyRate, RatePerHr,  RatePerDay,  RatePerMonth,  RatePerYr,  Status) values 
                                                         (@Code, @ClNumber, @Name, @MinDailyRate, @RatePerHr, @RatePerDay, @RatePerMonth, @RatePerYr, @Status); 
                         SELECT * FROM {schema}.Payrollgrp WHERE ID = (SELECT @@IDENTITY); ";
-        var res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, payrollgrp, conn);
+        var res = await _sql.FetchLegacy<PayrollgrpModel?, dynamic>(sql, payrollgrp, conn);
 
         var id = res.FirstOrDefault()?.Id;
 
         sql = $@"Update {schema}.Payrollgrp set  code = lpad(Id,5,'0') where Id = @Id ";
-        await _sql.ExecuteCmd(sql, new { Id = id }, conn);
+        await _sql.ExecuteLegacyCmd(sql, new { Id = id }, conn);
 
         sql = $@"SELECT * FROM {schema}.Payrollgrp where Id = @Id ";
-        res = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
+        res = await _sql.FetchLegacy<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
 
         return res.FirstOrDefault();
     }
@@ -40,14 +40,14 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
     public async Task<PayrollgrpModel?> _02(int id, string schema, string conn)
     {
         string sql = $@"select  Id, Code, ClNumber, Name, RatePerHr, RatePerDay, RatePerMonth, RatePerYr, MinDailyRate, Status, PayRateId from {schema}.Payrollgrp where Id = @Id";
-        var data = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task<List<PayrollgrpModel?>?> _02(string schemapay, string conn)
     {
         string sql = $@" SELECT p.* FROM {schemapay}.Payrollgrp p  ORDER BY Name";
-        var data = await _sql.FetchData<PayrollgrpModel, dynamic>( sql,new { }, conn );
+        var data = await _sql.FetchLegacy<PayrollgrpModel, dynamic>( sql,new { }, conn );
         return data ?? new List<PayrollgrpModel>();
     }
 
@@ -91,13 +91,13 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
         // RECORDS COUNT
         string countSql = $@" SELECT COUNT(*)  FROM {schemapay}.Payrollgrp p LEFT JOIN {schemapis}.client c  ON c.clnumber = p.clnumber {where}";
 
-        var totalResult = await _sql.FetchData<int, dynamic>(  countSql, parameters, conn);
+        var totalResult = await _sql.FetchLegacy<int, dynamic>(  countSql, parameters, conn);
         var total       = totalResult?.FirstOrDefault() ?? 0;
 
         // DATA
         string sql = $@"  SELECT  p.*, c.Clname AS Deployment FROM {schemapay}.Payrollgrp p   LEFT JOIN {schemapis}.client c   ON c.clnumber = p.clnumber {where}  ORDER BY {sortColumn} {sortOrder}  LIMIT @Offset, @PageSize";
 
-        var data =   await _sql.FetchData<PayrollgrpModel, dynamic>(    sql,   parameters,  conn);
+        var data =   await _sql.FetchLegacy<PayrollgrpModel, dynamic>(    sql,   parameters,  conn);
 
         return new GridResultModel<PayrollgrpModel>
         {
@@ -109,7 +109,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
     public async Task<List<PayrollgrpModel>?> _02ByName(string name,  string schema, string conn)
     {
         string sql = $@" SELECT Id, Code, ClNumber, Name, RatePerHr, RatePerDay, RatePerMonth, RatePerYr, MinDailyRate, Status, PayRateId FROM {schema}.Payrollgrp  WHERE UPPER(TRIM(Name)) = UPPER(TRIM(@Name)) LIMIT 1";
-        var data = await _sql.FetchData<PayrollgrpModel, dynamic>(sql, new { Name = name}, conn);
+        var data = await _sql.FetchLegacy<PayrollgrpModel, dynamic>(sql, new { Name = name}, conn);
         return data ?? new List<PayrollgrpModel>();
     }
 
@@ -117,7 +117,7 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
     {
         string sql = $@" SELECT 1 FROM {schema}.tbltran WHERE RIGHT(trn, 5) = @Code LIMIT 1";
 
-        var data = await _sql.FetchData<int, dynamic>( sql, new { Code = code }, conn);
+        var data = await _sql.FetchLegacy<int, dynamic>( sql, new { Code = code }, conn);
         return data?.Any() == true;
     }
 
@@ -126,27 +126,27 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
     {
         string sql = $@" SELECT 1 FROM {schema}.deprec WHERE payrollgrpId = @PayrollGrpId LIMIT 1";
 
-        var data = await _sql.FetchData<int, dynamic>(  sql,new { PayrollGrpId = payrollgrpId }, conn);
+        var data = await _sql.FetchLegacy<int, dynamic>(  sql,new { PayrollGrpId = payrollgrpId }, conn);
         return data?.Any() == true;
     }
 
     public async Task<PayrollgrpModel?> _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn)
     {
         string sql = $@"Update {schema}.Payrollgrp set  ClNumber = @ClNumber, Name = @Name, RatePerHr = @RatePerHr, RatePerDay = @RatePerDay, RatePerMonth = @RatePerMonth, RatePerYr = @RatePerYr, MinDailyRate = @MinDailyRate, Status = @Status, PayRateId = @PayRateId where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, payrollgrp, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, payrollgrp, conn);
 
         sql = $@" select  * from {schema}.Payrollgrp x where x.Id = @Id ;";
-        var data = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task<PayrollgrpModel?> _04(int? id, string schema, string conn)
     {
         string sql = $@"Delete from {schema}.Payrollgrp where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Payrollgrp x where x.Id = @Id ;";
-        var data = await _sql.FetchData<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<PayrollgrpModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 }

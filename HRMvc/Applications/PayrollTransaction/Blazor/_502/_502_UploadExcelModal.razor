@@ -1,0 +1,245 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay.OPay
+@using Telerik.Blazor.Components
+@using ClosedXML.Excel
+@using Microsoft.AspNetCore.DataProtection
+
+@* --- Upload Excel : same process as 1100/12002 (_12002_UploadExcelModal); the file is the one Create Excel makes.
+       The validation key (hidden "Key" sheet) must match the loaded payroll; columns are matched
+       by the key in row 5 (daywrk, rn, ...), rows from row 6 by EmpNumber in column A --- *@
+<TelerikDialog @bind-Visible="@v502.IsUploadExcelOpen"
+               Title="Upload Excel"
+               Width="700px">
+    <DialogContent>
+        <div class="row g-2 mb-3">
+            <div class="col-12">
+                <TelerikFileSelect OnSelect="OnFileSelected" AllowedExtensions="@allowed" MaxFileSize="@MaxBytes" Multiple="false" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(parseError))
+        {
+            <div class="small text-danger mb-2">@parseError</div>
+        }
+
+        @if (v502.ExcelToUpdate.Count > 0 || v502.ExcelToAdd.Count > 0 || v502.ExcelToRemove.Count > 0)
+        {
+            <!-- Options -->
+            <div class="d-flex gap-3 mb-3">
+                @if (v502.ExcelToAdd.Count > 0)
+                {
+                    <div>
+                        <TelerikCheckBox @bind-Value="v502.AllowAddFromExcel" Id="chk502Add" />
+                        <label for="chk502Add" class="ms-1">
+                            Add @v502.ExcelToAdd.Count new employee(s) from Excel
+                        </label>
+                    </div>
+                }
+                @if (v502.ExcelToRemove.Count > 0)
+                {
+                    <div>
+                        <TelerikCheckBox @bind-Value="v502.AllowRemoveFromExcel" Id="chk502Remove" />
+                        <label for="chk502Remove" class="ms-1">
+                            Remove @v502.ExcelToRemove.Count employee(s) not in Excel
+                        </label>
+                    </div>
+                }
+            </div>
+
+            <!-- Summary -->
+            <div class="small text-muted">
+                <span class="me-3"><i class="fas fa-sync txt-fcolor1"></i> @v502.ExcelToUpdate.Count to update</span>
+                <span class="me-3"><i class="fas fa-user-plus text-success"></i> @v502.ExcelToAdd.Count to add</span>
+                <span><i class="fas fa-user-minus text-danger"></i> @v502.ExcelToRemove.Count to remove</span>
+            </div>
+            @if (v502.ExcelIgnoredCols.Count > 0)
+            {
+                <div class="small text-warning mt-1">Ignored column(s), not in this payroll : @string.Join(", ", v502.ExcelIgnoredCols)</div>
+            }
+        }
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="OnApply" ThemeColor="primary"
+                       Enabled="@(v502.ExcelToUpdate.Count > 0 || (v502.AllowAddFromExcel && v502.ExcelToAdd.Count > 0) || (v502.AllowRemoveFromExcel && v502.ExcelToRemove.Count > 0))">
+            Apply
+        </TelerikButton>
+        <TelerikButton OnClick="OnCancel">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject IOPayrollDataAccess _payroll
+@inject IDataProtectionProvider DataProtection
+
+@code {
+    [CascadingParameter] public V502 v502 { get; set; } = new();
+
+    const long MaxBytes = 10 * 1024 * 1024;
+    readonly List<string> allowed = [".xlsx"];
+    string? parseError;
+
+    OPayrollSession? s => v502.Session;
+
+    async Task OnFileSelected(FileSelectEventArgs args)
+    {
+        Reset(keepOpen: true);
+        if (s == null || args.Files.Count == 0) return;
+
+        try
+        {
+            using var stream = new MemoryStream();
+            await args.Files[0].Stream.CopyToAsync(stream);
+            stream.Position = 0;
+
+            using var wb = new XLWorkbook(stream);
+
+            // -- Validation key first : the file must be the one Create Excel made for this payroll --
+            var keyError = _502_ExcelKey.Check(DataProtection, wb, s);
+            if (keyError != null)
+            {
+                parseError = keyError;
+                await Notify();
+                return;
+            }
+
+            var ws = wb.Worksheet(1);
+
+            // -- Row 5 : column keys (Create Excel writes them under the account names of row 4) --
+            var inputCols = OPayrollCompute.InputColumns(s);
+            var colMap    = new Dictionary<int, string>();
+            for (int c = 3; !ws.Cell(5, c).IsEmpty(); c++)
+            {
+                var key   = ws.Cell(5, c).GetString().Trim();
+                var match = inputCols.FirstOrDefault(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+                if (match != null) colMap[c] = match; else v502.ExcelIgnoredCols.Add(key);
+            }
+            if (colMap.Count == 0)
+            {
+                parseError = "No manhour column found in row 5. Use a file made with Create Excel.";
+                await Notify();
+                return;
+            }
+
+            // -- Row 6 onward : EmpNumber in column A until the first empty one --
+            var excelEmps = new List<OPayEmpResult>();
+            for (int row = 6; ; row++)
+            {
+                var empNo = ws.Cell(row, 1).GetString().Trim();
+                if (string.IsNullOrEmpty(empNo)) break;
+
+                var r = new OPayEmpResult { EmpNumber = empNo, Name = ws.Cell(row, 2).GetString().Trim() };
+                foreach (var (c, key) in colMap)
+                {
+                    var cell = ws.Cell(row, c);
+                    if (cell.IsEmpty()) { r.Hours[key] = 0; continue; }
+                    if (!cell.TryGetValue<double>(out var h))
+                    {
+                        parseError = $"Cell {cell.Address} ({key}) is not a number : {cell.GetString()}";
+                        await Notify();
+                        return;
+                    }
+                    r.Hours[key] = h;
+                }
+                excelEmps.Add(r);
+            }
+
+            var excelNos   = excelEmps.Select(x => x.EmpNumber).ToHashSet();
+            var currentNos = s.Results.Select(x => x.EmpNumber).ToHashSet();
+
+            v502.ExcelToUpdate = excelEmps.Where(x => currentNos.Contains(x.EmpNumber)).ToList();
+            v502.ExcelToAdd    = excelEmps.Where(x => !currentNos.Contains(x.EmpNumber)).ToList();
+            v502.ExcelToRemove = s.Results.Where(x => !excelNos.Contains(x.EmpNumber)).ToList();
+        }
+        catch (Exception ex)
+        {
+            parseError = $"File parse failed: {ex.Message}";
+        }
+
+        await Notify();
+    }
+
+    async Task OnApply()
+    {
+        if (s == null) return;
+
+        int updated = 0, added = 0, removed = 0;
+        var notFound = new List<string>();
+
+        v502.IsUploadExcelOpen = false;
+        v502.IsBusy = true; v502.Msg = "Applying Excel..."; await Notify();
+        try
+        {
+            // -- Update existing : only the columns that are in the file --
+            foreach (var emp in v502.ExcelToUpdate)
+            {
+                var existing = s.Results.FirstOrDefault(x => x.EmpNumber == emp.EmpNumber);
+                if (existing is null) continue;
+                foreach (var (key, h) in emp.Hours) existing.Hours[key] = h;
+                updated++;
+            }
+
+            // -- Add new : only employees found in the employee master --
+            if (v502.AllowAddFromExcel && v502.ExcelToAdd.Count > 0)
+            {
+                var emps = await _payroll._02Employees(s, v502.ExcelToAdd.Select(x => x.EmpNumber!));
+                foreach (var x in v502.ExcelToAdd)
+                {
+                    var e = emps.FirstOrDefault(m => m.EmpNumber == x.EmpNumber);
+                    if (e == null) { notFound.Add(x.EmpNumber!); continue; }
+
+                    if (!s.Employees.Any(m => m.EmpNumber == e.EmpNumber)) s.Employees.Add(e);
+                    var r = new OPayEmpResult { EmpNumber = e.EmpNumber, Name = e.Name };
+                    foreach (var c in OPayrollCompute.InputColumns(s)) r.Hours[c] = x.Hours.TryGetValue(c, out var h) ? h : 0;
+                    s.Results.Add(r);
+                    added++;
+                }
+            }
+
+            // -- Remove the ones not in the file --
+            if (v502.AllowRemoveFromExcel && v502.ExcelToRemove.Count > 0)
+            {
+                var gone = v502.ExcelToRemove.Select(x => x.EmpNumber).ToHashSet();
+                removed  = s.Results.RemoveAll(x => gone.Contains(x.EmpNumber));
+            }
+
+            if (added > 0 || removed > 0) await _payroll._01LoadEmployeeData(s);
+            if (v502.CurrentEmp == null || !s.Results.Contains(v502.CurrentEmp)) v502.CurrentEmp = s.Results.FirstOrDefault();
+
+            // -- Figures are stale until Process, as with typed hours --
+            v502.IsProcessed = false;
+            v502.Msg = $"Excel applied : {updated} updated, {added} added, {removed} removed."
+                     + (notFound.Count > 0 ? $" Not in the employee master : {string.Join(", ", notFound)}." : "")
+                     + " Process, then Save.";
+        }
+        catch (Exception ex) { v502.Msg = "Error: Excel apply failed : " + ex.Message; }
+        finally
+        {
+            v502.IsBusy = false;
+            Reset(keepOpen: false);
+            await Notify();
+        }
+    }
+
+    async Task OnCancel()
+    {
+        Reset(keepOpen: false);
+        await Notify();
+    }
+
+    void Reset(bool keepOpen)
+    {
+        parseError                  = null;
+        v502.IsUploadExcelOpen      = keepOpen;
+        v502.ExcelToUpdate          = [];
+        v502.ExcelToAdd             = [];
+        v502.ExcelToRemove          = [];
+        v502.ExcelIgnoredCols       = [];
+        v502.AllowAddFromExcel      = false;
+        v502.AllowRemoveFromExcel   = false;
+    }
+
+    async Task Notify()
+    {
+        if (v502.Changed != null) await v502.Changed();
+        StateHasChanged();
+    }
+}

@@ -21,7 +21,7 @@ public class OLoansDataAccess : IOLoansDataAccess
 							( @NUMBER, @EMPNUMBER, @DATE, @DEDNCODE, @DEDNDESC, @AMOUNT, @AMORT, @Principal, @MoToPay, @InterestRate, @InterestAmt, @BALANCE, @STATUS, @ENCODEBY, @ENCODEDT, @CHANGEBY, @CHANGEDT, @POSTED, @EMPLASTNM, @POSTFLAG, 
 							  @REMARKS, @payMode, @payStart, @payRes, @cvno, @p1, @p2, @p3, @p4, @p5, @TRNLastPosted); 
 							SELECT * FROM {schema}.Loans WHERE Number = @Number";
-        var res = await _sql.FetchData<GLoansModel?, dynamic>(sql, loans, conn);
+        var res = await _sql.FetchLegacy<GLoansModel?, dynamic>(sql, loans, conn);
         return res.FirstOrDefault();
     }
 
@@ -30,7 +30,7 @@ public class OLoansDataAccess : IOLoansDataAccess
         string? sql = $@"select  NUMBER, EMPNUMBER, DATE, DEDNCODE, DEDNDESC, AMOUNT, AMORT, Principal, MoToPay, InterestRate, InterestAmt, BALANCE, STATUS, ENCODEBY, 
 								ENCODEDT, CHANGEBY, CHANGEDT, POSTED, EMPLASTNM, POSTFLAG, REMARKS, payMode, payStart, payRes, cvno, p1, p2, p3, p4, p5, TRNLastPosted 
 						from {schema}.Loans where Number = @Number";
-        var data = await _sql.FetchData<GLoansModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<GLoansModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -49,7 +49,7 @@ public class OLoansDataAccess : IOLoansDataAccess
 						from {schema}.Loans l
 						left join {schema}.ChartOfAcct c on c.AcctNumber = l.DedNCode   
 						where Empnumber = @Empnumber and l.Balance > 0";
-        var data = await _sql.FetchData<GLoansModel?, dynamic>(sql, new { EmpNumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<GLoansModel?, dynamic>(sql, new { EmpNumber = empnumber }, conn);
 
         return data;
     }
@@ -86,17 +86,17 @@ public class OLoansDataAccess : IOLoansDataAccess
 							TRNLastPosted = @TRNLastPosted 
 						where Number = @Number;
 						select  * from {schema}.Loans x where Number = @Number ;";
-        var data = await _sql.FetchData<GLoansModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<GLoansModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task<GLoansModel?> _04(string? number, string? schema, string? conn)
     {
         string? sql = $@"Delete from {schema}.Loans where Number = @Number;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Number = number }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Number = number }, conn);
 
         sql = $@" select  * from {schema}.Loans  where Number = @Number ;";
-        var data = await _sql.FetchData<GLoansModel?, dynamic>(sql, new { Number = number }, conn);
+        var data = await _sql.FetchLegacy<GLoansModel?, dynamic>(sql, new { Number = number }, conn);
         return data?.FirstOrDefault();
     }
 }

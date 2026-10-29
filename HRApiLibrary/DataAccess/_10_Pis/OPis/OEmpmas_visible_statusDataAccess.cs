@@ -21,11 +21,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OEmpmas_visible_statusModel?> _01(OEmpmas_visible_statusModel empmas_visible_status, string schema, string conn)
         {
             string sql = $@"Insert into {schema}.Empmas_visible_status (empstat_) values (@empstat_)";
-            await _sql.ExecuteCmd<dynamic>(sql, empmas_visible_status, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, empmas_visible_status, conn);
 
             sql = $@"SELECT * FROM {schema}.Empmas_visible_status WHERE Empstat_ = @Empstat_";
 
-            var res = await _sql.FetchData<OEmpmas_visible_statusModel?, dynamic>(sql, empmas_visible_status, conn);
+            var res = await _sql.FetchLegacy<OEmpmas_visible_statusModel?, dynamic>(sql, empmas_visible_status, conn);
 
             return res.FirstOrDefault();
         }
@@ -34,7 +34,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OEmpmas_visible_statusModel?> _02(int id, string schema, string conn)
         {
             string sql = $@"select  empstat_ from {schema}.Empmas_visible_status where Id = @Id";
-            var data = await _sql.FetchData<OEmpmas_visible_statusModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OEmpmas_visible_statusModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -42,27 +42,27 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OEmpmas_visible_statusModel?>?> _02s(string schema, string conn)
         {
             string sql = $@"select  empstat_ from {schema}.Empmas_visible_status ";
-            var data = await _sql.FetchData<OEmpmas_visible_statusModel?, dynamic>(sql, new { }, conn);
+            var data = await _sql.FetchLegacy<OEmpmas_visible_statusModel?, dynamic>(sql, new { }, conn);
             return data;
         }
 
         public async Task<OEmpmas_visible_statusModel?> _03(int id, OEmpmas_visible_statusModel empmas_visible_status, string schema, string conn)
         {
             string sql = $@"Update {schema}.Empmas_visible_status set empstat_ = @empstat_ where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, empmas_visible_status, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, empmas_visible_status, conn);
 
             sql = $@" select  * from {schema}.Empmas_visible_status x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OEmpmas_visible_statusModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OEmpmas_visible_statusModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OEmpmas_visible_statusModel?> _04(OEmpmas_visible_statusModel empstat, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Empmas_visible_status where Empstat_ = @Empstat_;";
-            await _sql.ExecuteCmd<dynamic>(sql, empstat, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, empstat, conn);
 
             sql = $@" select  * from {schema}.Empmas_visible_status x where Empstat_ = @Empstat_ ;";
-            var data = await _sql.FetchData<OEmpmas_visible_statusModel?, dynamic>(sql, empstat, conn);
+            var data = await _sql.FetchLegacy<OEmpmas_visible_statusModel?, dynamic>(sql, empstat, conn);
             return data?.FirstOrDefault();
         }
     }

@@ -55,4 +55,26 @@ public class _90_001_MySqlDataAccess : I_90_001_MySqlDataAccess
         var connString = _config.GetConnectionString(connName);
         return new MySqlConnection(connString);
     }
+
+    //--- Legacy schemas (OPis / OPay) : the same calls run in LegacySqlMode on their own connection ----------------------
+    public Task ExecuteLegacyCmd<T>(string? sql, T parameters, string? connName = "MySqlConn")
+        => Legacy(_config.GetConnectionString(connName), cn => cn.ExecuteAsync(sql, parameters));
+
+    public Task ExecuteLegacyCmd<T>(string? sql, T parameters, string? db, string? connName)
+        => Legacy($"{_config.GetConnectionString(connName)}; database={db}", cn => cn.ExecuteAsync(sql, parameters));
+
+    public async Task<List<T>> FetchLegacy<T, U>(string? sql, U parameters, string? connName = "MySqlConn")
+        => (await Legacy(_config.GetConnectionString(connName), cn => cn.QueryAsync<T>(sql, parameters))).ToList();
+
+    public async Task<List<T>> FetchLegacy<T, U>(string? sql, U parameters, string? db, string? connName)
+        => (await Legacy($"{_config.GetConnectionString(connName)}; database={db}", cn => cn.QueryAsync<T>(sql, parameters))).ToList();
+
+    private static async Task<TR> Legacy<TR>(string? connString, Func<IDbConnection, Task<TR>> work)
+    {
+        using var cn = new MySqlConnection(connString);
+        await cn.OpenAsync();
+        await cn.ExecuteAsync(LegacySqlMode.Set);
+        try     { return await work(cn); }
+        finally { await cn.ExecuteAsync(LegacySqlMode.Restore); }
+    }
 }

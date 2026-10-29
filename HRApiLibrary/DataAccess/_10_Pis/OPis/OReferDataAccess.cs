@@ -19,11 +19,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OReferModel?> _01(OReferModel refer, string? schema, string? conn)
         {
             string? sql = $@"Insert into {schema}.Refer (EMPNUMBER, NAME, ADDR, TEL, POSITION) values (@EMPNUMBER, @NAME, @ADDR, @TEL, @POSITION)";
-            await _sql.ExecuteCmd<dynamic>(sql, refer, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, refer, conn);
 
             sql = $@"SELECT * FROM {schema}.Refer WHERE EMPNUMBER = @EMPNUMBER";
 
-            var res = await _sql.FetchData<OReferModel?, dynamic>(sql, new { refer.EmpNumber}, conn);
+            var res = await _sql.FetchLegacy<OReferModel?, dynamic>(sql, new { refer.EmpNumber}, conn);
 
             return res.FirstOrDefault();
         }
@@ -32,14 +32,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<List<OReferModel?>?> _02(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"select  EMPNUMBER, NAME, ADDR, TEL, POSITION from {schema}.Refer where Empnumber = @Empnumber";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OReferModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
 
         public async Task<List<OReferModel?>?> _02CheckExisting(string? empnumber, string? name, string? position, string? schema, string? conn)
         {
             string? sql = $@"select EMPNUMBER, NAME, ADDR, TEL, POSITION from {schema}.Refer where EMPNUMBER = @EMPNUMBER AND LOWER(TRIM(NAME)) = LOWER(TRIM(@NAME)) AND LOWER(TRIM(POSITION)) = LOWER(TRIM(@POSITION))";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber, NAME = name?.Trim().ToLower(), POSITION = position?.Trim().ToLower() }, conn);
+            var data = await _sql.FetchLegacy<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber, NAME = name?.Trim().ToLower(), POSITION = position?.Trim().ToLower() }, conn);
             return data;
         }
 
@@ -47,10 +47,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OReferModel?> _03(int? id, OReferModel refer, string? schema, string? conn)
         {
             string? sql = $@"Update {schema}.Refer set EMPNUMBER = @EMPNUMBER, NAME = @NAME, ADDR = @ADDR, TEL = @TEL, POSITION = @POSITION where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, refer, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, refer, conn);
 
             sql = $@" select  * from {schema}.Refer x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OReferModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -69,29 +69,29 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                 OldName = name?.Trim().ToLower(),
                 OldPosition = position?.Trim().ToLower()
             };
-            await _sql.ExecuteCmd<dynamic>(sql, parameters, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, parameters, conn);
             sql = $@"select * from {schema}.Refer where EMPNUMBER = @EMPNUMBER;";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OReferModel?> _04(string? empnumber, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Refer where EMPNUMBER = @EMPNUMBER;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
 
             sql = $@" select  * from {schema}.Refer x where x.EMPNUMBER = @EMPNUMBER ;";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OReferModel?> _04(string? empnumber, string? name, string? position, string? schema, string? conn)
         {
             string? sql = $@"Delete from {schema}.Refer where EMPNUMBER = @EMPNUMBER AND NAME = @NAME AND POSITION = @POSITION;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { EMPNUMBER = empnumber, NAME = name, POSITION = position }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { EMPNUMBER = empnumber, NAME = name, POSITION = position }, conn);
 
             sql = $@" select  * from {schema}.Refer x where x.EMPNUMBER = @EMPNUMBER ;";
-            var data = await _sql.FetchData<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OReferModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 

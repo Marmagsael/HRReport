@@ -26,7 +26,7 @@ public class OChartofacctDataAccess : IOChartofacctDataAccess
 							 @DedSort, @isTH, @Deferd, @isOT, @isMealAcct, @formula, @OTrate, @withSSS, @withPHIC, @withPagibig, 
 							 @isGovAcct, @isLegalHoliday, @isExtLoan, @ExtLoanPercentage, @status_, @customRate, @Taxable_Type, 
 							 @MWE_Type, @TaxExptAmt, @Annualize)";
-        await _sql.ExecuteCmd<dynamic>(sql, chartofacct, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, chartofacct, conn);
     }
 
 
@@ -34,7 +34,7 @@ public class OChartofacctDataAccess : IOChartofacctDataAccess
     {
         string? sql = $@"select  
 		 from {schema}.Chartofacct where AcctNumber = @AcctNumber";
-        var data = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { AcctNumber = acctNumber }, conn);
+        var data = await _sql.FetchLegacy<GChartofacctModel?, dynamic>(sql, new { AcctNumber = acctNumber }, conn);
         return data;
     }
 
@@ -80,14 +80,14 @@ public class OChartofacctDataAccess : IOChartofacctDataAccess
 							Annualize = @Annualize 
 						where AcctNumber = @AcctNumber;
 					    select  * from {schema}.Chartofacct  where AcctNumber = @AcctNumber ;";
-        var data = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, chartofacct, conn);
+        var data = await _sql.FetchLegacy<GChartofacctModel?, dynamic>(sql, chartofacct, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task _04(string? acctnumber, string? schema, string? conn)
     {
         string? sql = $@"Delete from {schema}.Chartofacct where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { AcctNumber = acctnumber }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { AcctNumber = acctnumber }, conn);
 
     }
 }

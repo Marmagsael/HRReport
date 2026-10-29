@@ -17,11 +17,11 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OInsuranceaccidentModel?> _01(OInsuranceaccidentModel insurance_accident, string schema, string conn)
         {
             string sql = $@"Insert into {schema}.Insurance_accident (EMPNUMBER, INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE) values (@EMPNUMBER, @INSURANCE, @POLICYNO, @FACEVALUE, @PREMIUM, @INSEXPIRE)";
-            await _sql.ExecuteCmd<dynamic>(sql, insurance_accident, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, insurance_accident, conn);
 
             sql = $@"SELECT * FROM {schema}.Insurance_accident WHERE ID = (SELECT @@IDENTITY)";
 
-            var res = await _sql.FetchData<OInsuranceaccidentModel?, dynamic>(sql, new { }, conn);
+            var res = await _sql.FetchLegacy<OInsuranceaccidentModel?, dynamic>(sql, new { }, conn);
 
             return res.FirstOrDefault();
         }
@@ -30,14 +30,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OInsuranceaccidentModel?> _02(string empnumber, string schema, string conn)
         {
             string sql = $@"select  EMPNUMBER, INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE from {schema}.Insurance_accident where EMPNUMBER = @EMPNUMBER";
-            var data = await _sql.FetchData<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<List<OInsuranceaccidentModel?>?> _02List(string empnumber, string schema, string conn)
         {
             string sql = $@"select  EMPNUMBER, INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE from {schema}.Insurance_accident where EMPNUMBER = @EMPNUMBER";
-            var data = await _sql.FetchData<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data;
         }
 
@@ -53,10 +53,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                         FACEVALUE = VALUES(FACEVALUE),
                         PREMIUM = VALUES(PREMIUM),
                         INSEXPIRE = VALUES(INSEXPIRE);";
-            await _sql.ExecuteCmd<dynamic>(sql, insurance_accident, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, insurance_accident, conn);
 
             sql = $@" select  * from {schema}.Insurance_accident x where x.EMPNUMBER = @EMPNUMBER ;";
-            var data = await _sql.FetchData<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OInsuranceaccidentModel?, dynamic>(sql, new { EMPNUMBER = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
@@ -64,10 +64,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OInsuranceaccidentModel?> _04(int id, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Insurance_accident where Id = @Id;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = id }, conn);
 
             sql = $@" select  * from {schema}.Insurance_accident x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OInsuranceaccidentModel?, dynamic>(sql, new { Id = id }, conn);
+            var data = await _sql.FetchLegacy<OInsuranceaccidentModel?, dynamic>(sql, new { Id = id }, conn);
             return data?.FirstOrDefault();
         }
     }

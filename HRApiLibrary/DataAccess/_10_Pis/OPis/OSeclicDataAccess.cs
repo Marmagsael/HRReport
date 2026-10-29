@@ -39,14 +39,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
                                 user = @User,
                                 dateModified = @DateModified,
                                 licDateIssued = @LicDateIssued";
-            await _sql.ExecuteCmd<dynamic>(sql, seclic, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, seclic, conn);
 
 
             sql = $@"select  {ReadFlds("s.")}, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
                         LEFT JOIN {schema}.empmas e ON e.EMPNUMBER = s.User
                         where s.Empnumber = @Empnumber";
 
-            var res = await _sql.FetchData<OSeclicModel?, dynamic>(sql, seclic, conn);
+            var res = await _sql.FetchLegacy<OSeclicModel?, dynamic>(sql, seclic, conn);
 
             return res.FirstOrDefault();
         }
@@ -57,14 +57,14 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string sql = $@"select  {ReadFlds("s.")}, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
                         LEFT JOIN {schema}.empmas e ON e.EMPNUMBER = s.User
                         where s.Empnumber = @Empnumber";
-            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<List<OSeclicModel?>?> _02s(string empnumber, string schema, string conn)
         {
             string sql = $@"select  {ReadFlds()} from {schema}.Seclic where Empnumber = @Empnumber";
-            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data;
         }
 
@@ -72,20 +72,20 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
         public async Task<OSeclicModel?> _03(string empnumber, OSeclicModel seclic, string schema, string conn)
         {
             string sql = $@"Update {schema}.Seclic set empnumber = @empnumber, sbrno = @sbrno, opno = @opno, validated = @validated, vfee = @vfee, revalidated = @revalidated, valStatus = @valStatus, user = @user, dateModified = @dateModified, licDateIssued = @licDateIssued where Empnumber = @Empnumber;";
-            await _sql.ExecuteCmd<dynamic>(sql, seclic, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, seclic, conn);
 
             sql = $@" select  {ReadFlds("x.")} from {schema}.Seclic x where x.Id = @Id ;";
-            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
         public async Task<OSeclicModel?> _04(string empnumber, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Seclic where Empnumber = @Empnumber;";
-            await _sql.ExecuteCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Empnumber = empnumber }, conn);
 
             sql = $@" select  {ReadFlds("x.")} from {schema}.Seclic x where x.Empnumber = @Empnumber ;";
-            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            var data = await _sql.FetchLegacy<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
     }

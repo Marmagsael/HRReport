@@ -26,10 +26,20 @@ public class OPayEmp
 
 public class OPayClient
 {
+    public int      Id          { get; set; }   // -- {OldPay}.payrollgrp.Id : {OldPis}.deprec.PayrollgrpId points here --
+    public string?  Code        { get; set; }   // -- payrollgrp.Code : unique per group, the key and the TRN suffix --
     public string?  ClNumber    { get; set; }
     public string?  ClName      { get; set; }
     public double   Rate        { get; set; }
     public double   MinRate     { get; set; }
+    public string?  PayPrd      { get; set; }   // -- client.payprd : "Last Payroll Entry" in MBPay payrollnew4 (display only, not shown on 13T/502) --
+}
+
+// -- {OldPay}.period : PdNumber 01-05 (00 = every payday, not a payroll period) --
+public class OPayPeriod
+{
+    public string?  PdNumber    { get; set; }
+    public string?  PdName      { get; set; }
 }
 
 public class OPayCoa

@@ -24,11 +24,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                             WHERE TABLE_NAME = 'empmas'
                             AND COLUMN_NAME = 'IsMigrated'
                             AND TABLE_SCHEMA = '{oPisDb}';"; 
-        var res = await _sql.FetchData<TableModel?, dynamic>(sql, new { }, conn);
+        var res = await _sql.FetchLegacy<TableModel?, dynamic>(sql, new { }, conn);
         
         if (res == null || res.Count == 0) { 
             string? usql = $@"ALTER TABLE {oPisDb}.Empmas ADD COLUMN IsMigrated int? Default 0;"; 
-            await _sql.ExecuteCmd<dynamic>(usql, new { }, conn);
+            await _sql.ExecuteLegacyCmd<dynamic>(usql, new { }, conn);
         }
     }
     public async Task _00MigrateData(string? pisDb, string? oPisDb, string? conn)
@@ -46,7 +46,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                             and email is not null 
                             and email != '' 
                             and empnumber not in (select empnumber from tmp_users) ;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { }, conn);
 
         sql = $@"drop table if exists tmp_empmas;
 
@@ -61,11 +61,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                     left join {oPisDb}.empmas e on e.empnumber = u.loginName
                     left join {pisDb}.empmas e1 on e1.systemId = u.Id
                 where e1.systemId is null; ";
-        var res = await _sql.FetchData<UsersModel?, dynamic>(sql, new { }, conn);
+        var res = await _sql.FetchLegacy<UsersModel?, dynamic>(sql, new { }, conn);
         
         sql = $@"update {oPisDb}.Empmas set IsMigrated = 1 
                  where IsMigrated = 0 and empstat_ = 'A' and email is not null and email != '' ;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { }, conn);
 
         
     }
@@ -97,11 +97,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     					 @BADGENO, @GUARDNOYRS, @MILITARYNOYR, @PAGIBIGNO, @PHIC, @BANK, @EXPMED, @regref, @empBasicRate, @rateID, @empEcola, @xmark, @suretybondquota, 
     					 @DRV_LICENSE, @DRV_EXP, @isTaxable, @isconfi, @iswithSSS, @iswithGSIS, @iswithPHIC, @iswithPagibig, @ismaxsss, @email, @passwd, @Countrycode, 
     					 @sgcode, @dpadate, @dpclient)" ; 
-		await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
+		await _sql.ExecuteLegacyCmd<dynamic>(sql, empmas, conn);
 
 		sql = $@"SELECT * FROM {schema}.Empmas WHERE EmpNumber = @Empnumber"; 
 
-		var res = await _sql.FetchData<OEmpmasModel?,dynamic>(sql,new {Empnumber=empmas.EmpNumber },conn);
+		var res = await _sql.FetchLegacy<OEmpmasModel?,dynamic>(sql,new {Empnumber=empmas.EmpNumber },conn);
 
 		return res.FirstOrDefault();
 	}
@@ -118,7 +118,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join {schema}.Client      c  on c.ClNumber = e.Client_                              
                      where e.EmpLastNm like @Name or e.EmpFirstNm like @Name
                      order by e.EmpLastNm, e.EmpFirstNm;";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Name = $"{name}%"}, conn);
         return data;    
     }
 
@@ -132,7 +132,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                  AND (d.empnumber IS NULL OR d.payrollgrpId = 0)
                  ORDER BY e.EmpLastNm, e.EmpFirstNm;";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"%{name?.Trim()}%" }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Name = $"%{name?.Trim()}%" }, conn);
         return data;
     }
 
@@ -146,7 +146,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                  WHERE (e.EmpLastNm LIKE @Name OR e.EmpFirstNm LIKE @Name)
                  ORDER BY e.EmpLastNm, e.EmpFirstNm;";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Name = $"%{name}%" }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Name = $"%{name}%" }, conn);
         return data;
     }
 
@@ -162,7 +162,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         WHERE d.payrollgrpId = @PayrollgrpId
                         ORDER BY e.EmpLastNm;";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { PayrollgrpId = payrollgrpId }, conn);
         return data;
     }
 
@@ -173,7 +173,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         from {schema}.Empmas e 
                         where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter
                         order by e.EmplastNm, e.EmpFirstNm";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter }, conn);
         return data;
     }
 
@@ -184,7 +184,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         from {schema}.Empmas e 
                         where left(trim(e.EmpLastNm),1) between @FirstLetter and @SecondLetter and e.empstat_ in @Statuses
                         order by e.EmplastNm, e.EmpFirstNm";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter, Statuses = statuses }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { FirstLetter = firstLetter, SecondLetter = secondLetter, Statuses = statuses }, conn);
         return data;
     }
 
@@ -196,7 +196,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         where (e.EmpLastNm like @SearchKey or e.EmpFirstNm like @SearchKey) and e.empstat_ in @Statuses
                         order by e.EmplastNm, e.EmpFirstNm";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { SearchKey = searchKey , Statuses = statuses }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { SearchKey = searchKey , Statuses = statuses }, conn);
         return data;
     }
 
@@ -208,7 +208,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         where e.EmpLastNm like @SearchKey or e.EmpFirstNm like @SearchKey
                         order by e.EmplastNm, e.EmpFirstNm";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { SearchKey = searchKey }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { SearchKey = searchKey }, conn);
         return data;
     }
 
@@ -220,7 +220,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                             and empstat_ = 'A' 
                             and email is not null 
                             and email != '';";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { }, conn);
         return data;    
     }
 
@@ -235,7 +235,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join {schema}.empstat     s on s.code = e.empstat_                              
                      left join {schema}.Client      c  on c.ClNumber = e.Client_                              
                      where e.Empnumber = @Empnumber";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }
 
@@ -257,7 +257,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                             FROM {schema}.empmasarchieved e 
                             WHERE {condition}";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>( sql, new { Empnumber = empnumber, Email = email }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>( sql, new { Empnumber = empnumber, Email = email }, conn);
 
         return data;
     }
@@ -271,7 +271,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                             FROM {schema}.Empmas e 
                             WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
 
         if(data.Count == 0)
         {
@@ -279,7 +279,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                             FROM {schema}.empmasarchieved e 
                             WHERE LOWER(TRIM(e.Empnumber)) = LOWER(TRIM(@Empnumber))";
 
-             data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+             data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         }
 
         return data;
@@ -294,7 +294,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                             FROM {schema}.Empmas e 
                             WHERE LOWER(TRIM(e.Email)) = LOWER(TRIM(@Email))";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Email = email}, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Email = email}, conn);
 
         return data;
     }
@@ -314,7 +314,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join {olddb}.Client      c on c.ClNumber = e.Client_                              
                      left join {newdb}.empmas      ne on ne.Empnumber = e.Empnumber                              
                      where e.Empnumber = @Empnumber";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data;
     }
 
@@ -349,7 +349,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         Drv_Exp    = IF(Drv_Exp    < '1000-01-01', NULL, Drv_Exp),
                         DpaDate    = IF(DpaDate    < '1000-01-01', NULL, DpaDate)
                     WHERE Client_ = @ClNumber; "; 
-        await _sql.ExecuteCmd<dynamic>(usql, new { ClNumber = clnumber }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(usql, new { ClNumber = clnumber }, conn);
         
         var sql = $@" select  s.name EmpStatus, p.name PositionName, c.ClName, 
                         e.* from {schema}.Empmas e
@@ -357,7 +357,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join {schema}.empstat     s on s.code = e.empstat_                              
                      left join {schema}.Client      c  on c.ClNumber = e.Client_                              
                      where e.Client_ = @ClNumber; ";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { ClNumber = clnumber }, conn);
         return data;
     }
 
@@ -393,7 +393,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         Drv_Exp    = IF(Drv_Exp    < '0001-01-01', NULL, Drv_Exp),
                         DpaDate    = IF(DpaDate    < '0001-01-01', NULL, DpaDate)
                     WHERE Email = @Email;"; 
-        await _sql.ExecuteCmd<dynamic>(usql, new { Email = email }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(usql, new { Email = email }, conn);
 
         var sql = $@"SELECT s.name AS EmpStatus, p.name AS PositionName, c.ClName,
                         e.* from {schema}.Empmas e
@@ -401,7 +401,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      left join   {schema}.empstat     s on s.code = e.empstat_                              
                      left join   {schema}.Client      c  on c.ClNumber = e.Client_
                      where e.Email = @Email" ; 
-		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Email = email }, conn); 
+		var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Email = email }, conn); 
 		return data;
 	}
 
@@ -418,7 +418,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         CROSS JOIN
                             (SELECT MAX(cast(empnumber as signed)) AS MaxEmp FROM {schema}.empmasarchieved) b;";
       
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new {}, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new {}, conn);
         return data.FirstOrDefault();
     }
 
@@ -470,10 +470,10 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                                iswithSSS = @iswithSSS, iswithGSIS = @iswithGSIS, iswithPHIC = @iswithPHIC, iswithPagibig = @iswithPagibig,
                                ismaxsss = @ismaxsss, email = @email, passwd = @passwd, Countrycode = @Countrycode, 
                                sgcode = @sgcode, dpadate = @dpadate, dpclient = @dpclient where Empnumber = @Empnumber;"; 
-		await _sql.ExecuteCmd<dynamic>(sql, empmas, conn);
+		await _sql.ExecuteLegacyCmd<dynamic>(sql, empmas, conn);
 		
 		sql = $@" select  * from {schema}.Empmas x where x.Empnumber = @Empnumber ;";
-		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+		var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
 		return data?.FirstOrDefault();
 	}
 
@@ -491,7 +491,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                     EMAIL      = @Email
                     WHERE EMPNUMBER = @SelEmpnumber";
 
-        await _sql.ExecuteCmd<dynamic>(sql, new
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new
         {
             SelEmpnumber = selectedEmpnumber,
             empmas.EmpLastNm,
@@ -507,7 +507,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
              FROM {schema}.Empmas
              WHERE Empnumber = @EmpNumber";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { empmas.EmpNumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { empmas.EmpNumber }, conn);
         return data?.FirstOrDefault();
     }
     // Tab: Personal Data
@@ -520,12 +520,12 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                     HAIR = @HAIR, EYES = @EYES, MARKS = @MARKS, COMPLEXION = @COMPLEXION,
                     AGE = @AGE, SPOUSE = @SPOUSE, OCCUPATION =@OCCUPATION, NOCHILDREN =@NOCHILDREN
                     WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT EMPBIRTH, BIRTHPLACE, SEX_, CIVSTAT_, CITIZEN, HEIGHT, 
         WEIGHT, BLOODTYPE, RELIGION, HAIR, EYES, MARKS, COMPLEXION, AGE, EMPNUMBER
         FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -537,13 +537,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         ADDR2 = @ADDR2, PROCODE_ = @PROCODE_, TEL2 = @TEL2,
                         CLNAME = @CLNAME, MLANAME = @MLANAME, Countrycode = @Countrycode
                         WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT  EMAIL, ADDR1, MLACODE_, TEL1, ADDR2, PROCODE_, TEL2, 
                 CLNAME, MLANAME, Countrycode, EMPNUMBER
                 FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -555,7 +555,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                         ADDR2 = @Addr2, TEL2 = @Tel2,
                         EMAIL = @Email
                         WHERE EMPNUMBER = @EmpNumber";
-        await _sql.ExecuteCmd<dynamic>(sql, new { EmpNumber = empnumber, Addr1 = addr1, Tel1 = tel1, Addr2 = addr2, Tel2 = tel2, Email = email }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { EmpNumber = empnumber, Addr1 = addr1, Tel1 = tel1, Addr2 = addr2, Tel2 = tel2, Email = email }, conn);
     }
 
     public async Task<OEmpmasModel?> _03_Deployment(string empnumber, OEmpmasModel m, string schema, string conn)
@@ -563,7 +563,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         string sql = $@"UPDATE {schema}.Empmas SET
                     DATEHIRED = @DATEHIRED, POSITION_ = @POSITION_, EMPSTAT_ = @EMPSTAT_, REGREF = @REGREF, SEPARATE =@SEPARATE
                     WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT  POSITION_, EMPSTAT_,  
                 if(e.DATEHIRED  < '1000-01-01', null, DATEHIRED  )  as DATEHIRED  ,       
@@ -571,7 +571,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                 if(e.SEPARATE  < '1000-01-01', null, SEPARATE  )  as SEPARATE 
                 FROM {schema}.Empmas e WHERE Empnumber = @Empnumber";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -583,11 +583,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                      TAXCODE = @TAXCODE, Bank =@Bank
                    
                     WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT  SSS, TIN, PAGIBIGNO, PHIC, HDMF, Drv_License, Drv_Exp, Hdmf, AcctCode,  TAXCODE, Bank, EMPNUMBER
                 FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -597,11 +597,11 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                 INSURANCE = @INSURANCE, POLICYNO = @POLICYNO, FACEVALUE = @FACEVALUE,
                 PREMIUM = @PREMIUM, INSEXPIRE = @INSEXPIRE
                 WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT INSURANCE, POLICYNO, FACEVALUE, PREMIUM, INSEXPIRE, EMPNUMBER
                 FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -613,13 +613,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                 LANGUAGE = @LANGUAGE, SKILL1 = @SKILL1, SKILL2 = @SKILL2,
                 SKILL3 = @SKILL3, SKILL4 = @SKILL4
                 WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT ELLEVEL, HSLEVEL, COLLEGE_, COURSE, VOLEVEL, VOCOURSE,
             LANGUAGE, SKILL1, SKILL2, SKILL3, SKILL4, EMPNUMBER
             FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -631,13 +631,13 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
                     GUARDEXP = @GUARDEXP, GUARDNOYRS = @GUARDNOYRS,
                     EXMILITARY = @EXMILITARY, MILITARYNOYR = @MILITARYNOYR,  BADGENO = @BADGENO, REMARKS =@REMARKS
                     WHERE EMPNUMBER = @EMPNUMBER";
-        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
 
         sql = $@"SELECT SECLICENSE, LICEXPIRE, GUARDEXP, GUARDNOYRS, EXMILITARY, MILITARYNOYR,  BADGENO, REMARKS
                     FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
 
 
-        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
         return data?.FirstOrDefault();
     }
 
@@ -646,10 +646,10 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?> _04(int? id, string? schema, string? conn)
 	{
 		string sql = $@"Delete from {schema}.Empmas where Id = @Id;";
-		// await _sql.ExecuteCmd<dynamic>(sql, new {Id=id},conn);
+		// await _sql.ExecuteLegacyCmd<dynamic>(sql, new {Id=id},conn);
 
 		sql = $@" select  * from {schema}.Empmas x where x.Id = @Id ;";
-		var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
+		var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Id = id }, conn);
 		return data?.FirstOrDefault();
 	}
 

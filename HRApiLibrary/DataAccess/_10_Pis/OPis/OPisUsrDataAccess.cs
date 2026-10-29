@@ -20,11 +20,11 @@ public class OPisUsrDataAccess : IOPisUsrDataAccess
     public async Task<OPisUsrModel?> _01(OPisUsrModel usr, string schema, string conn)
     {
         string sql = $@"Insert into {schema}.Usr (LogName, UserName, Password, status, withInsuranceAccess, Email) values (@LogName, @UserName, @Password, @status, @withInsuranceAccess, @Email)";
-        await _sql.ExecuteCmd<dynamic>(sql, usr, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, usr, conn);
 
         sql = $@"SELECT * FROM {schema}.Usr WHERE ID = (SELECT @@IDENTITY)";
 
-        var res = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { }, conn);
+        var res = await _sql.FetchLegacy<OPisUsrModel?, dynamic>(sql, new { }, conn);
 
         return res.FirstOrDefault();
     }
@@ -33,14 +33,14 @@ public class OPisUsrDataAccess : IOPisUsrDataAccess
     public async Task<OPisUsrModel?> _02(int id, string schema, string conn)
     {
         string sql = $@"select  LogName, UserName, Password, status, withInsuranceAccess, Email from {schema}.Usr where Id = @Id";
-        var data = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<OPisUsrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task<List<OPisUsrModel?>?> _02( string schema, string conn)
     {
         string sql = $@"select  LogName, UserName, Password, status, withInsuranceAccess, Email from {schema}.Usr Order BY UserName";
-        var data = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { }, conn);
+        var data = await _sql.FetchLegacy<OPisUsrModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
@@ -72,13 +72,13 @@ public class OPisUsrDataAccess : IOPisUsrDataAccess
 
         // RECORDS COUNT
         string countSql = $@" SELECT COUNT(*)  FROM {schemapay}.usr u  {where}";
-        var totalResult = await _sql.FetchData<int, dynamic>(countSql, parameters, conn);
+        var totalResult = await _sql.FetchLegacy<int, dynamic>(countSql, parameters, conn);
         var total = totalResult?.FirstOrDefault() ?? 0;
 
         // DATA
         string sql = $@"  SELECT  * FROM {schemapay}.usr u  {where}  ORDER BY {sortColumn} {sortOrder}  LIMIT @Offset, @PageSize";
 
-        var data = await _sql.FetchData<OPisUsrModel, dynamic>(sql, parameters, conn);
+        var data = await _sql.FetchLegacy<OPisUsrModel, dynamic>(sql, parameters, conn);
 
         return new GridResultModel<OPisUsrModel>
         {
@@ -91,20 +91,20 @@ public class OPisUsrDataAccess : IOPisUsrDataAccess
     public async Task<OPisUsrModel?> _03(int id, OPisUsrModel usr, string schema, string conn)
     {
         string sql = $@"Update {schema}.Usr set LogName = @LogName, UserName = @UserName, Password = @Password, status = @status, withInsuranceAccess = @withInsuranceAccess, Email = @Email where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, usr, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, usr, conn);
 
         sql = $@" select  * from {schema}.Usr x where x.Id = @Id ;";
-        var data = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<OPisUsrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 
     public async Task<OPisUsrModel?> _04(int id, string schema, string conn)
     {
         string sql = $@"Delete from {schema}.Usr where Id = @Id;";
-        await _sql.ExecuteCmd<dynamic>(sql, new { Id = id }, conn);
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = id }, conn);
 
         sql = $@" select  * from {schema}.Usr x where x.Id = @Id ;";
-        var data = await _sql.FetchData<OPisUsrModel?, dynamic>(sql, new { Id = id }, conn);
+        var data = await _sql.FetchLegacy<OPisUsrModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
 }
