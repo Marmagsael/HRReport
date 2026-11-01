@@ -80,6 +80,10 @@ public static class DependencyExt
         
         builder.Services.AddScoped<I_00CityDataAccess, _00CityDataAccess>();
         builder.Services.AddScoped<I_00PsgcDataAccess, _00PsgcDataAccess>();
+
+        // -- Employee photos in Backblaze (appsettings "BlackBlaze"); the B2 tokens are shared, so one instance --
+        builder.Services.AddSingleton<BackblazeB2Service>();
+        builder.Services.AddScoped<EmployeePhotoService>();
         builder.Services.AddScoped<I_00ClientDataAccess, _00ClientDataAccess>();
         builder.Services.AddScoped<I_00CompanyusersDataAccess, _00CompanyusersDataAccess>();
         builder.Services.AddScoped<I_00ProvincestateDataAccess, _00ProvincestateDataAccess>();

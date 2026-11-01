@@ -1,0 +1,321 @@
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03
+
+@* --- 12/103 201 Record : the 14/2052 records of the logged-in employee, read only and shown as text (no inputs, no dropdowns) --- *@
+<style>
+    .v201-section       { background:#fff; border:1px solid #e3e6ea; border-radius:.5rem; margin:.75rem; }
+    .v201-title         { padding:.6rem 1rem; border-bottom:1px solid #eef0f2; font-weight:600; color:#334155; font-size:.95rem; }
+    .v201-grid          { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:.25rem 1.5rem; padding:.75rem 1rem; }
+    .v201-field         { display:flex; flex-direction:column; padding:.35rem 0; border-bottom:1px dashed #eef0f2; min-width:0; }
+    .v201-label         { font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#8a94a3; }
+    .v201-value         { font-weight:600; color:#1f2937; overflow-wrap:anywhere; }
+    .v201-empty         { color:#b0b7c3; font-weight:400; }
+    .v201-table         { width:100%; border-collapse:collapse; font-size:.875rem; }
+    .v201-table th      { text-align:left; font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#8a94a3; font-weight:600;
+                          padding:.5rem 1rem; border-bottom:1px solid #eef0f2; background:#fafbfc; }
+    .v201-table td      { padding:.55rem 1rem; border-bottom:1px solid #f1f3f5; color:#1f2937; vertical-align:top; }
+    .v201-table tr:last-child td { border-bottom:none; }
+    .v201-none          { padding:1rem; color:#b0b7c3; font-style:italic; }
+</style>
+
+<div class="w-100" style="border:1px solid lightgray; margin-left:5px; margin-top:5px; display:flex; flex-direction:column; min-height:calc(100vh - 140px); background:#f7f8fa;">
+
+    @* --- Name and photo (Edit / Upload image are hidden while view only) --- *@
+    <div style="background-color:#f5f6f7; border-bottom:1px solid #d9dde2; flex-shrink:0;">
+        <_2052_03_01_EmpName ChildAction="ChildAction" />
+    </div>
+
+    @* --- Tabs --- *@
+    <div class="bg-white" style="flex-shrink:0;">
+        <_2052_03_01_Buttons ChildAction="ChildAction" />
+    </div>
+
+    <div style="flex:1;">
+        @switch (V.TabNo)
+        {
+            case 1:
+                @Section("Personal Data", Grid(
+                    ("Date of Birth",   F(E.EmpBirth)),
+                    ("Age",             F(E.Age)),
+                    ("Birth Place",     F(E.BirthPlace)),
+                    ("Gender",          F(V.OGenders?.FirstOrDefault(g => g?.Code == E.Sex_)?.Name ?? E.Sex_)),
+                    ("Civil Status",    F(V.OCivStats?.FirstOrDefault(c => c?.Code == E.CivStat_)?.Name ?? E.CivStat_)),
+                    ("Citizenship",     F(E.Citizen)),
+                    ("Religion",        F(E.Religion)),
+                    ("Email",           F(E.Email))))
+                @Section("Physical Description", Grid(
+                    ("Height",          Height()),
+                    ("Weight",          F(E.Weight) is var w && w != Dash ? $"{w} lbs" : Dash),
+                    ("Blood Type",      F(E.BloodType)),
+                    ("Hair",            F(E.Hair)),
+                    ("Eyes",            F(E.Eyes)),
+                    ("Complexion",      F(E.Complexion)),
+                    ("Marks",           F(E.Marks))))
+                @Section("Spouse", Grid(
+                    ("Name",            F(E.Spouse)),
+                    ("Occupation",      F(E.Occupation)),
+                    ("No. of Children", F(E.NoChildren))))
+                break;
+
+            case 2:
+                @Section("Present Address", Grid(
+                    ("Country",             F(HasAddress ? A.PresAddCountry : Country)),
+                    ("Province",            F(HasAddress ? A.PresAddProv : null)),
+                    ("City / Municipality", F(HasAddress ? A.PresAddCity : V.MlaList?.FirstOrDefault(m => m?.Code == E.MlaCode_)?.Name)),
+                    ("Address",             F(HasAddress ? _2052_03_Tab02b_DetailedAddress.Join(_2052_03_Tab02b_DetailedAddress.PresentParts(A)) : E.Addr1)),
+                    ("Telephone No.",       F(HasAddress ? A.PresAddTelNo : E.Tel1))))
+                @Section("Provincial Address", Grid(
+                    ("Country",             F(HasAddress ? A.ProvAddCountry : Country)),
+                    ("Province",            F(HasAddress ? A.ProvAddProv : V.ProList?.FirstOrDefault(p => p?.Code == E.ProCode_)?.Name)),
+                    ("City / Municipality", F(HasAddress ? A.ProvAddCity : null)),
+                    ("Address",             F(HasAddress ? _2052_03_Tab02b_DetailedAddress.Join(_2052_03_Tab02b_DetailedAddress.ProvincialParts(A)) : E.Addr2)),
+                    ("Telephone No.",       F(HasAddress ? A.ProvAddTelNo : E.Tel2))))
+                break;
+
+            case 3:
+                @Section("Employment Details", Grid(
+                    ("Position",            F(V.OPositions?.FirstOrDefault(p => p?.Code == E.Position_)?.Name ?? E.PositionName)),
+                    ("Status",              F(V.OEmpstats?.FirstOrDefault(s => s?.Code?.Trim() == E.EmpStat_?.Trim())?.Name ?? E.EmpStatus)),
+                    ("Date Hired",          F(E.DateHired)),
+                    ("Date of Regularization", F(E.RegRef)),
+                    ("Date Separated",      F(E.Separate))))
+                @Section("Group Assignment", Grid(
+                    ("Division",            F(V.Rdivisions?.FirstOrDefault(x => x?.Id == dep?.DivId && dep?.DivId > 0)?.Name)),
+                    ("Department",          F(V.Rdepartments?.FirstOrDefault(x => x?.Id == dep?.DepId && dep?.DepId > 0)?.Name)),
+                    ("Section",             F(V.Rsections?.FirstOrDefault(x => x?.Id == dep?.SecId && dep?.SecId > 0)?.Name)),
+                    ("Leave Group",         F(V.Leavegrps?.FirstOrDefault(x => x?.Id == dep?.LeavegrpId && dep?.LeavegrpId > 0)?.Name)),
+                    ("Payroll Group",       F(V.Payrollgprs?.FirstOrDefault(x => x?.Id == dep?.PayrollgrpId && dep?.PayrollgrpId > 0)?.Name))))
+                @Section("Employment References", Grid(
+                    ("Employment Type",     F(V.Employmenttypes?.FirstOrDefault(x => x?.Id == dep?.EmploymentTypeId && dep?.EmploymentTypeId > 0)?.Name)),
+                    ("Trainee",             Period(dep?.DTraineeStart, dep?.DTraineeEnd)),
+                    ("Contractual",         Period(dep?.DContractualStart, dep?.DContractualEnd)),
+                    ("Probationary",        Period(dep?.DProbationaryStart, dep?.DProbationaryEnd)),
+                    ("Regularization",      Period(dep?.DRegularizationStart, dep?.DRegularizationEnd))))
+                break;
+
+            case 4:
+                @Section("Employment History", Table(new[] { "Company", "Address", "Telephone", "Position", "From", "To", "Salary", "Remarks" },
+                    (V.Employments ?? new()).Where(r => r != null).Select(r => new[] { F(r!.Comp), F(r.Addr1), F(r.Tel), F(r.Posi), F(r.From_), F(r.To_), F(r.Sal), F(r.Rem1) })))
+                break;
+
+            case 5:
+                @Section("Educational Background", Table(new[] { "Level", "School", "Course", "From", "To", "Year / Level" },
+                    new[] { ("E", "Elementary"), ("H", "High School"), ("C", "College"), ("V", "Vocational"), ("P", "Post Graduate") }
+                        .Select(l => (Level: l.Item2, Rec: V.Educations?.LastOrDefault(e => e?.Code == l.Item1)))
+                        .Where(x => x.Rec != null)
+                        .Select(x => new[] { x.Level, F(x.Rec!.School), F(x.Rec.Course), F(x.Rec.From_), F(x.Rec.To_), F(x.Rec.Level) })))
+                break;
+
+            case 6:
+                @Section("Parents", Table(new[] { "Relation", "Name", "Age", "Date of Birth", "Occupation", "Address" },
+                    (V.Parents ?? new()).Where(r => r != null).Select(r => new[] { r!.Code == "M" ? "Mother" : r.Code == "F" ? "Father" : F(r.Code), F(r.Name), F(r.Age), F(r.DoB), F(r.Occ), F(r.Addr) })))
+                @Section("Children", Table(new[] { "Name", "Birthday" },
+                    (V.Children ?? new()).Where(r => r != null).Select(r => new[] { F(r!.Name), F(r.BDay) })))
+                @Section("Emergency Contacts", Table(new[] { "Name", "Relation", "Address", "Telephone" },
+                    (V.EmergencyContacts ?? new()).Where(r => r != null).Select(r => new[] { F(r!.Name), F(r.Rela), F(r.Addr), F(r.Tel) })))
+                @Section("Relatives", Table(new[] { "Name", "Relation", "Birthday" },
+                    (V.Familys ?? new()).Where(r => r != null).Select(r => new[] { F(r!.Name), F(r.Relation), F(r.Birth) })))
+                break;
+
+            case 7:
+                @Section("Trainings / Seminars", Table(new[] { "Program", "School", "Trainor", "Date Taken", "Type" },
+                    (V.Trainings ?? new()).Where(r => r != null).Select(r => new[] { F(r!.Program), F(r.School), F(r.Trainor), F(r.Taken), F(r.Type) })))
+                break;
+
+            case 8:
+                @Section("Character References", Table(new[] { "Name", "Position", "Address", "Telephone" },
+                    (V.CharRefs ?? new()).Where(r => r != null).Select(r => new[] { F(r!.Name), F(r.Position), F(r.Addr), F(r.Tel) })))
+                break;
+
+            case 9:
+                @Section("Life Insurance", Grid(
+                    ("Insurance Type",  F(E.Insurance)),
+                    ("Policy No.",      F(E.PolicyNo)),
+                    ("Face Value",      F(E.FaceValue)),
+                    ("Premium",         F(E.Premium)),
+                    ("Expiration Date", F(E.InsExpire))))
+                @Section("Accident Insurance", Grid(
+                    ("Insurance Type",  F(V.InsuranceAccident?.Insurance)),
+                    ("Policy No.",      F(V.InsuranceAccident?.PolicyNo)),
+                    ("Face Value",      F(V.InsuranceAccident?.FaceValue)),
+                    ("Premium",         F(V.InsuranceAccident?.Premium)),
+                    ("Expiration Date", F(V.InsuranceAccident?.InsExpire))))
+                break;
+
+            case 10:
+                @Section("Compliance", Table(new[] { "Compliance" }, Enumerable.Empty<string[]>()))
+                break;
+
+            case 11:
+                @Section("Government", Grid(
+                    ("SSS",             F(E.Sss)),
+                    ("PAG-IBIG No.",    F(E.PagIbigNo)),
+                    ("PhilHealth No.",  F(E.Phic)),
+                    ("HDMF",            F(E.Hdmf)),
+                    ("TIN",             F(E.Tin)),
+                    ("Tax Table Code",  F(E.TaxCode))))
+                @Section("Driver's License", Grid(
+                    ("License No.",     F(E.Drv_License)),
+                    ("Expiration",      F(E.Drv_Exp))))
+                @Section("Bank", Grid(
+                    ("Account No.",     F(E.AcctCode)),
+                    ("Bank / Branch",   F(E.Bank))))
+                break;
+
+            case 12:
+                @Section("Security License", Grid(
+                    ("Security License", F(E.SecLicense)),
+                    ("Expiration",      F(E.Licexpire)),
+                    ("Badge No.",       F(E.BadgeNo)),
+                    ("OP No.",          F(V.SecLicense?.Opno)),
+                    ("SBR No.",         F(V.SecLicense?.Sbrno))))
+                @Section("License Verification", Grid(
+                    ("Validation Status", F(V.SecLicense?.ValStatus)),
+                    ("Date Validated",  F(V.SecLicense?.Validated)),
+                    ("Date Re-validated", F(V.SecLicense?.Revalidated)),
+                    ("Lic Date Issued", F(V.SecLicense?.LicDateIssued))))
+                @Section("Experience", Grid(
+                    ("Guard No. of Years",    F(E.GuardNoYrs)),
+                    ("Military No. of Years", F(E.MilitaryNoYr)),
+                    ("Remarks",         F(E.Remarks))))
+                break;
+        }
+    </div>
+</div>
+
+@inject I_10_EmpmasDataAccess       _pisEmpmas
+@inject IODeprecDataAccess          _odeprec
+@inject IRdivisionDataAccess        _rdivision
+@inject IRdepartmentDataAccess      _rdepartment
+@inject IRsectionDataAccess         _rsection
+@inject IEmploymenttypeDataAccess   _employmenttype
+@inject ILeavegrpDataAccess         _leavegrp
+@inject IOPayrollgrpDataAccess      _payrollgrp
+
+@code {
+    [CascadingParameter] public UserClaimsModel       Uc              { get; set; } = new();
+    [CascadingParameter] public V2052                 V               { get; set; } = new();
+    [CascadingParameter] public V00_RepVars           Rv              { get; set; } = new();
+    [CascadingParameter] public TelerikNotification?  NotificationRef { get; set; }
+
+    [Parameter] public EventCallback ChildAction { get; set; }
+
+    const string Dash = "—";
+
+    OEmpmasModel        E => V.Empmas ?? new();
+    EmpmasAddressModel  A => V.Empmasaddress;
+    bool                HasAddress => A.Id != null;
+    string?             Country => V.Countrys?.FirstOrDefault(c => c?.Code == E.CountryCode)?.Name;
+
+    ODeprecModel? dep;
+    string?       loadedFor;
+
+    // -- What the editable tabs load for themselves : address (PIS), deployment (old PIS deprec) and the group names --
+    protected override async Task OnParametersSetAsync()
+    {
+        var empno = V.SelectedEmpnumber?.Trim();
+        if (string.IsNullOrEmpty(empno) || empno == loadedFor) return;
+        loadedFor = empno;
+
+        try
+        {
+            if (V.EmpmasaddressFor != empno && !string.IsNullOrWhiteSpace(Uc.SchemaUserPis))
+            {
+                var pis = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
+                V.Empmasaddress     = (pis?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(pis.Id, Uc.SchemaUserPis, Uc.Conn)) ?? new();
+                V.EmpmasaddressFor  = empno;
+            }
+
+            dep = await _odeprec._02ByEmpnumber(empno, Uc.OpisDb, Uc.Conn);
+
+            if (!string.IsNullOrWhiteSpace(Uc.SchemaUserPis))
+            {
+                V.Rdivisions        = await _rdivision._02(Uc.SchemaUserPis, Uc.Conn)       ?? new();
+                V.Rdepartments      = await _rdepartment._02(Uc.SchemaUserPis, Uc.Conn)     ?? new();
+                V.Rsections         = await _rsection._02(Uc.SchemaUserPis, Uc.Conn)        ?? new();
+                V.Employmenttypes   = await _employmenttype._02(Uc.SchemaUserPis, Uc.Conn)  ?? new();
+                V.Leavegrps         = await _leavegrp._02(Uc.SchemaUserPis, Uc.Conn)        ?? new();
+            }
+            if (!string.IsNullOrWhiteSpace(Uc.OpayDb))
+                V.Payrollgprs       = await _payrollgrp._02(Uc.OpayDb, Uc.Conn ?? "")       ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    // -- Text for any value : dates as "MMM dd, yyyy", amounts with 2 decimals, blanks / zero dates as a dash --
+    static string F(object? value) => value switch
+    {
+        null                                    => Dash,
+        DateTime d                              => d.Year > 1900 ? d.ToString("MMM dd, yyyy") : Dash,
+        decimal m                               => m == 0 ? Dash : m.ToString("#,##0.00"),
+        double x                                => x == 0 ? Dash : x.ToString("#,##0.##"),
+        float x                                 => x == 0 ? Dash : x.ToString("#,##0.##"),
+        string s when string.IsNullOrWhiteSpace(s) => Dash,
+        _                                       => value.ToString()!.Trim(),
+    };
+
+    string Height()
+    {
+        var ft = F(E.HeightFt); var inch = F(E.HeightInches);
+        if (ft == Dash && inch == Dash) return Dash;
+        return $"{(ft == Dash ? "0" : ft)}' {(inch == Dash ? "0" : inch)}\"";
+    }
+
+    static string Period(DateTime? start, DateTime? end)
+    {
+        var s = F(start); var e = F(end);
+        if (s == Dash && e == Dash) return Dash;
+        return $"{s}  to  {e}";
+    }
+
+    RenderFragment Section(string title, RenderFragment body) => __builder =>
+    {
+        <div class="v201-section">
+            <div class="v201-title">@title</div>
+            @body
+        </div>
+    };
+
+    RenderFragment Grid(params (string Label, string Value)[] fields) => __builder =>
+    {
+        <div class="v201-grid">
+            @foreach (var (label, value) in fields)
+            {
+                <div class="v201-field">
+                    <span class="v201-label">@label</span>
+                    <span class="v201-value @(value == Dash ? "v201-empty" : "")">@value</span>
+                </div>
+            }
+        </div>
+    };
+
+    RenderFragment Table(string[] headers, IEnumerable<string[]> rows) => __builder =>
+    {
+        var list = rows.ToList();
+        if (list.Count == 0)
+        {
+            <div class="v201-none">No records.</div>
+        }
+        else
+        {
+            <div style="overflow-x:auto;">
+                <table class="v201-table">
+                    <thead><tr>@foreach (var h in headers) { <th>@h</th> }</tr></thead>
+                    <tbody>
+                        @foreach (var row in list)
+                        {
+                            <tr>@foreach (var c in row) { <td class="@(c == Dash ? "v201-empty" : "")">@c</td> }</tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    };
+}

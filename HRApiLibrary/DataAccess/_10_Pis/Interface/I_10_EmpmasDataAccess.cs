@@ -91,6 +91,10 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
         Task<EmpmasTrainingModel?> _04EmpmasTraining(int? id, string? schema, string? conn);
         Task<EmpmasInternalModel?> _01EmpmasInternal(EmpmasInternalModel empmas, string? schema, string? conn);
         Task<EmpmasInternalModel?> _02EmpmasInternalByEmpNumber(string? empNumber, string? schema, string? conn);
+        Task<EmpmasPicModel?>      _01EmpmasPic(EmpmasPicModel pic, string? schema, string? conn);
+        Task<EmpmasPicModel?>      _02EmpmasPicCurrent(int? empmasId, string? category, string? schema, string? conn);
+        Task<List<EmpmasPicModel?>> _02EmpmasPicList(int? empmasId, string? category, string? schema, string? conn);
+        Task                       _04EmpmasPic(int? id, string? schema, string? conn);
         Task<EmpmasInternalModel?> _02EmpmasInternal(int? id, string? schema, string? conn);
         Task<EmpmasInternalModel?> _03EmpmasInternal(int? id, EmpmasInternalModel empmas, string? schema, string? conn);
         Task<EmpmasInternalModel?> _04EmpmasInternal(int? id, string? schema, string? conn);

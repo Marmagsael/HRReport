@@ -225,6 +225,38 @@ public class _10_EmpmasDataAccess : I_10_EmpmasDataAccess
     }
 
 
+    // -- New picture of a category : the previous ones go inactive (Mode 0), the new one is the current (Mode 1) --
+    public async Task<EmpmasPicModel?> _01EmpmasPic(EmpmasPicModel pic, string? schema, string? conn)
+    {
+        string? sql = $@"UPDATE {schema}.EmpmasPic SET Mode = 0 WHERE EmpmasId = @EmpmasId AND Category = @Category AND Mode = 1;
+                         INSERT INTO {schema}.EmpmasPic (EmpmasId, PicName, PicAddress, Category, Validity, Mode, Created, UploadedBy)
+                         VALUES (@EmpmasId, @PicName, @PicAddress, @Category, @Validity, 1, now(), @UploadedBy);";
+        await _sql.ExecuteCmd<dynamic>(sql, pic, conn);
+        return await _02EmpmasPicCurrent(pic.EmpmasId, pic.Category, schema, conn);
+    }
+
+    public async Task<EmpmasPicModel?> _02EmpmasPicCurrent(int? empmasId, string? category, string? schema, string? conn)
+    {
+        string? sql = $@"SELECT Id, EmpmasId, PicName, PicAddress, Category, Validity, Mode, Created, UploadedBy
+                         FROM {schema}.EmpmasPic WHERE EmpmasId = @EmpmasId AND Category = @Category AND Mode = 1
+                         ORDER BY Id DESC LIMIT 1";
+        var res = await _sql.FetchData<EmpmasPicModel?, dynamic>(sql, new { EmpmasId = empmasId, Category = category }, conn);
+        return res.FirstOrDefault();
+    }
+
+    // -- Pictures of a category, newest first --
+    public async Task<List<EmpmasPicModel?>> _02EmpmasPicList(int? empmasId, string? category, string? schema, string? conn)
+    {
+        string? sql = $@"SELECT Id, EmpmasId, PicName, PicAddress, Category, Validity, Mode, Created, UploadedBy
+                         FROM {schema}.EmpmasPic WHERE EmpmasId = @EmpmasId AND Category = @Category ORDER BY Id DESC";
+        return await _sql.FetchData<EmpmasPicModel?, dynamic>(sql, new { EmpmasId = empmasId, Category = category }, conn);
+    }
+
+    public async Task _04EmpmasPic(int? id, string? schema, string? conn)
+    {
+        await _sql.ExecuteCmd<dynamic>($"DELETE FROM {schema}.EmpmasPic WHERE Id = @Id", new { Id = id }, conn);
+    }
+
     public async Task<EmpmasInternalModel?> _02EmpmasInternal(int? id, string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Empmas where Id = @Id";

@@ -5,6 +5,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
     public interface IDeprecDataAccess
     {
         Task<DeprecModel?>              _01(DeprecModel deprec, string? schema, string? conn);
+        Task _01Deployment(int? empmasId, ODeprecModel d, string? schema, string? conn);
         Task                            _01FromPayrollGrp(DeprecModel deprec, string? schema, string? conn);
         Task<DeprecModel?>              _02(int? id, string? schema, string? conn);
         Task<DeprecModel?>              _02(int? id, string? schema, string? payschema, string? conn);

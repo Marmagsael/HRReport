@@ -39,6 +39,34 @@ public class DeprecDataAccess : IDeprecDataAccess
     }
 
 
+    // -- 14/2052 Deployment (copy of the old PIS deprec) : division, department, section, employment type and its dates, position, status --
+    public async Task _01Deployment(int? empmasId, ODeprecModel d, string? schema, string? conn)
+    {
+        string? sql = $@"INSERT INTO {schema}.Deprec (EmpmasId, DivId, DepId, SecId, EmploymentTypeId, PositionId, EmpStatusId,
+                                                       DTraineeStart, DTraineeEnd, DContractualStart, DContractualEnd, DProbationaryStart, DProbationaryEnd, DRegularizationStart, DRegularizationEnd)
+                         VALUES (@EmpmasId, @DivId, @DepId, @SecId, @EmploymentTypeId, @PositionId, @EmpStatusId,
+                                 @DTraineeStart, @DTraineeEnd, @DContractualStart, @DContractualEnd, @DProbationaryStart, @DProbationaryEnd, @DRegularizationStart, @DRegularizationEnd)
+                         ON DUPLICATE KEY UPDATE
+                                 DTraineeStart = VALUES(DTraineeStart), DTraineeEnd = VALUES(DTraineeEnd),
+                                 DContractualStart = VALUES(DContractualStart), DContractualEnd = VALUES(DContractualEnd),
+                                 DProbationaryStart = VALUES(DProbationaryStart), DProbationaryEnd = VALUES(DProbationaryEnd),
+                                 DRegularizationStart = VALUES(DRegularizationStart), DRegularizationEnd = VALUES(DRegularizationEnd),
+                                 DivId = VALUES(DivId), DepId = VALUES(DepId), SecId = VALUES(SecId), EmploymentTypeId = VALUES(EmploymentTypeId),
+                                 PositionId = VALUES(PositionId), EmpStatusId = VALUES(EmpStatusId);";
+        await _sql.ExecuteCmd<dynamic>(sql, new
+        {
+            EmpmasId            = empmasId,
+            DivId               = d.DivId ?? 0,
+            DepId               = d.DepId ?? 0,
+            SecId               = d.SecId ?? 0,
+            EmploymentTypeId    = d.EmploymentTypeId ?? 0,
+            PositionId          = d.PositionId ?? 0,
+            EmpStatusId         = d.EmpStatusId ?? 0,
+            d.DTraineeStart, d.DTraineeEnd, d.DContractualStart, d.DContractualEnd,
+            d.DProbationaryStart, d.DProbationaryEnd, d.DRegularizationStart, d.DRegularizationEnd,
+        }, conn);
+    }
+
     public async Task _01FromPayrollGrp(DeprecModel deprec, string? schema, string? conn)
     {
         string? sql = $@"Insert into {schema}.Deprec 

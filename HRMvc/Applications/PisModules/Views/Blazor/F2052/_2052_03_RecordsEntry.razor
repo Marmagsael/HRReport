@@ -1,4 +1,5 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
+﻿@using HRMvc.StartupConfig
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03
 
 
@@ -11,11 +12,14 @@
         <div class="d-flex justify-content-between">
             <div class="d-flex gap-1">
                 @* --- New Entry Button *@
-                <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="NewEntry">
-                    <div class="d-flex gap-1 align-items-center justify-content-center">
-                        <span class="fw-semibold"><small>Add Employee</small></span>
-                    </div>
-                </button>
+                @if (!V.IsViewOnly)
+                {
+                    <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 " @onclick="NewEntry">
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <span class="fw-semibold"><small>Add Employee</small></span>
+                        </div>
+                    </button>
+                }
 
                 @* --- Generate Report Button *@
                 <button type="button" class="card  flex-fill text-center h-40p mb-btn mb-btn-gray p-2 px-4 " @onclick="GenerateReport">
@@ -26,11 +30,14 @@
             </div>
 
             @* --- Open Status Settings Button *@
-            <div>
-                <button class="btn btn-secondary " title="Status Settings" @onclick="OpenStatusSettingsModal">
-                    <i class="fa-solid fa-gear"></i>
-                </button>
-            </div>
+            @if (!V.IsViewOnly)
+            {
+                <div>
+                    <button class="btn btn-secondary " title="Status Settings" @onclick="OpenStatusSettingsModal">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            }
 
           
 
@@ -50,8 +57,13 @@
         <_2052_03_01_Buttons  ChildAction="ChildAction" />
     </div>
 
-    @* --- Tab Content *@
+    @* --- Tab Content (view-only : shown as is, no clicks, no buttons) *@
+    <style>
+        .pis-view-only          { pointer-events: none; }
+        .pis-view-only button   { display: none !important; }
+    </style>
     <div class="hide-scroll" style="flex:1; @(V.TabNo is 1 or 2 ? "overflow:visible;" : "overflow-y:auto; overflow-x:hidden;")">
+      <div class="@(V.IsViewOnly ? "pis-view-only" : "")">
         @if (V.TabNo == 1)
         {
             <_2052_03_Tab01_PersonalData  ChildAction="ChildAction" />
@@ -100,10 +112,12 @@
         {
             <_2052_03_Tab12_Security ChildAction="ChildAction" />
         }
+      </div>
     </div>
 </div>
 
 @inject IOEmpmasDataAccess _empmas
+@inject EmployeePhotoService _photo
 
 
 @code
@@ -184,6 +198,17 @@
 
         V.IsLoading = true;
 
+        var photo = await _photo.GetAsync(Uc, V.SelectedEmpnumber, icon: false);
+        PrepareReport(V, Rv, photo?.Data);
+
+        V.Action = "GenerateReport";
+
+        await ChildAction.InvokeAsync();
+    }
+
+    // -- Personal Data Sheet data and settings (also used by the 12/103 view) --
+    public static void PrepareReport(V2052 V, V00_RepVars Rv, byte[]? photo = null)
+    {
         Rv.MCaption = "Personal Data Sheet";
         Rv.RelativePath = "";
         Rv.ReportData = [];
@@ -205,6 +230,7 @@
             new
             {
                 Empmas          = V.Empmas,
+                Photo           = photo,
                 EmpAddress      = V.Empmasaddress,
                 Familys         = V.Familys,
 
@@ -240,10 +266,6 @@
         Rv.ReportParams["ReportTitle"] = "Personal Data Sheet";
         Rv.RelativePath = "Reports/_01Pis/K_2052_201.trdp";
         Rv.SelectedFormat = "PDF";
-
-        V.Action = "GenerateReport";
-
-        await ChildAction.InvokeAsync();
     }
 }
 

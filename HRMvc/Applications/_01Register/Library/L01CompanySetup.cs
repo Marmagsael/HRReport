@@ -88,6 +88,7 @@ public class L01CompanySetup
         await _payTblMaker._01(owner.PaySchema, "PH", Conn);
         await _payTblMaker._01PH(owner.PaySchema, "PH", Conn);
         await _oldPisTblMaker._01OldPisTable(owner.OldPis, Conn);
+        await _oldPisTblMaker._01OldPisRefsFromPis(owner.OldPis, owner.PISSchema, MainPis, Conn); // position / empstat = PIS, same Ids
         await _oldPisTblMaker._01OldPisDefaults(owner.OldPis, MainPis, Conn);        // masterfile rows from MainPis
         await _oldPayTblMaker._01OldPayTable(owner.OldPay, Conn);
         await _acctgTblMaker.AccountingTableMaker(owner.AcctgSchema, Conn);      // was made on the first login before

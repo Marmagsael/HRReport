@@ -4,5 +4,6 @@ namespace HRApiLibrary.DataAccess._00_Main.Interface
     {
         Task _01OldPisTable(string? schema, string? connName = "MySqlConn");
         Task _01OldPisDefaults(string? schema, string? sourceSchema, string? connName = "MySqlConn");
+        Task _01OldPisRefsFromPis(string? schema, string? pisSchema, string? mainPis, string? connName = "MySqlConn");
     }
 }

@@ -45,6 +45,37 @@ public class ODeprecDataAccess : IODeprecDataAccess
         return result?.FirstOrDefault();
     }
 
+    // -- 14/2052 Deployment : division, department, section, employment type and its dates; position / status Ids from the empmas codes --
+    public async Task<ODeprecModel?> _01Deployment(ODeprecModel d, string? positionCode, string? empStatCode, string? schema, string? conn)
+    {
+        string? sql = $@"INSERT INTO {schema}.Deprec (EmpNumber, DivId, DepId, SecId, EmploymentTypeId, PositionId, EmpStatusId,
+                                                       DTraineeStart, DTraineeEnd, DContractualStart, DContractualEnd, DProbationaryStart, DProbationaryEnd, DRegularizationStart, DRegularizationEnd)
+                         VALUES (@EmpNumber, @DivId, @DepId, @SecId, @EmploymentTypeId,
+                                 ifnull((select Id from {schema}.position where CODE = @PositionCode limit 1), 0),
+                                 ifnull((select Id from {schema}.empstat  where binary CODE = binary @EmpStatCode limit 1), 0),
+                                 @DTraineeStart, @DTraineeEnd, @DContractualStart, @DContractualEnd, @DProbationaryStart, @DProbationaryEnd, @DRegularizationStart, @DRegularizationEnd)
+                         ON DUPLICATE KEY UPDATE
+                                 DTraineeStart = VALUES(DTraineeStart), DTraineeEnd = VALUES(DTraineeEnd),
+                                 DContractualStart = VALUES(DContractualStart), DContractualEnd = VALUES(DContractualEnd),
+                                 DProbationaryStart = VALUES(DProbationaryStart), DProbationaryEnd = VALUES(DProbationaryEnd),
+                                 DRegularizationStart = VALUES(DRegularizationStart), DRegularizationEnd = VALUES(DRegularizationEnd),
+                                 DivId = VALUES(DivId), DepId = VALUES(DepId), SecId = VALUES(SecId), EmploymentTypeId = VALUES(EmploymentTypeId),
+                                 PositionId = VALUES(PositionId), EmpStatusId = VALUES(EmpStatusId);";
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new
+        {
+            d.EmpNumber,
+            DivId               = d.DivId ?? 0,
+            DepId               = d.DepId ?? 0,
+            SecId               = d.SecId ?? 0,
+            EmploymentTypeId    = d.EmploymentTypeId ?? 0,
+            PositionCode        = positionCode ?? "",
+            EmpStatCode         = empStatCode ?? "",
+            d.DTraineeStart, d.DTraineeEnd, d.DContractualStart, d.DContractualEnd,
+            d.DProbationaryStart, d.DProbationaryEnd, d.DRegularizationStart, d.DRegularizationEnd,
+        }, conn);
+        return await _02ByEmpnumber(d.EmpNumber, schema, conn);
+    }
+
     public async Task<ODeprecModel?> _02(int id, string schema, string conn)
     {
         string sql = $@"select  EmpNumber, TranNumber, DivId, DepId, SecId, PositionId, LeavegrpId, PayrollgrpId, IdDeployment, EmploymentTypeId, EmpStatusId, DepDate, DHired, DRegularization, DTraineeStart, DTraineeEnd, DContractualStart, DContractualEnd, DProbationaryStart, DProbationaryEnd, DRegularizationStart, DRegularizationEnd, DPermanentStart, DResigned, DTerminated, DSeparated, Remarks, IsOnDeviation, IdDeviation, IsOnDiciplinary, IsOnInvestigation, IdInvestigate from {schema}.Deprec where Id = @Id";
@@ -170,6 +201,7 @@ public interface IODeprecDataAccess
 {
     Task<ODeprecModel?> _01(ODeprecModel deprec, string schema, string conn);
     Task<ODeprecModel?> _01PayrollGrp(ODeprecModel deprec, string? schema, string? conn);
+    Task<ODeprecModel?> _01Deployment(ODeprecModel d, string? positionCode, string? empStatCode, string? schema, string? conn);
     Task<ODeprecModel?> _02(int id, string schema, string conn);
     Task<ODeprecModel?> _02ByEmpnumber(string? empnumber, string? schema, string? conn);
     Task<List<ODeprecModel>?> _02ByFieldId(string? fieldName, int? fieldIdValue, string? schema, string? conn);

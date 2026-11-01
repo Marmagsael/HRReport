@@ -57,7 +57,7 @@
         @* ----- Contact ----------*@
         <div class="d-flex flex-column border-top pt-2 mt-3">
             <div class="fw-semibold p-1">Contact</div>
-            @Row("Primary email",           Text(() => A.EmailAdd,       v => A.EmailAdd       = v, 45))
+            @Row("Primary email",           Text(() => A.EmailAdd,       v => A.EmailAdd       = v, 45, HasSystemId))
             @Row("Secondary email",         Text(() => A.EmailAdd1,      v => A.EmailAdd1      = v, 45))
             @Row("Primary mobile",          Text(() => A.CellNo,         v => A.CellNo         = v, 45))
             @Row("Secondary mobile",        Text(() => A.CellNo1,        v => A.CellNo1        = v, 45))
@@ -228,9 +228,12 @@
         </div>
     };
 
-    RenderFragment Text(Func<string?> get, Action<string?> set, int max) => __builder =>
+    // -- Primary email is the login : locked once the employee has a system id --
+    bool HasSystemId => V.Empmas?.UserId > 0;
+
+    RenderFragment Text(Func<string?> get, Action<string?> set, int max, bool disabled = false) => __builder =>
     {
-        <RadzenTextBox Value="@get()" ValueChanged="@((string v) => set(v))" MaxLength="@max" class="form-control" Style="width:100%" />
+        <RadzenTextBox Value="@get()" ValueChanged="@((string v) => set(v))" MaxLength="@max" Disabled="@disabled" class="form-control" Style="width:100%" />
     };
 
     RenderFragment Drop<T>(IEnumerable<T> data, string textProperty, Func<int?> get, Func<int?, Task> changed) => __builder =>

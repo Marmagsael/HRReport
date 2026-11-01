@@ -22,6 +22,7 @@ public class V2052
 
     public string?  Action              { get; set; } = string.Empty;
     public bool     IsLoading           { get; set; } = false;
+    public bool     IsViewOnly          { get; set; } = false;        // -- 12/103 : the employee's own record, nothing editable --
     public string?  ModalCaption        { get; set; } = string.Empty;
     public bool?    IsNewEntry          { get; set; } = false;
 

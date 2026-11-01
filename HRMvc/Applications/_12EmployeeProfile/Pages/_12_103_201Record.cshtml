@@ -1,18 +1,32 @@
 
 @inject UserClaimsContextService ClaimsContext
+@inject HRApiLibrary.DataAccess._10_Pis.OPis.IOEmpmasDataAccess OldEmpmas
 
 
 @{
-    Layout = "~/Views/Shared/Main/_ReportLayout2.cshtml";
+    Layout = "~/Views/Shared/_EPortalLayout.cshtml";
     var userClaims  = ClaimsContext.Build(User);
+
+    // -- 14/2052 screen, view-only : claims with the old PIS schema, and the employee number found at login (session) --
+    var pisClaims   = HRMvc.Applications.PayrollTransaction.Vars.PayClaimsHelper.UserToClaims(User);
+    var selfEmpNo   = Context.Session.GetString("EmpNumber");
+
+    // -- The session is gone after the app restarts while the login cookie stays : find the employee number again by email, as the login does --
+    if (string.IsNullOrWhiteSpace(selfEmpNo) && !string.IsNullOrWhiteSpace(pisClaims.OpisDb) && !string.IsNullOrWhiteSpace(pisClaims.Email))
+    {
+        var found = await OldEmpmas._02ByEmail(pisClaims.Email, pisClaims.OpisDb, pisClaims.Conn ?? "");
+        selfEmpNo = found?.FirstOrDefault()?.EmpNumber;
+        if (!string.IsNullOrWhiteSpace(selfEmpNo)) Context.Session.SetString("EmpNumber", selfEmpNo);
+    }
 }
 
 <div>
 
-    @if(userClaims.IsExclusiveCompany == "true")
-    {   @(await Html.RenderComponentAsync<_12_1032R>(RenderMode.ServerPrerendered, new { UserClaims = userClaims })) }
+    @if (!string.IsNullOrWhiteSpace(pisClaims.OpisDb) && !string.IsNullOrWhiteSpace(selfEmpNo) && selfEmpNo != "00000")
+    {   @(await Html.RenderComponentAsync<HRMvc.Applications.PisModules.Views.Blazor._2052_EmployeeEntry>(RenderMode.ServerPrerendered,
+            new { Uc = pisClaims, SelfEmpNumber = selfEmpNo, ViewOnly = true })) }
     else
-    {   @(await Html.RenderComponentAsync<NE_12_1032R>(RenderMode.ServerPrerendered, new { UserClaims = userClaims })) }
+    {   <div class="p-3 text-secondary">No 201 record was found for your account.</div> }
 
 
 </div>

@@ -61,6 +61,45 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                                      insert into {schema}.`{table}` ({cols}) select {cols} from {sourceSchema}.`{table}`;
                                      SET SESSION sql_mode = @@GLOBAL.sql_mode;", new { }, connName);
         }
+
+        // -- 14/2052 Employee Status Settings : default to every status that is not resigned, when none is set yet --
+        var visible = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`empmas_visible_status`", new { }, connName);
+        if (visible.FirstOrDefault() == 0)
+            await ExecLegacy($@"insert ignore into {schema}.`empmas_visible_status` (empstat_)
+                                select CODE from {schema}.`empstat`
+                                where  ifnull(ISRESIGNED, '0') <> '1' and trim(ifnull(NAME, '')) <> ''", connName);
+    }
+
+    // -- position / empstat : same Id and CODE as the company PIS (Position / REmpStat), so deprec ids mean the same in both.
+    //    Only empty tables (a new company); run before _01OldPisDefaults, which fills them from MainPis when the PIS is missing.
+    //    empstat takes isInPayroll / inOE / inLicVer from MainPis by code (the PIS has no such columns; 13T/502 needs isInPayroll) --
+    public async Task _01OldPisRefsFromPis(string? schema, string? pisSchema, string? mainPis, string? connName = "MySqlConn")
+    {
+        if (string.IsNullOrEmpty(schema) || string.IsNullOrEmpty(pisSchema) || string.IsNullOrEmpty(mainPis)) return;
+        if (!Regex.IsMatch(schema, @"^\w+$") || !Regex.IsMatch(pisSchema, @"^\w+$") || !Regex.IsMatch(mainPis, @"^\w+$")) return;
+
+        if ((await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`position`", new { }, connName)).FirstOrDefault() == 0)
+            await ExecLegacy($@"insert ignore into {schema}.`position` (Id, CODE, NAME, ISGUARD, sort)
+                                select Id, left(trim(CODE), 5), left(NAME, 25), ifnull(ISGUARD, ''), sort
+                                from   {pisSchema}.Position where trim(ifnull(CODE, '')) <> '' order by Id", connName);
+
+        if ((await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`empstat`", new { }, connName)).FirstOrDefault() == 0)
+            await ExecLegacy($@"insert ignore into {schema}.`empstat` (Id, CODE, NAME, ISRESIGNED, isonleaved, isfloating, issuspended, isDeviation, isInPayroll, inOE, inLicVer)
+                                select r.Id, r.Code, r.Name, r.IsResigned, r.IsOnLeaved, r.IsFloating, r.IsSuspended, ifnull(r.IsForDeviation, 0),
+                                       ifnull(m.isInPayroll, 0), ifnull(m.inOE, 1), ifnull(m.inLicVer, 0)
+                                from   {pisSchema}.REmpStat r
+                                left join {mainPis}.empstat m on binary m.CODE = binary r.Code
+                                order by r.Id", connName);
+    }
+
+    // -- Existing old PIS tables : Id added at the end (CODE stays the primary key), numbered by MySQL --
+    private async Task AddIdIfMissing(string? schema, string table, string? conn)
+    {
+        var has = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.columns where table_schema = @Schema and table_name = @Table and column_name = 'Id'",
+            new { Schema = schema, Table = table }, conn);
+        if (has.FirstOrDefault() > 0) return;
+        await ExecLegacy($"ALTER TABLE {schema}.`{table}` ADD COLUMN `Id` int unsigned NOT NULL AUTO_INCREMENT, ADD UNIQUE KEY `Id` (`Id`)", conn);
     }
 
     private class LegacyColumn
@@ -1126,9 +1165,12 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `inLicVer` int DEFAULT '0',
                         `inOE` int unsigned DEFAULT '1',
                         `isDeviation` smallint unsigned NOT NULL DEFAULT '0',
-                        PRIMARY KEY (`CODE`)
+                        `Id` int unsigned NOT NULL AUTO_INCREMENT,
+                        PRIMARY KEY (`CODE`),
+                        UNIQUE KEY `Id` (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+        await AddIdIfMissing(schema, "empstat", conn);
     }
 
     private async Task _01EmpstatIn(string? schema, string? conn)
@@ -1712,9 +1754,12 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `NAME` varchar(25) DEFAULT NULL,
                         `ISGUARD` varchar(1) DEFAULT NULL,
                         `sort` varchar(2) NOT NULL DEFAULT '99',
-                        PRIMARY KEY (`CODE`)
+                        `Id` int unsigned NOT NULL AUTO_INCREMENT,
+                        PRIMARY KEY (`CODE`),
+                        UNIQUE KEY `Id` (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+        await AddIdIfMissing(schema, "position", conn);
     }
 
     private async Task _01Procode(string? schema, string? conn)

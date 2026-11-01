@@ -51,7 +51,15 @@
                 <div class="d-flex align-items-center justify-content-center" style="width:180px;">
                     <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
                          style="height:160px; width:160px;">
-                        <img class="img-fluid" alt="Employee image" src="images/employee.png" height="90" width="90">
+                        @* -- Current photo from Backblaze (PisPhotoController); the default picture when there is none -- *@
+                        @if (hasPhoto)
+                        {
+                            <img alt="Employee image" src="@($"pis/photo/{V.Empmas.EmpNumber?.Trim()}?v={photoVersion}")" style="width:100%; height:100%; object-fit:cover;">
+                        }
+                        else
+                        {
+                            <img class="img-fluid" alt="Employee image" src="images/employee.png" height="90" width="90">
+                        }
                     </div>
                 </div>
                 @* --- Fields ------------- *@
@@ -97,13 +105,13 @@
                     </div>
 
                     @* --- Edit / Upload *@
-                    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+                    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber) && !V.IsViewOnly)
                     {
                         <div class="d-flex align-items-center">
                             <div style="width:130px;">&nbsp;</div>
                             <div class="flex-grow-1 d-flex gap-3">
                                 <span class="msds-link small" role="button" @onclick="EditEmpmas">Edit</span>
-                                <span class="msds-link small" role="button">Upload image</span>
+                                <span class="msds-link small" role="button" @onclick="() => showUpload = true">Upload image</span>
                             </div>
                         </div>
                     }
@@ -123,9 +131,19 @@
 @inject IEmpmovementDataAccess _empMovement;
 @inject IMsdsDataAccess _msds;
 
+<_2052_03_01_UploadPhoto Visible="@showUpload" VisibleChanged="@(v => showUpload = v)" OnUploaded="PhotoUploaded" />
+
+@inject HRMvc.StartupConfig.EmployeePhotoService _photo
+
 @code {
 
     bool popup = true;
+
+    // -- Photo : checked again whenever another employee is shown; the version makes the browser fetch the new upload --
+    bool    showUpload;
+    bool    hasPhoto;
+    long    photoVersion;
+    string? photoFor;
     
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
@@ -141,6 +159,21 @@
     string? errorEmail = "";
 
 
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var empNo = V.Empmas?.EmpNumber?.Trim();
+        if (empNo == photoFor) return;
+        photoFor = empNo;
+        hasPhoto = await _photo.HasPhotoAsync(Uc, empNo);
+    }
+
+    Task PhotoUploaded()
+    {
+        hasPhoto     = true;
+        photoVersion = DateTime.Now.Ticks;
+        return Task.CompletedTask;
+    }
 
     async void EditEmpmas()
     {

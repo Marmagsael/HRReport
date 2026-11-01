@@ -184,6 +184,7 @@ public static class MigrationExt
         {
             log.LogInformation("Migrations : old PIS {Schema}", c.OldPis);
             await oldPis._01OldPisTable(c.OldPis!.Trim(), conn);
+            if (Exists(c.PISSchema)) await oldPis._01OldPisRefsFromPis(c.OldPis!.Trim(), c.PISSchema!.Trim(), mainPis, conn);
             await oldPis._01OldPisDefaults(c.OldPis!.Trim(), mainPis, conn);
         }
         if (Pick(c.OldPay))

@@ -31,68 +31,72 @@
         tenure = $"{years}y {months}m {days}d";
     }
 }
-<div class="d-flex gap-1 h-150p">
-    <div class="br-6">
-        <img src="images/employee1.png"
-             alt="Employee Image"
-             width="175"
-             height="150" />
+<style>
+    .pi-photo   { width:175px; height:150px; object-fit:cover; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,.15); }
+    .pi-name    { font-weight:700; line-height:1.15; color:#1f2937; }
+    .pi-sub     { color:#6b7280; font-size:.85rem; }
+    .pi-badge   { display:inline-flex; align-items:center; gap:.35rem; padding:.15rem .6rem; border-radius:999px; font-size:.75rem; font-weight:600; }
+    .pi-badge.on  { background:#e6f6ec; color:#157347; }
+    .pi-badge.off { background:#fdecec; color:#b02a37; }
+    .pi-grid    { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:.6rem; width:100%; }
+    .pi-tile    { display:flex; align-items:center; gap:.65rem; padding:.55rem .8rem; background:#fff; border:1px solid #e5e7eb; border-radius:10px; min-width:0; }
+    .pi-ico     { flex:0 0 34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:#eaf2fb; color:#1f6fb2; }
+    .pi-lbl     { font-size:.68rem; letter-spacing:.04em; text-transform:uppercase; color:#8a94a3; }
+    .pi-val     { font-weight:600; color:#1f2937; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+</style>
+
+@{
+    var isActive = string.Equals(empmas.EmpStatus?.Trim(), "Active", StringComparison.OrdinalIgnoreCase);
+}
+
+<div class="d-flex gap-3 align-items-center" style="min-height:150px;">
+
+    @* -- the photo uploaded on 14/2052 (default picture when none); ?v= keeps a new upload from coming out of the cache -- *@
+    <div class="flex-shrink-0">
+        <img class="pi-photo" src="@($"pis/photo/{empmas.EmpNumber?.Trim()}?fallback=wide&v={DateTime.Now.Ticks}")" alt="Employee Image" />
     </div>
 
-    <div class="mt-4 w-250p p-2 ">
-        <div class="mt-2 ">
-            <h5>@empmas.EmpFirstNm @empmas.EmpMidNm @empmas.EmpLastNm</h5>
-            <div class="mt-1 text-secondary ">
-                <i class="fa-solid fa-user-tag small txt-fcolor1"></i> @(empmas.EmpNumber ?? "") /
-                <i class="fa-solid fa-user-check small txt-fcolor1"></i> @(empmas.EmpStatus ?? "")
-            </div>
-            <div class="mt-1 text-secondary ">
-                <i class="fa-solid fa-briefcase small txt-fcolor1"></i>
-                @empmas.PositionName
-            </div>
+    @* -- Name, number, status, position -- *@
+    <div class="flex-shrink-0" style="width:260px;">
+        <h5 class="pi-name mb-1">@empmas.EmpFirstNm @empmas.EmpMidNm @empmas.EmpLastNm</h5>
+        <div class="pi-sub mb-2"><i class="fa-solid fa-hashtag small txt-fcolor1"></i> @(empmas.EmpNumber ?? "")</div>
+        <div class="mb-2">
+            <span class="pi-badge @(isActive ? "on" : "off")">
+                <i class="fa-solid fa-circle" style="font-size:.5rem;"></i> @(empmas.EmpStatus ?? "")
+            </span>
         </div>
+        <div class="pi-sub"><i class="fa-solid fa-briefcase small txt-fcolor1"></i> @empmas.PositionName</div>
     </div>
 
-    <div class=" flex-grow-1 d-flex justify-content-center align-items-center">
-        <div class="w-100 ">
-            <div class="d-flex gap-2  ">
-                <div class="w-40 txt-fcolor1">
-                    <div>
-                        <i class="fa-solid fa-calendar-check "></i>
-                        Date Hired
-                    </div>
-                    <div class="px-2 text-secondary">
-                        <span> @(empmas.DateHired?.ToString("MMM dd, yyyy") ?? "")</span>
-                    </div>
-                </div>
-                <div class="w-40 ">
-                    <div class="w-40 txt-fcolor1">
-                        <i class="fa-solid fa-business-time"></i> Tenure
-                    </div>
-                    <div class="px-2 text-secondary">
-                        @(tenure ?? "")
-                    </div>
+    @* -- Details -- *@
+    <div class="flex-grow-1" style="min-width:0;">
+        <div class="pi-grid">
+            <div class="pi-tile">
+                <span class="pi-ico"><i class="fa-solid fa-calendar-check"></i></span>
+                <div style="min-width:0;">
+                    <div class="pi-lbl">Date Hired</div>
+                    <div class="pi-val">@(empmas.DateHired?.ToString("MMM dd, yyyy") ?? "")</div>
                 </div>
             </div>
-
-            <div class="d-flex gap-2 mt-2">
-                <div class="w-40">
-                    <div class="txt-fcolor1">
-                        <span><i class="fa-solid fa-address-card"></i> </span>
-                        <span> Gender</span>
-                    </div>
-                    <div class="px-2 text-secondary">
-                        <span> @(empmas.Sex_ switch { "M" => "Male", "F" => "Female", _ => "" })</span>
-                    </div>
+            <div class="pi-tile">
+                <span class="pi-ico"><i class="fa-solid fa-business-time"></i></span>
+                <div style="min-width:0;">
+                    <div class="pi-lbl">Tenure</div>
+                    <div class="pi-val">@tenure</div>
                 </div>
-                <div class="w-40">
-                    <div class="txt-fcolor1">
-                        <span><i class="fa-solid fa-envelope"></i> </span>
-                        <span>Email</span>
-                    </div>
-                    <div class="px-2 text-secondary">
-                        <span> @(empmas.Email ?? "")</span>
-                    </div>
+            </div>
+            <div class="pi-tile">
+                <span class="pi-ico"><i class="fa-solid fa-address-card"></i></span>
+                <div style="min-width:0;">
+                    <div class="pi-lbl">Gender</div>
+                    <div class="pi-val">@(empmas.Sex_ switch { "M" => "Male", "F" => "Female", _ => "" })</div>
+                </div>
+            </div>
+            <div class="pi-tile">
+                <span class="pi-ico"><i class="fa-solid fa-envelope"></i></span>
+                <div style="min-width:0;">
+                    <div class="pi-lbl">Email</div>
+                    <div class="pi-val" title="@empmas.Email">@(empmas.Email ?? "")</div>
                 </div>
             </div>
         </div>

@@ -41,15 +41,6 @@
             </div>
 
             <div class="w-100 d-flex p-1">
-                <div class="w-30 p-2 small">Status</div>
-                <div class="w-80">
-                    <RadzenDropDown TValue="string" @bind-Value=@V.Empmas!.EmpStat_ Data=@V.OEmpstats
-                                    TextProperty="Name" ValueProperty="Code" Disabled
-                                    Style="width: 100%;  max-width: 400px;" />
-                </div>
-            </div>
-
-            <div class="w-100 d-flex p-1">
                 <div class="w-30 p-2 small">Date Hired </div>
                 <div class="w-80">
                     <RadzenDatePicker @bind-Value=@V.Empmas.DateHired DateFormat="MMMM dd, yyyy" Style="width:50%" />
@@ -73,15 +64,15 @@
 
 
 
-        <div class="disabled-div-50">
-            @* ============== Group Asdsignment ============== *@
+        <div>
+            @* ============== Group Assignment ============== *@
             <div class="h-10p"></div>
-            <RadzenFieldset Text="Group Assignment" class="bg-lightgray">
+            <RadzenFieldset Text="Group Assignment">
                 <div class="w-100 d-flex p-1">
                     <div class="w-30 p-2 small">Division</div>
                     <div class="w-80">
                         <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Divid Data=@V.Rdivisions
-                                        TextProperty="Name" ValueProperty="Id"
+                                        TextProperty="Name" ValueProperty="Id" AllowClear="true" Placeholder="Select division"
                                         Style="width: 100%;  max-width: 400px;" />
                     </div>
                 </div>
@@ -90,7 +81,8 @@
                     <div class="w-30 p-2 small">Department</div>
                     <div class="w-80">
                         <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Depid Data=@V.Rdepartments
-                                        TextProperty="Name" ValueProperty="Id"
+                                        TextProperty="Name" ValueProperty="Id" AllowClear="true" Placeholder="Select department"
+                                        Change="@(_ => OnDepartmentChanged())"
                                         Style="width: 100%;  max-width: 400px;" />
                     </div>
                 </div>
@@ -99,12 +91,13 @@
                 <div class="w-100 d-flex p-1">
                     <div class="w-30 p-2 small">Section</div>
                     <div class="w-80">
-                        <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Secid Data=@V.Rsections
-                                        TextProperty="Name" ValueProperty="Id"
+                        <RadzenDropDown TValue="int?" @bind-Value=@V.Deprec!.Secid Data=@SectionsOfDepartment
+                                        TextProperty="Name" ValueProperty="Id" AllowClear="true" Placeholder="Select section"
                                         Style="width: 100%;  max-width: 400px;" />
                     </div>
                 </div>
 
+                <div class="disabled-div-50">
                 <div class="w-100 d-flex p-1">
                     <div class="w-30 p-2 small">Leave Group</div>
                     <div class="w-80">
@@ -127,13 +120,13 @@
 
 
 
-
+                </div>
             </RadzenFieldset>
 
 
             @* ============== Employment References ============== *@
             <div class="h-10p"></div>
-            <RadzenFieldset Text="Employment References" class="bg-lightgray">
+            <RadzenFieldset Text="Employment References">
                 <div class="w-100 d-flex p-1">
                     <div class="w-30 p-2 small">Employment Type </div>
                     <div class="w-80">
@@ -141,24 +134,27 @@
                                         @bind-Value=@V.Deprec!.Employmenttypeid
                                         Data=@V.Employmenttypes
                                         TextProperty="Name"
-                                        ValueProperty="Id"
+                                        ValueProperty="Id" AllowClear="true" Placeholder="Select employment type"
                                         Style="width: 100%; max-width: 400px;" />
                     </div>
                 </div>
 
 
+                @* -- Only the dates of the selected employment type can be edited; the others stay as history -- *@
                 <div class="w-100 d-flex p-1">
-                    <div class="w-30 p-2 small">Trainee    </div>
+                    <div class="w-30 p-2 small">Trainee</div>
                     <div class="mt-1 w-80">
                         <RadzenRow RowGap="0">
                             <RadzenColumn Size="12" SizeMD="6">
                                 <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
-                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dtraineestart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="@dates.DTraineeStart" DateFormat="MMM dd, yyyy" Style="width:100%"
+                                                      Disabled="@(Stage != "trainee")" AllowClear="true" />
                                 </RadzenFormField>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="6">
                                 <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
-                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dtraineeend" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="@dates.DTraineeEnd" DateFormat="MMM dd, yyyy" Style="width:100%"
+                                                      Disabled="@(Stage != "trainee")" AllowClear="true" Min="@dates.DTraineeStart" />
                                 </RadzenFormField>
                             </RadzenColumn>
                         </RadzenRow>
@@ -166,88 +162,62 @@
                 </div>
 
                 <div class="w-100 d-flex p-1">
-                    <div class="w-30 p-2 small">Contractual   </div>
-                    <div class="w-80">
-                        <div class="mt-1">
-                            <RadzenRow RowGap="0">
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
-                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dcontractualstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
-                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dcontractualend" DateFormat="MMM dd, yyyy" Style="width:100%" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                        </div>
-                    </div>
-                </div>
-
-
-                <div class="w-100 d-flex p-1">
-                    <div class="w-30 p-2 small">Probationary    </div>
-                    <div class="w-80">
-                        <div class="mt-1">
-                            <RadzenRow RowGap="0">
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
-                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dprobationarystart" DateFormat="MMM dd, yyyy" Style="width:100%" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
-                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dprobationaryend" DateFormat="MMM dd, yyyy" Style="width:100%" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <div class="w-100 d-flex p-1">
-                    <div class="w-30 p-2 small">Regularization    </div>
-                    <div class="w-80">
-                        <div class="mt-1">
-                            <RadzenRow RowGap="0">
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
-                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dregularizationstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                                <RadzenColumn Size="12" SizeMD="6">
-                                    <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
-                                        <RadzenDatePicker @bind-Value="@V.Deprec!.Dregularizationend" DateFormat="MMM dd, yyyy" Style="width:100%" />
-                                    </RadzenFormField>
-                                </RadzenColumn>
-                            </RadzenRow>
-                        </div>
-                    </div>
-                </div>
-
-
-
-                <div class="w-100 d-flex p-1">
-                    <div class="w-30 p-2 small">Permanent    </div>
+                    <div class="w-30 p-2 small">Contractual</div>
                     <div class="mt-1 w-80">
                         <RadzenRow RowGap="0">
                             <RadzenColumn Size="12" SizeMD="6">
                                 <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
-                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dpermanentstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="@dates.DContractualStart" DateFormat="MMM dd, yyyy" Style="width:100%"
+                                                      Disabled="@(Stage != "contractual")" AllowClear="true" />
                                 </RadzenFormField>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="6">
                                 <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
-                                    <RadzenDatePicker @bind-Value="@V.Deprec!.Dpermanentstart" DateFormat="MMM dd, yyyy" Style="width:100%" />
+                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="@dates.DContractualEnd" DateFormat="MMM dd, yyyy" Style="width:100%"
+                                                      Disabled="@(Stage != "contractual")" AllowClear="true" Min="@dates.DContractualStart" />
                                 </RadzenFormField>
                             </RadzenColumn>
                         </RadzenRow>
                     </div>
                 </div>
 
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Probationary</div>
+                    <div class="mt-1 w-80">
+                        <RadzenRow RowGap="0">
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="@dates.DProbationaryStart" DateFormat="MMM dd, yyyy" Style="width:100%"
+                                                      Disabled="@(Stage != "probationary")" AllowClear="true" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker TValue="DateTime?" @bind-Value="@dates.DProbationaryEnd" DateFormat="MMM dd, yyyy" Style="width:100%"
+                                                      Disabled="@(Stage != "probationary")" AllowClear="true" Min="@dates.DProbationaryStart" />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </div>
+                </div>
+
+                <div class="w-100 d-flex p-1">
+                    <div class="w-30 p-2 small">Regularization</div>
+                    <div class="mt-1 w-80">
+                        <RadzenRow RowGap="0">
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date Start" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker TValue="DateTime?" Value="@RegularizationStart" DateFormat="MMM dd, yyyy" Style="width:100%" Disabled />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenFormField AllowFloatingLabel="false" Text="Date End" Variant="Variant.Outlined" class="custom-form-field">
+                                    <RadzenDatePicker TValue="DateTime?" Value="@RegularizationEnd" DateFormat="MMM dd, yyyy" Style="width:100%" Disabled />
+                                </RadzenFormField>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </div>
+                </div>
             </RadzenFieldset>
 
         </div>
@@ -256,7 +226,14 @@
     </RadzenTemplateForm>
 </div>
 
-@inject IOEmpmasDataAccess _empmas
+@inject IOEmpmasDataAccess          _empmas
+@inject IODeprecDataAccess          _odeprec
+@inject IDeprecDataAccess           _deprec
+@inject I_10_EmpmasDataAccess       _pisEmpmas
+@inject IRdivisionDataAccess        _rdivision
+@inject IRdepartmentDataAccess      _rdepartment
+@inject IRsectionDataAccess         _rsection
+@inject IEmploymenttypeDataAccess   _employmenttype
 
 @code {
 
@@ -286,9 +263,16 @@
     {
         if (model == null) return;
 
+        if (DateError() is string dateError)
+        {
+            NotificationRef.Show(dateError, ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
         try
         {
             var res = await _empmas._03_Deployment(V.SelectedEmpnumber, model, Uc.OpisDb, Uc.Conn);
+            await SaveDeprecAsync(model);
 
             V.Empmas.PositionName = V.OPositions.FirstOrDefault(p => p.Code == V.Empmas.Position_)?.Name ?? string.Empty;
 
@@ -302,6 +286,137 @@
         }
 
         await ChildAction.InvokeAsync();
+    }
+
+    // -- Lists from the company PIS (once), the employee's group from the old PIS deprec (on each employee) --
+    bool    listsLoaded;
+    string? loadedEmpNumber;
+
+    // -- Employment period dates (nullable, from the old PIS deprec) --
+    ODeprecModel dates = new();
+
+    // -- Selected employment type by name : trainee / contractual / probationary / regular --
+    string Stage => (V.Employmenttypes ?? new()).FirstOrDefault(t => t?.Id == V.Deprec?.Employmenttypeid)?.Name?.Trim().ToLower() switch
+    {
+        "trainee"       => "trainee",
+        "contractual"   => "contractual",
+        "probationary"  => "probationary",
+        "regular"       => "regular",
+        _               => "",
+    };
+
+    static DateTime? D(DateTime? d) => d is DateTime x && x.Year > 1900 ? x : null;
+
+    // -- Regularization period is not typed : it starts on the Date of Regularization and ends on the Date Separated (resigned) --
+    DateTime? RegularizationStart => D(V.Empmas?.RegRef);
+    DateTime? RegularizationEnd   => D(V.Empmas?.Separate);
+
+    string? DateError()
+    {
+        foreach (var (name, start, end) in new[]
+        {
+            ("Trainee",        dates.DTraineeStart,        dates.DTraineeEnd),
+            ("Contractual",    dates.DContractualStart,    dates.DContractualEnd),
+            ("Probationary",   dates.DProbationaryStart,   dates.DProbationaryEnd),
+            ("Regularization", RegularizationStart, RegularizationEnd),
+        })
+            if (start != null && end != null && end < start) return $"{name} : Date End is earlier than Date Start.";
+        return null;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            if (!listsLoaded && !string.IsNullOrWhiteSpace(Uc.SchemaUserPis))
+            {
+                V.Rdivisions        = await _rdivision._02(Uc.SchemaUserPis, Uc.Conn)       ?? new();
+                V.Rdepartments      = await _rdepartment._02(Uc.SchemaUserPis, Uc.Conn)     ?? new();
+                V.Rsections         = await _rsection._02(Uc.SchemaUserPis, Uc.Conn)        ?? new();
+                V.Employmenttypes   = await _employmenttype._02(Uc.SchemaUserPis, Uc.Conn)  ?? new();
+                listsLoaded = true;
+            }
+
+            var emp = V.Empmas?.EmpNumber?.Trim();
+            if (emp == loadedEmpNumber) return;
+            loadedEmpNumber = emp;
+
+            V.Deprec = new();
+            dates    = new();
+            if (string.IsNullOrEmpty(emp)) return;
+
+            var od = await _odeprec._02ByEmpnumber(emp, Uc.OpisDb, Uc.Conn);
+            if (od == null) return;
+            V.Deprec.Divid              = Nz(od.DivId);
+            V.Deprec.Depid              = Nz(od.DepId);
+            V.Deprec.Secid              = Nz(od.SecId);
+            V.Deprec.Employmenttypeid   = Nz(od.EmploymentTypeId);
+            V.Deprec.Leavegrpid         = Nz(od.LeavegrpId);
+            V.Deprec.Payrollgrpid       = Nz(od.PayrollgrpId);
+            dates = new ODeprecModel
+            {
+                DTraineeStart           = D(od.DTraineeStart),          DTraineeEnd         = D(od.DTraineeEnd),
+                DContractualStart       = D(od.DContractualStart),      DContractualEnd     = D(od.DContractualEnd),
+                DProbationaryStart      = D(od.DProbationaryStart),     DProbationaryEnd    = D(od.DProbationaryEnd),
+                DRegularizationStart    = D(od.DRegularizationStart),   DRegularizationEnd  = D(od.DRegularizationEnd),
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    // -- 0 in deprec means none : the dropdown shows its placeholder --
+    static int? Nz(int? id) => id is null or 0 ? null : id;
+
+    IEnumerable<RsectionModel?> SectionsOfDepartment =>
+        V.Deprec?.Depid is int dep && dep > 0
+            ? (V.Rsections ?? new()).Where(s => s?.Departmentid == dep)
+            : (V.Rsections ?? new());
+
+    void OnDepartmentChanged()
+    {
+        if (V.Deprec?.Secid is int sec && !SectionsOfDepartment.Any(s => s?.Id == sec)) V.Deprec.Secid = null;
+    }
+
+    // -- Old PIS deprec first (source of truth), then the same values in the company PIS DepRec --
+    async Task SaveDeprecAsync(OEmpmasModel model)
+    {
+        var emp = V.Empmas?.EmpNumber?.Trim();
+        if (string.IsNullOrEmpty(emp) || V.Deprec == null) return;
+
+        var od = await _odeprec._01Deployment(new ODeprecModel
+        {
+            EmpNumber           = emp,
+            DivId               = V.Deprec.Divid,
+            DepId               = V.Deprec.Depid,
+            SecId               = V.Deprec.Secid,
+            EmploymentTypeId    = V.Deprec.Employmenttypeid,
+            DTraineeStart       = dates.DTraineeStart,          DTraineeEnd         = dates.DTraineeEnd,
+            DContractualStart   = dates.DContractualStart,      DContractualEnd     = dates.DContractualEnd,
+            DProbationaryStart  = dates.DProbationaryStart,     DProbationaryEnd    = dates.DProbationaryEnd,
+            DRegularizationStart = RegularizationStart,         DRegularizationEnd  = RegularizationEnd,
+        }, model.Position_, model.EmpStat_, Uc.OpisDb, Uc.Conn);
+
+        if (string.IsNullOrWhiteSpace(Uc.SchemaUserPis)) return;
+        var pis = await _pisEmpmas._02EmpmasInternalByEmpNumber(emp, Uc.SchemaUserPis, Uc.Conn);
+        if (pis == null)
+        {
+            await _pisEmpmas._01EmpmasInternal(new EmpmasInternalModel
+            {
+                EmpNumber   = emp,
+                EmpLastNm   = V.Empmas!.EmpLastNm,
+                EmpFirstNm  = V.Empmas.EmpFirstNm,
+                EmpMidNm    = V.Empmas.EmpMidNm,
+                Suffix      = V.Empmas.Suffix ?? "",
+                EmpAlias    = V.Empmas.EmpAlias,
+            }, Uc.SchemaUserPis, Uc.Conn);
+            pis = await _pisEmpmas._02EmpmasInternalByEmpNumber(emp, Uc.SchemaUserPis, Uc.Conn);
+        }
+        if (pis?.Id == null) return;
+
+        if (od != null) await _deprec._01Deployment(pis.Id, od, Uc.SchemaUserPis, Uc.Conn);
     }
 
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args)

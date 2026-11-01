@@ -5,6 +5,10 @@
 
 
 <TelerikRootComponent>
+    <style>
+        /* loader cover 70% lighter than the Telerik default (.5 -> .15) */
+        .k-loader-container-overlay { opacity: .15 !important; }
+    </style>
     <div class="position-relative">
 
         @*--- TELERIK NOTIFICATION ---*@
@@ -13,17 +17,12 @@
             VerticalPosition="@NotificationVerticalPosition.Top" 
             AnimationType="@AnimationType.SlideLeft" />
 
-        @*--- TELERIK LOADER ---*@
-        <TelerikLoaderContainer 
-            Visible="@v.IsLoading" 
-            LoaderType="@LoaderType.ConvergingSpinner" />
-
         @*--- PARAMETERS ---*@
         <CascadingValue Value="@Uc">
             <CascadingValue Value="@v">
                 <CascadingValue Value="@rv">
                     <CascadingValue Value="@NotificationRef">
-                        <_00BT_FullW HdrCaption="Employee Entry">
+                        <_00BT_FullW HdrCaption="@(string.IsNullOrWhiteSpace(SelfEmpNumber) ? "Employee Entry" : "201 Record")">
                             <Details>
 
                                 @*--- REPORT ---*@
@@ -64,14 +63,31 @@
                                 }
 
                                 @*--- EMPLOYEE LIST AND EMPLOYEE RECORDS ---*@
-                                <div class="p-2 flex-grow-1 overflow-hidden">
+                                <div class="p-2 flex-grow-1 overflow-hidden position-relative">
+
+                                    @*--- TELERIK LOADER (centered on the form, not the screen) ---*@
+                                    <TelerikLoaderContainer 
+                                        Visible="@v.IsLoading" 
+                                        LoaderType="@LoaderType.ConvergingSpinner" />
+
                                     <div class="d-flex gap-2 w-100 h-100">
+                                        @if (string.IsNullOrWhiteSpace(SelfEmpNumber))
+                                        {
                                         <div class="pe-1  h-100 overflow-hidden" style="width:28%; min-width:0;">
                                              <_2052_02_EmpList ChildAction="ChildAction" /> 
                                         </div>
 
-                                        <div class="ps-1 pe-2 hide-scroll  w-85 h-100" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
-                                            <_2052_03_RecordsEntry ChildAction="ChildAction" />
+                                        }
+
+                                        <div class="ps-1 pe-2 hide-scroll h-100 @(string.IsNullOrWhiteSpace(SelfEmpNumber) ? "w-85" : "w-100")" style=" min-width:0; overflow-y:auto; overflow-x:hidden;">
+                                            @if (v.IsViewOnly)
+                                            {
+                                                <_2052_04_RecordView ChildAction="ChildAction" />
+                                            }
+                                            else
+                                            {
+                                                <_2052_03_RecordsEntry ChildAction="ChildAction" />
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -117,6 +133,10 @@
     [Parameter]
     public UserClaimsModel? Uc { get; set; } = new();
 
+    // -- 12/103 : open only this employee (no employee list), and with ViewOnly nothing can be edited --
+    [Parameter] public string?  SelfEmpNumber   { get; set; }
+    [Parameter] public bool     ViewOnly        { get; set; }
+
     V2052       v  = new();
     V00_RepVars rv = new();
 
@@ -137,6 +157,18 @@
 
         try
         {
+            if (!string.IsNullOrWhiteSpace(SelfEmpNumber))
+            {
+                v.IsViewOnly        = ViewOnly;
+                v.SelectedEmpnumber = SelfEmpNumber.Trim();
+                await LoadEmployeeStatus();
+                await LoadDropdownValues();
+                await SelectEmpmas();
+                _00InitializeReport();
+                await _02LoadCompanyInfo();
+                return;
+            }
+
             // Load Employee Status ---------
             await LoadSelectedStatus();
             await LoadEmployeeStatus();

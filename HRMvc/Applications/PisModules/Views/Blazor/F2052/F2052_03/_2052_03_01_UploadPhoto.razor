@@ -1,0 +1,148 @@
+@using HRMvc.StartupConfig
+
+@* --- 14/2052 Upload image : JPG / PNG up to 3 MB; EmployeePhotoService keeps the original and a 96x96 icon in Backblaze --- *@
+<TelerikDialog @ref="dialog" Visible="@Visible" VisibleChanged="@OnVisibleChanged" Title="Upload image" Width="420px">
+    <DialogContent>
+        @* -- Drop zone : the file input covers the box, so a drop or a click both pick the file -- *@
+        <style>
+            .upl-drop  { position: relative; width: 180px; height: 180px; border: 2px dashed #cbd5e1; border-radius: .5rem;
+                         background: #f8f9fa; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                         gap: .4rem; overflow: hidden; text-align: center; transition: background-color .15s, border-color .15s; }
+            .upl-drag  { border-color: #0d6efd; background: #e7f1ff; }
+            .upl-input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+            /* -- Upload button while disabled : light gray text -- */
+            .upl-btn.k-disabled, .upl-btn:disabled { color: #ced4da !important; }
+        </style>
+
+        <div class="d-flex flex-column align-items-center gap-2">
+            <div class="upl-drop @(dragging ? "upl-drag" : "")"
+                 @ondragenter="() => SetDragging(true)" @ondragleave="() => SetDragging(false)" @ondrop="() => SetDragging(false)">
+                @if (preview != null)
+                {
+                    <img src="@preview" alt="Preview" style="width:100%; height:100%; object-fit:cover;" />
+                }
+                else
+                {
+                    <i class="fa-solid fa-cloud-arrow-up fa-2x text-muted"></i>
+                    <div class="small text-muted px-2">Drag an image here<br />or click to choose</div>
+                }
+                <InputFile OnChange="OnSelected" accept=".jpg,.jpeg,.png" class="upl-input" disabled="@busy" title="Drag an image here or click to choose" />
+            </div>
+            <div class="small text-muted text-center">
+                <span class="fw-semibold">PNG and JPG files only.</span><br />
+                At least @EmployeePhotoService.MinSide × @EmployeePhotoService.MinSide px, up to 3 MB.
+            </div>
+            @if (info != null)
+            {
+                <div class="small text-center">
+                    <span class="fw-semibold">@fileName</span><br />
+                    @info.Value.SizeText · @info.Value.Width × @info.Value.Height px
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="small text-danger">@error</div>
+            }
+        </div>
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton ThemeColor="primary" Class="upl-btn" Enabled="@(data != null && !busy)" OnClick="Upload">@(busy ? "Uploading..." : "Upload")</TelerikButton>
+        <TelerikButton Enabled="@(!busy)" OnClick="Close">Cancel</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject EmployeePhotoService _photo
+
+@code {
+    [CascadingParameter] public UserClaimsModel     Uc              { get; set; } = new();
+    [CascadingParameter] public V2052               V               { get; set; } = new();
+    [CascadingParameter] public TelerikNotification? NotificationRef { get; set; }
+
+    [Parameter] public bool                 Visible         { get; set; }
+    [Parameter] public EventCallback<bool>  VisibleChanged  { get; set; }
+    [Parameter] public EventCallback        OnUploaded      { get; set; }
+
+    // -- TelerikDialog does not re-render its content with the parent : Refresh() after every change --
+    TelerikDialog? dialog;
+
+    ImageDetails? info;
+    byte[]?  data;
+    string?  fileName;
+    string?  preview;
+    string?  error;
+    bool     busy;
+
+    bool dragging;
+
+    void SetDragging(bool on)
+    {
+        if (dragging == on) return;
+        dragging = on;
+        dialog?.Refresh();
+    }
+
+    async Task OnSelected(InputFileChangeEventArgs e)
+    {
+        dragging = false;
+        data = null; preview = null; error = null; fileName = null; info = null;
+        var file = e.File;
+
+        if (file.Size > EmployeePhotoService.MaxBytes)
+        {
+            error = $"The file is larger than 3 MB ({file.Name}, {file.Size / 1024d / 1024d:0.00} MB).";
+            dialog?.Refresh();
+            return;
+        }
+
+        try
+        {
+            using var stream = file.OpenReadStream(EmployeePhotoService.MaxBytes);
+            using var ms     = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+            fileName  = file.Name;
+
+            // -- Format, minimum size and details from the content; the Upload button stays off when it cannot be uploaded --
+            (info, error) = EmployeePhotoService.Check(bytes);
+            if (info != null) preview = $"data:{(info.Value.Format == SkiaSharp.SKEncodedImageFormat.Png ? "image/png" : "image/jpeg")};base64,{Convert.ToBase64String(bytes)}";
+            if (error == null) data = bytes;
+        }
+        catch (Exception ex) { error = "Unable to read the file: " + ex.Message; }
+        dialog?.Refresh();
+    }
+
+    async Task Upload()
+    {
+        if (data == null || busy) return;
+        busy = true; error = null;
+        dialog?.Refresh();
+        try
+        {
+            var emp = new OEmpmasLite(V.Empmas.EmpNumber, V.Empmas.EmpLastNm, V.Empmas.EmpFirstNm, V.Empmas.EmpMidNm, V.Empmas.Suffix, V.Empmas.EmpAlias);
+            error = await _photo.UploadAsync(Uc, emp, fileName ?? "photo", data);
+            if (error == null)
+            {
+                NotificationRef?.Show("Image has been uploaded.", ThemeConstants.Notification.ThemeColor.Success);
+                await OnUploaded.InvokeAsync();
+                await Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            error = "Upload failed. Please try again.";
+        }
+        finally { busy = false; dialog?.Refresh(); }
+    }
+
+    async Task Close()
+    {
+        data = null; preview = null; error = null; fileName = null; info = null;
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    async Task OnVisibleChanged(bool visible)
+    {
+        if (!visible) await Close();
+    }
+}
