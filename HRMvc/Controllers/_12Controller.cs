@@ -13,7 +13,6 @@ namespace HRMvc.Controllers
             ["003"] = "_12_003_MyEngagement",
             ["004"] = "_12_004_PayrollSettings",
             // ["010"] = "_12_010_Logout",
-            ["101"] = "_12_101_Index",
             ["103"] = "_12_103_201Record",
             ["104"] = "_12_104_Attendance",
             ["105"] = "_12_105_Leave",
@@ -43,6 +42,7 @@ namespace HRMvc.Controllers
             return Redirect("/13"); // change if needed
         }
 
+        // -- 12/101 is the Razor page Applications/_12EmployeeProfile/Pages/_12_101_Index.razor --
         // -- 12/102 is the Razor page Applications/_12EmployeeProfile/Pages/_12_102_Dashboard.razor --
 
     }

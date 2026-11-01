@@ -1,0 +1,143 @@
+@using HRMvc.StartupConfig.Library
+
+<style>
+    .sm-card    { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:.9rem 1.1rem; box-shadow:0 1px 3px rgba(0,0,0,.05); height:100%; }
+    .sm-title   { font-weight:600; color:#1f2937; margin-bottom:.7rem; }
+    .sm-stat    { display:flex; align-items:center; gap:.8rem; }
+    .sm-ico     { flex:0 0 46px; height:46px; display:flex; align-items:center; justify-content:center; border-radius:12px; font-size:1.2rem; }
+    .sm-num     { font-size:1.7rem; font-weight:700; line-height:1.1; color:#1f2937; }
+    .sm-lbl     { font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; color:#8a94a3; }
+    .sm-bar-row { display:flex; align-items:center; gap:.6rem; margin-bottom:.45rem; font-size:.85rem; }
+    .sm-bar-lbl { flex:0 0 38%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#374151; }
+    .sm-bar-bg  { flex:1; background:#eef1f5; border-radius:6px; height:14px; overflow:hidden; }
+    .sm-bar     { height:100%; background:#1f6fb2; border-radius:6px; }
+    .sm-bar-num { flex:0 0 46px; text-align:right; font-weight:600; color:#1f2937; }
+    .sm-donut   { flex:0 0 140px; height:140px; border-radius:50%; position:relative; }
+    .sm-donut::after { content:""; position:absolute; inset:28px; background:#fff; border-radius:50%; }
+    .sm-dot     { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:.45rem; }
+    .sm-list    { max-height:260px; overflow-y:auto; }
+    .sm-item    { display:flex; justify-content:space-between; gap:.6rem; padding:.4rem 0; border-bottom:1px solid #f1f3f5; font-size:.85rem; }
+    .sm-item:last-child { border-bottom:none; }
+    .sm-none    { color:#b0b7c3; font-style:italic; font-size:.85rem; }
+</style>
+
+<div class="p-3 d-flex flex-column gap-3">
+
+    <h5 class="m-0 fw-bold" style="color:#1f2937;"><i class="fa-solid fa-chart-pie txt-fcolor1"></i> Employee Summary</h5>
+
+    @* -- Totals -- *@
+    <div class="row g-3">
+        @Stat("fa-users",       "#eaf2fb", "#1f6fb2", "Employees",              V.Totals.Total)
+        @Stat("fa-user-check",  "#e6f6ec", "#157347", "Active",                 V.Totals.Active)
+        @Stat("fa-user-minus",  "#fdecec", "#b02a37", "Resigned",               V.Totals.Resigned)
+        @Stat("fa-user-plus",   "#fff4e0", "#b36b00", "New hires this month",   V.Totals.NewHires)
+    </div>
+
+    <div class="row g-3">
+        @* -- Per department -- *@
+        <div class="col-12 col-lg-7">
+            <div class="sm-card">
+                <div class="sm-title">Active employees per department</div>
+                @if (V.ByDepartment.Count == 0) { <div class="sm-none">No data.</div> }
+                @{ var maxDept = V.ByDepartment.Count == 0 ? 1 : V.ByDepartment.Max(x => x.Total); }
+                @foreach (var d in V.ByDepartment.Take(12))
+                {
+                    <div class="sm-bar-row">
+                        <div class="sm-bar-lbl" title="@d.Label">@d.Label</div>
+                        <div class="sm-bar-bg"><div class="sm-bar" style="width:@(Pct(d.Total, maxDept))%"></div></div>
+                        <div class="sm-bar-num">@d.Total.ToString("N0")</div>
+                    </div>
+                }
+                @if (V.ByDepartment.Count > 12) { <div class="sm-none">+ @(V.ByDepartment.Count - 12) more</div> }
+            </div>
+        </div>
+
+        @* -- Per employment type -- *@
+        <div class="col-12 col-lg-5">
+            <div class="sm-card">
+                <div class="sm-title">Active employees per employment type</div>
+                @if (V.ByEmploymentType.Count == 0) { <div class="sm-none">No data.</div> }
+                else
+                {
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="sm-donut" style="background:@DonutGradient()"></div>
+                        <div class="small">
+                            @for (var i = 0; i < V.ByEmploymentType.Count; i++)
+                            {
+                                var t = V.ByEmploymentType[i];
+                                <div class="mb-1"><span class="sm-dot" style="background:@Palette[i % Palette.Length]"></span>@t.Label : <b>@t.Total.ToString("N0")</b></div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        @* -- Due for regularization -- *@
+        <div class="col-12 col-lg-6">
+            <div class="sm-card">
+                <div class="sm-title"><i class="fa-solid fa-user-clock txt-fcolor1"></i> Due for regularization <span class="text-muted fw-normal small">(next @V.WatchDays days)</span></div>
+                <div class="sm-list">
+                    @if (V.ForRegularization.Count == 0) { <div class="sm-none">None.</div> }
+                    @foreach (var p in V.ForRegularization)
+                    {
+                        <div class="sm-item"><span>@p.Name <span class="text-muted">(@p.EmpNumber)</span></span><span class="text-secondary">@(p.OnDate?.ToString("MMM dd, yyyy"))</span></div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* -- Birthdays -- *@
+        <div class="col-12 col-lg-6">
+            <div class="sm-card">
+                <div class="sm-title"><i class="fa-solid fa-cake-candles txt-fcolor1"></i> Birthdays in @DateTime.Today.ToString("MMMM")</div>
+                <div class="sm-list">
+                    @if (V.Birthdays.Count == 0) { <div class="sm-none">None.</div> }
+                    @foreach (var p in V.Birthdays)
+                    {
+                        <div class="sm-item"><span>@p.Name <span class="text-muted">(@p.EmpNumber)</span></span><span class="text-secondary">@(p.OnDate?.ToString("MMM dd"))</span></div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    [Parameter] public V12_101 V { get; set; } = new();
+
+    static readonly string[] Palette = { "#1f6fb2", "#2e9e5b", "#e08a00", "#8e5bd0", "#d9534f", "#5b6b7d" };
+
+    static int Pct(int value, int max) => max <= 0 ? 0 : (int)Math.Round(value * 100.0 / max);
+
+    string DonutGradient()
+    {
+        var total = V.ByEmploymentType.Sum(x => x.Total);
+        if (total <= 0) return "#eef1f5";
+        double from = 0;
+        var parts = new List<string>();
+        for (var i = 0; i < V.ByEmploymentType.Count; i++)
+        {
+            var to = from + V.ByEmploymentType[i].Total * 360.0 / total;
+            parts.Add($"{Palette[i % Palette.Length]} {from:0.##}deg {to:0.##}deg");
+            from = to;
+        }
+        return $"conic-gradient({string.Join(", ", parts)})";
+    }
+
+    RenderFragment Stat(string icon, string bg, string fg, string label, int value) => __builder =>
+    {
+        <div class="col-6 col-lg-3">
+            <div class="sm-card sm-stat">
+                <span class="sm-ico" style="background:@bg; color:@fg;"><i class="fa-solid @icon"></i></span>
+                <div>
+                    <div class="sm-num">@value.ToString("N0")</div>
+                    <div class="sm-lbl">@label</div>
+                </div>
+            </div>
+        </div>
+    };
+}

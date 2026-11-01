@@ -1,0 +1,41 @@
+@* -- 12/101 Employee Summary as a routable Razor page (same approach as 12/102) -- *@
+@page "/12/101"
+@layout HRMvc.Components.Layout.PISLayout
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.StartupConfig
+@using HRMvc.StartupConfig.Library
+
+@inject UserClaimsContextService ClaimsContext
+@inject L12_101 L101
+
+<div>
+    @if (isEmployee)
+    {
+        <div class="p-3 text-secondary">The employee summary is available to HR and admin users only.</div>
+    }
+    else if (V != null)
+    {
+        <HRMvc.Applications._12EmployeeProfile.Blazor._12_101Summary V="V" />
+    }
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    V12_101?    V;
+    bool        isEmployee;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext == null) return;
+
+        isEmployee = CompanyRole.IsEmployee(HttpContext.User);
+        if (isEmployee) return;
+
+        var uc  = ClaimsContext.Build(HttpContext.User);
+        V       = await L101._02Summary(uc);
+    }
+}
