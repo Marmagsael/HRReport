@@ -1,0 +1,225 @@
+<title>HRSeries System Flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  /* Layout: entry flow strip on top, four system cards in a grid below, data layer strip at the bottom. Menu data is the real menu tables. */
+  :root {
+    --bg: #f4f6f8; --surface: #ffffff; --ink: #19232d; --muted: #5d6b78; --line: #d9e0e6;
+    --auth: #2b63a8; --portal: #6d4fb0; --pis: #b4532a; --ams: #9a7208; --pay: #23774f; --data: #3d4a57;
+    --portal-t: #efe9fa; --pis-t: #fbece3; --ams-t: #f8efd2; --pay-t: #e1f2e8; --auth-t: #e3edf9;
+    --warn: #b02a37; --new: #0f766e;
+    --display: "Manrope", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12181e; --surface: #1b232b; --ink: #e8edf1; --muted: #9aa8b4; --line: #2c3742;
+      --auth: #6aa3ea; --portal: #a58be0; --pis: #e58a5e; --ams: #d8b24a; --pay: #55c08a; --data: #8fa0af;
+      --portal-t: #2a2339; --pis-t: #382519; --ams-t: #33290f; --pay-t: #17301f; --auth-t: #182638;
+      --warn: #f28b94; --new: #4fd1c5; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #12181e; --surface: #1b232b; --ink: #e8edf1; --muted: #9aa8b4; --line: #2c3742;
+    --auth: #6aa3ea; --portal: #a58be0; --pis: #e58a5e; --ams: #d8b24a; --pay: #55c08a; --data: #8fa0af;
+    --portal-t: #2a2339; --pis-t: #382519; --ams-t: #33290f; --pay-t: #17301f; --auth-t: #182638;
+    --warn: #f28b94; --new: #4fd1c5; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--display); font-size: 14px; line-height: 1.45;
+    padding-block: 28px 48px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+  h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.02em; margin: 0 0 4px; text-wrap: balance; }
+  .sub { color: var(--muted); margin: 0 0 20px; max-width: 70ch; }
+  .stats { display: flex; flex-wrap: wrap; gap: 10px 28px; margin: 0 0 26px; }
+  .stat b { font-size: 26px; font-weight: 800; display: block; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+
+  .entry { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin-bottom: 14px; }
+  .step { background: var(--auth-t); border: 1px solid var(--auth); border-radius: 8px; padding: 10px 14px; min-width: 0; flex: 1 1 190px; }
+  .step b { display: block; color: var(--auth); font-size: 13px; }
+  .step small { color: var(--muted); font-size: 12px; }
+  .arrow { align-self: center; color: var(--muted); font-size: 20px; }
+  .note { color: var(--muted); font-size: 12px; margin: 0 0 18px; }
+  .note code { font-family: var(--mono); font-size: 11.5px; }
+
+  .tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .tools input[type=search] {
+    flex: 1 1 260px; min-width: 0; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink); font: inherit;
+  }
+  .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 12.5px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .chip:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--auth); outline-offset: 2px; }
+  .hint { color: var(--muted); font-size: 12px; }
+
+  .systems { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; align-items: start; }
+  .sys { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-width: 0; }
+  .sys-head { padding: 12px 16px; color: #fff; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .sys-head h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: .02em; }
+  .sys-head span { font-size: 12px; opacity: .9; font-variant-numeric: tabular-nums; }
+  .sys-desc { padding: 10px 16px 4px; color: var(--muted); font-size: 12.5px; }
+  details { border-top: 1px solid var(--line); }
+  summary { padding: 9px 16px; cursor: pointer; font-weight: 700; font-size: 13px; display: flex; justify-content: space-between; gap: 10px; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: "\25B8"; margin-right: 8px; color: var(--muted); transition: transform .15s; display: inline-block; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  summary .cnt { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .items { padding: 2px 16px 12px 36px; display: grid; gap: 3px; }
+  .item { display: grid; grid-template-columns: 92px 1fr auto; gap: 8px; align-items: baseline; font-size: 13px; min-width: 0; }
+  .item code { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+  .item.hit { background: var(--ams-t); border-radius: 4px; }
+  .tag { font-size: 10.5px; font-weight: 700; border-radius: 4px; padding: 1px 6px; }
+  .tag.new { background: var(--new); color: var(--bg); }
+  .tag.warn { background: var(--warn); color: var(--bg); }
+  .portal .sys-head { background: var(--portal); } .portal .item.hit { background: var(--portal-t); }
+  .pis .sys-head { background: var(--pis); } .pis .item.hit { background: var(--pis-t); }
+  .ams .sys-head { background: var(--ams); } .ams .item.hit { background: var(--ams-t); }
+  .pay .sys-head { background: var(--pay); } .pay .item.hit { background: var(--pay-t); }
+
+  .data { margin-top: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .data h2 { margin: 0 0 10px; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--data); }
+  .layers { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .layer { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+  .layer b { display: block; font-size: 13px; margin-bottom: 2px; font-family: var(--mono); }
+  .layer small { color: var(--muted); font-size: 12px; }
+  .layer.truth { border-color: var(--pis); background: var(--pis-t); }
+  .empty { display: none; padding: 30px; text-align: center; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { summary::before { transition: none; } }
+</style>
+
+<div class="wrap">
+  <h1>HRSeries System Flow</h1>
+  <p class="sub">How a user gets from registration to the Employee Portal, PIS, AMS and Payroll, mapped from the real menu tables. Open a group to see its pages, or search by name or code.</p>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="entry" aria-label="Entry flow">
+    <div class="step"><b>1. Register</b><small>/signup, employee or owner. Creates the company schemas.</small></div>
+    <div class="arrow" aria-hidden="true">&rarr;</div>
+    <div class="step"><b>2. Login</b><small>/login. Cookie plus claims: PisSchema, OldPis, OldPay, Conn.</small></div>
+    <div class="arrow" aria-hidden="true">&rarr;</div>
+    <div class="step"><b>3. Role check</b><small>Employee sees the portal only. HR and admin also see System Application.</small></div>
+    <div class="arrow" aria-hidden="true">&rarr;</div>
+    <div class="step"><b>4. Left menu</b><small>Loaded from the menu tables of the system you opened.</small></div>
+  </div>
+  <p class="note">Data rule: the old PIS (<code>{Code}_OPis</code>) is the source of truth. The new PIS (<code>{Code}_Pis</code>) only links the employee by <code>SystemId</code>.</p>
+
+  <div class="tools">
+    <input type="search" id="q" placeholder="Search a page, for example payslip or 2052" aria-label="Search pages">
+    <button class="chip" data-f="all" aria-pressed="true">All</button>
+    <button class="chip" data-f="portal" aria-pressed="false">Employee Portal</button>
+    <button class="chip" data-f="pis" aria-pressed="false">PIS</button>
+    <button class="chip" data-f="ams" aria-pressed="false">AMS</button>
+    <button class="chip" data-f="pay" aria-pressed="false">Payroll</button>
+    <button class="chip" id="exp" aria-pressed="false">Expand all</button>
+  </div>
+  <div class="hint" id="hint"></div>
+
+  <div class="systems" id="systems"></div>
+  <div class="empty" id="empty">No page matches that search.</div>
+
+  <div class="data">
+    <h2>Data layer</h2>
+    <div class="layers">
+      <div class="layer"><b>main</b><small>users, userscompany, employee portal menu, settings</small></div>
+      <div class="layer"><b>mainpis / mainpay</b><small>menus and masterfiles, copied into new companies</small></div>
+      <div class="layer truth"><b>{Code}_OPis</b><small>old PIS. Source of truth: empmas, empstat, deprec</small></div>
+      <div class="layer truth"><b>{Code}_OPay</b><small>old Pay: payrollgrp, tbltran, holidaysetting</small></div>
+      <div class="layer"><b>{Code}_Pis</b><small>new PIS, links the employee only</small></div>
+      <div class="layer"><b>{Code}_Pay / _Acctg / _App</b><small>new Pay, accounting, applicant</small></div>
+      <div class="layer"><b>Backblaze B2</b><small>employee photos</small></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const R = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  const SYSTEMS = [
+    { id: "portal", name: "Employee Portal", desc: "Menu table: main. Pages under /12 and /15.", groups: [
+      ["Employee Portal", [["12/002", "Password & Security"], ["12/003", "My Engagement"], ["12/004", "Payroll Settings"], ["12/010", "Logout"]]],
+      ["Personal Details", [["12/102", "Dashboard"], ["12/103", "201 Record"], ["12/104", "Attendance"]]],
+      ["System Link", [["12/202", "Payslip"]]],
+      ["System Management", [["12/302", "Leave Approval"]]],
+      ["System Application", [["15/502", "System Application"]]],
+      ["Also in code (not in the menu table)", [["12/101", "Employee Summary dashboard (HR)", "new"], ["12/105", "Leave"], ["12/203", "SSS Remittance"], ["12/204", "PHIC Remittance"], ["12/205", "Pag-IBIG Remittance"], ["12/206", "Loan Obligation"]]],
+    ]},
+    { id: "pis", name: "PIS", desc: "Menu table: mainpis. Pages under /14.", groups: [
+      ["Settings", [["14/2002", "User Management"], ["14/2003", "Time-Off Settings"], ["14/2004", "Attendance Management"]]],
+      ["Record Management", [["14/2052", "Employee Entry"], ["14/2053", "Deployment Entry"], ["14/2054", "Insurance Entry"], ["14/2055", "Position Entry"], ["14/2056", "Leave Type Entry"], ["14/2057", "Penalty Type Entry"], ["14/2058", "Deviation Type Entry"], ["14/2059", "Area Code Entry"], ["14/2060", "Provincial Code"], ["14/2061", "Metro Manila Code"], ["14/2062", "Employee Status"], ["14/2063", "Civil Status"], ["14/2064", "Employee Archiving"]]],
+      ["Standard Report", [["14/2102", "Employee Master List"], ["14/2103", "Employee Status Report"], ["14/2104", "Employee Age Report"], ["14/2105", "Newly Hired for the Month"], ["14/2106", "Hire Date Report"], ["14/2107", "For Regularization"], ["14/2108", "Resigned Personnel for the Month"], ["14/2109", "Manpower Movement"], ["14/2110", "Insurance Policy"]]],
+      ["Compliance Report", [["14/2202", "Client Guard Detail"], ["14/2203", "Employee Clearance"], ["14/2204", "PNP SAGSD Report"], ["14/2205", "FED Report"], ["14/2206", "Group DDO"], ["14/2207", "RTU Report"], ["14/2208", "Recalled Employee Report"], ["14/2209", "Assignment History"], ["14/2210", "Client Contract Expiration Report"], ["14/2211", "Uniform Query"], ["14/2212", "Floating Employees"], ["14/2213", "On-Leave Employees"], ["14/2214", "Detailed Deviation Report"], ["14/2215", "Summarized Deviation Report"], ["14/2216", "License Verification"], ["14/2217", "License Expiration"]]],
+      ["Compliance (transactions)", [["14/2302", "Status Mgt"], ["14/2303", "Return To Unit (RTU)"], ["14/2304", "Group Recall Order"], ["14/2305", "Recall Order Entry"], ["14/2306", "Leave Transaction Entry"], ["14/2307", "Special Duty Order"], ["14/2308", "Assignment Order Entry"], ["14/2309", "Deviation Penalty"]]],
+      ["Inventory Management", [["14/2402", "Items Entry", "warn", "parent group 2400 is missing, so it is not in the left menu"], ["14/2403", "Equipment Entry"], ["14/2404", "Equipment Summary"], ["14/2405", "Quick Deployment"], ["14/2406", "Memorandum Receipt"]]],
+    ]},
+    { id: "ams", name: "AMS (Attendance)", desc: "Menu table: mainpay, group 11001. Razor pages under /1100.", groups: [
+      ["Settings", [["1100/11002", "Standard Working Hours Schedule"], ["1100/11003", "Employee Schedule"], ["1100/11004", "Daily Schedule Template"], ["1100/11005", "Weekly Schedule Template"], ["1100/11006", "Other Schedule Assignment"], ["1100/11008", "Overtime Settings"], ["1100/11009", "Punch Grace Period, per payroll group", "new"], ["1100/11010", "Holiday Settings, global and local, with calendar", "new"]]],
+      ["Transaction / Compliance", [["1100/12002", "Attendance Processing"], ["1100/12003", "OT Entry"], ["1100/12004", "OB / Direct Assignment", "warn", "menu action points to 12005"], ["1100/12005", "Punch Management"]]],
+    ]},
+    { id: "pay", name: "Payroll", desc: "Menu table: mainpay. Transactions under /13T, reports under /13.", groups: [
+      ["Management: Setting", [["13T/102", "Payroll Group Management"], ["13T/103", "User Management"]]],
+      ["Transaction: Process", [["13T/502", "Payroll Entry"], ["13T/503", "13th Month Entry"]]],
+      ["Transaction: Earnings Schedule", [["13T/552", "Employee Earnings"], ["13T/553", "Group Earnings"], ["13T/554", "Fixed Earnings"], ["13T/555", "Group Fixed Earnings"]]],
+      ["Transaction: Deductions Schedule", [["13T/602", "Employee Deduction"], ["13T/603", "Employee Group Deduction"], ["13T/604", "Partial Deduction"], ["13T/605", "Mandatory Deduction"]]],
+      ["Report: Earnings", [["13/1102", "Earnings Summary"], ["13/1103", "Earnings History"], ["13/1104", "Monthly Earnings Report"]]],
+      ["Report: Deductions", [["13/1152", "Deduction Summary"], ["13/1153", "Consolidated Deduction Summary"], ["13/1154", "Deduction History"], ["13/1155", "Monthly Deduction Summary"]]],
+      ["Report: Standard", [["13/1202", "Payslip"], ["13/1203", "Payroll Register"], ["13/1204", "Bank Charge"], ["13/1205", "Bank Advise"], ["13/1206", "Payroll Summary per Group"], ["13/1207", "13th Month Summary"], ["13/1208", "13th Month Bank Advise"], ["13/1209", "13th Month Detailed"], ["13/1210", "Payroll Register (Per Account)"], ["13/1211", "Bank Text File"], ["13/1212", "13th Month Register"], ["13/1213", "13th Month Payslip"], ["13/1214", "13th Month Detailed (Per Client)"], ["13/1215", "13th Month Detailed (Per Employee)"], ["13/1216", "13th Month Summary (Per Client)"], ["13/1217", "13th Month Summary (Per Employee)"], ["13/1218", "13th Month Register (Per Client)"], ["13/1219", "13th Month Voucher"], ["13/1220", "Payslip (Per Employee)"], ["13/1221", "Payroll Register (Masterlist)"], ["13/1222", "Payroll Summary (Masterlist)"], ["13/1223", "Payroll Register (2 liner)"], ["13/1224", "Payroll Summary per Pay Group"], ["13/1225", "Payroll Summary per Group/Month"]]],
+      ["Report: Compliance", [["13/1252", "SSS Contribution"], ["13/1253", "SSS Loan Remittance"], ["13/1254", "Pagibig Contribution"], ["13/1255", "Pagibig Loan Remittance"], ["13/1256", "Calamity Loan Remittance"], ["13/1257", "PHIC Contribution"], ["13/1258", "Pag-IBIG Contribution Summary"], ["13/1259", "PhilHealth Contribution Cert."], ["13/1260", "HDMF Loan Remittance"], ["13/1261", "Pag-IBIG Contribution Remit."], ["13/1262", "SSS Contribution Remittance"], ["13/1263", "SSS Contribution Remit. (Adj.)"], ["13/1264", "SSS Contribution per Pay Group"], ["13/1265", "PHIC Monthly per Pay Group"], ["13/1266", "PHIC Quarterly Remittance"], ["13/1267", "Monthly PHIC Report"], ["13/1268", "SSS Payment Module"]]],
+      ["Report: Others", [["13/1302", "Tax Annualization"], ["13/1303", "Duty Rendered"], ["13/1304", "Quit Claims"], ["13/1305", "Compliance Report"], ["13/1306", "PIS Validation"], ["13/1307", "Retirement"], ["13/1308", "Group Retirement"], ["13/1309", "Account Total"], ["13/1310", "Loan Summary"], ["13/1312", "Grand Total"]]],
+    ]},
+  ];
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const root = document.getElementById("systems");
+  const state = { filter: "all", q: "", expand: false };
+
+  const total = SYSTEMS.reduce((n, s) => n + s.groups.reduce((m, g) => m + g[1].length, 0), 0);
+  document.getElementById("stats").innerHTML = [
+    ["Systems", SYSTEMS.length], ["Menu groups", SYSTEMS.reduce((n, s) => n + s.groups.length, 0)], ["Pages", total],
+    ["Reports (.trdp)", 88], ["Transaction tables", 98]
+  ].map(([l, v]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join("");
+
+  function render() {
+    const q = state.q.trim().toLowerCase();
+    let shown = 0, html = "";
+    for (const s of SYSTEMS) {
+      if (state.filter !== "all" && state.filter !== s.id) continue;
+      let groupsHtml = "", count = 0;
+      for (const [gname, items] of s.groups) {
+        const hits = items.filter(i => !q || (i[0] + " " + i[1]).toLowerCase().includes(q));
+        if (!hits.length) continue;
+        count += hits.length;
+        const open = state.expand || q ? " open" : "";
+        groupsHtml += `<details${open}><summary><span>${esc(gname)}</span><span class="cnt">${hits.length}</span></summary><div class="items">` +
+          hits.map(i => {
+            const tag = i[2] === "new" ? '<span class="tag new">NEW</span>' : i[2] === "warn" ? `<span class="tag warn" title="${esc(i[3])}">CHECK</span>` : "<span></span>";
+            const hit = q ? " hit" : "";
+            return `<div class="item${hit}"><code>${esc(i[0])}</code><span>${esc(i[1])}${i[2] === "warn" ? ` <small style="color:var(--warn)">(${esc(i[3])})</small>` : ""}</span>${tag}</div>`;
+          }).join("") + `</div></details>`;
+      }
+      if (!count) continue;
+      shown += count;
+      html += `<section class="sys ${s.id}"><div class="sys-head"><h2>${esc(s.name)}</h2><span>${count} pages</span></div><div class="sys-desc">${esc(s.desc)}</div>${groupsHtml}</section>`;
+    }
+    root.innerHTML = html;
+    document.getElementById("empty").style.display = shown ? "none" : "block";
+    document.getElementById("hint").textContent = q ? `${shown} page(s) match "${state.q.trim()}"` : "";
+  }
+
+  document.getElementById("q").addEventListener("input", e => { state.q = e.target.value; render(); });
+  document.querySelectorAll(".chip[data-f]").forEach(b => b.addEventListener("click", () => {
+    state.filter = b.dataset.f;
+    document.querySelectorAll(".chip[data-f]").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    render();
+  }));
+  document.getElementById("exp").addEventListener("click", e => {
+    state.expand = !state.expand;
+    e.target.setAttribute("aria-pressed", String(state.expand));
+    e.target.textContent = state.expand ? "Collapse all" : "Expand all";
+    render();
+  });
+  render();
+</script>

@@ -25,7 +25,7 @@ public class OTbltrandtlDataAccess : IOTbltrandtlDataAccess
 
     public async Task<List<GTbltrandtlModel?>?> _02ByTrnAndEmpnumber(string? trn, string? empnumber, string? schema, string? conn)
     {
-        string? sql  = $@"select  * from {schema}.Tbltrandtl where left(Trn,6) = left(@Trn,6) and EmpNumber = @EmpNumber";
+        string? sql  = $@"select  * from {schema}.Tbltrandtl where Trn like concat(left(@Trn,6), '%') and EmpNumber = @EmpNumber";
         var data    = await _sql.FetchLegacy<GTbltrandtlModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         
         return data??[];

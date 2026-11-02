@@ -24,6 +24,7 @@ public class V12_202
     public int?                      Yr              { get; set; } = DateTime.Now.Year;
     public int?                      Mo              { get; set; } = DateTime.Now.Month;   
     public int?                      Prd             { get; set; } = 1;
+    public bool                      Loading         { get; set; }
 
 
     ///------------------------------------------------------------------------

@@ -1,0 +1,33 @@
+@page "/12/202"
+@layout HRMvc.Components.Layout.EPortalLayout
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using HRMvc.Applications.Vars
+@using HRMvc.StartupConfig
+@using HRMvc.StartupConfig.Library
+
+@inject UserClaimsContextService ClaimsContext
+@inject L12 L12
+
+<div>
+    @if (v202 != null)
+    {
+        <HRMvc.Applications._12EmployeeProfile.Blazor._12_202PSlip @rendermode="InteractiveServer" V="v202" />
+    }
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    V12_202? v202;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext == null) return;
+
+        var userClaims  = ClaimsContext.Build(HttpContext.User);
+        v202            = await L12._12_202(userClaims)!;
+    }
+}

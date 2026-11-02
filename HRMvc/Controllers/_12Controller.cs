@@ -16,7 +16,6 @@ namespace HRMvc.Controllers
             ["103"] = "_12_103_201Record",
             ["104"] = "_12_104_Attendance",
             ["105"] = "_12_105_Leave",
-            ["202"] = "_12_202_Payslip",
             ["203"] = "_12_203_SSSRemittance",
             ["204"] = "_12_204_PHICRemittance",
             ["205"] = "_12_205_PagibigRemittance",

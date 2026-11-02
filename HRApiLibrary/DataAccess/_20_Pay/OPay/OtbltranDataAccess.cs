@@ -47,7 +47,7 @@ public class OtbltranDataAccess : IOtbltranDataAccess
                         from {schema}.Tbltran t
                         left join {schema}.Tbltrandtl dt on t.trn = dt.trn and t.acctnumber = left(dt.dtlCd,4) and t.empnumber = dt.empnumber
                         left join {schema}.ChartofAcct c on c.AcctNumber = t.AcctNumber  
-                        where left(t.Trn,6) = @Trn and t.Empnumber = @Empnumber ;";
+                        where t.Trn like concat(@Trn, '%') and t.Empnumber = @Empnumber ;";
         
         var data = await _sql.FetchLegacy<GTbltranModel?, dynamic>(sql, new { Trn = trn, Empnumber = empnumber }, conn);
         return data;

@@ -79,27 +79,35 @@
         var paydb       = uc.OpayDb??"";
         var conn        = uc.Conn??"-";
 
-        msg = $"Please wait, Loading payslip for TRN : {trn} ";
+        V.Loading = true;
+        await ChildAction.InvokeAsync();
 
-        V.Tbltrans      = await _otbltran._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
-        V.Tbltrandtls   = await _otbltrandtl._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
-
-        if (!V.Tbltrans.Any())
+        try
         {
-            norecmsg = " No records found for this period.";
-        }
+            var tranTask    = _otbltran._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
+            var dtlTask     = _otbltrandtl._02ByTrnAndEmpnumber(trn,empnumber, paydb, conn);
+            await Task.WhenAll(tranTask, dtlTask);
+            V.Tbltrans      = await tranTask;
+            V.Tbltrandtls   = await dtlTask;
 
+            if (!V.Tbltrans.Any())
+            {
+                norecmsg = " No records found for this period.";
+            }
 
-        @* --- Paymainhdr ------------------------------------------------------------------- *@
-        V.Paymainhdrs   = []; 
-        if(V.Tbltrans.Count>0){
-            List<string?> trns = V.Tbltrandtls.Select(t=>t.Trn).Distinct().ToList(); 
-            foreach(var t in trns){
-                GPaymainhdrModel paymainhdr = await _opaymainhdr._02Trn(t,uc.OpayDb, uc.OpisDb, uc.Conn); 
-                V.Paymainhdrs.Add(paymainhdr); 
+            @* --- Paymainhdr ------------------------------------------------------------------- *@
+            V.Paymainhdrs   = []; 
+            if(V.Tbltrans.Count>0){
+                List<string?> trns = V.Tbltrandtls.Select(t=>t.Trn).Distinct().ToList(); 
+                var hdrs = await Task.WhenAll(trns.Select(t => _opaymainhdr._02Trn(t,uc.OpayDb, uc.OpisDb, uc.Conn)));
+                V.Paymainhdrs.AddRange(hdrs);
             }
         }
-        
+        finally
+        {
+            V.Loading = false;
+        }
+
         msg = string.Empty;
        
         StateHasChanged();
