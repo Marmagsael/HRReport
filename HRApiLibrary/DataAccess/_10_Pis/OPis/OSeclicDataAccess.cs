@@ -23,43 +23,48 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             string sql = $@" INSERT INTO {schema}.Seclic( empnumber, sbrno, opno, validated, vfee, revalidated, valStatus, user, dateModified, licDateIssued)
                             VALUES ( @Empnumber, @Sbrno, @Opno, @Validated, @Vfee, @Revalidated, @ValStatus, @User, @DateModified, @LicDateIssued  )
                             ON DUPLICATE KEY UPDATE
-                                sbrno = @Sbrno,
-                                opno = @Opno,
-                                validated = @Validated,
-                                vfee = @Vfee,
+                                sbrno       = @Sbrno,
+                                opno        = @Opno,
+                                validated   = @Validated,
+                                vfee        = @Vfee,
                                 revalidated = @Revalidated,
-                                valStatus = @ValStatus,
-                                user = @User,
+                                valStatus   = @ValStatus,
+                                user        = @User,
                                 dateModified = @DateModified,
                                 licDateIssued = @LicDateIssued";
             await _sql.ExecuteCmd<dynamic>(sql, seclic, conn);
 
+            var res = await _02(seclic.Empnumber!, schema, conn);
 
-            sql = $@"select  s.*, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
-                        LEFT JOIN {schema}.empmas e ON e.EMPNUMBER = s.User
-                        where s.Empnumber = @Empnumber";
-
-            var res = await _sql.FetchData<OSeclicModel?, dynamic>(sql, seclic, conn);
-
-            return res.FirstOrDefault();
+            return res;
         }
 
 
         public async Task<OSeclicModel?> _02(string empnumber, string schema, string conn)
         {
-            string sql = $@"select  s.*, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS UserName from {schema}.Seclic s
-                        LEFT JOIN {schema}.empmas e ON e.EMPNUMBER = s.User
-                        where s.Empnumber = @Empnumber";
-            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            string sql = $@" SELECT s.Empnumber, s.Sbrno, s.Opno, s.Vfee, s.ValStatus, s.User,
+                                NULLIF(s.Validated, 0000-00-00) AS Validated,
+                                NULLIF(s.Revalidated, 0000-00-00) AS Revalidated,
+                                NULLIF(s.DateModified, 0000-00-00) AS DateModified,
+                                NULLIF(s.LicDateIssued, 0000-00-00) AS LicDateIssued,
+                                CONCAT_WS(' ',
+                                    CONCAT(TRIM(e.emplastnm), ','),
+                                    TRIM(e.empfirstnm),
+                                    TRIM(e.empmidnm)
+                                ) AS UserName
+                            FROM {schema}.Seclic s
+                            LEFT JOIN {schema}.empmas e
+                                ON e.EMPNUMBER = s.User
+                            WHERE s.Empnumber = @Empnumber;";
+
+
+
+        var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
 
-        public async Task<List<OSeclicModel?>?> _02s(string empnumber, string schema, string conn)
-        {
-            string sql = $@"select  empnumber, sbrno, opno, validated, vfee, revalidated, valStatus, user, dateModified, licDateIssued from {schema}.Seclic where Empnumber = @Empnumber";
-            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
-            return data;
-        }
+
+
 
 
         public async Task<OSeclicModel?> _03(string empnumber, OSeclicModel seclic, string schema, string conn)
@@ -81,13 +86,17 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
             return data?.FirstOrDefault();
         }
+           
+    
     }
+
+
+           
 
     public interface IOSeclicDataAccess
     {
         Task<OSeclicModel?> _01(OSeclicModel seclic, string schema, string conn);
         Task<OSeclicModel?> _02(string empnumber, string schema, string conn);
-        Task<List<OSeclicModel?>?> _02s(string empnumber, string schema, string conn);
         Task<OSeclicModel?> _03(string empnumber, OSeclicModel seclic, string schema, string conn);
         Task<OSeclicModel?> _04(string empnumber, string schema, string conn);
     }

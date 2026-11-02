@@ -92,6 +92,31 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis
             var data = await _sql.FetchData<OTrainModel?, dynamic>(sql, new { EMPNUMBER = empnmber }, conn);
             return data?.FirstOrDefault();
         }
+
+        public async Task<OSeclicModel?> _02Sec(string empnumber, string schema, string conn)
+        {
+            string sql = $@" SELECT s.Empnumber, s.Sbrno, s.Opno, s.Vfee, s.ValStatus, s.User,
+                                NULLIF(s.Validated, 0000-00-00) AS Validated,
+                                NULLIF(s.Revalidated, 0000-00-00) AS Revalidated,
+                                NULLIF(s.DateModified, 0000-00-00) AS DateModified,
+                                NULLIF(s.LicDateIssued, 0000-00-00) AS LicDateIssued,
+                                CONCAT_WS(' ',
+                                    CONCAT(TRIM(e.emplastnm), ','),
+                                    TRIM(e.empfirstnm),
+                                    TRIM(e.empmidnm)
+                                ) AS UserName
+                            FROM {schema}.Seclic s
+                            LEFT JOIN {schema}.empmas e
+                                ON e.EMPNUMBER = s.User
+                            WHERE s.Empnumber = @Empnumber;";
+
+
+
+            var data = await _sql.FetchData<OSeclicModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+            return data?.FirstOrDefault();
+        }
+
+
     }
 }
 
@@ -104,4 +129,6 @@ public interface IOTrainDataAccess
     Task<OTrainModel?> _03(string? empnumber, string? program, string? taken, OTrainModel train, string? schema, string? conn);
     Task<OTrainModel?> _04(string? empnumber, string? schema, string? conn);
     Task<OTrainModel?> _04(string? empnmber, string? program, string? taken, string? schema, string? conn);
+    Task<OSeclicModel?> _02Sec(string empnumber, string schema, string conn);
+
 }

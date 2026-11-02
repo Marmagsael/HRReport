@@ -580,6 +580,20 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data?.FirstOrDefault();
     }
 
+    public async Task<OEmpmasModel?> _03_Clearance(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                     Exp_Nbi  = @Exp_Nbi , Exp_Police = @Exp_Police,  Exp_Pnp  = @Exp_Pnp , Exp_Brgy=@Exp_Brgy,  Exp_Neuro  = @Exp_Neuro , Exp_Drug = @Exp_Drug,
+                     Exp_Court  = @Exp_Court , ExpMed =@ExpMed 
+                    WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT  SSS, TIN, PAGIBIGNO, PHIC, HDMF, Drv_License, Drv_Exp, Hdmf, AcctCode,  TAXCODE, Bank, EMPNUMBER
+                FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+        var data = await _sql.FetchData<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
     public async Task<OEmpmasModel?> _03_Insurance(string empnumber, OEmpmasModel m, string schema, string conn)
     {
         string sql = $@"UPDATE {schema}.Empmas SET
@@ -839,6 +853,7 @@ public interface IOEmpmasDataAccess
     Task<OEmpmasModel?>         _03_Address(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Deployment(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Government(string empnumber, OEmpmasModel empmas, string schema, string conn);
+    Task<OEmpmasModel?>         _03_Clearance(string empnumber, OEmpmasModel m, string schema, string conn);
     Task<OEmpmasModel?>         _03_Insurance(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Education(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Security(string empnumber, OEmpmasModel mempmas, string schema, string conn);

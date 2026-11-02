@@ -22,6 +22,7 @@ public class V12_103
     public List<OEmployModel?>?      OEmploys             { get; set; } = [];
     public List<OReferModel?>?       ORefers              { get; set; } = [];
     public List<OTrainModel?>?       OTrains              { get; set; } = [];
+    public OSeclicModel?             OSeclic             { get; set; } = new();
     public List<OInsuranceaccidentModel?>?  OInsurances   { get; set; } = [];
 
     public List<OProcodeModel?>?     OProcode             { get; set; } = [];

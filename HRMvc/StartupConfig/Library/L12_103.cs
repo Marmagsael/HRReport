@@ -30,6 +30,7 @@ public class L12_103
     private readonly IOEmployDataAccess _oemploy;
     private readonly IOReferDataAccess _orefer;
     private readonly IOTrainDataAccess _otrain;
+    private readonly IOSeclicDataAccess _oseclic;
     private readonly IOInsuranceaccidentDataAccess _oinsurance;
 
     private readonly IOProcodeDataAccess _oprocode;
@@ -73,9 +74,9 @@ public class L12_103
     {
         V12_103 v12_103 = new();
 
-        var schema = uc.OpisDb;
-        var conn = uc.Conn;
-        var empno = uc.OempNumber;
+        var schema  = uc.OpisDb;
+        var conn    = uc.Conn;
+        var empno   = uc.OempNumber;
 
         v12_103.OCivstats = await _ocivstat._02(schema, conn);
         v12_103.OGenders = await _ogender._02(schema, conn);
@@ -98,9 +99,12 @@ public class L12_103
         v12_103.OEmploys    = await _oemploy._02(empno, schema, conn);
         v12_103.ORefers     = await _orefer._02(empno, schema, conn);
         v12_103.OTrains     = await _otrain._02(empno, schema, conn);
-        v12_103.OInsurances  = await _oinsurance._02List(empno, schema, conn);
+        v12_103.OInsurances = await _oinsurance._02List(empno, schema, conn);
+        v12_103.OSeclic     = await _otrain._02Sec(empno, schema, conn);
 
-        
+      
+
+
         return v12_103;
     }
 
