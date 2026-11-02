@@ -64,6 +64,8 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await _01FixedEarnings(schema, connName);
         await _01FixedEarningsGrp(schema, connName);
         await _01Holiday(schema, connName);
+        await _01Holidaysetting(schema, connName);
+        await _01Holidaysettinggrp(schema, connName);
         await _01Hospitalizationacct(schema, connName);
         await _01Hospitalizationdtl(schema, connName);
         await _01Hospitalizationdtlrchieved(schema, connName);
@@ -837,6 +839,36 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await ExecLegacy(sql, conn);
     }
 
+    private async Task _01Holidaysetting(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`holidaysetting` (
+                        `Id` int unsigned NOT NULL AUTO_INCREMENT,
+                        `HDate` date NOT NULL,
+                        `Name` varchar(80) NOT NULL,
+                        `TypeCode` char(2) NOT NULL DEFAULT 'LH',
+                        `Scope` char(1) NOT NULL DEFAULT 'G',
+                        `GlobalDate` date DEFAULT NULL,
+                        PRIMARY KEY (`Id`),
+                        UNIQUE KEY `uq_holidaysetting_globaldate` (`GlobalDate`),
+                        KEY `idx_holidaysetting_hdate` (`HDate`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+    }
+
+    private async Task _01Holidaysettinggrp(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`holidaysettinggrp` (
+                        `Id` int unsigned NOT NULL AUTO_INCREMENT,
+                        `HolidayId` int unsigned NOT NULL,
+                        `PayrollgrpId` int unsigned NOT NULL,
+                        `HDate` date NOT NULL,
+                        PRIMARY KEY (`Id`),
+                        UNIQUE KEY `uq_holidaysettinggrp_grp_hdate` (`PayrollgrpId`, `HDate`),
+                        KEY `idx_holidaysettinggrp_holiday` (`HolidayId`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+    }
+
     private async Task _01Holiday(string? schema, string? conn)
     {
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`holiday` (
@@ -1446,9 +1478,14 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         `MinDailyRate` double(12,4) DEFAULT '0.0000',
                         `Status` char(1) DEFAULT 'A',
                         `PayRateId` int DEFAULT '0',
+                        `GracePrd` int DEFAULT '0',
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        var columns = await _sql.FetchData<dynamic, dynamic>($"DESC {schema}.`payrollgrp`", new { }, conn);
+        if (!columns.Any(c => string.Equals((string)c.Field, "GracePrd", StringComparison.OrdinalIgnoreCase)))
+            await ExecLegacy($"ALTER TABLE {schema}.`payrollgrp` ADD COLUMN `GracePrd` int DEFAULT '0'", conn);
     }
 
     private async Task _01Payrollprd(string? schema, string? conn)

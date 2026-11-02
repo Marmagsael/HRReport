@@ -13,6 +13,7 @@ public class PayrollgrpModel
     public double    MinDailyRate        { get; set; }
     public string?   Status              { get; set; } = "A";
     public int?      PayRateId           { get; set; }
+    public int       GracePrd            { get; set; }
 
     //---------------------------------------------------------
     public bool      Show                { get; set; } = false;

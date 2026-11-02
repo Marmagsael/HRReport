@@ -1,0 +1,139 @@
+@inject IMainmenuDataAccess _menu
+
+<link rel="stylesheet" href="css/ReportLayout/report-left-menu.css" />
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+<div class="leftmenu-header pis-leftmenu-header ">
+    <h6>AMS System</h6>
+</div>
+
+<div class="report-left-menu">
+    <ul>
+        @if (HttpContext != null && !HRMvc.StartupConfig.CompanyRole.IsEmployee(HttpContext.User))
+        {
+            <div class="text-primary" style="background-color: lightgrey;">
+                <ReportLeftMenuMain Menus="menus" ParentId="1501" />
+            </div>
+        }
+        <ReportLeftMenuMainParentDtl Menus="menus" ParentId="1001" />
+    </ul>
+</div>
+
+<div class="report-left-menu w-100p">
+    <ul>
+        <li class="menu-item">
+            <a href="#" onclick="event.preventDefault();">
+                <div class="d-flex gap-2">
+                    <i class="fa-solid fa-folder-open fs-5"></i>
+                    <span>Management</span>
+                </div>
+                <i class="fa fa-chevron-right arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li class="menu-item">
+                    <a href="#" onclick="event.preventDefault();">
+                        <div class="d-flex justify-content-between">
+                            <div class="d-flex gap-2"><span class="material-symbols-outlined">settings</span><span>Settings</span></div>
+                            <i class="fa fa-chevron-right arrow"></i>
+                        </div>
+                    </a>
+                    <ul class="submenu">
+                        @Items(11002, 11003, 11004, 11005, 11006)
+                        <li><hr class="my-1" /></li>
+                        @Items(11008, 11009, 11010)
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</div>
+
+<div class="report-left-menu w-100p">
+    <ul>
+        <li class="menu-item">
+            <a href="#" onclick="event.preventDefault();">
+                <div class="d-flex gap-2">
+                    <i class="fa-solid fa-receipt fs-5"></i>
+                    <span>Transaction</span>
+                </div>
+                <i class="fa fa-chevron-right arrow"></i>
+            </a>
+            <ul class="submenu">
+                <li class="menu-item">
+                    <a href="#" onclick="event.preventDefault();">
+                        <div class="d-flex justify-content-between">
+                            <div class="d-flex gap-2"><span class="material-symbols-outlined">verified</span><span>Compliance</span></div>
+                            <i class="fa fa-chevron-right arrow"></i>
+                        </div>
+                    </a>
+                    <ul class="submenu">
+                        @Items(12002, 12003)
+                        <li><hr class="my-1" /></li>
+                        @Items(12004, 12005)
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</div>
+
+<div class="report-left-menu w-100p">
+    <ul>
+        <li class="menu-item">
+            <a href="#" onclick="event.preventDefault();">
+                <div class="d-flex gap-2">
+                    <i class="fa-solid fa-file-lines fs-5"></i>
+                    <span>Report Module</span>
+                </div>
+                <i class="fa fa-chevron-right arrow"></i>
+            </a>
+            <ul class="submenu"></ul>
+        </li>
+    </ul>
+</div>
+
+<style>
+    .report-menu-section-header {
+        background-color: #f1f3f5;
+        color: #6c757d;
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        border-bottom: 1px solid #e9ecef;
+    }
+</style>
+
+@code {
+    RenderFragment Items(params int[] ids) => __builder =>
+    {
+        foreach (var id in ids)
+        {
+            var d = menusPay.FirstOrDefault(m => m?.Id == id);
+            if (d == null || string.IsNullOrEmpty(d.Action)) continue;
+            <li>
+                <a href="@d.Action">
+                    <div class="d-flex align-items-center p-1 gap-2">
+                        <span class="material-symbols-outlined">@d.Icon</span>
+                        @d.DispText
+                    </div>
+                </a>
+            </li>
+        }
+    };
+
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    List<MainmenuModel?> menus      = new();
+    List<MainmenuModel?> menusPay   = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        menus       = await _menu._02("Main", Uc?.Conn ?? "") ?? [];
+        menusPay    = await _menu._02("MainPay", Uc?.Conn ?? "") ?? [];
+    }
+}

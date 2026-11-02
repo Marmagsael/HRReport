@@ -1073,6 +1073,11 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (1312, 'Dtl-Report',  1301, 1, 'functions',              'Grand Total',                    '13/1312',        1312);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
+        sql = @"INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (11009, 'Dtl-Transaction', 11001, 1, 'timer', 'Punch Grace Period', '1100/11009', 11009),
+                            (11010, 'Dtl-Transaction', 11001, 1, 'event', 'Holiday Settings', '1100/11010', 11010);";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
         // -- Corrections for tables seeded before; each only touches the old wrong value --
         sql = @"UPDATE MainPay.Menu SET IdParent = 1151 WHERE Id IN (1152, 1153, 1154, 1155) AND IdParent = 1051;
                 UPDATE MainPay.Menu SET DispText = 'SSS Contribution'  WHERE Id = 1252 AND DispText = 'SSS Contribution ';

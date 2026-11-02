@@ -1,0 +1,505 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<div class="card w-960p p-1">
+    <BodyHdr pageTitle="Holiday Settings" />
+    <div class="card-body p-2 w-100">
+
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <label class="fw-bold mb-0">Year</label>
+            <TelerikDropDownList Data="@years" Value="@year" ValueChanged="@((int y) => OnYearChanged(y))" Width="110px" />
+        </div>
+
+        <TelerikTabStrip>
+
+            <TabStripTab Title="Global Holidays">
+                <div class="p-2">
+                    <div class="text-secondary small mb-2">Applies to all payroll groups. One holiday per date.</div>
+
+                    <div class="d-flex flex-wrap align-items-end gap-3 mb-3 p-3 border rounded bg-light">
+                        <div>
+                            <label class="form-label fw-bold mb-1">Date</label>
+                            <div><TelerikDatePicker @bind-Value="gForm.HDate" Format="MMM dd, yyyy" Width="170px" /></div>
+                        </div>
+                        <div>
+                            <label class="form-label fw-bold mb-1">Holiday Name</label>
+                            <div><TelerikTextBox @bind-Value="gForm.Name" MaxLength="80" Width="260px" /></div>
+                        </div>
+                        <div>
+                            <label class="form-label fw-bold mb-1">Type</label>
+                            <div><TelerikDropDownList Data="@types" @bind-Value="gForm.TypeCode" TextField="Name" ValueField="Code" Width="170px" /></div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <TelerikButton OnClick="@SaveGlobal" ThemeColor="primary" Icon="@SvgIcon.Save">@(gForm.Id is null ? "Add" : "Update")</TelerikButton>
+                            @if (gForm.Id is not null)
+                            {
+                                <TelerikButton OnClick="@CancelGlobal" FillMode="outline">Cancel</TelerikButton>
+                            }
+                        </div>
+                    </div>
+
+                    <TelerikGrid Data="@globals" Pageable="true" PageSize="12" Sortable="true" Size="@ThemeConstants.Grid.Size.Small">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(HolidayGlobalModel.HDate)" Title="Date" DisplayFormat="{0:MMM dd, yyyy}" Width="150px" />
+                            <GridColumn Field="@nameof(HolidayGlobalModel.Name)" Title="Holiday" />
+                            <GridColumn Field="@nameof(HolidayGlobalModel.TypeCode)" Title="Type" Width="140px">
+                                <Template>@TypeName((context as HolidayGlobalModel)?.TypeCode)</Template>
+                            </GridColumn>
+                            <GridColumn Title="" Width="170px">
+                                <Template>
+                                    @{ var r = (HolidayGlobalModel)context; }
+                                    <TelerikButton OnClick="@(() => EditGlobal(r))" FillMode="outline" Size="sm">Edit</TelerikButton>
+                                    @if (deleteGlobalId == r.Id)
+                                    {
+                                        <TelerikButton OnClick="@(() => DeleteGlobal(r))" ThemeColor="error" Size="sm">Confirm</TelerikButton>
+                                    }
+                                    else
+                                    {
+                                        <TelerikButton OnClick="@(() => deleteGlobalId = r.Id)" FillMode="outline" ThemeColor="error" Size="sm">Delete</TelerikButton>
+                                    }
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
+            </TabStripTab>
+
+            <TabStripTab Title="Local Holidays">
+                <div class="p-2">
+                    <div class="text-secondary small mb-2">Applies to the payroll groups you select. A payroll group cannot have two local holidays on the same date. The date can match a global holiday.</div>
+
+                    <div class="d-flex flex-wrap align-items-end gap-3 mb-3 p-3 border rounded bg-light">
+                        <div>
+                            <label class="form-label fw-bold mb-1">Date</label>
+                            <div><TelerikDatePicker @bind-Value="lForm.HDate" Format="MMM dd, yyyy" Width="170px" /></div>
+                        </div>
+                        <div>
+                            <label class="form-label fw-bold mb-1">Holiday Name</label>
+                            <div><TelerikTextBox @bind-Value="lForm.Name" MaxLength="80" Width="260px" /></div>
+                        </div>
+                        <div>
+                            <label class="form-label fw-bold mb-1">Type</label>
+                            <div><TelerikDropDownList Data="@types" @bind-Value="lForm.TypeCode" TextField="Name" ValueField="Code" Width="170px" /></div>
+                        </div>
+                        <div class="w-100">
+                            <label class="form-label fw-bold mb-1">Payroll Groups</label>
+                            <div>
+                                <TelerikMultiSelect Data="@groupOptions" @bind-Value="selGroupIds" TextField="Name" ValueField="Id"
+                                                    Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains"
+                                                    AutoClose="false" Placeholder="Search and select payroll groups..." Width="100%" />
+                            </div>
+                            <div class="mt-1">
+                                <TelerikButton OnClick="@SelectAllGroups" FillMode="link" Size="sm">Select all</TelerikButton>
+                                <TelerikButton OnClick="@ClearGroups" FillMode="link" Size="sm">Clear</TelerikButton>
+                                <span class="text-secondary small ms-2">@selGroupIds.Count selected</span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <TelerikButton OnClick="@SaveLocal" ThemeColor="primary" Icon="@SvgIcon.Save">@(lForm.Id is null ? "Add" : "Update")</TelerikButton>
+                            @if (lForm.Id is not null)
+                            {
+                                <TelerikButton OnClick="@CancelLocal" FillMode="outline">Cancel</TelerikButton>
+                            }
+                        </div>
+                    </div>
+
+                    <TelerikGrid Data="@locals" Pageable="true" PageSize="12" Sortable="true" Size="@ThemeConstants.Grid.Size.Small">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(HolidayLocalModel.HDate)" Title="Date" DisplayFormat="{0:MMM dd, yyyy}" Width="130px" />
+                            <GridColumn Field="@nameof(HolidayLocalModel.Name)" Title="Holiday" Width="200px" />
+                            <GridColumn Field="@nameof(HolidayLocalModel.TypeCode)" Title="Type" Width="110px">
+                                <Template>@TypeName((context as HolidayLocalModel)?.TypeCode)</Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(HolidayLocalModel.GroupNames)" Title="Payroll Groups">
+                                <Template>
+                                    @{ var l = (HolidayLocalModel)context; }
+                                    <span class="badge bg-secondary me-1">@l.GroupCount</span>
+                                    <span class="small">@l.GroupNames</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Title="" Width="170px">
+                                <Template>
+                                    @{ var r = (HolidayLocalModel)context; }
+                                    <TelerikButton OnClick="@(() => EditLocal(r))" FillMode="outline" Size="sm">Edit</TelerikButton>
+                                    @if (deleteLocalId == r.Id)
+                                    {
+                                        <TelerikButton OnClick="@(() => DeleteLocal(r))" ThemeColor="error" Size="sm">Confirm</TelerikButton>
+                                    }
+                                    else
+                                    {
+                                        <TelerikButton OnClick="@(() => deleteLocalId = r.Id)" FillMode="outline" ThemeColor="error" Size="sm">Delete</TelerikButton>
+                                    }
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
+            </TabStripTab>
+
+            <TabStripTab Title="Calendar">
+                <div class="p-2">
+                    <div class="d-flex flex-wrap align-items-center gap-3 mb-3 small">
+                        <span><span class="hcal-key hcal-LH"></span> Legal (LH)</span>
+                        <span><span class="hcal-key hcal-SH"></span> Special (SH)</span>
+                        <span><span class="hcal-key hcal-DH"></span> Double (DH)</span>
+                        <span><span class="hcal-key hcal-local"></span> Local holiday (selected payroll groups)</span>
+                    </div>
+
+                    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm @(calView == "year" ? "btn-primary" : "btn-outline-primary")" @onclick='() => calView = "year"'>Annual</button>
+                            <button type="button" class="btn btn-sm @(calView == "month" ? "btn-primary" : "btn-outline-primary")" @onclick='() => calView = "month"'>Monthly</button>
+                        </div>
+
+                        @if (calView == "month")
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PrevMonth">&lsaquo;</button>
+                                <span class="fw-bold text-center" style="min-width:150px;">@(new DateTime(year, calMonth, 1).ToString("MMMM yyyy"))</span>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="NextMonth">&rsaquo;</button>
+                                <button type="button" class="btn btn-sm btn-link" @onclick="GoToday">Today</button>
+                            </div>
+                        }
+                    </div>
+
+                    @if (calView == "year")
+                    {
+                        <div class="hcal-grid">
+                            @for (var m = 1; m <= 12; m++)
+                            {
+                                var first   = new DateTime(year, m, 1);
+                                var offset  = (int)first.DayOfWeek;
+                                var days    = DateTime.DaysInMonth(year, m);
+
+                                <div class="hcal-month">
+                                    <div class="hcal-title">@first.ToString("MMMM")</div>
+                                    <table class="hcal-table">
+                                        <thead>
+                                            <tr><th>S</th><th>M</th><th>T</th><th>W</th><th>T</th><th>F</th><th>S</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            @for (var w = 0; w < 6; w++)
+                                            {
+                                                <tr>
+                                                    @for (var d = 0; d < 7; d++)
+                                                    {
+                                                        var day = w * 7 + d - offset + 1;
+                                                        if (day < 1 || day > days)
+                                                        {
+                                                            <td></td>
+                                                            continue;
+                                                        }
+
+                                                        var date    = new DateTime(year, m, day);
+                                                        var items   = holidayMap.TryGetValue(date, out var found) ? found : null;
+                                                        <td>
+                                                            <div class="@DayClass(date, items)" title="@DayTitle(items)">@day</div>
+                                                        </td>
+                                                    }
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        var mFirst  = new DateTime(year, calMonth, 1);
+                        var mOffset = (int)mFirst.DayOfWeek;
+                        var mDays   = DateTime.DaysInMonth(year, calMonth);
+                        var mWeeks  = (mOffset + mDays + 6) / 7;
+
+                        <table class="hmon-table">
+                            <thead>
+                                <tr>
+                                    @foreach (var dn in new[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" })
+                                    {
+                                        <th>@dn</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (var w = 0; w < mWeeks; w++)
+                                {
+                                    <tr>
+                                        @for (var d = 0; d < 7; d++)
+                                        {
+                                            var day = w * 7 + d - mOffset + 1;
+                                            if (day < 1 || day > mDays)
+                                            {
+                                                <td class="hmon-empty"></td>
+                                                continue;
+                                            }
+
+                                            var date    = new DateTime(year, calMonth, day);
+                                            var items   = holidayMap.TryGetValue(date, out var found) ? found : null;
+                                            <td class="hmon-cell @(date == DateTime.Today ? "hmon-today" : "")">
+                                                <div class="hmon-day">@day</div>
+                                                @if (items != null)
+                                                {
+                                                    @foreach (var i in items.OrderBy(x => x.IsLocal))
+                                                    {
+                                                        <div class="hmon-chip hcal-@i.TypeCode @(i.IsLocal ? "hcal-local" : "")" title="@(i.IsLocal ? $"{i.Name} ({TypeName(i.TypeCode)}, local: {i.Groups})" : $"{i.Name} ({TypeName(i.TypeCode)})")">
+                                                            @(i.IsLocal ? "Local: " : "")@i.Name
+                                                        </div>
+                                                    }
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </TabStripTab>
+
+        </TelerikTabStrip>
+    </div>
+</div>
+</TelerikRootComponent>
+
+<style>
+    .hcal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .hcal-month { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; background: #fff; }
+    .hcal-title { font-weight: 600; margin-bottom: 4px; }
+    .hcal-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+    .hcal-table th { font-size: 11px; color: #6c757d; text-align: center; font-weight: 600; padding-bottom: 2px; }
+    .hcal-table td { padding: 1px; }
+    .hcal-day { text-align: center; font-size: 12px; line-height: 24px; border-radius: 4px; border-bottom: 3px solid transparent; }
+    .hcal-today { outline: 2px solid #0d6efd; outline-offset: -2px; }
+    .hcal-LH { background: #dc3545; color: #fff; }
+    .hcal-SH { background: #fd7e14; color: #fff; }
+    .hcal-DH { background: #6f42c1; color: #fff; }
+    .hcal-day.hcal-local { border-bottom-color: #0d6efd; }
+    .hcal-key { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; }
+    .hcal-key.hcal-local { background: #fff; border: 1px solid #adb5bd; border-bottom: 3px solid #0d6efd; }
+    .hmon-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+    .hmon-table th { text-align: center; font-size: 12px; color: #6c757d; padding: 4px 0; border-bottom: 1px solid #dee2e6; }
+    .hmon-table td { border: 1px solid #e9ecef; vertical-align: top; height: 92px; padding: 3px; }
+    .hmon-empty { background: #f8f9fa; }
+    .hmon-today { outline: 2px solid #0d6efd; outline-offset: -2px; }
+    .hmon-day { font-size: 12px; font-weight: 600; color: #495057; }
+    .hmon-chip { font-size: 11px; line-height: 1.2; padding: 2px 4px; border-radius: 3px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-bottom: 3px solid transparent; }
+    .hmon-chip.hcal-local { border-bottom-color: #0d6efd; }
+    @@media (max-width: 760px) { .hcal-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
+
+@inject IOHolidayDataAccess _holidayDa
+@inject IOPayrollgrpDataAccess _payrollgrpDa
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    record HolidayType(string Code, string Name);
+    record GroupOption(int Id, string Name);
+
+    TelerikNotification         NotificationRef { get; set; } = new();
+
+    List<HolidayType> types = new()
+    {
+        new("LH", "Legal Holiday"),
+        new("SH", "Special Holiday"),
+        new("DH", "Double Holiday"),
+    };
+
+    List<int>                   years           = new();
+    int                         year            = DateTime.Today.Year;
+
+    List<HolidayGlobalModel>    globals         = new();
+    HolidayGlobalModel          gForm           = new();
+    int?                        deleteGlobalId;
+
+    List<HolidayLocalModel>     locals          = new();
+    HolidayLocalModel           lForm           = new();
+    int?                        deleteLocalId;
+    List<GroupOption>           groupOptions    = new();
+    List<int>                   selGroupIds     = new();
+
+    string TypeName(string? code) => types.FirstOrDefault(t => t.Code == code)?.Name ?? code ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        years = Enumerable.Range(DateTime.Today.Year - 3, 8).ToList();
+        if (Uc is null) return;
+        try
+        {
+            var groups = await _payrollgrpDa._02(Uc.OpayDb!, Uc.Conn!) ?? [];
+            groupOptions = groups.Where(g => g?.Id is not null && g.Status == "A")
+                                 .Select(g => new GroupOption(g!.Id!.Value, $"{g.Code} - {g.Name}"))
+                                 .ToList();
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            Show("error", $"Load failed: {ex.Message}");
+        }
+    }
+
+    async Task Reload()
+    {
+        globals = await _holidayDa._02Global(year, Uc!.OpayDb!, Uc.Conn!);
+        locals  = await _holidayDa._02Local(year, Uc.OpayDb!, Uc.Conn!);
+        BuildHolidayMap();
+    }
+
+    string  calView     = "year";
+    int     calMonth    = DateTime.Today.Month;
+
+    async Task PrevMonth()
+    {
+        if (calMonth == 1) { calMonth = 12; await OnYearChanged(year - 1); }
+        else calMonth--;
+    }
+
+    async Task NextMonth()
+    {
+        if (calMonth == 12) { calMonth = 1; await OnYearChanged(year + 1); }
+        else calMonth++;
+    }
+
+    async Task GoToday()
+    {
+        calMonth = DateTime.Today.Month;
+        if (year != DateTime.Today.Year) await OnYearChanged(DateTime.Today.Year);
+    }
+
+    record HolidayDay(string TypeCode, string Name, bool IsLocal, string? Groups);
+
+    Dictionary<DateTime, List<HolidayDay>> holidayMap = new();
+
+    void BuildHolidayMap()
+    {
+        holidayMap = new();
+        foreach (var g in globals)
+            Add(g.HDate, new HolidayDay(g.TypeCode ?? "LH", g.Name ?? "", false, null));
+        foreach (var l in locals)
+            Add(l.HDate, new HolidayDay(l.TypeCode ?? "LH", l.Name ?? "", true, l.GroupNames));
+
+        void Add(DateTime date, HolidayDay item)
+        {
+            if (!holidayMap.TryGetValue(date.Date, out var list)) holidayMap[date.Date] = list = new();
+            list.Add(item);
+        }
+    }
+
+    string DayClass(DateTime date, List<HolidayDay>? items)
+    {
+        var css = "hcal-day";
+        if (date.Date == DateTime.Today) css += " hcal-today";
+        if (items is null) return css;
+
+        var type = items.Any(i => i.TypeCode == "DH") ? "DH" : items.Any(i => i.TypeCode == "LH") ? "LH" : "SH";
+        css += $" hcal-{type}";
+        if (items.Any(i => i.IsLocal)) css += " hcal-local";
+        return css;
+    }
+
+    string DayTitle(List<HolidayDay>? items) =>
+        items is null ? "" : string.Join("; ", items.Select(i => i.IsLocal
+            ? $"{i.Name} ({TypeName(i.TypeCode)}, local: {i.Groups})"
+            : $"{i.Name} ({TypeName(i.TypeCode)})"));
+
+    async Task OnYearChanged(int y)
+    {
+        year = y;
+        if (!years.Contains(y)) { years.Add(y); years.Sort(); }
+        deleteGlobalId = deleteLocalId = null;
+        await Reload();
+    }
+
+    async Task SaveGlobal()
+    {
+        if (string.IsNullOrWhiteSpace(gForm.Name)) { Show("warning", "Enter the holiday name."); return; }
+        try
+        {
+            var msg = gForm.Id is null
+                ? await _holidayDa._01Global(gForm, Uc!.OpayDb!, Uc.Conn!)
+                : await _holidayDa._03Global(gForm, Uc!.OpayDb!, Uc.Conn!);
+            if (msg != null) { Show("error", msg); return; }
+
+            Show("success", "Global holiday saved.");
+            gForm = new();
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Save failed: {ex.Message}"); }
+    }
+
+    void EditGlobal(HolidayGlobalModel r) =>
+        gForm = new HolidayGlobalModel { Id = r.Id, HDate = r.HDate, Name = r.Name, TypeCode = r.TypeCode };
+
+    void CancelGlobal() => gForm = new();
+
+    async Task DeleteGlobal(HolidayGlobalModel r)
+    {
+        try
+        {
+            await _holidayDa._04Global(r.Id!.Value, Uc!.OpayDb!, Uc.Conn!);
+            deleteGlobalId = null;
+            if (gForm.Id == r.Id) gForm = new();
+            Show("success", "Global holiday deleted.");
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Delete failed: {ex.Message}"); }
+    }
+
+    async Task SaveLocal()
+    {
+        if (string.IsNullOrWhiteSpace(lForm.Name)) { Show("warning", "Enter the holiday name."); return; }
+        try
+        {
+            var msg = lForm.Id is null
+                ? await _holidayDa._01Local(lForm, selGroupIds, Uc!.OpayDb!, Uc.Conn!)
+                : await _holidayDa._03Local(lForm, selGroupIds, Uc!.OpayDb!, Uc.Conn!);
+            if (msg != null) { Show("error", msg); return; }
+
+            Show("success", "Local holiday saved.");
+            lForm = new();
+            selGroupIds = new();
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Save failed: {ex.Message}"); }
+    }
+
+    void EditLocal(HolidayLocalModel r)
+    {
+        lForm = new HolidayLocalModel { Id = r.Id, HDate = r.HDate, Name = r.Name, TypeCode = r.TypeCode };
+        selGroupIds = (r.GroupIds ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+    }
+
+    void CancelLocal()
+    {
+        lForm = new();
+        selGroupIds = new();
+    }
+
+    async Task DeleteLocal(HolidayLocalModel r)
+    {
+        try
+        {
+            await _holidayDa._04Local(r.Id!.Value, Uc!.OpayDb!, Uc.Conn!);
+            deleteLocalId = null;
+            if (lForm.Id == r.Id) CancelLocal();
+            Show("success", "Local holiday deleted.");
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Delete failed: {ex.Message}"); }
+    }
+
+    void SelectAllGroups() => selGroupIds = groupOptions.Select(g => g.Id).ToList();
+
+    void ClearGroups() => selGroupIds = new();
+
+    void Show(string type, string text) =>
+        NotificationRef.Show(new NotificationModel { Text = text, ThemeColor = type, CloseAfter = 4000 });
+}

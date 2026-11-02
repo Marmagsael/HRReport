@@ -52,6 +52,11 @@ public class OPayrollgrpDataAccess : IOPayrollgrpDataAccess
     }
 
 
+    public async Task _03GracePrd(int id, int gracePrd, string schema, string conn)
+    {
+        await _sql.ExecuteLegacyCmd($"update {schema}.Payrollgrp set GracePrd = @GracePrd where Id = @Id", new { Id = id, GracePrd = gracePrd }, conn);
+    }
+
     public async Task<GridResultModel<PayrollgrpModel>> _02Grid( GridRequestModel request, string schemapay,  string schemapis, string conn)
     {
         var columns = new Dictionary<string, string>
@@ -162,4 +167,5 @@ public interface IOPayrollgrpDataAccess
     Task<GridResultModel<PayrollgrpModel>> _02Grid(GridRequestModel request, string schemapay, string schemapis, string conn);
     Task<PayrollgrpModel?>                  _03(int? id, PayrollgrpModel payrollgrp, string schema, string conn);
     Task<PayrollgrpModel?>                  _04(int? id, string schema, string conn);
+    Task                                    _03GracePrd(int id, int gracePrd, string schema, string conn);
 }

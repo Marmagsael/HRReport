@@ -1,0 +1,159 @@
+﻿@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<div class="card w-960p p-1">
+    <BodyHdr pageTitle="Employee Grace Period Management" />
+    <div class="card-body p-2 w-100">
+
+        <div class="d-flex flex-wrap align-items-start gap-4 mb-3 p-3 border rounded bg-light">
+
+            <div>
+                <label class="form-label fw-bold mb-1">Search Payroll Group</label>
+                <div>
+                    <input class="form-control" style="width:280px;" placeholder="Code or name..." @bind="search" @bind:event="oninput" />
+                </div>
+            </div>
+
+            <div>
+                <label class="form-label fw-bold mb-1">Fill all shown with (minutes)</label>
+                <div class="d-flex align-items-center gap-2">
+                    <TelerikNumericTextBox Class="num-right" @bind-Value="bulkMinutes" Min="0" Max="999" Decimals="0" Format="N0" Width="100px" />
+                    <TelerikButton OnClick="@ApplyToShown" ThemeColor="secondary" FillMode="outline">Fill</TelerikButton>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 pt-4 mt-1">
+                <TelerikSwitch Class="sw-tall" @bind-Value="activeOnly" Width="50px" OnLabel="Yes" OffLabel="No" />
+                <span>Active only</span>
+            </div>
+
+            <div class="w-100" >
+                <div>
+                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Class="btn-save" Enabled="@(changed.Count > 0 && !saving)">@(saving ? "Saving..." : "Save")</TelerikButton>
+                </div>
+                <div class="text-end lh-sm ">
+                    <div class="text-secondary">@shown.Count of @groups.Count shown</div>
+                    @if (changed.Count > 0)
+                    {
+                        <div class="bg-warning text-dark fw-semibold">@changed.Count unsaved</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="text-secondary small mb-2">
+            Minutes allowed after the scheduled time before a punch in is counted late. 0 means no grace.
+        </div>
+
+        <TelerikGrid Data="@shown"
+                     EditMode="GridEditMode.Incell"
+                     OnUpdate="@OnCellUpdate"
+                     Pageable="true" PageSize="20"
+                     Sortable="true"
+                     Height="calc(100vh - 360px)"
+                     Size="@ThemeConstants.Grid.Size.Small">
+            <GridColumns>
+                <GridColumn Field="@nameof(PayrollgrpModel.Code)"   Title="Code"          Width="110px" Editable="false" />
+                <GridColumn Field="@nameof(PayrollgrpModel.Name)"   Title="Payroll Group" Editable="false" />
+                <GridColumn Field="@nameof(PayrollgrpModel.Status)" Title="Status"        Width="110px" Editable="false">
+                    <Template>
+                        @{ var s = (context as PayrollgrpModel)?.Status; }
+                        <span class="badge @(s == "A" ? "bg-success" : "bg-secondary")">@(s == "A" ? "Active" : "Inactive")</span>
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="@nameof(PayrollgrpModel.GracePrd)" Title="Grace Period (min)" Width="180px" TextAlign="ColumnTextAlign.Center">
+                    <EditorTemplate>
+                        @{ var m = (PayrollgrpModel)context; }
+                        <TelerikNumericTextBox Class="num-right" @bind-Value="m.GracePrd" Min="0" Max="999" Decimals="0" Format="N0" />
+                    </EditorTemplate>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+
+    </div>
+</div>
+</TelerikRootComponent>
+
+<style>
+    .num-right input.k-input-inner { text-align: center; }
+    .sw-tall.k-switch { height: 32px; }
+    .btn-save { min-width: 110px; height: 36px; font-weight: 600; }
+</style>
+
+@inject IOPayrollgrpDataAccess _payrollgrpDa
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    TelerikNotification         NotificationRef { get; set; } = new();
+    List<PayrollgrpModel>       groups          = new();
+    HashSet<int>                changed         = new();
+    bool                        activeOnly      = true;
+    string                      search          = string.Empty;
+    bool                        saving;
+    int                         bulkMinutes;
+
+    List<PayrollgrpModel> shown => groups.Where(g => (!activeOnly || g.Status == "A") && Matches(g)).ToList();
+
+    bool Matches(PayrollgrpModel g) =>
+        string.IsNullOrWhiteSpace(search)
+        || (g.Code ?? "").Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
+        || (g.Name ?? "").Contains(search.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc is null) return;
+        try
+        {
+            groups = (await _payrollgrpDa._02(Uc.OpayDb!, Uc.Conn!) ?? []).Where(g => g is not null).Select(g => g!).ToList();
+        }
+        catch (Exception ex)
+        {
+            Show("error", $"Load failed: {ex.Message}");
+        }
+    }
+
+    void OnCellUpdate(GridCommandEventArgs args)
+    {
+        if (args.Item is PayrollgrpModel m && m.Id is not null) changed.Add(m.Id.Value);
+    }
+
+    void ApplyToShown()
+    {
+        foreach (var g in shown)
+        {
+            if (g.GracePrd == bulkMinutes || g.Id is null) continue;
+            g.GracePrd = bulkMinutes;
+            changed.Add(g.Id.Value);
+        }
+    }
+
+    async Task Save()
+    {
+        saving = true;
+        try
+        {
+            foreach (var g in groups.Where(g => g.Id is not null && changed.Contains(g.Id.Value)))
+                await _payrollgrpDa._03GracePrd(g.Id!.Value, g.GracePrd, Uc!.OpayDb!, Uc.Conn!);
+
+            Show("success", $"{changed.Count} payroll group(s) saved.");
+            changed.Clear();
+        }
+        catch (Exception ex)
+        {
+            Show("error", $"Save failed: {ex.Message}");
+        }
+        saving = false;
+    }
+
+    void Show(string type, string text) =>
+        NotificationRef.Show(new NotificationModel { Text = text, ThemeColor = type, CloseAfter = 4000 });
+}
