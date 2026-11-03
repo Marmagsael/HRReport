@@ -343,12 +343,12 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `FMEDEE` double(7,2) DEFAULT NULL,
                         `FMEDER` double(7,2) DEFAULT NULL,
                         `Remarks` varchar(254) DEFAULT NULL,
-                        `contStart` date NOT NULL DEFAULT '0000-00-00',
-                        `contEnd` date NOT NULL DEFAULT '0000-00-00',
+                        `contStart` date DEFAULT NULL,
+                        `contEnd` date DEFAULT NULL,
                         `parentcd` varchar(5) NOT NULL DEFAULT '',
                         `maxsss` double(10,4) NOT NULL DEFAULT '0.0000',
                         `maxphic` double(10,4) NOT NULL DEFAULT '0.0000',
-                        `ContExp` date NOT NULL DEFAULT '0000-00-00',
+                        `ContExp` date DEFAULT NULL,
                         `HavTax` double NOT NULL DEFAULT '1',
                         `MinRate` double(10,2) NOT NULL DEFAULT '0.00',
                         `MealAllow` double(6,2) NOT NULL DEFAULT '0.00',
@@ -368,7 +368,17 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         PRIMARY KEY (`CLNUMBER`)
                         ) ENGINE=MyISAM DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        foreach (var col in new[] { "contStart", "contEnd", "ContExp" })
+        {
+            var notNull = await _sql.FetchData<long, dynamic>(
+                "select count(*) from information_schema.columns where table_schema = @Schema and table_name = 'client' and column_name = @Col and is_nullable = 'NO'",
+                new { Schema = schema, Col = col }, conn);
+            if (notNull.FirstOrDefault() > 0)
+                await ExecLegacy($"ALTER TABLE {schema}.`client` MODIFY COLUMN `{col}` date NULL DEFAULT NULL", conn);
+        }
     }
+
 
     private async Task _01Clientarchieved(string? schema, string? conn)
     {

@@ -58,6 +58,8 @@
 
 
 
+            @if (V.IsEditEntry)
+            {
             @* --- Client Code --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
@@ -78,9 +80,7 @@
 
                 </div>
             </div>
-
-
-
+            }
 
 
 
@@ -416,10 +416,10 @@
         {
             var existingRecords = await _client._02ByClientName( V.Client.ClName, Uc.OpisDb, Uc.Conn);
 
-            string clnumber = V.Client.ClNumber.Trim().ToUpper();
+            string clnumber = (V.Client.ClNumber ?? "").Trim().ToUpper();
 
 
-            if (existingRecords.Any(c => c.ClNumber?.Trim().ToUpper() != clnumber))
+            if (existingRecords != null && existingRecords.Any(c => c.ClNumber?.Trim().ToUpper() != clnumber))
             {
                 // There are already existing duplicate deployment names in the database.
                 var confirmed = await DialogsRef?.ConfirmAsync( $"'{V.Client.ClName}' deployment name already exists. Do you still want to continue saving this entry?","Confirm Save");
@@ -428,6 +428,7 @@
         }
         catch (Exception ex)
         {
+            Console.Error.WriteLine($"2053 deployment name check failed (OpisDb={Uc.OpisDb}, Conn={Uc.Conn}): {ex}");
             NotificationRef.Show(  "Unable to validate if the deployment name already exists.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
@@ -457,7 +458,7 @@
 
         try
         {
-            await _02FetchMaxClNumber();
+            V.Client.ClNumber = null;
 
             var res = await _client._01(V.Client, Uc.OpisDb, Uc.Conn);
             if(res == null )
@@ -471,6 +472,12 @@
             NotificationRef.Show("Deployment inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
             await ChildAction.InvokeAsync();
 
+        }
+        catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Number == 1062)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show($"Deployment code {V.Client.ClNumber} was just used by another user. Nothing was saved. Please try again.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
         }
         catch (Exception ex)
         {
@@ -518,7 +525,7 @@
         try
         {
             int? maxClnumber = await _client._02ByMaxClNumber(Uc.OpisDb, Uc.Conn);
-            V.Client.ClNumber = maxClnumber?.ToString("D5");
+            V.Client.ClNumber = (maxClnumber ?? 1).ToString("D5");
         }
         catch (Exception ex)
         {

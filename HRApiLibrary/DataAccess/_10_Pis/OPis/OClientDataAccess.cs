@@ -23,15 +23,33 @@ public class OClientDataAccess : IOClientDataAccess
 							 FMEDER, Remarks, contStart, contEnd, parentcd, maxsss, maxphic, ContExp, HavTax, MinRate, 
 							 MealAllow, withUniform, withRetirement, region, ecolaRevised, ctpaRate, withCTPA, seaRate, 
 							 withSEA, payprd, sgcode, isTrucking, isLumpsum) values 
-							(@CLNUMBER, @CLNAME, @ADDR1, @ADDR2, @AREACODE, @TEL1, @FAXNO, @PARENT, @RATE, 
-							 @BILLRATE, @ASSIST, @STATUS, @COLARATE, @ND_RATE, @RETIRATE, @UNIFRATE, @FDIRATE, 
+							(@CLNUMBER, @CLNAME, @ADDR1, @ADDR2, @AREACODE, @TEL1, @FAXNO, @PARENT, IFNULL(@RATE,0), 
+							 @BILLRATE, @ASSIST, @STATUS, IFNULL(@COLARATE,0), @ND_RATE, @RETIRATE, @UNIFRATE, @FDIRATE, 
 							 @OTRATE, @TIN, @CONT, @USED, @CONTACT, @POSTPERIOD, @BATCHX, @FSSSEE, @FSSSER, @FECC, @FMEDEE, 
-							 @FMEDER, @Remarks, @contStart, @contEnd, @parentcd, @maxsss, @maxphic, @ContExp, @HavTax, @MinRate, 
-							 @MealAllow, @withUniform, @withRetirement, @region, @ecolaRevised, @ctpaRate, @withCTPA, @seaRate, 
-							 @withSEA, @payprd, @sgcode, @isTrucking, @isLumpsum)";
+							 @FMEDER, @Remarks, @contStart, @contEnd, IFNULL(@parentcd,''), IFNULL(@maxsss,0), IFNULL(@maxphic,0), @ContExp, IFNULL(@HavTax,1), IFNULL(@MinRate,0), 
+							 IFNULL(@MealAllow,0), IFNULL(@withUniform,0), IFNULL(@withRetirement,0), @region, IFNULL(@ecolaRevised,0), @ctpaRate, @withCTPA, NULLIF(@seaRate,''), 
+							 @withSEA, IFNULL(@payprd,''), IFNULL(@sgcode,''), @isTrucking, @isLumpsum)";
 
 
-        await _sql.ExecuteLegacyCmd<dynamic>(sql, client, conn);
+        bool autoCode = string.IsNullOrWhiteSpace(client.ClNumber);
+        for (int attempt = 0; ; attempt++)
+        {
+            if (autoCode)
+            {
+                int? next = await _02ByMaxClNumber(schema, conn);
+                client.ClNumber = (next ?? 1).ToString("D5");
+            }
+
+            try
+            {
+                await _sql.ExecuteLegacyCmd<dynamic>(sql, client, conn);
+                break;
+            }
+            catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Number == 1062 && autoCode && attempt < 9)
+            {
+            }
+        }
+
         sql = $@"Select * FROM {schema}.client WHERE TRIM(UPPER(CLNUMBER)) = TRIM(UPPER(@ClNumber)) ";
         var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, new { client.ClNumber }, conn);
         return data.FirstOrDefault();
@@ -43,7 +61,7 @@ public class OClientDataAccess : IOClientDataAccess
     public async Task<int?> _02ByMaxClNumber( string? schema, string? conn)
     {
 
-        var sql = $@"select  LPAD(MAX(CAST(clnumber AS UNSIGNED)) + 1, 5, 0) from {schema}.Client ";
+        var sql = $@"select  IFNULL(MAX(CAST(clnumber AS UNSIGNED)), 0) + 1 from {schema}.Client ";
         var clnumber = await _sql.FetchLegacy<int?, dynamic>(sql, new {  }, conn);
         return clnumber.FirstOrDefault();
     }
@@ -258,17 +276,17 @@ public class OClientDataAccess : IOClientDataAccess
     public async Task<OClientModel?> _03(OClientModel client, string? schema, string? conn)
     {
         string? sql = $@"Update {schema}.Client set CLNUMBER = @CLNUMBER, CLNAME = @CLNAME, ADDR1 = @ADDR1, ADDR2 = @ADDR2, 
-							AREACODE = @AREACODE, TEL1 = @TEL1, FAXNO = @FAXNO, PARENT = @PARENT, RATE = @RATE, 
-							BILLRATE = @BILLRATE, ASSIST = @ASSIST, STATUS = @STATUS, COLARATE = @COLARATE, 
+							AREACODE = @AREACODE, TEL1 = @TEL1, FAXNO = @FAXNO, PARENT = @PARENT, RATE = IFNULL(@RATE,0), 
+							BILLRATE = @BILLRATE, ASSIST = @ASSIST, STATUS = @STATUS, COLARATE = IFNULL(@COLARATE,0), 
 							ND_RATE = @ND_RATE, RETIRATE = @RETIRATE, UNIFRATE = @UNIFRATE, FDIRATE = @FDIRATE, 
 							OTRATE = @OTRATE, TIN = @TIN, CONT = @CONT, USED = @USED, CONTACT = @CONTACT, POSTPERIOD = @POSTPERIOD, 
 							BATCHX = @BATCHX, FSSSEE = @FSSSEE, FSSSER = @FSSSER, FECC = @FECC, FMEDEE = @FMEDEE, 
 							FMEDER = @FMEDER, Remarks = @Remarks, contStart = @contStart, 
-							contEnd = @contEnd, parentcd = @parentcd, maxsss = @maxsss, maxphic = @maxphic, 
-							ContExp = @ContExp, HavTax = @HavTax, MinRate = @MinRate, MealAllow = @MealAllow, 
-							withUniform = @withUniform, withRetirement = @withRetirement, region = @region, 
-							ecolaRevised = @ecolaRevised, ctpaRate = @ctpaRate, withCTPA = @withCTPA, seaRate = @seaRate, 
-							withSEA = @withSEA, payprd = @payprd, sgcode = @sgcode, isTrucking = @isTrucking, 
+							contEnd = @contEnd, parentcd = IFNULL(@parentcd,''), maxsss = IFNULL(@maxsss,0), maxphic = IFNULL(@maxphic,0), 
+							ContExp = @ContExp, HavTax = IFNULL(@HavTax,1), MinRate = IFNULL(@MinRate,0), MealAllow = IFNULL(@MealAllow,0), 
+							withUniform = IFNULL(@withUniform,0), withRetirement = IFNULL(@withRetirement,0), region = @region, 
+							ecolaRevised = IFNULL(@ecolaRevised,0), ctpaRate = @ctpaRate, withCTPA = @withCTPA, seaRate = NULLIF(@seaRate,''), 
+							withSEA = @withSEA, payprd = IFNULL(@payprd,''), sgcode = IFNULL(@sgcode,''), isTrucking = @isTrucking, 
 							isLumpsum = @isLumpsum  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber));
 						select  * from {schema}.Client  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber)) ;";
         var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, client, conn);
