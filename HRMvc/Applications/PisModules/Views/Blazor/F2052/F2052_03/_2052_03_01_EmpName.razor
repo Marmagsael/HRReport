@@ -3,13 +3,17 @@
 @using HRApiLibrary.DataAccess._90_Utils.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Models._90_Utils
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
 
-
-
+@inject NotificationService NotificationService
+@inject I_00MainDA _main
+@inject IEmpmovementDataAccess _empMovement
+@inject IMsdsDataAccess _msds
 
 <div class="w-100 p-3 bg-lightgray">
 
-    @if (V.Empmas?.EmpLastNm?.Length > 0)
+     @if (V.Empmas?.EmpLastNm?.Length > 0)
     {
         <div class="mb-3 d-flex align-items-center gap-4">
             <button class="btn btn-link p-0 d-flex align-items-center"
@@ -43,103 +47,184 @@
         </div>
     }
 
-    @* COLLAPSIBLE CONTENT - Picture & Form *@
+
+
     <div class="collapse show" id="empmasFormContent">
 
-            <div class="d-flex gap-5">
-                @* --- Picture ------------- *@
-                <div class="d-flex align-items-center justify-content-center" style="width:180px;">
-                    <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
-                         style="height:160px; width:160px;">
-                        <img class="img-fluid" alt="Employee image" src="images/employee.png" height="90" width="90">
-                    </div>
-                </div>
-                @* --- Fields ------------- *@
-                <div class="flex-grow-1 mt-3">
-                    @* --- System Id *@
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                            <i class="fa-solid fa-fingerprint text-center field-icon txt-fcolor1" style="width:16px;"></i> System ID
-                        </div>
-                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas.UserId</div>
-                    </div>
+        <div class="d-flex gap-5">
 
-                    @* --- Email Address *@
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                            <i class="fa-solid fa-envelope text-center field-icon txt-fcolor1" style="width:16px;"></i> Email
-                        </div>
-                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.Email</div>
-                    </div>
+            @* --- Employee Picture --- *@
+            <div class="d-flex align-items-center justify-content-center"
+                 style="width:180px;">
 
-                    @* --- Emp Number *@
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                            <i class="fa-solid fa-hashtag text-center field-icon txt-fcolor1" style="width:16px;"></i> Emp. no.
-                        </div>
-                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.EmpNumber</div>
-                    </div>
+                <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
+                     style="height:160px; width:160px;">
 
-                    @* --- Position *@
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                            <i class="fa-solid fa-briefcase text-center field-icon txt-fcolor1" style="width:16px;"></i> Position
-                        </div>
-                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.PositionName</div>
-                    </div>
-
-                    @* --- Status *@
-                    <div class="d-flex align-items-center mb-2">
-                        <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
-                            <i class="fa-solid fa-circle-info text-center field-icon txt-fcolor1" style="width:16px;"></i> Status
-                        </div>
-                        <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.EmpStatus</div>
-                    </div>
-
-                    @* --- Edit / Upload *@
-                    @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+                    @if (!string.IsNullOrWhiteSpace(ImagePreview))
                     {
-                        <div class="d-flex align-items-center">
-                            <div style="width:130px;">&nbsp;</div>
-                            <div class="flex-grow-1 d-flex gap-3">
-                                <span class="msds-link small" role="button" @onclick="EditEmpmas">Edit</span>
-                                <span class="msds-link small" role="button">Upload image</span>
-                            </div>
-                        </div>
+                        <img src="@ImagePreview"
+                             class="img-fluid w-100 h-100"
+                             style="object-fit:cover;"
+                             alt="Employee image" />
+                    }
+                    else
+                    {
+                        <img src="images/employee.png"
+                             class="img-fluid"
+                             height="90"
+                             width="90"
+                             alt="Employee image" />
                     }
 
                 </div>
+
             </div>
+
+            @* --- Fields --- *@
+            <div class="flex-grow-1 mt-3">
+
+
+                @* --- System Id *@
+                <div class="d-flex align-items-center mb-2">
+                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                        <i class="fa-solid fa-fingerprint text-center field-icon txt-fcolor1" style="width:16px;"></i> System ID
+                    </div>
+                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas.UserId</div>
+                </div>
+
+                @* --- Email Address *@
+                <div class="d-flex align-items-center mb-2">
+                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                        <i class="fa-solid fa-envelope text-center field-icon txt-fcolor1" style="width:16px;"></i> Email
+                    </div>
+                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.Email</div>
+                </div>
+
+                @* --- Emp Number *@
+                <div class="d-flex align-items-center mb-2">
+                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                        <i class="fa-solid fa-hashtag text-center field-icon txt-fcolor1" style="width:16px;"></i> Emp. no.
+                    </div>
+                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas!.EmpNumber</div>
+                </div>
+
+                @* --- Position *@
+                <div class="d-flex align-items-center mb-2">
+                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                        <i class="fa-solid fa-briefcase text-center field-icon txt-fcolor1" style="width:16px;"></i> Position
+                    </div>
+                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.PositionName</div>
+                </div>
+
+                @* --- Status *@
+                <div class="d-flex align-items-center mb-2">
+                    <div class="text-uppercase text-muted fw-medium d-flex align-items-center gap-2" style="width:130px; font-size:.8rem; letter-spacing:.03em; white-space:nowrap;">
+                        <i class="fa-solid fa-circle-info text-center field-icon txt-fcolor1" style="width:16px;"></i> Status
+                    </div>
+                    <div class="flex-grow-1 small border-bottom pb-1" style="min-height:22px;">@V.Empmas?.EmpStatus</div>
+                </div>
+
+
+
+                @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+                {
+                    <div class="d-flex align-items-center">
+
+                        <div style="width:130px;">&nbsp;</div>
+
+                        <div class="flex-grow-1 d-flex gap-3">
+
+                            <span class="msds-link small" role="button" @onclick="EditEmpmas">Edit</span>
+
+                            @* --- Image Selection --- *@
+                            <label class="msds-link small mb-0"
+                                   style="cursor:pointer;">
+
+                                Upload image
+
+                                <InputFile OnChange="@OnImageSelected"
+                                           accept=".jpg,.jpeg,.png,.webp"
+                                           class="d-none" />
+
+                            </label>
+
+                            @* --- Remove Image --- *@
+                            @if (!string.IsNullOrWhiteSpace(ImagePreview))
+                            {
+                                <span class="text-danger small"
+                                      role="button"
+                                      style="cursor:pointer;"
+                                      @onclick="RemoveImage">
+
+                                    Remove image
+
+                                </span>
+                            }
+
+                        </div>
+
+                    </div>
+                }
+
+                @* --- Error Message --- *@
+                @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+                {
+                    <div class="text-danger small mt-2">
+                        @ErrorMessage
+                    </div>
+                }
+
+            </div>
+
+        </div>
 
     </div>
 
 </div>
 
-
-
-
-@inject NotificationService NotificationService
-@inject I_00MainDA _main;
-@inject IEmpmovementDataAccess _empMovement;
-@inject IMsdsDataAccess _msds;
-
 @code {
 
     bool popup = true;
-    
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
     [CascadingParameter]
     public V2052 V { get; set; } = new();
 
-
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
     List<UsersModel?>? users = new();
+
     string? errorEmail = "";
 
+
+
+    // Selected image
+    private byte[]? ImageBytes;
+
+    // Image preview
+    private string? ImagePreview;
+
+    // Selected image filename
+    private string? ImageFileName;
+
+    // Validation message
+    private string? ErrorMessage;
+
+    // Image size limits
+    private const long MaxFileSize = 2 * 1024 * 1024; // 2 MB
+    private const long MinFileSize = 1024;            // 1 KB
+
+    // Allowed image extensions
+    private readonly List<string> AllowedExtensions = new()
+    {
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp"
+    };
 
 
     async void EditEmpmas()
@@ -154,16 +239,94 @@
         await ChildAction.InvokeAsync();
     }
 
-    
+
+
+
+    // Handle selected image
+    private async Task OnImageSelected(InputFileChangeEventArgs args)
+    {
+        // Reset previous selection
+        ImagePreview = null;
+        ImageBytes = null;
+        ImageFileName = null;
+        ErrorMessage = null;
+
+        var file = args.File;
+
+        // 1. Validate file extension
+        var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+
+        if (!AllowedExtensions.Contains(extension))
+        {
+            ErrorMessage = "Only JPG, JPEG, PNG, and WEBP images are allowed.";
+            return;
+        }
+
+        // 2. Validate minimum file size
+        if (file.Size < MinFileSize)
+        {
+            ErrorMessage = "Image must be at least 1 KB.";
+            return;
+        }
+
+        // 3. Validate maximum file size
+        if (file.Size > MaxFileSize)
+        {
+            ErrorMessage = "Image must not exceed 2 MB.";
+            return;
+        }
+
+        try
+        {
+            // 4. Read image into memory
+            using var memoryStream = new MemoryStream();
+
+            await file.OpenReadStream(MaxFileSize)
+                      .CopyToAsync(memoryStream);
+
+            ImageBytes = memoryStream.ToArray();
+
+            // 5. Store filename
+            ImageFileName = file.Name;
+
+            // 6. Determine image content type
+            var contentType = extension switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".webp" => "image/webp",
+                _ => "application/octet-stream"
+            };
+
+            // 7. Generate Base64 preview
+            ImagePreview = $"data:{contentType};base64,{Convert.ToBase64String(ImageBytes)}";
+
+        }
+        catch (Exception ex)
+        {
+            ImageBytes = null;
+            ImagePreview = null;
+            ImageFileName = null;
+
+            ErrorMessage = $"Unable to preview image: {ex.Message}";
+        }
+    }
+
+    // Remove selected image
+    private void RemoveImage()
+    {
+        ImagePreview = null;
+        ImageBytes = null;
+        ImageFileName = null;
+        ErrorMessage = null;
+    }
+
 }
 
-
-
-
-<style >
+<style>
 
     .field-icon {
-       opacity: 0.7;
+        opacity: 0.7;
     }
 
     button[data-bs-toggle="collapse"] {
@@ -171,20 +334,21 @@
         color: #0066cc !important;
     }
 
-    button[data-bs-toggle="collapse"]:hover {
-        color: #004999 !important;
-    }
+        button[data-bs-toggle="collapse"]:hover {
+            color: #004999 !important;
+        }
 
-    button[data-bs-toggle="collapse"] i {
-        transition: transform 0.3s ease;
-        display: inline-block;
-    }
+        button[data-bs-toggle="collapse"] i {
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
 
-    button[data-bs-toggle="collapse"].collapsed i {
-        transform: rotate(-90deg);
-    }
+        button[data-bs-toggle="collapse"].collapsed i {
+            transform: rotate(-90deg);
+        }
 
     .collapse.collapsing {
         transition: all 0.35s ease;
     }
+
 </style>
