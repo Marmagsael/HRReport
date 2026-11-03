@@ -1,0 +1,217 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<div class="card w-100 p-1">
+    <BodyHdr pageTitle="Salary Grade" />
+    <div class="card-body p-2 w-100">
+
+        <div class="p-3 mb-3 border rounded bg-light">
+            <div class="d-flex flex-wrap align-items-end gap-3">
+                <div>
+                    <label class="form-label fw-bold mb-1">Code</label>
+                    <div><TelerikTextBox @bind-Value="form.SgCode" MaxLength="10" Width="130px" Enabled="@(editingCode is null)" /></div>
+                </div>
+                <div>
+                    <label class="form-label fw-bold mb-1">Salary Grade</label>
+                    <div><TelerikTextBox @bind-Value="form.SGrade" MaxLength="45" Width="320px" /></div>
+                </div>
+                <div>
+                    <label class="form-label fw-bold mb-1">Monthly Rate</label>
+                    <div><TelerikNumericTextBox Class="num-right" Value="@form.MonthlyRate" ValueChanged="@((double v) => OnMonthlyChanged(v))" Min="0" Decimals="2" Format="N2" Width="140px" /></div>
+                </div>
+                <div>
+                    <label class="form-label fw-bold mb-1">Daily Rate</label>
+                    <div><TelerikNumericTextBox Class="num-right" @bind-Value="form.DailyRate" Min="0" Decimals="2" Format="N2" Width="130px" /></div>
+                </div>
+            </div>
+
+            <div class="card mt-3 sg-card">
+                <div class="card-header py-2 fw-bold">Tax and contributions</div>
+                <div class="card-body py-2">
+                    <div class="text-secondary small mb-2">Check what applies to this salary grade.</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <label class="sg-chip @(form.WTax == 1 ? "on" : "")"><TelerikCheckBox Value="@(form.WTax == 1)" ValueChanged="@((bool v) => form.WTax = v ? 1 : 0)" /> Taxable</label>
+                        <label class="sg-chip @(form.WSss == 1 ? "on" : "")"><TelerikCheckBox Value="@(form.WSss == 1)" ValueChanged="@((bool v) => form.WSss = v ? 1 : 0)" /> SSS</label>
+                        <label class="sg-chip @(form.WGsis == 1 ? "on" : "")"><TelerikCheckBox Value="@(form.WGsis == 1)" ValueChanged="@((bool v) => form.WGsis = v ? 1 : 0)" /> GSIS</label>
+                        <label class="sg-chip @(form.WPhic == 1 ? "on" : "")"><TelerikCheckBox Value="@(form.WPhic == 1)" ValueChanged="@((bool v) => form.WPhic = v ? 1 : 0)" /> PHIC</label>
+                        <label class="sg-chip @(form.WPagibig == 1 ? "on" : "")"><TelerikCheckBox Value="@(form.WPagibig == 1)" ValueChanged="@((bool v) => form.WPagibig = v ? 1 : 0)" /> Pag-IBIG</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-3">
+                <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(!saving)">@(editingCode is null ? "Add" : "Update")</TelerikButton>
+                <TelerikButton OnClick="@ClearForm" FillMode="outline">@(editingCode is null ? "Clear" : "Cancel")</TelerikButton>
+                <span class="text-secondary small align-self-center ms-2">Daily rate is filled from the monthly rate divided by 30. You can change it.</span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+            <input class="form-control" style="width:280px;" placeholder="Search code or name..." @bind="search" @bind:event="oninput" />
+            <span class="text-secondary">@shown.Count of @grades.Count shown</span>
+        </div>
+
+        <TelerikGrid Data="@shown" Pageable="true" PageSize="15" Sortable="true" Size="@ThemeConstants.Grid.Size.Small">
+            <GridColumns>
+                <GridColumn Field="@nameof(SalgradeModel.SgCode)" Title="Code" Width="110px" />
+                <GridColumn Field="@nameof(SalgradeModel.SGrade)" Title="Salary Grade" />
+                <GridColumn Field="@nameof(SalgradeModel.MonthlyRate)" Title="Monthly" DisplayFormat="{0:N2}" Width="120px" TextAlign="ColumnTextAlign.Right" />
+                <GridColumn Field="@nameof(SalgradeModel.DailyRate)" Title="Daily" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                <GridColumn Title="Tax" Width="60px" TextAlign="ColumnTextAlign.Center"><Template>@Flag((context as SalgradeModel)?.WTax)</Template></GridColumn>
+                <GridColumn Title="SSS" Width="60px" TextAlign="ColumnTextAlign.Center"><Template>@Flag((context as SalgradeModel)?.WSss)</Template></GridColumn>
+                <GridColumn Title="GSIS" Width="60px" TextAlign="ColumnTextAlign.Center"><Template>@Flag((context as SalgradeModel)?.WGsis)</Template></GridColumn>
+                <GridColumn Title="PHIC" Width="60px" TextAlign="ColumnTextAlign.Center"><Template>@Flag((context as SalgradeModel)?.WPhic)</Template></GridColumn>
+                <GridColumn Title="Pag-IBIG" Width="80px" TextAlign="ColumnTextAlign.Center"><Template>@Flag((context as SalgradeModel)?.WPagibig)</Template></GridColumn>
+                <GridColumn Title="Lock" Width="70px" TextAlign="ColumnTextAlign.Center">
+                    <Template>
+                        @{ var g = (SalgradeModel)context; }
+                        <span class="badge @((g.IsLock ?? 0) == 1 ? "bg-secondary" : "bg-success")">@((g.IsLock ?? 0) == 1 ? "Locked" : "Open")</span>
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="" Width="260px">
+                    <Template>
+                        @{ var r = (SalgradeModel)context; var locked = (r.IsLock ?? 0) == 1; }
+                        <TelerikButton OnClick="@(() => Edit(r))" FillMode="outline" Size="sm" Enabled="@(!locked)">Edit</TelerikButton>
+                        <TelerikButton OnClick="@(() => ToggleLock(r))" FillMode="outline" Size="sm">@(locked ? "Unlock" : "Lock")</TelerikButton>
+                        @if (deleteCode == r.SgCode)
+                        {
+                            <TelerikButton OnClick="@(() => Delete(r))" ThemeColor="error" Size="sm">Confirm</TelerikButton>
+                        }
+                        else
+                        {
+                            <TelerikButton OnClick="@(() => deleteCode = r.SgCode)" FillMode="outline" ThemeColor="error" Size="sm" Enabled="@(!locked)">Delete</TelerikButton>
+                        }
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+
+    </div>
+</div>
+</TelerikRootComponent>
+
+<style>
+    .num-right input.k-input-inner { text-align: right; }
+    .sg-card { max-width: 560px; background: #fff; }
+    .sg-chip { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border: 1px solid #ced4da; border-radius: 999px; cursor: pointer; user-select: none; background: #fff; }
+    .sg-chip.on { border-color: #23774f; background: #e1f2e8; color: #1b5e3b; font-weight: 600; }
+</style>
+
+@inject IOSalgradeDataAccess _salgradeDa
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    TelerikNotification     NotificationRef { get; set; } = new();
+    List<SalgradeModel>     grades          = new();
+    SalgradeModel           form            = NewForm();
+    string?                 editingCode;
+    string?                 deleteCode;
+    string                  search          = string.Empty;
+    bool                    saving;
+
+    static SalgradeModel NewForm() => new() { WGsis = 1, WPhic = 1, WPagibig = 1, WTax = 0, WSss = 0 };
+
+    List<SalgradeModel> shown => grades.Where(g =>
+        string.IsNullOrWhiteSpace(search)
+        || (g.SgCode ?? "").Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
+        || (g.SGrade ?? "").Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+
+    MarkupString Flag(int? v) => new MarkupString(v == 1 ? "<span style=\"color:#23774f;font-weight:700\">&#10003;</span>" : "<span style=\"color:#9aa5b1\">-</span>");
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc is null) return;
+        await Reload();
+    }
+
+    async Task Reload()
+    {
+        try
+        {
+            grades = await _salgradeDa._02(Uc!.OpayDb!, Uc.Conn!);
+        }
+        catch (Exception ex)
+        {
+            Show("error", $"Load failed: {ex.Message}");
+        }
+    }
+
+    void OnMonthlyChanged(double v)
+    {
+        var autoDaily = Math.Round(form.MonthlyRate / 30, 2);
+        form.MonthlyRate = v;
+        if (form.DailyRate == 0 || Math.Abs(form.DailyRate - autoDaily) < 0.005)
+            form.DailyRate = Math.Round(v / 30, 2);
+    }
+
+    async Task Save()
+    {
+        saving = true;
+        try
+        {
+            var msg = editingCode is null
+                ? await _salgradeDa._01(form, Uc!.OpayDb!, Uc.Conn!)
+                : await _salgradeDa._03(form, Uc!.OpayDb!, Uc.Conn!);
+            if (msg != null) { Show("error", msg); return; }
+
+            Show("success", editingCode is null ? "Salary grade added." : "Salary grade updated.");
+            ClearForm();
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Save failed: {ex.Message}"); }
+        finally { saving = false; }
+    }
+
+    void Edit(SalgradeModel r)
+    {
+        editingCode = r.SgCode;
+        form = new SalgradeModel
+        {
+            SgCode = r.SgCode, SGrade = r.SGrade, MonthlyRate = r.MonthlyRate, DailyRate = r.DailyRate,
+            WTax = r.WTax, WSss = r.WSss, WGsis = r.WGsis, WPhic = r.WPhic, WPagibig = r.WPagibig
+        };
+    }
+
+    void ClearForm()
+    {
+        editingCode = null;
+        form = NewForm();
+    }
+
+    async Task ToggleLock(SalgradeModel r)
+    {
+        try
+        {
+            await _salgradeDa._03Lock(r.SgCode!, (r.IsLock ?? 0) != 1, Uc!.OpayDb!, Uc.Conn!);
+            if (editingCode == r.SgCode) ClearForm();
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Failed: {ex.Message}"); }
+    }
+
+    async Task Delete(SalgradeModel r)
+    {
+        try
+        {
+            var msg = await _salgradeDa._04(r.SgCode!, Uc!.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            deleteCode = null;
+            if (msg != null) { Show("error", msg); return; }
+
+            Show("success", "Salary grade deleted.");
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Delete failed: {ex.Message}"); }
+    }
+
+    void Show(string type, string text) =>
+        NotificationRef.Show(new NotificationModel { Text = text, ThemeColor = type, CloseAfter = 4000 });
+}

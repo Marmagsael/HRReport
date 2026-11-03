@@ -1479,13 +1479,35 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         `Status` char(1) DEFAULT 'A',
                         `PayRateId` int DEFAULT '0',
                         `GracePrd` int DEFAULT '0',
+                        `EcolaRate` double(12,4) DEFAULT '0.0000',
+                        `CtpaRate` double(12,4) DEFAULT '0.0000',
+                        `SeaRate` double(12,4) DEFAULT '0.0000',
+                        `EcolaRevised` int unsigned DEFAULT '0',
+                        `WithCtpa` int unsigned DEFAULT '0',
+                        `WithSea` int unsigned DEFAULT '0',
+                        `SgCode` char(10) DEFAULT '',
                         PRIMARY KEY (`Id`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
 
+        // -- Columns added after the table was created (rate setup per payroll group) --
         var columns = await _sql.FetchData<dynamic, dynamic>($"DESC {schema}.`payrollgrp`", new { }, conn);
-        if (!columns.Any(c => string.Equals((string)c.Field, "GracePrd", StringComparison.OrdinalIgnoreCase)))
-            await ExecLegacy($"ALTER TABLE {schema}.`payrollgrp` ADD COLUMN `GracePrd` int DEFAULT '0'", conn);
+        var added = new (string Name, string Definition)[]
+        {
+            ("GracePrd",     "int DEFAULT '0'"),
+            ("EcolaRate",    "double(12,4) DEFAULT '0.0000'"),
+            ("CtpaRate",     "double(12,4) DEFAULT '0.0000'"),
+            ("SeaRate",      "double(12,4) DEFAULT '0.0000'"),
+            ("EcolaRevised", "int unsigned DEFAULT '0'"),
+            ("WithCtpa",     "int unsigned DEFAULT '0'"),
+            ("WithSea",      "int unsigned DEFAULT '0'"),
+            ("SgCode",       "char(10) DEFAULT ''"),
+        };
+        foreach (var (name, definition) in added)
+        {
+            if (columns.Any(c => string.Equals((string)c.Field, name, StringComparison.OrdinalIgnoreCase))) continue;
+            await ExecLegacy($"ALTER TABLE {schema}.`payrollgrp` ADD COLUMN `{name}` {definition}", conn);
+        }
     }
 
     private async Task _01Payrollprd(string? schema, string? conn)

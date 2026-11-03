@@ -1,0 +1,364 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<_00BT_FullW HdrCaption="Rate Setup">
+    <Details>
+    <div class="p-2">
+
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+            <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(UnsavedCount > 0 && !saving)">@(saving ? "Saving..." : "Save")</TelerikButton>
+            <TelerikButton OnClick="@OpenAmounts" FillMode="outline" Enabled="@(selected != null)">Fixed Amount Rates</TelerikButton>
+            @if (UnsavedCount > 0)
+            {
+                <span class="badge bg-warning text-dark">@UnsavedCount unsaved</span>
+            }
+            <input class="form-control ms-3" style="width:240px;" placeholder="Search payroll group..." @bind="search" @bind:event="oninput" />
+            <label class="d-flex align-items-center gap-2"><TelerikSwitch Class="sw-tall" @bind-Value="activeOnly" Width="50px" OnLabel="Yes" OffLabel="No" /> Active only</label>
+            <span class="text-secondary">@shownGroups.Count of @groups.Count groups</span>
+        </div>
+
+        <TelerikGrid Class="rs-grid" Data="@shownGroups" Height="250px" Pageable="false" Sortable="false" Resizable="true" Size="@ThemeConstants.Grid.Size.Small"
+                     SelectionMode="GridSelectionMode.Single" SelectedItems="@selectedList"
+                     SelectedItemsChanged="@((IEnumerable<RateSetupGroupModel> items) => OnGroupSelected(items))">
+            <GridColumns>
+                <GridColumn Title="Payroll Group" Width="260px" Locked="true">
+                    <Template>
+                        @{ var g = (RateSetupGroupModel)context; }
+                        <span class="@(g.Changed ? "fw-bold" : "")">@g.Name</span>
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Rate" Width="120px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@{ var g1 = (RateSetupGroupModel)context; }<TelerikNumericTextBox Arrows="false" Class="num-right" Value="@g1.Rate" ValueChanged="@((double v) => { g1.Rate = v; g1.Changed = true; })" Min="0" Decimals="2" Format="N2" Width="100%" /></Template>
+                </GridColumn>
+                <GridColumn Title="Min. Rate" Width="110px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@{ var g2 = (RateSetupGroupModel)context; }<TelerikNumericTextBox Arrows="false" Class="num-right" Value="@g2.MinRate" ValueChanged="@((double v) => { g2.MinRate = v; g2.Changed = true; })" Min="0" Decimals="2" Format="N2" Width="100%" /></Template>
+                </GridColumn>
+                <GridColumn Title="ECOLA" Width="100px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@{ var g3 = (RateSetupGroupModel)context; }<TelerikNumericTextBox Arrows="false" Class="num-right" Value="@g3.Ecola" ValueChanged="@((double v) => { g3.Ecola = v; g3.Changed = true; })" Min="0" Decimals="2" Format="N2" Width="100%" /></Template>
+                </GridColumn>
+                <GridColumn Title="CTPA" Width="100px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@{ var g4 = (RateSetupGroupModel)context; }<TelerikNumericTextBox Arrows="false" Class="num-right" Value="@g4.Ctpa" ValueChanged="@((double v) => { g4.Ctpa = v; g4.Changed = true; })" Min="0" Decimals="2" Format="N2" Width="100%" /></Template>
+                </GridColumn>
+                <GridColumn Title="SEA" Width="100px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@{ var g5 = (RateSetupGroupModel)context; }<TelerikNumericTextBox Arrows="false" Class="num-right" Value="@g5.Sea" ValueChanged="@((double v) => { g5.Sea = v; g5.Changed = true; })" Min="0" Decimals="2" Format="N2" Width="100%" /></Template>
+                </GridColumn>
+                <GridColumn Title="ECOLA New Rate" Width="90px" TextAlign="ColumnTextAlign.Center">
+                    <Template>@{ var g6 = (RateSetupGroupModel)context; }<TelerikCheckBox Value="@(g6.EcolaRevised == 1)" ValueChanged="@((bool v) => { g6.EcolaRevised = v ? 1 : 0; g6.Changed = true; })" /></Template>
+                </GridColumn>
+                <GridColumn Title="With CTPA" Width="80px" TextAlign="ColumnTextAlign.Center">
+                    <Template>@{ var g7 = (RateSetupGroupModel)context; }<TelerikCheckBox Value="@(g7.WithCtpa == 1)" ValueChanged="@((bool v) => { g7.WithCtpa = v ? 1 : 0; g7.Changed = true; })" /></Template>
+                </GridColumn>
+                <GridColumn Title="With SEA" Width="80px" TextAlign="ColumnTextAlign.Center">
+                    <Template>@{ var g8 = (RateSetupGroupModel)context; }<TelerikCheckBox Value="@(g8.WithSea == 1)" ValueChanged="@((bool v) => { g8.WithSea = v ? 1 : 0; g8.Changed = true; })" /></Template>
+                </GridColumn>
+                <GridColumn Title="Salary Grade" Width="520px">
+                    <Template>
+                        @{ var g9 = (RateSetupGroupModel)context; }
+                        <TelerikDropDownList Data="@salgrades" TextField="SGrade" ValueField="SgCode" Value="@(g9.SgCode ?? string.Empty)"
+                                             ValueChanged="@((string v) => OnGroupSalgrade(g9, v))" Width="100%">
+                            <DropDownListSettings><DropDownListPopupSettings Width="520px" /></DropDownListSettings>
+                        </TelerikDropDownList>
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="SG Daily Rate" Width="110px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@{ var g10 = (RateSetupGroupModel)context; }@g10.SgDailyRate.ToString("N2")</Template>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+
+        <div class="mt-3 mb-1 fw-bold">
+            @if (selected != null) { <span>Employees of @selected.Name</span> } else { <span class="text-secondary">Select a payroll group to see its employees.</span> }
+            @if (loadingEmps) { <span class="text-secondary ms-2">Loading...</span> }
+        </div>
+
+        @if (selected != null)
+        {
+            <TelerikGrid Class="rs-grid" Data="@employees" Height="440px" Pageable="false" Sortable="false" Resizable="true" Size="@ThemeConstants.Grid.Size.Small">
+                <GridColumns>
+                    <GridColumn Title="Employee Name" Width="220px" Locked="true">
+                        <Template>@{ var e = (RateSetupEmployeeModel)context; }<span class="@(e.Changed ? "fw-bold" : "")">@e.Name</span></Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(RateSetupEmployeeModel.Position)" Title="Position" Width="150px" />
+                    <GridColumn Field="@nameof(RateSetupEmployeeModel.Status)" Title="Status" Width="100px" />
+                    <GridColumn Title="Basic Rate" Width="120px" TextAlign="ColumnTextAlign.Right">
+                        <Template>@{ var e1 = (RateSetupEmployeeModel)context; }<TelerikNumericTextBox Arrows="false" Class="num-right" Value="@e1.BasicRate" ValueChanged="@((double v) => EmpEdit(e1, () => e1.BasicRate = v))" Min="0" Decimals="2" Format="N2" Width="100%" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="Type" Width="210px">
+                        <Template>@{ var e2 = (RateSetupEmployeeModel)context; }<TelerikDropDownList Data="@rateTypes" TextField="Name" ValueField="Id" Value="@e2.RateId" ValueChanged="@((int v) => EmpEdit(e2, () => e2.RateId = v))" Width="100%" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="Allowance" Width="110px" TextAlign="ColumnTextAlign.Right">
+                        <Template>@{ var e3 = (RateSetupEmployeeModel)context; }<TelerikNumericTextBox Arrows="false" Class="num-right" Value="@e3.AllowRate" ValueChanged="@((double v) => EmpEdit(e3, () => e3.AllowRate = v))" Min="0" Decimals="2" Format="N2" Width="100%" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="Max SSS" Width="70px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var e4 = (RateSetupEmployeeModel)context; }<TelerikCheckBox Value="@(e4.IsMaxSss == 1)" ValueChanged="@((bool v) => EmpEdit(e4, () => e4.IsMaxSss = v ? 1 : 0))" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="Salary Grade" Width="520px">
+                        <Template>
+                            @{ var e5 = (RateSetupEmployeeModel)context; }
+                            <TelerikDropDownList Data="@salgrades" TextField="SGrade" ValueField="SgCode" Value="@(e5.SgCode ?? string.Empty)"
+                                                 ValueChanged="@((string v) => OnEmpSalgrade(e5, v))" Width="100%">
+                                <DropDownListSettings><DropDownListPopupSettings Width="520px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Title="SG Daily Rate" Width="110px" TextAlign="ColumnTextAlign.Right">
+                        <Template>@{ var e6 = (RateSetupEmployeeModel)context; }@e6.SgDailyRate.ToString("N2")</Template>
+                    </GridColumn>
+                    <GridColumn Title="Taxable" Width="70px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var e7 = (RateSetupEmployeeModel)context; }<TelerikCheckBox Value="@(e7.IsTaxable == 1)" ValueChanged="@((bool v) => EmpEdit(e7, () => e7.IsTaxable = v ? 1 : 0))" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="SSS" Width="60px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var e8 = (RateSetupEmployeeModel)context; }<TelerikCheckBox Value="@(e8.WithSss == 1)" ValueChanged="@((bool v) => EmpEdit(e8, () => e8.WithSss = v ? 1 : 0))" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="GSIS" Width="60px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var e9 = (RateSetupEmployeeModel)context; }<TelerikCheckBox Value="@(e9.WithGsis == 1)" ValueChanged="@((bool v) => EmpEdit(e9, () => e9.WithGsis = v ? 1 : 0))" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="Pagibig" Width="70px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var e10 = (RateSetupEmployeeModel)context; }<TelerikCheckBox Value="@(e10.WithPagibig == 1)" ValueChanged="@((bool v) => EmpEdit(e10, () => e10.WithPagibig = v ? 1 : 0))" /></Template>
+                    </GridColumn>
+                    <GridColumn Title="PHIC" Width="60px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var e11 = (RateSetupEmployeeModel)context; }<TelerikCheckBox Value="@(e11.WithPhic == 1)" ValueChanged="@((bool v) => EmpEdit(e11, () => e11.WithPhic = v ? 1 : 0))" /></Template>
+                    </GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+        }
+
+    </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow @bind-Visible="@showAmt" Modal="true" Width="560px">
+    <WindowTitle>Custom Payroll Group Rates</WindowTitle>
+    <WindowContent>
+        @if (amt != null)
+        {
+            <div class="mb-2 fw-bold">@selected?.Name</div>
+            <div class="text-secondary small mb-2">A fixed amount per hour. When it is more than 0, it is used instead of the computed rate.</div>
+            <div class="row g-2">
+                @foreach (var f in AmtFields)
+                {
+                    <div class="col-6 d-flex align-items-center gap-2">
+                        <span style="width:150px;">@f.Label</span>
+                        <TelerikNumericTextBox Arrows="false" Class="num-right" Value="@f.Get(amt)" ValueChanged="@((double v) => f.Set(amt, v))" Min="0" Decimals="2" Format="N2" Width="100px" />
+                        <span class="text-secondary small">/ hour</span>
+                    </div>
+                }
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <TelerikButton OnClick="@SaveAmounts" ThemeColor="primary" Icon="@SvgIcon.Save">Save</TelerikButton>
+                <TelerikButton OnClick="@ClearAmounts" FillMode="outline" ThemeColor="error">Clear</TelerikButton>
+                <TelerikButton OnClick="@(() => showAmt = false)" FillMode="outline">Close</TelerikButton>
+            </div>
+        }
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
+
+<style>
+    .num-right input.k-input-inner { text-align: right; }
+    .sw-tall.k-switch { height: 32px; }
+    .rs-grid .k-input, .rs-grid .k-input-solid, .rs-grid .k-numerictextbox, .rs-grid .k-numerictextbox .k-input-inner { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; outline: 0 !important; background: transparent !important; }
+    .rs-grid .k-picker, .rs-grid .k-picker-solid { border: 0 !important; border-bottom: 1px solid #adb5bd !important; border-radius: 0 !important; background: transparent !important; box-shadow: none !important; outline: 0 !important; }
+    .rs-grid .k-picker .k-input-inner, .rs-grid .k-picker .k-input-button { border: 0 !important; background: transparent !important; box-shadow: none !important; }
+    .rs-grid .k-table-td, .rs-grid .k-grid-header .k-table-th { padding: 0 !important; }
+    .rs-grid .k-table-td > span:not(.k-numerictextbox):not(.k-dropdownlist), .rs-grid .k-table-td > .k-checkbox { margin-left: 4px; }
+</style>
+
+@inject IORateSetupDataAccess _rateDa
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    record RateType(int Id, string Name);
+    record AmtField(string Label, Func<RatesAmtModel, double> Get, Action<RatesAmtModel, double> Set);
+
+    TelerikNotification         NotificationRef { get; set; } = new();
+    List<RateSetupGroupModel>   groups          = new();
+    List<RateSetupSalgradeModel> salgrades      = new();
+    List<RateSetupEmployeeModel> employees      = new();
+    Dictionary<string, RateSetupEmployeeModel> empChanged = new();
+    RateSetupGroupModel?        selected;
+    List<RateSetupGroupModel>   selectedList    = new();
+    string                      search          = string.Empty;
+    bool                        activeOnly      = true;
+    bool                        saving;
+    bool                        loadingEmps;
+    bool                        showAmt;
+    RatesAmtModel?              amt;
+
+    List<RateType> rateTypes = new() { new(1, "per month"), new(2, "per day"), new(3, "semi-monthly") };
+
+    List<AmtField> AmtFields = new()
+    {
+        new("Reg. Overtime",    a => a.Rot,    (a, v) => a.Rot = v),
+        new("LH",               a => a.Lh,     (a, v) => a.Lh = v),
+        new("LH OT",            a => a.Lhot,   (a, v) => a.Lhot = v),
+        new("SH",               a => a.Sh,     (a, v) => a.Sh = v),
+        new("SH OT",            a => a.Shot,   (a, v) => a.Shot = v),
+        new("DH",               a => a.Dh,     (a, v) => a.Dh = v),
+        new("DH OT",            a => a.Dhot,   (a, v) => a.Dhot = v),
+        new("RD",               a => a.Rd,     (a, v) => a.Rd = v),
+        new("RD OT",            a => a.Rdot,   (a, v) => a.Rdot = v),
+        new("RD LH",            a => a.Rdlh,   (a, v) => a.Rdlh = v),
+        new("RD LH OT",         a => a.Rdlhot, (a, v) => a.Rdlhot = v),
+        new("RD SH",            a => a.Rdsh,   (a, v) => a.Rdsh = v),
+        new("RD SH OT",         a => a.Rdshot, (a, v) => a.Rdshot = v),
+        new("RD DH",            a => a.Rddh,   (a, v) => a.Rddh = v),
+        new("RD DH OT",         a => a.Rddhot, (a, v) => a.Rddhot = v),
+    };
+
+    int UnsavedCount => groups.Count(g => g.Changed) + empChanged.Count;
+
+    List<RateSetupGroupModel> shownGroups => groups.Where(g =>
+        (!activeOnly || g.Status == "A")
+        && (string.IsNullOrWhiteSpace(search)
+            || (g.Name ?? "").Contains(search.Trim(), StringComparison.OrdinalIgnoreCase)
+            || (g.Code ?? "").Contains(search.Trim(), StringComparison.OrdinalIgnoreCase))).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc is null) return;
+        await Reload();
+    }
+
+    async Task Reload()
+    {
+        try
+        {
+            salgrades   = await _rateDa._02Salgrades(Uc!.OpayDb!, Uc.Conn!);
+            groups      = await _rateDa._02Groups(Uc.OpayDb!, Uc.Conn!);
+            selected    = null;
+            selectedList = new();
+            employees   = new();
+            empChanged  = new();
+        }
+        catch (Exception ex)
+        {
+            Show("error", $"Load failed: {ex.Message}");
+        }
+    }
+
+    async Task OnGroupSelected(IEnumerable<RateSetupGroupModel> items)
+    {
+        var g = items.FirstOrDefault();
+        selectedList = g == null ? new() : new() { g };
+        selected = g;
+        employees = new();
+        if (g == null) return;
+
+        loadingEmps = true;
+        try
+        {
+            var list = await _rateDa._02Employees(g.Id, Uc!.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            employees = list.Select(e => empChanged.TryGetValue(e.EmpNumber ?? "", out var kept) ? kept : e).ToList();
+        }
+        catch (Exception ex)
+        {
+            Show("error", $"Load employees failed: {ex.Message}");
+        }
+        finally { loadingEmps = false; }
+    }
+
+    void OnGroupSalgrade(RateSetupGroupModel g, string code)
+    {
+        g.SgCode        = code ?? string.Empty;
+        var sg          = salgrades.FirstOrDefault(s => s.SgCode == g.SgCode);
+        g.SgDailyRate   = sg?.DailyRate ?? 0;
+        if (g.SgDailyRate > 0) g.Rate = g.SgDailyRate;
+        g.Changed       = true;
+    }
+
+    void OnEmpSalgrade(RateSetupEmployeeModel e, string code)
+    {
+        e.SgCode        = code ?? string.Empty;
+        var sg          = salgrades.FirstOrDefault(s => s.SgCode == e.SgCode);
+        e.SgDailyRate   = sg?.DailyRate ?? 0;
+        if (e.SgDailyRate > 0) e.BasicRate = e.SgDailyRate;
+        MarkEmp(e);
+    }
+
+    void EmpEdit(RateSetupEmployeeModel e, Action change)
+    {
+        change();
+        MarkEmp(e);
+    }
+
+    void MarkEmp(RateSetupEmployeeModel e)
+    {
+        e.Changed = true;
+        empChanged[e.EmpNumber ?? string.Empty] = e;
+    }
+
+    async Task Save()
+    {
+        saving = true;
+        try
+        {
+            var gChanged = groups.Where(g => g.Changed).ToList();
+            var eChanged = empChanged.Values.ToList();
+
+            var msg = gChanged.Count > 0 ? await _rateDa._03Groups(gChanged, Uc!.OpayDb!, Uc.Conn!) : null;
+            if (msg == null && eChanged.Count > 0) msg = await _rateDa._03Employees(eChanged, Uc!.OpisDb!, Uc.Conn!);
+            if (msg != null) { Show("error", msg); return; }
+
+            var keep = selected?.Id;
+            Show("success", $"{gChanged.Count} payroll group(s) and {eChanged.Count} employee(s) saved.");
+            await Reload();
+            if (keep != null)
+            {
+                var g = groups.FirstOrDefault(x => x.Id == keep);
+                if (g != null) await OnGroupSelected(new[] { g });
+            }
+        }
+        catch (Exception ex) { Show("error", $"Save failed: {ex.Message}"); }
+        finally { saving = false; }
+    }
+
+    async Task OpenAmounts()
+    {
+        if (selected == null) return;
+        try
+        {
+            amt = await _rateDa._02RatesAmt(selected.ClNumber ?? string.Empty, Uc!.OpayDb!, Uc.Conn!);
+            amt.ClNumber = selected.ClNumber;
+            showAmt = true;
+        }
+        catch (Exception ex) { Show("error", $"Load failed: {ex.Message}"); }
+    }
+
+    async Task SaveAmounts()
+    {
+        if (amt == null) return;
+        try
+        {
+            var msg = await _rateDa._03RatesAmt(amt, Uc!.OpayDb!, Uc.Conn!);
+            if (msg != null) { Show("error", msg); return; }
+            Show("success", "Fixed amount rates saved.");
+            showAmt = false;
+        }
+        catch (Exception ex) { Show("error", $"Save failed: {ex.Message}"); }
+    }
+
+    async Task ClearAmounts()
+    {
+        if (selected == null) return;
+        try
+        {
+            await _rateDa._04RatesAmt(selected.ClNumber ?? string.Empty, Uc!.OpayDb!, Uc.Conn!);
+            amt = new RatesAmtModel { ClNumber = selected.ClNumber };
+            Show("success", "Fixed amount rates cleared.");
+        }
+        catch (Exception ex) { Show("error", $"Clear failed: {ex.Message}"); }
+    }
+
+    void Show(string type, string text) =>
+        NotificationRef.Show(new NotificationModel { Text = text, ThemeColor = type, CloseAfter = 4000 });
+}

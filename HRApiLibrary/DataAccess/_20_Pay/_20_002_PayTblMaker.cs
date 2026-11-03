@@ -1075,7 +1075,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         sql = @"INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
                             (11009, 'Dtl-Transaction', 11001, 1, 'timer', 'Punch Grace Period', '1100/11009', 11009),
-                            (11010, 'Dtl-Transaction', 11001, 1, 'event', 'Holiday Settings', '1100/11010', 11010);";
+                            (11010, 'Dtl-Transaction', 11001, 1, 'event', 'Holiday Settings', '1100/11010', 11010),
+                            (104,   'Dtl-Report',      101,   1, 'military_tech', 'Salary Grade', '13T/104', 104),
+                            (105,   'Dtl-Report',      101,   1, 'account_tree', 'Payroll Account Mapping', '13T/105', 105),
+                            (106,   'Dtl-Report',      101,   1, 'price_change', 'Rate Setup', '13T/106', 106);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         // -- Corrections for tables seeded before; each only touches the old wrong value --

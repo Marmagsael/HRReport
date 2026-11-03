@@ -1,0 +1,84 @@
+@inject IMainmenuDataAccess _menu
+
+<link rel="stylesheet" href="css/ReportLayout/report-left-menu.css" />
+
+<div class="leftmenu-header pay-leftmenu-header ">
+    <h6>Payroll System</h6>
+</div>
+
+<div class="report-left-menu">
+    <ul>
+        @if (HttpContext != null && !HRMvc.StartupConfig.CompanyRole.IsEmployee(HttpContext.User))
+        {
+            <div class="text-primary">
+                <ReportLeftMenuMain Menus="menus" ParentId="1501" />
+            </div>
+        }
+        <ReportLeftMenuMainParentDtl Menus="menus" ParentId="1001" />
+    </ul>
+</div>
+
+<div class="report-left-menu">
+    <ul>
+        <li class="menu-item">
+            <a href="#" onclick="event.preventDefault();">
+                <div class="d-flex gap-2 align-items-center">
+                    <i class="fa-solid  fa-folder-open fs-5"></i>
+                    <span>Management</span>
+                </div>
+                <i class="fa fa-chevron-right arrow"></i>
+            </a>
+            <ul class="submenu">
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="101" />
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="11001" />
+            </ul>
+        </li>
+
+        <li class="menu-item">
+            <a href="#" onclick="event.preventDefault();">
+                <div class="d-flex gap-2 align-items-center">
+                    <i class="fa-solid fa-receipt fs-5"></i>
+                    <span>Transaction</span>
+                </div>
+                <i class="fa fa-chevron-right arrow"></i>
+            </a>
+            <ul class="submenu">
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="501" />
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="551" />
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="601" />
+            </ul>
+        </li>
+
+        <li class="menu-item">
+            <a href="#" onclick="event.preventDefault();">
+                <div class="d-flex gap-2 align-items-center">
+                    <i class="fa-solid fa-file-lines fs-5"></i>
+                    <span>Report Module</span>
+                </div>
+                <i class="fa fa-chevron-right arrow"></i>
+            </a>
+            <ul class="submenu">
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="1101" />
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="1151" />
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="1201" />
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="1251" />
+                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="1301" />
+            </ul>
+        </li>
+    </ul>
+</div>
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    List<MainmenuModel?> menus      = new();
+    List<MainmenuModel?> menuspay   = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        menus       = await _menu._02("Main", Uc?.Conn ?? "") ?? [];
+        menuspay    = await _menu._02("MainPay", Uc?.Conn ?? "") ?? [];
+    }
+}

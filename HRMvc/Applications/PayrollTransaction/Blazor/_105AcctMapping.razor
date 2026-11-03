@@ -1,0 +1,122 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<_00BT_FullW HdrCaption="Payroll Account Mapping">
+    <Details>
+    <div class="p-2">
+
+        <div class="d-flex align-items-center gap-3 mb-2">
+            <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(rows.Any(r => r.Changed) && !saving)">@(saving ? "Saving..." : "Save")</TelerikButton>
+            @if (rows.Any(r => r.Changed))
+            {
+                <span class="badge bg-warning text-dark">@rows.Count(r => r.Changed) unsaved</span>
+            }
+        </div>
+
+        <TelerikGrid Data="@rows" Height="calc(100vh - 230px)" Size="@ThemeConstants.Grid.Size.Small">
+            <GridColumns>
+                <GridColumn Title="Fld Name" Width="190px">
+                    <Template>
+                        @{ var f = (AcctMapRowModel)context; }
+                        <span title="@f.Label" class="@(f.Changed ? "fw-bold" : "")">@f.Field.ToUpperInvariant()</span>
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Acct Name">
+                    <Template>
+                        @{ var a = (AcctMapRowModel)context; }
+                        <TelerikDropDownList Data="@accounts" TextField="AcctName" ValueField="AcctNumber"
+                                             Value="@a.AcctCode" ValueChanged="@((string v) => OnAccountPicked(a, v))"
+                                             Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains"
+                                             Width="100%" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Rate" Width="150px" TextAlign="ColumnTextAlign.Right">
+                    <Template>
+                        @{ var r = (AcctMapRowModel)context; }
+                        <TelerikNumericTextBox Class="num-right" Value="@r.OtRate" ValueChanged="@((double v) => OnRateChanged(r, v))"
+                                               Min="0" Decimals="4" Format="N4" Enabled="@(!string.IsNullOrEmpty(r.AcctCode))" Width="120px" />
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+
+    </div>
+    </Details>
+</_00BT_FullW>
+</TelerikRootComponent>
+
+<style>
+    .num-right input.k-input-inner { text-align: right; }
+</style>
+
+@inject IOAcctMappingDataAccess _mapDa
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    TelerikNotification         NotificationRef { get; set; } = new();
+    List<AcctMapRowModel>       rows            = new();
+    List<AcctMapAccountModel>   accounts        = new();
+    bool                        saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc is null) return;
+        await Reload();
+    }
+
+    async Task Reload()
+    {
+        try
+        {
+            accounts    = await _mapDa._02Accounts(Uc!.OpayDb!, Uc.Conn!);
+            rows        = await _mapDa._02(Uc.OpayDb!, Uc.Conn!);
+        }
+        catch (Exception ex)
+        {
+            Show("error", $"Load failed: {ex.Message}");
+        }
+    }
+
+    void OnAccountPicked(AcctMapRowModel row, string code)
+    {
+        row.AcctCode    = code ?? string.Empty;
+        row.OtRate      = accounts.FirstOrDefault(a => string.Equals(a.AcctNumber, row.AcctCode, StringComparison.OrdinalIgnoreCase))?.OtRate ?? 0;
+        row.Changed     = true;
+    }
+
+    void OnRateChanged(AcctMapRowModel row, double rate)
+    {
+        row.OtRate  = rate;
+        row.Changed = true;
+        foreach (var other in rows.Where(r => !ReferenceEquals(r, row) && string.Equals(r.AcctCode, row.AcctCode, StringComparison.OrdinalIgnoreCase)))
+            other.OtRate = rate;
+    }
+
+    async Task Save()
+    {
+        saving = true;
+        try
+        {
+            var changed = rows.Where(r => r.Changed).ToList();
+            var msg = await _mapDa._03(changed, Uc!.OpayDb!, Uc.Conn!);
+            if (msg != null) { Show("error", msg); return; }
+
+            Show("success", $"{changed.Count} mapping(s) saved.");
+            await Reload();
+        }
+        catch (Exception ex) { Show("error", $"Save failed: {ex.Message}"); }
+        finally { saving = false; }
+    }
+
+    void Show(string type, string text) =>
+        NotificationRef.Show(new NotificationModel { Text = text, ThemeColor = type, CloseAfter = 4000 });
+}
