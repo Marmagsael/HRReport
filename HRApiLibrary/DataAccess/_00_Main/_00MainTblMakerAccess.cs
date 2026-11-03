@@ -162,9 +162,12 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
             sql = @$"insert into {schema}.Currency 
                   (Code, Name, Symbol) values 
                   ('CAD', 'Canada', 'C$'), 
-		          ('PHL', 'Philippines','Php'); ";
+		          ('PHP', 'Philippines','Php'); ";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
+
+        sql = $"update {schema}.Currency set Code = 'PHP' where Code = 'PHL' and Name = 'Philippines'";
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
     private async Task _01ProvinceState(string? schema, string? connName)

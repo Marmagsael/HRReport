@@ -270,7 +270,7 @@ public class _00MainDataMakerAccess : I_00MainDataMakerAccess
             sql = @$"insert into {schema}.Currency 
                   (Code, Name, Symbol) values 
                   ('CAD', 'Canada', 'C$'), 
-		          ('PHL', 'Philippines','Php'); ";
+		          ('PHP', 'Philippines','Php'); ";
             await _sql.ExecuteCmd(sql, new { }, connNam);
         }
 
