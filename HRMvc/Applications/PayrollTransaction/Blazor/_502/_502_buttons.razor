@@ -27,7 +27,7 @@
 
     <div class="bordered-right"></div>
     @* --- Employee -------------------------- *@
-    <div class="card p-2 w-50p text-center h-35p mb-btn mb-btn-gray mb-tooltip disabled-div">
+    <div class="card p-2 w-50p text-center h-35p mb-btn mb-btn-gray mb-tooltip @cssAddEmployee" @onclick="OpenAddEmployee">
         <span class="tooltip-text">Add Employee</span>
         <i class="fa-solid fa-user-plus fa-lg txt-blue"></i>
     </div>
@@ -54,14 +54,18 @@
     </div>
 </div>
 
-@if (confirmLock)
+@if (confirmLock && lockCheck != null)
 {
     <div class="p-2 bordered-bottom bg-warning-subtle d-flex gap-2 align-items-center">
         <div>
             <strong>Lock transaction @v502.TRN?</strong> This action cannot be undone.
-            @if (belowMinimum > 0)
+            @if (lockCheck.BelowMinimum.Count > 0)
             {
-                <span class="text-danger"> @belowMinimum employee(s) have a net pay below the minimum.</span>
+                <div class="text-danger">Net pay below 500: @string.Join(", ", lockCheck.BelowMinimum)</div>
+            }
+            @if (lockCheck.Over40Percent.Count > 0)
+            {
+                <div class="text-danger">Deductions are 40% or more of earnings: @string.Join(", ", lockCheck.Over40Percent)</div>
             }
         </div>
         <button class="btn btn-sm btn-danger"    @onclick="Lock">Lock</button>
@@ -78,26 +82,30 @@
     [CascadingParameter] public V502            v502 { get; set; } = new();
 
     bool confirmLock = false;
-    int  belowMinimum => v502.Session?.Results.Count(r => r.NetStatus == NetPayStatus.BelowMinimum) ?? 0;
+    OPayLockCheck? lockCheck;
     bool hasSession   => v502.Session != null && v502.Session.Results.Count > 0;
     bool editable     => hasSession && !v502.Session!.IsLocked && !v502.IsBusy;
 
     string? cssSave             => editable ? "" : " disabled-div ";
     string? cssProcess          => editable ? "" : " disabled-div ";
     string? cssLock             => editable && v502.IsProcessed ? "" : " disabled-div ";
+    string? cssAddEmployee      => editable ? "" : " disabled-div ";
     string? cssRemoveEmployee   => editable && v502.Session!.Results.Any(r => r.IsSelected) ? "" : " disabled-div ";
     string? cssCreateExcel      => hasSession && !v502.IsBusy ? "" : " disabled-div ";
     string? cssUploadExcel      => editable ? "" : " disabled-div ";
 
-    //--- payroll4 bProcess: compute every employee from the manhours ------------------------------------------------------
+    //--- payroll4 bProcess: compute every employee from the manhours, then bSave.Click runs by itself -------------------
     async Task Process()
     {
         if (!editable) return;
-        OPayrollCompute.Compute(v502.Session!);
-        v502.IsProcessed = true;
-        var neg = v502.Session!.Results.Count(r => r.NetStatus == NetPayStatus.Negative);
-        v502.Msg = "Processed." + (neg > 0 ? $" {neg} employee(s) with negative net pay." : "");
-        await Notify();
+        await Run("Processing...", async () =>
+        {
+            OPayrollCompute.Compute(v502.Session!);
+            var err = await _payroll._03SaveDraft(v502.Session!, Uc.UserName ?? "");
+            v502.IsProcessed = err == null;
+            var neg = v502.Session!.Results.Count(r => r.NetStatus == NetPayStatus.Negative);
+            v502.Msg = err ?? ("Processed and saved." + (neg > 0 ? $" {neg} employee(s) with negative net pay." : ""));
+        });
     }
 
     async Task Save()
@@ -111,10 +119,17 @@
         });
     }
 
+    //--- payroll4 bLock: already locked, negative net pay (blocks), net below 500 and 40% of salary (ask) ---------------
     void AskLock()
     {
         if (!editable || !v502.IsProcessed) return;
-        OPayrollCompute.Compute(v502.Session!);
+        lockCheck = _payroll._04LockCheck(v502.Session!);
+        if (lockCheck.AlreadyLocked) { v502.Msg = "Payroll already lock. Unable to process."; return; }
+        if (lockCheck.Negative.Count > 0)
+        {
+            v502.Msg = "Unable to lock transaction. Found record(s) with negative net pay: " + string.Join(", ", lockCheck.Negative);
+            return;
+        }
         confirmLock = true;
     }
 
@@ -131,12 +146,17 @@
     async Task RemoveSelected()
     {
         if (!editable) return;
-        v502.Session!.Results.RemoveAll(r => r.IsSelected);
-        if (v502.CurrentEmp != null && !v502.Session.Results.Contains(v502.CurrentEmp)) v502.CurrentEmp = v502.Session.Results.FirstOrDefault();
-        await _payroll._01LoadEmployeeData(v502.Session);
-        OPayrollCompute.Compute(v502.Session);
-        v502.Msg = "Employee(s) removed. Save to keep the change.";
-        await Notify();
+        var picked = v502.Session!.Results.Where(r => r.IsSelected).Select(r => r.EmpNumber!).ToList();
+        await Run("Removing...", async () =>
+        {
+            var err = await _payroll._05RemoveEmployees(v502.Session!, picked);
+            if (err != null) { v502.Msg = err; return; }
+            v502.Session!.Results.RemoveAll(r => r.IsSelected);
+            if (v502.CurrentEmp != null && !v502.Session.Results.Contains(v502.CurrentEmp)) v502.CurrentEmp = v502.Session.Results.FirstOrDefault();
+            await _payroll._01LoadEmployeeData(v502.Session);
+            OPayrollCompute.Compute(v502.Session);
+            v502.Msg = "Employee(s) removed.";
+        });
     }
 
     //--- Create Excel : manhour sheet like 1100/12002 Export to Excel; row 5 keeps the column keys for Upload Excel ---------
@@ -216,6 +236,13 @@
         "absent" => "Absent (Hrs)",
         _        => s.Coas.FirstOrDefault(a => a.AcctNumber == OPayrollCompute.Acct(s, c))?.AcctName?.Trim() is { Length: > 0 } n ? n : c.ToUpper()
     };
+
+    async Task OpenAddEmployee()
+    {
+        if (!editable) return;
+        v502.IsAddEmployeeOpen = true;
+        await Notify();
+    }
 
     async Task OpenUploadExcel()
     {
