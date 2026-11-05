@@ -1,9 +1,9 @@
-﻿@using HRApiLibrary.Models._10_Pis.OPis;
+@using HRApiLibrary.Models._10_Pis.OPis;
 @using HRMvc.Applications.PisModules.Views.Blazor._2302
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 
 
-@inject IOEmpstatDataAccess _oempstat
+@inject IOEmpstatMgtDataAccess _empstatMgt
 
 
 <TelerikRootComponent>
@@ -71,6 +71,7 @@
 
         v.OPisdb    = Uc.OpisDb;
         v.Conn      = Uc.Conn;
+        v.UserName  = Uc.UserName;
 
 
         await _02LoadEmployeeStatuses();
@@ -85,7 +86,7 @@
 
         try
         {
-            var res = await _oempstat._02s(v.OPisdb, v.Conn);
+            var res = await _empstatMgt._02StatMgtStatuses(v.OPisdb, v.Conn);
             if (res.Any())
             {
                 v.OEmpStatuses = res;
@@ -101,6 +102,10 @@
 
     private async Task ChildAction()
     {
-
+        if (v.Action == "select")
+        {
+            v.Action = string.Empty;
+            if (v.OnEmployeeSelected != null) await v.OnEmployeeSelected();
+        }
     }
 }
