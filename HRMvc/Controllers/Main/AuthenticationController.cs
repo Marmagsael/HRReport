@@ -431,6 +431,7 @@ public class AuthenticationController : Controller
         {
             LoadLoginViewData();
             ViewData["ErrorMsg"] = "Something went wrong. Please try again.";
+            Console.WriteLine(ex);
             return View("Login", login);
         }
     }

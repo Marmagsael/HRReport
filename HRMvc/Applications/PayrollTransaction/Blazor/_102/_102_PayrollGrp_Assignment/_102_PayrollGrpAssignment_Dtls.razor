@@ -5,6 +5,8 @@
 @using HRMvc.Applications._00GeneralComponents.TelerikComponents.Grid
 
 @inject IODeprecDataAccess _deprec
+@inject IDeprecDataAccess _newDeprec
+@inject I_10_EmpmasDataAccess _pisEmpmas
 
 <div class="w-100 h-100 d-flex flex-column">
     @if (SelectedEmployees.Any())
@@ -303,6 +305,8 @@
 
         if (result == null)
             throw new Exception($"Failed to remove {emp.EmpName}.");
+
+        await SyncNewDeprec(emp.EmpNumber, 0);
     }
 
     public async Task ResetGrid()
@@ -327,7 +331,21 @@
 
         DeprecGrid.Rebind();
     }
-}
 
+    private async Task SyncNewDeprec(string? empNumber, int payrollGrpId)
+    {
+        if (string.IsNullOrWhiteSpace(V.newpisdb) || string.IsNullOrWhiteSpace(empNumber)) return;
+        try
+        {
+            var pis = await _pisEmpmas._02EmpmasInternalByEmpNumber(empNumber, V.newpisdb, V.conn);
+            if (pis?.Id == null) return;
+            await _newDeprec._01FromPayrollGrp(new DeprecModel { EmpmasId = pis.Id, Payrollgrpid = payrollGrpId }, V.newpisdb, V.conn);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"13T/102 new Deprec sync failed ({empNumber}): {ex}");
+        }
+    }
+}
 <style>
 </style>

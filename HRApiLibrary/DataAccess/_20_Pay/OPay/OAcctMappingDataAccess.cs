@@ -124,6 +124,10 @@ public class OAcctMappingDataAccess : IOAcctMappingDataAccess
             if (row.OtRate < 0)                             return $"OT rate for {row.Label} is not valid.";
         }
 
+        var has = await _sql.FetchLegacy<dynamic, dynamic>($"select 1 from {schema}.paymaindtlsetup limit 1", new { }, conn);
+        if (!has.Any())
+            await _sql.ExecuteLegacyCmd($"insert into {schema}.paymaindtlsetup (daywrk) values ('')", new { }, conn);
+
         foreach (var row in changed)
         {
             var field = Fields.First(f => string.Equals(f.Field, row.Field, StringComparison.OrdinalIgnoreCase)).Field;

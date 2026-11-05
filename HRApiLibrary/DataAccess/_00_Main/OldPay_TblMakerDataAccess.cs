@@ -1450,6 +1450,35 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await ExecLegacy(sql, conn);
     }
 
+    // -- Empty chartofacct is filled from pay.chartofacct, empty paymaindtlsetup from test.paymaindtlsetup (when those exist on the server) --
+    public async Task _01OldPayMasterDefaults(string? schema, string? connName = "MySqlConn")
+    {
+        await CopyIfEmpty(schema, "chartofacct", "pay", connName);
+        await CopyIfEmpty(schema, "paymaindtlsetup", "test", connName);
+    }
+
+    private async Task CopyIfEmpty(string? schema, string table, string source, string? conn)
+    {
+        if (string.Equals(schema, source, StringComparison.OrdinalIgnoreCase)) return;
+
+        var found = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.tables where table_schema = @Source and table_name = @Table", new { Source = source, Table = table }, conn);
+        if (found.FirstOrDefault() == 0) return;
+
+        var count = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`{table}`", new { }, conn);
+        if (count.FirstOrDefault() > 0) return;
+
+        var cols = await _sql.FetchData<string, dynamic>(
+            @"select concat('`', t.column_name, '`') from information_schema.columns t
+              join information_schema.columns s on s.table_schema = @Source and s.table_name = @Table and s.column_name = t.column_name
+              where t.table_schema = @Target and t.table_name = @Table order by t.ordinal_position",
+            new { Source = source, Target = schema, Table = table }, conn);
+        if (!cols.Any()) return;
+
+        var list = string.Join(",", cols);
+        await ExecLegacy($"INSERT INTO {schema}.`{table}` ({list}) SELECT {list} FROM {source}.`{table}`", conn);
+    }
+
     // -- Data from the company's old PIS : payrollgrp from client when payrollgrp is empty (13T/502 payroll groups) --
     public async Task _01OldPayDefaults(string? schema, string? pisSchema, string? connName = "MySqlConn")
     {

@@ -1,0 +1,104 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using Telerik.Blazor.Components
+
+<TelerikDialog Visible="@v502.IsEmpStatusOpen" VisibleChanged="@OnVisibleChanged"
+               Title="Employee Status Visible in Payroll"
+               Width="460px">
+    <DialogContent>
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="small text-danger mb-2">@error</div>
+        }
+
+        <div class="small text-muted mb-1">@statuses.Count status(es) from @Uc.OpisDb, loads: @loads</div>
+
+        <div style="height:420px; overflow-y:auto;" class="border rounded p-2">
+            @foreach (var s in statuses)
+            {
+                var a = s;
+                <div class="d-flex align-items-center gap-2 py-1" @onclick="@(() => LogCurrent(a))">
+                    <TelerikCheckBox Value="@a.IsInPayroll"
+                                     ValueChanged="@((bool v) => SetStatus(a, v))" />
+                    <span>@a.Name</span>
+                </div>
+            }
+        </div>
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton ThemeColor="@ThemeConstants.Button.ThemeColor.Primary" OnClick="@Close">Close</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject IOEmpStatusDataAccess _status
+
+@code {
+    [CascadingParameter] public UserClaimsModel Uc   { get; set; } = new();
+    [CascadingParameter] public V502            v502 { get; set; } = new();
+
+    List<EmpStatusModel> statuses = [];
+    string  error = string.Empty;
+    bool    changed;
+    bool    wasOpen;
+    int     loads;
+
+    protected override async Task OnInitializedAsync() => await LoadStatuses();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        bool opening = v502.IsEmpStatusOpen && !wasOpen;
+        wasOpen = v502.IsEmpStatusOpen;
+        if (opening) await LoadStatuses();
+    }
+
+    async Task LoadStatuses()
+    {
+        loads++;
+        error = string.Empty;
+        try
+        {
+            statuses = await _status._02(Uc.OpisDb!, Uc.Conn!);
+            Console.WriteLine($"EmpStatus: {statuses.Count} from {Uc.OpisDb} / {Uc.Conn}");
+            if (statuses.Count == 0) error = $"No employee statuses found in {Uc.OpisDb}.";
+        }
+        catch (Exception ex) { statuses = []; error = "Unable to load the employee statuses."; Console.Error.WriteLine(ex); }
+    }
+
+    async Task SetStatus(EmpStatusModel a, bool value)
+    {
+        bool previous = a.IsInPayroll;
+        a.IsInPayroll = value;
+        error = string.Empty;
+        int flag = value ? 1 : 0;
+        Console.WriteLine($"EmpStatus update: {a.Code} = {flag} ==> {a.Name} to {Uc.OpisDb}");
+        try
+        {
+            await _status._03(a.Code, flag, Uc.OpisDb!, Uc.Conn!);
+            changed = true;
+        }
+        catch (Exception ex)
+        {
+            a.IsInPayroll = previous;
+            error = $"Unable to update {a.Name}.";
+            Console.Error.WriteLine(ex);
+        }
+    }
+
+    void LogCurrent(EmpStatusModel a)
+        => Console.WriteLine($"EmpStatus click {a.Code} {a.Name} current = {a.IsInPayroll}");
+
+    async Task Close()
+    {
+        v502.IsEmpStatusOpen = false;
+        wasOpen = false;
+        if (changed) v502.Msg = "Employee statuses updated. Load the payroll again to apply.";
+        changed = false;
+        if (v502.Changed != null) await v502.Changed();
+    }
+
+    async Task OnVisibleChanged(bool visible)
+    {
+        if (!visible) { await Close(); return; }
+        v502.IsEmpStatusOpen = visible;
+        if (v502.Changed != null) await v502.Changed();
+    }
+}

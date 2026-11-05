@@ -1,4 +1,4 @@
-﻿using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.Models._00_Main;
 using HRApiLibrary.Models._20_Pay;
 
 namespace HRMvc;
@@ -35,6 +35,9 @@ public class V502
 
     //--- Upload Excel (same process as 1100/12002) : rows read from the file, split by what they do to the grid ----------
     public bool                         IsUploadExcelOpen   { get; set; }
+    public bool                         IsVisibleAccountsOpen { get; set; }
+    public bool                         IsEmpStatusOpen       { get; set; }
+    public HashSet<string>?             VisibleAcctNumbers    { get; set; }
     public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToUpdate { get; set; } = [];
     public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToAdd    { get; set; } = [];
     public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToRemove { get; set; } = [];

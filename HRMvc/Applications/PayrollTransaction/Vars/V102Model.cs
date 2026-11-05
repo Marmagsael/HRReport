@@ -10,6 +10,7 @@ public class V102Model
 {
     public string           pisdb           { get; set; } = string.Empty;
     public string           paydb           { get; set; } = string.Empty;
+    public string           newpisdb        { get; set; } = string.Empty;
     public string           conn            { get; set; } = string.Empty;
     public string           Action          { get; set; } = string.Empty;
     public bool             ShowDE          { get; set; } = false;

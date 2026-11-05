@@ -53,6 +53,7 @@ public static class OPayrollCompute
         o ??= new PayCalcOptions();
         var coa = s.Coas.Where(c => c.AcctNumber != null).GroupBy(c => c.AcctNumber!.Trim()).ToDictionary(g => g.Key, g => g.First());
         HashSet<string> Accts(Func<OPayCoa, bool> f) => s.Coas.Where(c => (c.AcctType ?? "").Trim() == "E" && f(c)).Select(c => c.AcctNumber!.Trim()).ToHashSet();
+        
         var sssAccts     = Accts(c => c.WithSss == 1);
         var phicAccts    = Accts(c => c.WithPhic == 1);
         var pagibigAccts = Accts(c => c.WithPagibig == 1);

@@ -1,4 +1,4 @@
-﻿using HRApiLibrary.DataAccess._00_CT;
+using HRApiLibrary.DataAccess._00_CT;
 using HRApiLibrary.DataAccess._00_CT.Interfaces;
 using HRApiLibrary.DataAccess._00_Login;
 using HRApiLibrary.DataAccess._00_Login.Interface;
@@ -256,6 +256,8 @@ public static class ApiExt
         builder.Services.AddScoped<IOSalgradeDataAccess, OSalgradeDataAccess>();
         builder.Services.AddScoped<IOAcctMappingDataAccess, OAcctMappingDataAccess>();
         builder.Services.AddScoped<IORateSetupDataAccess, ORateSetupDataAccess>();
+        builder.Services.AddScoped<IOVisibleAccountDataAccess, OVisibleAccountDataAccess>();
+        builder.Services.AddScoped<IOEmpStatusDataAccess, OEmpStatusDataAccess>();
         builder.Services.AddScoped<IOPayrollDataAccess, OPayrollDataAccess>();
         builder.Services.AddScoped<IODomainaccessDataAccess, ODomainaccessDataAccess>();
         builder.Services.AddScoped<IODomainusrDataAccess, ODomainusrDataAccess>();
