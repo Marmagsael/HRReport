@@ -1,4 +1,4 @@
-using HRApiLibrary.Models._10_Pis.OPis;
+﻿using HRApiLibrary.Models._10_Pis.OPis;
 
 namespace HRMvc.Applications.PisModules.Vars
 {
@@ -7,7 +7,6 @@ namespace HRMvc.Applications.PisModules.Vars
         public string?      OPisdb                          { get; set; } = string.Empty;
         public string?      Maindb                          { get; set; } = string.Empty;
         public string?      Mainpisdb                       { get; set; } = string.Empty;
-        public string?      UserName                        { get; set; } = string.Empty;
         public string?      Conn                            { get; set; } = string.Empty;
 
 
@@ -28,8 +27,6 @@ namespace HRMvc.Applications.PisModules.Vars
         public List<OEmpstatModel?>? OEmpStatuses           { get; set; } = new();
         public OEmpstatModel?       OEmpStatus              { get; set; } = new();
         public string NewStatus                             { get; set; } =  string.Empty;
-        public string? SelectedEmpNumber                    { get; set; }
-        public Func<Task>? OnEmployeeSelected               { get; set; }
 
     }
 }

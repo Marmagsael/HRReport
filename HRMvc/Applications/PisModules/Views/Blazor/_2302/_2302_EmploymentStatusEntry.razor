@@ -1,15 +1,10 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.OPis
-@inject IOEmpmasDataAccess _oempmas
-@inject IOEmpstatMgtDataAccess _empstatMgt
-
-<div class="p-0">
+﻿<div class="p-0">
     <div class="card-header d-flex gap-2">
         <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray" type="button" tabindex="1" @onclick="OpenSearchEmployeeModal">
             Search Employee
         </button>
 
-        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="button" tabindex="6"
-                disabled="@(!CanChange || V.IsLoading)" @onclick="ChangeStatus">
+        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="button" tabindex="6">
             Change Status
         </button>
 
@@ -25,8 +20,6 @@
 
             <div class="col-12 col-md-7 col-lg-3">
                 <TelerikTextBox @bind-Value="@V.OEmpmas.EmpNumber"
-                                MaxLength="5"
-                                OnBlur="LoadEmployee"
                                 Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                 FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                 TabIndex="2">
@@ -102,7 +95,8 @@
                 <TelerikDatePicker @bind-Value="@V.OEmpmas.Separate"
                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                   Enabled="@SeparateEnabled" />
+                                   ReadOnly
+                                   Enabled="false" />
             </div>
         </div>
 
@@ -117,8 +111,8 @@
                 <TelerikTextArea @bind-Value="@V.OEmpmas.Remarks"
                                  Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                  FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                 MaxLength="150"
-                                 Enabled="@SeparateEnabled" />
+                                 ReadOnly
+                                 Enabled="false" />
 
 
             </div>
@@ -151,8 +145,7 @@
                 <TelerikDropDownList Data="@V.OEmpStatuses"
                                      TextField="Name"
                                      ValueField="Code"
-                                     Value="@V.NewStatus"
-                                     ValueChanged="@((string code) => OnStatusChanged(code))"
+                                     @bind-Value="@V.NewStatus"
                                      DefaultText="Select new employee status..."
                                      Filterable="true"
                                      TabIndex="3">
@@ -182,7 +175,7 @@
                 <TelerikTextArea @bind-Value="@V.OEmpmas.Reason"
                                  Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                  FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                 MaxLength="200"
+                                 MaxLength="150"
                                  Width="100%"
                                  TabIndex="4" />
             </div>
@@ -190,9 +183,7 @@
             <div class="ms-md-2 mt-2 mt-md-0 d-flex align-items-center">
                 <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue text-nowrap"
                         type="button"
-                        tabindex="5"
-                        disabled="@(!CanChange || V.IsLoading)"
-                        @onclick="SaveRemarks">
+                        tabindex="5">
                     Save Remarks
                 </button>
             </div>
@@ -208,159 +199,8 @@
     [CascadingParameter]
     public V2302Model V { get; set; } = new();
 
-    [CascadingParameter]
-    public TelerikNotification? NotificationRef { get; set; }
-
     [Parameter]
     public EventCallback ChildAction { get; set; }
-
-    private bool CanChange { get; set; }
-    private bool SeparateEnabled { get; set; }
-
-    protected override void OnInitialized()
-    {
-        V.OnEmployeeSelected = async () =>
-        {
-            V.OEmpmas.EmpNumber = V.SelectedEmpNumber;
-            await LoadEmployee();
-            StateHasChanged();
-        };
-    }
-
-    private void Notify(string msg, string color) => NotificationRef?.Show(msg, color);
-
-    private OEmpstatModel? SelectedStatus => V.OEmpStatuses?.FirstOrDefault(x => x?.Code == V.NewStatus);
-
-    private async Task LoadEmployee()
-    {
-        var lcEmpNumber = V.OEmpmas?.EmpNumber?.Trim();
-        V.OEmpmas = new() { EmpNumber = lcEmpNumber };
-        V.NewStatus = string.Empty;
-        SeparateEnabled = false;
-        CanChange = false;
-        if (string.IsNullOrEmpty(lcEmpNumber)) return;
-
-        try
-        {
-            var emp = (await _oempmas._02(lcEmpNumber, V.OPisdb, V.Conn))?.FirstOrDefault();
-            if (emp == null) return;
-
-            CanChange = true;
-            V.OEmpmas = emp;
-            V.OEmpmas.EmpNumber = lcEmpNumber;
-
-            V.OEmpmas.Fullname = string.IsNullOrWhiteSpace(emp.EmpLastNm)
-                ? string.Empty
-                : $"{emp.EmpLastNm.Trim().ToUpper()}, {emp.EmpFirstNm?.Trim()} {emp.EmpMidNm?.Trim().FirstOrDefault()}".TrimEnd();
-
-            V.OEmpmas.SecLicense = emp.SecLicense?.Trim() ?? string.Empty;
-            if (emp.Licexpire.HasValue && emp.Licexpire.Value.Year < 1900) V.OEmpmas.Licexpire = null;
-            if (emp.Separate.HasValue && emp.Separate.Value.Year < 1900) V.OEmpmas.Separate = null;
-
-            V.OEmpmas.ClName = emp.MovMode?.Trim() == "A"
-                ? $"[{emp.Client_?.Trim()}] {emp.ClName?.Trim()}"
-                : string.Empty;
-
-            V.OEmpmas.Reason = await _empstatMgt._02Remarks(lcEmpNumber, V.OPisdb, V.Conn) ?? string.Empty;
-
-        }
-        catch
-        {
-            Notify("Unable to load employee. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-    }
-
-    private void OnStatusChanged(string code)
-    {
-        V.NewStatus = code;
-        SeparateEnabled = SelectedStatus?.IsResigned?.Trim() == "1";
-    }
-
-    private async Task ChangeStatus()
-    {
-        var mStatFrom = V.OEmpmas.EmpStatus;
-        var mStatTo = SelectedStatus?.Name?.Trim();
-        const string mModule = "Employee Status Module";
-
-        if (string.IsNullOrEmpty(V.OEmpmas.Fullname))
-        {
-            Notify("Invalid employee", ThemeConstants.Notification.ThemeColor.Warning);
-            return;
-        }
-        if (string.IsNullOrEmpty(V.NewStatus))
-        {
-            Notify("Please select CHANGE TO status to proceed!", ThemeConstants.Notification.ThemeColor.Warning);
-            return;
-        }
-
-        var lcEmpNumber = V.OEmpmas.EmpNumber?.Trim();
-        var lcDate = V.OEmpmas.Separate;
-        var mMrkResigned = SelectedStatus?.IsResigned?.Trim();
-
-        if (!lcDate.HasValue && mMrkResigned == "1")
-        {
-            Notify("Date is empty.", ThemeConstants.Notification.ThemeColor.Warning);
-            return;
-        }
-
-        var mOldStat = V.OEmpmas.EmpStat_?.Trim() ?? string.Empty;
-        var mNewStatus = SelectedStatus?.Code?.Trim() ?? string.Empty;
-        if (mOldStat == mNewStatus)
-        {
-            Notify("Status already set to " + mStatFrom, ThemeConstants.Notification.ThemeColor.Warning);
-            return;
-        }
-
-        var hadSeparate = V.OEmpmas.Separate.HasValue && V.OEmpmas.Separate.Value.Year >= 1900;
-        var empNumber = V.OEmpmas.EmpNumber;
-
-        V.IsLoading = true;
-        try
-        {
-            var existing = (await _oempmas._02(lcEmpNumber, V.OPisdb, V.Conn))?.FirstOrDefault();
-            hadSeparate = existing?.Separate.HasValue == true && existing.Separate.Value.Year >= 1900;
-            var setSeparate = !hadSeparate && mMrkResigned == "1";
-
-            await _empstatMgt._03ChangeStatus(lcEmpNumber, mNewStatus, lcDate, setSeparate, mMrkResigned == "1", V.OEmpmas.Remarks?.Trim(), V.OPisdb, V.Conn);
-
-            await LoadEmployee();
-
-            if ((V.OEmpmas.EmpStat_?.Trim() ?? string.Empty) != mNewStatus)
-            {
-                Notify("Unable to set employee status to " + mStatTo + "!", ThemeConstants.Notification.ThemeColor.Error);
-            }
-            else
-            {
-                string Fit(string? x) => x == null ? string.Empty : (x.Length > 15 ? x.Substring(0, 15) : x);
-                await _empstatMgt._01StatusMovement(lcEmpNumber, V.UserName?.Trim(), Fit(mStatFrom), Fit(mStatTo), mModule, V.OPisdb, V.Conn);
-                Notify("Employment Status Changed", ThemeConstants.Notification.ThemeColor.Success);
-            }
-        }
-        catch
-        {
-            Notify("Unable to change employee status. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-        V.IsLoading = false;
-    }
-
-    private async Task SaveRemarks()
-    {
-        var mEmpNumber = V.OEmpmas.EmpNumber?.Trim();
-        var mRemarks = (V.OEmpmas.Reason ?? "-").Trim();
-        if (mRemarks == string.Empty) mRemarks = "-";
-
-        V.IsLoading = true;
-        try
-        {
-            await _empstatMgt._01UpsertRemarks(mEmpNumber, mRemarks, V.OPisdb, V.Conn);
-            Notify("Status remarks saved.", ThemeConstants.Notification.ThemeColor.Success);
-        }
-        catch
-        {
-            Notify("Unable to save status remarks. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-        V.IsLoading = false;
-    }
 
 
     private async Task OpenSearchEmployeeModal()

@@ -1,5 +1,4 @@
-@using HRApiLibrary.DataAccess._10_Pis.OPis
-<TelerikGrid Data="@V.OEmployees"
+﻿<TelerikGrid Data="@V.OEmployees"
              TItem="OEmpmasModel"
              Sortable="true"
              Navigable="true"
@@ -27,8 +26,7 @@
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="button"
                     tabindex="2"
-                    disabled="@V.IsLoading"
-                    @onclick="SearchEmployees">
+                    disabled="@V.IsLoading">
 
                 Search Employee
 
@@ -90,10 +88,9 @@
                     <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
                             type="button"
                             tabindex="3"
-                            disabled="@V.IsLoading"
-                            @onclick="() => SelectEmployee(employee)">
+                            disabled="@V.IsLoading">
 
-                        Select
+                        Add
 
                     </button>
 
@@ -136,32 +133,5 @@
     private string EmployeeName { get; set; } = string.Empty;
 
     private TelerikGrid<OEmpmasModel>? EmpmasGridRef;
-
-    [Inject]
-    private IOEmpmasDataAccess _oempmas { get; set; } = default!;
-
-    private async Task SearchEmployees()
-    {
-        if (string.IsNullOrWhiteSpace(EmployeeName)) return;
-
-        V.IsLoading = true;
-        try
-        {
-            V.OEmployees = (await _oempmas._02ByLNameAndFNamesWithStatus(EmployeeName, V.OPisdb, V.Conn)) ?? new();
-        }
-        catch
-        {
-            NotificationRef?.Show("Unable to search employees. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-        }
-        V.IsLoading = false;
-    }
-
-    private async Task SelectEmployee(OEmpmasModel employee)
-    {
-        V.SelectedEmpNumber = employee.EmpNumber;
-        V.Action = "select";
-        V.ShowSearchModal = false;
-        await ChildAction.InvokeAsync();
-    }
 
 }
