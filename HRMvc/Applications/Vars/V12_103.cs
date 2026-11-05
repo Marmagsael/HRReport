@@ -48,4 +48,7 @@ public class V12_103
     public List<EmpmasTrainingModel?>?              Trainings           { get; set; } = [];
     public List<EmpmasClearancePhModel?>?           Clearances          { get; set; } = [];
 
+
+    // Image --------------------------
+    public string?                                  ImagePreview        { get; set; } = string.Empty;
 }

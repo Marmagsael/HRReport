@@ -1,5 +1,5 @@
 @using HRApiLibrary.Models._10_Pis.OPis
-
+@using HRApiLibrary.DataAccess._10_Pis.Interface
 @{
     var empmas = OEmpmass.FirstOrDefault();
     if (OEmpmass.Count < 1) empmas = new OEmpmasModel(); 
@@ -32,13 +32,33 @@
     }
 }
 <div class="d-flex gap-1 h-150p">
-    <div class="br-6">
-        <img src="images/employee1.png"
-             alt="Employee Image"
-             width="175"
-             height="150" />
+       @* --- Employee Picture --- *@
+    <div class="d-flex align-items-center justify-content-center"
+         style="width:180px;">
+
+        <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
+             style="height:160px; width:160px;">
+
+            @if (!string.IsNullOrWhiteSpace(V12_103.ImagePreview))
+            {
+                <img src="@V12_103.ImagePreview"
+                     class="img-fluid w-100 h-100"
+                     style="object-fit:cover;"
+                     alt="Employee Image" />
+            }
+            else
+            {
+                <img src="images/employee1.png"
+                     alt="Employee Image"
+                     width="175"
+                     height="150" />
+            }
+
+        </div>
+
     </div>
 
+   
     <div class="mt-4 w-250p p-2 ">
         <div class="mt-2 ">
             <h5>@empmas.EmpFirstNm @empmas.EmpMidNm @empmas.EmpLastNm</h5>
@@ -101,9 +121,11 @@
 
 
 
+
 @code {
 
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
     [Parameter] public List<OEmpmasModel?>?     OEmpmass   { get; set; } = [];
+    [Parameter] public V12_103? V12_103 { get; set; } = new();
 
 }

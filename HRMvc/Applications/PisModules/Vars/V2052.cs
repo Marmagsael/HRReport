@@ -56,14 +56,20 @@ public class V2052
 
 
     public string?                       SearchValue                { get; set; } = string.Empty;
+    public int?                          EmpmasId                   { get; set; } = 0;
 
 
 
+    //Image ----------------------
+    public byte[]?                       ImageBytes                  { get; set; }
+    public string?                       ImagePreview                { get; set; } = string.Empty;
+    public string?                       ImageFileName               { get; set; } = string.Empty;
+    //--------------------------
 
 
-    
     public OEmpmasModel?                   Empmas               { get; set; } = new();  
     public EmpmasAddressModel              Empmasaddress        { get; set; } = new();
+    public EmpmaspicModel                  EmpmasPic            { get; set; } = new();
     public DeprecModel?                    Deprec               { get; set; } = new();
     public OEducateModel?                  Education            { get; set; } = new();
     public OSeclicModel?                   SecLicense           { get; set; } = new();

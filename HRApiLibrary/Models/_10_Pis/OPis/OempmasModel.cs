@@ -241,4 +241,7 @@ public class OEmpmasModel
     public TimeOnly?    MovSaTime           { get; set; } 
     public string?      ControlNumber       { get; set; } = string.Empty;
 
+   
+
+
 }

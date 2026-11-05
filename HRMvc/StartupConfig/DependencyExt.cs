@@ -1,22 +1,29 @@
-﻿using HRApiLibrary.DataAccess._00_Main;
+﻿using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Drive.v3;
+using Google.Apis.Services;
+using Google.Apis.Util.Store;
+using HRApiLibrary.DataAccess._00_Main;
+using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._10_Pis;
+using HRApiLibrary.DataAccess._10_Pis.Interface;
+using HRApiLibrary.DataAccess._10_Pis.OPis;
+using HRApiLibrary.DataAccess._20_Pay;
+using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils;
+using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRMvc.DataAccess.Main;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 //using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.AspNetCore.WebUtilities;
+
 //using Syncfusion.Blazor;
 //using Syncfusion.Blazor.Popups;
 using Radzen;
-using HRApiLibrary.DataAccess._00_Main.Interface;
-using HRApiLibrary.DataAccess._10_Pis.Interface;
-using HRApiLibrary.DataAccess._90_Utils.Interface;
-using HRApiLibrary.DataAccess._20_Pay;
-using HRApiLibrary.DataAccess._20_Pay.Interface;
-
-using Microsoft.AspNetCore.DataProtection;
 
 namespace HRMvc.StartupConfig;
 
@@ -160,6 +167,9 @@ public static class DependencyExt
         //}).AddMicrosoftIdentityUI();
     }
 
+ 
+
+
     public static void AddCors(this WebApplicationBuilder builder)
     {
         builder.Services.AddCors(p => p.AddPolicy("corspolicy",
@@ -174,5 +184,14 @@ public static class DependencyExt
         {
             opt.BaseAddress = new Uri(builder.Configuration.GetValue<string>("ApiAddress"));
         });
+    }
+
+
+
+    // GOOGLE DRIVE OAUTH REGISTRATION
+    public static void AddGoogleDriveOAuth(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddSingleton<GoogleDriveOAuthService>();
+        builder.Services.AddScoped<IGoogleDriveServiceProvider, GoogleDriveServiceProvider>();
     }
 }

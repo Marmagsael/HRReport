@@ -22,6 +22,8 @@ builder.Services.AddHRMvcScope();
 builder.AddApiInjectionServices();
 builder.AddApiServices();
 
+builder.AddGoogleDriveOAuth();
+
 var app = builder.Build();
 await app.RunMigrations();      // -- table makers (main, MainPis), when appsettings "Migrations" is "true"; company schemas run after login --
 PayClaimsHelper.Init(app.Configuration);

@@ -242,6 +242,8 @@ public static class ApiExt
         builder.Services.AddScoped<IOSeclicDataAccess, OSeclicDataAccess>();
         builder.Services.AddScoped<IOLicverstatusDataAccess, OLicverstatusDataAccess>();
         builder.Services.AddScoped<IOSecliclogsDataAccess, OSecliclogsDataAccess>();
+        builder.Services.AddScoped<IEmpmaspicDataAccess, EmpmaspicDataAccess>();
+        builder.Services.AddScoped<IGoogleDriveDataAccess, GoogleDriveDataAccess>();
 
 
         //-- Old Pay -----------------------------------------------------------------------

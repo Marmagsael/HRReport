@@ -1,6 +1,7 @@
 using DocumentFormat.OpenXml.EMMA;
 using DocumentFormat.OpenXml.Wordprocessing;
 using FastReport;
+using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.Models._00_Main;
@@ -12,6 +13,8 @@ using HRMvc.Views.BlazorPages._01MyProfile;
 using HRMvc.Views.BlazorPages._01MyProfile.EmpmasEmploymentDtl;
 using Microsoft.VisualBasic;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
+using Radzen.Documents.Markdown;
+
 
 namespace HRMvc.StartupConfig.Library;
 
@@ -38,8 +41,10 @@ public class L12_103
 
 
     private readonly IEmpmasInternalDataAccess _iempmas;
+    private readonly IGoogleDriveDataAccess _googledrive;
+    private readonly IEmpmaspicDataAccess _emppic;
 
-    
+
 
 
     public L12_103(IOEmpmasDataAccess OEmpmas, IOCivstatDataAccess ocivstat, IOGenderDataAccess ogender, 
@@ -72,11 +77,14 @@ public class L12_103
 
     public async Task<V12_103> V12_103(UserClaimsModel uc)
     {
+
+      
         V12_103 v12_103 = new();
 
-        var schema  = uc.OpisDb;
-        var conn    = uc.Conn;
-        var empno   = uc.OempNumber;
+        var schema      = uc.OpisDb;
+        var newschema   = uc.SchemaUserPis;
+        var conn        = uc.Conn;
+        var empno       = uc.OempNumber;
 
         v12_103.OCivstats = await _ocivstat._02(schema, conn);
         v12_103.OGenders = await _ogender._02(schema, conn);
@@ -102,7 +110,7 @@ public class L12_103
         v12_103.OInsurances = await _oinsurance._02List(empno, schema, conn);
         v12_103.OSeclic     = await _otrain._02Sec(empno, schema, conn);
 
-      
+
 
 
         return v12_103;
@@ -118,4 +126,6 @@ public class L12_103
 
         return age;
     }
+
+ 
 }

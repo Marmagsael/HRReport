@@ -2,7 +2,8 @@
 @using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_00_Modal
-
+@using HRApiLibrary.DataAccess._10_Pis;
+@using HRApiLibrary.DataAccess._10_Pis.Interface;
 
 <TelerikRootComponent>
     <div class="position-relative">
@@ -87,7 +88,7 @@
 </TelerikRootComponent>
 
 
-@inject IOEmpmasDataAccess _empmas
+@inject IOEmpmasDataAccess _oempmas
 @inject IOEmpstatDataAccess _oempstat
 @inject IOEmpmas_visible_statusDataAccess _oselectedEmpstat
 
@@ -98,20 +99,24 @@
 @inject IOProcodeDataAccess _opro
 @inject IOPositionDataAccess _oposition
 
-@inject IOEmployDataAccess _employemt
-@inject IOEducateDataAccess _education
-@inject IOParentDataAccess _parent
-@inject IOChildrenDataAccess _children
-@inject IOEmergencDataAccess _emergency;
-@inject IOFamilyDataAccess _family
-@inject IOTrainDataAccess _training
-@inject IOReferDataAccess _charref
-@inject IOInsuranceaccidentDataAccess _insuranceacc
-@inject IOLicverstatusDataAccess _licverstatus
-@inject IOSeclicDataAccess _seclic
-@inject IOSecliclogsDataAccess _secliclog
+@inject IOEmployDataAccess _oemployemt
+@inject IOEducateDataAccess _oeducation
+@inject IOParentDataAccess _oparent
+@inject IOChildrenDataAccess _ochildren
+@inject IOEmergencDataAccess _oemergency
+@inject IOFamilyDataAccess _ofamily
+@inject IOTrainDataAccess _otraining
+@inject IOReferDataAccess _ocharref
+@inject IOInsuranceaccidentDataAccess _oinsuranceacc
+@inject IOLicverstatusDataAccess _olicverstatus
+@inject IOSeclicDataAccess _oseclic
+@inject IOSecliclogsDataAccess _osecliclog
 
 @inject IOPisReportDataAccess _pisRep
+@inject IEmpmaspicDataAccess _emppic
+@inject IEmpmasInternalDataAccess _empmas
+@inject IGoogleDriveDataAccess _googledrive
+
 
 @code {
     [Parameter]
@@ -126,14 +131,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        v.IsLoading = true;
+
 
         if (Uc.Conn == null || Uc.OpisDb == null || Uc.OpayDb == null)
         {
             NotificationRef.Show("Something went wrong while loading the employee page. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            v.IsLoading = false;
             return;
         }
 
-        v.IsLoading = true;
 
         try
         {
@@ -183,8 +190,17 @@
         if (v.Action == "GenerateReport")       await GenerateReport();
         if (v.Action == "ShowDataEntry")        await ShowDataEntry();
 
+        if (v.Action == "EndLoading")           await EndLoading();
+
         v.Action = "";
     }
+
+
+    private async Task EndLoading()
+    {
+        v.IsLoading = false;
+    }
+
 
 
 
@@ -209,7 +225,7 @@
                 statuses.Add(s.Code);
             }
 
-            var res = await _empmas._02By1stLetterRangeByStatus("A", "J", statuses, Uc.OpisDb, Uc.Conn);
+            var res = await _oempmas._02By1stLetterRangeByStatus("A", "J", statuses, Uc.OpisDb, Uc.Conn);
             v.EmpmasList = res;
 
             var employeeExistInList = v.EmpmasList.Any(e => e.EmpNumber == v.SelectedEmpnumber);
@@ -250,6 +266,7 @@
 
         v.IsLoading = true;
 
+        v.EmpmasId          = 0;
         v.Empmas            = new();
         v.Employments       = [];
         v.Educations        = [];
@@ -261,13 +278,16 @@
         v.CharRefs          = [];
         v.InsuranceAccident = new();
         v.SecLicense        = new();
-        v.PrevSecLicense = new();
+        v.PrevSecLicense    = new();
         v.SecLicenseLogs    = [];
-
+        v.EmpmasPic         = new();
+        v.ImagePreview      = null;
+        v.ImageBytes        = null;
+        v.ImageFileName     = null;
 
         try
         {
-            var res = await _empmas._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.SchemaMain, Uc.SchemaUserPis, Uc.Conn);
+            var res = await _oempmas._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.SchemaMain, Uc.SchemaUserPis, Uc.Conn);
             if (res.Any())
             {
                 v.Empmas = res.FirstOrDefault();
@@ -283,6 +303,8 @@
                 await LoadCharRefs();
                 await LoadInsuranceAccident();
                 await LoadSecLicense();
+                await GetEmpmasId();
+                await LoadEmpmasPic();
 
                 SplitHeight();
                 GetAddressArea();
@@ -301,7 +323,7 @@
         }
         finally
         {
-            await Task.Delay(1000);
+            // await Task.Delay(1500);
             v.IsLoading = false;
         }
 
@@ -363,6 +385,8 @@
         }
     }
 
+
+
     private async Task LoadEmployeeStatus()
     {
 
@@ -397,7 +421,7 @@
 
         try
         {
-            v.InsuranceAccident = await _insuranceacc._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.InsuranceAccident = await _oinsuranceacc._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
         }
         catch (Exception ex)
         {
@@ -411,7 +435,7 @@
 
         try
         {
-            v.SecLicense = await _seclic._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.SecLicense = await _oseclic._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
             v.PrevSecLicense = new OSeclicModel
             {
@@ -431,7 +455,6 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"TEST {ex}");
             NotificationRef.Show("Unable to load security license records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
@@ -441,7 +464,7 @@
 
         try
         {
-            v.Parents = await _parent._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.Parents = await _oparent._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -456,7 +479,7 @@
 
         try
         {
-            v.Children = await _children._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.Children = await _ochildren._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -472,7 +495,7 @@
 
         try
         {
-            v.EmergencyContacts = await _emergency._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.EmergencyContacts = await _oemergency._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -486,7 +509,7 @@
     {
         try
         {
-            v.Familys = await _family._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.Familys = await _ofamily._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -501,7 +524,7 @@
 
         try
         {
-            v.Trainings = await _training._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.Trainings = await _otraining._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -515,7 +538,7 @@
     {
         try
         {
-            v.CharRefs = await _charref._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.CharRefs = await _ocharref._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -529,7 +552,7 @@
     {
         try
         {
-            v.Employments = await _employemt._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            v.Employments = await _oemployemt._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
         }
         catch (Exception ex)
@@ -543,7 +566,7 @@
     {
         try
         {
-            var res = await _education._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            var res = await _oeducation._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
 
             var codes = new[] { "E", "H", "C", "V", "P" };
             foreach (var code in codes)
@@ -568,7 +591,7 @@
 
         try
         {
-            var res             = await _secliclog._02s(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
+            var res             = await _osecliclog._02s(v.SelectedEmpnumber, Uc.OpisDb, Uc.Conn) ?? new();
             v.SecLicenseLogs    = res;
             v.ModalCaption      = "License Verification Logs";
             v.ShowLicenseVerficationLogsModal = true;
@@ -585,7 +608,73 @@
         }
 
     }
+    private async Task GetEmpmasId()
+    {
+        try
+        {
+            var res = await _empmas._02(v.SelectedEmpnumber, Uc.SchemaUserPis, Uc.Conn) ?? new();
+            if (res.Id > 0)
+            {
+                v.EmpmasId = res.Id;
+            }
 
+
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load employee Id. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+
+        }
+    }
+
+    private async Task LoadEmpmasPic()
+    {
+        if (v.EmpmasId == 0) return;
+
+        try
+        {
+            var res = await _emppic._02ByEmpmasId(v.EmpmasId, "Profile", Uc.SchemaUserPis, Uc.Conn) ?? new();
+
+            if(res.Id > 0)
+            {
+                v.EmpmasPic = res;
+                await LoadEmployeeImage(res.PicAddress);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to load employee image. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+     private async Task LoadEmployeeImage(string imgId)
+    {
+
+
+        try
+        {
+            v.ImagePreview = null;
+            string imageId = imgId;
+
+            if (string.IsNullOrWhiteSpace(imageId))  return;
+
+            var result = await _googledrive._02GetEmployeeImage(imageId);
+            if (result == null)  return;
+
+            v.ImageBytes    = result.Value.Content;
+            v.ImagePreview  = $"data:{result.Value.MimeType};base64," + Convert.ToBase64String(v.ImageBytes);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Unable to retrieve employee image: {ex.Message}");
+        }
+    }
 
 
     // --- DROP DOWN DATA ------------------------------------------------------------
@@ -692,7 +781,7 @@
     {
         try
         {
-            var res = await _licverstatus._02s(Uc.OpisDb, Uc.Conn) ?? new();
+            var res = await _olicverstatus._02s(Uc.OpisDb, Uc.Conn) ?? new();
             v.LicverStatuses = res;
         }
         catch (Exception ex)

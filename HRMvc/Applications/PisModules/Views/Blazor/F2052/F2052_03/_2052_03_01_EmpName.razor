@@ -5,11 +5,19 @@
 @using HRApiLibrary.Models._90_Utils
 @using Microsoft.AspNetCore.Components.Forms
 @using System.IO
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+@using HRApiLibrary.DataAccess._10_Pis
 
-@inject NotificationService NotificationService
+
+
 @inject I_00MainDA _main
 @inject IEmpmovementDataAccess _empMovement
 @inject IMsdsDataAccess _msds
+@inject IOEmpmasDataAccess _oempmas
+@inject IEmpmasInternalDataAccess _empmas
+@inject IEmpmaspicDataAccess _emppic
+@inject IGoogleDriveDataAccess _googledrive
+
 
 <div class="w-100 p-3 bg-lightgray">
 
@@ -47,8 +55,6 @@
         </div>
     }
 
-
-
     <div class="collapse show" id="empmasFormContent">
 
         <div class="d-flex gap-5">
@@ -60,9 +66,9 @@
                 <div class="rounded-3 border bg-light d-flex align-items-center justify-content-center overflow-hidden"
                      style="height:160px; width:160px;">
 
-                    @if (!string.IsNullOrWhiteSpace(ImagePreview))
+                    @if (!string.IsNullOrWhiteSpace(V.ImagePreview))
                     {
-                        <img src="@ImagePreview"
+                        <img src="@V.ImagePreview"
                              class="img-fluid w-100 h-100"
                              style="object-fit:cover;"
                              alt="Employee image" />
@@ -136,25 +142,30 @@
 
                             <span class="msds-link small" role="button" @onclick="EditEmpmas">Edit</span>
 
-                            @* --- Image Selection --- *@
-                            <label class="msds-link small mb-0"
-                                   style="cursor:pointer;">
+                            @if (string.IsNullOrWhiteSpace(V.ImagePreview))
+                            {
+                                @* --- Image Selection --- *@
+                                <label class="msds-link small mb-0"
+                                       style="cursor:pointer;">
 
-                                Upload image
+                                    Upload image
 
-                                <InputFile OnChange="@OnImageSelected"
-                                           accept=".jpg,.jpeg,.png,.webp"
-                                           class="d-none" />
+                                    <InputFile OnChange="@OnImageSelected"
+                                               accept=".jpg,.jpeg,.png,.webp"
+                                               class="d-none" />
 
-                            </label>
+                                </label>
+                            }
+                           
 
                             @* --- Remove Image --- *@
-                            @if (!string.IsNullOrWhiteSpace(ImagePreview))
+                            @if (!string.IsNullOrWhiteSpace(V.ImagePreview))
                             {
-                                <span class="text-danger small"
+
+                                <span class="text-danger small link-underline-danger"
                                       role="button"
                                       style="cursor:pointer;"
-                                      @onclick="RemoveImage">
+                                      @onclick="_04DeleteEmployeeImage">
 
                                     Remove image
 
@@ -182,6 +193,8 @@
 
 </div>
 
+
+
 @code {
 
     bool popup = true;
@@ -192,30 +205,27 @@
     [CascadingParameter]
     public V2052 V { get; set; } = new();
 
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
+
     [Parameter]
     public EventCallback ChildAction { get; set; }
+
+
 
     List<UsersModel?>? users = new();
 
     string? errorEmail = "";
 
 
-
-    // Selected image
-    private byte[]? ImageBytes;
-
-    // Image preview
-    private string? ImagePreview;
-
-    // Selected image filename
-    private string? ImageFileName;
-
     // Validation message
     private string? ErrorMessage;
 
     // Image size limits
     private const long MaxFileSize = 2 * 1024 * 1024; // 2 MB
-    private const long MinFileSize = 1024;            // 1 KB
+    // private const long MinFileSize = 1024;            1 KB
 
     // Allowed image extensions
     private readonly List<string> AllowedExtensions = new()
@@ -225,6 +235,9 @@
         ".png",
         ".webp"
     };
+
+
+
 
 
     async void EditEmpmas()
@@ -240,57 +253,47 @@
     }
 
 
-
-
-    // Handle selected image
     private async Task OnImageSelected(InputFileChangeEventArgs args)
     {
-        // Reset previous selection
-        ImagePreview = null;
-        ImageBytes = null;
-        ImageFileName = null;
-        ErrorMessage = null;
+
+        V.ImagePreview  = null;
+        V.ImageBytes    = null;
+        V.ImageFileName = null;
+
+        if (V.EmpmasId == 0)
+        {
+            NotificationRef.Show("To proceed with image uploading, please edit the employee information and click Save.", ThemeConstants.Notification.ThemeColor.Info);
+            return;
+        }
 
         var file = args.File;
 
-        // 1. Validate file extension
         var extension = Path.GetExtension(file.Name).ToLowerInvariant();
 
         if (!AllowedExtensions.Contains(extension))
         {
-            ErrorMessage = "Only JPG, JPEG, PNG, and WEBP images are allowed.";
+            NotificationRef.Show("Only JPG, JPEG, PNG, and WEBP images are allowed.", ThemeConstants.Notification.ThemeColor.Warning);
             return;
         }
 
-        // 2. Validate minimum file size
-        if (file.Size < MinFileSize)
-        {
-            ErrorMessage = "Image must be at least 1 KB.";
-            return;
-        }
+       
 
-        // 3. Validate maximum file size
         if (file.Size > MaxFileSize)
         {
-            ErrorMessage = "Image must not exceed 2 MB.";
+            NotificationRef.Show("Image must not exceed 2 MB.", ThemeConstants.Notification.ThemeColor.Warning);
             return;
         }
 
         try
         {
-            // 4. Read image into memory
             using var memoryStream = new MemoryStream();
 
-            await file.OpenReadStream(MaxFileSize)
-                      .CopyToAsync(memoryStream);
+            await file.OpenReadStream(MaxFileSize).CopyToAsync(memoryStream);
 
-            ImageBytes = memoryStream.ToArray();
+            V.ImageBytes        = memoryStream.ToArray();
+            V.ImageFileName     = Path.GetFileName(file.Name);
 
-            // 5. Store filename
-            ImageFileName = file.Name;
-
-            // 6. Determine image content type
-            var contentType = extension switch
+            var contentType     = extension switch
             {
                 ".jpg" or ".jpeg" => "image/jpeg",
                 ".png" => "image/png",
@@ -298,29 +301,128 @@
                 _ => "application/octet-stream"
             };
 
-            // 7. Generate Base64 preview
-            ImagePreview = $"data:{contentType};base64,{Convert.ToBase64String(ImageBytes)}";
+            V.ImagePreview = $"data:{contentType};base64,{Convert.ToBase64String(V.ImageBytes)}";
 
+
+            if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+            {
+                await _03UploadImage(contentType);
+            }
         }
         catch (Exception ex)
         {
-            ImageBytes = null;
-            ImagePreview = null;
-            ImageFileName = null;
+            V.ImageBytes        = null;
+            V.ImagePreview      = null;
+            V.ImageFileName     = null;
 
-            ErrorMessage = $"Unable to preview image: {ex.Message}";
+            NotificationRef.Show("Unable to process image.", ThemeConstants.Notification.ThemeColor.Warning);
         }
     }
 
-    // Remove selected image
-    private void RemoveImage()
+    private async Task _03UploadImage(string contentType)
     {
-        ImagePreview = null;
-        ImageBytes = null;
-        ImageFileName = null;
-        ErrorMessage = null;
+
+
+        if (string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+        {
+            return;
+        }
+
+
+        if (V.ImageBytes == null || string.IsNullOrWhiteSpace(V.ImageFileName))
+            return;
+
+        try
+        {
+            V.IsLoading = true;
+            await ChildAction.InvokeAsync();
+
+            var fileId = await _googledrive._03UploadEmployeeImage(V.Empmas.EmpNumber, V.ImageBytes, V.ImageFileName, contentType);
+
+            if (!string.IsNullOrWhiteSpace(fileId))
+            {
+                var empmasPicDtls = new EmpmaspicModel()
+                {
+                    EmpmasId        = V.EmpmasId,         
+                    PicName         = V.ImageFileName?.Length > 45 ? V.ImageFileName.Substring(0, 45) : V.ImageFileName,
+                    PicAddress      = fileId,               
+                    Category        = "Profile",
+                    Validity        = null,
+                    Mode            = 0,                  
+                    Created         = DateTime.Now,
+                    UploadedBy      = Uc.OempNumber
+                };
+
+
+                if(V.EmpmasPic.Id == 0)
+                {
+                    //Insert
+                    V.EmpmasPic =  await _emppic._01(empmasPicDtls, Uc.SchemaUserPis, Uc.Conn);
+                }
+                else
+                {
+                    //Update
+                    V.EmpmasPic = await _emppic._03(V.EmpmasPic.Id, empmasPicDtls, Uc.SchemaUserPis, Uc.Conn);
+                }
+
+                NotificationRef.Show("Image uploaded successfully.", ThemeConstants.Notification.ThemeColor.Success);
+
+            }
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            NotificationRef.Show("Image upload failed.", ThemeConstants.Notification.ThemeColor.Error);
+
+
+            V.ImageBytes = null;
+            V.ImagePreview = null;
+            V.ImageFileName = null;
+        }
+        finally
+        {
+            V.Action = "EndLoading";
+            await ChildAction.InvokeAsync();
+        }
     }
 
+
+
+
+    private async Task _04DeleteEmployeeImage()
+    {
+
+        @if (string.IsNullOrWhiteSpace(V.ImagePreview)) return;
+        try
+
+        {
+             V.IsLoading = true;
+             await ChildAction.InvokeAsync();
+
+
+            await _googledrive._04DeleteEmployeeImage(V.EmpmasPic.PicAddress);
+            await _emppic._04(V.EmpmasPic.Id, Uc.SchemaUserPis, Uc.Conn);
+
+            // Clear image preview
+            V.ImagePreview      = null;
+            V.ImageBytes        = null;
+            V.ImageFileName     = null;
+            V.EmpmasPic         = new();
+
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show("Unable to delete image.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+             V.Action = "EndLoading";
+             await ChildAction.InvokeAsync();
+        }
+
+    }
 }
 
 <style>

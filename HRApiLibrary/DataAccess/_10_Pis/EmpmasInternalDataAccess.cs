@@ -183,6 +183,7 @@ public class EmpmasInternalDataAccess : IEmpmasInternalDataAccess
     
     public async Task<EmpmasInternalModel?> _04(int? id, string? schema, string? conn)
     {
+
         string? sql = $@"Delete from {schema}.Empmas where Id = @Id;
                         select  * from {schema}.Empmas x where x.Id = @Id ; ";
         var data = await _sql.FetchData<EmpmasInternalModel?, dynamic>(sql, new { Id = id }, conn);

@@ -3,12 +3,13 @@
 @using HRMvc.Applications._12EmployeeProfile.Blazor
 @using HRMvc.Applications._12EmployeeProfile.Blazor._12_103
 @using HRMvc.StartupConfig.Library
+@using HRApiLibrary.DataAccess._10_Pis.Interface
 
 
 <div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper">
 
     <div class="card-header">
-        <_12_102_PersonalInfo OEmpmass="V12_103.OEmpmass"></_12_102_PersonalInfo>
+        <_12_102_PersonalInfo UserClaims="UserClaims" OEmpmass="V12_103.OEmpmass" V12_103="V12_103"></_12_102_PersonalInfo>
     </div>
     <_12_103Shortcuts Ec="@Ec"/>
 
@@ -108,10 +109,15 @@
 </div>
 
 @inject L12_103 L103
+@inject IEmpmaspicDataAccess _emppic
+@inject IEmpmasInternalDataAccess _iempmas
+@inject IGoogleDriveDataAccess _googledrive
 
 @code {
     [Parameter] public UserClaimsModel?             UserClaims  { get; set; }
-    V12_103?                     V12_103     { get; set; }   = new();
+    V12_103?                                        V12_103     = new();
+
+    private int? empmasId = 0;
 
     int? lnk = 1;
 
@@ -124,8 +130,94 @@
     protected async override Task OnInitializedAsync()
     {
         V12_103 = await L103.V12_103(UserClaims);
+        if (V12_103.OEmpmass.Any() && string.IsNullOrWhiteSpace(V12_103.OEmpmass?.FirstOrDefault()?.EmpNumber)) return;
+
+        var empnumber = V12_103.OEmpmass?.FirstOrDefault()?.EmpNumber;
+        await GetEmpmasId(empnumber);
+        await LoadEmpmasPic();
     }
 
-  
+
+
+
+    private async Task GetEmpmasId(string empnumber)
+    {
+
+        empmasId = 0;
+
+        try
+        {
+            var res = await _iempmas._02(empnumber, UserClaims.SchemaUserPis, UserClaims.Conn) ?? new();
+            if (res.Id > 0)
+            {
+                empmasId = res.Id;
+            }
+
+
+        }
+        catch (Exception ex)
+        {
+
+            Console.WriteLine(ex);
+            return;
+
+        }
+
+    }
+
+
+
+    private async Task LoadEmpmasPic()
+    {
+        if (empmasId == 0) return;
+
+        try
+        {
+            var res = await _emppic._02ByEmpmasId(empmasId, "Profile", UserClaims.SchemaUserPis, UserClaims.Conn) ?? new();
+
+            if (res.Id > 0)
+            {
+                await LoadEmployeeImage(res.PicAddress);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+
+
+
+    }
+
+
+
+
+    private async Task LoadEmployeeImage(string imgId)
+    {
+
+        try
+        {
+            string imageId      = imgId;
+            byte[] imageBytes   = null;
+            string imagePreview = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(imageId)) return;
+
+            var result = await _googledrive._02GetEmployeeImage(imageId);
+            imageBytes = result.Value.Content;
+            V12_103.ImagePreview = $"data:{result.Value.MimeType};base64," + Convert.ToBase64String(imageBytes);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Unable to retrieve employee image: {ex.Message}");
+        }
+
+      
+    }
+
+
+
 
 }
