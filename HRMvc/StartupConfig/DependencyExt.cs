@@ -188,10 +188,4 @@ public static class DependencyExt
 
 
 
-    // GOOGLE DRIVE OAUTH REGISTRATION
-    public static void AddGoogleDriveOAuth(this WebApplicationBuilder builder)
-    {
-        builder.Services.AddSingleton<GoogleDriveOAuthService>();
-        builder.Services.AddScoped<IGoogleDriveServiceProvider, GoogleDriveServiceProvider>();
-    }
 }
