@@ -1016,7 +1016,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = 2309 WHERE Id = 2304 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2306 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2311 WHERE Id = 2309 AND IdParent = 2301;
-                        DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';";
+                        DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';
+                        DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
@@ -1100,7 +1101,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (11091, 'Separator',       11001, 1, NULL, '-', NULL, 11007),
                             (104,   'Dtl-Report',      101,   1, 'military_tech', 'Salary Grade', '13T/104', 104),
                             (105,   'Dtl-Report',      101,   1, 'account_tree', 'Payroll Account Mapping', '13T/105', 105),
-                            (106,   'Dtl-Report',      101,   1, 'price_change', 'Rate Setup', '13T/106', 106);";
+                            (106,   'Dtl-Report',      101,   1, 'price_change', 'Rate Setup', '13T/106', 106),
+                            (107,   'Dtl-Report',      101,   1, 'settings', 'Payroll Settings', '12/004', 107);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         // -- Corrections for tables seeded before; each only touches the old wrong value --
@@ -1108,7 +1110,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                 UPDATE MainPay.Menu SET DispText = 'SSS Contribution'  WHERE Id = 1252 AND DispText = 'SSS Contribution ';
                 UPDATE MainPay.Menu SET DispText = 'Tax Annualization' WHERE Id = 1302 AND DispText = 'Tax Annunalization';
                 DELETE FROM MainPay.Menu WHERE Id = 1313 AND DispText = 'Account Total' AND Action IN ('13/PayRep_1313', '13/1313');
-                UPDATE MainPay.Menu SET Action = CONCAT('13/', SUBSTRING(Action, 11)) WHERE Action LIKE '13/PayRep\_%';";
+                UPDATE MainPay.Menu SET Action = CONCAT('13/', SUBSTRING(Action, 11)) WHERE Action LIKE '13/PayRep\_%';
+                DELETE FROM Main.Menu WHERE Id = 1004 AND DispText = 'Payroll Settings' AND Action = '12/004';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 

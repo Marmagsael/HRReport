@@ -1,10 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HRMvc.StartupConfig;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HRMvc.Controllers;
 
 [Route("14")]
 public class PisReportController : Controller
 {
+    private readonly PisAccessService _access;
+
+    public PisReportController(PisAccessService access)
+    {
+        _access = access;
+    }
+
     // Management
     private static readonly Dictionary<string, string> ManagementViews = new()
     {
@@ -104,9 +112,12 @@ public class PisReportController : Controller
     }
 
     [HttpGet("{pisCode:int}")]
-    public IActionResult Report(int? pisCode)
+    public async Task<IActionResult> Report(int? pisCode)
     {
         var key = pisCode.ToString();
+
+        if (pisCode.HasValue && !await _access.CanOpenAsync(User, pisCode.Value))
+            return StatusCode(StatusCodes.Status403Forbidden, "You do not have access to this module. Please ask your administrator to grant it in PIS User Management.");
 
         if (ManagementViews.TryGetValue(key, out var mgmtView)) return View($"~/Applications/PisModules/Views/Pages/{mgmtView}.cshtml");
 
