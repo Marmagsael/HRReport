@@ -1770,6 +1770,18 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `days` double(6,0) NOT NULL DEFAULT '0'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        // -- Default penalty types, only when the company's own table is empty (DEV_NO / FREQ are left empty) --
+        var rows = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`penalty`", new { }, conn);
+        if (rows.FirstOrDefault() == 0)
+            await ExecLegacy($@"insert into {schema}.`penalty` (PENALTY_NO, DESC_, resetregref, isterminated, days) VALUES
+                                ('WR','WRITTEN REPRIMAND','0','0',0),
+                                ('7D','7 DAYS SUSPENSION','1','0',7),
+                                ('15','15 DAYS SUSPENSION','1','0',15),
+                                ('30','30 DAYS SUSPENSION','1','0',30),
+                                ('SL','SUSPENDED L/POST','0','0',0),
+                                ('DM','DISMISSAL','1','1',0),
+                                ('DP','DISMISSAL/PAY COST','0','1',0)", conn);
     }
 
     private async Task _01Position(string? schema, string? conn)
