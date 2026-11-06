@@ -1590,6 +1590,11 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `NAME` varchar(30) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        // -- Default Metro Manila cities / municipality (PSA PSGC Q4 2024, NCR), only when the company's own table is empty --
+        var rows = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`mlacode`", new { }, conn);
+        if (rows.FirstOrDefault() == 0)
+            await ExecLegacy($@"insert into {schema}.`mlacode` (CODE, NAME) VALUES ('CALOO','Caloocan City'),('LASPI','Las Pinas City'),('MAKAT','Makati City'),('MALAB','Malabon City'),('MANDA','Mandaluyong City'),('MANIL','Manila'),('MARIK','Marikina City'),('MUNTI','Muntinlupa City'),('NAVOT','Navotas City'),('PARAN','Paranaque City'),('PASAY','Pasay City'),('PASIG','Pasig City'),('PATER','Pateros'),('QUEZO','Quezon City'),('SANJU','San Juan City'),('TAGUI','Taguig City'),('VALEN','Valenzuela City')", conn);
     }
 
     private async Task _01Movedtl(string? schema, string? conn)

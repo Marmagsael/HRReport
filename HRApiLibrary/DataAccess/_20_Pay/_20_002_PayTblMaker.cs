@@ -1015,7 +1015,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = 2308 WHERE Id = 2305 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2309 WHERE Id = 2304 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2306 AND IdParent = 2301;
-                        UPDATE MainPis.Menu SET Odr = 2311 WHERE Id = 2309 AND IdParent = 2301;";
+                        UPDATE MainPis.Menu SET Odr = 2311 WHERE Id = 2309 AND IdParent = 2301;
+                        DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
