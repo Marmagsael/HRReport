@@ -1,7 +1,9 @@
 ﻿@using HRMvc.Applications.PisReport.Vars
+@using HRMvc.Applications.PisReport.Views.Blazor._2205
 
 <TelerikRootComponent>
     <div class="position-relative">
+
         @*--- TELERIK NOTIFICATION ---*@
         <TelerikNotification @ref="@NotificationRef"
                              HorizontalPosition="@NotificationHorizontalPosition.Right"
@@ -17,14 +19,14 @@
             <CascadingValue Value="@v">
                 <CascadingValue Value="@rv">
                     <CascadingValue Value="@NotificationRef">
-
-
-                        <_00BT_FullW HdrCaption="Employee Entry">
+                        <_00BT_FullW HdrCaption="FED Report">
                             <Details>
 
                                 @*--- REPORT ---*@
                                 <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
+                                <_2205_FilterOption ChildAction="ChildAction" />
+                                <_2205_FEDList ChildAction="ChildAction" />
 
                             </Details>
                         </_00BT_FullW>
@@ -32,64 +34,31 @@
                 </CascadingValue>
             </CascadingValue>
         </CascadingValue>
-
-
     </div>
 
 </TelerikRootComponent>
 
-
 @code {
     [Parameter]
-    public UserClaimsModel Uc { get; set; }
+    public UserClaimsModel Uc { get; set; } = new();
 
-    V2205Model v = new();
+    V2102Model v = new();
     V00_RepVars rv = new();
-
 
     private TelerikNotification? NotificationRef;
 
+
     protected override async Task OnInitializedAsync()
     {
-        v.IsLoading = true;
-
-        _00InitializeReport();
-        await _02LoadCompanyInfo();
-
         v.IsLoading = false;
-
     }
 
-    // REPORT DATA --------------------------------------------------------------------
-    private void _00InitializeReport()
+
+
+    private async Task ChildAction()
     {
-        rv.MCaption = "Client Guard Detail Summary";
-        rv.RefreshToken = 2202000;
-        rv.ReportParams = new()
-        {
-            ["CoName"] = "-",
-            ["CoAddress"] = "-",
-            ["ReportTitle"] = "",
-            ["RunDate"] = DateTime.Now
-        };
+        if (v == null) return;
+
+        v.Action = "";
     }
-
-    private async Task _02LoadCompanyInfo()
-    {
-        // var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        // if (!(res ?? []).Any()) return;
-
-        // var r = res!.First();
-        // rv.ReportParams["CoName"] = r.CoName ?? "";
-        // rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
-    }
-
-    private void ChildAction()
-    {
-
-    }
-
-
-
-
 }
