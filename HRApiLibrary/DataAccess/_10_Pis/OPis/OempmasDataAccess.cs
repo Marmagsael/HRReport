@@ -409,10 +409,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?>_02MaxEmpnumber( string? schema, string? conn)
     {
 
-        var sql = $@"SELECT CASE
-                                WHEN a.MaxEmp >= b.MaxEmp THEN a.MaxEmp
-                                ELSE b.MaxEmp
-                            END AS Empnumber
+        var sql = $@"SELECT GREATEST(COALESCE(a.MaxEmp, 0), COALESCE(b.MaxEmp, 0)) AS Empnumber
                         FROM
                             (SELECT MAX(cast(empnumber as signed)) AS MaxEmp FROM {schema}.empmas) a
                         CROSS JOIN
@@ -642,6 +639,24 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     }
 
 
+    public async Task<OEmpmasModel?> _03_Clearance(string empnumber, OEmpmasModel m, string schema, string conn)
+    {
+        string sql = $@"UPDATE {schema}.Empmas SET
+                    Exp_Nbi = @Exp_Nbi, Exp_Police = @Exp_Police,
+                    Exp_Pnp = @Exp_Pnp, Exp_Brgy = @Exp_Brgy,
+                    Exp_Neuro = @Exp_Neuro, Exp_Drug = @Exp_Drug,  Exp_Court = @Exp_Court, ExpMed =@ExpMed
+                    WHERE EMPNUMBER = @EMPNUMBER";
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, m, conn);
+
+        sql = $@"SELECT Exp_Nbi, Exp_Police, Exp_Pnp, Exp_Brgy, Exp_Neuro, Exp_Drug,  Exp_Court, ExpMed
+                    FROM {schema}.Empmas WHERE Empnumber = @Empnumber";
+
+
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, new { Empnumber = empnumber }, conn);
+        return data?.FirstOrDefault();
+    }
+
+
 
     public async Task<OEmpmasModel?> _04(int? id, string? schema, string? conn)
 	{
@@ -854,7 +869,7 @@ public interface IOEmpmasDataAccess
     Task<OEmpmasModel?>         _03_Insurance(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Education(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Security(string empnumber, OEmpmasModel mempmas, string schema, string conn);
-
+    Task<OEmpmasModel?>         _03_Clearance(string empnumber, OEmpmasModel m, string schema, string conn);
     Task<OEmpmasModel?>         _04(int? id, string? schema, string? conn);
 
 

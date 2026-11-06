@@ -1,5 +1,7 @@
 @* -- From Views/Shared/PIS/_PISLeftMenu.cshtml : same HTML / CSS classes -- *@
 @inject IMainmenuDataAccess _menu
+@inject HRMvc.StartupConfig.PisAccessService _pisAccess
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider _auth
 
 <!-- Custom CSS -->
 <link rel="stylesheet" href="css/ReportLayout/report-left-menu.css" />
@@ -92,5 +94,7 @@
     {
         menus       = await _menu._02("Main", Uc?.Conn ?? "") ?? [];
         menuspis    = await _menu._02("MainPis", Uc?.Conn ?? "") ?? [];
+        var user    = (await _auth.GetAuthenticationStateAsync()).User;
+        menuspis    = HRMvc.StartupConfig.PisAccessService.Filter(menuspis, await _pisAccess.AllowedMenuIdsAsync(user));
     }
 }

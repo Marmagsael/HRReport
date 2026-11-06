@@ -20,6 +20,21 @@
         <ul class="submenu">
             @foreach (var d in menuDtls)
             {
+                if (d!.Type == "NoAccess")
+                {
+                    <li title="No access">
+                        <div class="d-flex align-items-center p-1 gap-2" style="display:block;padding:9px 14px;color:#9ca3af;cursor:not-allowed;font-size:13px;">
+                            <span class="material-symbols-outlined">@d.Icon</span>
+                            @d.DispText
+                        </div>
+                    </li>
+                    continue;
+                }
+                if (d!.Type == "Separator")
+                {
+                    <li class="menu-separator"><hr style="margin:4px 10px;border:0;border-top:1px solid #9ca3af;opacity:1;" /></li>
+                    continue;
+                }
                 <li>
                     <a href="@d!.Action">
                         <div class="d-flex align-items-center p-1 gap-2">
@@ -38,5 +53,5 @@
     [Parameter] public int ParentId { get; set; }
 
     MainmenuModel? menuParent => Menus.FirstOrDefault(m => m?.Id == ParentId);
-    List<MainmenuModel?> menuDtls => Menus.Where(m => m?.IdParent == ParentId && !string.IsNullOrEmpty(m.Action)).ToList();
+    List<MainmenuModel?> menuDtls => Menus.Where(m => m?.IdParent == ParentId && (!string.IsNullOrEmpty(m.Action) || m.Type == "Separator")).ToList();
 }

@@ -69,8 +69,9 @@ public class V2052
     public DeprecModel?                    Deprec               { get; set; } = new();
     public OEducateModel?                  Education            { get; set; } = new();
     public OSeclicModel?                   SecLicense           { get; set; } = new();
+    public OSeclicModel?                   PrevSecLicense       { get; set; } = new();
     public List<OLicverstatusModel?>?      LicverStatuses       { get; set; } = new();
-    public OSecliclogsModel?               SecLicenseLog       { get; set; } = new ();
+    public OSecliclogsModel?               SecLicenseLog        { get; set; } = new ();
 
 
     public List<OEmployModel?>?             Employments         { get; set; } = new();
