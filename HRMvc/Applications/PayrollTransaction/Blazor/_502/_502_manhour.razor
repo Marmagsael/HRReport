@@ -99,13 +99,14 @@ else
     OPayrollSession? s => v502?.Session;
     List<string> cols  => s == null ? [] : OPayrollCompute.InputColumns(s);
 
-    static string Label(string c) => c switch
+    //--- grdrow_hide_unhide : the header is the account's short description when it has one ---
+    string Label(string c)
     {
-        "daywrk" => "Days Wrk<br>(Basic)",
-        "rn"     => "Ordinary<br>(Hrs)",
-        "absent" => "Absent<br>(Hrs)",
-        _        => c.ToUpper()
-    };
+        if (c == "daywrk") return "Days Wrk<br>(Basic)";
+        var a = s?.Coas.FirstOrDefault(x => x.AcctNumber == OPayrollCompute.Acct(s, c));
+        return !string.IsNullOrWhiteSpace(a?.ShortDesc) ? System.Net.WebUtility.HtmlEncode(a!.ShortDesc!.Trim())
+             : c == "rn" ? "Ordinary<br>(Hrs)" : c == "absent" ? "Absent<br>(Hrs)" : c.ToUpper();
+    }
 
     //--- Inputs changed: figures are stale until Process, as in payroll4 ------------------------------------------------
     async Task SetHours(OPayEmpResult r, string col, double v)
