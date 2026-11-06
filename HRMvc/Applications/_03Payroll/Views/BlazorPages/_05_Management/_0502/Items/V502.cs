@@ -38,6 +38,7 @@ public class V502
     public bool                         IsVisibleAccountsOpen { get; set; }
     public bool                         IsEmpStatusOpen       { get; set; }
     public HashSet<string>?             VisibleAcctNumbers    { get; set; }
+    public bool                         IsAddEmployeeOpen   { get; set; }
     public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToUpdate { get; set; } = [];
     public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToAdd    { get; set; } = [];
     public List<HRApiLibrary.Models._20_Pay.OPay.OPayEmpResult> ExcelToRemove { get; set; } = [];

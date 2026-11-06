@@ -96,6 +96,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         await Menus("MainPis", connName, country);
         await Menus("MainPay", connName, country);
+        await MenusMainPisData(connName);
         await MenusMainPayData(connName);
         await _01_102_MatrixWTax(schema, connName, country);
         await _01_103_MatrixSss(schema, connName, country);
@@ -996,6 +997,25 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           Action        VARCHAR (45),
                           Odr           INTEGER,
                           PRIMARY KEY (`Id`))   ENGINE = InnoDB; ";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+    }
+
+    // -- MainPis.Menu 14/Compliance order: Status Mgt | Assignment Order, Special Duty Order | RTU, Recall Order, the rest --
+    private async Task MenusMainPisData(string? connName)
+    {
+        string? sql = @"INSERT IGNORE INTO MainPis.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (2391, 'Separator', 2301, 1, NULL, '-', NULL, 2303),
+                            (2392, 'Separator', 2301, 1, NULL, '-', NULL, 2306);
+                        UPDATE MainPis.Menu SET Odr = 2302 WHERE Id = 2302 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2303 WHERE Id = 2391 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2304 WHERE Id = 2308 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2305 WHERE Id = 2307 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2306 WHERE Id = 2392 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2307 WHERE Id = 2303 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2308 WHERE Id = 2305 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2309 WHERE Id = 2304 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2306 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2311 WHERE Id = 2309 AND IdParent = 2301;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 

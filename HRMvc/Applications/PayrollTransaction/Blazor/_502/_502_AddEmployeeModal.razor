@@ -1,0 +1,80 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay.OPay
+@using Telerik.Blazor.Components
+
+@* --- payrollAddEmp4 : employees in payroll that are not in this payroll yet; double click adds one to the payroll --- *@
+<TelerikDialog @bind-Visible="@v502.IsAddEmployeeOpen" Title="Add Employee" Width="560px">
+    <DialogContent>
+        <div class="d-flex gap-2 align-items-center mb-2">
+            <label class="small">Find:</label>
+            <TelerikTextBox @bind-Value="find" Width="360px" Placeholder="Name or Emp ID" OnChange="Search" />
+            <TelerikButton OnClick="Search">Find</TelerikButton>
+        </div>
+        <TelerikGrid Data="@list" Height="380px" Sortable="false" OnRowDoubleClick="@((GridRowClickEventArgs a) => Add((OPayEmp)a.Item))">
+            <GridColumns>
+                <GridColumn Field="@nameof(OPayEmp.Name)" Title="Name" Width="260px" />
+                <GridColumn Field="@nameof(OPayEmp.EmpNumber)" Title="Emp ID" Width="90px" />
+                <GridColumn Field="@nameof(OPayEmp.StatName)" Title="Status" />
+            </GridColumns>
+        </TelerikGrid>
+        @if (!string.IsNullOrEmpty(msg))
+        {
+            <div class="small text-danger mt-1">@msg</div>
+        }
+        <div class="small text-muted mt-1">Double click an employee to add. @list.Count shown (up to 300).</div>
+    </DialogContent>
+    <DialogButtons>
+        <TelerikButton OnClick="Close">Close</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
+
+@inject IOPayrollDataAccess _payroll
+
+@code {
+    [CascadingParameter] public V502 v502 { get; set; } = new();
+
+    string find = "";
+    string? msg;
+    List<OPayEmp> list = [];
+    bool wasOpen;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (v502.IsAddEmployeeOpen && !wasOpen) { find = ""; msg = null; await Search(); }
+        wasOpen = v502.IsAddEmployeeOpen;
+    }
+
+    async Task Search()
+    {
+        if (v502.Session == null) return;
+        list = await _payroll._02AddCandidates(v502.Session, find);
+    }
+
+    async Task Add(OPayEmp e)
+    {
+        var s = v502.Session;
+        if (s == null || s.IsLocked) return;
+        try
+        {
+            await _payroll._05AddEmployees(s, [e.EmpNumber!]);
+            if (!s.Employees.Any(m => m.EmpNumber == e.EmpNumber)) s.Employees.Add(e);
+            var r = new OPayEmpResult { EmpNumber = e.EmpNumber, Name = e.Name };
+            foreach (var c in OPayrollCompute.HourColumns.Concat(OPayrollCompute.OtherHourColumns)) r.Hours[c] = 0;
+            s.Results.Add(r);
+            await _payroll._01LoadEmployeeData(s);
+            OPayrollCompute.Compute(s);
+            v502.CurrentEmp = r;
+            v502.IsProcessed = false;
+            v502.Msg = $"{e.Name} added. Enter the manhours, Process, then Save.";
+            v502.IsAddEmployeeOpen = false;
+            if (v502.Changed != null) await v502.Changed();
+        }
+        catch (Exception ex) { msg = "Error: " + ex.Message; }
+    }
+
+    async Task Close()
+    {
+        v502.IsAddEmployeeOpen = false;
+        if (v502.Changed != null) await v502.Changed();
+    }
+}
