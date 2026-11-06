@@ -101,7 +101,7 @@ public class _00RegisterDataAccess : I_00RegisterDataAccess
     public async Task _01OwnerEmpmas(RegisterOwnerModel owner, string? schema, string? connName = "MySqlConn")
     {
         string sql = $@"insert into {owner.PISSchema}.Empmas (SystemId, EmpNumber, EmpLastNm, EmpFirstNm, EmpMidNm, Suffix)
-                                                      values (@UserId,  '0001',    @LastName, @FirstName, @MiddleName, ifnull(@Suffix, ''));
+                                                      values (@UserId,  '00001',    @LastName, @FirstName, @MiddleName, ifnull(@Suffix, ''));
                         update {schema}.CompanyUsers set EmpmasId = last_insert_id() where UserId = @UserId and CompanyId = @CompanyId;";
         await _sql.ExecuteCmd(sql, owner, connName);
     }
@@ -111,7 +111,7 @@ public class _00RegisterDataAccess : I_00RegisterDataAccess
     public async Task _01OwnerOldEmpmas(RegisterOwnerModel owner, string? connName = "MySqlConn")
     {
         string sql = $@"insert into {owner.OldPis}.Empmas (EMPNUMBER, EMPLASTNM, EMPFIRSTNM, EMPMIDNM, suffix, email, EMPSTAT_)
-                                                   values ('0001',    @LastName, @FirstName, @MiddleName, ifnull(@Suffix, ''), @Email, '_')";
+                                                   values ('00001',   @LastName, @FirstName, @MiddleName, ifnull(@Suffix, ''), @Email, '_')";
         await _sql.ExecuteCmd(sql, owner, connName);
     }
 

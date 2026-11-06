@@ -409,10 +409,7 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
     public async Task<OEmpmasModel?>_02MaxEmpnumber( string? schema, string? conn)
     {
 
-        var sql = $@"SELECT CASE
-                                WHEN a.MaxEmp >= b.MaxEmp THEN a.MaxEmp
-                                ELSE b.MaxEmp
-                            END AS Empnumber
+        var sql = $@"SELECT GREATEST(COALESCE(a.MaxEmp, 0), COALESCE(b.MaxEmp, 0)) AS Empnumber
                         FROM
                             (SELECT MAX(cast(empnumber as signed)) AS MaxEmp FROM {schema}.empmas) a
                         CROSS JOIN
