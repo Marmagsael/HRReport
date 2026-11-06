@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
+using HRApiLibrary.Models._10_Pis.OPis;
 
 namespace HRApiLibrary.DataAccess._00_Main;
 
@@ -1746,15 +1747,37 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
     private async Task _01Penalty(string? schema, string? conn)
     {
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`penalty` (
-                        `DEV_NO` varchar(10) DEFAULT NULL,
-                        `FREQ` varchar(1) DEFAULT NULL,
-                        `PENALTY_NO` varchar(2) DEFAULT NULL,
-                        `DESC_` varchar(20) DEFAULT NULL,
-                        `resetregref` varchar(1) NOT NULL DEFAULT '0' COMMENT '1true, 2false reset regularization period',
-                        `isterminated` varchar(1) NOT NULL DEFAULT '0',
-                        `days` double(6,0) NOT NULL DEFAULT '0'
+                        `DEV_NO`        varchar(10) DEFAULT NULL,
+                        `FREQ`          varchar(1) DEFAULT NULL,
+                        `PENALTY_NO`    varchar(2) DEFAULT NULL,
+                        `DESC_`         varchar(20) DEFAULT NULL,
+                        `resetregref`   varchar(1) NOT NULL DEFAULT '0' COMMENT '1true, 2false reset regularization period',
+                        `isterminated`  varchar(1) NOT NULL DEFAULT '0',
+                        `days`          double(6,0) NOT NULL DEFAULT '0'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+
+        sql = @$"select DEV_NO from {schema}.penalty limit 1 ";
+        var res = await _sql.FetchData<OPenaltyModel, dynamic>(sql, new { }, conn);
+        if (res == null || res.Count == 0)
+        {
+            sql = $@"insert into {schema}.rpenalty
+                     (DEV_NO,	FREQ,	PENALTY_NO,	DESC_,	resetregref,	isterminated,	days) VALUES
+                     (1,	2,	'7D',	'7 DAYS SUSPENSION',	1,	0,	7),
+                     (1,	1,	'WR',	'WRITTEN REPRIMAND',	0,	0,	0),
+                     (1,	5,	'DM',	'DISMISSAL',	        1,	1,	0),
+                     (2,	3,	'SL',	'SUSPENDED L/ POST',	0,	0,	0),
+                     (2,	4,	'DM',	'DISMISSAL',	        1,	1,	0),
+                     (2,	5,	'DP',	'DISMISSAL/PAY OF COST',0,	1,	0),
+                     (3,	3,	'SL',	'SUSPENDED L/ POST',	0,	0,	0),
+                     (3,	4,	'DM',	'DISMISSAL',	        1,	1,	0),
+                     (3,	5,	'DP',	'DISMISSAL/PAY OF COST',0,	1,	0)
+             ; ";
+
+
+            await _sql.ExecuteCmd(sql, new { }, conn);
+        }
     }
 
     private async Task _01Position(string? schema, string? conn)
