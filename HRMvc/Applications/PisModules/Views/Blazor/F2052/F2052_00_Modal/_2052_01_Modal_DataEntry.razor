@@ -358,11 +358,14 @@
 
         try
         {
-            var main        = await _user._02ByLoginName(V.Empmas.EmpNumber, Uc.SchemaMain, Uc.Conn);
-            var empmasrec   = await _empmas._02Empmas_Empnumber(V.Empmas.EmpNumber, Uc.SchemaUserPis, Uc.Conn);
+            // -- The employee being saved (not V.Empmas, which can be empty or another employee) --
+            var empNumber   = V.EmpmasToEdit.EmpNumber?.Trim();
+            var main        = await _user._02ByLoginName(empNumber, Uc.SchemaMain, Uc.Conn);
+            var empmasrec   = await _empmas._02Empmas_Empnumber(empNumber, Uc.SchemaUserPis, Uc.Conn);
 
 
             EmpmasModel empmas = V.OldEmpmasToNewEmpmasMapper(V.EmpmasToEdit, new EmpmasModel());
+            empmas.EmpNumber   = empNumber;
 
             if(main != null)
             {
@@ -377,7 +380,7 @@
             {
                 //Update
                 var res = await _empmas._03EmpmasWithEmpnumber(empmas, Uc.SchemaUserPis, Uc.Conn);
-                empmasId = res?.Id;
+                empmasId = res?.Id ?? empmasrec.FirstOrDefault()?.Id;
                 Console.WriteLine("Update");
             }
             else
@@ -392,7 +395,7 @@
 
 
             Console.WriteLine($"empmasId {empmasId}");
-            if(empmasId != 0)
+            if(empmasId is > 0)
             {
                 //Addresss ---------------------
                 await _empmas._01EmpmasAddress_EmailOnly(empmasId, V.EmpmasToEdit.Email, Uc.SchemaUserPis, Uc.Conn);
