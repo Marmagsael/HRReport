@@ -1,0 +1,170 @@
+﻿@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+
+<div class="p-2">
+    <RadzenTemplateForm TItem="OEmpmasModel" Data=@V.Empmas Submit=@OnSubmit InvalidSubmit=@OnInvalidSubmit>
+        <div class="position-sticky sticky-top bg-white pt-1" style="top:0; z-index:9;">
+            <HRMvc.Applications._02HR.Views.BlazorPages._00Library._02ColumnHdr pageTitle="Clearance" />
+
+            <div class="h-10p"></div>
+
+            @if (!string.IsNullOrWhiteSpace(V.Empmas.EmpNumber))
+            {
+                <div class="p-2 bordered mb-2 w-100">
+
+                    <button type="submit" class="card  flex-fill text-center h-40p mb-btn mb-btn-blue p-2 px-4 ">
+                        <div class="d-flex gap-1 align-items-center justify-content-center">
+                            <span class="fw-semibold"><small>Save</small></span>
+                        </div>
+                    </button>
+                </div>
+            }
+        </div>
+
+
+
+
+        <div class="h-10p"></div>
+        <RadzenFieldset Text="******">
+
+            <div class="row">
+                <div class="col-12 col-md-6">
+                    @* ----- NBI Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">NBI Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.Exp_Nbi DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+
+
+                    @* ----- Police Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">Police Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.Exp_Police DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+
+
+                    @* ----- PNP Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">PNP Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.Exp_Pnp DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+
+                    @* ----- Barangay Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">Barangay Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.Exp_Brgy DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                <div class="col-12 col-md-6">
+                    @* ----- Neuro Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">Neuro Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.Exp_Neuro DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+
+
+
+                    @* ----- DrugTest Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">Drugtest Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.Exp_Drug DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+
+                    @* ----- Court Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">Court Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.Exp_Court DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+
+
+                    @* ----- Medical Expire -----------------------*@
+                    <div class="w-100 d-flex p-1">
+                        <div class="w-30 small">Medical Expire </div>
+                        <div class="w-50">
+                            <RadzenDatePicker @bind-Value=@V.Empmas.ExpMed DateFormat="MMMM dd, yyyy" Style="width:100%" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+          
+
+           
+        </RadzenFieldset>
+
+
+
+   
+    </RadzenTemplateForm>
+
+</div>
+
+
+@inject IOEmpmasDataAccess _empmas
+
+@code {
+
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+
+    [CascadingParameter]
+    public V2052 V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; } = new();
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+    async Task OnSubmit(OEmpmasModel model)
+    {
+        if (model == null) return;
+
+
+        try
+        {
+            // Update  clearance records in empmas table ------
+            var res = await _empmas._03_Clearance(V.SelectedEmpnumber, V.Empmas, Uc.OpisDb!, Uc.Conn!);
+
+            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+
+
+    }
+
+    void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
+    {
+
+    }
+
+   
+
+   
+
+}
