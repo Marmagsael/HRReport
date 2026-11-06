@@ -68,6 +68,16 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
             await ExecLegacy($@"insert ignore into {schema}.`empmas_visible_status` (empstat_)
                                 select CODE from {schema}.`empstat`
                                 where  ifnull(ISRESIGNED, '0') <> '1' and trim(ifnull(NAME, '')) <> ''", connName);
+
+        // -- 14/2002 PIS User Management : these users get every PIS module (domainaccess) by default; missing rows only --
+        await ExecLegacy($@"insert into {schema}.`domainaccess` (username, idsysmenu, module)
+                            select e.EMPNUMBER, m.Id, 'pis'
+                            from   {schema}.`empmas` e
+                            join   {sourceSchema}.`Menu` m on m.Action like '14/%'
+                            where  lower(trim(e.email)) in ('marmagsael@gmail.com', '00003@email.com')
+                              and  trim(ifnull(e.EMPNUMBER, '')) <> ''
+                              and  not exists (select 1 from {schema}.`domainaccess` d
+                                               where d.username = e.EMPNUMBER and d.idsysmenu = m.Id and lower(d.module) = 'pis')", connName);
     }
 
     // -- position / empstat : same Id and CODE as the company PIS (Position / REmpStat), so deprec ids mean the same in both.
@@ -1784,6 +1794,11 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `NAME` varchar(30) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        // -- Default provinces of the Philippines (PSA PSGC Q4 2024), only when the company's own table is empty --
+        var rows = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.`procode`", new { }, conn);
+        if (rows.FirstOrDefault() == 0)
+            await ExecLegacy($@"insert into {schema}.`procode` (CODE, NAME) VALUES ('ILONO','Ilocos Norte'),('ILOSU','Ilocos Sur'),('LAUNI','La Union'),('PANGA','Pangasinan'),('BATAN','Batanes'),('CAGAY','Cagayan'),('ISABE','Isabela'),('NUEVI','Nueva Vizcaya'),('QUIRI','Quirino'),('BATAA','Bataan'),('BULAC','Bulacan'),('NUEEC','Nueva Ecija'),('PAMPA','Pampanga'),('TARLA','Tarlac'),('ZAMBA','Zambales'),('AUROR','Aurora'),('BATGA','Batangas'),('CAVIT','Cavite'),('LAGUN','Laguna'),('QUEZO','Quezon'),('RIZAL','Rizal'),('MARIN','Marinduque'),('OCCMI','Occidental Mindoro'),('ORIMI','Oriental Mindoro'),('PALAW','Palawan'),('ROMBL','Romblon'),('ALBAY','Albay'),('CAMNO','Camarines Norte'),('CAMSU','Camarines Sur'),('CATAN','Catanduanes'),('MASBA','Masbate'),('SORSO','Sorsogon'),('AKLAN','Aklan'),('ANTIQ','Antique'),('CAPIZ','Capiz'),('ILOIL','Iloilo'),('NEGOC','Negros Occidental'),('GUIMA','Guimaras'),('BOHOL','Bohol'),('CEBU','Cebu'),('NEGOR','Negros Oriental'),('SIQUI','Siquijor'),('EASSA','Eastern Samar'),('LEYTE','Leyte'),('NORSA','Northern Samar'),('SAMAR','Samar'),('SOULE','Southern Leyte'),('BILIR','Biliran'),('ZAMNO','Zamboanga del Norte'),('ZAMSU','Zamboanga del Sur'),('ZAMSI','Zamboanga Sibugay'),('BUKID','Bukidnon'),('CAMIG','Camiguin'),('LANNO','Lanao del Norte'),('MISOC','Misamis Occidental'),('MISOR','Misamis Oriental'),('DAVNO','Davao del Norte'),('DAVSU','Davao del Sur'),('DAVOR','Davao Oriental'),('DAORO','Davao de Oro'),('DAVOC','Davao Occidental'),('COTAB','Cotabato'),('SOUCO','South Cotabato'),('SULKU','Sultan Kudarat'),('SARAN','Sarangani'),('AGUNO','Agusan del Norte'),('AGUSU','Agusan del Sur'),('SURNO','Surigao del Norte'),('SURSU','Surigao del Sur'),('DINIS','Dinagat Islands'),('ABRA','Abra'),('BENGU','Benguet'),('IFUGA','Ifugao'),('KALIN','Kalinga'),('MOUPR','Mountain Province'),('APAYA','Apayao'),('BASIL','Basilan'),('LANSU','Lanao del Sur'),('MAGNO','Maguindanao del Norte'),('MAGSU','Maguindanao del Sur'),('SULU','Sulu'),('TAWTA','Tawi-Tawi')", conn);
     }
 
     private async Task _01Qrynum(string? schema, string? conn)
