@@ -53,6 +53,8 @@ public class OClientModel
 	public string? 		SgCode        		{ get; set; } = string.Empty;
     public int? 		IsTrucking    		{ get; set; } = 0;
     public int? 		IsLumpsum     		{ get; set; } = 0;
+    public int? 		IsMotherUnit  		{ get; set; } = 0;
+    public bool 		IsMotherUnitB 		{ get => IsMotherUnit == 1; set => IsMotherUnit = value ? 1 : 0; }
 
     // --- Other -------------------------------------------------------
     public int? 	    IsSelected 			{ get; set; } = 0; 

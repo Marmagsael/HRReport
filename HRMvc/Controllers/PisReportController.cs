@@ -1,4 +1,4 @@
-﻿using HRMvc.StartupConfig;
+using HRMvc.StartupConfig;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HRMvc.Controllers;
@@ -31,6 +31,7 @@ public class PisReportController : Controller
         ["2053"] = "_2053_DeploymentEntry",
         ["2054"] = "_2054_InsuranceEntry",
         ["2055"] = "_2055_PositionEntry",
+        ["2065"] = "_2065_DesignationEntry",
         ["2056"] = "_2056_LeaveTypeEntry",
         ["2057"] = "_2057_PenaltyTypeEntry",
         ["2058"] = "_2058_DeviationTypeEntry",
@@ -71,6 +72,7 @@ public class PisReportController : Controller
         ["2307"] = "_2307_SpecialDutyOrder",
         ["2308"] = "_2308_AssignmentOrder",
         ["2309"] = "_2309_DeviationPenalty",
+        ["2310"] = "_2310_OBEntry",
     };
 
 

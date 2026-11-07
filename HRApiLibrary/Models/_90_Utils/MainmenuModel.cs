@@ -10,4 +10,5 @@ public class MainmenuModel
     public string?  DispText   {get; set; } = string.Empty; 
     public string?  Action     {get; set; } = string.Empty; 
     public int?     Odr        {get; set; } = 0; 
+    public bool     IsCommercialUse  {get; set; } = true;
 }

@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._20_Pay;
@@ -96,6 +96,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         await Menus("MainPis", connName, country);
         await Menus("MainPay", connName, country);
+        await AddIsCommercialUse("Main", connName);
         await MenusMainPisData(connName);
         await MenusMainPayData(connName);
         await _01_102_MatrixWTax(schema, connName, country);
@@ -578,7 +579,12 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         {
             sql = $@"Insert into {schema}.PayrollGrp 
                         (ClNumber, Name   ) values 
-                        ('00001',  'Main' ) ;";
+                        ('00001',  'Head Office' ),
+                        ('00002',  'Regular Employees' ),
+                        ('00003',  'Probationary Employees' ),
+                        ('00004',  'Contractual Employees' ),
+                        ('00005',  'Project-Based Employees' ),
+                        ('00006',  'Consultants' ) ;";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
@@ -996,8 +1002,22 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           DispText      VARCHAR (80),
                           Action        VARCHAR (45),
                           Odr           INTEGER,
+                          IsCommercialUse     TINYINT         UNSIGNED NOT NULL DEFAULT 1,
                           PRIMARY KEY (`Id`))   ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, connName);
+        await AddIsCommercialUse(schema, connName);
+    }
+
+    // -- Menu.IsCommercialUse on Main, MainPis and MainPay : added when the table already exists without it --
+    private async Task AddIsCommercialUse(string? schema, string? connName)
+    {
+        var has = await _sql.FetchData<long, dynamic>(
+            @"select sum(column_name = 'IsCommercialUse') from information_schema.columns
+              where table_schema = @Schema and table_name = 'Menu'", new { Schema = schema }, connName);
+        var tbl = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.tables where table_schema = @Schema and table_name = 'Menu'", new { Schema = schema }, connName);
+        if (tbl.FirstOrDefault() > 0 && has.FirstOrDefault() == 0)
+            await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN IsCommercialUse TINYINT UNSIGNED NOT NULL DEFAULT 1 AFTER Odr", new { }, connName);
     }
 
     // -- MainPis.Menu 14/Compliance order: Status Mgt | Assignment Order, Special Duty Order | RTU, Recall Order, the rest --
@@ -1005,8 +1025,13 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     {
         string? sql = @"INSERT IGNORE INTO MainPis.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
                             (2005, 'Dtl-Report', 2001, 1, 'business', 'Company Information', '14/2005', 2),
+                            (2310, 'Dtl-Report', 2301, 1, 'flight_takeoff', 'OB Entry', '14/2310', 2311),
                             (2391, 'Separator', 2301, 1, NULL, '-', NULL, 2303),
-                            (2392, 'Separator', 2301, 1, NULL, '-', NULL, 2306);
+                            (2392, 'Separator', 2301, 1, NULL, '-', NULL, 2306),
+                            (2393, 'Separator', 2301, 1, NULL, '-', NULL, 2311),
+                            (2394, 'Separator', 2051, 1, NULL, '-', NULL, 2053),
+                            (2065, 'Dtl-Report', 2051, 1, 'badge', 'Designation Entry', '14/2065', 2058),
+                            (2395, 'Separator', 2051, 1, NULL, '-', NULL, 2055);
                         UPDATE MainPis.Menu SET Odr = 2302 WHERE Id = 2302 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2303 WHERE Id = 2391 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2304 WHERE Id = 2308 AND IdParent = 2301;
@@ -1015,8 +1040,13 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = 2307 WHERE Id = 2303 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2308 WHERE Id = 2305 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2309 WHERE Id = 2304 AND IdParent = 2301;
-                        UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2306 AND IdParent = 2301;
-                        UPDATE MainPis.Menu SET Odr = 2311 WHERE Id = 2309 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2309 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2312 WHERE Id = 2306 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2313 WHERE Id = 2310 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = Id + 1 WHERE IdParent = 2051 AND Id = 2053;
+                        UPDATE MainPis.Menu SET Odr = Id + 2 WHERE IdParent = 2051 AND Id BETWEEN 2054 AND 2055;
+                        UPDATE MainPis.Menu SET Odr = 2058 WHERE IdParent = 2051 AND Id = 2065;
+                        UPDATE MainPis.Menu SET Odr = Id + 3 WHERE IdParent = 2051 AND Id BETWEEN 2056 AND 2063;
                         DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';
                         DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';";
         await _sql.ExecuteCmd(sql, new { }, connName);

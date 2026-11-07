@@ -1,12 +1,15 @@
-﻿@using HRApiLibrary.Models._10_Pis.OPis;
-@using HRMvc.Applications.PisModules.Views.Blazor._2303
-@using HRMvc.Applications.PisModules.Views.Blazor._2306
-@using HRApiLibrary.DataAccess._10_Pis.OPis;
+@using HRApiLibrary.Modules._2306O
+@using HRApiLibrary.Modules._12005O
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._00GeneralComponents
 
-
-@inject IOOfstaffDataAccess _oofstaff
-@inject IOOfstaff2DataAccess _oofstaff2
-
+@inject IDA_2306O _da
+@inject IDA_12005O _sched
+@inject ILeaveapplicationDataAccess _lvapp
+@inject IAttpunches1DataAccess _attPunches
+@inject HRMvc.StartupConfig.ClientTerminalService _terminal
 
 <TelerikRootComponent>
 
@@ -15,37 +18,295 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
-    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+    <TelerikLoaderContainer Visible="@IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
-    <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+    <_00BT_FullW HdrCaption="Leave Transaction Entry">
 
-            <_00BT_FullW HdrCaption="Leave Transaction Entry">
+        <Details>
 
-                <Details>
-
-
-
-                    @*--- SEARCH EMPLOYEE  ---*@
-                    @if (v.ShowSearchEmployeeModal == true)
+            <div class="p-0">
+                <div class="card-header d-flex gap-2">
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray" type="button" tabindex="1" @onclick="NewEntry">New</button>
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="button" tabindex="2" @onclick="SaveLeave">Save</button>
+                    @if (IsExisting)
                     {
-                        <_00Modal ModuleCaption="@v.SearchEmployeeModalCaption" ChildAction="() => v.ShowSearchEmployeeModal = false">
-                            <Content>
-                                <_2303_SearchEmployeeModal ChildAction="@ChildAction" />
-                            </Content>
-                        </_00Modal>
+                        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray" type="button" @onclick="AskDelete">Delete</button>
                     }
 
+                    <div class="vr"></div>
 
-                    @*--- ENTRY  ---*@
-                    <_2306_LTEntry ChildAction="@ChildAction" />
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray" type="button" @onclick="OpenSearchEmployee">Search Employee</button>
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray" type="button" @onclick="OpenSearchTransaction">Search Transaction</button>
+                </div>
+            </div>
 
-                </Details>
+            <div class="px-2 ps-md-3 pt-3">
 
-            </_00BT_FullW>
+                <div class="card py-2 px-3 mb-2">
+                    @* --- Control Number --- *@
+                    <div class="d-flex flex-column flex-md-row mb-2">
+                        <label class="fw-normal w-180p">Control Number</label>
+                        <div class="col-12 col-md-7 col-lg-3">
+                            <TelerikTextBox Value="@ControlNumber" Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                            ReadOnly Enabled="false" />
+                        </div>
+                    </div>
 
-        </CascadingValue>
-    </CascadingValue>
+                    @* -- Date Filed --- *@
+                    <div class="d-flex flex-column flex-md-row mb-2">
+                        <label class="fw-normal w-180p">Date Filed</label>
+                        <div class="col-12 col-md-7 col-lg-3">
+                            <TelerikDatePicker Value="@LvDate" ValueChanged="@((DateTime v) => DateFiledChanged(v))" ValueExpression="@(() => LvDate)"
+                                               Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-0 mb-2">
+                    <div class="card-header txt-fcolor">Employee Details</div>
+                    <div class="py-2 px-3">
+
+                        @* -- Employee Number --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Employee Number</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikTextBox Value="@EmpNumber" ValueChanged="@((string v) => EmpNumberChanged(v))" ValueExpression="@(() => EmpNumber)"
+                                                MaxLength="5"
+                                                Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" TabIndex="3">
+                                    <TextBoxSuffixTemplate>
+                                        <TelerikFontIcon Icon="@FontIcon.Search" Size="@ThemeConstants.FontIcon.Size.Small" />
+                                    </TextBoxSuffixTemplate>
+                                </TelerikTextBox>
+                                @if (!string.IsNullOrEmpty(EmpError)) { <div class="txt-red small">@EmpError</div> }
+                            </div>
+                        </div>
+
+                        @* --- Employee Name --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Employee Name</label>
+                            <div class="col-12 col-md-7 col-lg-5">
+                                <TelerikTextBox Value="@EmpName" Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" ReadOnly Enabled="false" />
+                            </div>
+                        </div>
+
+                        @* -- Status --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Status</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikTextBox Value="@EmpStatus" Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" ReadOnly Enabled="false" />
+                            </div>
+                        </div>
+
+                        @* -- Client --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Deployment</label>
+                            <div class="col-12 col-md-7 col-lg-5">
+                                <TelerikTextBox Value="@EmpClient" Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" ReadOnly Enabled="false" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-0 mb-2">
+                    <div class="card-header txt-fcolor">Leave Details</div>
+                    <div class="py-2 px-3">
+
+                        @* --- Leave Type --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Leave Type</label>
+                            <div class="col-12 col-md-7 col-lg-5">
+                                <TelerikDropDownList Data="@LeaveTypes" Value="@LeaveCode" ValueChanged="@((string v) => LeaveCodeChanged(v))" ValueExpression="@(() => LeaveCode)"
+                                                     TextField="Name" ValueField="Code"
+                                                     DefaultText="Select an item..." Filterable="true" TabIndex="4">
+                                    <DropDownListSettings>
+                                        <DropDownListPopupSettings Height="auto" />
+                                    </DropDownListSettings>
+                                </TelerikDropDownList>
+                            </div>
+                        </div>
+
+                        @* --- Leave Balance : credit (14/2003) less the leave with pay of the year, in the PIS --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Leave Balance</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikTextBox Value="@BalanceText" Class="text-end" Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" ReadOnly Enabled="false" />
+                            </div>
+                            <div class="ms-md-2 small text-muted align-self-center">@BalanceNote</div>
+                        </div>
+
+                        @* --- Set Employee Status To : optional, the "on leave" statuses --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Set Employee Status To</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikDropDownList Data="@LeaveStatuses" @bind-Value="@SetStatusCode" TextField="Name" ValueField="Code"
+                                                     DefaultText="(no change)" TabIndex="5" />
+                            </div>
+                        </div>
+
+                        @* -- From --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">From</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikDatePicker Value="@LvStart" ValueChanged="@((DateTime v) => StartChanged(v))" ValueExpression="@(() => LvStart)"
+                                                   Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" TabIndex="6" />
+                            </div>
+                        </div>
+
+                        @* -- To --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">To</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikDatePicker Value="@LvEnd" ValueChanged="@((DateTime v) => EndChanged(v))" ValueExpression="@(() => LvEnd)"
+                                                   Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" TabIndex="7" />
+                            </div>
+                        </div>
+
+                        @* -- Number of Days --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Number of Days</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikNumericTextBox @bind-Value="@NoDays" Format="N2" Decimals="2" Min="0.5m" Max="365m" Step="0.5m" Class="text-end"
+                                                       Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" TabIndex="8" />
+                            </div>
+                            <div class="ms-md-2 small text-muted align-self-center">Counted from the dates; change it for a half day.</div>
+                        </div>
+
+                        @* -- Number of Days With Pay --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Days With Pay</label>
+                            <div class="col-12 col-md-7 col-lg-3">
+                                <TelerikNumericTextBox @bind-Value="@DaysWithPay" Format="N2" Decimals="2" Min="0m" Max="365m" Step="0.5m" Class="text-end"
+                                                       Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" TabIndex="9" />
+                            </div>
+                            <div class="ms-md-2 small text-muted align-self-center">Without pay : @((NoDays - DaysWithPay).ToString("N2")) day(s)</div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ---------------- Leave History of the employee ---------------- *@
+                <div class="card p-0 mb-2">
+                    <div class="card-header txt-fcolor">Leave History @(string.IsNullOrEmpty(EmpName) ? "" : "- " + EmpName)</div>
+                    <div class="py-2 px-3">
+
+                        @if (Summary.Count > 0)
+                        {
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                @foreach (var s in Summary)
+                                {
+                                    <div class="border rounded px-2 py-1 small bg-white">
+                                        <b>@s.Name</b> @s.Year : @s.Days.ToString("N2") day(s), with pay @s.WithPay.ToString("N2")
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        <TelerikGrid Data="@History" Sortable="true" Pageable="true" PageSize="8" Height="360px"
+                                     OnRowDoubleClick="@((GridRowClickEventArgs a) => PickTransaction((M2306_Transaction)a.Item))">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(M2306_Transaction.LvNumber)" Title="Control No." Width="110px" />
+                                <GridColumn Field="@nameof(M2306_Transaction.LvDate)" Title="Date Filed" DisplayFormat="{0:MMM dd, yyyy}" Width="120px" />
+                                <GridColumn Field="@nameof(M2306_Transaction.LeaveName)" Title="Leave Type" />
+                                <GridColumn Field="@nameof(M2306_Transaction.LvStart)" Title="From" DisplayFormat="{0:MMM dd, yyyy}" Width="120px" />
+                                <GridColumn Field="@nameof(M2306_Transaction.LvEnd)" Title="To" DisplayFormat="{0:MMM dd, yyyy}" Width="120px" />
+                                <GridColumn Field="@nameof(M2306_Transaction.NoDays)" Title="Days" Width="80px" TextAlign="ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                                <GridColumn Field="@nameof(M2306_Transaction.DaysWithPay)" Title="With Pay" Width="90px" TextAlign="ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                            </GridColumns>
+                            <NoDataTemplate>
+                                <div class="p-3 text-muted">@(string.IsNullOrEmpty(EmpName) ? "Choose an employee to see the leave history." : "No leave filed yet.")</div>
+                            </NoDataTemplate>
+                        </TelerikGrid>
+                        <div class="small text-muted mt-1">Double-click a leave to open it.</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </Details>
+
+    </_00BT_FullW>
+
+    @* ---------------- Search Employee ---------------- *@
+    <TelerikWindow Modal="true" @bind-Visible="@ShowSearchEmployee" Width="780px">
+        <WindowActions><WindowAction Name="Close" /></WindowActions>
+        <WindowTitle>Search Employee</WindowTitle>
+        <WindowContent>
+            <div class="p-2">
+                <div class="d-flex gap-2 mb-2">
+                    <TelerikTextBox @bind-Value="@EmpKeyword" Placeholder="Employee no. or name" Width="320px" />
+                    <TelerikButton OnClick="@SearchEmployees" ThemeColor="primary">Search</TelerikButton>
+                </div>
+                <TelerikGrid Data="@EmpResults" Height="360px" OnRowDoubleClick="@((GridRowClickEventArgs a) => PickEmployee((M2306_EmpInfo)a.Item))">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M2306_EmpInfo.EmpNumber)" Title="Emp. No." Width="100px" />
+                        <GridColumn Field="@nameof(M2306_EmpInfo.EmpName)" Title="Name" />
+                        <GridColumn Field="@nameof(M2306_EmpInfo.Status)" Title="Status" Width="150px" />
+                        <GridCommandColumn Width="90px" Title="">
+                            <GridCommandButton Command="Select" OnClick="@((GridCommandEventArgs a) => PickEmployee((M2306_EmpInfo)a.Item))">Select</GridCommandButton>
+                        </GridCommandColumn>
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">Type a number or a name, then click Search.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+        </WindowContent>
+    </TelerikWindow>
+
+    @* ---------------- Search Transaction ---------------- *@
+    <TelerikWindow Modal="true" @bind-Visible="@ShowSearchTransaction" Width="1000px">
+        <WindowActions><WindowAction Name="Close" /></WindowActions>
+        <WindowTitle>Search Transaction</WindowTitle>
+        <WindowContent>
+            <div class="p-2">
+                <div class="d-flex flex-wrap align-items-end gap-3 mb-2">
+                    <div>
+                        <label class="form-label fw-bold mb-0">From</label><br />
+                        <TelerikDatePicker @bind-Value="@ListFrom" Width="150px" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-bold mb-0">To</label><br />
+                        <TelerikDatePicker @bind-Value="@ListTo" Width="150px" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-bold mb-0">Employee</label><br />
+                        <TelerikTextBox @bind-Value="@ListKeyword" Placeholder="No. or name" Width="200px" />
+                    </div>
+                    <TelerikButton OnClick="@LoadTransactions" ThemeColor="primary">Search</TelerikButton>
+                </div>
+                <TelerikGrid Data="@Transactions" Sortable="true" Pageable="true" PageSize="12" Height="420px"
+                             OnRowDoubleClick="@((GridRowClickEventArgs a) => PickTransaction((M2306_Transaction)a.Item))">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M2306_Transaction.LvNumber)" Title="Control No." Width="110px" />
+                        <GridColumn Field="@nameof(M2306_Transaction.LvDate)" Title="Date Filed" DisplayFormat="{0:MMM dd, yyyy}" Width="120px" />
+                        <GridColumn Field="@nameof(M2306_Transaction.EmpNumber)" Title="Emp. No." Width="90px" />
+                        <GridColumn Field="@nameof(M2306_Transaction.EmpName)" Title="Name" />
+                        <GridColumn Field="@nameof(M2306_Transaction.LeaveName)" Title="Leave Type" Width="150px" />
+                        <GridColumn Field="@nameof(M2306_Transaction.LvStart)" Title="From" DisplayFormat="{0:MMM dd, yyyy}" Width="110px" />
+                        <GridColumn Field="@nameof(M2306_Transaction.LvEnd)" Title="To" DisplayFormat="{0:MMM dd, yyyy}" Width="110px" />
+                        <GridColumn Field="@nameof(M2306_Transaction.NoDays)" Title="Days" Width="70px" TextAlign="ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                        <GridColumn Field="@nameof(M2306_Transaction.DaysWithPay)" Title="With Pay" Width="85px" TextAlign="ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                        <GridCommandColumn Width="90px" Title="">
+                            <GridCommandButton Command="Select" OnClick="@((GridCommandEventArgs a) => PickTransaction((M2306_Transaction)a.Item))">Open</GridCommandButton>
+                        </GridCommandColumn>
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">No leave transactions found.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+        </WindowContent>
+    </TelerikWindow>
+
+    @* ---------------- Delete ---------------- *@
+    <TelerikWindow Modal="true" @bind-Visible="@ShowDelete" Width="420px">
+        <WindowActions><WindowAction Name="Close" /></WindowActions>
+        <WindowTitle>Delete Leave</WindowTitle>
+        <WindowContent>
+            <div class="p-2">
+                <p>Delete leave <b>@ControlNumber</b> of <b>@EmpName</b>?</p>
+                <div class="d-flex gap-2">
+                    <TelerikButton OnClick="@DoDelete" ThemeColor="primary">Delete</TelerikButton>
+                    <TelerikButton OnClick="@(() => ShowDelete = false)">Cancel</TelerikButton>
+                </div>
+            </div>
+        </WindowContent>
+    </TelerikWindow>
 
 </TelerikRootComponent>
 
@@ -54,58 +315,425 @@
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
 
-    private V2303Model v = new();
+    private TelerikNotification NotificationRef = default!;
+    private bool IsLoading;
 
-    private TelerikNotification NotificationRef;
+    // -- The form (the leave is saved in the old PIS : leave1) --
+    private string  ControlNumber = "";
+    private bool    IsExisting;
+    private DateTime LvDate  = DateTime.Today;
+    private string? EmpNumber;
+    private string  EmpName = "", EmpStatus = "", EmpClient = "", EmpError = "";
+    private string? LeaveCode;
+    private string? SetStatusCode;
+    private DateTime LvStart = DateTime.Today;
+    private DateTime LvEnd   = DateTime.Today;
+    private decimal NoDays   = 1;
+    private decimal DaysWithPay = 1;
+
+    private List<M2306_LeaveType> LeaveTypes = [];
+    private List<M2306_Status> LeaveStatuses = [];
+
+    // -- Search Employee --
+    private bool ShowSearchEmployee;
+    private string EmpKeyword = "";
+    private List<M2306_EmpInfo> EmpResults = [];
+
+    // -- Search Transaction --
+    private bool ShowSearchTransaction;
+    private DateTime ListFrom = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime ListTo   = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1);
+    private string ListKeyword = "";
+    private List<M2306_Transaction> Transactions = [];
+
+    private bool ShowDelete;
+
+    // -- The PIS side : the leave is recorded there too (keyed by Empmas.Id) so the leave balance can be monitored --
+    private M2306_PisEmp? PisEmp;
+    private int     PisTypeId;
+    private double? Balance;
+    private string  BalanceText => Balance == null ? "-" : Balance.Value.ToString("N2");
+    private string  BalanceNote = "";
+
+    // -- the leave as it was when opened (an edit replaces its record in the PIS) --
+    private string? OrigEmpNumber, OrigLeaveCode;
+    private DateTime OrigStart, OrigEnd;
+    private double  OrigDaysWithPay;
+
+    private async Task LeaveCodeChanged(string v)
+    {
+        LeaveCode = v;
+        await RefreshBalance();
+    }
+
+    // -- Credit (LvCredit, set in 14/2003 per Empmas.Id) less the days with pay already taken in that year --
+    private async Task RefreshBalance()
+    {
+        Balance = null; BalanceNote = ""; PisEmp = null; PisTypeId = 0;
+        if (string.IsNullOrWhiteSpace(EmpNumber) || EmpName == "" || string.IsNullOrWhiteSpace(LeaveCode)) return;
+
+        try
+        {
+            PisEmp = await _da._02PisEmp(EmpNumber.Trim(), Pis, Conn);
+            if (PisEmp == null) { BalanceNote = "The employee has no PIS record; the balance cannot be monitored."; return; }
+
+            PisTypeId = await _da._02PisLeaveTypeId(LeaveCode!, Pis, Conn);
+            if (PisTypeId == 0) { BalanceNote = "This leave type is not in the PIS; the balance cannot be monitored."; return; }
+
+            Balance = await _lvapp._02LvBalance(PisTypeId, PisEmp.EmpmasId, LvStart.Year, Pis, Conn);
+
+            // -- the leave being edited is already counted in the balance --
+            if (IsExisting && OrigEmpNumber == EmpNumber?.Trim() && OrigLeaveCode == LeaveCode && OrigStart.Year == LvStart.Year)
+                Balance += OrigDaysWithPay;
+
+            BalanceNote = Balance <= 0 ? "No credit or no balance left : with pay is not allowed." : "";
+        }
+        catch (Exception ex)
+        {
+            BalanceNote = $"Unable to get the balance : {ex.Message}";
+        }
+    }
+
+    // -- Leave history of the chosen employee, and the days taken per leave type and year --
+    private List<M2306_Transaction> History = [];
+    private record HistSummary(string Name, int Year, double Days, double WithPay);
+    private List<HistSummary> Summary = [];
+
+    private async Task LoadHistory()
+    {
+        History = []; Summary = [];
+        if (string.IsNullOrWhiteSpace(EmpNumber) || EmpName == "") return;
+
+        try
+        {
+            History = (await _da._02History(EmpNumber.Trim(), OPis, Conn)) ?? [];
+            Summary = History.Where(h => h.LvStart != null)
+                             .GroupBy(h => new { Name = h.LeaveName ?? h.LeaveCode ?? "", h.LvStart!.Value.Year })
+                             .OrderByDescending(g => g.Key.Year).ThenBy(g => g.Key.Name)
+                             .Select(g => new HistSummary(g.Key.Name, g.Key.Year, g.Sum(x => x.NoDays ?? 0), g.Sum(x => x.DaysWithPay ?? 0)))
+                             .ToList();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show($"Unable to load the leave history : {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private string Pis  => Uc?.SchemaUserPis ?? "";
+    private string OPis => Uc?.OpisDb ?? "";
+    private string Conn => Uc?.Conn ?? "";
 
     protected override async Task OnInitializedAsync()
     {
-        v.IsLoading = true;
-
         if (Uc?.Conn == null || Uc.OpisDb == null)
         {
-            v.UcLoaded = false;
             NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
-        v.UcLoaded = true;
 
-        v.OPisdb = Uc.OpisDb;
-        v.Conn = Uc.Conn;
-
-        await LoadPreparers();
-        await LoadApprovers();
-        v.IsLoading = false;
-
+        IsLoading = true;
+        try
+        {
+            LeaveTypes    = (await _da._02LeaveTypes(OPis, Conn)) ?? [];
+            LeaveStatuses = (await _da._02LeaveStatuses(OPis, Conn)) ?? [];
+            ControlNumber = await _da._02NextNumber(LvDate, OPis, Conn);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show($"Unable to load : {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        IsLoading = false;
     }
 
-
-    private async Task LoadPreparers()
+    // ---------------- Form ----------------
+    private async Task NewEntry()
     {
-        var res = await _oofstaff._02s(v.OPisdb, v.Conn);
-        if (res.Any())
+        IsExisting = false;
+        LvDate = DateTime.Today;
+        EmpNumber = null; EmpName = EmpStatus = EmpClient = EmpError = "";
+        History = []; Summary = [];
+        LeaveCode = null; SetStatusCode = null; Balance = null; BalanceNote = ""; PisEmp = null; PisTypeId = 0; OrigEmpNumber = OrigLeaveCode = null;
+        LvStart = LvEnd = DateTime.Today; NoDays = 1; DaysWithPay = 1;
+        ControlNumber = await _da._02NextNumber(LvDate, OPis, Conn);
+    }
+
+    private async Task DateFiledChanged(DateTime v)
+    {
+        LvDate = v.Date;
+        if (!IsExisting) ControlNumber = await _da._02NextNumber(LvDate, OPis, Conn);
+    }
+
+    // -- No. of days is counted from the dates (both days included); it can be changed afterwards, e.g. for a half day --
+    private async Task StartChanged(DateTime v)
+    {
+        LvStart = v.Date;
+        if (LvEnd < LvStart) LvEnd = LvStart;
+        CountDays();
+        await RefreshBalance();
+    }
+
+    private void EndChanged(DateTime v)
+    {
+        LvEnd = v.Date;
+        if (LvEnd < LvStart) LvStart = LvEnd;
+        CountDays();
+    }
+
+    // -- the days with pay follow the number of days until they are set apart --
+    private void CountDays()
+    {
+        NoDays = (decimal)((LvEnd.Date - LvStart.Date).TotalDays + 1);
+        DaysWithPay = NoDays;
+    }
+
+    private async Task EmpNumberChanged(string v)
+    {
+        EmpNumber = v;
+        await FillEmployee(v);
+    }
+
+    private async Task FillEmployee(string? number)
+    {
+        EmpError = ""; EmpName = EmpStatus = EmpClient = "";
+        History = []; Summary = []; Balance = null; BalanceNote = ""; PisEmp = null;
+        if (string.IsNullOrWhiteSpace(number)) return;
+
+        try
         {
-            v.Preparers = res;
-            v.Preparer = v.Preparers?.Where(p => p.Defa == 1).FirstOrDefault();
+            var e = await _da._02Employee(number.Trim(), OPis, Conn);
+            if (e == null) { EmpError = "Employee number not found."; return; }
+            EmpName = e.EmpName ?? ""; EmpStatus = e.Status ?? ""; EmpClient = e.Client ?? "";
+            await LoadHistory();
+            await RefreshBalance();
+        }
+        catch (Exception ex)
+        {
+            EmpError = ex.Message;
+        }
+    }
+
+    // ---------------- Search Employee ----------------
+    private void OpenSearchEmployee()
+    {
+        EmpResults = [];
+        ShowSearchEmployee = true;
+    }
+
+    private async Task SearchEmployees()
+    {
+        try { EmpResults = (await _da._02EmployeeSearch(EmpKeyword, OPis, Conn)) ?? []; }
+        catch (Exception ex) { NotificationRef.Show($"Unable to search : {ex.Message}", ThemeConstants.Notification.ThemeColor.Error); }
+    }
+
+    private async Task PickEmployee(M2306_EmpInfo e)
+    {
+        EmpNumber = e.EmpNumber;
+        ShowSearchEmployee = false;
+        await FillEmployee(EmpNumber);
+    }
+
+    // ---------------- Search Transaction ----------------
+    private async Task OpenSearchTransaction()
+    {
+        ShowSearchTransaction = true;
+        await LoadTransactions();
+    }
+
+    private async Task LoadTransactions()
+    {
+        try
+        {
+            var all = (await _da._02Transactions(ListFrom, ListTo, OPis, Conn)) ?? [];
+            var k = (ListKeyword ?? "").Trim();
+            Transactions = k == "" ? all : all.Where(t => (t.EmpNumber ?? "").Contains(k, StringComparison.OrdinalIgnoreCase)
+                                                       || (t.EmpName ?? "").Contains(k, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Transactions = [];
+            NotificationRef.Show($"Unable to load the leave transactions : {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private async Task PickTransaction(M2306_Transaction t)
+    {
+        ShowSearchTransaction = false;
+        IsExisting    = true;
+        ControlNumber = t.LvNumber ?? "";
+        LvDate        = t.LvDate ?? DateTime.Today;
+        EmpNumber     = t.EmpNumber;
+        LeaveCode     = t.LeaveCode;
+        SetStatusCode = null;
+        LvStart       = t.LvStart ?? DateTime.Today;
+        LvEnd         = t.LvEnd ?? LvStart;
+        NoDays        = (decimal)(t.NoDays ?? 1);
+        DaysWithPay   = (decimal)(t.DaysWithPay ?? 0);
+        OrigEmpNumber = t.EmpNumber?.Trim(); OrigLeaveCode = t.LeaveCode; OrigStart = LvStart; OrigEnd = LvEnd; OrigDaysWithPay = t.DaysWithPay ?? 0;
+        await FillEmployee(EmpNumber);
+    }
+
+    // ---------------- Save / Delete (old PIS : leave1) ----------------
+    private async Task SaveLeave()
+    {
+        if (string.IsNullOrWhiteSpace(EmpNumber) || !string.IsNullOrEmpty(EmpError) || EmpName == "") { NotificationRef.Show("Choose an employee.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+        if (string.IsNullOrWhiteSpace(LeaveCode)) { NotificationRef.Show("Choose a leave type.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+        if (LvEnd < LvStart) { NotificationRef.Show("The end date must not be earlier than the start date.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+        if (NoDays <= 0) { NotificationRef.Show("Number of days must be more than zero.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+        if (DaysWithPay < 0 || DaysWithPay > NoDays) { NotificationRef.Show("Number of days with pay must be from 0 up to the number of days.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+
+        IsLoading = true;
+        try
+        {
+            var emp = EmpNumber.Trim();
+            if (await _da._02Overlapping(emp, LvStart, LvEnd, IsExisting ? ControlNumber : null, OPis, Conn) > 0)
+            {
+                NotificationRef.Show("The employee already has a leave on these dates.", ThemeConstants.Notification.ThemeColor.Warning);
+                IsLoading = false;
+                return;
+            }
+
+            // -- Leave balance : the days with pay cannot be more than the balance (the PIS keeps the credit) --
+            await RefreshBalance();
+            if (DaysWithPay > 0 && Balance != null && (double)DaysWithPay > Balance.Value + 0.0001)
+            {
+                NotificationRef.Show($"Number of days with pay ({DaysWithPay:N2}) is more than the leave balance ({Balance.Value:N2}).", ThemeConstants.Notification.ThemeColor.Warning);
+                IsLoading = false;
+                return;
+            }
+
+            var s = new M2306_Save
+            {
+                LvDate = LvDate, EmpNumber = emp, LeaveCode = LeaveCode!,
+                LvStart = LvStart, LvEnd = LvEnd, NoDays = (double)NoDays, DaysWithPay = (double)DaysWithPay
+            };
+            var wasExisting = IsExisting;
+
+            if (IsExisting)
+                await _da._03Update(ControlNumber, s, Uc.OempNumber, OPis, Conn);
+            else
+            {
+                ControlNumber = await _da._01Save(s, Uc.OempNumber, OPis, Conn);
+                IsExisting = true;
+            }
+
+            // -- The PIS : an approved application, its days and the leave punches (balance and attendance) --
+            var pisNote = await SavePis(emp, wasExisting);
+
+            // -- Set Employee Status To : the employee status of the old PIS --
+            if (!string.IsNullOrWhiteSpace(SetStatusCode))
+            {
+                await _da._03EmpStatus(emp, SetStatusCode, LvStart, Uc.UserName, OPis, Conn);
+                await FillEmployee(emp);
+                SetStatusCode = null;
+            }
+
+            OrigEmpNumber = emp; OrigLeaveCode = LeaveCode; OrigStart = LvStart; OrigEnd = LvEnd; OrigDaysWithPay = (double)DaysWithPay;
+            await LoadHistory();
+            await RefreshBalance();
+            NotificationRef.Show($"Leave {ControlNumber} saved." + pisNote, ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show($"Failed to save: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        IsLoading = false;
+    }
+
+    // -- The leave in the PIS. An edit replaces the old record : the old application is cancelled, a new one is made. --
+    private async Task<string> SavePis(string emp, bool wasExisting)
+    {
+        var pe = PisEmp ?? await _da._02PisEmp(emp, Pis, Conn);
+        if (pe == null) return " (Not recorded in the PIS : the employee has no PIS record.)";
+        var typeId = PisTypeId > 0 ? PisTypeId : await _da._02PisLeaveTypeId(LeaveCode!, Pis, Conn);
+        if (typeId == 0) return " (Not recorded in the PIS : the leave type is not in the PIS.)";
+
+        // -- the old record of an edited leave --
+        if (wasExisting && !string.IsNullOrEmpty(OrigEmpNumber) && !string.IsNullOrEmpty(OrigLeaveCode))
+        {
+            var oldPe = await _da._02PisEmp(OrigEmpNumber, Pis, Conn);
+            var oldType = await _da._02PisLeaveTypeId(OrigLeaveCode, Pis, Conn);
+            if (oldPe != null && oldType > 0)
+                await _da._03CancelPis(oldPe.EmpmasId, oldPe.SystemId, oldType, OrigStart, OrigEnd, Uc.EmpmasId ?? 0, Pis, Conn);
         }
 
-    }
-
-    private async Task LoadApprovers()
-    {
-        var res = await _oofstaff2._02s(v.OPisdb, v.Conn);
-        if (res.Any())
+        var days = await BuildPisDays(emp, pe.SystemId);
+        var lvaId = await _da._01SavePis(new M2306_PisSave
         {
-            v.Approvers = res;
-            v.Approver = v.Approvers?.Where(p => p.Defa == 1).FirstOrDefault();
+            Yr = LvStart.Year, EmpmasId = pe.EmpmasId, EmpNumber = emp, DateApplied = LvDate, LeaveTypeId = typeId,
+            LvBalance = Balance ?? 0, DaysCnt = (double)NoDays, DaysWithPay = (double)DaysWithPay, LvStart = LvStart, LvEnd = LvEnd, Days = days
+        }, Uc.EmpmasId ?? 0, Pis, Conn);
+
+        // -- the days with pay are leave in the attendance (LV0 / LV1 / LV2); only an employee with a user account has one --
+        if (pe.SystemId > 0)
+        {
+            var pay = days.Where(d => d.IsPayable == 1)
+                          .Select(d => (d.Date, (int?)d.LeaveDayTypeId, AttPunchStatus.LV(d.LeaveDayTypeId))).ToList();
+            if (pay.Count > 0)
+            {
+                var t = await _terminal.GetAsync();
+                await _attPunches._01Approved(pe.SystemId, pay, Uc.UserId, t.TimeZoneId, t.IpAddress, t.MacAddress, Pis, Conn);
+            }
         }
-
+        return "";
     }
 
-    private async Task ChildAction()
+    // -- A row per day of the leave : the duty type from the schedule of the person (rest days are not leave with pay).
+    //    The days with pay are given to the working days from the first one; a half is a first-half day. --
+    private async Task<List<M2306_PisDay>> BuildPisDays(string emp, int systemId)
     {
+        var weekly = systemId > 0 ? ((await _sched._02Templates([systemId], Pis, Conn)) ?? []) : [];
+        var deflt  = (await _sched._02DefaultSchedule(Pis, Conn)) ?? [];
+        var adv    = (await _sched._02Advances([emp], LvStart, LvEnd, Pis, Conn)) ?? [];
 
+        var list = new List<M2306_PisDay>();
+        var left = (double)DaysWithPay;
+        for (var d = LvStart.Date; d <= LvEnd.Date; d = d.AddDays(1))
+        {
+            var dayNo = (int)d.DayOfWeek + 1;      // 1 = Sunday
+            var duty  = adv.FirstOrDefault(a => a.EmpNumber?.Trim() == emp && a.Date.Date == d)?.DutyType
+                        ?? weekly.FirstOrDefault(w => w.DayNo == dayNo)?.DutyType
+                        ?? deflt.FirstOrDefault(w => w.DayNo == dayNo)?.DutyType
+                        ?? "R";
+            duty = string.IsNullOrWhiteSpace(duty) ? "R" : duty.Trim();
+
+            var day = new M2306_PisDay { Date = d, DutyType = duty, IsPayable = 0, LeaveDayTypeId = 1 };
+            if (duty != "RD" && left > 0.0001)
+            {
+                day.IsPayable = 1;
+                if (left >= 1) { day.LeaveDayTypeId = 1; left -= 1; }
+                else           { day.LeaveDayTypeId = 2; left = 0; }
+            }
+            list.Add(day);
+        }
+        return list;
     }
 
+    private void AskDelete() => ShowDelete = true;
 
+    private async Task DoDelete()
+    {
+        ShowDelete = false;
+        if (!IsExisting) return;
+
+        try
+        {
+            var no = ControlNumber;
+            await _da._04Delete(no, OPis, Conn);
+
+            // -- the PIS record of that leave is cancelled too --
+            if (!string.IsNullOrEmpty(OrigEmpNumber) && !string.IsNullOrEmpty(OrigLeaveCode))
+            {
+                var pe = await _da._02PisEmp(OrigEmpNumber, Pis, Conn);
+                var typeId = await _da._02PisLeaveTypeId(OrigLeaveCode, Pis, Conn);
+                if (pe != null && typeId > 0)
+                    await _da._03CancelPis(pe.EmpmasId, pe.SystemId, typeId, OrigStart, OrigEnd, Uc.EmpmasId ?? 0, Pis, Conn);
+            }
+            await NewEntry();
+            NotificationRef.Show($"Leave {no} deleted.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show($"Failed to delete: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
 }

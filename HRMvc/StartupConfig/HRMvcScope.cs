@@ -3,6 +3,9 @@ using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._11_AMS;
 using HRApiLibrary.Modules._11003AME;
 using HRApiLibrary.Modules._11003O;
+using HRApiLibrary.Modules._12005O;
+using HRApiLibrary.Modules._2306O;
+using HRApiLibrary.Modules._2310O;
 using HRApiLibrary.Modules._12006O;
 using HRMvc.StartupConfig.Library;
 
@@ -36,6 +39,9 @@ public static class HRMvcScope
         services.AddScoped<IAttadvancescheduleDataAccess, AttadvancescheduleDataAccess>();
         services.AddScoped<IDA_11003AME, DA_11003AME>();
         services.AddScoped<IDA_11003O, DA_11003O>();
+        services.AddScoped<IDA_12005O, DA_12005O>();
+        services.AddScoped<IDA_2306O, DA_2306O>();
+        services.AddScoped<IDA_2310O, DA_2310O>();
         services.AddScoped<IAms_otsettingsDataAccess, Ams_otsettingsDataAccess>();
         services.AddScoped<IBiologDataAccess, BiologDataAccess>();
         services.AddScoped<IBioManHourDataAccess, BioManHourDataAccess>();

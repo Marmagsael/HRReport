@@ -1,4 +1,4 @@
-﻿using HRApiLibrary.DataAccess._10_Pis.Interface;
+using HRApiLibrary.DataAccess._10_Pis.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis;
 
@@ -53,7 +53,7 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
     }
 
     
-    public async Task<double> _02LvBalance(int? lvTypeId, int? empmasId, int? yr, string? schema, string? conn)
+    public async Task<double> _02LvBalance(int? lvTypeId, int? empmasId, int? yr, string? schema, string? conn, int? excludeLvaId = null)
     {
         double lvBal =0; 
         string?  q   = @$"select sum(Credit) Credit from {schema}.LvCredit 
@@ -65,10 +65,10 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
 
         string?  q2 = @$"select sum(DaysWithPay) DaysWithPay from {schema}.leaveapplication  
                             where EmpmasId = @EmpmasId and LeaveTypeId = @LvTypeId and Yr = @Year 
-                                  and Status in ('A', 'FA')  ";
+                                  and Status in ('A', 'F') and (@ExcludeId is null or Id <> @ExcludeId) ";
         var     r2 = await _sql.FetchData<LeaveapplicationModel?, 
-                        dynamic>(q2, new { EmpmasId = empmasId, LvTypeId = lvTypeId, Year = yr }, conn);
-        double  lvUsed = r2.FirstOrDefault().DaysWithPay ;
+                        dynamic>(q2, new { EmpmasId = empmasId, LvTypeId = lvTypeId, Year = yr, ExcludeId = excludeLvaId }, conn);
+        double  lvUsed = r2.FirstOrDefault()?.DaysWithPay ?? 0;
 
         lvBal = lvTotal - lvUsed;
         return lvBal;
@@ -95,7 +95,7 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
                         left join {pisdb}.empmas    e2   on e2.Id     = h.Approver2Id                        
                         where ( (h.Approver1Id = @ApproverId and h.ApproverLevel = 1) or 
                                 (h.Approver2Id = @ApproverId and h.ApproverLevel = 2)     ) and 
-                              Status in ('F', 'FA')";
+                              Status in ('F')";
         var data = await _sql.FetchData<LeaveapplicationModel?, dynamic>(sql,
                         new { ApproverId = approverId }, conn);
         return data ?? [];
@@ -167,6 +167,27 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
     }
 
     
+    // -- Approved leave goes to the old PIS table leave1 (the source of truth) : one row per leave application.
+    //    NO_DAYS keeps the half days (two decimals). LVNUMBER = yy-MM + running number of the month; a leave already posted (same employee, code and dates) is not posted twice. --
+    public async Task _01PostToOPis(int? lvaId, int? approverEmpmasId, string? pisdb, string? opisdb, string? conn)
+    {
+        string? sql = $@"insert into {opisdb}.leave1 (LVNUMBER, LVDATE, EMPNUMBER, LVCODE, `START`, `END`, NO_DAYS, WITHPAY, DAYS_WITHPAY, ENCODEBY, ENCODEDT, `mode`)
+                         select concat(date_format(now(), '%y-%m'),
+                                       lpad(ifnull((select max(cast(right(l.LVNUMBER, 3) as unsigned)) from {opisdb}.leave1 l
+                                                    where l.LVNUMBER like concat(date_format(now(), '%y-%m'), '%')), 0) + 1, 3, '0')),
+                                a.DateApplied, trim(e.EmpNumber), left(trim(t.Code), 2), a.LvStart, a.LvEnd,
+                                a.DaysCnt, if(a.DaysWithPay > 0, 'Y', 'N'), a.DaysWithPay, left(trim(ap.EmpNumber), 10), date_format(now(), '%Y-%m-%d'), 'L'
+                         from   {pisdb}.Leaveapplication a
+                                join {pisdb}.Empmas     e  on e.Id = a.EmpmasId
+                                join {pisdb}.Leavetype  t  on t.Id = a.LeaveTypeId
+                                left join {pisdb}.Empmas ap on ap.Id = @ApproverId
+                         where  a.Id = @Id
+                                and not exists (select 1 from {opisdb}.leave1 x
+                                                where x.EMPNUMBER = trim(e.EmpNumber) and x.LVCODE = left(trim(t.Code), 2)
+                                                  and x.`START` = a.LvStart and x.`END` = a.LvEnd)";
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = lvaId, ApproverId = approverEmpmasId }, conn);
+    }
+
     public async Task<LeaveapplicationModel?> _03SendForApproval(LeaveapplicationModel lva, string? schema, string? conn)
     {
         var     lvaId   = lva.Id; 

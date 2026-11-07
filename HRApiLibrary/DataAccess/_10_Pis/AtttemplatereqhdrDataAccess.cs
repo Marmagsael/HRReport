@@ -92,7 +92,7 @@ public class AtttemplatereqhdrDataAccess : IAtttemplatereqhdrDataAccess
         string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName, h.*
                         from      {pisdb}.Atttemplatereqhdr h
                         left join {pisdb}.empmas e on e.SystemId = h.UserId    
-                        where h.Empnumber_Approver = @EmpNumber_Approver and Status in ('F', 'FA') ";
+                        where h.Empnumber_Approver = @EmpNumber_Approver and Status in ('F') ";
         var data = await _sql.FetchData<AtttemplatereqhdrModel?, dynamic>(sql,
                         new { EmpNumber_Approver = approver_empnumber }, conn);
         return data ?? [];

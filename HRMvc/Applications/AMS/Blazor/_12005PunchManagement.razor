@@ -1,7 +1,482 @@
-﻿<_00UnderDevelopment Module="_12005PunchManagement" />
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._11003O
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
 
+@using HRApiLibrary.Modules._12005O
+
+@inject IDA_11003O _empDa
+@inject IDA_12005O _da
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<div class="card w-100 p-1">
+    <BodyHdr pageTitle="12005 - Punch Management" />
+    <div class="card-body p-1 w-100">
+
+        <TelerikTabStrip ActiveTabId="@ActiveTab" ActiveTabIdChanged="@((string id) => TabChanged(id))">
+
+            @* ======================= PER EMPLOYEE : only the filter is different ======================= *@
+            <TabStripTab Title="Per Employee" Id="emp">
+
+                <div class="d-flex flex-wrap align-items-end gap-3 py-2 border-bottom">
+                    <div>
+                        <label class="form-label fw-bold mb-0">Employee</label><br />
+                        <TelerikComboBox Data="@Employees" @bind-Value="@EmpNumber" TextField="Display" ValueField="EmpNumber"
+                                         Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains"
+                                         Placeholder="Search employee no. or name" Width="360px" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-bold mb-0">From</label><br />
+                        <TelerikDatePicker @bind-Value="@From" Width="150px" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-bold mb-0">To</label><br />
+                        <TelerikDatePicker @bind-Value="@To" Width="150px" />
+                    </div>
+                    <div>
+                        <TelerikButton OnClick="@LoadByEmployee" ThemeColor="primary">Load</TelerikButton>
+                    </div>
+                </div>
+
+                @Results
+
+            </TabStripTab>
+
+            @* ===================== PER PAYROLL GROUP : only the filter is different ===================== *@
+            <TabStripTab Title="Per Payroll Group" Id="grp">
+
+                <div class="d-flex flex-wrap align-items-end gap-3 py-2 border-bottom">
+                    <div>
+                        <label class="form-label fw-bold mb-0">Payroll Group</label><br />
+                        <TelerikDropDownList Data="@PayrollGrps" @bind-Value="@PayrollGrpId" TextField="Name" ValueField="Id"
+                                             DefaultText="-- Select --" Width="320px" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-bold mb-0">From</label><br />
+                        <TelerikDatePicker @bind-Value="@From" Width="150px" />
+                    </div>
+                    <div>
+                        <label class="form-label fw-bold mb-0">To</label><br />
+                        <TelerikDatePicker @bind-Value="@To" Width="150px" />
+                    </div>
+                    <div>
+                        <TelerikButton OnClick="@LoadByPayrollGroup" ThemeColor="primary">Load</TelerikButton>
+                    </div>
+                </div>
+
+                @Results
+
+            </TabStripTab>
+
+        </TelerikTabStrip>
+
+    </div>
+</div>
+</TelerikRootComponent>
+
+@* ============ same presentation for both : the bar to apply a schedule / punch and the grid ============ *@
 @code {
+
+    private RenderFragment Results => __builder =>
+    {
+        if (Rows.Count > 0)
+        {
+            <div class="py-2 border-bottom bg-lightgray px-2">
+            <div class="d-flex flex-wrap align-items-end gap-3">
+                <div>
+                    <label class="form-label mb-0 small">Daily Schedule Template</label><br />
+                    <TelerikDropDownList Data="@Templates" Value="@BulkTemplateId" ValueChanged="@((int? v) => BulkTemplateChanged(v))"
+                                         TextField="Display" ValueField="Id" DefaultText="-- None --" Width="200px" />
+                </div>
+                <div class="small px-2 py-1 bg-white border rounded">
+                    Duty Start : <b>@(BulkTemplate?.DutyStart ?? "--:--")</b> &nbsp;
+                    Duration : <b>@(BulkTemplate == null ? "-" : BulkTemplate.Duration.ToString("N2") + " hrs")</b> &nbsp;
+                    Duty End : <b>@(BulkTemplate?.DutyEnd ?? "--:--")</b>
+                </div>
+                <div>
+                    <label class="form-label mb-0 small">Punch In</label><br />
+                    <TelerikTimePicker @bind-Value="@BulkIn" Width="130px" />
+                </div>
+                <div>
+                    <label class="form-label mb-0 small">Punch Out</label><br />
+                    <TelerikTimePicker @bind-Value="@BulkOut" Width="130px" />
+                </div>
+                <div>
+                    <label class="form-label mb-0 small">Select rows by Duty Type</label><br />
+                    <div class="d-flex gap-3 align-items-center border rounded bg-white px-3" style="height:32px;">
+                        @foreach (var dt in DutyTypes)
+                        {
+                            var duty = dt;
+                            <label class="d-flex gap-1 align-items-center mb-0">
+                                <TelerikCheckBox Value="@SelDuty.Contains(duty)" ValueChanged="@((bool on) => PickDuty(duty, on))" />
+                                <span>@duty</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="mt-2">
+                <TelerikButton OnClick="@UseAssigned">Use assigned schedule</TelerikButton>
+                <TelerikButton OnClick="@ApplyBulk">Apply template</TelerikButton>
+                <TelerikButton OnClick="@SaveRows" ThemeColor="primary">Save Changes</TelerikButton>
+            </div>
+            <div class="fw-bold mt-2">Apply to the selected rows (@Rows.Count(r => r.Selected)) within @From.ToString("MMM dd") - @To.ToString("MMM dd, yyyy")</div>
+            </div>
+        }
+
+        <TelerikGrid Data="@Rows" Sortable="true" Pageable="true" PageSize="25" Height="calc(100vh - 400px)" Class="mt-2">
+            <GridColumns>
+                <GridColumn Width="50px" Title="">
+                    <HeaderTemplate>
+                        <TelerikCheckBox Value="@AllSelected" ValueChanged="@((bool v) => ToggleAll(v))" />
+                    </HeaderTemplate>
+                    <Template>
+                        @{ var r = (PunchRowItem)context; }
+                        <TelerikCheckBox @bind-Value="@r.Selected" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="@nameof(PunchRowItem.Date)" Title="Date" DisplayFormat="{0:MMM dd, yyyy ddd}" Width="150px" />
+                <GridColumn Field="@nameof(PunchRowItem.EmpNumber)" Title="Emp. No." Width="100px" />
+                <GridColumn Field="@nameof(PunchRowItem.Name)" Title="Name" />
+                <GridColumn Field="@nameof(PunchRowItem.DutyType)" Title="Duty Type" Width="100px" />
+                <GridColumn Field="@nameof(PunchRowItem.Schedule)" Title="Schedule" Width="100px" />
+                <GridColumn Field="@nameof(PunchRowItem.DutyStart)" Title="Duty Start" Width="95px" TextAlign="ColumnTextAlign.Right" />
+                <GridColumn Field="@nameof(PunchRowItem.SchedDuration)" Title="Duration" Width="90px" TextAlign="ColumnTextAlign.Right" DisplayFormat="{0:N2}" />
+                <GridColumn Field="@nameof(PunchRowItem.DutyEnd)" Title="Duty End" Width="95px" TextAlign="ColumnTextAlign.Right" />
+                <GridColumn Field="@nameof(PunchRowItem.PunchIn)" Title="Punch In" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                <GridColumn Field="@nameof(PunchRowItem.PunchOut)" Title="Punch Out" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                <GridColumn Field="@nameof(PunchRowItem.Status)" Title="Status" Width="100px">
+                    <Template>@StatusText(((PunchRowItem)context).Status)</Template>
+                </GridColumn>
+            </GridColumns>
+            <NoDataTemplate>
+                <div class="p-3 text-muted">Choose the filter above, then click Load.</div>
+            </NoDataTemplate>
+        </TelerikGrid>
+    };
 
     [Parameter] public UserClaimsModel? Uc { get; set; }
 
+    private TelerikNotification NotificationRef = default!;
+
+    private static readonly string[] DutyTypes = ["R", "RD", "RN"];
+
+    // -- AttPunches1.Status : every punch saved here is Locked --
+    private const string Locked = "L";
+    private static string StatusText(string? code) => code == Locked ? "Locked" : "";
+
+    // -- Daily schedule template (AttSchedDaily : Name, DutyType, PIn / POut as HHmm, Duration as hours x 100) --
+    private class TemplateItem
+    {
+        public int    Id       { get; set; }
+        public string Name     { get; set; } = "";
+        public string DutyType { get; set; } = "R";
+        public int    PIn      { get; set; }
+        public int    POut     { get; set; }
+        public string Display  => Name;
+        public string DutyStart => Fmt(PIn);
+        public string DutyEnd   => Fmt(POut);
+        public double Duration  => MinutesBetween(PIn, POut) / 60.0;
+    }
+
+    private static string Fmt(int hhmm) => $"{hhmm / 100:00}:{hhmm % 100:00}";
+
+    // -- minutes from an HHmm to another HHmm; an end that is not later than the start is on the next day --
+    private static int MinutesBetween(int fromHhmm, int toHhmm)
+    {
+        var a = fromHhmm / 100 * 60 + fromHhmm % 100;
+        var b = toHhmm / 100 * 60 + toHhmm % 100;
+        return b > a ? b - a : b + 1440 - a;
+    }
+
+    private record Sched(string DutyType, string Start, double Duration, string End, string Source);
+
+    private static Sched Make(string? duty, int pin, int hrs100, string source)
+    {
+        duty = string.IsNullOrWhiteSpace(duty) ? "R" : duty.Trim();
+
+        // -- old default row keeps 8000 / 8 : In x 10, hours instead of hours x 100 --
+        if (pin > 2359) pin /= 10;
+        if (hrs100 > 0 && hrs100 < 100) hrs100 *= 100;
+
+        if (duty == "RD" || hrs100 <= 0) return new(duty, "", 0, "", source);
+
+        var startMin = pin / 100 * 60 + pin % 100;
+        var durMin   = (int)Math.Round(hrs100 / 100.0 * 60);
+        var endMin   = (startMin + durMin) % 1440;
+        return new(duty, $"{startMin / 60:00}:{startMin % 60:00}", durMin / 60.0, $"{endMin / 60:00}:{endMin % 60:00}", source);
+    }
+
+    // -- one row = one employee on one date, shown like AttPunches1 (punch in / punch out / status) --
+    private class PunchRowItem
+    {
+        public bool      Selected  { get; set; }
+        public DateTime  Date      { get; set; }
+        public int       SystemId  { get; set; }
+        public string    EmpNumber { get; set; } = "";
+        public string    Name      { get; set; } = "";
+        public string    DutyType  { get; set; } = "R";
+        public string    Schedule  { get; set; } = "";
+        public string    DutyStart { get; set; } = "";
+        public double?   SchedDuration { get; set; }
+        public string    DutyEnd   { get; set; } = "";
+        public string    PunchIn   { get; set; } = "";
+        public string    PunchOut  { get; set; } = "";
+        public string    Status    { get; set; } = "";
+        public bool      Edited    { get; set; }
+        public DateTime? OrigPunchInDate { get; set; }
+    }
+
+    private class EmpItem { public int SystemId { get; set; } public string EmpNumber { get; set; } = ""; public string Name { get; set; } = ""; public string Display => $"{EmpNumber} - {Name}"; }
+
+    private List<TemplateItem> Templates = [];
+
+    // -- Filters --
+    private List<EmpItem> Employees = [];
+    private string? EmpNumber;
+    private List<M11003_Payrollgrp> PayrollGrps = [];
+    private int? PayrollGrpId;
+    private DateTime From = DateTime.Today.AddDays(-6);
+    private DateTime To   = DateTime.Today;
+
+    // -- Switching tab starts clean : the list of the other tab is cleared --
+    private string ActiveTab = "emp";
+
+    private void TabChanged(string id)
+    {
+        if (id == ActiveTab) return;
+        ActiveTab = id;
+        Rows = [];
+        SelDuty.Clear();
+        BulkTemplateId = null;
+    }
+
+    // -- Result rows (same for both) and the bar --
+    private List<PunchRowItem> Rows = [];
+    private int? BulkTemplateId;
+    private TemplateItem? BulkTemplate => Templates.FirstOrDefault(x => x.Id == BulkTemplateId);
+    private DateTime BulkIn   = DateTime.Today.AddHours(8);
+    private DateTime BulkOut  = DateTime.Today.AddHours(17);
+
+    private bool AllSelected => Rows.Count > 0 && Rows.All(r => r.Selected);
+
+    private string Pis  => Uc?.SchemaUserPis ?? "";
+    private string OPis => Uc?.OpisDb ?? "";
+    private string Conn => Uc?.Conn ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc == null || string.IsNullOrEmpty(Pis) || string.IsNullOrEmpty(Conn)) return;
+
+        try
+        {
+            Employees = ((await _empDa._02EmpmasByKeyword("", Pis, OPis, Conn)) ?? [])
+                .Select(e => new EmpItem { SystemId = e.SystemId, EmpNumber = (e.EmpNumber ?? "").Trim(), Name = (e.EmpName ?? "").Trim() })
+                .ToList();
+
+            PayrollGrps = (await _empDa._02Payrollgrps(Uc.OpayDb ?? "", Conn)) ?? [];
+
+            Templates = ((await _da._02Dailys(Pis, Conn)) ?? [])
+                .Select(d => new TemplateItem { Id = d.Id, Name = d.Name ?? "", DutyType = d.DutyType ?? "R", PIn = d.PIn, POut = d.POut })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show($"Unable to load the lists : {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    // ---------------- Load : one row per employee per date in the range, with the schedule assigned to that person ----------------
+    private async Task LoadByEmployee()
+    {
+        if (string.IsNullOrWhiteSpace(EmpNumber)) { NotificationRef.Show("Choose an employee first.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+        await Build(Employees.Where(e => e.EmpNumber == EmpNumber).ToList());
+    }
+
+    private async Task LoadByPayrollGroup()
+    {
+        if (PayrollGrpId is null or 0) { NotificationRef.Show("Choose a payroll group first.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+
+        var people = ((await _empDa._02Deprec_ByFieldId("PayrollgrpId", PayrollGrpId, Pis, OPis, Conn)) ?? [])
+            .Select(e => new EmpItem { SystemId = e.SystemId, EmpNumber = (e.EmpNumber ?? "").Trim(), Name = (e.EmpName ?? "").Trim() })
+            .ToList();
+        await Build(people);
+    }
+
+    private async Task Build(List<EmpItem> people)
+    {
+        if (To.Date < From.Date) { NotificationRef.Show("The end date must not be earlier than the start date.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+
+        var last = From.Date.AddDays(30);
+        var to   = To.Date <= last ? To.Date : last;
+
+        try
+        {
+            var ids  = people.Where(p => p.SystemId > 0).Select(p => p.SystemId).Distinct().ToList();
+            var nos  = people.Select(p => p.EmpNumber).Distinct().ToList();
+
+            var weekly  = (await _da._02Templates(ids, Pis, Conn)) ?? [];
+            var weekAdv = (await _da._02WeeklyAdvance(ids, Pis, Conn)) ?? [];
+            var deflt   = (await _da._02DefaultSchedule(Pis, Conn)) ?? [];
+            var advance = (await _da._02Advances(nos, From, to, Pis, Conn)) ?? [];
+            var punches = (await _da._02Punches(ids, From, to, Pis, Conn)) ?? [];
+
+            Rows = [];
+            for (var d = From.Date; d <= to; d = d.AddDays(1))
+            {
+                var dayNo = (int)d.DayOfWeek + 1;      // 1 = Sunday
+
+                foreach (var e in people)
+                {
+                    // -- schedule : the schedule of that date, then the weekly one that takes effect, then the assigned weekly one, then the default --
+                    Sched sc;
+                    var adv = advance.FirstOrDefault(a => a.EmpNumber?.Trim() == e.EmpNumber && a.Date.Date == d);
+                    var wa  = weekAdv.FirstOrDefault(w => w.EmpmasId == e.SystemId && w.DayNo == dayNo && w.EffFrom != null && w.EffFrom.Value.Date <= d && (w.EffTo == null || d <= w.EffTo.Value.Date));
+                    var wk  = weekly.FirstOrDefault(w => w.EmpmasId == e.SystemId && w.DayNo == dayNo);
+                    var df  = deflt.FirstOrDefault(w => w.DayNo == dayNo);
+
+                    if (adv != null)      sc = Make(adv.DutyType, adv.PIn, adv.Duration, "Advance");
+                    else if (wa != null)  sc = Make(wa.DutyType, wa.PIn, wa.Hrs, "Advance");
+                    else if (wk != null)  sc = Make(wk.DutyType, wk.PIn, wk.Hrs, "Assigned");
+                    else if (df != null)  sc = Make(df.DutyType, df.PIn, df.Hrs, "Default");
+                    else                  sc = new("R", "", 0, "", "No schedule");
+
+                    var mine = punches.Where(p => p.EmpmasId == e.SystemId && p.PunchInDate.Date == d).ToList();
+
+                    // -- the punches of that date; if none yet, one empty row --
+                    if (mine.Count == 0)
+                        Rows.Add(NewRow(d, e, sc, null));
+                    else
+                        foreach (var p in mine) Rows.Add(NewRow(d, e, sc, p));
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Rows = [];
+            NotificationRef.Show($"Unable to load : {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+    private static PunchRowItem NewRow(DateTime d, EmpItem e, Sched sc, M12005_Punch? p)
+    {
+        var working = !string.IsNullOrEmpty(sc.Start);
+        return new PunchRowItem
+        {
+            Date = d, SystemId = e.SystemId, EmpNumber = e.EmpNumber, Name = e.Name,
+            DutyType  = p?.DutyCode ?? sc.DutyType,
+            Schedule  = e.SystemId <= 0 ? "No user account" : sc.Source,
+            DutyStart = sc.Start, SchedDuration = working ? sc.Duration : null, DutyEnd = sc.End,
+            PunchIn   = p?.PunchInDate.ToString("HH:mm") ?? "",
+            PunchOut  = p?.PunchOutDate?.ToString("HH:mm") ?? "",
+            Status    = p == null ? "" : Locked,
+            OrigPunchInDate = p?.PunchInDate
+        };
+    }
+
+    // ---------------- The bar ----------------
+    private void ToggleAll(bool on) { foreach (var r in Rows) r.Selected = on; }
+
+    // -- Tick one or more duty types (R / RD / RN) to select every row of those types; untick to take them out --
+    private readonly HashSet<string> SelDuty = [];
+
+    private void PickDuty(string code, bool on)
+    {
+        if (on) SelDuty.Add(code); else SelDuty.Remove(code);
+        foreach (var r in Rows) r.Selected = SelDuty.Contains(r.DutyType);
+    }
+
+    private void BulkTemplateChanged(int? id)
+    {
+        BulkTemplateId = id;
+        var t = Templates.FirstOrDefault(x => x.Id == id);
+        if (t == null) return;
+
+        BulkIn  = DateTime.Today.Add(TimeSpan.Parse(t.DutyStart));
+        BulkOut = DateTime.Today.Add(TimeSpan.Parse(t.DutyEnd));
+    }
+
+    // -- Reset the selected rows to the schedule assigned to each person : scheduled IN / OUT become the actual punch (still editable) --
+    private void UseAssigned()
+    {
+        var sel = Rows.Where(r => r.Selected).ToList();
+        if (sel.Count == 0) { NotificationRef.Show("Select at least one row.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+
+        var noSched = 0;
+        foreach (var r in sel)
+        {
+            if (string.IsNullOrEmpty(r.DutyStart)) { noSched++; continue; }    // rest day or no schedule : nothing to punch
+            r.PunchIn = r.DutyStart; r.PunchOut = r.DutyEnd;
+            r.Status  = Locked; r.Edited = true;
+        }
+        if (noSched > 0) NotificationRef.Show($"{noSched} selected row(s) have no scheduled duty (rest day or no schedule) and were skipped.", ThemeConstants.Notification.ThemeColor.Info);
+    }
+
+    private void ApplyBulk()
+    {
+        var sel = Rows.Where(r => r.Selected).ToList();
+        if (sel.Count == 0) { NotificationRef.Show("Select at least one row.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+
+        foreach (var r in sel)
+        {
+            r.PunchIn = BulkIn.ToString("HH:mm"); r.PunchOut = BulkOut.ToString("HH:mm");
+            if (BulkTemplate != null)
+            {
+                r.DutyType = BulkTemplate.DutyType; r.Schedule = "Template";
+                r.DutyStart = BulkTemplate.DutyStart; r.SchedDuration = BulkTemplate.Duration; r.DutyEnd = BulkTemplate.DutyEnd;
+            }
+            r.Status = Locked; r.Edited = true;
+        }
+    }
+
+    private async Task SaveRows()
+    {
+        var edited = Rows.Where(r => r.Edited).ToList();
+        if (edited.Count == 0) { NotificationRef.Show("Nothing to save.", ThemeConstants.Notification.ThemeColor.Info); return; }
+
+        var noAccount = edited.Count(r => r.SystemId <= 0);
+        var save = new List<M12005_Save>();
+
+        foreach (var r in edited.Where(r => r.SystemId > 0 && TimeSpan.TryParse(r.PunchIn, out _)))
+        {
+            var pin  = r.Date.Date + TimeSpan.Parse(r.PunchIn);
+            DateTime? pout = null;
+            if (TimeSpan.TryParse(r.PunchOut, out var o))
+            {
+                pout = r.Date.Date + o;
+                if (pout <= pin) pout = pout.Value.AddDays(1);        // an out that is not later than the in is on the next day
+            }
+
+            var sIn = string.IsNullOrEmpty(r.DutyStart) ? pin : r.Date.Date + TimeSpan.Parse(r.DutyStart);
+            save.Add(new M12005_Save
+            {
+                EmpmasId = r.SystemId, OrigPunchInDate = r.OrigPunchInDate, PunchInDate = pin, PunchOutDate = pout,
+                DayNo = (int)r.Date.DayOfWeek + 1, PunchT = sIn.Hour * 100 + sIn.Minute,
+                SchedDuration = (int)Math.Round((r.SchedDuration ?? 0) * 100), DutyCode = r.DutyType
+            });
+        }
+
+        try
+        {
+            if (save.Count > 0) await _da._01Save(save, Uc?.UserId ?? 0, Pis, Conn);
+
+            foreach (var r in edited.Where(r => r.SystemId > 0 && TimeSpan.TryParse(r.PunchIn, out _)))
+            {
+                r.Edited = false;
+                r.OrigPunchInDate = r.Date.Date + TimeSpan.Parse(r.PunchIn);
+            }
+
+            var msg = $"{save.Count} punch(es) saved.";
+            if (noAccount > 0) msg += $" {noAccount} row(s) skipped : no user account.";
+            NotificationRef.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef.Show($"Failed to save: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
 }
