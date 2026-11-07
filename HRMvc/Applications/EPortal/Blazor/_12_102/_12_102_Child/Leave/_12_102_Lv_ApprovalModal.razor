@@ -1,4 +1,4 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications._00GeneralComponents
@@ -123,6 +123,9 @@
                                       .Select(d => (d.Date!.Value, d.LeaveDayTypeId, AttPunchStatus.LV(d.LeaveDayTypeId)));
                 var t    = await _terminal.GetAsync();
                 await _attPunches._01Approved(V.LvApp.EmpmasId, days, Uc.UserId, t.TimeZoneId, t.IpAddress, t.MacAddress, Uc.SchemaUserPis, Uc.Conn);
+
+                @* --- the approved leave is also posted to the old PIS (leave1) --- *@
+                await _lvapp._01PostToOPis(V.LvApp.Id, Uc.EmpmasId, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn);
             }
             V.LvApps = [];
 
