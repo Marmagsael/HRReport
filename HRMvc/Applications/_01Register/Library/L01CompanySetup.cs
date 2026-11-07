@@ -95,5 +95,6 @@ public class L01CompanySetup
 
         await _register._01OwnerEmpmas(owner, Main, Conn);
         await _register._01OwnerOldEmpmas(owner, Conn);
+        await _register._01OwnerCompanyInfo(owner, Conn);
     }
 }

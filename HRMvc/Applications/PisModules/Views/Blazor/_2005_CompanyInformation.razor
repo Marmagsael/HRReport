@@ -1,0 +1,246 @@
+@using HRMvc.Applications._00GeneralComponents
+@using HRApiLibrary.Models._10_Pis
+@using HRApiLibrary.Models._10_Pis.OPis
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOCoinfoDataAccess _coinfo;
+@inject IRCoInfoDataAccess _rcoinfo;
+
+<TelerikRootComponent>
+
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
+    <_00BT_FullW HdrCaption="Company Information">
+
+        <Details>
+
+            <EditForm Model="@F" OnValidSubmit="@SaveRecord" class="d-flex flex-column">
+
+                <div class="p-2 bordered-bottom d-flex bg-lightgray flex-shrink-0">
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="submit">Save</button>
+                </div>
+
+                <div class="px-2 ps-md-3 pt-3">
+
+                    @Field("Company Name", F.CoName, v => F.CoName = v, 150, 8)
+                    @if (!string.IsNullOrWhiteSpace(NameError))
+                    {
+                        <div class="txt-red small mb-2">@NameError</div>
+                    }
+                    @Field("Short Name", F.ShortName, v => F.ShortName = v, 45, 4)
+                    @Field("Address 1", F.Add1, v => F.Add1 = v, 250, 8)
+                    @Field("Address 2", F.Add2, v => F.Add2 = v, 250, 8)
+                    @Field("Tel No.", F.TelNo, v => F.TelNo = v, 100, 4)
+                    @Field("Registration No.", F.RegNo, v => F.RegNo = v, 60, 4)
+
+                    <div class="d-flex flex-column flex-md-row mb-2">
+                        <label class="fw-normal w-180p">Registration Period</label>
+                        <div class="col-12 col-md-2">
+                            <TelerikNumericTextBox @bind-Value="@F.RegPeriod" Format="N0" Decimals="0" Min="0"
+                                                   Rounded="@ThemeConstants.NumericTextBox.Rounded.Large"
+                                                   FillMode="@ThemeConstants.NumericTextBox.FillMode.Solid" Class="text-end" />
+                        </div>
+                    </div>
+
+                    @Field("Account No.", F.AcctNo, v => F.AcctNo = v, 45, 4)
+                    @Field("TIN", F.Tin, v => F.Tin = v, 25, 4)
+                    @Field("SSS No.", F.Sss, v => F.Sss = v, 25, 4)
+                    @Field("PHIC No.", F.Phic, v => F.Phic = v, 25, 4)
+                    @Field("Pag-IBIG No.", F.Pagibig, v => F.Pagibig = v, 25, 4)
+
+                    <div class="d-flex flex-column flex-md-row mb-2">
+                        <label class="fw-normal w-180p">SSS Member Type</label>
+                        <div class="col-12 col-md-4">
+                            <TelerikDropDownList Data="@MemTypes" TextField="Text" ValueField="Value" @bind-Value="@F.SssMemType"
+                                                 DefaultText="-- Select --"
+                                                 Rounded="@ThemeConstants.DropDownList.Rounded.Large"
+                                                 FillMode="@ThemeConstants.DropDownList.FillMode.Solid" />
+                        </div>
+                    </div>
+
+                    @Field("SSS Doc No.", F.SssDocNo, v => F.SssDocNo = v, 6, 2)
+                    @Field("SSS Branch Code", F.SssBrCode, v => F.SssBrCode = v, 3, 2)
+
+                </div>
+
+            </EditForm>
+
+        </Details>
+
+    </_00BT_FullW>
+
+</TelerikRootComponent>
+
+
+@code {
+    [Parameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    private TelerikNotification NotificationRef = default!;
+
+    private bool IsLoading;
+    private string NameError = string.Empty;
+
+    private CompanyForm F = new();
+
+    private record MemType(string Value, string Text);
+    private readonly List<MemType> MemTypes =
+    [
+        new("1", "Private"), new("2", "Local"), new("3", "GCC"), new("4", "NGA")
+    ];
+
+    private class CompanyForm
+    {
+        public string? CoName     { get; set; }
+        public string? ShortName  { get; set; }
+        public string? Add1       { get; set; }
+        public string? Add2       { get; set; }
+        public string? TelNo      { get; set; }
+        public string? RegNo      { get; set; }
+        public int?    RegPeriod  { get; set; }
+        public string? AcctNo     { get; set; }
+        public string? Tin        { get; set; }
+        public string? Sss        { get; set; }
+        public string? Phic       { get; set; }
+        public string? Pagibig    { get; set; }
+        public string? SssMemType { get; set; }
+        public string? SssDocNo   { get; set; }
+        public string? SssBrCode  { get; set; }
+    }
+
+    private RenderFragment Field(string label, string? value, Action<string?> set, int max, int cols) => __builder =>
+    {
+        <div class="d-flex flex-column flex-md-row mb-2">
+            <label class="fw-normal w-180p">@label</label>
+            <div class="col-12 col-md-@cols">
+                <TelerikTextBox Value="@value" ValueChanged="@((string? v) => set(v))" ValueExpression="@(() => value)"
+                                Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                MaxLength="@max" />
+            </div>
+        </div>
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.OpisDb == null || Uc.SchemaUserPis == null)
+        {
+            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            var o = await _coinfo._02(Uc.OpisDb, Uc.Conn);
+            var r = await _rcoinfo._02(Uc.SchemaUserPis, Uc.Conn);
+
+            // -- The old PIS comes first; what it does not have yet is taken from the new PIS --
+            F = new CompanyForm
+            {
+                CoName     = Pick(o?.CoName, r?.CoName),
+                ShortName  = Pick(o?.Shortname, r?.ShortName),
+                Add1       = Pick(o?.Add1, o?.CoAdd, r?.Add1),
+                Add2       = Pick(o?.Add2, r?.Add2),
+                TelNo      = Pick(o?.TelNo, r?.TelNo),
+                RegNo      = Pick(o?.RegNo, r?.RegNo),
+                RegPeriod  = o?.RegPeriod ?? r?.RegPeriod,
+                AcctNo     = Pick(o?.AcctNo, r?.AcctNo),
+                Tin        = Pick(o?.Tin, r?.TinNo),
+                Sss        = Pick(o?.Sss, r?.SssNo),
+                Phic       = Pick(o?.Phic, r?.PhicNo),
+                Pagibig    = Pick(o?.Pagibig, r?.PagibigNo),
+                SssMemType = Pick(o?.SssMemType, r?.SssMemType?.ToString()),
+                SssDocNo   = Pick(o?.Sssdocno, r?.SssDocNo),
+                SssBrCode  = Pick(o?.SssLocCode, r?.SssBrCode)
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to load the company information.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        IsLoading = false;
+    }
+
+    private static string? Pick(params string?[] values)
+        => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+
+    private static string? Blank(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+
+    private async Task SaveRecord()
+    {
+        NameError = string.Empty;
+        if (string.IsNullOrWhiteSpace(F.CoName))
+        {
+            NameError = "Company name is required.";
+            return;
+        }
+
+        IsLoading = true;
+        try
+        {
+            var memType = Blank(F.SssMemType);
+            var add1 = Blank(F.Add1);
+            var add2 = Blank(F.Add2);
+
+            // -- Old PIS : CoAdd (one field, used by the reports) = Address 1 + Address 2 --
+            var o = new OCompanyInfoModel
+            {
+                CoName     = F.CoName.Trim(),
+                Shortname  = Blank(F.ShortName),
+                CoAdd      = string.Join(" ", new[] { add1, add2 }.Where(a => a != null)),
+                Add1       = add1,
+                Add2       = add2,
+                TelNo      = Blank(F.TelNo),
+                RegNo      = Blank(F.RegNo),
+                RegPeriod  = F.RegPeriod,
+                AcctNo     = Blank(F.AcctNo),
+                Tin        = Blank(F.Tin),
+                Sss        = Blank(F.Sss),
+                Phic       = Blank(F.Phic),
+                Pagibig    = Blank(F.Pagibig),
+                SssMemType = memType,
+                Sssdocno   = Blank(F.SssDocNo),
+                SssLocCode = Blank(F.SssBrCode)
+            };
+
+            var existing = await _coinfo._02(Uc.OpisDb, Uc.Conn);
+            if (existing == null) await _coinfo._01(o, Uc.OpisDb, Uc.Conn);
+            else                  await _coinfo._03(existing.CoName, o, Uc.OpisDb, Uc.Conn);
+
+            var r = new RCoInfoModel
+            {
+                CoName     = o.CoName,
+                ShortName  = o.Shortname,
+                Add1       = add1,
+                Add2       = add2,
+                TelNo      = o.TelNo,
+                RegNo      = o.RegNo,
+                RegPeriod  = o.RegPeriod,
+                AcctNo     = o.AcctNo,
+                TinNo      = o.Tin,
+                SssNo      = o.Sss,
+                PhicNo     = o.Phic,
+                PagibigNo  = o.Pagibig,
+                SssMemType = int.TryParse(memType, out var mt) ? mt : null,
+                SssDocNo   = o.Sssdocno,
+                SssBrCode  = o.SssLocCode
+            };
+            await _rcoinfo._01Save(r, Uc.SchemaUserPis, Uc.Conn);
+
+            NotificationRef?.Show("Company information saved.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex)
+        {
+            NotificationRef?.Show($"Failed to save: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        IsLoading = false;
+    }
+}
