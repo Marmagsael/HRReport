@@ -2,6 +2,8 @@
 @using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_00_Modal
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 
 
 <TelerikRootComponent>
@@ -86,7 +88,7 @@
                                             }
                                             else
                                             {
-                                                <_2052_03_RecordsEntry ChildAction="ChildAction" />
+                                                <_2052_03_RecordsEntry ChildAction="ChildAction"/>
                                             }
                                         </div>
                                     </div>
@@ -135,6 +137,9 @@
 @inject IOSecliclogsDataAccess _secliclog
 
 @inject IOPisReportDataAccess _pisRep
+@inject I_10_EmpmasDataAccess _pisEmpmas
+
+@inject ISettingsDataAccess _settings;
 
 @code {
     [Parameter]
@@ -321,6 +326,7 @@
                 await LoadCharRefs();
                 await LoadInsuranceAccident();
                 await LoadSecLicense();
+                await LoadEmployeeAddress();
 
                 SplitHeight();
                 GetAddressArea();
@@ -365,12 +371,11 @@
 
     private async Task _02LoadCompanyInfo()
     {
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        if (!(res ?? []).Any()) return;
+        // var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
 
-        var r = res!.First();
-        rv.ReportParams["CoName"] = r.CoName ?? "";
-        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        rv.ReportParams["CoName"] = res.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = res.CoAddress ?? "";
     }
 
     private async Task GenerateReport()
@@ -559,6 +564,19 @@
             Console.WriteLine(ex);
             NotificationRef.Show("Unable to load character reference records. Please refresh or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
+    }
+
+    public async Task LoadEmployeeAddress()
+    {
+
+        var empno = v.SelectedEmpnumber;
+        if (string.IsNullOrWhiteSpace(empno) || v.EmpmasaddressFor == empno) return;
+
+        var empmas = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
+        var address = empmas?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(empmas.Id, Uc.SchemaUserPis, Uc.Conn);
+        v.Empmasaddress = address ?? new();
+        v.EmpmasaddressFor = empno;
+
     }
 
     private async Task LoadEmployments()

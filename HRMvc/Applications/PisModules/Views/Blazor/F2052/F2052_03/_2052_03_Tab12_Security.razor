@@ -36,6 +36,8 @@
                 </div>
             </div>
 
+
+          
             @* ----- Expiration -----------------------*@
             <div class="w-100 d-flex p-1">
                 <div class="w-20 small">Expiration </div>
@@ -46,7 +48,7 @@
             </div>
 
             @* ----- Badge No -----------------------*@
-             <div class="w-100 d-flex p-1">
+            <div class="w-100 d-flex p-1">
                 <div class="w-20 small">Badge No. </div>
                 <div class="w-30">
                     <RadzenTextBox @bind-Value=@V.Empmas.BadgeNo class="form-control" Name="BadgeNo" MaxLength="10" Style="width:100%" />
@@ -71,23 +73,23 @@
                     <RadzenTextBox @bind-Value=@V.SecLicense.Sbrno class="form-control" Name="SbrNo" MaxLength="25" Style="width:100%" />
                 </div>
             </div>
-           
+
         </RadzenFieldset>
 
 
 
-    <div class="h-10p"></div>
-       <RadzenFieldset Text="LICENSE VERIFICATION">
+        <div class="h-10p"></div>
+        <RadzenFieldset Text="LICENSE VERIFICATION">
 
             @* ----- Last Edited   -----------------------*@
             <div class="w-100 d-flex p-1">
                 <div class="w-20 small">Last Edited  </div>
                 <div class="w-30">
-                    <RadzenDatePicker @bind-Value=@V.SecLicense.DateModified  Style="width:100%"  Disabled />
+                    <RadzenDatePicker @bind-Value=@V.SecLicense.DateModified Style="width:100%" Disabled />
                 </div>
             </div>
 
-          
+
 
 
             @* ----- By  -----------------------*@
@@ -95,10 +97,10 @@
                 <div class="w-20 small">By</div>
                 <div class="w-50">
                     <RadzenTextBox Value="@(string.IsNullOrWhiteSpace(V.SecLicense.UserName)
-                                           ? V.SecLicense.User
-                                           : V.SecLicense.UserName)"
+                                                                              ? V.SecLicense.User
+                                                                              : V.SecLicense.UserName)"
                                    Style="width:100%"
-                                   Disabled/>
+                                   Disabled />
                 </div>
             </div>
 
@@ -116,9 +118,9 @@
             </div>
 
 
-           
 
-            <hr/>
+
+            <hr />
 
             @* ----- Validation Status -----------------------*@
             <div class="w-100 d-flex p-1">
@@ -162,7 +164,7 @@
 
 
         <div class="h-10p"></div>
-       <RadzenFieldset Text="******">
+        <RadzenFieldset Text="******">
 
 
             @* ----- Guard No Years -----------------------*@
@@ -187,7 +189,7 @@
             <div class="w-100 d-flex p-1">
                 <div class="w-20 small">Remarks </div>
                 <div class="w-80">
-                    <RadzenTextBox @bind-Value=@V.Empmas.Remarks class="form-control"  MaxLength="150" Style="width:100%" />
+                    <RadzenTextBox @bind-Value=@V.Empmas.Remarks class="form-control" MaxLength="150" Style="width:100%" />
                 </div>
             </div>
 
@@ -222,31 +224,51 @@
 
         try
         {
-            // Update  security records in empmas table ------
-            var res = await _empmas._03_Security(V.SelectedEmpnumber, V.Empmas, Uc.OpisDb!, Uc.Conn!);
+            // Update employee security records in empmas 
+            await _empmas._03_Security( V.SelectedEmpnumber, V.Empmas, Uc.OpisDb!, Uc.Conn! );
 
+            V.SecLicense.Empnumber = V.Empmas.EmpNumber;
 
-            if (
+            // Check whether relevant security license properties changed
+            bool hasChanges =
                 V.SecLicense.ValStatus != V.PrevSecLicense.ValStatus ||
                 V.SecLicense.Validated != V.PrevSecLicense.Validated ||
                 V.SecLicense.Revalidated != V.PrevSecLicense.Revalidated ||
-                V.SecLicense.LicDateIssued != V.PrevSecLicense.LicDateIssued
-            )
+                V.SecLicense.LicDateIssued != V.PrevSecLicense.LicDateIssued;
+
+            if (hasChanges)
             {
-                V.SecLicense.Empnumber = V.Empmas.EmpNumber;
-                V.SecLicense.User = Uc.UserName;
+                V.SecLicense.User = Uc.OempNumber;
                 V.SecLicense.DateModified = DateTime.Now;
 
-                // Insert or update security records
-                var resLic = await _seclic._01(V.SecLicense, Uc.OpisDb!, Uc.Conn!);
+                // Save security license
+                var resLic = await _seclic._01(  V.SecLicense, Uc.OpisDb!, Uc.Conn! );
 
                 if (!string.IsNullOrWhiteSpace(resLic.Empnumber))
                 {
                     V.SecLicense = resLic;
 
-                    var log = new OSecliclogsModel()
+                    // Insert security log
+                    var log = new OSecliclogsModel
                     {
-                        EmpNumber       = resLic.Empnumber,
+                        EmpNumber   = resLic.Empnumber,
+                        Sbrno       = resLic.Sbrno,
+                        Opno        = resLic.Opno,
+                        Validated   = resLic.Validated,
+                        Vfee        = resLic.Vfee,
+                        Revalidated = resLic.Revalidated,
+                        ValStatus   = resLic.ValStatus,
+                        User        = resLic.User,
+                        DateModified = resLic.DateModified,
+                        LicDateIssued = resLic.LicDateIssued
+                    };
+
+                    await _secliclogs._01(log, Uc.OpisDb!, Uc.Conn!);
+
+                    // Refresh previous license values
+                    V.PrevSecLicense = new OSeclicModel
+                    {
+                        Empnumber       = resLic.Empnumber,
                         Sbrno           = resLic.Sbrno,
                         Opno            = resLic.Opno,
                         Validated       = resLic.Validated,
@@ -255,48 +277,47 @@
                         ValStatus       = resLic.ValStatus,
                         User            = resLic.User,
                         DateModified    = resLic.DateModified,
-                        LicDateIssued   = resLic.LicDateIssued
-                    };
-
-                    // Insert security logs
-                    var resLogs = await _secliclogs._01(log, Uc.OpisDb!, Uc.Conn!);
-
-                    // Refresh PrevSecLicense after successful insert/update
-                    V.PrevSecLicense = new OSeclicModel
-                    {
-                        Empnumber       = V.SecLicense.Empnumber,
-                        Sbrno           = V.SecLicense.Sbrno,
-                        Opno            = V.SecLicense.Opno,
-                        Validated       = V.SecLicense.Validated,
-                        Vfee            = V.SecLicense.Vfee,
-                        Revalidated     = V.SecLicense.Revalidated,
-                        ValStatus       = V.SecLicense.ValStatus,
-                        User            = V.SecLicense.User,
-                        DateModified    = V.SecLicense.DateModified,
-                        LicDateIssued   = V.SecLicense.LicDateIssued,
-                        UserName        = V.SecLicense.UserName
+                        LicDateIssued   = resLic.LicDateIssued,
+                        UserName        = resLic.UserName
                     };
                 }
             }
+            else
+            {
+                // No license changes: still save the op, sbrno record
+                await _seclic._01(V.SecLicense, Uc.OpisDb!, Uc.Conn!);
+            }
 
-
-            NotificationRef.Show("Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success);
-
-
+            NotificationRef.Show( "Record has been successfully saved.", ThemeConstants.Notification.ThemeColor.Success  );
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-
+            NotificationRef.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error );
         }
+
 
 
     }
 
     void OnInvalidSubmit(FormInvalidSubmitEventArgs args)
     {
+        var valid = true;
 
+      
+
+        if (string.IsNullOrWhiteSpace(V.Empmas.MilitaryNoYr))
+        {
+            NotificationRef.Show("Military No. of Years is required. Please complete this field before saving.", ThemeConstants.Notification.ThemeColor.Warning);
+            valid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(V.Empmas.GuardNoYrs))
+        {
+            NotificationRef.Show("Guard No. of Years is required. Please complete this field before saving.", ThemeConstants.Notification.ThemeColor.Warning);
+            valid = false;
+        }
+        if (!valid) return;
     }
 
     private async void ShowLicenseVerifLogs()
@@ -306,6 +327,6 @@
     }
 
 
-   
+
 
 }
