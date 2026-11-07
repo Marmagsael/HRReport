@@ -222,6 +222,7 @@ public static class ApiExt
         
         //-- Old Pis -----------------------------------------------------------------------
         builder.Services.AddScoped<IOCoinfoDataAccess, OCoinfoDataAccess>();
+        builder.Services.AddScoped<IRCoInfoDataAccess, RCoInfoDataAccess>();
         builder.Services.AddScoped<IOClientDataAccess, OClientDataAccess>();
         builder.Services.AddScoped<IClientstatusDataAccess, ClientstatusDataAccess>();
         builder.Services.AddScoped<IOEmpstatDataAccess, OEmpstatDataAccess>();

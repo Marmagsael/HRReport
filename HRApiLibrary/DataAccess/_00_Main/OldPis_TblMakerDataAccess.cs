@@ -467,35 +467,82 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
     private async Task _01Coinfo(string? schema, string? conn)
     {
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`coinfo` (
-                        `CoName` varchar(150) NOT NULL,
-                        `CoAdd` varchar(300) NOT NULL,
-                        `TelNo` varchar(100) NOT NULL,
-                        `RegPeriod` int unsigned NOT NULL,
-                        `CurrBasicRate` double(6,2) NOT NULL DEFAULT '0.00',
-                        `min` double(10,4) NOT NULL DEFAULT '0.0000',
-                        `SDOSource` varchar(100) NOT NULL DEFAULT '',
-                        `SDOSaveTo` varchar(100) NOT NULL DEFAULT '',
-                        `shortname` varchar(45) NOT NULL,
-                        `schemapis` varchar(45) NOT NULL,
-                        `schemapay` varchar(45) NOT NULL,
-                        `schemaequip` varchar(45) NOT NULL,
-                        `cologo` varchar(45) DEFAULT NULL,
-                        `acctno` varchar(45) NOT NULL DEFAULT ' ',
-                        `TIN` varchar(25) NOT NULL,
-                        `SSS` varchar(25) NOT NULL,
-                        `PHIC` varchar(25) NOT NULL,
-                        `PAGIBIG` varchar(25) NOT NULL,
-                        `sssMemType` int unsigned NOT NULL DEFAULT '1' COMMENT '1 - Private, 2 - Loca, 3-GCC, 4 - NGA',
-                        `sssdocno` char(6) DEFAULT NULL,
-                        `sssLocCode` char(3) DEFAULT NULL,
-                        `schemaams` varchar(45) DEFAULT NULL,
+                        `CoName`        varchar(150) NOT NULL,
+                        `CoAdd`         varchar(300) DEFAULT NULL,
+                        `TelNo`         varchar(100) DEFAULT NULL,
+                        `RegPeriod`     int unsigned DEFAULT NULL,
+                        `CurrBasicRate` double(6,2) NULL DEFAULT '0.00',
+                        `min`           double(10,4) NULL DEFAULT '0.0000',
+                        `SDOSource`     varchar(100) NULL DEFAULT '',
+                        `SDOSaveTo`     varchar(100) NULL DEFAULT '',
+                        `shortname`     varchar(45) DEFAULT NULL,
+                        `schemapis`     varchar(45) DEFAULT NULL,
+                        `schemapay`     varchar(45) DEFAULT NULL,
+                        `schemaequip`   varchar(45) DEFAULT NULL,
+                        `cologo`        varchar(45) DEFAULT NULL,
+                        `acctno`        varchar(45) NULL DEFAULT ' ',
+                        `TIN`           varchar(25) DEFAULT NULL,
+                        `SSS`           varchar(25) DEFAULT NULL,
+                        `PHIC`          varchar(25) DEFAULT NULL,
+                        `PAGIBIG`       varchar(25) DEFAULT NULL,
+                        `sssMemType`    int unsigned NULL DEFAULT '1' COMMENT '1 - Private, 2 - Loca, 3-GCC, 4 - NGA',
+                        `sssdocno`      char(6) DEFAULT NULL,
+                        `sssLocCode`    char(3) DEFAULT NULL,
+                        `schemaams`     varchar(45) DEFAULT NULL,
                         `schemalumpsum` varchar(45) DEFAULT NULL,
-                        `schematruc` varchar(45) DEFAULT NULL,
-                        `schemaipay` varchar(45) DEFAULT NULL,
-                        `isHeadOffice` tinyint unsigned DEFAULT '0',
-                        PRIMARY KEY (`CoName`)
-                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+                        `schematruc`    varchar(45) DEFAULT NULL,
+                        `schemaipay`    varchar(45) DEFAULT NULL,
+                        `isHeadOffice`  tinyint unsigned DEFAULT '0',
+                        PRIMARY KEY (`CoName`)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+        foreach (var (col, def) in new[] {
+            ("Add1", "`Add1` varchar(250) DEFAULT NULL AFTER `CoAdd`"),
+            ("Add2", "`Add2` varchar(250) DEFAULT NULL AFTER `Add1`"),
+            ("RegNo", "`RegNo` varchar(60) DEFAULT NULL AFTER `Add2`")
+        })
+        {
+            var has = await _sql.FetchData<long, dynamic>(
+                "select count(*) from information_schema.columns where table_schema = @Schema and table_name = 'coinfo' and column_name = @Col",
+                new { Schema = schema, Col = col }, conn);
+            if (has.FirstOrDefault() == 0)
+                await ExecLegacy($"ALTER TABLE {schema}.`coinfo` ADD COLUMN {def}", conn);
+        }
+
+        foreach (var def in new[] {
+            "`CoAdd` varchar(300) DEFAULT NULL",
+            "`TelNo` varchar(100) DEFAULT NULL",
+            "`RegPeriod` int unsigned DEFAULT NULL",
+            "`CurrBasicRate` double(6,2) NULL DEFAULT '0.00'",
+            "`min` double(10,4) NULL DEFAULT '0.0000'",
+            "`SDOSource` varchar(100) NULL DEFAULT ''",
+            "`SDOSaveTo` varchar(100) NULL DEFAULT ''",
+            "`shortname` varchar(45) DEFAULT NULL",
+            "`schemapis` varchar(45) DEFAULT NULL",
+            "`schemapay` varchar(45) DEFAULT NULL",
+            "`schemaequip` varchar(45) DEFAULT NULL",
+            "`cologo` varchar(45) DEFAULT NULL",
+            "`acctno` varchar(45) NULL DEFAULT ' '",
+            "`TIN` varchar(25) DEFAULT NULL",
+            "`SSS` varchar(25) DEFAULT NULL",
+            "`PHIC` varchar(25) DEFAULT NULL",
+            "`PAGIBIG` varchar(25) DEFAULT NULL",
+            "`sssMemType` int unsigned NULL DEFAULT '1' COMMENT '1 - Private, 2 - Loca, 3-GCC, 4 - NGA'",
+            "`sssdocno` char(6) DEFAULT NULL",
+            "`sssLocCode` char(3) DEFAULT NULL",
+            "`schemaams` varchar(45) DEFAULT NULL",
+            "`schemalumpsum` varchar(45) DEFAULT NULL",
+            "`schematruc` varchar(45) DEFAULT NULL",
+            "`schemaipay` varchar(45) DEFAULT NULL",
+            "`isHeadOffice` tinyint unsigned DEFAULT '0'"
+        })
+        {
+            var col = def.Split('`')[1];
+            var notNull = await _sql.FetchData<long, dynamic>(
+                "select count(*) from information_schema.columns where table_schema = @Schema and table_name = 'coinfo' and column_name = @Col and is_nullable = 'NO'",
+                new { Schema = schema, Col = col }, conn);
+            if (notNull.FirstOrDefault() > 0)
+                await ExecLegacy($"ALTER TABLE {schema}.`coinfo` MODIFY COLUMN {def}", conn);
+        }
     }
 
     private async Task _01College(string? schema, string? conn)

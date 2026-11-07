@@ -8,6 +8,7 @@ namespace HRApiLibrary.DataAccess._00_Main.Interface
         Task<RegisterOwnerModel> _01Company(RegisterOwnerModel owner, string? schema, string? connName = "MySqlConn");
         Task _01OwnerEmpmas(RegisterOwnerModel owner, string? schema, string? connName = "MySqlConn");
         Task _01OwnerOldEmpmas(RegisterOwnerModel owner, string? connName = "MySqlConn");
+        Task _01OwnerCompanyInfo(RegisterOwnerModel owner, string? connName = "MySqlConn");
         Task<RegisterEmployeeModel> _01Employee(RegisterEmployeeModel emp, string? schema, string? mainPisSchema, string? connName = "MySqlConn");
 
         Task<bool>                  _02EmailExists(string email, string? schema, string? connName = "MySqlConn");

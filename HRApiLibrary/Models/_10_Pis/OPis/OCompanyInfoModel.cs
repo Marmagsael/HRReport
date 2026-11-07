@@ -4,6 +4,9 @@ public class OCompanyInfoModel
 {
     public string?  CoName          { get; set; } 
 	public string?  CoAdd           { get; set; } 
+	public string?  Add1            { get; set; } 
+	public string?  Add2            { get; set; } 
+	public string?  RegNo           { get; set; } 
 	public string?  TelNo           { get; set; } 
 	public int?      RegPeriod       { get; set; } 
 	public double   CurrBasicRate   { get; set; } 

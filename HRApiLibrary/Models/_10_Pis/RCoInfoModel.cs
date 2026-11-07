@@ -4,6 +4,10 @@ public class RCoInfoModel
 {
     public int? Id { get; set; }
 
+    public string? CoName { get; set; }
+
+    public string? ShortName { get; set; }
+
     public string? Add1 { get; set; }
 
     public string? Add2 { get; set; }

@@ -1004,6 +1004,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     private async Task MenusMainPisData(string? connName)
     {
         string? sql = @"INSERT IGNORE INTO MainPis.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (2005, 'Dtl-Report', 2001, 1, 'business', 'Company Information', '14/2005', 2),
                             (2391, 'Separator', 2301, 1, NULL, '-', NULL, 2303),
                             (2392, 'Separator', 2301, 1, NULL, '-', NULL, 2306);
                         UPDATE MainPis.Menu SET Odr = 2302 WHERE Id = 2302 AND IdParent = 2301;
