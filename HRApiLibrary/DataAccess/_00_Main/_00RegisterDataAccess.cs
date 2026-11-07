@@ -115,6 +115,19 @@ public class _00RegisterDataAccess : I_00RegisterDataAccess
         await _sql.ExecuteCmd(sql, owner, connName);
     }
 
+    // -- 03 Company details at the start : {PISSchema}.RCoInfo, {OldPis}.coinfo and {PaySchema}.Settings (name, short name, schemas); the rest is filled in later --
+    public async Task _01OwnerCompanyInfo(RegisterOwnerModel owner, string? connName = "MySqlConn")
+    {
+        string sql = $@"insert into {owner.PISSchema}.RCoInfo (Id, CoName, ShortName)
+                        select 1, @CompanyName, @CompanyCode from dual where not exists (select 1 from {owner.PISSchema}.RCoInfo);
+                        insert into {owner.OldPis}.coinfo (CoName, shortname, schemapis, schemapay, schemaams)
+                        select @CompanyName, @CompanyCode, @PISSchema, @PaySchema, @AMSSchema from dual
+                        where not exists (select 1 from {owner.OldPis}.coinfo);
+                        update {owner.PaySchema}.Settings set CoShortName = left(@CompanyCode, 15), CoFullName = left(@CompanyName, 80)
+                        where Id = 1 and (ifnull(CoShortName, '') = '' and ifnull(CoFullName, '') = '');";
+        await _sql.ExecuteCmd(sql, owner, connName);
+    }
+
     // -- 04 Employee : users + CompanyInvite (P pending) + MainPis.Empmas, in one transaction ------
     // -- The employee comes from {OldPis}.Empmas; {PISSchema}.Empmas gets a row (by EmpNumber) when it has none --
     // -- DefaultCoId, CompanyUsers and {PISSchema}.Empmas.SystemId wait for the company's approval --

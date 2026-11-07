@@ -1591,10 +1591,12 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
     {
         string? sql = $@"CREATE TABLE  IF NOT EXISTS   {schema}.RCoInfo (
                             Id          int unsigned NOT NULL AUTO_INCREMENT,
+                            CoName      varchar(150)    Default Null,
+                            ShortName   varchar(45)     Default Null,
                             Add1        varchar(250)    Default Null,
                             Add2        varchar(250)    Default Null,
                             TelNo       varchar(100)    Default Null,
-                            RegNo       varchar(60)    Default Null,
+                            RegNo       varchar(60)     Default Null,
                             RegPeriod   int             Default Null,
                             CoLogo      varchar(60)     Default Null,
                             AcctNo      varchar(45)     Default Null DEFAULT ' ',
@@ -1607,6 +1609,8 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             SssBrCode  Char(3) DEFAULT NULL,
                             PRIMARY KEY (Id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, conn);
+        await AddColumnIfMissing(schema, "RCoInfo", "CoName", "CoName varchar(150) DEFAULT NULL AFTER Id", conn);
+        await AddColumnIfMissing(schema, "RCoInfo", "ShortName", "ShortName varchar(45) DEFAULT NULL AFTER CoName", conn);
     }
     private async Task _01RCollege(string? schema, string? conn)
     {
