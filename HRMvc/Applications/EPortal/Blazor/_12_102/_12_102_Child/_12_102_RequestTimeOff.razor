@@ -1,4 +1,4 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.Interface
 @using HRApiLibrary.DataAccess._20_Pay.Interface
 @using HRApiLibrary.DataAccess._90_Utils
@@ -295,6 +295,7 @@
                             <input 
                             class="form-check-input" 
                             type="checkbox"
+                            @key="@($"{lvd.Date}-{payableKey}")"
                             checked="@lvd!.IsPayableB"
                             @onchange="@((ChangeEventArgs e) => MarkPayable(e, lvd))" />
                         </div>
@@ -327,6 +328,7 @@
     V12_102Lv   v = new();
     V00_RepVars rv = new(); 
     int? ctr = 0; 
+    int  payableKey = 0;
     bool isLoading = false;
 
     void MarkPayable() {
@@ -391,6 +393,15 @@
 
     async Task<bool> Save()
     {
+        @* --- With pay is only for the leave balance --- *@
+        await _02LeaveBalance();
+        if (lvWPay > lva.LvBalance + 0.0001)
+        {
+            await _DialogService.Alert(
+                $"The with-pay days ({lvWPay:N2}) are more than the leave balance ({lva.LvBalance:N2}). Please untick the days that are over the balance.",
+                "No Leave Balance", new AlertOptions() { OkButtonText = "OK" });
+            return false;
+        }
 
         @* --- Check for Overlapping Leave Applications --- *@
         var resOverlapping = await _lvApplication._02Overlapping(Uc.EmpmasId, v.LeaveApplication.Id, v.LeaveApplication.LvStart, v.LeaveApplication.LvEnd, Uc.SchemaUserPis, Uc.Conn);
@@ -542,7 +553,7 @@
                         && lva.Status is "S"; 
 
     bool IsCanPrint     => lva != null
-                            && (lva.Status is "S" or "FA" or "F"); 
+                            && (lva.Status is "S" or "F"); 
                             
     bool IsLocked     =>  lva != null
                             && (lva.Status is "N" or "S"); 
@@ -558,8 +569,8 @@
     async Task _02LeaveBalance() {
         var res = await _lvApplication
                     ._02LvBalance(v.LeaveApplication.LeaveTypeId, 
-                                  Uc.UserId, 
-                                  v.LeaveApplication.Yr, Uc.SchemaUserPis, Uc.Conn); 
+                                  Uc.EmpmasId, 
+                                  v.LeaveApplication.Yr, Uc.SchemaUserPis, Uc.Conn, v.LeaveApplication.Id); 
         v.LeaveApplication.LvBalance = res; 
 
     }
@@ -656,6 +667,18 @@
     private async Task MarkPayable(ChangeEventArgs e, LeaveapplicationdtlModel l)
     {
         var val = (bool)(e.Value??false); 
+
+        // -- with pay only while there is a leave balance : a day over the balance cannot be ticked --
+        var dayValue = l.LeaveDayTypeId == 1 ? 1 : .5;
+        if (val && lvWPay + dayValue > lva.LvBalance + 0.0001)
+        {
+            l.IsPayableB = false;
+            payableKey++;                       // draws the checkbox unticked again
+            await _DialogService.Alert(
+                $"There is no more leave balance for a with-pay day. Leave balance : {lva.LvBalance:N2} day(s).",
+                "No Leave Balance", new AlertOptions() { OkButtonText = "OK" });
+            return;
+        }
         l.IsPayableB = val;
 
         @* var cHrs = (decimal?)((decimal?)(l.TimeDuration)/100); 

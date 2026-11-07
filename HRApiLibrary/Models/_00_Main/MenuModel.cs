@@ -17,4 +17,6 @@ public class MenuModel
     public string?      Action      { get; set; }
 
     public int?         Odr         { get; set; }
+
+    public bool         IsCommercialUse   { get; set; } = true;
 }

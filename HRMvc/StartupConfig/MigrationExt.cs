@@ -130,6 +130,7 @@ public static class MigrationExt
         var acctg   = sp.GetRequiredService<I_AcctgTableMaker>();
         var oldPis  = sp.GetRequiredService<IOldPis_TblMakerDataAccess>();
         var oldPay  = sp.GetRequiredService<IOldPay_TblMakerDataAccess>();
+        var register = sp.GetRequiredService<I_00RegisterDataAccess>();
 
         var existing = (await sql.FetchData<string, dynamic>("select lower(schema_name) from information_schema.schemata", new { }, conn))
                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -193,6 +194,7 @@ public static class MigrationExt
             await oldPay._01OldPayTable(c.OldPay!.Trim(), conn);
             await oldPay._01OldPayMasterDefaults(c.OldPay!.Trim(), conn);
             if (Exists(c.OldPis)) await oldPay._01OldPayDefaults(c.OldPay!.Trim(), c.OldPis!.Trim(), conn);
+            await register._01PayrollGrps(c.OldPay!.Trim(), conn);
         }
 
         if (amsSchema != null) done.Add(amsSchema);

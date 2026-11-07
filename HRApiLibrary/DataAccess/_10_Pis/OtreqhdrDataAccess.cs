@@ -32,7 +32,7 @@ public class OtreqhdrDataAccess : IOtreqhdrDataAccess
         string? sql = $@"select  CONCAT_WS(' ', TRIM(e.EmpFirstNm), trim(e.EmpMidNm), TRIM(e.EmpLastNm)) AS RequestorName, h.*
                         from      {pisdb}.Otreqhdr h
                         left join {pisdb}.empmas e on e.Id = h.UserId    
-                        where h.Empnumber_Approver = @EmpNumber_Approver and Status in ('F', 'FA') ";
+                        where h.Empnumber_Approver = @EmpNumber_Approver and Status in ('F') ";
         var data = await _sql.FetchData<OtreqhdrModel?, dynamic>(sql,
                         new { EmpNumber_Approver = approver_empnumber }, conn);
         return data ?? [];

@@ -88,7 +88,7 @@ public class PisAccessService
         {
             if (m == null || m.Type == "Separator" || string.IsNullOrEmpty(m.Action)) return m;
             if (m.Id is int id && allowed.Contains(id)) return m;
-            return new MainmenuModel { Id = m.Id, Type = "NoAccess", IdParent = m.IdParent, Indent = m.Indent, Icon = m.Icon, DispText = m.DispText, Action = m.Action, Odr = m.Odr };
+            return new MainmenuModel { Id = m.Id, Type = "NoAccess", IdParent = m.IdParent, Indent = m.Indent, Icon = m.Icon, DispText = m.DispText, Action = m.Action, Odr = m.Odr, IsCommercialUse = m.IsCommercialUse };
         }).ToList();
     }
 }
