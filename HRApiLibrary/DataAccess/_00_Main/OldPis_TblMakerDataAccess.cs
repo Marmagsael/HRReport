@@ -184,6 +184,7 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
         await _01Language(schema, connName);
         await _01Lastrefused(schema, connName);
         await _01Leave1(schema, connName);
+        await _01Ob1(schema, connName);
         await _01Levmonletter(schema, connName);
         await _01Levmonpara(schema, connName);
         await _01Levtbl(schema, connName);
@@ -376,9 +377,20 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `isTrucking` int unsigned DEFAULT '0',
                         `isLumpsum` int unsigned DEFAULT '0',
                         `withSIL` int unsigned DEFAULT '1',
+                        `IsMotherUnit` tinyint unsigned NOT NULL DEFAULT '0',
                         PRIMARY KEY (`CLNUMBER`)
                         ) ENGINE=MyISAM DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        // -- IsMotherUnit : added to an existing table; units already used as a mother by another unit are flagged --
+        var hasMother = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.columns where table_schema = @Schema and table_name = 'client' and column_name = 'IsMotherUnit'",
+            new { Schema = schema }, conn);
+        if (hasMother.FirstOrDefault() == 0)
+        {
+            await ExecLegacy($"ALTER TABLE {schema}.`client` ADD COLUMN `IsMotherUnit` tinyint unsigned NOT NULL DEFAULT '0'", conn);
+            await ExecLegacy($"UPDATE {schema}.`client` m SET m.IsMotherUnit = 1 WHERE EXISTS (SELECT 1 FROM (SELECT ParentCd FROM {schema}.`client`) c WHERE c.ParentCd = m.CLNUMBER)", conn);
+        }
 
         foreach (var col in new[] { "contStart", "contEnd", "ContExp" })
         {
@@ -1485,14 +1497,55 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `LVCODE` varchar(2) DEFAULT NULL,
                         `START` date DEFAULT NULL,
                         `END` date DEFAULT NULL,
-                        `NO_DAYS` double(3,0) DEFAULT NULL,
+                        `NO_DAYS` double(5,2) DEFAULT NULL,
                         `WITHPAY` varchar(1) DEFAULT NULL,
+                        `DAYS_WITHPAY` double(5,2) DEFAULT NULL,
                         `ENCODEBY` varchar(10) DEFAULT NULL,
                         `ENCODEDT` varchar(10) DEFAULT NULL,
                         `CHANGEBY` varchar(10) DEFAULT NULL,
                         `CHANGEDT` varchar(10) DEFAULT NULL,
                         `POSTED` varchar(1) DEFAULT NULL,
                         `mode` varchar(1) NOT NULL DEFAULT 'L'
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+
+        // -- half days : NO_DAYS was a whole number (double(3,0)), it keeps two decimals now --
+        var whole = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.columns where table_schema = @Schema and table_name = 'leave1' and column_name = 'NO_DAYS' and numeric_scale = 0",
+            new { Schema = schema }, conn);
+        if (whole.FirstOrDefault() > 0)
+            await ExecLegacy($"ALTER TABLE {schema}.`leave1` MODIFY COLUMN `NO_DAYS` double(5,2) DEFAULT NULL", conn);
+
+        // -- number of days with pay : apart from the number of days of the leave --
+        var hasPay = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.columns where table_schema = @Schema and table_name = 'leave1' and column_name = 'DAYS_WITHPAY'",
+            new { Schema = schema }, conn);
+        if (hasPay.FirstOrDefault() == 0)
+            await ExecLegacy($"ALTER TABLE {schema}.`leave1` ADD COLUMN `DAYS_WITHPAY` double(5,2) DEFAULT NULL AFTER `WITHPAY`", conn);
+    }
+
+    // -- Official business (OB Entry) : one row per OB, like leave1 for the leave --
+    private async Task _01Ob1(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`ob1` (
+                        `OBNUMBER` varchar(10) CHARACTER SET latin1 COLLATE latin1_bin NOT NULL DEFAULT '',
+                        `OBDATE` date DEFAULT NULL,
+                        `EMPNUMBER` varchar(5) DEFAULT NULL,
+                        `START` date DEFAULT NULL,
+                        `END` date DEFAULT NULL,
+                        `NO_DAYS` double(5,2) DEFAULT NULL,
+                        `DAYS_WITHPAY` double(5,2) DEFAULT NULL,
+                        `DESTINATION` varchar(150) DEFAULT NULL,
+                        `PURPOSE` varchar(250) DEFAULT NULL,
+                        `CONTACTPERSON` varchar(100) DEFAULT NULL,
+                        `TELNO` varchar(45) DEFAULT NULL,
+                        `REMARKS` varchar(250) DEFAULT NULL,
+                        `ENCODEBY` varchar(10) DEFAULT NULL,
+                        `ENCODEDT` varchar(10) DEFAULT NULL,
+                        `CHANGEBY` varchar(10) DEFAULT NULL,
+                        `CHANGEDT` varchar(10) DEFAULT NULL,
+                        `mode` varchar(1) NOT NULL DEFAULT 'O',
+                        PRIMARY KEY (`OBNUMBER`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
     }

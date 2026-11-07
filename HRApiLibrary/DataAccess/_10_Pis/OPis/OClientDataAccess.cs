@@ -22,13 +22,13 @@ public class OClientDataAccess : IOClientDataAccess
 							 OTRATE, TIN, CONT, USED, CONTACT, POSTPERIOD, BATCHX, FSSSEE, FSSSER, FECC, FMEDEE, 
 							 FMEDER, Remarks, contStart, contEnd, parentcd, maxsss, maxphic, ContExp, HavTax, MinRate, 
 							 MealAllow, withUniform, withRetirement, region, ecolaRevised, ctpaRate, withCTPA, seaRate, 
-							 withSEA, payprd, sgcode, isTrucking, isLumpsum) values 
+							 withSEA, payprd, sgcode, isTrucking, isLumpsum, IsMotherUnit) values 
 							(@CLNUMBER, @CLNAME, @ADDR1, @ADDR2, @AREACODE, @TEL1, @FAXNO, @PARENT, IFNULL(@RATE,0), 
 							 @BILLRATE, @ASSIST, @STATUS, IFNULL(@COLARATE,0), @ND_RATE, @RETIRATE, @UNIFRATE, @FDIRATE, 
 							 @OTRATE, @TIN, @CONT, @USED, @CONTACT, @POSTPERIOD, @BATCHX, @FSSSEE, @FSSSER, @FECC, @FMEDEE, 
 							 @FMEDER, @Remarks, @contStart, @contEnd, IFNULL(@parentcd,''), IFNULL(@maxsss,0), IFNULL(@maxphic,0), @ContExp, IFNULL(@HavTax,1), IFNULL(@MinRate,0), 
 							 IFNULL(@MealAllow,0), IFNULL(@withUniform,0), IFNULL(@withRetirement,0), @region, IFNULL(@ecolaRevised,0), @ctpaRate, @withCTPA, NULLIF(@seaRate,''), 
-							 @withSEA, IFNULL(@payprd,''), IFNULL(@sgcode,''), @isTrucking, @isLumpsum)";
+							 @withSEA, IFNULL(@payprd,''), IFNULL(@sgcode,''), @isTrucking, @isLumpsum, IFNULL(@IsMotherUnit,0))";
 
 
         bool autoCode = string.IsNullOrWhiteSpace(client.ClNumber);
@@ -287,7 +287,7 @@ public class OClientDataAccess : IOClientDataAccess
 							withUniform = IFNULL(@withUniform,0), withRetirement = IFNULL(@withRetirement,0), region = @region, 
 							ecolaRevised = IFNULL(@ecolaRevised,0), ctpaRate = @ctpaRate, withCTPA = @withCTPA, seaRate = NULLIF(@seaRate,''), 
 							withSEA = @withSEA, payprd = IFNULL(@payprd,''), sgcode = IFNULL(@sgcode,''), isTrucking = @isTrucking, 
-							isLumpsum = @isLumpsum  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber));
+							isLumpsum = @isLumpsum, IsMotherUnit = IFNULL(@IsMotherUnit,0)  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber));
 						select  * from {schema}.Client  where TRIM(UPPER(ClNumber)) = TRIM(UPPER(@ClNumber)) ;";
         var data = await _sql.FetchLegacy<OClientModel?, dynamic>(sql, client, conn);
         return data?.FirstOrDefault();

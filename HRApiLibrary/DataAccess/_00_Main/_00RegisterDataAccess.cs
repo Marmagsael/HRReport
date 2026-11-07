@@ -128,6 +128,17 @@ public class _00RegisterDataAccess : I_00RegisterDataAccess
         await _sql.ExecuteCmd(sql, owner, connName);
     }
 
+    // -- 04 Payroll groups of a new company : possible group names in {OldPay}.Payrollgrp (own list, not copied from the new Pay), only when the table is empty --
+    public async Task _01PayrollGrps(string? oldPaySchema, string? connName = "MySqlConn")
+    {
+        string sql = $@"insert into {oldPaySchema}.Payrollgrp (Code, ClNumber, Name, Status)
+                        select lpad(t.n, 5, '0'), lpad(t.n, 5, '0'), t.name, 'A'
+                        from (select 1 n, 'Head Office' name union all select 2, 'Regular Employees' union all select 3, 'Probationary Employees'
+                              union all select 4, 'Contractual Employees' union all select 5, 'Project-Based Employees' union all select 6, 'Consultants') t
+                        where not exists (select 1 from {oldPaySchema}.Payrollgrp);";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+    }
+
     // -- 04 Employee : users + CompanyInvite (P pending) + MainPis.Empmas, in one transaction ------
     // -- The employee comes from {OldPis}.Empmas; {PISSchema}.Empmas gets a row (by EmpNumber) when it has none --
     // -- DefaultCoId, CompanyUsers and {PISSchema}.Empmas.SystemId wait for the company's approval --

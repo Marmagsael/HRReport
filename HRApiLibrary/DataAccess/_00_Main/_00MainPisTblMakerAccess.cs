@@ -1,4 +1,4 @@
-﻿
+
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
@@ -219,6 +219,21 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
 
         await _01Para(schema, connName);
 
+        await _03ForApprovalStatusF(schema, connName);
+
+    }
+
+    // -- "For Approval" is F everywhere : leave, OB, time-off and schedule requests used FA or F; old FA rows become F --
+    private async Task _03ForApprovalStatusF(string? schema, string? conn)
+    {
+        foreach (var table in new[] { "LeaveApplication", "ObApplication", "AttReqHdr", "AtttemplateReqHdr", "OTReqHdr" })
+        {
+            var has = await _sql.FetchData<long, dynamic>(
+                "select count(*) from information_schema.columns where table_schema = @Schema and table_name = @Table and column_name = 'Status'",
+                new { Schema = schema, Table = table }, conn);
+            if (has.FirstOrDefault() > 0)
+                await _sql.ExecuteCmd($"update {schema}.{table} set Status = 'F' where Status = 'FA'", new { }, conn);
+        }
     }
 
 
@@ -458,6 +473,10 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
 
+        // -- RN (regular night) is a duty type too; added to existing tables as well --
+        sql = @$"insert into {schema}.AttDutyType (Code, Name)
+                    select 'RN', 'Regular Night' from dual where not exists (select 1 from {schema}.AttDutyType where Code = 'RN')";
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
 
