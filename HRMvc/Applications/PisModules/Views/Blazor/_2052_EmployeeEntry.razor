@@ -88,7 +88,7 @@
                                             }
                                             else
                                             {
-                                                <_2052_03_RecordsEntry ChildAction="ChildAction"/>
+                                                <_2052_03_RecordsEntry ChildAction="ChildAction"  />
                                             }
                                         </div>
                                     </div>
@@ -293,8 +293,10 @@
         if (string.IsNullOrWhiteSpace(v.SelectedEmpnumber)) return;
 
         v.IsLoading = true;
+        v.EmpmasaddressFor  = string.Empty;
 
         v.Empmas            = new();
+        v.Empmasaddress     = new();
         v.Employments       = [];
         v.Educations        = [];
         v.Parents           = [];
@@ -310,12 +312,14 @@
 
         try
         {
+
             var res = await _empmas._02(v.SelectedEmpnumber, Uc.OpisDb, Uc.SchemaMain, Uc.SchemaUserPis, Uc.Conn);
             if (res.Any())
             {
                 v.Empmas = res.FirstOrDefault();
                 v.EmpmasToEdit  = MapEmpmas(res.FirstOrDefault());
 
+                await LoadEmployeeAddress();
                 await LoadEmployments();
                 await LoadEducations();
                 await LoadParents();
@@ -326,7 +330,6 @@
                 await LoadCharRefs();
                 await LoadInsuranceAccident();
                 await LoadSecLicense();
-                await LoadEmployeeAddress();
 
                 SplitHeight();
                 GetAddressArea();
@@ -568,15 +571,24 @@
 
     public async Task LoadEmployeeAddress()
     {
+        Console.WriteLine($" v.EmpmasaddressFor {v.EmpmasaddressFor} || {v.SelectedEmpnumber}");
 
         var empno = v.SelectedEmpnumber;
         if (string.IsNullOrWhiteSpace(empno) || v.EmpmasaddressFor == empno) return;
 
-        var empmas = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
-        var address = empmas?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(empmas.Id, Uc.SchemaUserPis, Uc.Conn);
-        v.Empmasaddress = address ?? new();
-        v.EmpmasaddressFor = empno;
+        var empmas          = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
+        var address         = empmas?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(empmas.Id, Uc.SchemaUserPis, Uc.Conn);
+        v.Empmasaddress     = address ?? new();
+        v.EmpmasaddressFor  = empno;
 
+
+        // -- Nothing in PIS yet : start from the old phone numbers / email --
+        v.Empmasaddress = address ?? new EmpmasAddressModel
+        {
+            PresAddTelNo    = v.Empmas.Tel1,
+            ProvAddTelNo    = v.Empmas.Tel2,
+            EmailAdd        = v.Empmas.Email,
+        };
     }
 
     private async Task LoadEmployments()
