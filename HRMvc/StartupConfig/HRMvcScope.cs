@@ -20,6 +20,8 @@ public static class HRMvcScope
         services.AddScoped<SessionService>();
         services.AddScoped<UserClaimsContextService>();
         services.AddScoped<PisAccessService>();
+        services.AddScoped<AmsAccessService>();
+        services.AddScoped<PayAccessService>();
         services.AddScoped<ClientTerminalService>();
         services.AddScoped<HRMvc.Applications._01Register.Library.L01CompanySetup>();
         services.AddScoped<L12_101>();

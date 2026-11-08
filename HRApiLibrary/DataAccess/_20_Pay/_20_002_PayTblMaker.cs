@@ -1169,7 +1169,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                 UPDATE MainPay.Menu SET Odr = 12006 WHERE Id = 12005;
                 INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
                     (12008, 'Dtl-Transaction', 11001, 1, 'face', 'Enrollment', '1100/12008', 12008),
-                    (12009, 'Dtl-Transaction', 11001, 1, 'camera_front', 'Punch Capturing', '1100/12009', 12009);
+                    (12009, 'Dtl-Transaction', 11001, 1, 'camera_front', 'Punch Capturing', '1100/12009', 12009),
+                    (12010, 'Dtl-Transaction', 11001, 1, 'manage_accounts', 'User Management', '1100/12010', 12010);
                 DELETE FROM Main.Menu WHERE Id = 1004 AND DispText = 'Payroll Settings' AND Action = '12/004';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }

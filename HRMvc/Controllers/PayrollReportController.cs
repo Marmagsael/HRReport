@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace HRMvc.Controllers
 {
     [Route("13")]
     public class PayrollReportController : Controller
     {
+        private readonly HRMvc.StartupConfig.PayAccessService _access;
+        public PayrollReportController(HRMvc.StartupConfig.PayAccessService access) { _access = access; }
+
         private static readonly Dictionary<string, string> ReportViews = new()
         {
             // Earnings
@@ -91,8 +94,11 @@ namespace HRMvc.Controllers
 
         // 🔥 Clean numeric route
         [HttpGet("{reportCode:int}")]
-        public IActionResult Report(int reportCode)
+        public async Task<IActionResult> Report(int reportCode)
         {
+            if (!await _access.CanOpenAsync(User, reportCode))
+                return StatusCode(StatusCodes.Status403Forbidden, "You do not have access to this module. Please ask your administrator to grant it in User Management.");
+
             var key = reportCode.ToString();
 
             if (!ReportViews.TryGetValue(key, out var viewName))
