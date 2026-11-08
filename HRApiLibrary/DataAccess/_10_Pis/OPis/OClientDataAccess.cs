@@ -253,7 +253,7 @@ public class OClientDataAccess : IOClientDataAccess
                         GROUP_CONCAT(DISTINCT p.name SEPARATOR ' / ') AS PersonnelPositions,
                         SUM(IF(e.sex_ = 'M', 1, 0)) AS MaleCnt,
                         SUM(IF(e.sex_ = 'F', 1, 0)) AS FemaleCnt,
-                        SUM(IF(e.sex_ = '' OR e.sex_ IS NULL, 1, 0)) AS OthersCnt, c.ContStart, c.ContEnd
+                        SUM(IF(e.sex_ = '' OR e.sex_ IS NULL, 0, 1)) AS OthersCnt, c.ContStart, c.ContEnd
                         FROM {schema}.Client c
                             LEFT JOIN {schema}.Empmas e  ON e.Client_ = c.ClNumber
                             LEFT JOIN {schema}.Position p  ON p.Code = e.Position_

@@ -4,7 +4,7 @@
 @inject IOClientDataAccess _client;
 
 
-<div style="height:calc(100vh - 200px); position:relative; min-height:0;">
+<div style="height:calc(100vh - 100px); position:relative; min-height:0;">
     <_02BTModal MCaption="@Rv.MCaption" ShowModal="V.ShowDOLEReportModal" ChildAction="CloseReportModal">
         <Details>
 
@@ -220,7 +220,7 @@
     {
 
 
-        V.IsLoading = true;
+        V.IsGridLoading = true;
 
         args.Data = new List<OClientModel>();
         args.Total = 0;
@@ -269,7 +269,7 @@
             NotificationRef.Show("Unable to load deployment records.", ThemeConstants.Notification.ThemeColor.Error);
         }
 
-        V.IsLoading = false;
+        V.IsGridLoading = false;
         await ChildAction.InvokeAsync();
 
     }
@@ -322,40 +322,8 @@
 
     private async Task GenerateDOLEDeploymentReport()
     {
-      
-
-        if (!V.Clients.Any()) { return; }
-
-        V.RepDtls = new List<OClientModel>();
-
-
-        if (!V.SelectedDeployments.Any())
-        {
-            NotificationRef.Show("Select a record to export to Excel.", ThemeConstants.Notification.ThemeColor.Warning);
-            return;
-        }
-
-        V.RepDtls = V.SelectedDeployments!;
-
-        Rv.MCaption = "Personnel Reporting";
-        Rv.RelativePath = "";
-        Rv.ReportData = [];
-        Rv.ReportData = V.RepDtls;
-
-        Rv.ReportParams["ReportTitle"] = "Personnel Reporting";
-        Rv.RelativePath = "Reports/_01Pis/J_2053_DE_DOLE.trdp";
-        Rv.SelectedFormat = "XLSX";
-
-        Rv.ShowReport = true;
-        if (Rv.SelectedFormat == "XLSX")
-        {
-            await Task.Delay(2000);
-            Rv.ShowReport = false;
-            NotificationRef.Show("The Excel file has been generated successfully. Please check your browser's downloads.", ThemeConstants.Notification.ThemeColor.Success);
-
-        }
-
-        V.SelectedDeployments = new List<OClientModel>();
+        V.Action = "GenerateDOLEDeploymentReport";
+        await ChildAction.InvokeAsync();
     }
 
     private async Task CloseReportModal()

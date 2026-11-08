@@ -11,7 +11,9 @@ namespace HRMvc.Applications.PisModules.Vars
         public string? Conn                 { get; set; } = string.Empty;
 
         public string?  Action              { get; set; } = string.Empty;
-        public bool     IsLoading           { get; set; } = true;
+        public bool     IsLoading           { get; set; } = false;
+        public bool     IsGridLoading       { get; set; } = true;
+        public bool     IsReportLoading     { get; set; } = false;
         public bool?    UcLoaded            { get; set; } = false;
 
 
