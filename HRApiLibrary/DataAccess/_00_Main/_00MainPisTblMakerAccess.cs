@@ -477,6 +477,17 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         sql = @$"insert into {schema}.AttDutyType (Code, Name)
                     select 'RN', 'Regular Night' from dual where not exists (select 1 from {schema}.AttDutyType where Code = 'RN')";
         await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- Face samples for the face punch (Enrollment / Punch Capturing) : one row per sample, EmpmasId = {PIS}.Empmas.Id --
+        sql = @$"CREATE TABLE IF NOT EXISTS {schema}.FaceTemplate (
+                        Id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                        EmpmasId    INT UNSIGNED  NOT NULL,
+                        Descriptor  MEDIUMTEXT    NOT NULL,
+                        CreatedAt   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        CreatedById INT UNSIGNED  DEFAULT 0,
+                        PRIMARY KEY (Id),
+                        KEY IX_FaceTemplate_Empmas (EmpmasId)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
 
