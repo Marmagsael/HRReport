@@ -1,0 +1,149 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._12008O
+@using HRMvc.Applications._00GeneralComponents
+@using System.Text.Json
+
+@implements IAsyncDisposable
+@inject IDA_12008O _da
+@inject IJSRuntime JS
+@inject HRMvc.StartupConfig.ClientTerminalService _terminal
+
+<TelerikRootComponent>
+
+    <_00BT_FullW HdrCaption="Punch Capturing">
+        <Details>
+            <div class="p-3 d-flex flex-wrap gap-4 justify-content-center">
+
+                <div>
+                    <div style="position:relative;width:480px;height:360px;background:#222;border-radius:8px;overflow:hidden">
+                        <video id="punchCam" autoplay muted playsinline style="width:480px;height:360px;object-fit:cover;transform:scaleX(-1)"></video>
+                    </div>
+                    <div class="text-center mt-2 fs-5" style="min-height:32px">@Status</div>
+                    @if (!string.IsNullOrEmpty(CameraMsg)) { <div class="txt-red text-center">@CameraMsg</div> }
+                </div>
+
+                <div style="width:380px">
+                    <div class="text-center">
+                        <div style="font-size:3rem;font-weight:600;line-height:1">@Now.ToString("hh:mm:ss tt")</div>
+                        <div class="text-muted mb-3">@Now.ToString("dddd, MMMM dd, yyyy")</div>
+                    </div>
+
+                    @if (Last != null)
+                    {
+                        <div class="card p-3 mb-3 text-center" style="border-width:2px;border-color:@(Last.Ok ? (Last.Type == "IN" ? "#2e7d32" : "#1565c0") : "#c62828")">
+                            @if (Last.Ok)
+                            {
+                                <div style="font-size:1.6rem;font-weight:600">@Last.EmpName</div>
+                                <div style="font-size:2rem;font-weight:700;color:@(Last.Type == "IN" ? "#2e7d32" : "#1565c0")">@Last.Msg</div>
+                                <div>@Last.At.ToString("hh:mm:ss tt")</div>
+                            }
+                            else
+                            {
+                                <div style="font-size:1.2rem;font-weight:600">@Last.EmpName</div>
+                                <div class="txt-red">@Last.Msg</div>
+                            }
+                        </div>
+                    }
+
+                    <div class="fw-bold mb-1">Recent punches</div>
+                    @foreach (var r in Recent)
+                    {
+                        <div class="d-flex justify-content-between border-bottom py-1">
+                            <span>@r.EmpName</span>
+                            <span><b>@r.Type</b> &nbsp; @r.At.ToString("hh:mm tt")</span>
+                        </div>
+                    }
+                    @if (!Recent.Any()) { <div class="text-muted">No punch yet.</div> }
+                </div>
+            </div>
+        </Details>
+    </_00BT_FullW>
+
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    string? Status = "Starting the camera...", CameraMsg;
+    DateTime Now = DateTime.Now;
+    M12008_PunchResult? Last;
+    List<M12008_PunchResult> Recent = new();
+    Dictionary<int, DateTime> LastPunch = new();
+    DotNetObjectReference<_12009PunchCapture>? self;
+    System.Threading.Timer? clock, hideTimer;
+    bool busy;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        clock = new System.Threading.Timer(_ => { Now = DateTime.Now; InvokeAsync(StateHasChanged); }, null, 1000, 1000);
+
+        CameraMsg = await JS.InvokeAsync<string>("FacePunch.init", "punchCam");
+        if (!string.IsNullOrEmpty(CameraMsg)) { Status = null; StateHasChanged(); return; }
+
+        var rows = await _da._02Templates(Uc.SchemaUserPis!, Uc.Conn!);
+        var templates = rows.GroupBy(r => r.EmpmasId).Select(g => new
+        {
+            id = g.Key,
+            samples = g.Select(x => System.Text.Json.JsonSerializer.Deserialize<double[]>(x.Descriptor ?? "[]")).Where(x => x is { Length: 128 }).ToList()
+        }).Where(t => t.samples.Count > 0).ToList();
+
+        if (templates.Count == 0) { Status = "No face enrolled yet. Use Enrollment first."; StateHasChanged(); return; }
+
+        self = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("FacePunch.startMatching", "punchCam", self, templates, 0.5);
+        Status = "Look at the camera.";
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnStatus(string text)
+    {
+        if (!busy) { Status = text; InvokeAsync(StateHasChanged); }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task OnRecognized(int empmasId)
+    {
+        busy = true;
+        try
+        {
+            M12008_PunchResult res;
+            if (LastPunch.TryGetValue(empmasId, out var at) && (DateTime.Now - at).TotalSeconds < 60)
+            {
+                var name = await _da._02EmpName(empmasId, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!);
+                res = new() { Ok = false, EmpName = name, Msg = $"Already recorded at {at:hh:mm:ss tt}." };
+            }
+            else
+            {
+                var t = await _terminal.GetAsync();
+                res = await _da._01Punch(empmasId, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!, t.TimeZoneId, t.IpAddress, t.MacAddress);
+                if (res.Ok) { LastPunch[empmasId] = DateTime.Now; Recent.Insert(0, res); if (Recent.Count > 8) Recent.RemoveAt(8); }
+            }
+            Last = res;
+            Status = res.Ok ? $"{res.Msg} recorded." : res.Msg;
+        }
+        catch (Exception ex)
+        {
+            Last = new() { Ok = false, Msg = "Unable to record the punch." };
+            Console.Error.WriteLine("12009 punch failed: " + ex);
+        }
+        await InvokeAsync(StateHasChanged);
+
+        hideTimer?.Dispose();
+        hideTimer = new System.Threading.Timer(async _ =>
+        {
+            busy = false; Last = null; Status = "Look at the camera.";
+            await InvokeAsync(async () => { await JS.InvokeVoidAsync("FacePunch.resume"); StateHasChanged(); });
+        }, null, 4000, Timeout.Infinite);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        clock?.Dispose(); hideTimer?.Dispose();
+        self?.Dispose();
+        try { await JS.InvokeVoidAsync("FacePunch.stop"); } catch { }
+    }
+}
