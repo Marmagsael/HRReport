@@ -16,6 +16,8 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
+    <TelerikLoaderContainer Visible="@IsCapturing" Text="Capturing..." LoaderType="@LoaderType.ConvergingSpinner" />
+
     <_00BT_FullW HdrCaption="Enrollment">
         <Details>
             <div class="p-2 d-flex flex-wrap gap-3">
@@ -46,7 +48,7 @@
                     @if (!string.IsNullOrEmpty(CameraMsg)) { <div class="txt-red small mt-1">@CameraMsg</div> }
 
                     <div class="d-flex gap-2 mt-2">
-                        <TelerikButton OnClick="@Capture" ThemeColor="primary" Enabled="@(Selected != null && PisEmpmasId > 0)">Capture Sample</TelerikButton>
+                        <TelerikButton OnClick="@Capture" ThemeColor="primary" Enabled="@(Selected != null && PisEmpmasId > 0 && !IsCapturing)">Capture Sample</TelerikButton>
                         <TelerikButton OnClick="@AskDelete" Enabled="@(SampleCount > 0)">Delete Face Data</TelerikButton>
                     </div>
                     @if (!string.IsNullOrEmpty(Msg)) { <div class="mt-2 @(MsgOk ? "text-success" : "txt-red")">@Msg</div> }
@@ -90,7 +92,7 @@
 
     TelerikNotification? NotificationRef;
     string? Keyword, CameraMsg, Msg;
-    bool MsgOk, ShowDelete;
+    bool MsgOk, ShowDelete, IsCapturing;
     List<M2306_EmpInfo> Results = new();
     List<M12008_Enrolled> Enrolled = new();
     M2306_EmpInfo? Selected;
@@ -123,15 +125,28 @@
     async Task Capture()
     {
         Msg = null;
-        var json = await JS.InvokeAsync<string>("FacePunch.capture", "enrollCam");
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-        if (!root.GetProperty("ok").GetBoolean()) { Msg = root.GetProperty("msg").GetString(); MsgOk = false; return; }
+        IsCapturing = true;
+        StateHasChanged();
+        try
+        {
+            var json = await JS.InvokeAsync<string>("FacePunch.capture", "enrollCam");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (!root.GetProperty("ok").GetBoolean()) { Msg = root.GetProperty("msg").GetString(); MsgOk = false; return; }
 
-        await _da._01Sample(PisEmpmasId, root.GetProperty("descriptor").GetRawText(), Uc.UserId ?? 0, Uc.SchemaUserPis!, Uc.Conn!);
-        SampleCount++;
-        Msg = $"Sample {SampleCount} saved."; MsgOk = true;
-        await LoadEnrolled();
+            await _da._01Sample(PisEmpmasId, root.GetProperty("descriptor").GetRawText(), Uc.UserId ?? 0, Uc.SchemaUserPis!, Uc.Conn!);
+            SampleCount++;
+            Msg = $"Sample {SampleCount} saved."; MsgOk = true;
+            await LoadEnrolled();
+        }
+        catch (Exception ex)
+        {
+            Msg = "Unable to capture: " + ex.Message; MsgOk = false;
+        }
+        finally
+        {
+            IsCapturing = false;
+        }
     }
 
     void AskDelete() => ShowDelete = true;

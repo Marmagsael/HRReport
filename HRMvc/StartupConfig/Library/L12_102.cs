@@ -44,7 +44,7 @@ public class L12_102
         var Atttemplates    = await _attTemplate._02s(empmasid, pisdb, conn);
         if(Atttemplates.Count < 1 )
         {
-            var res = _attTemplate._02NoSchedule(empmasid);
+            var res = await _attTemplate._02NoSchedule(empmasid, pisdb, conn);
             Atttemplates.Add(res); 
         }
         v12_102.Atttemplates = Atttemplates;

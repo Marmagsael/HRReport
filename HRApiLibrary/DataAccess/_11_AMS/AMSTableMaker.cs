@@ -156,8 +156,15 @@ public class AMSTableMaker : IAMSTableMaker
                       PRIMARY KEY (`Id`)
                     ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
+
+        var rows = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.AttSchedDaily", new { }, connName);
+        if (rows.FirstOrDefault() == 0)
+            await _sql.ExecuteCmd($@"INSERT INTO {schema}.AttSchedDaily (Name, DutyType, PIn, Duration, POut, Nd) VALUES
+                                    ('8AM-5PM', 'R',  800, 900, 1700, 0),
+                                    ('RN',      'RN', 0,   0,   0,    0),
+                                    ('RD',      'RD', 0,   0,   0,    0)", new { }, connName);
     }
-    
+
     private async Task _01AttAdvanceSchedule(string schema, string connName)
     {
         var sql = $@"CREATE TABLE if not exists {schema}.`AttAdvanceSchedule` (

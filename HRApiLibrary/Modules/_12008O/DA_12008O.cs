@@ -47,6 +47,18 @@ public class DA_12008O : IDA_12008O
         return (r.FirstOrDefault() ?? "").Trim();
     }
 
+    public async Task<int> _02EmpmasIdByNumber(string empNumber, string pisdb, string conn)
+    {
+        var r = await _sql.FetchData<int, dynamic>($"select Id from {pisdb}.Empmas where trim(EmpNumber) = @EmpNumber order by Id limit 1", new { EmpNumber = (empNumber ?? "").Trim() }, conn);
+        return r.FirstOrDefault();
+    }
+
+    public async Task<string> _02EmpNumber(int empmasId, string pisdb, string conn)
+    {
+        var r = await _sql.FetchData<string, dynamic>($"select trim(EmpNumber) from {pisdb}.Empmas where Id = @Id", new { Id = empmasId }, conn);
+        return (r.FirstOrDefault() ?? "").Trim();
+    }
+
     public async Task _01Sample(int empmasId, string descriptor, int userId, string pisdb, string conn)
     {
         await _sql.ExecuteCmd($"insert into {pisdb}.FaceTemplate (EmpmasId, Descriptor, CreatedById) values (@EmpmasId, @Descriptor, @UserId)",
@@ -81,7 +93,7 @@ public class DA_12008O : IDA_12008O
 
         if (open == null)
         {
-            var at = (await _tpl._02s(systemId, pisdb, conn))?.FirstOrDefault(x => x != null) ?? _tpl._02NoSchedule(systemId)!;
+            var at = (await _tpl._02s(systemId, pisdb, conn))?.FirstOrDefault(x => x != null) ?? (await _tpl._02NoSchedule(systemId, pisdb, conn))!;
             int? dayNo = MsdsDataAccess.GetDayNo(now.DayOfWeek.ToString());
             var s = Sched(dayNo, at);
             int dutyId = await DutyId(s.DutyType, pisdb, conn);
@@ -102,7 +114,7 @@ public class DA_12008O : IDA_12008O
         }
         else
         {
-            var at = (await _tpl._02s(systemId, pisdb, conn))?.FirstOrDefault(x => x != null) ?? _tpl._02NoSchedule(systemId)!;
+            var at = (await _tpl._02s(systemId, pisdb, conn))?.FirstOrDefault(x => x != null) ?? (await _tpl._02NoSchedule(systemId, pisdb, conn))!;
             var inDate = open.PunchInDate ?? now;
             int? dayNo = MsdsDataAccess.GetDayNo(inDate.DayOfWeek.ToString());
             var s = Sched(dayNo, at);
@@ -155,6 +167,8 @@ public interface IDA_12008O
     Task<List<M12008_Enrolled>> _02Enrolled(string pisdb, string opisdb, string conn);
     Task<List<M12008_Template>> _02Templates(string pisdb, string conn);
     Task<string> _02EmpName(int empmasId, string pisdb, string opisdb, string conn);
+    Task<string> _02EmpNumber(int empmasId, string pisdb, string conn);
+    Task<int> _02EmpmasIdByNumber(string empNumber, string pisdb, string conn);
     Task _01Sample(int empmasId, string descriptor, int userId, string pisdb, string conn);
     Task _04Delete(int empmasId, string pisdb, string conn);
     Task<int> _02Samples(int empmasId, string pisdb, string conn);

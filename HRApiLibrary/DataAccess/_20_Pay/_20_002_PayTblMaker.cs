@@ -1012,10 +1012,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     private async Task AddIsCommercialUse(string? schema, string? connName)
     {
         var has = await _sql.FetchData<long, dynamic>(
-            @"select sum(column_name = 'IsCommercialUse') from information_schema.columns
-              where table_schema = @Schema and table_name = 'Menu'", new { Schema = schema }, connName);
+            @"select count(*) from information_schema.columns
+              where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu' and column_name = 'IsCommercialUse'", new { Schema = schema }, connName);
         var tbl = await _sql.FetchData<long, dynamic>(
-            "select count(*) from information_schema.tables where table_schema = @Schema and table_name = 'Menu'", new { Schema = schema }, connName);
+            "select count(*) from information_schema.tables where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu'", new { Schema = schema }, connName);
         if (tbl.FirstOrDefault() > 0 && has.FirstOrDefault() == 0)
             await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN IsCommercialUse TINYINT UNSIGNED NOT NULL DEFAULT 1 AFTER Odr", new { }, connName);
     }
