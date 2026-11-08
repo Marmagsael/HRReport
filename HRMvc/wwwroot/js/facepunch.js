@@ -61,16 +61,11 @@ window.FacePunch = (function () {
         return Math.sqrt(s);
     }
 
-    function ear(p, i) {
-        const d = (a, b) => Math.hypot(p[a].x - p[b].x, p[a].y - p[b].y);
-        return (d(i + 1, i + 5) + d(i + 2, i + 4)) / (2 * d(i, i + 3));
-    }
-
     // templates : [{ id, samples : [ [128 numbers], ... ] }]
     function startMatching(videoId, dotnet, templates, threshold) {
         const v = document.getElementById(videoId);
         const list = templates.map(t => ({ id: t.id, samples: t.samples.map(s => Float32Array.from(s)) }));
-        state = { id: 0, hits: 0, since: 0, closed: false, done: false };
+        state = { id: 0, hits: 0, done: false };
         const limit = threshold || 0.5;
 
         if (timer) clearInterval(timer);
@@ -81,7 +76,7 @@ window.FacePunch = (function () {
                 const r = await faceapi.detectSingleFace(v, opts()).withFaceLandmarks(true).withFaceDescriptor();
                 if (!r) {
                     if (state.id !== 0) dotnet.invokeMethodAsync('OnStatus', 'Look at the camera.');
-                    state.id = 0; state.hits = 0; state.closed = false;
+                    state.id = 0; state.hits = 0;
                     return;
                 }
 
@@ -91,32 +86,32 @@ window.FacePunch = (function () {
                     if (d < bestD) { bestD = d; best = t.id; }
                 }
                 if (bestD > limit) {
-                    state.id = 0; state.hits = 0; state.closed = false;
+                    state.id = 0; state.hits = 0;
                     dotnet.invokeMethodAsync('OnStatus', 'Face not recognized.');
                     return;
                 }
 
-                if (best !== state.id) { state.id = best; state.hits = 1; state.since = Date.now(); state.closed = false; return; }
+                if (best !== state.id) { state.id = best; state.hits = 1; return; }
                 state.hits++;
                 if (state.hits < 3) return;
 
-                // the live person has to blink, a photo does not
-                const pts = r.landmarks.positions;
-                const e = (ear(pts, 36) + ear(pts, 42)) / 2;
-                if (e < 0.21) state.closed = true;
-                else if (state.closed && e > 0.26) {
-                    state.done = true;
-                    dotnet.invokeMethodAsync('OnRecognized', best);
-                    return;
-                }
-                dotnet.invokeMethodAsync('OnStatus', 'Recognized. Please blink to confirm.');
-                if (Date.now() - state.since > 10000) { state.id = 0; state.hits = 0; }
+                state.done = true;
+                dotnet.invokeMethodAsync('OnRecognized', best);
             } catch (e) { /* the next frame tries again */ }
             finally { busy = false; }
-        }, 350);
+        }, 300);
     }
 
-    function resume() { if (state) { state.id = 0; state.hits = 0; state.closed = false; state.done = false; } }
+    function resume() { if (state) { state.id = 0; state.hits = 0; state.done = false; } }
 
-    return { init, stop, capture, startMatching, resume };
+    function fullscreen() {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+    }
+
+    function leaveFullscreen() {
+        if (document.fullscreenElement) document.exitFullscreen();
+    }
+
+    return { fullscreen, leaveFullscreen, init, stop, capture, startMatching, resume };
 })();
