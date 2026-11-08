@@ -1047,6 +1047,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = Id + 2 WHERE IdParent = 2051 AND Id BETWEEN 2054 AND 2055;
                         UPDATE MainPis.Menu SET Odr = 2058 WHERE IdParent = 2051 AND Id = 2065;
                         UPDATE MainPis.Menu SET Odr = Id + 3 WHERE IdParent = 2051 AND Id BETWEEN 2056 AND 2063;
+                        DELETE FROM MainPis.Menu WHERE Id = 2056 AND DispText = 'Leave Type Entry';
                         DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';
                         DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';";
         await _sql.ExecuteCmd(sql, new { }, connName);

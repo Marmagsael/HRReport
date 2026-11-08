@@ -2280,9 +2280,12 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         {
             sql = $@"insert into {schema}.LeaveType
                             (Id, Code,  LeaveName,                 AnivStart,                          AnivEnd, DefValue) values 
-                            (1,  'SIL', 'Service Incentive Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 5), 
-                            (2,  'SL', 'Sick Leave',               date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15),
-                            (3,  'VL', 'Vacation Leave',           date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15) ";
+                            (1,  'VL', 'Vacation Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15),
+                            (2,  'SL', 'Sick Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15),
+                            (3,  'IL', 'Incentive Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 5),
+                            (4,  'ML', 'Maternity Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 0),
+                            (5,  'PL', 'Paternity Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 0),
+                            (6,  'EL', 'Emergency Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 0) ";
             await _sql.ExecuteCmd(sql, new { }, conn);
         }
     }
