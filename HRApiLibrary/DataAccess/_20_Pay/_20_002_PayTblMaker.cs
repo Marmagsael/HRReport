@@ -1031,7 +1031,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (2393, 'Separator', 2301, 1, NULL, '-', NULL, 2311),
                             (2394, 'Separator', 2051, 1, NULL, '-', NULL, 2053),
                             (2065, 'Dtl-Report', 2051, 1, 'badge', 'Designation Entry', '14/2065', 2058),
-                            (2395, 'Separator', 2051, 1, NULL, '-', NULL, 2055);
+                            (2395, 'Separator', 2051, 1, NULL, '-', NULL, 2055),
+                            (2396, 'Separator', 2051, 1, NULL, '-', NULL, 2060),
+                            (2397, 'Separator', 2051, 1, NULL, '-', NULL, 2063),
+                            (2398, 'Separator', 2051, 1, NULL, '-', NULL, 2067);
                         UPDATE MainPis.Menu SET Odr = 2302 WHERE Id = 2302 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2303 WHERE Id = 2391 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2304 WHERE Id = 2308 AND IdParent = 2301;
@@ -1043,10 +1046,25 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2309 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2312 WHERE Id = 2306 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2313 WHERE Id = 2310 AND IdParent = 2301;
-                        UPDATE MainPis.Menu SET Odr = Id + 1 WHERE IdParent = 2051 AND Id = 2053;
-                        UPDATE MainPis.Menu SET Odr = Id + 2 WHERE IdParent = 2051 AND Id BETWEEN 2054 AND 2055;
-                        UPDATE MainPis.Menu SET Odr = 2058 WHERE IdParent = 2051 AND Id = 2065;
-                        UPDATE MainPis.Menu SET Odr = Id + 3 WHERE IdParent = 2051 AND Id BETWEEN 2056 AND 2063;
+                        UPDATE MainPis.Menu SET Odr = 2052 WHERE IdParent = 2051 AND Id = 2052;
+                        UPDATE MainPis.Menu SET Odr = 2053 WHERE IdParent = 2051 AND Id = 2394;
+                        UPDATE MainPis.Menu SET Odr = 2054 WHERE IdParent = 2051 AND Id = 2053;
+                        UPDATE MainPis.Menu SET Odr = 2055 WHERE IdParent = 2051 AND Id = 2395;
+                        UPDATE MainPis.Menu SET Odr = 2056 WHERE IdParent = 2051 AND Id = 2055;
+                        UPDATE MainPis.Menu SET Odr = 2057 WHERE IdParent = 2051 AND Id = 2065;
+                        UPDATE MainPis.Menu SET Odr = 2058 WHERE IdParent = 2051 AND Id = 2062;
+                        UPDATE MainPis.Menu SET Odr = 2059 WHERE IdParent = 2051 AND Id = 2063;
+                        UPDATE MainPis.Menu SET DispText = 'State / Province Entry' WHERE Id = 2060;
+                        UPDATE MainPis.Menu SET DispText = 'City / Municipality Entry' WHERE Id = 2061;
+                        UPDATE MainPis.Menu SET Odr = 2060 WHERE IdParent = 2051 AND Id = 2396;
+                        UPDATE MainPis.Menu SET Odr = 2061 WHERE IdParent = 2051 AND Id = 2057;
+                        UPDATE MainPis.Menu SET Odr = 2062 WHERE IdParent = 2051 AND Id = 2058;
+                        UPDATE MainPis.Menu SET Odr = 2063 WHERE IdParent = 2051 AND Id = 2397;
+                        UPDATE MainPis.Menu SET Odr = 2064 WHERE IdParent = 2051 AND Id = 2059;
+                        UPDATE MainPis.Menu SET Odr = 2065 WHERE IdParent = 2051 AND Id = 2061;
+                        UPDATE MainPis.Menu SET Odr = 2066 WHERE IdParent = 2051 AND Id = 2060;
+                        UPDATE MainPis.Menu SET Odr = 2067 WHERE IdParent = 2051 AND Id = 2398;
+                        UPDATE MainPis.Menu SET Odr = 2068 WHERE IdParent = 2051 AND Id = 2054;
                         DELETE FROM MainPis.Menu WHERE Id = 2056 AND DispText = 'Leave Type Entry';
                         DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';
                         DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';";
@@ -1143,6 +1161,15 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                 UPDATE MainPay.Menu SET DispText = 'Tax Annualization' WHERE Id = 1302 AND DispText = 'Tax Annunalization';
                 DELETE FROM MainPay.Menu WHERE Id = 1313 AND DispText = 'Account Total' AND Action IN ('13/PayRep_1313', '13/1313');
                 UPDATE MainPay.Menu SET Action = CONCAT('13/', SUBSTRING(Action, 11)) WHERE Action LIKE '13/PayRep\_%';
+                UPDATE MainPay.Menu SET Action = '1100/12004' WHERE Id = 12004 AND DispText = 'OB / Direct Assignment' AND Action IN ('1100/12005', '14/2310');
+                INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                    (12007, 'Dtl-Transaction', 11001, 1, 'event_note', 'Leave Transaction Entry', '1100/12007', 12004);
+                UPDATE MainPay.Menu SET Odr = 12004 WHERE Id = 12007;
+                UPDATE MainPay.Menu SET Odr = 12005 WHERE Id = 12004;
+                UPDATE MainPay.Menu SET Odr = 12006 WHERE Id = 12005;
+                INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                    (12008, 'Dtl-Transaction', 11001, 1, 'face', 'Enrollment', '1100/12008', 12008),
+                    (12009, 'Dtl-Transaction', 11001, 1, 'camera_front', 'Punch Capturing', '1100/12009', 12009);
                 DELETE FROM Main.Menu WHERE Id = 1004 AND DispText = 'Payroll Settings' AND Action = '12/004';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
