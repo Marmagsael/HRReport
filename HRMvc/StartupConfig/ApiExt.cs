@@ -180,6 +180,7 @@ public static class ApiExt
         builder.Services.AddScoped<IOMlacodeDataAccess, OMlacodeDataAccess>();
         builder.Services.AddScoped<IOPositionDataAccess, OPositionDataAccess>();
         builder.Services.AddScoped<IODesignationDataAccess, ODesignationDataAccess>();
+        builder.Services.AddScoped<IOLeaveTypeSyncDataAccess, OLeaveTypeSyncDataAccess>();
         builder.Services.AddScoped<IOInsuranceaccidentDataAccess, OInsuranceaccidentDataAccess>();
         builder.Services.AddScoped<ILvcreditDataAccess, LvcreditDataAccess>();
 
