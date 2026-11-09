@@ -1,4 +1,5 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis.OPis;
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+@inject Microsoft.Extensions.Configuration.IConfiguration _cfgT;
 @inject IOClientDataAccess _client;
 
 
@@ -31,7 +32,7 @@
 
                 <div class="col-12 col-md-8  ">
 
-                    <TelerikDropDownList Data="@V.Clients"
+                    <TelerikDropDownList Data="@MotherUnits"
                                          TextField="ClName"
                                          ValueField="ClNumber"
                                          @bind-Value="@V.Client.ParentCd"
@@ -64,7 +65,7 @@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Deployment Code
+                    @T("Deployment Code")
                 </label>
 
                 <div class="col-12 col-md-4 col-lg-3 ">
@@ -88,7 +89,7 @@
             <div class="d-flex flex-column flex-md-row mb-2">
 
                 <label class="fw-normal w-180p">
-                    Deployment Name
+                    @T("Deployment Name")
                 </label>
 
                 <div class="col-12 col-md-8 ">
@@ -113,6 +114,14 @@
 
 
 
+
+            @* --- Is Mother Unit --- *@
+            <div class="d-flex flex-column flex-md-row mb-2">
+                <label class="fw-normal w-180p">Is Mother Unit</label>
+                <div class="col-12 col-md-8">
+                    <input type="checkbox" class="form-check-input" @bind="V.Client.IsMotherUnitB" />
+                </div>
+            </div>
 
             @* --- Current Address --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
@@ -388,6 +397,10 @@
 </div>
 
 @code {
+    List<OClientModel?> MotherUnits => (V.Clients ?? []).Where(c => c != null && (string.IsNullOrWhiteSpace(V.Client.ClNumber) || c.ClNumber?.Trim() != V.Client.ClNumber.Trim()) && (c.IsMotherUnit == 1 || c.ClNumber?.Trim() == V.Client.ParentCd?.Trim())).ToList();
+
+    string T(string s) => string.Equals(_cfgT["CompanyInfo:IsSecurityAgency"], "true", StringComparison.OrdinalIgnoreCase) ? s.Replace("Deployment", "Client").Replace("deployment", "client") : s;
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
@@ -422,14 +435,14 @@
             if (existingRecords != null && existingRecords.Any(c => c.ClNumber?.Trim().ToUpper() != clnumber))
             {
                 // There are already existing duplicate deployment names in the database.
-                var confirmed = await DialogsRef?.ConfirmAsync( $"'{V.Client.ClName}' deployment name already exists. Do you still want to continue saving this entry?","Confirm Save");
+                var confirmed = await DialogsRef?.ConfirmAsync( T($"'{V.Client.ClName}' deployment name already exists. Do you still want to continue saving this entry?"),"Confirm Save");
                 if (!confirmed) return;
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"2053 deployment name check failed (OpisDb={Uc.OpisDb}, Conn={Uc.Conn}): {ex}");
-            NotificationRef.Show(  "Unable to validate if the deployment name already exists.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show(  T("Unable to validate if the deployment name already exists."), ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
 
@@ -476,7 +489,7 @@
         catch (MySql.Data.MySqlClient.MySqlException ex) when (ex.Number == 1062)
         {
             Console.WriteLine(ex);
-            NotificationRef.Show($"Deployment code {V.Client.ClNumber} was just used by another user. Nothing was saved. Please try again.", ThemeConstants.Notification.ThemeColor.Warning);
+            NotificationRef.Show(T($"Deployment code {V.Client.ClNumber} was just used by another user. Nothing was saved. Please try again."), ThemeConstants.Notification.ThemeColor.Warning);
             return;
         }
         catch (Exception ex)
@@ -542,7 +555,7 @@
 
         if (string.IsNullOrWhiteSpace(V.Client.ClName))
         {
-            V.DeploymentNameErrorMsg = "Deployment name is required";
+            V.DeploymentNameErrorMsg = T("Deployment name is required");
             isValid = false;
         }
 

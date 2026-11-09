@@ -1,0 +1,361 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._12008O
+@using HRMvc.Applications._00GeneralComponents
+@using System.Text.Json
+
+@implements IAsyncDisposable
+@inject IDA_12008O _da
+@inject IJSRuntime JS
+@inject NavigationManager _nav
+@inject HRMvc.StartupConfig.ClientTerminalService _terminal
+
+<TelerikRootComponent>
+
+    <style>
+        .pc-modal { position:fixed; inset:0; z-index:5000; display:flex; flex-direction:column; overflow:auto;
+                    background:radial-gradient(circle at 20% 0%, #e6eefb 0%, #f4f7fb 55%, #eaf0f8 100%); }
+        .pc-bar { flex:none; height:62px; padding:0 22px; display:flex; align-items:center; justify-content:space-between; color:#fff;
+                  background:linear-gradient(90deg,#0f2747,#1565c0); box-shadow:0 4px 18px rgba(15,39,71,.35); }
+        .pc-title { display:flex; align-items:center; gap:12px; font-size:1.25rem; font-weight:600; letter-spacing:.02em; }
+        .pc-bar-btns { display:flex; gap:10px; }
+        .pc-icon { width:42px; height:42px; border:0; border-radius:12px; font-size:1.05rem; color:#fff; cursor:pointer; background:rgba(255,255,255,.14); transition:background .15s; }
+        .pc-icon:hover { background:rgba(255,255,255,.28); }
+
+        .pc-wrap { flex:1; display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:28px; padding:24px 28px; width:100%; max-width:1600px; margin:0 auto; align-items:start; }
+        @@media (max-width: 1000px) { .pc-wrap { grid-template-columns:minmax(0,1fr); } }
+
+        .pc-main { width:min(100%, calc((100vh - 330px) * 1.3333)); min-width:320px; margin:0 auto; }
+        .pc-stage { position:relative; width:100%; aspect-ratio:4/3; border-radius:24px; overflow:hidden; background:#0b1220;
+                    box-shadow:0 18px 40px -12px rgba(11,18,32,.45), 0 0 0 1px rgba(255,255,255,.06) inset; }
+        .pc-stage video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block; }
+
+        .pc-guide { position:absolute; left:50%; top:46%; width:42%; height:68%; transform:translate(-50%,-50%); border-radius:50%;
+                    border:3px dashed rgba(255,255,255,.55); pointer-events:none; transition:border-color .3s, box-shadow .3s; }
+        .pc-guide.scan { border-style:solid; border-color:#4da3ff; animation:pc-pulse 1.6s ease-in-out infinite; }
+        @@keyframes pc-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(77,163,255,.55); } 50% { box-shadow:0 0 0 22px rgba(77,163,255,0); } }
+
+        .pc-corner { position:absolute; width:46px; height:46px; border:4px solid rgba(255,255,255,.85); pointer-events:none; }
+        .pc-corner.tl { top:20px; left:20px; border-right:0; border-bottom:0; border-top-left-radius:14px; }
+        .pc-corner.tr { top:20px; right:20px; border-left:0; border-bottom:0; border-top-right-radius:14px; }
+        .pc-corner.bl { bottom:20px; left:20px; border-right:0; border-top:0; border-bottom-left-radius:14px; }
+        .pc-corner.br { bottom:20px; right:20px; border-left:0; border-top:0; border-bottom-right-radius:14px; }
+
+        .pc-live { position:absolute; top:22px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:8px; padding:6px 14px;
+                   border-radius:999px; background:rgba(11,18,32,.6); color:#fff; font-size:.8rem; letter-spacing:.12em; font-weight:600; backdrop-filter:blur(6px); }
+        .pc-live i { width:9px; height:9px; border-radius:50%; background:#ff4d4f; animation:pc-blink 1.2s infinite; }
+        @@keyframes pc-blink { 50% { opacity:.25; } }
+
+        .pc-status { position:absolute; left:50%; bottom:26px; transform:translateX(-50%); max-width:86%; display:flex; align-items:center; gap:12px;
+                     padding:12px 26px; border-radius:999px; background:rgba(11,18,32,.72); color:#fff; font-size:1.15rem; font-weight:500;
+                     backdrop-filter:blur(8px); box-shadow:0 8px 24px rgba(0,0,0,.35); }
+        .pc-dot { width:12px; height:12px; border-radius:50%; background:#94a3b8; flex:none; }
+        .pc-dot.scan { background:#4da3ff; animation:pc-blink 1s infinite; }
+        .pc-dot.err { background:#ff6b6b; }
+
+        .pc-idle { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center;
+                   color:#cbd5e1; background:radial-gradient(circle at 50% 38%, #1e3a5f 0%, #0b1220 70%); }
+        .pc-idle .pc-ico { width:104px; height:104px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.8rem; color:#7cc0ff;
+                           background:rgba(124,192,255,.12); box-shadow:0 0 0 12px rgba(124,192,255,.06); }
+        .pc-idle h3 { margin:0; color:#fff; font-weight:600; font-size:1.7rem; }
+        .pc-idle p { margin:0; font-size:1.05rem; }
+
+        .pc-result { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(11,18,32,.55); backdrop-filter:blur(6px);
+                     animation:pc-fade .25s ease-out; }
+        @@keyframes pc-fade { from { opacity:0; } to { opacity:1; } }
+        .pc-rcard { width:min(78%,440px); padding:34px 28px 28px; border-radius:24px; background:#fff; text-align:center; box-shadow:0 24px 60px rgba(0,0,0,.4);
+                    animation:pc-pop .35s cubic-bezier(.2,1.3,.4,1); }
+        @@keyframes pc-pop { from { transform:scale(.85); opacity:0; } to { transform:scale(1); opacity:1; } }
+        .pc-check { width:84px; height:84px; margin:0 auto 14px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.4rem; color:#fff; }
+        .pc-check.in { background:linear-gradient(135deg,#34c759,#1e8e3e); }
+        .pc-check.out { background:linear-gradient(135deg,#4da3ff,#1565c0); }
+        .pc-check.bad { background:linear-gradient(135deg,#ff6b6b,#c62828); }
+        .pc-rname { font-size:1.7rem; font-weight:700; color:#0f172a; line-height:1.2; }
+        .pc-rtype { display:inline-block; margin:12px 0 6px; padding:6px 22px; border-radius:999px; font-size:1.5rem; font-weight:800; letter-spacing:.08em; color:#fff; }
+        .pc-rtype.in { background:#2e7d32; }
+        .pc-rtype.out { background:#1565c0; }
+        .pc-rtime { font-size:1.15rem; color:#475569; font-variant-numeric:tabular-nums; }
+        .pc-rmsg { margin-top:8px; font-size:1.1rem; color:#c62828; font-weight:500; }
+
+        .pc-entry { margin-top:20px; padding:22px 24px; border-radius:20px; background:#fff; box-shadow:0 10px 28px -10px rgba(15,23,42,.22), 0 0 0 1px #e8edf3; }
+        .pc-entry label { display:block; margin-bottom:10px; font-size:.78rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#64748b; }
+        .pc-row { display:flex; gap:14px; }
+        .pc-input { flex:1; min-width:0; height:68px; border:2px solid #d5dde8; border-radius:16px; background:#f8fafc; text-align:center;
+                    font-size:2.1rem; font-weight:700; letter-spacing:.3em; padding:0 14px; color:#0f172a; transition:border-color .2s, box-shadow .2s; outline:none; }
+        .pc-input:focus { border-color:#1565c0; background:#fff; box-shadow:0 0 0 5px rgba(21,101,192,.14); }
+        .pc-input:disabled { opacity:.55; }
+        .pc-input.bad { border-color:#e0524f; box-shadow:0 0 0 5px rgba(224,82,79,.12); }
+        .pc-btn { width:150px; height:68px; border:0; border-radius:16px; font-size:1.2rem; font-weight:700; color:#fff; cursor:pointer;
+                  background:linear-gradient(135deg,#2f80ed,#1257b8); box-shadow:0 8px 18px -6px rgba(21,101,192,.6); transition:transform .12s, filter .12s; }
+        .pc-btn:hover:enabled { filter:brightness(1.07); }
+        .pc-btn:active:enabled { transform:translateY(1px) scale(.99); }
+        .pc-btn:disabled { background:#b7c3d4; box-shadow:none; cursor:default; }
+        .pc-err { min-height:24px; margin-top:12px; color:#c62828; font-weight:500; font-size:1rem; }
+
+        .pc-side { display:flex; flex-direction:column; gap:20px; }
+        .pc-clock { padding:26px 20px; border-radius:24px; text-align:center; color:#fff;
+                    background:linear-gradient(145deg,#12315c 0%,#1565c0 55%,#2f80ed 100%); box-shadow:0 16px 34px -12px rgba(21,101,192,.7); }
+        .pc-time { font-size:3.3rem; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:.01em; }
+        .pc-date { margin-top:10px; font-size:1.05rem; opacity:.85; }
+
+        .pc-recent { flex:1; padding:20px; border-radius:24px; background:#fff; box-shadow:0 10px 28px -10px rgba(15,23,42,.18), 0 0 0 1px #e8edf3; }
+        .pc-recent h4 { margin:0 0 12px; font-size:.78rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#64748b; }
+        .pc-item { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #eef2f6; }
+        .pc-item:last-child { border-bottom:0; }
+        .pc-av { width:42px; height:42px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; background:linear-gradient(135deg,#64748b,#334155); }
+        .pc-av.in { background:linear-gradient(135deg,#34c759,#1e8e3e); }
+        .pc-av.out { background:linear-gradient(135deg,#4da3ff,#1565c0); }
+        .pc-iname { font-weight:600; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .pc-itime { font-size:.85rem; color:#64748b; font-variant-numeric:tabular-nums; }
+        .pc-badge { padding:3px 12px; border-radius:999px; font-size:.78rem; font-weight:800; letter-spacing:.06em; color:#fff; }
+        .pc-badge.in { background:#2e7d32; }
+        .pc-badge.out { background:#1565c0; }
+        .pc-empty { padding:26px 0; text-align:center; color:#94a3b8; }
+    </style>
+
+    <div class="pc-modal">
+        <div class="pc-bar">
+            <div class="pc-title"><i class="fa-solid fa-camera-retro"></i>Punch Capturing</div>
+            <div class="pc-bar-btns">
+                <button type="button" class="pc-icon" title="Full screen" @onclick="ToggleFullscreen"><i class="fa-solid fa-expand"></i></button>
+                <button type="button" class="pc-icon" title="Close" @onclick="Exit"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+            <div class="pc-wrap">
+
+                <div class="pc-main">
+                    <div class="pc-stage">
+                        <video id="punchCam" autoplay muted playsinline></video>
+
+                        <div class="pc-guide @(Scanning ? "scan" : "")"></div>
+                        <span class="pc-corner tl"></span><span class="pc-corner tr"></span>
+                        <span class="pc-corner bl"></span><span class="pc-corner br"></span>
+
+                        @if (Scanning)
+                        {
+                            <div class="pc-live"><i></i>LIVE</div>
+                        }
+
+                        @if (InNumberStage && Last == null)
+                        {
+                            <div class="pc-idle">
+                                <div class="pc-ico"><i class="fa-solid fa-id-card"></i></div>
+                                <h3>Welcome</h3>
+                                <p>Enter your employee number to begin.</p>
+                            </div>
+                        }
+
+                        @if (Last != null)
+                        {
+                            <div class="pc-result">
+                                <div class="pc-rcard">
+                                    @if (Last.Ok)
+                                    {
+                                        <div class="pc-check @(Last.Type == "IN" ? "in" : "out")"><i class="fa-solid fa-check"></i></div>
+                                        <div class="pc-rname">@Last.EmpName</div>
+                                        <div class="pc-rtype @(Last.Type == "IN" ? "in" : "out")">@Last.Type</div>
+                                        <div class="pc-rtime">@Last.At.ToString("hh:mm:ss tt")</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="pc-check bad"><i class="fa-solid fa-xmark"></i></div>
+                                        @if (!string.IsNullOrWhiteSpace(Last.EmpName)) { <div class="pc-rname">@Last.EmpName</div> }
+                                        <div class="pc-rmsg">@Last.Msg</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else if (!InNumberStage && !string.IsNullOrWhiteSpace(Status))
+                        {
+                            <div class="pc-status"><span class="pc-dot @StatusKind"></span>@Status</div>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(CameraMsg)) { <div class="txt-red text-center mt-2">@CameraMsg</div> }
+
+                    <div class="pc-entry">
+                        <label for="pcNo">Employee number</label>
+                        <div class="pc-row">
+                            <input id="pcNo" @ref="NoInput" class="pc-input @(string.IsNullOrEmpty(NoError) ? "" : "bad")" maxlength="10" autocomplete="off"
+                                   placeholder="00000" disabled="@(!InNumberStage)"
+                                   @bind="EnteredNo" @bind:event="oninput" @onkeydown="OnNoKey" />
+                            <button type="button" class="pc-btn" disabled="@(!InNumberStage || Checking)" @onclick="SubmitNo">@(Checking ? "Checking..." : "Continue")</button>
+                        </div>
+                        <div class="pc-err">@NoError</div>
+                    </div>
+                </div>
+
+                <div class="pc-side">
+                    <div class="pc-clock">
+                        <div class="pc-time">@Now.ToString("hh:mm:ss tt")</div>
+                        <div class="pc-date">@Now.ToString("dddd, MMMM dd, yyyy")</div>
+                    </div>
+
+                    <div class="pc-recent">
+                        <h4>Recent punches</h4>
+                        @foreach (var r in Recent)
+                        {
+                            <div class="pc-item">
+                                <div class="pc-av @(r.Type == "IN" ? "in" : "out")">@Initials(r.EmpName)</div>
+                                <div style="flex:1;min-width:0">
+                                    <div class="pc-iname">@r.EmpName</div>
+                                    <div class="pc-itime">@r.At.ToString("hh:mm:ss tt")</div>
+                                </div>
+                                <span class="pc-badge @(r.Type == "IN" ? "in" : "out")">@r.Type</span>
+                            </div>
+                        }
+                        @if (!Recent.Any()) { <div class="pc-empty"><i class="fa-regular fa-clock fs-3 d-block mb-2"></i>No punch yet.</div> }
+                    </div>
+                </div>
+            </div>
+    </div>
+
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    string? Status = "Enter your employee number.", CameraMsg, EnteredNo, NoError;
+    DateTime Now = DateTime.Now;
+    M12008_PunchResult? Last;
+    List<M12008_PunchResult> Recent = new();
+    Dictionary<int, DateTime> LastPunch = new();
+    DotNetObjectReference<_12009PunchCapture>? self;
+    System.Threading.Timer? clock, hideTimer, faceTimer;
+    ElementReference NoInput;
+    bool Scanning => !InNumberStage && Last == null && string.IsNullOrEmpty(CameraMsg);
+    string StatusKind => !string.IsNullOrEmpty(NoError) ? "err" : Scanning ? "scan" : "";
+
+    static string Initials(string? name)
+    {
+        var parts = (name ?? "").Split(new[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "?";
+        return parts.Length == 1 ? parts[0][..1].ToUpper() : (parts[0][..1] + parts[^1][..1]).ToUpper();
+    }
+    bool InNumberStage = true, Checking, FocusNo = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (FocusNo && InNumberStage) { FocusNo = false; try { await NoInput.FocusAsync(); } catch { } }
+        if (!firstRender) return;
+
+        clock = new System.Threading.Timer(_ => { Now = DateTime.Now; InvokeAsync(StateHasChanged); }, null, 1000, 1000);
+    }
+
+    async Task ToggleFullscreen()
+    {
+        try { await JS.InvokeVoidAsync("FacePunch.fullscreen"); } catch { }
+    }
+
+    async Task Exit()
+    {
+        try { await JS.InvokeVoidAsync("FacePunch.stop"); } catch { }
+        try { await JS.InvokeVoidAsync("FacePunch.leaveFullscreen"); } catch { }
+        _nav.NavigateTo("/1100/12005", forceLoad: true);
+    }
+
+    async Task OnNoKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SubmitNo();
+    }
+
+    async Task SubmitNo()
+    {
+        if (Checking) return;
+        NoError = null;
+        var no = (EnteredNo ?? "").Trim();
+        if (no.Length == 0) { NoError = "Enter your employee number."; FocusNo = true; return; }
+
+        Checking = true;
+        try
+        {
+            var empmasId = await _da._02EmpmasIdByNumber(no, Uc.SchemaUserPis!, Uc.Conn!);
+            if (empmasId == 0) { NoError = "Employee number not found."; EnteredNo = ""; FocusNo = true; return; }
+
+            var rows = await _da._02Templates(Uc.SchemaUserPis!, Uc.Conn!);
+            var samples = rows.Where(r => r.EmpmasId == empmasId)
+                              .Select(r => System.Text.Json.JsonSerializer.Deserialize<double[]>(r.Descriptor ?? "[]"))
+                              .Where(x => x is { Length: 128 }).ToList();
+            if (samples.Count == 0) { NoError = "No face enrolled for this employee. Use Enrollment first."; EnteredNo = ""; FocusNo = true; return; }
+
+            InNumberStage = false;
+            Status = "Starting the camera...";
+            await InvokeAsync(StateHasChanged);
+
+            CameraMsg = await JS.InvokeAsync<string>("FacePunch.init", "punchCam");
+            if (!string.IsNullOrEmpty(CameraMsg)) { await BackToNumber(null); return; }
+
+            self ??= DotNetObjectReference.Create(this);
+            var templates = new[] { new { id = empmasId, samples } };
+            await JS.InvokeVoidAsync("FacePunch.startMatching", "punchCam", self, templates, 0.5);
+            Status = "Look at the camera.";
+
+            faceTimer?.Dispose();
+            faceTimer = new System.Threading.Timer(async _ => await InvokeAsync(() => BackToNumber("Face does not match. Try again.")), null, 15000, Timeout.Infinite);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("12009 number check failed: " + ex);
+            NoError = "Unable to check the employee number.";
+        }
+        finally { Checking = false; }
+    }
+
+    async Task BackToNumber(string? error)
+    {
+        faceTimer?.Dispose();
+        try { await JS.InvokeVoidAsync("FacePunch.stop"); } catch { }
+        InNumberStage = true; EnteredNo = ""; FocusNo = true;
+        NoError = error;
+        Status = "Enter your employee number.";
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnStatus(string text)
+    {
+        if (!InNumberStage && Last == null) { Status = text; InvokeAsync(StateHasChanged); }
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task OnRecognized(int empmasId)
+    {
+        faceTimer?.Dispose();
+        try
+        {
+            M12008_PunchResult res;
+            if (LastPunch.TryGetValue(empmasId, out var at) && (DateTime.Now - at).TotalSeconds < 60)
+            {
+                var name = await _da._02EmpName(empmasId, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!);
+                res = new() { Ok = false, EmpName = name, Msg = $"Already recorded at {at:hh:mm:ss tt}." };
+            }
+            else
+            {
+                var t = await _terminal.GetAsync();
+                res = await _da._01Punch(empmasId, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!, t.TimeZoneId, t.IpAddress, t.MacAddress);
+                if (res.Ok) { LastPunch[empmasId] = DateTime.Now; Recent.Insert(0, res); if (Recent.Count > 8) Recent.RemoveAt(8); }
+            }
+            Last = res;
+            Status = res.Ok ? $"{res.Msg} recorded." : res.Msg;
+        }
+        catch (Exception ex)
+        {
+            Last = new() { Ok = false, Msg = "Unable to record the punch." };
+            Console.Error.WriteLine("12009 punch failed: " + ex);
+        }
+        await InvokeAsync(StateHasChanged);
+
+        hideTimer?.Dispose();
+        hideTimer = new System.Threading.Timer(async _ =>
+        {
+            Last = null;
+            await InvokeAsync(() => BackToNumber(null));
+        }, null, 4000, Timeout.Infinite);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        clock?.Dispose(); hideTimer?.Dispose(); faceTimer?.Dispose();
+        self?.Dispose();
+        try { await JS.InvokeVoidAsync("FacePunch.stop"); } catch { }
+    }
+}

@@ -1,6 +1,7 @@
-﻿@using HRApiLibrary.Models._90_Utils
+@using HRApiLibrary.Models._90_Utils
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 
+@inject Microsoft.Extensions.Configuration.IConfiguration _cfgT;
 @inject IOClientDataAccess _client;
 
 
@@ -69,7 +70,7 @@
                                             SelectAllMode="@GridSelectAllMode.All" />
 
                         <GridColumn Field="@nameof(OClientModel.ClName)"
-                                    Title="Deployment"
+                                    Title="@T("Deployment")"
                                     Width="180px" />
 
                         @* --- STATUS  --- *@
@@ -167,6 +168,8 @@
 
 
 @code {
+    string T(string s) => string.Equals(_cfgT["CompanyInfo:IsSecurityAgency"], "true", StringComparison.OrdinalIgnoreCase) ? s.Replace("Deployment", "Client").Replace("deployment", "client") : s;
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
@@ -266,7 +269,7 @@
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            NotificationRef.Show("Unable to load deployment records.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show(T("Unable to load deployment records."), ThemeConstants.Notification.ThemeColor.Error);
         }
 
         V.IsGridLoading = false;

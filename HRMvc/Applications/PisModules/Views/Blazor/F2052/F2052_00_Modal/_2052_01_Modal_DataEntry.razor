@@ -281,6 +281,12 @@
         {
             if (!ValidateFields()) return;
 
+            if (V.IsNewEntry == true)
+            {
+                var full = await _oempmas._02EmployeeLimitReached(Uc.OpisDb, Uc.SchemaUserPis, Uc.SchemaMain, Uc.Conn);
+                if (full != null) { NotificationRef?.Show(full, ThemeConstants.Notification.ThemeColor.Warning); return; }
+            }
+
             if (!await OnEmpNumberLostFocus()) return; // stop if empno  already exists in empmas and empmasarchived;
             if (!await OnEmailLostFocus())  return; // stop if email is already registered/associated with other employee (check in main.user and secpis.empmas);
 

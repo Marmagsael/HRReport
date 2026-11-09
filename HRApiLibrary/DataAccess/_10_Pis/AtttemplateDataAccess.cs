@@ -62,40 +62,38 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
 		return data;
 	}
 	
-    public AtttemplateModel? _02NoSchedule(int? empmasId)
+    private class DailyRow
     {
-        AtttemplateModel at = new()
-        {
-	        EmpmasId = empmasId, 
-	        
-	        AttendancetypeId = 1,
-	        
-	        D1_dutytype 	= "RD", 
-	        D2_dutytype 	= "RD", 
-	        D3_dutytype 	= "RD", 
-	        D4_dutytype 	= "RD", 
-	        D5_dutytype 	= "RD", 
-	        D6_dutytype 	= "RD", 
-	        D7_dutytype 	= "RD",
-	        
-	        D1_hrslength 	= 0, 
-	        D2_hrslength 	= 0, 
-	        D3_hrslength 	= 0, 
-	        D4_hrslength 	= 0, 
-	        D5_hrslength 	= 0,
-	        D6_hrslength 	= 0, 
-	        D7_hrslength 	= 0,
-	        
-	        D1_in 			= 0, 
-	        D2_in 			= 0, 
-	        D3_in 			= 0, 
-	        D4_in 			= 0, 
-	        D5_in 			= 0, 
-	        D6_in 			= 0, 
-	        D7_in 			= 0, 
-        };
+        public string? DutyType { get; set; }
+        public int     PIn      { get; set; }
+        public int     Duration { get; set; }
+    }
 
-        return at;
+    // -- No schedule assigned : Mon-Fri follow the first Attscheddaily row, Sat the first RN row, Sun the first RD row --
+    public async Task<AtttemplateModel?> _02NoSchedule(int? empmasId, string? schema, string? conn)
+    {
+        var rows = await _sql.FetchData<DailyRow, dynamic>($"select DutyType, PIn, Duration from {schema}.Attscheddaily order by Id", new { }, conn) ?? [];
+        var work = rows.FirstOrDefault();
+        var sat  = rows.FirstOrDefault(r => r.DutyType == "RN");
+        var sun  = rows.FirstOrDefault(r => r.DutyType == "RD");
+
+        string wType = work?.DutyType ?? "RD";
+        int    wIn   = work?.PIn      ?? 0;
+        int    wLen  = work?.Duration ?? 0;
+
+        return new AtttemplateModel
+        {
+            EmpmasId         = empmasId,
+            AttendancetypeId = 1,
+
+            D1_dutytype = sun?.DutyType ?? "RD", D1_in = sun?.PIn ?? 0, D1_hrslength = sun?.Duration ?? 0,
+            D2_dutytype = wType, D2_in = wIn, D2_hrslength = wLen,
+            D3_dutytype = wType, D3_in = wIn, D3_hrslength = wLen,
+            D4_dutytype = wType, D4_in = wIn, D4_hrslength = wLen,
+            D5_dutytype = wType, D5_in = wIn, D5_hrslength = wLen,
+            D6_dutytype = wType, D6_in = wIn, D6_hrslength = wLen,
+            D7_dutytype = sat?.DutyType ?? "RD", D7_in = sat?.PIn ?? 0, D7_hrslength = sat?.Duration ?? 0,
+        };
     }
 
     public async Task<AtttemplateModel?> _03(int? id,AtttemplateModel atttemplate, string? schema, string? conn)

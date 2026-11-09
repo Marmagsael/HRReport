@@ -1,0 +1,147 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRMvc.Applications._00GeneralComponents
+
+@inject IODesignationDataAccess _da
+
+<TelerikRootComponent>
+
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <_00BT_FullW HdrCaption="Designation Entry">
+        <Details>
+            <div class="p-0">
+                <div class="card-header d-flex gap-2">
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="button" @onclick="OpenAdd">Add Designation</button>
+                </div>
+
+                <div class="p-2">
+                    <TelerikGrid Data="@Items" Sortable="true" Pageable="true" PageSize="30" Height="calc(100vh - 210px)">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(ODesignationModel.Code)" Title="Code" Width="120px" Sortable="false" />
+                            <GridColumn Field="@nameof(ODesignationModel.Name)" Title="Designation" />
+                            <GridCommandColumn Width="170px" Title="">
+                                <GridCommandButton Command="Edit" OnClick="@((GridCommandEventArgs a) => OpenEdit((ODesignationModel)a.Item))">Edit</GridCommandButton>
+                                <GridCommandButton Command="Delete" OnClick="@((GridCommandEventArgs a) => AskDelete((ODesignationModel)a.Item))">Delete</GridCommandButton>
+                            </GridCommandColumn>
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-3 text-muted">No designation yet. Click Add Designation.</div></NoDataTemplate>
+                    </TelerikGrid>
+                </div>
+            </div>
+
+            <TelerikWindow Modal="true" @bind-Visible="@ShowEntry" Width="460px">
+                <WindowActions><WindowAction Name="Close" /></WindowActions>
+                <WindowTitle>@(IsEdit ? "Edit Designation" : "Add Designation")</WindowTitle>
+                <WindowContent>
+                    <div class="p-2">
+                        <div class="mb-2">
+                            <label class="form-label fw-bold mb-0">Code</label><br />
+                            <TelerikTextBox @bind-Value="@F.Code" MaxLength="5" Width="140px" Enabled="@(!IsEdit)" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold mb-0">Designation</label><br />
+                            <TelerikTextBox @bind-Value="@F.Name" MaxLength="45" Width="100%" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(ErrorMsg)) { <div class="txt-red small mb-2">@ErrorMsg</div> }
+                        <div class="d-flex gap-2">
+                            <TelerikButton OnClick="@SaveEntry" ThemeColor="primary">Save</TelerikButton>
+                            <TelerikButton OnClick="@(() => ShowEntry = false)">Cancel</TelerikButton>
+                        </div>
+                    </div>
+                </WindowContent>
+            </TelerikWindow>
+
+            <TelerikWindow Modal="true" @bind-Visible="@ShowDelete" Width="420px">
+                <WindowActions><WindowAction Name="Close" /></WindowActions>
+                <WindowTitle>Delete Designation</WindowTitle>
+                <WindowContent>
+                    <div class="p-2">
+                        <p>Delete <b>@F.Name</b> (@F.Code)?</p>
+                        <div class="d-flex gap-2">
+                            <TelerikButton OnClick="@DoDelete" ThemeColor="primary">Delete</TelerikButton>
+                            <TelerikButton OnClick="@(() => ShowDelete = false)">Cancel</TelerikButton>
+                        </div>
+                    </div>
+                </WindowContent>
+            </TelerikWindow>
+        </Details>
+    </_00BT_FullW>
+
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    TelerikNotification? NotificationRef;
+    List<ODesignationModel> Items = new();
+    ODesignationModel F = new();
+    bool ShowEntry, ShowDelete, IsEdit;
+    string? ErrorMsg;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.OpisDb == null) return;
+        await Load();
+    }
+
+    async Task Load()
+    {
+        try { Items = await _da._02(Uc.OpisDb, Uc.Conn); }
+        catch { NotificationRef?.Show("Unable to load designations.", ThemeConstants.Notification.ThemeColor.Error); }
+    }
+
+    void OpenAdd()
+    {
+        F = new ODesignationModel();
+        IsEdit = false; ErrorMsg = null; ShowEntry = true;
+    }
+
+    void OpenEdit(ODesignationModel d)
+    {
+        F = new ODesignationModel { Code = d.Code, Name = d.Name };
+        IsEdit = true; ErrorMsg = null; ShowEntry = true;
+    }
+
+    async Task SaveEntry()
+    {
+        ErrorMsg = null;
+        F.Code = F.Code?.Trim().ToUpper();
+        F.Name = F.Name?.Trim();
+        if (string.IsNullOrWhiteSpace(F.Code)) { ErrorMsg = "Code is required."; return; }
+        if (string.IsNullOrWhiteSpace(F.Name)) { ErrorMsg = "Designation is required."; return; }
+        try
+        {
+            if (IsEdit) await _da._03(F, Uc.OpisDb, Uc.Conn);
+            else
+            {
+                if (await _da._02Exists(F.Code, Uc.OpisDb, Uc.Conn)) { ErrorMsg = "This code already exists."; return; }
+                await _da._01(F, Uc.OpisDb, Uc.Conn);
+            }
+            ShowEntry = false;
+            NotificationRef?.Show("Designation saved.", ThemeConstants.Notification.ThemeColor.Success);
+            await Load();
+        }
+        catch { NotificationRef?.Show("Unable to save the designation.", ThemeConstants.Notification.ThemeColor.Error); }
+    }
+
+    void AskDelete(ODesignationModel d)
+    {
+        F = new ODesignationModel { Code = d.Code, Name = d.Name };
+        ShowDelete = true;
+    }
+
+    async Task DoDelete()
+    {
+        try
+        {
+            await _da._04(F.Code, Uc.OpisDb, Uc.Conn);
+            ShowDelete = false;
+            NotificationRef?.Show("Designation deleted.", ThemeConstants.Notification.ThemeColor.Success);
+            await Load();
+        }
+        catch { NotificationRef?.Show("Unable to delete the designation.", ThemeConstants.Notification.ThemeColor.Error); }
+    }
+}

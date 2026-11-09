@@ -1,0 +1,166 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._2306O
+@using HRApiLibrary.Modules._12008O
+@using HRMvc.Applications._00GeneralComponents
+@using System.Text.Json
+
+@implements IAsyncDisposable
+@inject IDA_12008O _da
+@inject IDA_2306O _emp
+@inject IJSRuntime JS
+
+<TelerikRootComponent>
+
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@IsCapturing" Text="Capturing..." LoaderType="@LoaderType.ConvergingSpinner" />
+
+    <_00BT_FullW HdrCaption="Enrollment">
+        <Details>
+            <div class="p-2 d-flex flex-wrap gap-3">
+
+                <div style="width:420px">
+                    <div class="fw-bold mb-1">1. Choose the employee</div>
+                    <div class="d-flex gap-2 mb-2">
+                        <TelerikTextBox @bind-Value="@Keyword" Placeholder="Employee no. or name" Width="250px" />
+                        <TelerikButton OnClick="@Search" ThemeColor="primary">Search</TelerikButton>
+                    </div>
+                    <TelerikGrid Data="@Results" Height="180px" OnRowClick="@((GridRowClickEventArgs a) => Pick((M2306_EmpInfo)a.Item))">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M2306_EmpInfo.EmpNumber)" Title="Emp. No." Width="90px" />
+                            <GridColumn Field="@nameof(M2306_EmpInfo.EmpName)" Title="Name" />
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-2 text-muted">Type a number or a name, then Search. Click a row to choose.</div></NoDataTemplate>
+                    </TelerikGrid>
+
+                    <div class="fw-bold mt-3 mb-1">2. Capture the face</div>
+                    <div class="mb-2">
+                        @if (Selected == null) { <span class="text-muted">No employee chosen.</span> }
+                        else { <span><b>@Selected.EmpName</b> (@Selected.EmpNumber) &nbsp; Samples: <b>@SampleCount</b></span> }
+                    </div>
+
+                    <div style="position:relative;width:400px;height:300px;background:#222;border-radius:6px;overflow:hidden">
+                        <video id="enrollCam" autoplay muted playsinline style="width:400px;height:300px;object-fit:cover;transform:scaleX(-1)"></video>
+                    </div>
+                    @if (!string.IsNullOrEmpty(CameraMsg)) { <div class="txt-red small mt-1">@CameraMsg</div> }
+
+                    <div class="d-flex gap-2 mt-2">
+                        <TelerikButton OnClick="@Capture" ThemeColor="primary" Enabled="@(Selected != null && PisEmpmasId > 0 && !IsCapturing)">Capture Sample</TelerikButton>
+                        <TelerikButton OnClick="@AskDelete" Enabled="@(SampleCount > 0)">Delete Face Data</TelerikButton>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Msg)) { <div class="mt-2 @(MsgOk ? "text-success" : "txt-red")">@Msg</div> }
+                    <div class="small text-muted mt-2">Take 3 to 5 samples: look straight, then slightly left and right. Good light, no mask or cap.</div>
+                </div>
+
+                <div style="flex:1;min-width:360px">
+                    <div class="fw-bold mb-1">Enrolled employees</div>
+                    <TelerikGrid Data="@Enrolled" Sortable="true" Pageable="true" PageSize="15" Height="520px">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M12008_Enrolled.EmpNumber)" Title="Emp. No." Width="100px" Sortable="false" />
+                            <GridColumn Field="@nameof(M12008_Enrolled.EmpName)" Title="Name" />
+                            <GridColumn Field="@nameof(M12008_Enrolled.Samples)" Title="Samples" Width="90px" TextAlign="ColumnTextAlign.Right" />
+                            <GridColumn Field="@nameof(M12008_Enrolled.EnrolledAt)" Title="Enrolled" DisplayFormat="{0:MMM dd, yyyy}" Width="120px" />
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-3 text-muted">No face enrolled yet.</div></NoDataTemplate>
+                    </TelerikGrid>
+                </div>
+            </div>
+
+            <TelerikWindow Modal="true" @bind-Visible="@ShowDelete" Width="420px">
+                <WindowActions><WindowAction Name="Close" /></WindowActions>
+                <WindowTitle>Delete Face Data</WindowTitle>
+                <WindowContent>
+                    <div class="p-2">
+                        <p>Delete the face data of <b>@Selected?.EmpName</b>?</p>
+                        <div class="d-flex gap-2">
+                            <TelerikButton OnClick="@DoDelete" ThemeColor="primary">Delete</TelerikButton>
+                            <TelerikButton OnClick="@(() => ShowDelete = false)">Cancel</TelerikButton>
+                        </div>
+                    </div>
+                </WindowContent>
+            </TelerikWindow>
+        </Details>
+    </_00BT_FullW>
+
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    TelerikNotification? NotificationRef;
+    string? Keyword, CameraMsg, Msg;
+    bool MsgOk, ShowDelete, IsCapturing;
+    List<M2306_EmpInfo> Results = new();
+    List<M12008_Enrolled> Enrolled = new();
+    M2306_EmpInfo? Selected;
+    int PisEmpmasId, SampleCount;
+
+    protected override async Task OnInitializedAsync() => await LoadEnrolled();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) CameraMsg = await JS.InvokeAsync<string>("FacePunch.init", "enrollCam");
+        if (firstRender && !string.IsNullOrEmpty(CameraMsg)) StateHasChanged();
+    }
+
+    async Task LoadEnrolled()
+    {
+        try { Enrolled = await _da._02Enrolled(Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!); } catch { Enrolled = new(); }
+    }
+
+    async Task Search() => Results = await _emp._02EmployeeSearch(Keyword ?? "", Uc.OpisDb!, Uc.Conn!);
+
+    async Task Pick(M2306_EmpInfo e)
+    {
+        Selected = e; Msg = null;
+        var pe = await _emp._02PisEmp(e.EmpNumber!, Uc.SchemaUserPis!, Uc.Conn!);
+        PisEmpmasId = pe?.EmpmasId ?? 0;
+        if (PisEmpmasId == 0) { Msg = "This employee has no record in the new PIS yet. Open the employee in Employee Entry and save it."; MsgOk = false; SampleCount = 0; return; }
+        SampleCount = await _da._02Samples(PisEmpmasId, Uc.SchemaUserPis!, Uc.Conn!);
+    }
+
+    async Task Capture()
+    {
+        Msg = null;
+        IsCapturing = true;
+        StateHasChanged();
+        try
+        {
+            var json = await JS.InvokeAsync<string>("FacePunch.capture", "enrollCam");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            if (!root.GetProperty("ok").GetBoolean()) { Msg = root.GetProperty("msg").GetString(); MsgOk = false; return; }
+
+            await _da._01Sample(PisEmpmasId, root.GetProperty("descriptor").GetRawText(), Uc.UserId ?? 0, Uc.SchemaUserPis!, Uc.Conn!);
+            SampleCount++;
+            Msg = $"Sample {SampleCount} saved."; MsgOk = true;
+            await LoadEnrolled();
+        }
+        catch (Exception ex)
+        {
+            Msg = "Unable to capture: " + ex.Message; MsgOk = false;
+        }
+        finally
+        {
+            IsCapturing = false;
+        }
+    }
+
+    void AskDelete() => ShowDelete = true;
+
+    async Task DoDelete()
+    {
+        await _da._04Delete(PisEmpmasId, Uc.SchemaUserPis!, Uc.Conn!);
+        ShowDelete = false; SampleCount = 0;
+        Msg = "Face data deleted."; MsgOk = true;
+        await LoadEnrolled();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("FacePunch.stop"); } catch { }
+    }
+}

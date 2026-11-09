@@ -406,6 +406,16 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
 	}
 
 
+    public async Task<string?> _02EmployeeLimitReached(string? opisdb, string? pisSchema, string? mainSchema, string? conn)
+    {
+        var lim = await _sql.FetchLegacy<int?, dynamic>($"select EmployeeCnt from {mainSchema}.UsersCompany where PISSchema = @Pis limit 1", new { Pis = pisSchema }, conn);
+        if (lim == null || lim.Count == 0 || lim[0] == null) return null;
+
+        var cnt = await _sql.FetchLegacy<long, dynamic>($"select count(*) from {opisdb}.Empmas", new { }, conn);
+        if (cnt.FirstOrDefault() >= lim[0]) return $"Employee limit ({lim[0]}) reached. You can no longer add employees. Please contact your administrator.";
+        return null;
+    }
+
     public async Task<OEmpmasModel?>_02MaxEmpnumber( string? schema, string? conn)
     {
 
@@ -857,6 +867,7 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?> _02EmpnumberOwnedByOthers(string? empnumber, string? schema, string? conn);
     Task<List<OEmpmasModel?>?> _02EmailLinkedToOthers(string? email, string? schema, string? conn);
     Task<OEmpmasModel?>         _02MaxEmpnumber(string? schema, string? conn);
+    Task<string?>               _02EmployeeLimitReached(string? opisdb, string? pisSchema, string? mainSchema, string? conn);
 
     Task<OEmpmasModel?>         _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn);
 

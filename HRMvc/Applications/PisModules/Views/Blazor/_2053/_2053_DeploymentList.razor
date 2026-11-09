@@ -1,7 +1,8 @@
-﻿@using HRApiLibrary.Models._90_Utils
+@using HRApiLibrary.Models._90_Utils
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 
 
+@inject Microsoft.Extensions.Configuration.IConfiguration _cfgT;
 @inject IOClientDataAccess _client;
 
 <TelerikGrid OnRead="@_02OnGridRead"
@@ -28,7 +29,7 @@
         <div class="d-flex justify-content-between align-items-center w-100">
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     @onclick="@(() => OpenEntryModal(new OClientModel()))">
-                Add Deployment
+                @T("Add Deployment")
             </button>
 
             <div class="d-flex gap-2">
@@ -135,6 +136,8 @@
 
 
 @code {
+    string T(string s) => string.Equals(_cfgT["CompanyInfo:IsSecurityAgency"], "true", StringComparison.OrdinalIgnoreCase) ? s.Replace("Deployment", "Client").Replace("deployment", "client") : s;
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
@@ -236,13 +239,13 @@
         V.Client            = new OClientModel();
         V.IsEditEntry       = false;
 
-        V.ModalCaption      = "Add Deployment";
+        V.ModalCaption      = T("Add Deployment");
         V.Client.Status     = "Active";
 
         if (!string.IsNullOrWhiteSpace(client.ClNumber))
         {
             V.IsEditEntry   = true;
-            V.ModalCaption  = "Edit Deployment";
+            V.ModalCaption  = T("Edit Deployment");
             V.Client        = client;
         }
 
@@ -284,7 +287,7 @@
 
     private async Task _04Delete(OClientModel client)
     {
-        var confirmed = await DialogsRef?.ConfirmAsync( $"Are you sure you want to delete '{client.ClName}'?", "Confirm Deployment Deletion"  );
+        var confirmed = await DialogsRef?.ConfirmAsync( $"Are you sure you want to delete '{client.ClName}'?", T("Confirm Deployment Deletion")  );
 
         if (confirmed != true) return;
 
@@ -295,13 +298,13 @@
 
             if (recordExists?.Any() == true)
             {
-                NotificationRef?.Show(  "Unable to delete this deployment. It is linked to another transaction.",ThemeConstants.Notification.ThemeColor.Warning );
+                NotificationRef?.Show(  T("Unable to delete this deployment. It is linked to another transaction."),ThemeConstants.Notification.ThemeColor.Warning );
                 return;
             }
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show( "Unable to validate if this deployment is linked to another transaction.", ThemeConstants.Notification.ThemeColor.Error );
+            NotificationRef?.Show( T("Unable to validate if this deployment is linked to another transaction."), ThemeConstants.Notification.ThemeColor.Error );
             return;
         }
 
@@ -312,17 +315,17 @@
 
             if (result != null)
             {
-                NotificationRef?.Show( "Unable to delete this deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error );
+                NotificationRef?.Show( T("Unable to delete this deployment. Please try again."), ThemeConstants.Notification.ThemeColor.Error );
                 return;
             }
 
-            NotificationRef?.Show( "Deployment deleted successfully.", ThemeConstants.Notification.ThemeColor.Success );
+            NotificationRef?.Show( T("Deployment deleted successfully."), ThemeConstants.Notification.ThemeColor.Success );
             V.Action = "RefreshDeploymentGrid";
             await ChildAction.InvokeAsync();
         }
         catch (Exception ex)
         {
-            NotificationRef?.Show( "Unable to delete deployment. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef?.Show( T("Unable to delete deployment. Please try again."), ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
@@ -330,7 +333,19 @@
     private async Task GenerateDeploymentList()
     {
 
-        V.Action = "GenerateDeploymentList";
+        if (!V.Clients.Any()) { return; }
+
+        Rv.MCaption     = T("Deployment Listing");
+        Rv.RelativePath = "";
+        Rv.ReportData   = [];
+        Rv.ReportData   = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = T("Deployment Listing");
+        Rv.RelativePath = "Reports/_01Pis/J_2053_DE.trdp";
+        Rv.SelectedFormat = "PDF";
+
+        Rv.ShowModal = true;
+
         await ChildAction.InvokeAsync();
 
 

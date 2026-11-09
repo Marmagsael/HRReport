@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._20_Pay;
@@ -96,6 +96,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         await Menus("MainPis", connName, country);
         await Menus("MainPay", connName, country);
+        await AddIsCommercialUse("Main", connName);
         await MenusMainPisData(connName);
         await MenusMainPayData(connName);
         await _01_102_MatrixWTax(schema, connName, country);
@@ -578,7 +579,12 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         {
             sql = $@"Insert into {schema}.PayrollGrp 
                         (ClNumber, Name   ) values 
-                        ('00001',  'Main' ) ;";
+                        ('00001',  'Head Office' ),
+                        ('00002',  'Regular Employees' ),
+                        ('00003',  'Probationary Employees' ),
+                        ('00004',  'Contractual Employees' ),
+                        ('00005',  'Project-Based Employees' ),
+                        ('00006',  'Consultants' ) ;";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
@@ -996,8 +1002,22 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           DispText      VARCHAR (80),
                           Action        VARCHAR (45),
                           Odr           INTEGER,
+                          IsCommercialUse     TINYINT         UNSIGNED NOT NULL DEFAULT 1,
                           PRIMARY KEY (`Id`))   ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, connName);
+        await AddIsCommercialUse(schema, connName);
+    }
+
+    // -- Menu.IsCommercialUse on Main, MainPis and MainPay : added when the table already exists without it --
+    private async Task AddIsCommercialUse(string? schema, string? connName)
+    {
+        var has = await _sql.FetchData<long, dynamic>(
+            @"select count(*) from information_schema.columns
+              where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu' and column_name = 'IsCommercialUse'", new { Schema = schema }, connName);
+        var tbl = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.tables where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu'", new { Schema = schema }, connName);
+        if (tbl.FirstOrDefault() > 0 && has.FirstOrDefault() == 0)
+            await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN IsCommercialUse TINYINT UNSIGNED NOT NULL DEFAULT 1 AFTER Odr", new { }, connName);
     }
 
     // -- MainPis.Menu 14/Compliance order: Status Mgt | Assignment Order, Special Duty Order | RTU, Recall Order, the rest --
@@ -1005,8 +1025,16 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
     {
         string? sql = @"INSERT IGNORE INTO MainPis.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
                             (2005, 'Dtl-Report', 2001, 1, 'business', 'Company Information', '14/2005', 2),
+                            (2310, 'Dtl-Report', 2301, 1, 'flight_takeoff', 'OB Entry', '14/2310', 2311),
                             (2391, 'Separator', 2301, 1, NULL, '-', NULL, 2303),
-                            (2392, 'Separator', 2301, 1, NULL, '-', NULL, 2306);
+                            (2392, 'Separator', 2301, 1, NULL, '-', NULL, 2306),
+                            (2393, 'Separator', 2301, 1, NULL, '-', NULL, 2311),
+                            (2394, 'Separator', 2051, 1, NULL, '-', NULL, 2053),
+                            (2065, 'Dtl-Report', 2051, 1, 'badge', 'Designation Entry', '14/2065', 2058),
+                            (2395, 'Separator', 2051, 1, NULL, '-', NULL, 2055),
+                            (2396, 'Separator', 2051, 1, NULL, '-', NULL, 2060),
+                            (2397, 'Separator', 2051, 1, NULL, '-', NULL, 2063),
+                            (2398, 'Separator', 2051, 1, NULL, '-', NULL, 2067);
                         UPDATE MainPis.Menu SET Odr = 2302 WHERE Id = 2302 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2303 WHERE Id = 2391 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2304 WHERE Id = 2308 AND IdParent = 2301;
@@ -1015,8 +1043,29 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = 2307 WHERE Id = 2303 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2308 WHERE Id = 2305 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2309 WHERE Id = 2304 AND IdParent = 2301;
-                        UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2306 AND IdParent = 2301;
-                        UPDATE MainPis.Menu SET Odr = 2311 WHERE Id = 2309 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2310 WHERE Id = 2309 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2312 WHERE Id = 2306 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2313 WHERE Id = 2310 AND IdParent = 2301;
+                        UPDATE MainPis.Menu SET Odr = 2052 WHERE IdParent = 2051 AND Id = 2052;
+                        UPDATE MainPis.Menu SET Odr = 2053 WHERE IdParent = 2051 AND Id = 2394;
+                        UPDATE MainPis.Menu SET Odr = 2054 WHERE IdParent = 2051 AND Id = 2053;
+                        UPDATE MainPis.Menu SET Odr = 2055 WHERE IdParent = 2051 AND Id = 2395;
+                        UPDATE MainPis.Menu SET Odr = 2056 WHERE IdParent = 2051 AND Id = 2055;
+                        UPDATE MainPis.Menu SET Odr = 2057 WHERE IdParent = 2051 AND Id = 2065;
+                        UPDATE MainPis.Menu SET Odr = 2058 WHERE IdParent = 2051 AND Id = 2062;
+                        UPDATE MainPis.Menu SET Odr = 2059 WHERE IdParent = 2051 AND Id = 2063;
+                        UPDATE MainPis.Menu SET DispText = 'State / Province Entry' WHERE Id = 2060;
+                        UPDATE MainPis.Menu SET DispText = 'City / Municipality Entry' WHERE Id = 2061;
+                        UPDATE MainPis.Menu SET Odr = 2060 WHERE IdParent = 2051 AND Id = 2396;
+                        UPDATE MainPis.Menu SET Odr = 2061 WHERE IdParent = 2051 AND Id = 2057;
+                        UPDATE MainPis.Menu SET Odr = 2062 WHERE IdParent = 2051 AND Id = 2058;
+                        UPDATE MainPis.Menu SET Odr = 2063 WHERE IdParent = 2051 AND Id = 2397;
+                        UPDATE MainPis.Menu SET Odr = 2064 WHERE IdParent = 2051 AND Id = 2059;
+                        UPDATE MainPis.Menu SET Odr = 2065 WHERE IdParent = 2051 AND Id = 2061;
+                        UPDATE MainPis.Menu SET Odr = 2066 WHERE IdParent = 2051 AND Id = 2060;
+                        UPDATE MainPis.Menu SET Odr = 2067 WHERE IdParent = 2051 AND Id = 2398;
+                        UPDATE MainPis.Menu SET Odr = 2068 WHERE IdParent = 2051 AND Id = 2054;
+                        DELETE FROM MainPis.Menu WHERE Id = 2056 AND DispText = 'Leave Type Entry';
                         DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';
                         DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';";
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -1112,6 +1161,16 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                 UPDATE MainPay.Menu SET DispText = 'Tax Annualization' WHERE Id = 1302 AND DispText = 'Tax Annunalization';
                 DELETE FROM MainPay.Menu WHERE Id = 1313 AND DispText = 'Account Total' AND Action IN ('13/PayRep_1313', '13/1313');
                 UPDATE MainPay.Menu SET Action = CONCAT('13/', SUBSTRING(Action, 11)) WHERE Action LIKE '13/PayRep\_%';
+                UPDATE MainPay.Menu SET Action = '1100/12004' WHERE Id = 12004 AND DispText = 'OB / Direct Assignment' AND Action IN ('1100/12005', '14/2310');
+                INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                    (12007, 'Dtl-Transaction', 11001, 1, 'event_note', 'Leave Transaction Entry', '1100/12007', 12004);
+                UPDATE MainPay.Menu SET Odr = 12004 WHERE Id = 12007;
+                UPDATE MainPay.Menu SET Odr = 12005 WHERE Id = 12004;
+                UPDATE MainPay.Menu SET Odr = 12006 WHERE Id = 12005;
+                INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                    (12008, 'Dtl-Transaction', 11001, 1, 'face', 'Enrollment', '1100/12008', 12008),
+                    (12009, 'Dtl-Transaction', 11001, 1, 'camera_front', 'Punch Capturing', '1100/12009', 12009),
+                    (12010, 'Dtl-Transaction', 11001, 1, 'manage_accounts', 'User Management', '1100/12010', 12010);
                 DELETE FROM Main.Menu WHERE Id = 1004 AND DispText = 'Payroll Settings' AND Action = '12/004';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
@@ -1449,9 +1508,12 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                               DATE              date                        DEFAULT NULL,
                               DEDNCODE          varchar(4)                  DEFAULT NULL,
                               DEDNDESC          varchar(20)                 DEFAULT NULL,
-                              AMOUNT            double(8,2)                 DEFAULT NULL,
-                              AMORT             double(7,2)                 DEFAULT NULL,
-                              BALANCE           double(8,2)                 DEFAULT NULL,
+                              Principal         double(14,2)                DEFAULT 0,
+                              InterestRate      double(7,4)                 DEFAULT 0,
+                              MoToPay           int(10)         unsigned    DEFAULT 0,
+                              AMOUNT            double(14,2)                DEFAULT NULL,
+                              AMORT             double(14,2)                DEFAULT NULL,
+                              BALANCE           double(14,2)                DEFAULT NULL,
                               STATUS            varchar(1)                  DEFAULT NULL,
                               ENCODEBY          varchar(10)                 DEFAULT NULL,
                               ENCODEDT          varchar(20)                 DEFAULT NULL,
@@ -1473,6 +1535,17 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                               TRNLastPosted     char(12)                    DEFAULT '',
                               PRIMARY KEY (Id)
                             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;"; 
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        sql = @$"CREATE TABLE if not exists {schema}.loansSchedule (
+                    Id          int(10)         unsigned NOT NULL AUTO_INCREMENT,
+                    LoansId     int(10)         unsigned NOT NULL,
+                    SchedNo     int(10)         unsigned NOT NULL,
+                    Amort       double(14,2)    NOT NULL DEFAULT 0,
+                    TRN         char(15)        DEFAULT NULL,
+                    PRIMARY KEY (Id),
+                    UNIQUE KEY uq_loansSchedule (LoansId, SchedNo)
+                ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = @$"CREATE TABLE if not exists {schema}.loanhdr (
@@ -1508,11 +1581,14 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         string? sql = $@"Desc {schema}.Loans ";
         var res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
 
-        if (res.Count < 28)
-        {
-            sql = $@"ALTER TABLE {schema}.`loans` ADD COLUMN `Principal` DOUBLE(12,2) DEFAULT 0 AFTER `DedNDesc`;";
-            await _sql.ExecuteCmd(sql, new { }, connName);
-        }
+        if (!res.Any(c => string.Equals(c.Field, "Principal", StringComparison.OrdinalIgnoreCase)))
+            await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` ADD COLUMN `Principal` DOUBLE(14,2) DEFAULT 0 AFTER `DedNDesc`;", new { }, connName);
+        if (!res.Any(c => string.Equals(c.Field, "InterestRate", StringComparison.OrdinalIgnoreCase)))
+            await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` ADD COLUMN `InterestRate` DOUBLE(7,4) DEFAULT 0 AFTER `Principal`;", new { }, connName);
+        if (!res.Any(c => string.Equals(c.Field, "MoToPay", StringComparison.OrdinalIgnoreCase)))
+            await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` ADD COLUMN `MoToPay` INT UNSIGNED DEFAULT 0 AFTER `InterestRate`;", new { }, connName);
+
+        await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` MODIFY `Amount` DOUBLE(14,2) DEFAULT NULL, MODIFY `Amort` DOUBLE(14,2) DEFAULT NULL, MODIFY `Balance` DOUBLE(14,2) DEFAULT NULL, MODIFY `Principal` DOUBLE(14,2) DEFAULT 0;", new { }, connName);
     }
 
     private async Task _01_252_DedMandatory(string? schema, string? connName, string? country = "PH")

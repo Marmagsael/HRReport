@@ -1,4 +1,4 @@
-﻿@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.Models._10_Pis
 @using HRMvc.Applications._00GeneralComponents
 @using Radzen.Blazor
@@ -165,13 +165,16 @@
                                   .Select(d => (d.Date!.Value, d.ObDurationId, AttPunchStatus.OB(d.ObDurationId)));
             var t    = await _terminal.GetAsync();
             await _attPunches._01Approved(hdr.EmpmasId, days, Uc.UserId, t.TimeZoneId, t.IpAddress, t.MacAddress, Uc.SchemaUserPis, Uc.Conn);
+
+            @* --- the approved OB is also posted to the old PIS (ob1) --- *@
+            await _obapp._01PostToOPis(hdr.Id, Uc.EmpmasId, Uc.SchemaUserPis, Uc.OpisDb, Uc.Conn);
         }
         await _obHist._01(hdr.Id, Uc.EmpmasId, "Approved - Level " + hdr.ApproverLevel, Uc.SchemaUserPis, Uc.Conn);
 
         await Reload("Approve");
     }
 
-    @* --- FA -> R : back to the requestor with the approver's remarks --- *@
+    @* --- F -> R : back to the requestor with the approver's remarks --- *@
     async Task Return()
     {
         if (string.IsNullOrWhiteSpace(apprRemarks)) return;

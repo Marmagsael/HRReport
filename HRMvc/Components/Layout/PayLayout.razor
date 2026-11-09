@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
 @using HRMvc.StartupConfig
 @inject UserClaimsContextService ClaimsContext
+@inject NavigationManager Nav
+@inject PayAccessService Access
 
 <div class="main-wrapper d-flex flex-column vh-100 w-100 bg-light">
 
@@ -15,7 +17,14 @@
         </aside>
 
         <main class="bg-gray-95 overflow-auto w-100 flex-fill  bg-gray-95 ">
-            @Body
+            @if (denied)
+            {
+                <div class="p-4 txt-red">You do not have access to this module. Please ask your administrator to grant it in User Management.</div>
+            }
+            else
+            {
+                @Body
+            }
         </main>
 
     </div>
@@ -26,8 +35,15 @@
 
     UserClaimsModel? userClaims;
 
-    protected override void OnInitialized()
+    bool denied;
+
+    protected override async Task OnInitializedAsync()
     {
-        if (HttpContext != null) userClaims = ClaimsContext.Build(HttpContext.User);
+        if (HttpContext == null) return;
+        userClaims = ClaimsContext.Build(HttpContext.User);
+
+        var parts = new Uri(Nav.Uri).AbsolutePath.Trim('/').Split('/');
+        if (parts.Length == 2 && (parts[0].Equals("13T", StringComparison.OrdinalIgnoreCase) || parts[0] == "13") && int.TryParse(parts[1], out var id))
+            denied = !await Access.CanOpenAsync(HttpContext.User, id);
     }
 }

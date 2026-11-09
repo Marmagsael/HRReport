@@ -1,0 +1,27 @@
+@page "/13"
+@layout HRMvc.Components.Layout.PayLayout
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using System.Security.Claims
+
+<div class="m-2">
+    @foreach (var claim in claims)
+    {
+        <div class="d-flex w-100">
+            <div class="w-175p b-blue p-2 mr-1">@claim.Type </div> :
+            <div class="b-red p-2 flex-grow-1 ">@claim.Value</div>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    IEnumerable<Claim> claims = [];
+
+    protected override void OnInitialized()
+    {
+        if (HttpContext != null) claims = HttpContext.User.Claims;
+    }
+}

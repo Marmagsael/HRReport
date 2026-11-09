@@ -1,15 +1,390 @@
-﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
 
+<style>
+    .pd-form { display:flex; flex-direction:column; gap:14px; }
+    .pd-card { background:#fff; border:1px solid #dfe3e8; border-radius:8px; padding:14px 18px 16px; }
+    .pd-title { font-weight:700; font-size:.95rem; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #eef0f3; }
+    .pd-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px 20px; }
+    .pd-span2 { grid-column:span 2; }
+    .pd-span4 { grid-column:span 4; }
+    .pd-f label { display:block; font-size:.78rem; font-weight:600; color:#5b6573; margin-bottom:4px; }
+    .pd-hint { font-weight:400; color:#8a93a0; }
+    .pd-checks { display:flex; gap:22px; align-items:center; height:32px; }
+    .pd-checks label { margin:0; font-size:.85rem; font-weight:500; color:#222; display:flex; align-items:center; gap:6px; }
+    .pd-tiles { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px 20px; margin-top:16px; }
+    .pd-tile { background:#f5f7fa; border:1px solid #e6e9ee; border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; text-align:right; }
+    .pd-tile span { font-size:.72rem; color:#6b7480; }
+    .pd-tile b { font-size:1.05rem; }
+    .pd-tile-main { background:#eaf2fd; border-color:#c9dcf6; }
+    @@media (max-width: 1100px) { .pd-grid, .pd-tiles { grid-template-columns:repeat(2, minmax(0,1fr)); } .pd-span4 { grid-column:span 2; } }
+</style>
 
-<div class="card ">
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
 
-    Partial Deductions Entry - 604
+<_00BT_FullW HdrCaption="Partial Deductions Entry">
+    <Details>
+    <div class="p-2">
+        <div class="d-flex gap-3 flex-wrap flex-lg-nowrap">
 
+            @* ---------- Employee list ---------- *@
+            <div style="width:300px;flex-shrink:0;">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <input class="form-control form-control-sm" placeholder="Find employee..." @bind="empSearch" @bind:event="oninput" />
+                </div>
+                <label class="small mb-1"><TelerikCheckBox @bind-Value="showAll" /> Show resigned employees</label>
+                <TelerikGrid Data="@shownEmployees" Height="560px" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selectedEmp" SelectedItemsChanged="@((IEnumerable<EmpRow> e) => PickEmployee(e.FirstOrDefault()))">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(EmpRow.EmpName)" Title="Employee List" />
+                        <GridColumn Field="@nameof(EmpRow.EmpNumber)" Title="Emp. No." Width="75px" />
+                    </GridColumns>
+                </TelerikGrid>
+            </div>
 
+            @* ---------- Loans + entry ---------- *@
+            <div class="flex-fill" style="min-width:0;">
 
-</div>
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <span class="fw-bold">@(emp?.EmpName ?? "Select an employee")</span>
+                    <TelerikDropDownList Data="@viewOptions" @bind-Value="view" TextField="Text" ValueField="Value" Width="130px" />
+                </div>
 
+                <TelerikGrid Data="@shownLoans" Height="190px" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selectedLoan" SelectedItemsChanged="@((IEnumerable<LoanRow> e) => PickLoan(e.FirstOrDefault()))">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(LoanRow.AcctName)" Title="Description" />
+                        <GridColumn Field="@nameof(LoanRow.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(LoanRow.Amort)" Title="Amort" DisplayFormat="{0:N2}" Width="90px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(LoanRow.Balance)" Title="Balance" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(LoanRow.PayStart)" Title="Pay Start" DisplayFormat="{0:MM/dd/yyyy}" Width="95px" />
+                        <GridColumn Field="@nameof(LoanRow.PayRes)" Title="Pay Resume" DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
+                        <GridColumn Field="@nameof(LoanRow.LoanDate)" Title="Loan Date" DisplayFormat="{0:MM/dd/yyyy}" Width="95px" />
+                        <GridColumn Field="@nameof(LoanRow.Remarks)" Title="Remarks" />
+                        <GridColumn Field="@nameof(LoanRow.Status)" Title="Status" Width="60px" TextAlign="ColumnTextAlign.Center" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-2 text-muted">No deduction for this employee.</div></NoDataTemplate>
+                </TelerikGrid>
+
+                <div class="d-flex gap-2 my-3">
+                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(editing)">Save</TelerikButton>
+                    <TelerikButton OnClick="@NewLoan" Icon="@SvgIcon.Plus" Enabled="@(emp != null)">New</TelerikButton>
+                    <TelerikButton OnClick="@AskDelete" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Trash" Enabled="@(editing && !isNew)">Delete</TelerikButton>
+                    <TelerikButton OnClick="@Recompute" FillMode="outline" Icon="@SvgIcon.Calculator" Enabled="@(!isNew && f.Number > 0)">Recompute</TelerikButton>
+                </div>
+
+                <div class="pd-form">
+
+                    <div class="pd-card">
+                        <div class="pd-title">Loan details</div>
+                        <div class="pd-grid">
+                            <div class="pd-f pd-span2">
+                                <label>Charge to</label>
+                                <TelerikDropDownList Data="@accounts" @bind-Value="f.DednCode" TextField="AcctName" ValueField="AcctNumber" Width="100%" Enabled="@isNew" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains" />
+                            </div>
+                            <div class="pd-f">
+                                <label>Loan Date</label>
+                                <TelerikDatePicker @bind-Value="f.LoanDate" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
+                            </div>
+                            <div class="pd-f">
+                                <label>CV No.</label>
+                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.CvNo" Min="0" Decimals="0" Format="N0" Width="100%" Enabled="@editing" />
+                            </div>
+
+                            <div class="pd-f">
+                                <label>Amount</label>
+                                <TelerikNumericTextBox Class="num-right" Value="@f.Amount" ValueChanged="@((decimal v) => f.Amount = v)" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@(editing && isNew)" />
+                            </div>
+                            <div class="pd-f">
+                                <label>Amort</label>
+                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.Amort" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                            </div>
+                            <div class="pd-f">
+                                <label>Balance</label>
+                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.Balance" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@(editing && !isNew)" />
+                            </div>
+                            <div class="pd-f">
+                                <label>Status</label>
+                                <TelerikDropDownList Data="@statusOptions" @bind-Value="f.Status" TextField="Text" ValueField="Value" Width="100%" Enabled="@(editing && !isNew)" />
+                            </div>
+
+                            <div class="pd-f pd-span4">
+                                <label>Remarks</label>
+                                <TelerikTextBox @bind-Value="f.Remarks" MaxLength="75" Width="100%" Enabled="@editing" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pd-card">
+                        <div class="pd-title">Payment</div>
+                        <div class="pd-grid">
+                            <div class="pd-f">
+                                <label>Pay Start</label>
+                                <TelerikDatePicker @bind-Value="f.PayStart" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
+                            </div>
+                            <div class="pd-f">
+                                <label>Pay Resume</label>
+                                <TelerikDatePicker @bind-Value="f.PayRes" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
+                            </div>
+                            <div class="pd-f pd-span2">
+                                <label>Mode of Payment <span class="pd-hint">(periods where it is deducted)</span></label>
+                                <div class="pd-checks">
+                                    <label><TelerikCheckBox @bind-Value="f.P1" Enabled="@editing" /> P1</label>
+                                    <label><TelerikCheckBox @bind-Value="f.P2" Enabled="@editing" /> P2</label>
+                                    <label><TelerikCheckBox @bind-Value="f.P3" Enabled="@editing" /> P3</label>
+                                    <label><TelerikCheckBox @bind-Value="f.P4" Enabled="@editing" /> P4</label>
+                                    <label><TelerikCheckBox @bind-Value="f.P5" Enabled="@editing" /> P5</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pd-card">
+                        <div class="pd-title">Loan calculator</div>
+                        <div class="pd-grid">
+                            <div class="pd-f">
+                                <label>Principal</label>
+                                <TelerikNumericTextBox Class="num-right" Value="@f.Principal" ValueChanged="@((decimal v) => { f.Principal = v; })" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                            </div>
+                            <div class="pd-f">
+                                <label>Interest Rate (% / month)</label>
+                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.InterestRate" Min="0" Decimals="4" Format="N2" Width="100%" Enabled="@editing" />
+                            </div>
+                            <div class="pd-f">
+                                <label>Months to Pay</label>
+                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.MoToPay" Min="0" Decimals="0" Format="N0" Width="100%" Enabled="@editing" />
+                            </div>
+                        </div>
+                        <div class="pd-tiles">
+                            <div class="pd-tile"><span>Interest / month</span><b>@interest.ToString("N2")</b></div>
+                            <div class="pd-tile"><span>Total Interest</span><b>@totInterest.ToString("N2")</b></div>
+                            <div class="pd-tile"><span>Total Amount</span><b>@totAmount.ToString("N2")</b></div>
+                            <div class="pd-tile pd-tile-main"><span>Expected Amort</span><b>@expAmort.ToString("N2")</b></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="small text-muted mt-2">Preview: sample data only. Nothing is saved yet.</div>
+            </div>
+        </div>
+    </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showDelete" Width="380px">
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+    <WindowTitle>Delete</WindowTitle>
+    <WindowContent>
+        <p>Delete this record?</p>
+        <div class="d-flex gap-2">
+            <TelerikButton OnClick="@DoDelete" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showDelete = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+</TelerikWindow>
+
+<TelerikWindow Modal="true" @bind-Visible="@showRecompute" Width="640px">
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+    <WindowTitle>Recompute Balance</WindowTitle>
+    <WindowContent>
+        <div class="p-1">
+            <div class="mb-2">Payments recorded in the loan schedule against what was actually deducted in payroll.</div>
+            <TelerikGrid Data="@schedule" Size="@ThemeConstants.Grid.Size.Small" Height="220px">
+                <GridColumns>
+                    <GridColumn Field="@nameof(SchedRow.SchedNo)" Title="#" Width="50px" />
+                    <GridColumn Field="@nameof(SchedRow.Amort)" Title="Amort" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                    <GridColumn Field="@nameof(SchedRow.Trn)" Title="Payroll (TRN)" />
+                    <GridColumn Title="Paid" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@(string.IsNullOrEmpty((context as SchedRow)?.Trn) ? "" : "Yes")</Template></GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+            <div class="d-flex justify-content-between mt-2">
+                <span>Paid: <b>@schedule.Where(x => !string.IsNullOrEmpty(x.Trn)).Sum(x => x.Amort).ToString("N2")</b></span>
+                <span>Expected balance: <b>@(f.Amount - schedule.Where(x => !string.IsNullOrEmpty(x.Trn)).Sum(x => x.Amort)).ToString("N2")</b></span>
+                <span>Current balance: <b>@f.Balance.ToString("N2")</b></span>
+            </div>
+            <div class="mt-3"><TelerikButton OnClick="@ApplyRecompute" ThemeColor="primary">Reconstruct Balance</TelerikButton></div>
+        </div>
+    </WindowContent>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+
+    class EmpRow { public string EmpNumber { get; set; } = ""; public string EmpName { get; set; } = ""; public bool Resigned { get; set; } }
+    class AcctRow { public string AcctNumber { get; set; } = ""; public string AcctName { get; set; } = ""; }
+    class LoanRow
+    {
+        public int Number { get; set; }
+        public string EmpNumber { get; set; } = "";
+        public string DednCode { get; set; } = "";
+        public string AcctName { get; set; } = "";
+        public DateTime? LoanDate { get; set; }
+        public DateTime? PayStart { get; set; }
+        public DateTime? PayRes { get; set; }
+        public decimal Amount { get; set; }
+        public decimal Amort { get; set; }
+        public decimal Balance { get; set; }
+        public decimal Principal { get; set; }
+        public decimal InterestRate { get; set; }
+        public int MoToPay { get; set; }
+        public int CvNo { get; set; }
+        public bool P1 { get; set; }
+        public bool P2 { get; set; }
+        public bool P3 { get; set; }
+        public bool P4 { get; set; }
+        public bool P5 { get; set; }
+        public string? Remarks { get; set; }
+        public string Status { get; set; } = "A";
+    }
+    class SchedRow { public int SchedNo { get; set; } public decimal Amort { get; set; } public string? Trn { get; set; } }
+    record Opt(string Text, string Value);
+
+    List<EmpRow> employees = new();
+    List<AcctRow> accounts = new();
+    List<LoanRow> loans = new();
+    List<SchedRow> schedule = new();
+
+    string empSearch = "";
+    bool showAll, editing, isNew, showDelete, showRecompute;
+    string view = "A";
+    EmpRow? emp;
+    IEnumerable<EmpRow> selectedEmp = new List<EmpRow>();
+    IEnumerable<LoanRow> selectedLoan = new List<LoanRow>();
+    LoanRow f = new();
+
+    List<Opt> viewOptions = new() { new("Active", "A"), new("Inactive", "I"), new("All", "*") };
+    List<Opt> statusOptions = new() { new("Active", "A"), new("Inactive", "I") };
+
+    IEnumerable<EmpRow> shownEmployees => employees
+        .Where(e => showAll || !e.Resigned)
+        .Where(e => string.IsNullOrWhiteSpace(empSearch) || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase) || e.EmpNumber.Contains(empSearch, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(e => e.EmpName);
+
+    IEnumerable<LoanRow> shownLoans => emp == null ? [] : loans
+        .Where(l => l.EmpNumber == emp.EmpNumber && (view == "*" || l.Status == view))
+        .OrderBy(l => l.AcctName);
+
+    decimal interest    => f.Principal > 0 && f.InterestRate > 0 && f.MoToPay > 0 ? f.Principal * f.InterestRate / 100 : 0;
+    decimal totInterest => interest * f.MoToPay;
+    decimal totAmount   => interest > 0 ? f.Principal + totInterest : 0;
+    decimal expAmort    => interest > 0 ? totAmount / f.MoToPay : 0;
+
+    protected override void OnInitialized()
+    {
+        employees = new()
+        {
+            new() { EmpNumber = "00001", EmpName = "Dela Cruz, Juan P." },
+            new() { EmpNumber = "00002", EmpName = "Santos, Maria L." },
+            new() { EmpNumber = "00003", EmpName = "Reyes, Pedro A." },
+            new() { EmpNumber = "00004", EmpName = "Garcia, Ana B.", Resigned = true },
+        };
+        accounts = new()
+        {
+            new() { AcctNumber = "D019", AcctName = "Loans" },
+            new() { AcctNumber = "D020", AcctName = "Cash Advance" },
+            new() { AcctNumber = "D021", AcctName = "Salary Loan" },
+            new() { AcctNumber = "D022", AcctName = "Uniform" },
+        };
+        loans = new()
+        {
+            new() { Number = 1, EmpNumber = "00001", DednCode = "D021", AcctName = "Salary Loan", LoanDate = new(2026, 9, 1), PayStart = new(2026, 9, 15), Amount = 12000, Amort = 1000, Balance = 9000, Principal = 10000, InterestRate = 2, MoToPay = 12, P1 = true, P2 = true, Remarks = "Sample", Status = "A" },
+            new() { Number = 2, EmpNumber = "00001", DednCode = "D020", AcctName = "Cash Advance", LoanDate = new(2026, 5, 3), PayStart = new(2026, 5, 15), Amount = 3000, Amort = 500, Balance = 0, P1 = true, Status = "I" },
+            new() { Number = 3, EmpNumber = "00002", DednCode = "D019", AcctName = "Loans", LoanDate = new(2026, 10, 1), PayStart = new(2026, 10, 31), Amount = 20000, Amort = 2000, Balance = 20000, P2 = true, Status = "A" },
+        };
+    }
+
+    void PickEmployee(EmpRow? e)
+    {
+        emp = e; selectedEmp = e == null ? [] : [e];
+        selectedLoan = []; editing = false; isNew = false; f = new();
+        var first = shownLoans.FirstOrDefault();
+        if (first != null) PickLoan(first);
+    }
+
+    void PickLoan(LoanRow? l)
+    {
+        if (l == null) return;
+        selectedLoan = [l];
+        f = new LoanRow
+        {
+            Number = l.Number, EmpNumber = l.EmpNumber, DednCode = l.DednCode, AcctName = l.AcctName, LoanDate = l.LoanDate, PayStart = l.PayStart, PayRes = l.PayRes,
+            Amount = l.Amount, Amort = l.Amort, Balance = l.Balance, Principal = l.Principal, InterestRate = l.InterestRate, MoToPay = l.MoToPay, CvNo = l.CvNo,
+            P1 = l.P1, P2 = l.P2, P3 = l.P3, P4 = l.P4, P5 = l.P5, Remarks = l.Remarks, Status = l.Status
+        };
+        editing = true; isNew = false;
+    }
+
+    void NewLoan()
+    {
+        selectedLoan = [];
+        f = new LoanRow { EmpNumber = emp!.EmpNumber, Status = "A" };
+        editing = true; isNew = true;
+    }
+
+    void Save()
+    {
+        if (emp == null) { Warn("Invalid Employee"); return; }
+        if (f.LoanDate == null) { Warn("Date of Loan is invalid."); return; }
+        if (f.PayStart == null) { Warn("Please input start of payment."); return; }
+        if (f.Amort <= 0) { Warn("Amortization is invalid."); return; }
+        if (!(f.P1 || f.P2 || f.P3 || f.P4 || f.P5)) { Warn("Invalid Mode of Payment"); return; }
+
+        if (isNew)
+        {
+            if (f.Amount <= 0) { Warn("Amount is invalid."); return; }
+            if (string.IsNullOrEmpty(f.DednCode)) { Warn("Account Description is invalid."); return; }
+            if (loans.Any(l => l.EmpNumber == emp.EmpNumber && l.DednCode == f.DednCode && l.Status == "A"))
+            { Warn("Unable to save transaction! Existing account found in database."); return; }
+        }
+        if (f.CvNo > 0 && loans.Any(l => l.Number != f.Number && l.CvNo == f.CvNo)) { Warn("CV number already in used!"); return; }
+
+        f.AcctName = accounts.FirstOrDefault(a => a.AcctNumber == f.DednCode)?.AcctName ?? f.AcctName;
+        if (isNew)
+        {
+            f.Number = loans.Count == 0 ? 1 : loans.Max(l => l.Number) + 1;
+            f.Balance = f.Amount;
+            f.Status = "A";
+            loans.Add(f);
+        }
+        else
+        {
+            var idx = loans.FindIndex(l => l.Number == f.Number);
+            if (idx >= 0) loans[idx] = f;
+        }
+        var saved = f.Number;
+        PickLoan(loans.First(l => l.Number == saved));
+        NotificationRef?.Show("Saved Successfully", ThemeConstants.Notification.ThemeColor.Success);
+    }
+
+    void AskDelete() => showDelete = true;
+
+    void DoDelete()
+    {
+        loans.RemoveAll(l => l.Number == f.Number);
+        showDelete = false; editing = false; f = new(); selectedLoan = [];
+        NotificationRef?.Show("Record Deleted Successfully", ThemeConstants.Notification.ThemeColor.Success);
+    }
+
+    void Recompute()
+    {
+        schedule = Enumerable.Range(1, 12).Select(i => new SchedRow { SchedNo = i, Amort = f.Amort, Trn = i <= 3 ? $"2026{9 + (i - 1):00}0100" + i : null }).ToList();
+        showRecompute = true;
+    }
+
+    void ApplyRecompute()
+    {
+        f.Balance = f.Amount - schedule.Where(x => !string.IsNullOrEmpty(x.Trn)).Sum(x => x.Amort);
+        showRecompute = false;
+        NotificationRef?.Show("Balance reconstructed (preview only).", ThemeConstants.Notification.ThemeColor.Info);
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 }

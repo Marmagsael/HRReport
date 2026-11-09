@@ -1,4 +1,4 @@
-﻿
+
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._20_Pay.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
@@ -219,6 +219,21 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
 
         await _01Para(schema, connName);
 
+        await _03ForApprovalStatusF(schema, connName);
+
+    }
+
+    // -- "For Approval" is F everywhere : leave, OB, time-off and schedule requests used FA or F; old FA rows become F --
+    private async Task _03ForApprovalStatusF(string? schema, string? conn)
+    {
+        foreach (var table in new[] { "LeaveApplication", "ObApplication", "AttReqHdr", "AtttemplateReqHdr", "OTReqHdr" })
+        {
+            var has = await _sql.FetchData<long, dynamic>(
+                "select count(*) from information_schema.columns where table_schema = @Schema and table_name = @Table and column_name = 'Status'",
+                new { Schema = schema, Table = table }, conn);
+            if (has.FirstOrDefault() > 0)
+                await _sql.ExecuteCmd($"update {schema}.{table} set Status = 'F' where Status = 'FA'", new { }, conn);
+        }
     }
 
 
@@ -458,6 +473,21 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
 
+        // -- RN (regular night) is a duty type too; added to existing tables as well --
+        sql = @$"insert into {schema}.AttDutyType (Code, Name)
+                    select 'RN', 'Regular Night' from dual where not exists (select 1 from {schema}.AttDutyType where Code = 'RN')";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- Face samples for the face punch (Enrollment / Punch Capturing) : one row per sample, EmpmasId = {PIS}.Empmas.Id --
+        sql = @$"CREATE TABLE IF NOT EXISTS {schema}.FaceTemplate (
+                        Id          INT UNSIGNED  NOT NULL AUTO_INCREMENT,
+                        EmpmasId    INT UNSIGNED  NOT NULL,
+                        Descriptor  MEDIUMTEXT    NOT NULL,
+                        CreatedAt   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        CreatedById INT UNSIGNED  DEFAULT 0,
+                        PRIMARY KEY (Id),
+                        KEY IX_FaceTemplate_Empmas (EmpmasId)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await _sql.ExecuteCmd(sql, new { }, connName);
     }
 
 
@@ -2261,9 +2291,12 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         {
             sql = $@"insert into {schema}.LeaveType
                             (Id, Code,  LeaveName,                 AnivStart,                          AnivEnd, DefValue) values 
-                            (1,  'SIL', 'Service Incentive Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 5), 
-                            (2,  'SL', 'Sick Leave',               date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15),
-                            (3,  'VL', 'Vacation Leave',           date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15) ";
+                            (1,  'VL', 'Vacation Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15),
+                            (2,  'SL', 'Sick Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 15),
+                            (3,  'IL', 'Incentive Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 5),
+                            (4,  'ML', 'Maternity Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 0),
+                            (5,  'PL', 'Paternity Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 0),
+                            (6,  'EL', 'Emergency Leave', date(concat(year(now()),'-01-01')), date(concat(year(now()),'-12-31')), 0) ";
             await _sql.ExecuteCmd(sql, new { }, conn);
         }
     }

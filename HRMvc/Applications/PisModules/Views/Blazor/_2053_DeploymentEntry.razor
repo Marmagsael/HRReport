@@ -1,9 +1,10 @@
-﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2053;
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 @using HRApiLibrary.DataAccess._20_Pay.Interface;
 
 @inject IOClientDataAccess _client;
+@inject IConfiguration _config;
 @inject IClientstatusDataAccess _clientstatus;
 @inject IOAreaDataAccess _area;
 @inject IORegionsDataAccess _regions;
@@ -12,8 +13,19 @@
 
 
 <TelerikRootComponent>
-    <div class="overflow-hidden position-relative">
-        <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
+    <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
+
+    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@v">
+            <CascadingValue Value="@rv">
+                <CascadingValue Value="@NotificationRef">
+                    <_00BT_FullW HdrCaption="@ModuleCaption">
+                        <Details>
+
+                            @*--- REPORT ---*@
+                            <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
         <CascadingValue Value="@Uc">
@@ -90,6 +102,7 @@
 
 
     private _2053_DeploymentList DeploymentGridRef;
+    string ModuleCaption => string.Equals(_config["CompanyInfo:IsSecurityAgency"], "true", StringComparison.OrdinalIgnoreCase) ? "Client Entry" : "Deployment Entry";
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,10 +134,16 @@
 
     private async Task ChildAction()
     {
-        if (v.Action == "GenerateDeploymentList") await GenerateDeploymentList();
-        if (v.Action == "GenerateDOLEDeploymentReport") await GenerateDOLEDeploymentReport();
-        if (v.Action == "RefreshDeploymentGrid") if (DeploymentGridRef != null) DeploymentGridRef.RebindGrid();
-        if (v.Action == "CloseEntryModalAndRefreshGrid") CloseEntryModal();
+        if (v.Action == "RefreshDeploymentGrid")
+        {
+            await _02LoadClients();
+            if (DeploymentGridRef != null) DeploymentGridRef.RebindGrid();
+        }
+        if (v.Action == "CloseEntryModalAndRefreshGrid")
+        {
+            await _02LoadClients();
+            CloseEntryModal();
+        }
         v.Action = string.Empty;
     }
 
@@ -136,10 +155,7 @@
         {
 
             var res = await _client._02(Uc.OpisDb, Uc.Conn);
-            if (res.Any())
-            {
-                v.Clients = res;
-            }
+            v.Clients = res ?? [];
         }
         catch (Exception)
         {

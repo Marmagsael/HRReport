@@ -11,7 +11,7 @@
 @* =====================================================================================
    OB ( Official Business ) Request
    Tables : ObApplication, ObApplicationDtl, ObApplicationHist, ObDuration
-   Status : N - New, S - Save, FA - For Approval, A - Approved, C - Cancel, R - Returned
+   Status : N - New, S - Save, F - For Approval, A - Approved, C - Cancel, R - Returned
    ===================================================================================== *@
 
 <RadzenDialog />
@@ -334,7 +334,7 @@
     protected override async Task OnInitializedAsync()
     {
         @* --- Employee schedule ( same source as "My Schedule Template" ) --- *@
-        at = await _attTemplate._02(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn) ?? _attTemplate._02NoSchedule(Uc?.EmpmasId);
+        at = await _attTemplate._02(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn) ?? await _attTemplate._02NoSchedule(Uc?.EmpmasId, Uc?.SchemaUserPis, Uc?.Conn);
 
         @* --- Day Type dropdown : ObDuration ( 1 Whole day, 2 First-Half, 3 Second-Half ) --- *@
         obDurations = await _obDuration._02s(Uc?.SchemaUserPis, Uc?.Conn) ?? [];
@@ -553,10 +553,10 @@
     double DaysWithPay => dtls.Where(d => d.IsPayableB)
                               .Sum(d => d.ObDurationId == 1 ? 1 : .5);
 
-    string? _02Status(string? code) => code switch { "N" => "New", "S" => "Saved", "FA" => "For Approval", "A" => "Approved", "C" => "Cancelled", "R" => "Returned", _ => "Unknown" };
+    string? _02Status(string? code) => code switch { "N" => "New", "S" => "Saved", "F" => "For Approval", "A" => "Approved", "C" => "Cancelled", "R" => "Returned", _ => "Unknown" };
     @* --- Where the request is now : only For Approval has a pending level --- *@
     string? _02ApprovalLevel(ObapplicationModel? r) => r?.Status switch {
-        "FA" => r.ApproverLevel == 2 ? "Level 2 - Final Approver" : "Level 1 - Approver",
+        "F" => r.ApproverLevel == 2 ? "Level 2 - Final Approver" : "Level 1 - Approver",
         "S"  => "Not yet sent",
         "R"  => "Returned - edit and re-send",
         _    => "-"

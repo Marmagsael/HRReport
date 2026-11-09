@@ -157,12 +157,18 @@
 
     private List<string>? Cls() { var c = rv.Clients.Where(x => x.IsSelectedB).Select(x => x.ClNumber!).ToList(); return c.Any() ? c : null; }
 
-    private void CreateReport()
+    private async Task CreateReport()
     {
         rv.ReportData   = reps;
         rv.RelativePath = Cont ? "Reports/_03Payroll/K_PagibigContRemit.trdp" : Pagibig ? "Reports/_03Payroll/K_PagibigLoanRemit.trdp" : "Reports/_03Payroll/K_HDMFLoanRemit.trdp";
         rv.RefreshToken++;
         rv.ShowReport   = true;
+        if (rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2000);
+            rv.ShowReport = false;
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
+        }
     }
 
     private void CloseReportModal(bool ans)

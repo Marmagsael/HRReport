@@ -1,4 +1,5 @@
 @inject IMainmenuDataAccess _menu
+@inject HRMvc.StartupConfig.PayAccessService _access
 
 <link rel="stylesheet" href="css/ReportLayout/report-left-menu.css" />
 
@@ -80,5 +81,11 @@
     {
         menus       = await _menu._02("Main", Uc?.Conn ?? "") ?? [];
         menuspay    = await _menu._02("MainPay", Uc?.Conn ?? "") ?? [];
+        if (HttpContext != null)
+        {
+            var allowed = await _access.AllowedMenuIdsAsync(HttpContext.User);
+            var locked  = HRMvc.StartupConfig.PisAccessService.Filter(menuspay.Where(m => m?.IdParent != 11001).ToList(), allowed);
+            menuspay    = locked.Concat(menuspay.Where(m => m?.IdParent == 11001)).ToList();
+        }
     }
 }
