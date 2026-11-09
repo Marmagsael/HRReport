@@ -13,7 +13,7 @@
                          AnimationType="@AnimationType.SlideLeft" />
 
 
-    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+    @* <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" /> *@
 
     <CascadingValue Value="@v">
         <CascadingValue Value="@Uc">
@@ -21,11 +21,33 @@
                 <_00BT_FullW HdrCaption="Insurance Entry">
 
                     <Details>
+                            @*--- REPORT ---*@
+                                    @* <_02BTRep Rv="rv" ChildAction="ChildAction" /> *@
 
-                  
 
-                        @*---  Grid ---*@
-                        <_2054_InsuranceList ChildAction="ChildAction" />
+
+                                <div class="p-2 flex-grow-1 overflow-hidden position-relative">
+
+                                    @*--- TELERIK LOADER (centered on the form, not the screen) ---*@
+                                    <TelerikLoaderContainer Visible="@v.IsLoading"
+                                                            LoaderType="@LoaderType.ConvergingSpinner" />
+
+                                    @*--- ENTRY FORM MODAL ---*@
+                                    @if (v.ShowInsuranceEntryModal == true)
+                                    {
+                                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowInsuranceEntryModal = false" ModalWidth="70vh">
+
+                                            <Content>
+                                                <_2054_InsuranceEntryModal ChildAction="ChildAction" />
+                                            </Content>
+
+                                        </_00Modal>
+                                    }
+
+                                    @*---  Grid ---*@
+                                    <_2054_InsuranceList ChildAction="ChildAction" />
+
+                                </div>
                     </Details>
 
                 </_00BT_FullW>
