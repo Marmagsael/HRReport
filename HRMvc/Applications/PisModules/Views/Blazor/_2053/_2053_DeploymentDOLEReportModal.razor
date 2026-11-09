@@ -1,11 +1,10 @@
-@using HRApiLibrary.Models._90_Utils
+﻿@using HRApiLibrary.Models._90_Utils
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 
-@inject Microsoft.Extensions.Configuration.IConfiguration _cfgT;
 @inject IOClientDataAccess _client;
 
 
-<div style="height:calc(100vh - 100px); position:relative; min-height:0;">
+<div style="height:calc(100vh - 200px); position:relative; min-height:0;">
     <_02BTModal MCaption="@Rv.MCaption" ShowModal="V.ShowDOLEReportModal" ChildAction="CloseReportModal">
         <Details>
 
@@ -70,7 +69,7 @@
                                             SelectAllMode="@GridSelectAllMode.All" />
 
                         <GridColumn Field="@nameof(OClientModel.ClName)"
-                                    Title="@T("Deployment")"
+                                    Title="Deployment"
                                     Width="180px" />
 
                         @* --- STATUS  --- *@
@@ -168,8 +167,6 @@
 
 
 @code {
-    string T(string s) => string.Equals(_cfgT["CompanyInfo:IsSecurityAgency"], "true", StringComparison.OrdinalIgnoreCase) ? s.Replace("Deployment", "Client").Replace("deployment", "client") : s;
-
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
@@ -223,7 +220,7 @@
     {
 
 
-        V.IsGridLoading = true;
+        V.IsLoading = true;
 
         args.Data = new List<OClientModel>();
         args.Total = 0;
@@ -269,10 +266,10 @@
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-            NotificationRef.Show(T("Unable to load deployment records."), ThemeConstants.Notification.ThemeColor.Error);
+            NotificationRef.Show("Unable to load deployment records.", ThemeConstants.Notification.ThemeColor.Error);
         }
 
-        V.IsGridLoading = false;
+        V.IsLoading = false;
         await ChildAction.InvokeAsync();
 
     }
@@ -325,8 +322,40 @@
 
     private async Task GenerateDOLEDeploymentReport()
     {
-        V.Action = "GenerateDOLEDeploymentReport";
-        await ChildAction.InvokeAsync();
+      
+
+        if (!V.RepDtls.Any()) { return; }
+
+        V.RepDtls = new List<OClientModel>();
+
+
+        if (!V.SelectedDeployments.Any())
+        {
+            NotificationRef.Show("Select a record to export to Excel.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        V.RepDtls = V.SelectedDeployments!;
+
+        Rv.MCaption = "Personnel Reporting";
+        Rv.RelativePath = "";
+        Rv.ReportData = [];
+        Rv.ReportData = V.RepDtls;
+
+        Rv.ReportParams["ReportTitle"] = "Personnel Reporting";
+        Rv.RelativePath = "Reports/_01Pis/J_2053_DE_DOLE.trdp";
+        Rv.SelectedFormat = "XLSX";
+
+        Rv.ShowReport = true;
+        if (Rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2000);
+            Rv.ShowReport = false;
+            NotificationRef.Show("The Excel file has been generated successfully. Please check your browser's downloads.", ThemeConstants.Notification.ThemeColor.Success);
+
+        }
+
+        V.SelectedDeployments = new List<OClientModel>();
     }
 
     private async Task CloseReportModal()
