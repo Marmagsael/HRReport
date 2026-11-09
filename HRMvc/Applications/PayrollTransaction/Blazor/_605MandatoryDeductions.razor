@@ -1,6 +1,9 @@
 @using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._605O
 @using Telerik.Blazor.Components
 @using Telerik.SvgIcons
+
+@inject IDA_605O _da
 
 <style>
     .md-root { font-size:13px; color:#1f2a37; }
@@ -11,6 +14,7 @@
     .md-root .k-grid td, .md-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
     .md-root .k-grid th, .md-root .k-grid .k-header, .md-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
     .md-root .k-button { padding:5px 12px; }
+    .md-root .k-grid tbody tr { cursor:pointer; }
     .md-root .k-numerictextbox .k-input-inner { text-align:right !important; }
     .md-root .k-numerictextbox .k-input-spinner { display:none !important; }
     .md-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
@@ -46,7 +50,7 @@
             <div class="flex-fill" style="min-width:0;">
 
                 <div class="md-bar">
-                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@editing">Save</TelerikButton>
+                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(editing && !busy)">Save</TelerikButton>
                     <TelerikButton OnClick="@NewRow" Icon="@SvgIcon.Plus">New</TelerikButton>
                     <TelerikButton OnClick="@AskStop" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Cancel" Enabled="@(editing && !isNew)">Stop</TelerikButton>
                 </div>
@@ -91,18 +95,18 @@
                     </div>
                 </div>
 
-                <TelerikGrid Data="@rows" Height="60vh" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
-                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selected" SelectedItemsChanged="@((IEnumerable<MandRow> e) => Pick(e.FirstOrDefault()))">
+                <TelerikGrid Data="@rows" Height="calc(100vh - 470px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selected" SelectedItemsChanged="@((IEnumerable<M605_Row> e) => Pick(e.FirstOrDefault()))">
                     <GridColumns>
-                        <GridColumn Field="@nameof(MandRow.AcctName)" Title="Account Name" />
-                        <GridColumn Field="@nameof(MandRow.ContAmt)" Title="Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
-                        <GridColumn Field="@nameof(MandRow.MaxAmt)" Title="Max. Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
-                        <GridColumn Title="Status" Width="90px" TextAlign="ColumnTextAlign.Center"><Template>@{ var s = (context as MandRow)?.Status; }<span class="md-st st-@s">@StatusText(s)</span></Template></GridColumn>
-                        <GridColumn Title="P1" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P1)</Template></GridColumn>
-                        <GridColumn Title="P2" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P2)</Template></GridColumn>
-                        <GridColumn Title="P3" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P3)</Template></GridColumn>
-                        <GridColumn Title="P4" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P4)</Template></GridColumn>
-                        <GridColumn Title="P5" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P5)</Template></GridColumn>
+                        <GridColumn Field="@nameof(M605_Row.AcctName)" Title="Account Name" />
+                        <GridColumn Field="@nameof(M605_Row.ContAmt)" Title="Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(M605_Row.MaxAmt)" Title="Max. Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Title="Status" Width="90px" TextAlign="ColumnTextAlign.Center"><Template>@{ var s = (context as M605_Row)?.Status; }<span class="md-st st-@s">@StatusText(s)</span></Template></GridColumn>
+                        <GridColumn Title="P1" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M605_Row)?.P1)</Template></GridColumn>
+                        <GridColumn Title="P2" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M605_Row)?.P2)</Template></GridColumn>
+                        <GridColumn Title="P3" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M605_Row)?.P3)</Template></GridColumn>
+                        <GridColumn Title="P4" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M605_Row)?.P4)</Template></GridColumn>
+                        <GridColumn Title="P5" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M605_Row)?.P5)</Template></GridColumn>
                     </GridColumns>
                     <NoDataTemplate><div class="p-2 text-muted">No mandatory deduction yet.</div></NoDataTemplate>
                 </TelerikGrid>
@@ -114,9 +118,9 @@
                     <div class="md-ex">
                         <div>
                             <div class="md-exlbl">Clients that are deducted</div>
-                            <TelerikGrid Data="@deducted" Height="190px" Size="@ThemeConstants.Grid.Size.Small" SelectionMode="GridSelectionMode.Single"
-                                         SelectedItems="@selDed" SelectedItemsChanged="@((IEnumerable<MandClient> e) => selDed = e.ToList())">
-                                <GridColumns><GridColumn Field="@nameof(MandClient.Name)" Title="Client" /></GridColumns>
+                            <TelerikGrid Data="@deducted" Height="calc(50vh - 170px)" Size="@ThemeConstants.Grid.Size.Small" SelectionMode="GridSelectionMode.Single"
+                                         SelectedItems="@selDed" SelectedItemsChanged="@((IEnumerable<M605_Client> e) => selDed = e.ToList())">
+                                <GridColumns><GridColumn Field="@nameof(M605_Client.Name)" Title="Client" /></GridColumns>
                                 <NoDataTemplate><div class="p-2 text-muted">None</div></NoDataTemplate>
                             </TelerikGrid>
                         </div>
@@ -126,9 +130,9 @@
                         </div>
                         <div>
                             <div class="md-exlbl">Clients that are exempted</div>
-                            <TelerikGrid Data="@exempted" Height="190px" Size="@ThemeConstants.Grid.Size.Small" SelectionMode="GridSelectionMode.Single"
-                                         SelectedItems="@selEx" SelectedItemsChanged="@((IEnumerable<MandClient> e) => selEx = e.ToList())">
-                                <GridColumns><GridColumn Field="@nameof(MandClient.Name)" Title="Client" /></GridColumns>
+                            <TelerikGrid Data="@exempted" Height="calc(50vh - 170px)" Size="@ThemeConstants.Grid.Size.Small" SelectionMode="GridSelectionMode.Single"
+                                         SelectedItems="@selEx" SelectedItemsChanged="@((IEnumerable<M605_Client> e) => selEx = e.ToList())">
+                                <GridColumns><GridColumn Field="@nameof(M605_Client.Name)" Title="Client" /></GridColumns>
                                 <NoDataTemplate><div class="p-2 text-muted">None</div></NoDataTemplate>
                             </TelerikGrid>
                         </div>
@@ -157,128 +161,112 @@
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
 
-    class MandRow
-    {
-        public int Id { get; set; }
-        public string AcctNumber { get; set; } = "";
-        public string AcctName { get; set; } = "";
-        public double ContAmt { get; set; }
-        public double MaxAmt { get; set; }
-        public int Sched { get; set; } = 3;
-        public string Status { get; set; } = "A";
-        public string Remarks { get; set; } = "";
-        public bool P1 { get; set; }
-        public bool P2 { get; set; }
-        public bool P3 { get; set; }
-        public bool P4 { get; set; }
-        public bool P5 { get; set; }
-        public MandRow Copy() => (MandRow)MemberwiseClone();
-    }
-    record Acct(string AcctNumber, string AcctName);
     record Opt<T>(string Text, T Value);
-    class MandClient { public string Number { get; set; } = ""; public string Name { get; set; } = ""; }
 
     TelerikNotification? NotificationRef;
 
-    List<Acct> accounts = new()
-    {
-        new("D007", "Union Dues"), new("D008", "Coop Membership"), new("D009", "Medical Fund"), new("D010", "Burial Fund"), new("D011", "Uniform"),
-    };
-    List<Opt<int>> schedOptions = new() { new("1st prd", 1), new("2nd prd", 2), new("Every Payroll", 3) };
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    List<M605_Acct> accounts = new();
     List<Opt<string>> statusOptions = new() { new("Active", "A"), new("Inactive", "I"), new("Stop", "S") };
 
-    List<MandRow> all = new();
-    List<MandClient> clients = new()
-    {
-        new() { Number = "00001", Name = "Head Office" }, new() { Number = "00002", Name = "Branch 1" },
-        new() { Number = "00003", Name = "Branch 2" }, new() { Number = "00004", Name = "Plant" },
-    };
-    Dictionary<int, HashSet<string>> exemptions = new();
+    List<M605_Row> rows = new();
+    List<M605_Client> clients = new();
+    HashSet<string> exemptSet = new();
 
-    List<MandRow> rows => all.Where(x => x.Status == "A").ToList();
-    IEnumerable<MandRow> selected = Array.Empty<MandRow>();
-    MandRow? cur;
-    MandRow f = new();
-    bool editing, isNew, showStop;
-    int nextId = 1;
+    IEnumerable<M605_Row> selected = Array.Empty<M605_Row>();
+    M605_Row? cur;
+    M605_Row f = new();
+    bool editing, isNew, showStop, busy;
 
-    List<MandClient> selDed = new(), selEx = new();
-    List<MandClient> deducted => cur == null ? new() : clients.Where(c => !Ex(cur.Id).Contains(c.Number)).ToList();
-    List<MandClient> exempted => cur == null ? new() : clients.Where(c => Ex(cur.Id).Contains(c.Number)).ToList();
-    HashSet<string> Ex(int id) => exemptions.TryGetValue(id, out var s) ? s : new();
+    List<M605_Client> selDed = new(), selEx = new();
+    List<M605_Client> deducted => cur == null ? new() : clients.Where(c => !exemptSet.Contains(c.Number)).ToList();
+    List<M605_Client> exempted => cur == null ? new() : clients.Where(c => exemptSet.Contains(c.Number)).ToList();
 
-    static string SchedText(int? s) => s switch { 1 => "1st prd", 2 => "2nd prd", _ => "Every Payroll" };
     static string StatusText(string? s) => s switch { "A" => "Active", "I" => "Inactive", "S" => "Stop", _ => "" };
     static string Tick(bool? b) => b == true ? "✓" : "";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        all = new()
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
         {
-            new() { Id = nextId++, AcctNumber = "D007", AcctName = "Union Dues", ContAmt = 100, MaxAmt = 1200, Sched = 2, P1 = false, P2 = true },
-            new() { Id = nextId++, AcctNumber = "D009", AcctName = "Medical Fund", ContAmt = 250, MaxAmt = 6000, Sched = 3, P1 = true, P2 = true },
-        };
+            accounts = await _da._02Accounts(Opay, Conn);
+            clients = await _da._02Clients(Opis, Conn);
+            await LoadRows();
+        }
+        catch (Exception ex) { Console.Error.WriteLine("605 load failed: " + ex); Warn("Unable to load the mandatory deductions."); }
     }
 
-    void Pick(MandRow? r)
+    async Task LoadRows() => rows = await _da._02Rows(Opay, Conn);
+
+    async Task Pick(M605_Row? r)
     {
         if (r == null) return;
         cur = r; selected = new[] { r }; f = r.Copy(); editing = true; isNew = false;
         selDed = new(); selEx = new();
+        await LoadExempt();
     }
+
+    async Task LoadExempt() => exemptSet = cur == null ? new() : (await _da._02Exempted(cur.Id, Opay, Conn)).ToHashSet();
 
     void NewRow()
     {
-        cur = null; selected = Array.Empty<MandRow>(); f = new(); editing = true; isNew = true;
-        selDed = new(); selEx = new();
+        cur = null; selected = Array.Empty<M605_Row>(); f = new(); editing = true; isNew = true;
+        selDed = new(); selEx = new(); exemptSet = new();
     }
 
-    void Save()
+    async Task Save()
     {
-        if (string.IsNullOrEmpty(f.AcctNumber)) { Warn("Please select an account name from the list."); return; }
-        if (f.ContAmt <= 0) { Warn("Amount is required."); return; }
-        if (f.MaxAmt < 0) { Warn("Max. Amount is invalid."); return; }
-        if (isNew && all.Any(x => x.AcctNumber == f.AcctNumber && x.Status != "S")) { Warn("This account already has a mandatory deduction."); return; }
-
-        if (isNew)
+        await Task.Delay(300);
+        if (busy) return;
+        busy = true;
+        try
         {
-            f.Id = nextId++;
-            f.AcctName = accounts.First(a => a.AcctNumber == f.AcctNumber).AcctName;
-            all.Add(f);
+            if (isNew) f.AcctName = accounts.FirstOrDefault(a => a.AcctNumber == f.AcctNumber)?.AcctName ?? "";
+            var (err, id) = await _da._01Save(f, isNew, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            await LoadRows();
+            cur = rows.FirstOrDefault(x => x.Id == id);
+            if (cur != null) { selected = new[] { cur }; f = cur.Copy(); }
+            else { selected = Array.Empty<M605_Row>(); f = new(); editing = false; }
+            isNew = false;
+            await LoadExempt();
+            NotificationRef?.Show("Saved Successfully", ThemeConstants.Notification.ThemeColor.Success);
         }
-        else
-        {
-            var i = all.FindIndex(x => x.Id == f.Id);
-            if (i >= 0) all[i] = f;
-        }
-        cur = f; selected = new[] { f }; f = f.Copy(); isNew = false;
-        NotificationRef?.Show("Saved Successfully", ThemeConstants.Notification.ThemeColor.Success);
+        catch (Exception ex) { Console.Error.WriteLine("605 save failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
     }
 
     void AskStop() => showStop = true;
 
-    void DoStop()
+    async Task DoStop()
     {
         showStop = false;
-        var r = all.FirstOrDefault(x => x.Id == f.Id);
-        if (r != null) r.Status = "S";
-        cur = null; selected = Array.Empty<MandRow>(); f = new(); editing = false;
-        NotificationRef?.Show("Mandatory deduction stopped", ThemeConstants.Notification.ThemeColor.Success);
+        try
+        {
+            await _da._04Stop(f.Id, Opay, Conn);
+            cur = null; selected = Array.Empty<M605_Row>(); f = new(); editing = false; exemptSet = new();
+            await LoadRows();
+            NotificationRef?.Show("Mandatory deduction stopped", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("605 stop failed: " + ex); Warn("Unable to stop."); }
     }
 
-    void Exempt()
+    async Task Exempt()
     {
-        if (cur == null) return;
-        if (!exemptions.ContainsKey(cur.Id)) exemptions[cur.Id] = new();
-        foreach (var c in selDed) exemptions[cur.Id].Add(c.Number);
-        selDed = new();
+        if (cur == null || selDed.Count == 0) return;
+        try { await _da._01Exempt(cur.Id, selDed.Select(c => c.Number).ToList(), Opay, Conn); selDed = new(); await LoadExempt(); }
+        catch (Exception ex) { Console.Error.WriteLine("605 exempt failed: " + ex); Warn("Unable to save the exemption."); }
     }
 
-    void Include()
+    async Task Include()
     {
-        if (cur == null) return;
-        foreach (var c in selEx) Ex(cur.Id).Remove(c.Number);
-        selEx = new();
+        if (cur == null || selEx.Count == 0) return;
+        try { await _da._04Exempt(cur.Id, selEx.Select(c => c.Number).ToList(), Opay, Conn); selEx = new(); await LoadExempt(); }
+        catch (Exception ex) { Console.Error.WriteLine("605 include failed: " + ex); Warn("Unable to save the exemption."); }
     }
 
     void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);

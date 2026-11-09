@@ -40,6 +40,7 @@ static class FrxConvert
         // gives the font at run time (the FontMap font stays as the design-time font)
         var paramTypes = Map("ParamTypes");
         var fontParam = Map("FontParam");
+        var formats = Map("Formats");
         var constants = cfg.TryGetProperty("Constants", out var cs) ? cs.EnumerateObject().ToDictionary(x => x.Name.ToLower(), x => x.Value.GetString()!) : new();
         // Exprs: whole FoxPro expression (any case, spaces ignored) -> Telerik expression; FontMap: printer font -> PDF font
         string Key(string s) => Regex.Replace(s, @"\s+", "").ToLower();
@@ -260,6 +261,7 @@ static class FrxConvert
                         if (codes.Contains('!')) value = "=ToUpper(" + value[1..] + ")";
                         value = When(value);
                         string fmt = Fmt(r["PICTURE"], value);
+                        if (fmt == "" && formats.TryGetValue(expr.Trim().ToLower(), out var fmtOverride)) fmt = fmtOverride;
                         // FoxPro: OFFSET 0 left, 1 right, 2 center; numbers in a picture default to right
                         int ofs = I(r, "OFFSET");
                         string align = codes.Contains('I') || ofs == 2 ? "Center"

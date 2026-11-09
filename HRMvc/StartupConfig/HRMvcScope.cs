@@ -8,7 +8,11 @@ using HRApiLibrary.Modules._2306O;
 using HRApiLibrary.Modules._2310O;
 using HRApiLibrary.Modules._12008O;
 using HRApiLibrary.Modules._11000O;
+using HRApiLibrary.Modules._552O;
+using HRApiLibrary.Modules._602O;
+using HRApiLibrary.Modules._603O;
 using HRApiLibrary.Modules._604O;
+using HRApiLibrary.Modules._605O;
 using HRApiLibrary.Modules._12006O;
 using HRMvc.StartupConfig.Library;
 
@@ -49,7 +53,11 @@ public static class HRMvcScope
         services.AddScoped<IDA_2310O, DA_2310O>();
         services.AddScoped<IDA_12008O, DA_12008O>();
         services.AddScoped<IDA_11000O, DA_11000O>();
+        services.AddScoped<IDA_552O, DA_552O>();
+        services.AddScoped<IDA_602O, DA_602O>();
+        services.AddScoped<IDA_603O, DA_603O>();
         services.AddScoped<IDA_604O, DA_604O>();
+        services.AddScoped<IDA_605O, DA_605O>();
         services.AddScoped<IAms_otsettingsDataAccess, Ams_otsettingsDataAccess>();
         services.AddScoped<IBiologDataAccess, BiologDataAccess>();
         services.AddScoped<IBioManHourDataAccess, BioManHourDataAccess>();
