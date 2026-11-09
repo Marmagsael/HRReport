@@ -1508,9 +1508,12 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                               DATE              date                        DEFAULT NULL,
                               DEDNCODE          varchar(4)                  DEFAULT NULL,
                               DEDNDESC          varchar(20)                 DEFAULT NULL,
-                              AMOUNT            double(8,2)                 DEFAULT NULL,
-                              AMORT             double(7,2)                 DEFAULT NULL,
-                              BALANCE           double(8,2)                 DEFAULT NULL,
+                              Principal         double(14,2)                DEFAULT 0,
+                              InterestRate      double(7,4)                 DEFAULT 0,
+                              MoToPay           int(10)         unsigned    DEFAULT 0,
+                              AMOUNT            double(14,2)                DEFAULT NULL,
+                              AMORT             double(14,2)                DEFAULT NULL,
+                              BALANCE           double(14,2)                DEFAULT NULL,
                               STATUS            varchar(1)                  DEFAULT NULL,
                               ENCODEBY          varchar(10)                 DEFAULT NULL,
                               ENCODEDT          varchar(20)                 DEFAULT NULL,
@@ -1532,6 +1535,17 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                               TRNLastPosted     char(12)                    DEFAULT '',
                               PRIMARY KEY (Id)
                             ) ENGINE=InnoDB DEFAULT CHARSET=latin1;"; 
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        sql = @$"CREATE TABLE if not exists {schema}.loansSchedule (
+                    Id          int(10)         unsigned NOT NULL AUTO_INCREMENT,
+                    LoansId     int(10)         unsigned NOT NULL,
+                    SchedNo     int(10)         unsigned NOT NULL,
+                    Amort       double(14,2)    NOT NULL DEFAULT 0,
+                    TRN         char(15)        DEFAULT NULL,
+                    PRIMARY KEY (Id),
+                    UNIQUE KEY uq_loansSchedule (LoansId, SchedNo)
+                ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         sql = @$"CREATE TABLE if not exists {schema}.loanhdr (
@@ -1567,11 +1581,14 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         string? sql = $@"Desc {schema}.Loans ";
         var res = await _sql.FetchData<TableStructureModel, dynamic>(sql, new { }, connName);
 
-        if (res.Count < 28)
-        {
-            sql = $@"ALTER TABLE {schema}.`loans` ADD COLUMN `Principal` DOUBLE(12,2) DEFAULT 0 AFTER `DedNDesc`;";
-            await _sql.ExecuteCmd(sql, new { }, connName);
-        }
+        if (!res.Any(c => string.Equals(c.Field, "Principal", StringComparison.OrdinalIgnoreCase)))
+            await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` ADD COLUMN `Principal` DOUBLE(14,2) DEFAULT 0 AFTER `DedNDesc`;", new { }, connName);
+        if (!res.Any(c => string.Equals(c.Field, "InterestRate", StringComparison.OrdinalIgnoreCase)))
+            await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` ADD COLUMN `InterestRate` DOUBLE(7,4) DEFAULT 0 AFTER `Principal`;", new { }, connName);
+        if (!res.Any(c => string.Equals(c.Field, "MoToPay", StringComparison.OrdinalIgnoreCase)))
+            await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` ADD COLUMN `MoToPay` INT UNSIGNED DEFAULT 0 AFTER `InterestRate`;", new { }, connName);
+
+        await _sql.ExecuteCmd($@"ALTER TABLE {schema}.`loans` MODIFY `Amount` DOUBLE(14,2) DEFAULT NULL, MODIFY `Amort` DOUBLE(14,2) DEFAULT NULL, MODIFY `Balance` DOUBLE(14,2) DEFAULT NULL, MODIFY `Principal` DOUBLE(14,2) DEFAULT 0;", new { }, connName);
     }
 
     private async Task _01_252_DedMandatory(string? schema, string? connName, string? country = "PH")

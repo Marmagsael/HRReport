@@ -160,12 +160,18 @@
         return $"{new DateTime(y, m, 1):MMMM} {days}, {y}";
     }
 
-    private void CreateReport()
+    private async Task CreateReport()
     {
         rv.ReportData   = reps;
         rv.RelativePath = isAtm ? "Reports/_03Payroll/K_AcctTotals.trdp" : "Reports/_03Payroll/K_AcctTotalsCash.trdp";
         rv.RefreshToken++;
         rv.ShowReport   = true;
+        if (rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2000);
+            rv.ShowReport = false;
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
+        }
     }
 
     private void CloseReportModal(bool ans)

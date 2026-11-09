@@ -3,9 +3,175 @@
 @attribute [Authorize]
 
 @using Microsoft.AspNetCore.Authorization
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._11000O
+@using HRMvc.Applications.PayrollTransaction.Vars
 
-<div class="ms-2 mt-1 w-960p card b-dgray vh-95min body-wrapper d-flex justify-content-center align-items-center">
-    <div class="txt-fcolor1">
-        <h4>Welcome to AMS Home Page...</h4>
+@inject IDA_11000O _da
+
+<style>
+    .ah-wrap { padding:18px 22px 28px; }
+    .ah-head { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; }
+    .ah-head h4 { margin:0; font-weight:700; }
+    .ah-head .ah-date { color:#6b7480; font-size:.9rem; }
+    .ah-tiles { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+    .ah-tile { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:14px 16px; display:flex; gap:12px; align-items:center; }
+    .ah-ic { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .ah-ic .material-symbols-outlined { font-size:24px; }
+    .ah-num { font-size:1.6rem; font-weight:700; line-height:1; }
+    .ah-lbl { font-size:.78rem; color:#6b7480; margin-top:3px; }
+    .c-green { background:#e6f4ea; color:#1e7d34; }
+    .c-red   { background:#fdeaea; color:#c62828; }
+    .c-amber { background:#fff4e0; color:#b26a00; }
+    .c-blue  { background:#e8f0fe; color:#1a56c4; }
+    .c-gray  { background:#eef0f3; color:#515b68; }
+    .ah-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:16px; margin-bottom:18px; }
+    .ah-card { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:14px 18px 10px; }
+    .ah-title { font-weight:700; font-size:.95rem; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid #eef0f3; display:flex; justify-content:space-between; align-items:center; }
+    .ah-title small { font-weight:500; color:#8a93a0; }
+    .ah-row { display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid #f1f3f6; }
+    .ah-row:last-child { border-bottom:0; }
+    .ah-row .ah-ic { width:34px; height:34px; border-radius:8px; }
+    .ah-row .ah-ic .material-symbols-outlined { font-size:20px; }
+    .ah-grow { flex:1; min-width:0; }
+    .ah-main { font-size:.9rem; font-weight:600; }
+    .ah-sub { font-size:.78rem; color:#7a8491; }
+    .ah-badge { font-size:.72rem; font-weight:700; padding:2px 9px; border-radius:20px; }
+    .b-in  { background:#e6f4ea; color:#1e7d34; }
+    .b-out { background:#e8f0fe; color:#1a56c4; }
+    .ah-count { background:#c62828; color:#fff; border-radius:20px; font-size:.75rem; font-weight:700; min-width:26px; text-align:center; padding:2px 8px; }
+    .ah-links { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+    .ah-link { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:16px 10px; text-align:center; color:#1f2a37; text-decoration:none; display:block; transition:box-shadow .15s, border-color .15s; }
+    .ah-link:hover { box-shadow:0 3px 10px rgba(0,0,0,.08); border-color:#b9c4d3; color:#1f2a37; }
+    .ah-link .material-symbols-outlined { font-size:30px; color:#1a56c4; }
+    .ah-link div { font-size:.85rem; font-weight:600; margin-top:6px; }
+    .ah-rem { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; }
+    .ah-bar { height:8px; background:#e9edf2; border-radius:6px; overflow:hidden; margin-top:8px; }
+    .ah-bar > span { display:block; height:100%; background:#1a56c4; }
+    .ah-note { color:#8a93a0; font-size:.78rem; margin-top:14px; }
+    @@media (max-width: 1200px) { .ah-tiles, .ah-links { grid-template-columns:repeat(3, minmax(0,1fr)); } .ah-grid, .ah-rem { grid-template-columns:1fr; } }
+</style>
+
+<div class="ah-wrap">
+
+    <div class="ah-head">
+        <div>
+            <h4>Attendance Management</h4>
+            <div class="ah-date">@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</div>
+        </div>
     </div>
+
+    @* ---------- Today at a glance ---------- *@
+    <div class="ah-tiles">
+        <div class="ah-tile"><div class="ah-ic c-green"><span class="material-symbols-outlined">how_to_reg</span></div><div><div class="ah-num">@h.Present</div><div class="ah-lbl">Present</div></div></div>
+        <div class="ah-tile"><div class="ah-ic c-red"><span class="material-symbols-outlined">person_off</span></div><div><div class="ah-num">@h.NoPunch</div><div class="ah-lbl">No punch / Absent</div></div></div>
+        <div class="ah-tile"><div class="ah-ic c-amber"><span class="material-symbols-outlined">schedule</span></div><div><div class="ah-num">@h.Late</div><div class="ah-lbl">Late</div></div></div>
+        <div class="ah-tile"><div class="ah-ic c-blue"><span class="material-symbols-outlined">event_available</span></div><div><div class="ah-num">@h.OnObLeave</div><div class="ah-lbl">On OB / Leave</div></div></div>
+        <div class="ah-tile"><div class="ah-ic c-gray"><span class="material-symbols-outlined">logout</span></div><div><div class="ah-num">@h.InNoOut</div><div class="ah-lbl">IN, no OUT yet</div></div></div>
+    </div>
+
+    <div class="ah-grid">
+
+        @* ---------- Needs action ---------- *@
+        <div class="ah-card">
+            <div class="ah-title">Needs action <small>@actions.Sum(a => a.Count) items</small></div>
+            @foreach (var a in actions)
+            {
+                <div class="ah-row">
+                    <div class="ah-ic @a.Color"><span class="material-symbols-outlined">@a.Icon</span></div>
+                    <div class="ah-grow">
+                        <div class="ah-main">@a.Title</div>
+                        <div class="ah-sub">@a.Sub</div>
+                    </div>
+                    <span class="ah-count">@a.Count</span>
+                </div>
+            }
+        </div>
+
+        @* ---------- Live punches ---------- *@
+        <div class="ah-card">
+            <div class="ah-title">Latest punches <small>today</small></div>
+            @foreach (var p in punches)
+            {
+                <div class="ah-row">
+                    <div class="ah-grow">
+                        <div class="ah-main">@p.Name</div>
+                        <div class="ah-sub">@p.Number</div>
+                    </div>
+                    <span class="ah-badge @(p.Type == "IN" ? "b-in" : "b-out")">@p.Type</span>
+                    <div style="width:80px;text-align:right;font-weight:600;font-size:.88rem">@p.Time</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    @* ---------- Quick links ---------- *@
+    <div class="ah-links">
+        <a class="ah-link" href="1100/12009"><span class="material-symbols-outlined">camera_front</span><div>Punch Capturing</div></a>
+        <a class="ah-link" href="1100/12008"><span class="material-symbols-outlined">face</span><div>Enrollment</div></a>
+        <a class="ah-link" href="1100/12002"><span class="material-symbols-outlined">fact_check</span><div>Attendance Processing</div></a>
+        <a class="ah-link" href="1100/12004"><span class="material-symbols-outlined">near_me</span><div>OB / Direct Assignment</div></a>
+        <a class="ah-link" href="1100/12007"><span class="material-symbols-outlined">event_note</span><div>Leave Transaction Entry</div></a>
+    </div>
+
+    @* ---------- Reminders ---------- *@
+    <div class="ah-rem">
+        <div class="ah-card">
+            <div class="ah-title">Face enrollment</div>
+            <div><span class="ah-num" style="font-size:1.3rem">@h.Enrolled</span> <span class="ah-sub">of @h.Active employees enrolled</span></div>
+            <div class="ah-bar"><span style="width:@Pct(h.Enrolled, h.Active)%"></span></div>
+        </div>
+        <div class="ah-card">
+            <div class="ah-title">Employee limit</div>
+            <div><span class="ah-num" style="font-size:1.3rem">@h.EmployeeCount</span> <span class="ah-sub">@(h.EmployeeLimit > 0 ? $"of {h.EmployeeLimit} allowed" : "employees")</span></div>
+            <div class="ah-bar"><span style="width:@Pct(h.EmployeeCount, h.EmployeeLimit)%;background:@(Pct(h.EmployeeCount, h.EmployeeLimit) >= 90 ? "#c62828" : "#1a56c4")"></span></div>
+        </div>
+        <div class="ah-card">
+            <div class="ah-title">Upcoming holiday</div>
+            @if (h.Holiday != null)
+            {
+                <div class="ah-main">@h.Holiday.Name</div>
+                <div class="ah-sub">@h.Holiday.HDate.ToString("dddd, MMMM dd") &nbsp;·&nbsp; @HolType(h.Holiday.TypeCode)</div>
+            }
+            else
+            {
+                <div class="ah-sub">No upcoming holiday.</div>
+            }
+        </div>
+    </div>
+
 </div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    record ActionRow(string Icon, string Color, string Title, string Sub, int Count);
+    record PunchRow(string Name, string Number, string Type, string Time);
+
+    M11000_Home h = new();
+    List<ActionRow> actions = new();
+    List<PunchRow> punches = new();
+
+    static int Pct(int n, int d) => d <= 0 ? 0 : Math.Min(100, (int)Math.Round(n * 100.0 / d));
+    static string HolType(string? c) => c switch { "LH" => "Legal Holiday", "SH" => "Special Holiday", "DH" => "Double Holiday", _ => "Holiday" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext == null) return;
+        var uc = PayClaimsHelper.UserToClaims(HttpContext.User);
+        if (string.IsNullOrEmpty(uc.SchemaUserPis) || string.IsNullOrEmpty(uc.OpisDb)) return;
+
+        try { h = await _da._02Home(uc.SchemaUserPis!, uc.OpisDb!, uc.OpayDb ?? "", uc.SchemaMain ?? "Main", uc.Conn!); }
+        catch (Exception ex) { Console.Error.WriteLine("11000 home failed: " + ex); }
+
+        actions = new()
+        {
+            new("near_me",       "c-blue",  "OB / Direct Assignment",  "Waiting for approval",              h.PendingOb),
+            new("event_note",    "c-green", "Leave requests",          "Waiting for approval",              h.PendingLeave),
+            new("more_time",     "c-amber", "Overtime requests",       "Waiting for approval",              h.PendingOt),
+            new("edit_calendar", "c-gray",  "Change schedule requests","Waiting for approval",              h.PendingChange),
+            new("report",        "c-red",   "Incomplete punches",      "IN with no OUT from previous days", h.Incomplete),
+        };
+        punches = h.Latest.Select(x => new PunchRow(x.EmpName ?? x.EmpNumber ?? "", x.EmpNumber ?? "", x.Type ?? "", x.At.ToString("hh:mm tt"))).ToList();
+    }
+}

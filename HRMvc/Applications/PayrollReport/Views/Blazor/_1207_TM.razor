@@ -222,7 +222,7 @@
         rv.ShowModal = true;
     }
 
-    private void CreateReport()
+    private async Task CreateReport()
     {
         string h = half == "02" ? "DM" : "JN";
         rv.ReportData   = Kind == "bank" && !isAtm ? shown.OrderBy(r => r.Clname).ThenBy(r => r.Emplastnm).ThenBy(r => r.Empfirstnm).ToList() : shown;
@@ -240,6 +240,12 @@
         };
         rv.RefreshToken++;
         rv.ShowReport   = true;
+        if (rv.SelectedFormat == "XLSX")
+        {
+            await Task.Delay(2000);
+            rv.ShowReport = false;
+            Notify(NotificationSeverity.Success, "Success", "The Excel file is ready. Please check the download in your browser.");
+        }
     }
 
     private void CloseReportModal(bool ans)
