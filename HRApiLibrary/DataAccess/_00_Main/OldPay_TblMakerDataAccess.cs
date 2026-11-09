@@ -80,6 +80,7 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await _01Loandtl(schema, connName);
         await _01Loanhdr(schema, connName);
         await _01Loans(schema, connName);
+        await _01LoansSchedule(schema, connName);
         await _01Loans18(schema, connName);
         await _01Loansacctaccess(schema, connName);
         await _01Loansref(schema, connName);
@@ -1090,6 +1091,24 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         `TRNLastPosted` char(12) DEFAULT '',
                         PRIMARY KEY (`NUMBER`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+    }
+
+    // -- Schedule of payment of a loan : one row per payment; TRN is filled only when that payment is deducted in a payroll --
+    private async Task _01LoansSchedule(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`loansSchedule` (
+                        `Id` int unsigned NOT NULL AUTO_INCREMENT,
+                        `LoansId` int unsigned NOT NULL,
+                        `SchedNo` int unsigned NOT NULL,
+                        `Amort` double(14,2) NOT NULL DEFAULT '0.00',
+                        `TRN` char(15) DEFAULT NULL,
+                        PRIMARY KEY (`Id`),
+                        UNIQUE KEY `uq_loansSchedule` (`LoansId`,`SchedNo`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+
+        sql = $@"ALTER TABLE {schema}.`loans` MODIFY `AMOUNT` double(14,2) DEFAULT NULL, MODIFY `AMORT` double(14,2) DEFAULT NULL, MODIFY `BALANCE` double(14,2) DEFAULT NULL;";
         await ExecLegacy(sql, conn);
     }
 
