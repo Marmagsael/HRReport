@@ -33,7 +33,7 @@
                                          @bind-Value="@V.Insurance.InsuranceType"
                                          Rounded="@ThemeConstants.DropDownList.Rounded.Large"
                                          FillMode="@ThemeConstants.DropDownList.FillMode.Solid"
-                                         TabIndex="2"
+                                         TabIndex="1"
                                          Class="@(string.IsNullOrWhiteSpace(V.TypeErrorMsg) ? "" : "k-invalid")">
 
 
@@ -64,7 +64,7 @@
                     <TelerikTextBox @bind-Value="@V.Insurance.Name"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
-                                    TabIndex="1"
+                                    TabIndex="2"
                                     MaxLength="45" 
                                     Class="@(string.IsNullOrWhiteSpace(V.InsuranceDescErrorMsg) ? "" : "k-invalid")" />
 
@@ -123,8 +123,15 @@
                                            Min="0"
                                            Max="9999999999.99"
                                            Decimals="2"
-                                           Format="N2">
-                    </TelerikNumericTextBox>
+                                           Format="N2" 
+                                           Class="@(string.IsNullOrWhiteSpace(V.FaceValueErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.FaceValueErrorMsg))
+                    {
+                        <div class="txt-red small">@V.FaceValueErrorMsg</div>
+                    }
+
+                
 
                 </div>
 
@@ -147,8 +154,13 @@
                                            Min="0"
                                            Max="9999999999.99"
                                            Decimals="2"
-                                           Format="N2">
-                    </TelerikNumericTextBox>
+                                           Format="N2"
+                                           Class="@(string.IsNullOrWhiteSpace(V.PremiumErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.PremiumErrorMsg))
+                    {
+                        <div class="txt-red small">@V.PremiumErrorMsg</div>
+                    }
 
                 </div>
 
@@ -167,8 +179,7 @@
                     <TelerikDatePicker @bind-Value="@V.Insurance.InsExpire"
                                        Rounded="@ThemeConstants.DatePicker.Rounded.Large"
                                        FillMode="@ThemeConstants.DatePicker.FillMode.Solid"
-                                       TabIndex="6">
-                    </TelerikDatePicker>
+                                       TabIndex="6"/>
 
                 </div>
 
@@ -180,6 +191,9 @@
 
 </div>
 
+
+@using HRApiLibrary.DataAccess._10_Pis.OPis;
+@inject IOInsuranceDataAccess _insurance
 
 @code {
     [CascadingParameter]
@@ -197,17 +211,116 @@
 
     [Parameter]
     public EventCallback ChildAction { get; set; }
-   
 
-    private void SaveInsurance()
+
+    private async Task SaveInsurance()
     {
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
-        var insType     = V.Insurance.InsuranceType.Trim().ToUpper();
-        var insName     = V.Insurance.Name.Trim().ToUpper();
-        var insPolicy   = V.Insurance.PolicyNo.Trim().ToUpper();
+        var insType = V.Insurance.InsuranceType?.Trim().ToUpper();
+        var insName = V.Insurance.Name?.Trim().ToUpper();
+        var insPolicy = V.Insurance.PolicyNo?.Trim().ToUpper();
+
+        var origType = V.InsuranceOriginalState?.InsuranceType?.Trim().ToUpper();
+        var origName = V.InsuranceOriginalState?.Name?.Trim().ToUpper();
+        var origPolicy = V.InsuranceOriginalState?.PolicyNo?.Trim().ToUpper();
+
+        // Validate if insurance type and policy number already exist
+        var existingRecord = await _insurance._02ByTypeAndByPolicyNo(insType, insPolicy, Uc.OpisDb, Uc.Conn);
+
+        if (existingRecord != null && existingRecord.Any())
+        {
+            bool policyExists = existingRecord.Any(c => c.InsuranceType?.Trim().ToUpper() == insType 
+                    &&  c.PolicyNo?.Trim().ToUpper() == insPolicy && (V.InsuranceOriginalState == null || c.Id != V.InsuranceOriginalState.Id));
+
+            if (policyExists)
+            {
+                V.PolicyNoErrorMsg = "Policy number already exists for this insurance type.";
+                return;
+            }
+        }
+
+        if (V.Insurance.Id == 0)
+        {
+            await _01InsertRecord();
+        }
+        else
+        {
+            await _03UpdateRecord();
+        }
     }
+
+
+    private async Task _01InsertRecord()
+    {
+        try
+        {
+            var res = await _insurance._01(V.Insurance, Uc.OpisDb, Uc.Conn);
+
+            if (res == null)
+            {
+                NotificationRef.Show("Unable to insert insurance.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.Insurances.Insert(0, res);
+            V.Insurance = new OInsuranceModel();
+
+            V.Action = "RefreshInsuranceGrid";
+            NotificationRef.Show("Insurance inserted successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to insert insurance.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
+    private async Task _03UpdateRecord()
+    {
+
+
+        try
+        {
+            var res = await _insurance._03(V.Insurance.Id, V.Insurance, Uc.OpisDb, Uc.Conn);
+
+            if (res == null)
+            {
+
+                NotificationRef.Show("Unable to update insurance.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            V.InsuranceOriginalState = new OInsuranceModel
+            {
+                Id = res.Id,
+                Name = res.Name,
+                PolicyNo = res.PolicyNo,
+                InsuranceType = res.InsuranceType,
+                FaceValue = res.FaceValue,
+                Premiums = res.Premiums,
+                InsExpire = res.InsExpire
+            };
+
+
+            V.Action = "LoadInsurances";
+            NotificationRef.Show("Insurance updated successfully.", ThemeConstants.Notification.ThemeColor.Success);
+            await ChildAction.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef.Show("Unable to update insurance.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
+    }
+
+
 
 
     private bool IsFormValid()
@@ -232,6 +345,19 @@
             isValid = false;
         }
 
+        if (V.Insurance.FaceValue <= 0)
+        {
+            V.FaceValueErrorMsg = "Face value is required";
+            isValid = false;
+        }
+
+
+        if (V.Insurance.Premiums <= 0)
+        {
+            V.PremiumErrorMsg = "Premiums value is required";
+            isValid = false;
+        }
+
         return isValid;
     }
 
@@ -240,5 +366,7 @@
         V.TypeErrorMsg = string.Empty;
         V.InsuranceDescErrorMsg = string.Empty;
         V.PolicyNoErrorMsg = string.Empty;
+        V.FaceValueErrorMsg = string.Empty;
+        V.PremiumErrorMsg = string.Empty;
     }
 }
