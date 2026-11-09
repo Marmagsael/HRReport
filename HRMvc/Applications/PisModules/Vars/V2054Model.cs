@@ -35,14 +35,10 @@ namespace HRMvc.Applications.PisModules.Vars
             "Accident"
         };
 
-
-        public List<string> Policies                        { get; set; } = new()
-        {
-            "Policy 1",
-            "Policy 2"
-        };
-
-
+        //Error Message ----------------------------
+        public string TypeErrorMsg { get; set; } = string.Empty;
+        public string InsuranceDescErrorMsg { get; set; } = string.Empty;
+        public string PolicyNoErrorMsg { get; set; } = string.Empty;
 
     }
 }
