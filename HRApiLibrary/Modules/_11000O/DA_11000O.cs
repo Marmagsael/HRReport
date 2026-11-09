@@ -18,7 +18,78 @@ public class DA_11000O : IDA_11000O
         catch { return 0; }
     }
 
-    public async Task<M11000_Home> _02Home(string pisdb, string opisdb, string opaydb, string mainSchema, string conn)
+
+    private async Task ScheduleCounts(M11000_Home h, string pisdb, string opisdb, string opaydb, string paydb, string conn)
+    {
+        try
+        {
+            var now = DateTime.Now;
+            var today = now.Date;
+            var dn = (int)today.DayOfWeek + 1;
+            int nowT = now.Hour * 60 + now.Minute;
+            var p = new { Today = today, Dn = dn };
+
+            var emps = await _sql.FetchLegacy<M11000_SchedEmp, dynamic>($@"select e.SystemId EmpmasId, trim(o.EmpNumber) EmpNumber
+                    from {opisdb}.Empmas o
+                    left join {opisdb}.empstat s on s.CODE = o.EmpStat_
+                    join {pisdb}.Empmas e on trim(e.EmpNumber) = trim(o.EmpNumber) and e.SystemId > 0
+                    where ifnull(s.ISRESIGNED, '0') <> '1'", p, conn) ?? [];
+
+            var tpl = (await _sql.FetchData<M11000_Tpl, dynamic>($@"select EmpmasId, AttendanceTypeId Att,
+                    elt(@Dn, D1_In, D2_In, D3_In, D4_In, D5_In, D6_In, D7_In) SchedIn,
+                    elt(@Dn, D1_DutyType, D2_DutyType, D3_DutyType, D4_DutyType, D5_DutyType, D6_DutyType, D7_DutyType) Duty
+                    from {pisdb}.Atttemplate where EmpmasId > 0", p, conn) ?? []).ToDictionary(x => x.EmpmasId, x => x);
+
+            var punch = (await _sql.FetchData<M11000_FirstIn, dynamic>($@"select EmpmasId, min(PunchInDate) FirstIn from {pisdb}.Attpunches1
+                    where date(PunchInDate) = @Today group by EmpmasId", p, conn) ?? []).ToDictionary(x => x.EmpmasId, x => x.FirstIn);
+
+            var away = new HashSet<string>(((await _sql.FetchLegacy<string, dynamic>($@"select trim(EMPNUMBER) from {opisdb}.ob1 where `START` <= @Today and `END` >= @Today
+                    union select trim(EMPNUMBER) from {opisdb}.leave1 where `START` <= @Today and `END` >= @Today", p, conn)) ?? []));
+
+            var grace = new Dictionary<int, int>();
+            if (!string.IsNullOrEmpty(paydb) && !string.IsNullOrEmpty(opaydb))
+            {
+                try
+                {
+                    var g = await _sql.FetchData<M11000_Grace, dynamic>($@"select r.EmpmasId, g.GracePrd Minutes from {paydb}.EmpRates r
+                            join {opaydb}.payrollgrp g on g.Id = r.PayrollgrpId", p, conn) ?? [];
+                    foreach (var x in g) grace[x.EmpmasId] = x.Minutes;
+                }
+                catch { }
+            }
+
+            bool holiday = false;
+            try
+            {
+                var hc = await _sql.FetchLegacy<long, dynamic>($"select count(*) from {opaydb}.holidaysetting where Scope = 'G' and HDate = @Today", p, conn);
+                holiday = (hc?.FirstOrDefault() ?? 0) > 0;
+            }
+            catch { }
+
+            int late = 0, none = 0;
+            foreach (var e in emps)
+            {
+                if (!tpl.TryGetValue(e.EmpmasId, out var t)) continue;
+                if (t.Att == 3 || (t.Duty ?? "") != "R") continue;
+                if (away.Contains(e.EmpNumber ?? "")) continue;
+
+                int inT = t.SchedIn ?? 0;
+                bool validIn = inT > 0 && inT / 100 < 24 && inT % 100 < 60;
+                int due = validIn ? (inT / 100) * 60 + inT % 100 + (grace.TryGetValue(e.EmpmasId, out var gm) ? gm : 0) : 12 * 60;
+
+                if (punch.TryGetValue(e.EmpmasId, out var first))
+                {
+                    if (t.Att == 1 && validIn && first.Hour * 60 + first.Minute > due) late++;
+                }
+                else if (!holiday && nowT > due) none++;
+            }
+            h.Late = late;
+            h.NoPunch = none;
+        }
+        catch { }
+    }
+
+    public async Task<M11000_Home> _02Home(string pisdb, string opisdb, string opaydb, string paydb, string mainSchema, string conn)
     {
         var today = DateTime.Today;
         var p = new { Today = today };
@@ -36,9 +107,6 @@ public class DA_11000O : IDA_11000O
         catch { }
 
         h.Present   = await Count($"select count(distinct EmpmasId) from {pisdb}.Attpunches1 where date(PunchInDate) = @Today", p, false, conn);
-        h.Late      = await Count($@"select count(distinct EmpmasId) from {pisdb}.Attpunches1
-                                     where date(PunchInDate) = @Today and ifnull(PunchT, 0) > 0
-                                       and (hour(PunchInDate) * 100 + minute(PunchInDate)) > PunchT", p, false, conn);
         h.InNoOut   = await Count($"select count(*) from {pisdb}.Attpunches1 where date(PunchInDate) = @Today and PunchOutDate is null", p, false, conn);
         h.Incomplete = await Count($"select count(*) from {pisdb}.Attpunches1 where date(PunchInDate) < @Today and PunchOutDate is null", p, false, conn);
 
@@ -46,7 +114,7 @@ public class DA_11000O : IDA_11000O
                                         select trim(EMPNUMBER) EMPNUMBER from {opisdb}.ob1    where `START` <= @Today and `END` >= @Today
                                         union
                                         select trim(EMPNUMBER) EMPNUMBER from {opisdb}.leave1 where `START` <= @Today and `END` >= @Today) x", p, true, conn);
-        h.NoPunch = Math.Max(0, h.Active - h.Present - h.OnObLeave);
+        await ScheduleCounts(h, pisdb, opisdb, opaydb, paydb, conn);
 
         h.PendingOb     = await Count($"select count(*) from {pisdb}.ObApplication where Status in ('S','F')", p, false, conn);
         h.PendingLeave  = await Count($"select count(*) from {pisdb}.LeaveApplication where Status in ('S','F')", p, false, conn);
@@ -92,7 +160,7 @@ public class DA_11000O : IDA_11000O
 
 public interface IDA_11000O
 {
-    Task<M11000_Home> _02Home(string pisdb, string opisdb, string opaydb, string mainSchema, string conn);
+    Task<M11000_Home> _02Home(string pisdb, string opisdb, string opaydb, string paydb, string mainSchema, string conn);
 }
 
 public class M11000_Home
@@ -136,3 +204,8 @@ public class M11000_Holiday
     public string? Name { get; set; }
     public string? TypeCode { get; set; }
 }
+
+public class M11000_SchedEmp { public int EmpmasId { get; set; } public string? EmpNumber { get; set; } }
+public class M11000_Tpl { public int EmpmasId { get; set; } public int? Att { get; set; } public int? SchedIn { get; set; } public string? Duty { get; set; } }
+public class M11000_FirstIn { public int EmpmasId { get; set; } public DateTime FirstIn { get; set; } }
+public class M11000_Grace { public int EmpmasId { get; set; } public int Minutes { get; set; } }

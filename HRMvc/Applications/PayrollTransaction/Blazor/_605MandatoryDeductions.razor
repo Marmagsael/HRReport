@@ -1,15 +1,285 @@
-﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._00_Main
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
 
+<style>
+    .md-root { font-size:13px; color:#1f2a37; }
+    .md-root .k-input-inner, .md-root .k-input-value-text, .md-root .k-button { font-size:13px; }
+    .md-root .k-input-inner { padding:4px 8px; }
+    .md-root .k-input, .md-root .k-picker { min-height:30px; }
+    .md-root .k-grid { font-size:12.5px; }
+    .md-root .k-grid td, .md-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .md-root .k-grid th, .md-root .k-grid .k-header, .md-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .md-root .k-button { padding:5px 12px; }
+    .md-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .md-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .md-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .md-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .md-card .k-input, .md-card .k-picker, .md-card .k-input-inner, .md-card .k-input-button { border-color:#8a95a3 !important; }
+    .md-title { font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:#5b6573; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+    .md-title small { text-transform:none; letter-spacing:0; font-weight:500; color:#8a93a0; }
+    .md-grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:10px 14px; align-items:start; }
+    .m3 { grid-column:span 3; } .m4 { grid-column:span 4; } .m5 { grid-column:span 5; } .m6 { grid-column:span 6; } .m8 { grid-column:span 8; } .m9 { grid-column:span 9; } .m12 { grid-column:span 12; }
+    .md-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .md-hint { font-weight:400; color:#8a93a0; text-transform:none; letter-spacing:0; }
+    .md-checks { display:flex; gap:16px; align-items:center; height:30px; }
+    .md-checks label { margin:0; font-size:13px; font-weight:500; color:#222; display:flex; align-items:center; gap:5px; }
+    .md-side { width:360px; flex-shrink:0; }
+    .md-ex { display:flex; flex-direction:column; gap:8px; }
+    .md-exbtns { display:flex; gap:8px; justify-content:center; }
+    .md-exlbl { font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .md-st { font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px; }
+    .st-A { background:#e6f4ea; color:#1e7d34; } .st-I { background:#eef0f3; color:#515b68; } .st-S { background:#fdeaea; color:#c62828; }
+    @@media (max-width: 1200px) { .md-grid { grid-template-columns:repeat(6, minmax(0,1fr)); } .m3,.m4 { grid-column:span 3; } .m5,.m6,.m8,.m9,.m12 { grid-column:span 6; } }
+</style>
 
-<div class="card ">
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
 
-    Mandatory Deductions Entry - 605
+<_00BT_FullW HdrCaption="Mandatory Deductions Entry">
+    <Details>
+    <div class="p-2 md-root">
+        <div class="d-flex gap-3 flex-wrap flex-lg-nowrap">
 
+            <div class="flex-fill" style="min-width:0;">
 
+                <div class="md-bar">
+                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@editing">Save</TelerikButton>
+                    <TelerikButton OnClick="@NewRow" Icon="@SvgIcon.Plus">New</TelerikButton>
+                    <TelerikButton OnClick="@AskStop" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Cancel" Enabled="@(editing && !isNew)">Stop</TelerikButton>
+                </div>
 
-</div>
+                <div class="md-card">
+                    <div class="md-title">Mandatory deduction <small>@(editing ? (isNew ? "New" : "Editing") : "Select a row or click New")</small></div>
+                    <div class="md-grid">
+                        <div class="md-f m6">
+                            <label>Account Name</label>
+                            <TelerikDropDownList Data="@accounts" @bind-Value="f.AcctNumber" TextField="AcctName" ValueField="AcctNumber" Width="100%" Enabled="@(editing && isNew)" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                        <div class="md-f m3">
+                            <label>Amount</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.ContAmt" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                        </div>
+                        <div class="md-f m3">
+                            <label>Max. Amount</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.MaxAmt" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                        </div>
 
+                        <div class="md-f m3">
+                            <label>Status</label>
+                            <TelerikDropDownList Data="@statusOptions" @bind-Value="f.Status" TextField="Text" ValueField="Value" Width="100%" Enabled="@(editing && !isNew)" />
+                        </div>
+                        <div class="md-f m9">
+                            <label>Mode of Payment <span class="md-hint">(periods deducted)</span></label>
+                            <div class="md-checks">
+                                <label><TelerikCheckBox @bind-Value="f.P1" Enabled="@editing" /> P1</label>
+                                <label><TelerikCheckBox @bind-Value="f.P2" Enabled="@editing" /> P2</label>
+                                <label><TelerikCheckBox @bind-Value="f.P3" Enabled="@editing" /> P3</label>
+                                <label><TelerikCheckBox @bind-Value="f.P4" Enabled="@editing" /> P4</label>
+                                <label><TelerikCheckBox @bind-Value="f.P5" Enabled="@editing" /> P5</label>
+                            </div>
+                        </div>
+
+                        <div class="md-f m12">
+                            <label>Remarks</label>
+                            <TelerikTextBox @bind-Value="f.Remarks" MaxLength="200" Width="100%" Enabled="@editing" />
+                        </div>
+                    </div>
+                </div>
+
+                <TelerikGrid Data="@rows" Height="60vh" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selected" SelectedItemsChanged="@((IEnumerable<MandRow> e) => Pick(e.FirstOrDefault()))">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(MandRow.AcctName)" Title="Account Name" />
+                        <GridColumn Field="@nameof(MandRow.ContAmt)" Title="Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(MandRow.MaxAmt)" Title="Max. Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Title="Status" Width="90px" TextAlign="ColumnTextAlign.Center"><Template>@{ var s = (context as MandRow)?.Status; }<span class="md-st st-@s">@StatusText(s)</span></Template></GridColumn>
+                        <GridColumn Title="P1" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P1)</Template></GridColumn>
+                        <GridColumn Title="P2" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P2)</Template></GridColumn>
+                        <GridColumn Title="P3" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P3)</Template></GridColumn>
+                        <GridColumn Title="P4" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P4)</Template></GridColumn>
+                        <GridColumn Title="P5" Width="46px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as MandRow)?.P5)</Template></GridColumn>
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-2 text-muted">No mandatory deduction yet.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+
+            <div class="md-side">
+                <div class="md-card">
+                    <div class="md-title">Exempted clients <small>@(cur != null ? cur.AcctName : "Select a deduction")</small></div>
+                    <div class="md-ex">
+                        <div>
+                            <div class="md-exlbl">Clients that are deducted</div>
+                            <TelerikGrid Data="@deducted" Height="190px" Size="@ThemeConstants.Grid.Size.Small" SelectionMode="GridSelectionMode.Single"
+                                         SelectedItems="@selDed" SelectedItemsChanged="@((IEnumerable<MandClient> e) => selDed = e.ToList())">
+                                <GridColumns><GridColumn Field="@nameof(MandClient.Name)" Title="Client" /></GridColumns>
+                                <NoDataTemplate><div class="p-2 text-muted">None</div></NoDataTemplate>
+                            </TelerikGrid>
+                        </div>
+                        <div class="md-exbtns">
+                            <TelerikButton OnClick="@Exempt" FillMode="outline" Icon="@SvgIcon.ArrowDown" Enabled="@(cur != null && selDed.Count > 0)">Exempt</TelerikButton>
+                            <TelerikButton OnClick="@Include" FillMode="outline" Icon="@SvgIcon.ArrowUp" Enabled="@(cur != null && selEx.Count > 0)">Include</TelerikButton>
+                        </div>
+                        <div>
+                            <div class="md-exlbl">Clients that are exempted</div>
+                            <TelerikGrid Data="@exempted" Height="190px" Size="@ThemeConstants.Grid.Size.Small" SelectionMode="GridSelectionMode.Single"
+                                         SelectedItems="@selEx" SelectedItemsChanged="@((IEnumerable<MandClient> e) => selEx = e.ToList())">
+                                <GridColumns><GridColumn Field="@nameof(MandClient.Name)" Title="Client" /></GridColumns>
+                                <NoDataTemplate><div class="p-2 text-muted">None</div></NoDataTemplate>
+                            </TelerikGrid>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showStop" Width="380px">
+    <WindowTitle>Confirm Stop</WindowTitle>
+    <WindowContent>
+        <div class="p-1">Stop this mandatory deduction? It will no longer be deducted.</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoStop" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showStop = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    class MandRow
+    {
+        public int Id { get; set; }
+        public string AcctNumber { get; set; } = "";
+        public string AcctName { get; set; } = "";
+        public double ContAmt { get; set; }
+        public double MaxAmt { get; set; }
+        public int Sched { get; set; } = 3;
+        public string Status { get; set; } = "A";
+        public string Remarks { get; set; } = "";
+        public bool P1 { get; set; }
+        public bool P2 { get; set; }
+        public bool P3 { get; set; }
+        public bool P4 { get; set; }
+        public bool P5 { get; set; }
+        public MandRow Copy() => (MandRow)MemberwiseClone();
+    }
+    record Acct(string AcctNumber, string AcctName);
+    record Opt<T>(string Text, T Value);
+    class MandClient { public string Number { get; set; } = ""; public string Name { get; set; } = ""; }
+
+    TelerikNotification? NotificationRef;
+
+    List<Acct> accounts = new()
+    {
+        new("D007", "Union Dues"), new("D008", "Coop Membership"), new("D009", "Medical Fund"), new("D010", "Burial Fund"), new("D011", "Uniform"),
+    };
+    List<Opt<int>> schedOptions = new() { new("1st prd", 1), new("2nd prd", 2), new("Every Payroll", 3) };
+    List<Opt<string>> statusOptions = new() { new("Active", "A"), new("Inactive", "I"), new("Stop", "S") };
+
+    List<MandRow> all = new();
+    List<MandClient> clients = new()
+    {
+        new() { Number = "00001", Name = "Head Office" }, new() { Number = "00002", Name = "Branch 1" },
+        new() { Number = "00003", Name = "Branch 2" }, new() { Number = "00004", Name = "Plant" },
+    };
+    Dictionary<int, HashSet<string>> exemptions = new();
+
+    List<MandRow> rows => all.Where(x => x.Status == "A").ToList();
+    IEnumerable<MandRow> selected = Array.Empty<MandRow>();
+    MandRow? cur;
+    MandRow f = new();
+    bool editing, isNew, showStop;
+    int nextId = 1;
+
+    List<MandClient> selDed = new(), selEx = new();
+    List<MandClient> deducted => cur == null ? new() : clients.Where(c => !Ex(cur.Id).Contains(c.Number)).ToList();
+    List<MandClient> exempted => cur == null ? new() : clients.Where(c => Ex(cur.Id).Contains(c.Number)).ToList();
+    HashSet<string> Ex(int id) => exemptions.TryGetValue(id, out var s) ? s : new();
+
+    static string SchedText(int? s) => s switch { 1 => "1st prd", 2 => "2nd prd", _ => "Every Payroll" };
+    static string StatusText(string? s) => s switch { "A" => "Active", "I" => "Inactive", "S" => "Stop", _ => "" };
+    static string Tick(bool? b) => b == true ? "✓" : "";
+
+    protected override void OnInitialized()
+    {
+        all = new()
+        {
+            new() { Id = nextId++, AcctNumber = "D007", AcctName = "Union Dues", ContAmt = 100, MaxAmt = 1200, Sched = 2, P1 = false, P2 = true },
+            new() { Id = nextId++, AcctNumber = "D009", AcctName = "Medical Fund", ContAmt = 250, MaxAmt = 6000, Sched = 3, P1 = true, P2 = true },
+        };
+    }
+
+    void Pick(MandRow? r)
+    {
+        if (r == null) return;
+        cur = r; selected = new[] { r }; f = r.Copy(); editing = true; isNew = false;
+        selDed = new(); selEx = new();
+    }
+
+    void NewRow()
+    {
+        cur = null; selected = Array.Empty<MandRow>(); f = new(); editing = true; isNew = true;
+        selDed = new(); selEx = new();
+    }
+
+    void Save()
+    {
+        if (string.IsNullOrEmpty(f.AcctNumber)) { Warn("Please select an account name from the list."); return; }
+        if (f.ContAmt <= 0) { Warn("Amount is required."); return; }
+        if (f.MaxAmt < 0) { Warn("Max. Amount is invalid."); return; }
+        if (isNew && all.Any(x => x.AcctNumber == f.AcctNumber && x.Status != "S")) { Warn("This account already has a mandatory deduction."); return; }
+
+        if (isNew)
+        {
+            f.Id = nextId++;
+            f.AcctName = accounts.First(a => a.AcctNumber == f.AcctNumber).AcctName;
+            all.Add(f);
+        }
+        else
+        {
+            var i = all.FindIndex(x => x.Id == f.Id);
+            if (i >= 0) all[i] = f;
+        }
+        cur = f; selected = new[] { f }; f = f.Copy(); isNew = false;
+        NotificationRef?.Show("Saved Successfully", ThemeConstants.Notification.ThemeColor.Success);
+    }
+
+    void AskStop() => showStop = true;
+
+    void DoStop()
+    {
+        showStop = false;
+        var r = all.FirstOrDefault(x => x.Id == f.Id);
+        if (r != null) r.Status = "S";
+        cur = null; selected = Array.Empty<MandRow>(); f = new(); editing = false;
+        NotificationRef?.Show("Mandatory deduction stopped", ThemeConstants.Notification.ThemeColor.Success);
+    }
+
+    void Exempt()
+    {
+        if (cur == null) return;
+        if (!exemptions.ContainsKey(cur.Id)) exemptions[cur.Id] = new();
+        foreach (var c in selDed) exemptions[cur.Id].Add(c.Number);
+        selDed = new();
+    }
+
+    void Include()
+    {
+        if (cur == null) return;
+        foreach (var c in selEx) Ex(cur.Id).Remove(c.Number);
+        selEx = new();
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 }

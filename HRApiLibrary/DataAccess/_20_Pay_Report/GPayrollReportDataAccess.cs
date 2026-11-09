@@ -17,7 +17,7 @@ public class GPayrollReportDataAccess : IGPayrollReportDataAccess
 
     public async Task<List<GChartofacctModel?>?> _02s(string? schema, string? conn)
     {
-        string? sql = $@"select  * from {schema}.Chartofacct order by Type Desc, AcctName ";
+        string? sql = $@"select  * from {schema}.Chartofacct order by AcctType Desc, AcctName ";
         var data = await _sql.FetchData<GChartofacctModel?, dynamic>(sql, new { }, conn);
         return data;
     }
