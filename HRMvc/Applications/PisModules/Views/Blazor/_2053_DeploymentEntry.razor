@@ -9,8 +9,6 @@
 @inject IOAreaDataAccess _area;
 @inject IORegionsDataAccess _regions;
 @inject IOPisReportDataAccess _pisRep;
-@inject ISettingsDataAccess _settings;
-
 
 <TelerikRootComponent>
     <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
@@ -28,64 +26,39 @@
                             <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
-        <CascadingValue Value="@Uc">
-            <CascadingValue Value="@v">
-                <CascadingValue Value="@rv">
-                    <CascadingValue Value="@NotificationRef">
-                        <_00BT_FullW HdrCaption="Deployment Entry">
-                            <Details>
+                            @*--- ENTRY FORM MODAL ---*@
+                            @if (v.ShowEntryModal == true)
+                            {
+                                <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false">
 
+                                    <Content>
+                                        <_2053_DeploymentEntryModal ChildAction="ChildAction" />
+                                    </Content>
 
-                                 @*--- REPORT ---*@
-                                    <_02BTRep Rv="rv" ChildAction="ChildAction" />
+                                </_00Modal>
+                            }
 
+                            @*--- DOLE REPORT MODAL ---*@
+                            @if (v.ShowDOLEReportModal == true)
+                            {
+                               
+                                <_2053_DeploymentDOLEReportModal ChildAction="ChildAction" />
+                                 
+                            }
 
+                            @if (v.ShowDOLEReportModal == false)
+                            {
+                                @*--- GRID ---*@
+                                <_2053_DeploymentList ChildAction="ChildAction" @ref="DeploymentGridRef" />
+                            }
 
-                                <div class="p-2 flex-grow-1 overflow-hidden position-relative">
-
-                                    @*--- TELERIK LOADER (centered on the form, not the screen) ---*@
-                                    <TelerikLoaderContainer Visible="@v.IsGridLoading"
-                                                            LoaderType="@LoaderType.ConvergingSpinner" />
-
-                                    <TelerikLoaderContainer Visible="@v.IsReportLoading" 
-                                                            LoaderType="@LoaderType.ConvergingSpinner" />
-
-
-
-                                    @*--- ENTRY FORM MODAL ---*@
-                                    @if (v.ShowEntryModal == true)
-                                    {
-                                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false">
-
-                                            <Content>
-                                                <_2053_DeploymentEntryModal ChildAction="ChildAction" />
-                                            </Content>
-
-                                        </_00Modal>
-                                    }
-
-                                    @*--- DOLE REPORT MODAL ---*@
-                                    @if (v.ShowDOLEReportModal == true)
-                                    {
-
-                                        <_2053_DeploymentDOLEReportModal ChildAction="ChildAction" />
-
-                                    }
-
-                                    @if (v.ShowDOLEReportModal == false)
-                                    {
-                                        @*--- GRID ---*@
-                                        <_2053_DeploymentList ChildAction="ChildAction" @ref="DeploymentGridRef" />
-                                    }
-                                </div>
-
-                            </Details>
-                        </_00BT_FullW>
-                    </CascadingValue>
+                         
+                        </Details>
+                    </_00BT_FullW>
                 </CascadingValue>
             </CascadingValue>
         </CascadingValue>
-    </div>
+    </CascadingValue>
 </TelerikRootComponent>
 
 
@@ -106,7 +79,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        v.IsGridLoading = true;
 
         if (Uc?.Conn == null || Uc.OpisDb == null)
         {
@@ -116,7 +88,13 @@
         }
 
         v.UcLoaded  = true;
+        v.IsLoading = true;
 
+        if (Uc == null || string.IsNullOrWhiteSpace(Uc.OpisDb) || string.IsNullOrWhiteSpace(Uc.Conn))
+        {
+            NotificationRef.Show("Something went wrong.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
 
         await _02LoadClients();
         await _02LoadClientStatus();
@@ -128,7 +106,7 @@
         _00InitializeReport();
         await _02LoadCompanyInfo();
 
-        v.IsGridLoading = false;
+        v.IsLoading = false;
     }
 
 
@@ -229,82 +207,16 @@
 
     private async Task _02LoadCompanyInfo()
     {
-        // var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        if (!(res ?? []).Any()) return;
 
-        rv.ReportParams["CoName"] = res.CoFullName ?? "";
-        rv.ReportParams["CoAddress"] = res.CoAddress ?? "";
+        var r = res!.First();
+        rv.ReportParams["CoName"] = r.CoName ?? "";
+        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
     }
 
 
-    private async Task GenerateDeploymentList()
-    {
 
-        if (!v.RepDtls.Any()) { return; }
-        v.IsReportLoading = true;
-
-
-        rv.MCaption = "Deployment Listing";
-        rv.RelativePath = "";
-        rv.ReportData = [];
-        rv.ReportData = v.RepDtls;
-
-        rv.ReportParams["ReportTitle"] = "Deployment Listing";
-        rv.RelativePath = "Reports/_01Pis/J_2053_DE.trdp";
-        rv.SelectedFormat = "PDF";
-
-        await Task.Delay(2000);
-        rv.ShowModal = true;
-        v.IsReportLoading = false;
-
-    }
-
-
-    private async Task GenerateDOLEDeploymentReport()
-    {
-        v.RepDtls = new List<OClientModel>();
-
-        if (!v.SelectedDeployments.Any())
-        {
-            NotificationRef.Show(
-                "Select a record to export to Excel.",
-                ThemeConstants.Notification.ThemeColor.Warning
-            );
-            return;
-        }
-
-        v.IsReportLoading = true;
-
-        try
-        {
-            v.RepDtls = v.SelectedDeployments.ToList();
-
-            rv.MCaption = "Personnel Reporting";
-            rv.RelativePath = "Reports/_01Pis/J_2053_DE_DOLE.trdp";
-            rv.ReportData = v.RepDtls;
-
-            rv.ReportParams["ReportTitle"] = "Personnel Reporting";
-            rv.SelectedFormat = "XLSX";
-
-            rv.ShowReport = true;
-
-            await Task.Delay(2000);
-
-            rv.ShowReport = false;
-
-            NotificationRef.Show( "The Excel file has been generated successfully. Please check your browser's downloads.", ThemeConstants.Notification.ThemeColor.Success );
-
-            v.SelectedDeployments = new List<OClientModel>();
-        }
-        catch (Exception ex)
-        {
-            NotificationRef.Show( $"Excel export failed: {ex.Message}", ThemeConstants.Notification.ThemeColor.Error);
-        }
-        finally
-        {
-            v.IsReportLoading = false;
-        }
-    }
 
     private void OpenEntryModal()
     {
