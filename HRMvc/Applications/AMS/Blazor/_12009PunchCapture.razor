@@ -21,6 +21,12 @@
         .pc-icon { width:42px; height:42px; border:0; border-radius:12px; font-size:1.05rem; color:#fff; cursor:pointer; background:rgba(255,255,255,.14); transition:background .15s; }
         .pc-icon:hover { background:rgba(255,255,255,.28); }
 
+        .pc-cfg { position:fixed; top:70px; right:22px; z-index:5100; width:300px; padding:16px 18px; border-radius:16px; background:#fff; box-shadow:0 14px 36px rgba(15,39,71,.35); display:flex; flex-direction:column; gap:6px; }
+        .pc-cfg-h { font-weight:700; margin-bottom:4px; }
+        .pc-cfg label { font-size:.85rem; color:#334155; display:flex; justify-content:space-between; gap:6px; }
+        .pc-cfg label span { color:#94a3b8; font-size:.75rem; }
+        .pc-cfg-r { margin-top:6px; padding:8px 10px; border-radius:10px; background:#f1f5f9; font-size:.85rem; font-variant-numeric:tabular-nums; }
+        .pc-cfg-d { margin-top:4px; border:0; border-radius:10px; padding:7px; background:#e2e8f0; cursor:pointer; }
         .pc-wrap { flex:1; display:grid; grid-template-columns:minmax(0,1fr) 360px; gap:28px; padding:24px 28px; width:100%; max-width:1600px; margin:0 auto; align-items:start; }
         @@media (max-width: 1000px) { .pc-wrap { grid-template-columns:minmax(0,1fr); } }
 
@@ -116,10 +122,23 @@
         <div class="pc-bar">
             <div class="pc-title"><i class="fa-solid fa-camera-retro"></i>Punch Capturing</div>
             <div class="pc-bar-btns">
+                <button type="button" class="pc-icon" title="Matching settings" @onclick="ToggleCfg"><i class="fa-solid fa-sliders"></i></button>
                 <button type="button" class="pc-icon" title="Full screen" @onclick="ToggleFullscreen"><i class="fa-solid fa-expand"></i></button>
                 <button type="button" class="pc-icon" title="Close" @onclick="Exit"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
+        @if (ShowCfg)
+        {
+            <div class="pc-cfg">
+                <div class="pc-cfg-h">Matching settings</div>
+                <label>Match limit <b>@CfgLimit.ToString("0.00")</b> <span>lower = stricter</span></label>
+                <input type="range" min="0.30" max="0.60" step="0.01" @bind="CfgLimit" @bind:event="oninput" @bind:after="ApplyCfg" />
+                <label>Gap to next person <b>@CfgGap.ToString("0.00")</b> <span>higher = stricter</span></label>
+                <input type="range" min="0.00" max="0.15" step="0.01" @bind="CfgGap" @bind:event="oninput" @bind:after="ApplyCfg" />
+                <div class="pc-cfg-r" id="pcReadout">Distance -</div>
+                <button type="button" class="pc-cfg-d" @onclick="ResetCfg">Default (0.45 / 0.06)</button>
+            </div>
+        }
             <div class="pc-wrap">
 
                 <div class="pc-main">
@@ -240,6 +259,33 @@
         clock = new System.Threading.Timer(_ => { Now = DateTime.Now; InvokeAsync(StateHasChanged); }, null, 1000, 1000);
     }
 
+    bool ShowCfg;
+    double CfgLimit = 0.45, CfgGap = 0.06;
+
+    async Task ToggleCfg()
+    {
+        ShowCfg = !ShowCfg;
+        if (!ShowCfg) return;
+        try
+        {
+            using var d = JsonDocument.Parse(await JS.InvokeAsync<string>("FacePunch.getStrictness"));
+            CfgLimit = d.RootElement.GetProperty("limit").GetDouble();
+            CfgGap = d.RootElement.GetProperty("gap").GetDouble();
+        }
+        catch { }
+    }
+
+    async Task ApplyCfg()
+    {
+        try { await JS.InvokeVoidAsync("FacePunch.setStrictness", Math.Round(CfgLimit, 2), Math.Round(CfgGap, 2)); } catch { }
+    }
+
+    async Task ResetCfg()
+    {
+        CfgLimit = 0.45; CfgGap = 0.06;
+        await ApplyCfg();
+    }
+
     async Task ToggleFullscreen()
     {
         try { await JS.InvokeVoidAsync("FacePunch.fullscreen"); } catch { }
@@ -284,8 +330,15 @@
             if (!string.IsNullOrEmpty(CameraMsg)) { await BackToNumber(null); return; }
 
             self ??= DotNetObjectReference.Create(this);
-            var templates = new[] { new { id = empmasId, samples } };
-            await JS.InvokeVoidAsync("FacePunch.startMatching", "punchCam", self, templates, 0.5);
+            var templates = rows.GroupBy(r => r.EmpmasId)
+                .Select(g => new
+                {
+                    id = g.Key,
+                    samples = g.Select(r => System.Text.Json.JsonSerializer.Deserialize<double[]>(r.Descriptor ?? "[]"))
+                               .Where(x => x is { Length: 128 }).ToList()
+                })
+                .Where(t => t.samples.Count > 0).ToList();
+            await JS.InvokeVoidAsync("FacePunch.startMatching", "punchCam", self, templates, 0.45, empmasId, 0.06);
             Status = "Look at the camera.";
 
             faceTimer?.Dispose();
