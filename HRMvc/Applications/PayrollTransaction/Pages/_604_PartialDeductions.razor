@@ -1,0 +1,33 @@
+@page "/13T/604"
+@layout HRMvc.Components.Layout.PayLayout
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications.PayrollTransaction.Blazor
+@using HRMvc.StartupConfig
+
+@inject UserClaimsContextService ClaimsContext
+@inject PayAccessService Access
+
+<div class="h-100">
+    @if (uc != null)
+    {
+        <_604PartialDeductions @rendermode="InteractiveServer" UserClaims="uc" IsAdmin="isAdmin" />
+    }
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    UserClaimsModel? uc;
+    bool isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext == null) return;
+        uc = ClaimsContext.Build(HttpContext.User);
+        isAdmin = await Access.AllowedMenuIdsAsync(HttpContext.User) == null;
+    }
+}

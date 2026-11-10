@@ -1,4 +1,4 @@
-﻿@using HRMvc.StartupConfig
+@using HRMvc.StartupConfig
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRMvc.Applications.PisModules.Views.Blazor.F2052.F2052_03
 
@@ -54,7 +54,7 @@
 
     @* --- Tabs *@
     <div style="flex-shrink:0;">
-        <_2052_03_01_Buttons  ChildAction="ChildAction" />
+        <_2052_03_01_Buttons  ChildAction="ChildAction"  />
     </div>
 
     @* --- Tab Content (view-only : shown as is, no clicks, no buttons) *@
@@ -70,7 +70,7 @@
         }
         @if (V.TabNo == 2)
         {
-            <_2052_03_Tab02_Address  ChildAction="ChildAction" />
+            <_2052_03_Tab02_Address ChildAction="ChildAction"  />
         }
         @if (V.TabNo == 3)
         {
@@ -142,9 +142,13 @@
     [Parameter]
     public EventCallback ChildAction { get; set; }
 
+   
 
     async Task NewEntry()
     {
+        var full = await _empmas._02EmployeeLimitReached(Uc.OpisDb, Uc.SchemaUserPis, Uc.SchemaMain, Uc.Conn);
+        if (full != null) { NotificationRef?.Show(full, ThemeConstants.Notification.ThemeColor.Warning); return; }
+
         V.SelectedEmpnumber = string.Empty;
         V.EmpmasToEdit      = new OEmpmasModel();
 

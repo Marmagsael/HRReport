@@ -1,4 +1,4 @@
-﻿using HRApiLibrary.DataAccess._00_Main;
+using HRApiLibrary.DataAccess._00_Main;
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._10_Pis.Interface;
@@ -771,6 +771,16 @@ public class AuthenticationController : Controller
         {
             empnumber = res.First().EmpNumber ?? "00000";    
             empmasId = res.First().Id.ToString() ?? "0";
+        }
+        else if (!string.IsNullOrWhiteSpace(oldPis) && !string.IsNullOrWhiteSpace(email))
+        {
+            // -- No PIS record linked to this user yet : the old PIS (source of truth) finds the employee number by email --
+            try
+            {
+                var byMail = await _oldEmpmas._02ByEmail(email, oldPis, conn ?? "");
+                if (byMail?.Count > 0 && !string.IsNullOrWhiteSpace(byMail.First()?.EmpNumber)) empnumber = byMail.First()!.EmpNumber!.Trim();
+            }
+            catch { }
         }
 
         if (!string.IsNullOrEmpty(user.DefaultCoId.ToString()) && user.DefaultCoId != 0)

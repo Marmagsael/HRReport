@@ -281,6 +281,12 @@
         {
             if (!ValidateFields()) return;
 
+            if (V.IsNewEntry == true)
+            {
+                var full = await _oempmas._02EmployeeLimitReached(Uc.OpisDb, Uc.SchemaUserPis, Uc.SchemaMain, Uc.Conn);
+                if (full != null) { NotificationRef?.Show(full, ThemeConstants.Notification.ThemeColor.Warning); return; }
+            }
+
             if (!await OnEmpNumberLostFocus()) return; // stop if empno  already exists in empmas and empmasarchived;
             if (!await OnEmailLostFocus())  return; // stop if email is already registered/associated with other employee (check in main.user and secpis.empmas);
 
@@ -360,8 +366,12 @@
         {
             // -- The employee being saved (not V.Empmas, which can be empty or another employee) --
             var empNumber   = V.EmpmasToEdit.EmpNumber?.Trim();
-            var main        = await _user._02ByLoginName(empNumber, Uc.SchemaMain, Uc.Conn);
-            var empmasrec   = await _empmas._02Empmas_Empnumber(empNumber, Uc.SchemaUserPis, Uc.Conn);
+            // var main        = await _user._02ByLoginName(empNumber, Uc.SchemaMain, Uc.Conn); why do we use empnumber instead of email?
+
+            var empEmail    = V.EmpmasToEdit.Email?.Trim(); //use email 
+            var main        = await _user._02ByLoginName(empEmail, Uc.SchemaMain, Uc.Conn); // pass email instead of empnumber since loginname is email
+
+            var empmasrec   = await _empmas._02Empmas_Empnumber(empNumber, Uc.SchemaUserPis, Uc.Conn); 
 
 
             EmpmasModel empmas = V.OldEmpmasToNewEmpmasMapper(V.EmpmasToEdit, new EmpmasModel());
@@ -372,29 +382,30 @@
                 userId = main.Id;
             }
 
+
             empmas.SystemId = userId ;
             int? empmasId = 0;
+
+
+            var res = new EmpmasModel();
 
             // Empmas --------------------
             if (empmasrec.Any())
             {
                 //Update
-                var res = await _empmas._03EmpmasWithEmpnumber(empmas, Uc.SchemaUserPis, Uc.Conn);
+                res = await _empmas._03EmpmasWithEmpnumber(empmas, Uc.SchemaUserPis, Uc.Conn);
                 empmasId = res?.Id ?? empmasrec.FirstOrDefault()?.Id;
-                Console.WriteLine("Update");
             }
             else
             {
                 // Insert
-                var res = await _empmas._01EmpmasWithSystemId(empmas, Uc.SchemaUserPis, Uc.Conn);
+                res = await _empmas._01EmpmasWithSystemId(empmas, Uc.SchemaUserPis, Uc.Conn);
                 empmasId = res?.Id;
-                Console.WriteLine("Insert");
 
 
             }
 
 
-            Console.WriteLine($"empmasId {empmasId}");
             if(empmasId is > 0)
             {
                 //Addresss ---------------------
@@ -406,6 +417,7 @@
                 return;
             }
 
+            V.Empmas.UserId = res.SystemId; 
 
 
 
@@ -424,17 +436,19 @@
 
     void UpdateRecordOnEmpmas(OEmpmasModel source)
     {
-        V.Empmas.UserId         = userId;
-        V.Empmas.EmpFirstNm     = source.EmpFirstNm;
-        V.Empmas.EmpLastNm      = source.EmpLastNm;
-        V.Empmas.EmpMidNm       = source.EmpMidNm;
-        V.Empmas.Suffix         = source.Suffix;
-        V.Empmas.EmpAlias       = source.EmpAlias;
-        V.Empmas.Email          = source.Email;
+
+        V.Empmas.EmpFirstNm         = source.EmpFirstNm;
+        V.Empmas.EmpLastNm          = source.EmpLastNm;
+        V.Empmas.EmpMidNm           = source.EmpMidNm;
+        V.Empmas.Suffix             = source.Suffix;
+        V.Empmas.EmpAlias           = source.EmpAlias;
+        V.Empmas.Email              = source.Email;
+        V.Empmasaddress.EmailAdd    = source.Email; // added to update the primary email on address tab
     }
 
     void UpdateRecordOnEmpmasList(OEmpmasModel source)
     {
+
         var rec = V.EmpmasList.FirstOrDefault(e => e.EmpNumber == V.SelectedEmpnumber);
 
         rec.EmpFirstNm      = source.EmpFirstNm;
@@ -443,6 +457,8 @@
         rec.Suffix          = source.Suffix;
         rec.EmpAlias        = source.EmpAlias;
         rec.Email           = source.Email;
+
+
     }
 
 
@@ -636,7 +652,6 @@
 
         foreach (var employee in res)
         {
-            Console.WriteLine($"{employee.LoginName.Trim()}   -- {V.EmpmasToEdit.EmpNumber.Trim()}");
 
             if (V.IsNewEntry == true)
             {
@@ -648,14 +663,27 @@
             }
             
 
-            else if (employee.LoginName.Trim() != V.EmpmasToEdit.EmpNumber.Trim())
+            // else if (employee.LoginName.Trim() != V.EmpmasToEdit.EmpNumber.Trim())
+            // {
+            //     V.IsEmailRegistered = true;
+            //     V.EmailRegisteredToUser = employee.AFullName;
+            //     break;
+            // }
+
+            // else if (employee.LoginName.Trim() == V.EmpmasToEdit.EmpNumber.Trim())
+            // {
+            //     V.IsEmailRegistered = true;
+            //     break;
+            // }
+
+             else if (employee.LoginName.Trim() != V.EmpmasToEdit.Email.Trim())
             {
                 V.IsEmailRegistered = true;
                 V.EmailRegisteredToUser = employee.AFullName;
                 break;
             }
 
-            else if (employee.LoginName.Trim() == V.EmpmasToEdit.EmpNumber.Trim())
+            else if (employee.LoginName.Trim() == V.EmpmasToEdit.Email.Trim())
             {
                 V.IsEmailRegistered = true;
                 break;

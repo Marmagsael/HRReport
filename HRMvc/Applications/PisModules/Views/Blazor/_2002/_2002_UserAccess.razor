@@ -1,4 +1,4 @@
-﻿@using HRApiLibrary.DataAccess._00_Main.Interface
+@using HRApiLibrary.DataAccess._00_Main.Interface
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRMvc.Applications._00GeneralComponents.FormComponents
@@ -17,11 +17,14 @@
 
             <div class="d-flex flex-column flex-md-row">
 
-                <label class="fw-normal w-180p">
-                    User Name
-                </label>
+                <div class="col-4">
+                    <label class="fw-normal w-180p">
+                        User Name
+                    </label>
+                </div>
 
-                <div class="col-12">
+
+                <div class="col-12 col-md-8">
 
                     <TelerikTextBox @bind-Value="@V.User.FullName"
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
@@ -219,6 +222,13 @@
     {
         try
         {
+            if (V.Module == "ams")
+            {
+                V.SystemMenus = [new MenuModel { Id = 11001, Type = "shdr", DispText = "Attendance (AMS)" }];
+                V.SelectedSystemMenu = V.SystemMenus.ToList();
+                await LoadDetailsMenu(11001);
+                return;
+            }
             var result = await _menu._02ByType( "shdr", V.Mainpisdb,V.Conn);
             V.SystemMenus = result ?? [];
         }
@@ -257,7 +267,7 @@
         try
         {
             var result = await _menu._02ByIdParent( idparent, V.Mainpisdb, V.Conn);
-            V.DtlsMenus = result ?? [];
+            V.DtlsMenus = V.Module == "ams" ? (result ?? []).Where(x => x?.Type != "Separator" && !string.IsNullOrEmpty(x?.Action)).ToList() : (result ?? []);
 
             var access          = await _domainaccess._02ByUserName_Module( V.User.Empnumber, V.Module, V.OPisdb, V.Conn) ?? [];
             var accessMenuIds   = access.Where(x => x.Idsysmenu.HasValue).Select(x => x.Idsysmenu!.Value).ToList();

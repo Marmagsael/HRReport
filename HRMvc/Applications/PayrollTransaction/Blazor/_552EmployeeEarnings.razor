@@ -1,15 +1,377 @@
-﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._552O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
 
+@inject IDA_552O _da
 
-<div class="card ">
+<style>
+    .ee-root { font-size:13px; color:#1f2a37; }
+    .ee-root .k-input-inner, .ee-root .k-input-value-text, .ee-root .k-button { font-size:13px; }
+    .ee-root .k-input-inner { padding:4px 8px; }
+    .ee-root .k-input, .ee-root .k-picker { min-height:30px; }
+    .ee-root .k-grid, .ee-win .k-grid { font-size:12.5px; }
+    .ee-root .k-grid td, .ee-root .k-grid th, .ee-win .k-grid td, .ee-win .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .ee-root .k-grid th, .ee-root .k-grid .k-header, .ee-root .k-grid .k-column-title, .ee-win .k-grid th, .ee-win .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .ee-root .k-button, .ee-win .k-button { padding:5px 12px; font-size:13px; }
+    .ee-root .k-numerictextbox .k-input-inner, .ee-win .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .ee-root .k-numerictextbox .k-input-spinner, .ee-win .k-numerictextbox .k-input-spinner { display:none !important; }
+    .ee-root .k-grid tbody tr, .ee-win .k-grid tbody tr { cursor:pointer; }
+    .ee-cols { display:flex; gap:1rem; height:calc(100vh - 175px); min-height:360px; }
+    .ee-left { width:300px; flex-shrink:0; display:flex; flex-direction:column; min-height:0; }
+    .ee-right { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; min-height:0; }
+    .ee-fill { flex:1 1 auto; min-height:0; }
+    .ee-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .ee-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .ee-who { font-weight:700; font-size:15px; margin-bottom:10px; }
+    .ee-who small { font-weight:500; color:#6b7480; font-size:12.5px; }
+    .ee-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .ee-grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:10px 14px; align-items:start; }
+    .e3 { grid-column:span 3; } .e4 { grid-column:span 4; } .e5 { grid-column:span 5; } .e6 { grid-column:span 6; } .e8 { grid-column:span 8; } .e12 { grid-column:span 12; }
+    .ee-checks { display:flex; gap:14px; align-items:center; height:30px; flex-wrap:wrap; }
+    .ee-checks label { margin:0; font-size:13px; font-weight:500; color:#222; display:flex; align-items:center; gap:5px; }
+    .ee-win .k-input, .ee-win .k-picker, .ee-win .k-input-inner, .ee-win .k-input-button { border-color:#8a95a3 !important; }
+    .ee-hint { color:#8a93a0; font-size:12px; }
+</style>
 
-    Employee Earnings Entry - 552
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
 
+<_00BT_FullW HdrCaption="Employee Earnings Entry">
+    <Details>
+    <div class="p-2 ee-root">
+        <div class="ee-cols">
 
+            <div class="ee-left">
+                <input class="form-control form-control-sm mb-2" placeholder="Locate..." @bind="empSearch" @bind:event="oninput" />
+                <div class="ee-fill"><TelerikGrid Data="@shownEmps" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selEmp" SelectedItemsChanged="@((IEnumerable<M552_Emp> e) => PickEmp(e.FirstOrDefault()))">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M552_Emp.EmpName)" Title="Employee Name" />
+                        <GridColumn Field="@nameof(M552_Emp.EmpNumber)" Title="Emp. No." Width="84px" />
+                    </GridColumns>
+                </TelerikGrid></div>
+            </div>
 
-</div>
+            <div class="ee-right">
+                <div class="ee-who">@(emp != null ? $"[ {emp.EmpNumber} ] - {emp.EmpName}" : "Select an employee") @if (emp != null) { <small>&nbsp;@(string.IsNullOrEmpty(emp.Status) ? "No Status defined" : emp.Status)</small> }</div>
 
+                <div class="ee-bar">
+                    <TelerikButton OnClick="@NewEntry" ThemeColor="primary" Icon="@SvgIcon.Plus" Enabled="@(emp != null)">New</TelerikButton>
+                    <TelerikButton OnClick="@EditEntry" Icon="@SvgIcon.Pencil" Enabled="@(cur != null)">Edit</TelerikButton>
+                    <TelerikButton OnClick="@AskDelete" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Trash" Enabled="@(cur != null)">Delete</TelerikButton>
+                    @if (cur != null && cur.ContProc == 1)
+                    {
+                        <TelerikButton OnClick="@(() => showTerm = true)" FillMode="outline" Icon="@SvgIcon.Stop">Terminate Cont. Process</TelerikButton>
+                    }
+                    <TelerikButton OnClick="@OpenCoa" FillMode="outline" Icon="@SvgIcon.Gear" Class="ms-auto">COA Setting</TelerikButton>
+                    <TelerikButton OnClick="@OpenStatus" FillMode="outline" Icon="@SvgIcon.Gear">Emp. Status Setting</TelerikButton>
+                </div>
+
+                <div class="ee-fill"><TelerikGrid Data="@earnings" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selEarn" SelectedItemsChanged="@((IEnumerable<M552_Earn> e) => cur = e.FirstOrDefault())">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M552_Earn.Year)" Title="Year" Width="56px" />
+                        <GridColumn Title="Month" Width="56px"><Template>@MonthText((context as M552_Earn)?.Month)</Template></GridColumn>
+                        <GridColumn Field="@nameof(M552_Earn.PeriodId)" Title="Prd" Width="48px" />
+                        <GridColumn Field="@nameof(M552_Earn.AcctName)" Title="Description" Width="190px" />
+                        <GridColumn Field="@nameof(M552_Earn.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Title="Posted" Width="60px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M552_Earn)?.Processed)</Template></GridColumn>
+                        <GridColumn Field="@nameof(M552_Earn.Remarks)" Title="Remarks" />
+                        <GridColumn Title="P1" Width="38px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M552_Earn)?.P1)</Template></GridColumn>
+                        <GridColumn Title="P2" Width="38px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M552_Earn)?.P2)</Template></GridColumn>
+                        <GridColumn Title="P3" Width="38px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M552_Earn)?.P3)</Template></GridColumn>
+                        <GridColumn Title="P4" Width="38px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M552_Earn)?.P4)</Template></GridColumn>
+                        <GridColumn Title="P5" Width="38px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M552_Earn)?.P5)</Template></GridColumn>
+                        <GridColumn Title="Continuous" Width="80px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M552_Earn)?.ContProc)</Template></GridColumn>
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-2 text-muted">@(emp == null ? "Select an employee." : "No earnings for this employee.")</div></NoDataTemplate>
+                </TelerikGrid></div>
+            </div>
+        </div>
+    </div>
+    </Details>
+</_00BT_FullW>
+
+@* ---------- New / Edit ---------- *@
+<TelerikWindow Modal="true" @bind-Visible="@showForm" Width="620px" Class="ee-win">
+    <WindowTitle>@(isNew ? "New" : "Edit") Earning</WindowTitle>
+    <WindowContent>
+        <div class="ee-win p-1">
+            <div class="mb-2"><b>@(emp?.EmpName)</b></div>
+            <div class="ee-grid">
+                <div class="ee-f e12">
+                    <label>Description</label>
+                    <TelerikDropDownList Data="@accounts" @bind-Value="f.AcctNumber" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select earning" Width="100%" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                        <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                    </TelerikDropDownList>
+                </div>
+                <div class="ee-f e3"><label>Year</label><TelerikDropDownList Data="@years" @bind-Value="f.Year" Width="100%" /></div>
+                <div class="ee-f e4"><label>Month</label><TelerikDropDownList Data="@months" @bind-Value="f.Month" TextField="Text" ValueField="Value" Width="100%" /></div>
+                <div class="ee-f e5">
+                    <label>Amount</label>
+                    <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.Amount" Min="0" Decimals="2" Format="N2" Width="100%" />
+                </div>
+                <div class="ee-f e6"><label>Effective Date</label><TelerikDatePicker @bind-Value="f.Effective" Format="MM/dd/yyyy" Width="100%" /></div>
+                <div class="ee-f e6"><label>Processed Mark <span class="ee-hint">(set by payroll processing)</span></label><TelerikTextBox Value="@(f.Processed == 1 ? "Yes" : "No")" Width="100%" Enabled="false" /></div>
+                <div class="ee-f e12"><label>Remarks</label><TelerikTextBox @bind-Value="f.Remarks" MaxLength="45" Width="100%" /></div>
+                <div class="ee-f e12">
+                    <label>Pay Prd <span class="ee-hint">(periods to deduct)</span></label>
+                    <div class="ee-checks">
+                        <label><TelerikCheckBox Value="@(f.P1 == 1)" ValueChanged="@((bool v) => f.P1 = v ? 1 : 0)" /> P1</label>
+                        <label><TelerikCheckBox Value="@(f.P2 == 1)" ValueChanged="@((bool v) => f.P2 = v ? 1 : 0)" /> P2</label>
+                        <label><TelerikCheckBox Value="@(f.P3 == 1)" ValueChanged="@((bool v) => f.P3 = v ? 1 : 0)" /> P3</label>
+                        <label><TelerikCheckBox Value="@(f.P4 == 1)" ValueChanged="@((bool v) => f.P4 = v ? 1 : 0)" /> P4</label>
+                        <label><TelerikCheckBox Value="@(f.P5 == 1)" ValueChanged="@((bool v) => f.P5 = v ? 1 : 0)" /> P5</label>
+                    </div>
+                    <div class="ee-checks mt-1">
+                        <label><TelerikCheckBox Value="@(f.ContProc == 1)" ValueChanged="@((bool v) => f.ContProc = v ? 1 : 0)" /> <b>Continuous process</b></label>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(!busy)">Save</TelerikButton>
+                <TelerikButton OnClick="@(() => showForm = false)">Cancel</TelerikButton>
+            </div>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+<TelerikWindow Modal="true" @bind-Visible="@showDelete" Width="380px">
+    <WindowTitle>Confirm Delete</WindowTitle>
+    <WindowContent>
+        <div class="p-1">Delete this record?</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoDelete" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showDelete = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+<TelerikWindow Modal="true" @bind-Visible="@showTerm" Width="400px">
+    <WindowTitle>Terminate Continuous Process</WindowTitle>
+    <WindowContent>
+        <div class="p-1">Terminate continuous process of this earning?</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoTerminate" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showTerm = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+@* ---------- Settings ---------- *@
+<TelerikWindow Modal="true" @bind-Visible="@showStatus" Width="520px" Class="ee-win">
+    <WindowTitle>Other Earnings Status Settings</WindowTitle>
+    <WindowContent>
+        <div class="ee-win">
+            <div class="ee-hint mb-2">Employees with a ticked status are listed in this module.</div>
+            <TelerikGrid Data="@statusFlags" Height="60vh" Size="@ThemeConstants.Grid.Size.Small">
+                <GridColumns>
+                    <GridColumn Field="@nameof(M552_Flag.Name)" Title="Employment Status" />
+                    <GridColumn Title="Included" Width="90px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var x = (M552_Flag)context; }<TelerikCheckBox Value="@x.On" ValueChanged="@((bool v) => SetStatus(x, v))" /></Template>
+                    </GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+            <div class="d-flex justify-content-end mt-3"><TelerikButton OnClick="@CloseStatus">Close</TelerikButton></div>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+<TelerikWindow Modal="true" @bind-Visible="@showCoa" Width="560px" Class="ee-win">
+    <WindowTitle>COA Settings</WindowTitle>
+    <WindowContent>
+        <div class="ee-win">
+            <div class="ee-hint mb-2">Ticked earning accounts can be chosen as Description.</div>
+            <TelerikGrid Data="@coaFlags" Height="60vh" Size="@ThemeConstants.Grid.Size.Small">
+                <GridColumns>
+                    <GridColumn Field="@nameof(M552_Flag.Name)" Title="Account Name" />
+                    <GridColumn Title="Included" Width="90px" TextAlign="ColumnTextAlign.Center">
+                        <Template>@{ var x = (M552_Flag)context; }<TelerikCheckBox Value="@x.On" ValueChanged="@((bool v) => SetCoa(x, v))" /></Template>
+                    </GridColumn>
+                </GridColumns>
+            </TelerikGrid>
+            <div class="d-flex justify-content-end mt-3"><TelerikButton OnClick="@CloseCoa">Close</TelerikButton></div>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    record Opt<T>(string Text, T Value);
+
+    TelerikNotification? NotificationRef;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    List<int> years = Enumerable.Range(DateTime.Today.Year - 3, 6).ToList();
+    List<Opt<int>> months = Enumerable.Range(1, 12).Select(i => new Opt<int>(System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(i), i)).ToList();
+
+    List<M552_Emp> emps = new();
+    string empSearch = "";
+    List<M552_Emp> shownEmps => emps.Where(e => string.IsNullOrWhiteSpace(empSearch) || e.EmpName.StartsWith(empSearch, StringComparison.OrdinalIgnoreCase)
+                                             || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase) || e.EmpNumber.Contains(empSearch)).ToList();
+    IEnumerable<M552_Emp> selEmp = Array.Empty<M552_Emp>();
+    M552_Emp? emp;
+
+    List<M552_Earn> earnings = new();
+    IEnumerable<M552_Earn> selEarn = Array.Empty<M552_Earn>();
+    M552_Earn? cur;
+
+    List<M552_Acct> accounts = new();
+
+    M552_Earn f = new();
+    bool showForm, isNew, showDelete, showTerm, showStatus, showCoa, busy;
+    List<M552_Flag> statusFlags = new(), coaFlags = new();
+    bool settingsChanged;
+
+    static string MonthText(int? m) => m is >= 1 and <= 12 ? System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetAbbreviatedMonthName(m.Value) : "";
+    static string Tick(int? v) => v is > 0 ? "✓" : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
+        {
+            emps = await _da._02Employees(Opis, Conn);
+            accounts = await _da._02Accounts(Opay, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("552 load failed: " + ex); Warn("Unable to load the employees."); }
+    }
+
+    async Task PickEmp(M552_Emp? e)
+    {
+        if (e == null) return;
+        emp = e; selEmp = new[] { e };
+        await LoadEarnings();
+    }
+
+    async Task LoadEarnings(int? keep = null)
+    {
+        if (emp == null) return;
+        try { earnings = await _da._02Earnings(emp.EmpNumber, Opay, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("552 earnings failed: " + ex); Warn("Unable to load the earnings."); earnings = new(); }
+        cur = keep != null ? earnings.FirstOrDefault(x => x.ControlNo == keep) : null;
+        selEarn = cur != null ? new[] { cur } : Array.Empty<M552_Earn>();
+    }
+
+    void NewEntry()
+    {
+        if (emp == null) return;
+        isNew = true;
+        f = new() { Year = DateTime.Today.Year, Month = DateTime.Today.Month, Effective = DateTime.Today, Processed = 0, P1 = 1 };
+        showForm = true;
+    }
+
+    void EditEntry()
+    {
+        if (cur == null) { Warn("Nothing to edit"); return; }
+        if (cur.Processed == 1) { Warn("Editing processed transaction is not allowed"); return; }
+        isNew = false;
+        f = cur.Copy();
+        showForm = true;
+    }
+
+    async Task Save()
+    {
+        if (emp == null || busy) return;
+        await Task.Delay(300);
+        busy = true;
+        try
+        {
+            var err = await _da._01Save(f, isNew, emp.EmpNumber, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            showForm = false;
+            await LoadEarnings(isNew ? null : f.ControlNo);
+            NotificationRef?.Show("Successfully Saved.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("552 save failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    void AskDelete()
+    {
+        if (cur == null) { Warn("Nothing to delete."); return; }
+        if (cur.Processed > 0) { Warn("Unable to delete posted transaction."); return; }
+        showDelete = true;
+    }
+
+    async Task DoDelete()
+    {
+        showDelete = false;
+        if (cur == null) return;
+        try
+        {
+            var err = await _da._04Delete(cur.ControlNo, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            await LoadEarnings();
+            NotificationRef?.Show("Successfully Deleted.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("552 delete failed: " + ex); Warn("Unable to delete."); }
+    }
+
+    async Task DoTerminate()
+    {
+        showTerm = false;
+        if (cur == null) return;
+        try
+        {
+            int id = cur.ControlNo;
+            await _da._03Terminate(id, Opay, Conn);
+            await LoadEarnings(id);
+            NotificationRef?.Show("Settings changed.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("552 terminate failed: " + ex); Warn("Unable to terminate."); }
+    }
+
+    async Task OpenStatus()
+    {
+        try { statusFlags = await _da._02StatusFlags(Opis, Conn); settingsChanged = false; showStatus = true; }
+        catch (Exception ex) { Console.Error.WriteLine("552 status failed: " + ex); Warn("Unable to load the settings."); }
+    }
+
+    async Task SetStatus(M552_Flag x, bool v)
+    {
+        try { await _da._03StatusFlag(x.Key, v, Opis, Conn); x.On = v; settingsChanged = true; }
+        catch (Exception ex) { Console.Error.WriteLine("552 status set failed: " + ex); Warn("Unable to save the setting."); }
+    }
+
+    async Task CloseStatus()
+    {
+        showStatus = false;
+        if (!settingsChanged) return;
+        emps = await _da._02Employees(Opis, Conn);
+        emp = null; selEmp = Array.Empty<M552_Emp>(); earnings = new(); cur = null; selEarn = Array.Empty<M552_Earn>();
+    }
+
+    async Task OpenCoa()
+    {
+        try { coaFlags = await _da._02CoaFlags(Opay, Conn); settingsChanged = false; showCoa = true; }
+        catch (Exception ex) { Console.Error.WriteLine("552 coa failed: " + ex); Warn("Unable to load the settings."); }
+    }
+
+    async Task SetCoa(M552_Flag x, bool v)
+    {
+        try { await _da._03CoaFlag(x.Key, v, Opay, Conn); x.On = v; settingsChanged = true; }
+        catch (Exception ex) { Console.Error.WriteLine("552 coa set failed: " + ex); Warn("Unable to save the setting."); }
+    }
+
+    async Task CloseCoa()
+    {
+        showCoa = false;
+        if (settingsChanged) accounts = await _da._02Accounts(Opay, Conn);
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 }

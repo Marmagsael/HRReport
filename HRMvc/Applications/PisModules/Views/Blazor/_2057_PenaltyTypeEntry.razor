@@ -2,7 +2,9 @@
 @using HRMvc.Applications.PisModules.Views.Blazor._2057
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRApiLibrary.DataAccess._10_Pis.OPis
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 
+@inject ISettingsDataAccess _settings;
 @inject IOPenaltyDataAccess _penalty;
 @inject IOPisReportDataAccess _pisRep;
 
@@ -13,7 +15,6 @@
                          VerticalPosition="@NotificationVerticalPosition.Top"
                          AnimationType="@AnimationType.SlideLeft" />
 
-    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
     <CascadingValue Value="@v">
         <CascadingValue Value="@rv">
@@ -28,20 +29,29 @@
                         <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
-                        @*--- ENTRY ---*@
-                        @if (v.ShowEntryModal == true)
-                        {
-                            <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
-                                <Content>
-                                    <_2057_PenaltyTypeEntryModal ChildAction="ChildAction" />
-                                </Content>
-                            </_00Modal>
-                        }
+                        <div class="p-2 flex-grow-1 overflow-hidden position-relative">
+
+                            @*--- TELERIK LOADER (centered on the form, not the screen) ---*@
+                            <TelerikLoaderContainer Visible="@v.IsLoading"
+                                                    LoaderType="@LoaderType.ConvergingSpinner" />
+
+
+                            @*--- ENTRY ---*@
+                            @if (v.ShowEntryModal == true)
+                            {
+                                <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowEntryModal = false" ModalWidth="70vh">
+                                    <Content>
+                                        <_2057_PenaltyTypeEntryModal ChildAction="ChildAction" />
+                                    </Content>
+                                </_00Modal>
+                            }
 
 
 
-                        @*---  GRID ---*@
-                        <_2057_PenaltyTypeList ChildAction="ChildAction" @ref="PenaltyTypeGridRef" />
+                            @*---  GRID ---*@
+                            <_2057_PenaltyTypeList ChildAction="ChildAction" @ref="PenaltyTypeGridRef" />
+
+                        </div>
                     </Details>
 
                 </_00BT_FullW>
@@ -127,13 +137,13 @@
 
     private async Task _02LoadCompanyInfo()
     {
-        var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        if (!(res ?? []).Any()) return;
+        // var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
 
-        var r = res!.First();
-        rv.ReportParams["CoName"] = r.CoName ?? "";
-        rv.ReportParams["CoAddress"] = r.CoAdd ?? "";
+        rv.ReportParams["CoName"] = res.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = res.CoAddress ?? "";
     }
+
 
 
 

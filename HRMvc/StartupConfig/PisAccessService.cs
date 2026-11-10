@@ -7,7 +7,7 @@ namespace HRMvc.StartupConfig;
 
 public class PisAccessService
 {
-    private const string Module = "pis";
+    protected virtual string Module => "pis";
 
     private readonly IOPisDomainaccessDataAccess _access;
     private readonly IOEmpmasDataAccess             _oldEmpmas;
@@ -58,9 +58,7 @@ public class PisAccessService
 
             if (!string.IsNullOrEmpty(empNumber) && !string.IsNullOrWhiteSpace(uc.OpisDb))
             {
-                var rows = await _access._02ByUserName_Module(empNumber, Module, uc.OpisDb, uc.Conn ?? "") ?? [];
-                foreach (var r in rows)
-                    if (r?.Idsysmenu is int id) allowed.Add(id);
+                foreach (var id in await LoadIdsAsync(empNumber, uc)) allowed.Add(id);
             }
         }
         catch
@@ -71,6 +69,12 @@ public class PisAccessService
         _allowed = allowed;
         _loaded  = true;
         return _allowed;
+    }
+
+    protected virtual async Task<List<int>> LoadIdsAsync(string empNumber, HRApiLibrary.Models._00_Main.UserClaimsModel uc)
+    {
+        var rows = await _access._02ByUserName_Module(empNumber, Module, uc.OpisDb!, uc.Conn ?? "") ?? [];
+        return rows.Where(r => r?.Idsysmenu != null).Select(r => r!.Idsysmenu!.Value).ToList();
     }
 
     public async Task<bool> CanOpenAsync(ClaimsPrincipal user, int menuId)

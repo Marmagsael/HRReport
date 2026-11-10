@@ -57,7 +57,9 @@
         @* ----- Contact ----------*@
         <div class="d-flex flex-column border-top pt-2 mt-3">
             <div class="fw-semibold p-1">Contact</div>
-            @Row("Primary email",           Text(() => A.EmailAdd,       v => A.EmailAdd       = v, 45, HasSystemId))
+            @* @Row("Primary email",           Text(() => A.EmailAdd,       v => A.EmailAdd       = v, 45, HasSystemId)) *@
+            @* permanently disable the textbox of  primary email. User should edit the email in data entry only  *@
+            @Row("Primary email",           Text(() => A.EmailAdd,       v => A.EmailAdd       = v, 45, true))  
             @Row("Secondary email",         Text(() => A.EmailAdd1,      v => A.EmailAdd1      = v, 45))
             @Row("Primary mobile",          Text(() => A.CellNo,         v => A.CellNo         = v, 45))
             @Row("Secondary mobile",        Text(() => A.CellNo1,        v => A.CellNo1        = v, 45))
@@ -97,17 +99,17 @@
         if (string.IsNullOrWhiteSpace(empno) || empno == loadedFor) return;
         loadedFor = empno;
 
-        var empmas  = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
-        var address = empmas?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(empmas.Id, Uc.SchemaUserPis, Uc.Conn);
+        // var empmas  = await _pisEmpmas._02EmpmasInternalByEmpNumber(empno, Uc.SchemaUserPis, Uc.Conn);
+        // var address = empmas?.Id == null ? null : await _pisEmpmas._02EmpmasAddress(empmas.Id, Uc.SchemaUserPis, Uc.Conn);
 
         // -- Nothing in PIS yet : start from the old phone numbers / email --
-        V.Empmasaddress = address ?? new EmpmasAddressModel
-        {
-            PresAddTelNo    = V.Empmas.Tel1,
-            ProvAddTelNo    = V.Empmas.Tel2,
-            EmailAdd        = V.Empmas.Email,
-        };
-        V.EmpmasaddressFor = empno;
+        // V.Empmasaddress = address ?? new EmpmasAddressModel
+        // {
+        //     PresAddTelNo    = V.Empmas.Tel1,
+        //     ProvAddTelNo    = V.Empmas.Tel2,
+        //     EmailAdd        = V.Empmas.Email,
+        // };
+        // V.EmpmasaddressFor = empno;
 
         // -- PH only for now : no country yet means Philippines --
         var ph = Countries.FirstOrDefault();
@@ -116,6 +118,8 @@
 
         await LoadLists(Pres);
         await LoadLists(Prov);
+
+        await ChildAction.InvokeAsync();
     }
 
     // -- One side of the form : Present or Provincial; the address fields are reached through the model --

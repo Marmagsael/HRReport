@@ -1,15 +1,283 @@
-﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._602O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
 
+@inject IDA_602O _da
 
-<div class="card ">
+<style>
+    .ed-root { font-size:13px; color:#1f2a37; }
+    .ed-root .k-input-inner, .ed-root .k-input-value-text, .ed-root .k-button { font-size:13px; }
+    .ed-root .k-input-inner { padding:4px 8px; }
+    .ed-root .k-input, .ed-root .k-picker { min-height:30px; }
+    .ed-root .k-grid { font-size:12.5px; }
+    .ed-root .k-grid td, .ed-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .ed-root .k-grid th, .ed-root .k-grid .k-header, .ed-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .ed-root .k-button { padding:5px 12px; }
+    .ed-left .k-grid tbody tr, .ed-pick tbody tr { cursor:pointer; }
+    .ed-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .ed-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .ed-period { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; background:#fff; border:1px solid #7d8895; border-radius:6px; padding:10px 16px; margin-bottom:12px; }
+    .ed-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .ed-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .ed-card .k-input, .ed-card .k-picker, .ed-card .k-input-inner, .ed-card .k-input-button { border-color:#8a95a3 !important; }
+    .ed-title { font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:#5b6573; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+    .ed-title small { text-transform:none; letter-spacing:0; font-weight:500; color:#8a93a0; }
+    .ed-left { width:300px; flex-shrink:0; }
+    .ed-right { width:390px; flex-shrink:0; }
+    .ed-bar { display:flex; align-items:center; gap:8px; margin-top:10px; }
+    .ed-tot { display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:8px; }
+    .ed-tot span { font-size:11.5px; font-weight:600; color:#5b6573; }
+    .ed-tot b { font-size:13.5px; min-width:110px; text-align:right; background:#f5f7fa; border:1px solid #e6e9ee; border-radius:5px; padding:4px 10px; }
+    .ed-net { background:#eaf2fd; border:1px solid #c9dcf6; border-radius:6px; padding:10px 16px; display:flex; justify-content:space-between; align-items:baseline; }
+    .ed-net span { font-weight:600; color:#5b6573; }
+    .ed-net b { font-size:17px; }
+    .ed-src { font-size:11px; font-weight:600; padding:2px 8px; border-radius:20px; background:#eef0f3; color:#515b68; white-space:nowrap; }
+    .src-Other { background:#fff4e0; color:#b26a00; } .src-Loan { background:#e8f0fe; color:#1a56c4; } .src-Mand { background:#e6f4ea; color:#1e7d34; }
+</style>
 
-    eMPloyee Deductions Entry - 602
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
 
+<_00BT_FullW HdrCaption="Employee Deductions Entry">
+    <Details>
+    <div class="p-2 ed-root">
 
+        <div class="ed-period">
+            <div class="ed-f"><label>Year</label><TelerikDropDownList Data="@years" @bind-Value="year" Width="100px" Enabled="@changing" /></div>
+            <div class="ed-f"><label>Month</label><TelerikDropDownList Data="@months" @bind-Value="month" TextField="Text" ValueField="Value" Width="150px" Enabled="@changing" /></div>
+            <div class="ed-f"><label>Period</label><TelerikDropDownList Data="@periods" @bind-Value="period" TextField="Text" ValueField="Value" Width="130px" Enabled="@changing" /></div>
+            <TelerikButton OnClick="@ToggleChange" FillMode="outline" Icon="@(changing ? SvgIcon.Check : SvgIcon.Calendar)" ThemeColor="@(changing ? "primary" : "base")">@(changing ? "Done" : "Change Period")</TelerikButton>
+            <div class="ms-auto small text-muted">Deductions of the selected employee for <b>@months.First(x => x.Value == month).Text @year</b>, @periods.First(x => x.Value == period).Text period</div>
+        </div>
 
-</div>
+        <div class="d-flex gap-3 flex-wrap flex-xl-nowrap">
 
+            @* ---------- Employees ---------- *@
+            <div class="ed-left">
+                <input class="form-control form-control-sm mb-2" placeholder="Locate..." @bind="empSearch" @bind:event="oninput" />
+                <TelerikGrid Data="@shownEmps" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selEmp" SelectedItemsChanged="@((IEnumerable<M602_Emp> e) => PickEmp(e.FirstOrDefault()))">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M602_Emp.EmpNumber)" Title="Emp. No." Width="84px" />
+                        <GridColumn Field="@nameof(M602_Emp.EmpName)" Title="Name" />
+                    </GridColumns>
+                </TelerikGrid>
+            </div>
+
+            @* ---------- Other deductions (editable) ---------- *@
+            <div class="flex-fill" style="min-width:0;">
+                <div class="ed-card">
+                    <div class="ed-title">Other deduction <small>@(emp != null ? $"[ {emp.EmpNumber} ] - {emp.EmpName}" : "Select an employee")</small></div>
+                    <div class="d-flex gap-3 align-items-end">
+                        <div class="ed-f flex-fill">
+                            <label>Account</label>
+                            <TelerikDropDownList Data="@accounts" @bind-Value="acct" TextField="AcctName" ValueField="AcctNumber" Width="100%" Enabled="@(emp != null && mode == "new")" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                        <div class="ed-f" style="width:150px">
+                            <label>Amount</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="amount" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@(emp != null && mode != "")" />
+                        </div>
+                    </div>
+                    <div class="ed-bar">
+                        <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(mode == "new" && !busy)">Save</TelerikButton>
+                        <TelerikButton OnClick="@NewEntry" Icon="@SvgIcon.Plus" Enabled="@(emp != null)">New</TelerikButton>
+                        <TelerikButton OnClick="@Update" FillMode="outline" Icon="@SvgIcon.Pencil" Enabled="@(mode == "edit")">Update</TelerikButton>
+                        <TelerikButton OnClick="@AskDelete" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Trash" Enabled="@checkedOther.Any()" Class="ms-auto">Delete Selected</TelerikButton>
+                    </div>
+                </div>
+
+                <TelerikGrid Class="ed-pick" Data="@others" Height="calc(100vh - 520px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                             SelectionMode="GridSelectionMode.Multiple" SelectedItems="@checkedOther" SelectedItemsChanged="@((IEnumerable<M602_Other> e) => PickOther(e.ToList()))">
+                    <GridColumns>
+                        <GridCheckboxColumn Width="40px" SelectAll="false" />
+                        <GridColumn Field="@nameof(M602_Other.AcctNumber)" Title="Acct. No." Width="90px" />
+                        <GridColumn Field="@nameof(M602_Other.AcctName)" Title="Description" />
+                        <GridColumn Field="@nameof(M602_Other.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="120px" TextAlign="ColumnTextAlign.Right" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-2 text-muted">@(emp == null ? "Select an employee." : "No other deduction for this period.")</div></NoDataTemplate>
+                </TelerikGrid>
+                <div class="ed-tot"><span>Total Amount</span><b>@others.Sum(x => x.Amount).ToString("N2")</b></div>
+            </div>
+
+            @* ---------- Earnings, deductions, net ---------- *@
+            <div class="ed-right">
+                <div class="ed-card">
+                    <div class="ed-title">Current period earnings</div>
+                    <TelerikGrid Data="@earnings" Height="170px" Size="@ThemeConstants.Grid.Size.Small">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M602_Line.AcctName)" Title="Acct. Name" />
+                            <GridColumn Field="@nameof(M602_Line.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-2 text-muted">No earnings yet.</div></NoDataTemplate>
+                    </TelerikGrid>
+                    <div class="ed-tot"><span>Amount</span><b>@earnings.Sum(x => x.Amount).ToString("N2")</b></div>
+                </div>
+
+                <div class="ed-card">
+                    <div class="ed-title">Current period deduction</div>
+                    <TelerikGrid Data="@deductions" Height="210px" Size="@ThemeConstants.Grid.Size.Small">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M602_Line.AcctName)" Title="Acct. Name" />
+                            <GridColumn Field="@nameof(M602_Line.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
+                            <GridColumn Title="Source" Width="110px"><Template>@{ var l = context as M602_Line; }<span class="ed-src src-@(l?.Kind)">@l?.Source</span></Template></GridColumn>
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-2 text-muted">No deduction yet.</div></NoDataTemplate>
+                    </TelerikGrid>
+                    <div class="ed-tot"><span>Amount</span><b>@deductions.Sum(x => x.Amount).ToString("N2")</b></div>
+                </div>
+
+                <div class="ed-net"><span>Net</span><b>@((earnings.Sum(x => x.Amount) - deductions.Sum(x => x.Amount)).ToString("N2"))</b></div>
+            </div>
+
+        </div>
+    </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showDelete" Width="400px">
+    <WindowTitle>Confirm Delete</WindowTitle>
+    <WindowContent>
+        <div class="p-1">This will delete the selected transaction. Click Yes to proceed.</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoDelete" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showDelete = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    record Opt<T>(string Text, T Value);
+
+    TelerikNotification? NotificationRef;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    List<int> years = Enumerable.Range(DateTime.Today.Year - 3, 6).ToList();
+    List<Opt<int>> months = Enumerable.Range(1, 12).Select(i => new Opt<int>(System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(i), i)).ToList();
+    List<Opt<int>> periods = Enumerable.Range(1, 5).Select(i => new Opt<int>(i switch { 1 => "First", 2 => "Second", 3 => "Third", 4 => "Fourth", _ => "Fifth" }, i)).ToList();
+    int year = DateTime.Today.Year, month = DateTime.Today.Month, period = 1;
+    bool changing, busy;
+
+    List<M602_Emp> emps = new();
+    string empSearch = "";
+    List<M602_Emp> shownEmps => emps.Where(e => string.IsNullOrWhiteSpace(empSearch) || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase) || e.EmpNumber.Contains(empSearch)).ToList();
+    IEnumerable<M602_Emp> selEmp = Array.Empty<M602_Emp>();
+    M602_Emp? emp;
+
+    List<M602_Acct> accounts = new();
+    string? acct;
+    decimal amount;
+    string mode = "";
+
+    List<M602_Other> others = new();
+    IEnumerable<M602_Other> checkedOther = Array.Empty<M602_Other>();
+    List<M602_Line> earnings = new(), deductions = new();
+    bool showDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
+        {
+            emps = await _da._02Employees(Opis, Conn);
+            accounts = await _da._02Accounts(Opay, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("602 load failed: " + ex); Warn("Unable to load the employees."); }
+    }
+
+    async Task ToggleChange()
+    {
+        changing = !changing;
+        if (!changing && emp != null) await Reload();
+    }
+
+    async Task PickEmp(M602_Emp? e)
+    {
+        if (e == null) return;
+        emp = e; selEmp = new[] { e }; mode = ""; acct = null; amount = 0;
+        await Reload();
+    }
+
+    async Task Reload()
+    {
+        if (emp == null) return;
+        try
+        {
+            others = await _da._02Others(emp.EmpNumber, emp.ClNumber, year, month, period, Opay, Conn);
+            earnings = await _da._02Earnings(emp.EmpNumber, year, month, period, Opay, Conn);
+            deductions = await _da._02Deductions(emp.EmpNumber, emp.ClNumber, year, month, period, Opay, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("602 reload failed: " + ex); Warn("Unable to load the deductions."); }
+        checkedOther = Array.Empty<M602_Other>();
+    }
+
+    void PickOther(List<M602_Other> sel)
+    {
+        checkedOther = sel;
+        if (sel.Count == 1) { acct = sel[0].AcctNumber; amount = sel[0].Amount; mode = "edit"; }
+        else if (mode == "edit") { acct = null; amount = 0; mode = ""; }
+    }
+
+    void NewEntry() { mode = "new"; acct = null; amount = 0; checkedOther = Array.Empty<M602_Other>(); }
+
+    async Task Save()
+    {
+        await Task.Delay(300);
+        if (emp == null || busy) return;
+        busy = true;
+        try
+        {
+            var err = await _da._01Save(emp.EmpNumber, year, month, period, acct ?? "", amount, others, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            mode = ""; acct = null; amount = 0;
+            await Reload();
+            NotificationRef?.Show("Saved Successfully", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("602 save failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    async Task Update()
+    {
+        await Task.Delay(300);
+        var row = checkedOther.FirstOrDefault();
+        if (emp == null || row == null) return;
+        if (amount == 0) { Warn("Amount should not be zero!"); return; }
+        try
+        {
+            await _da._03Update(emp.EmpNumber, row, amount, Opay, Conn);
+            await Reload();
+            NotificationRef?.Show("Updated Successfully", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("602 update failed: " + ex); Warn("Unable to update."); }
+    }
+
+    void AskDelete() => showDelete = true;
+
+    async Task DoDelete()
+    {
+        showDelete = false;
+        if (emp == null) return;
+        try
+        {
+            await _da._04Delete(emp.EmpNumber, checkedOther.ToList(), Opay, Conn);
+            mode = ""; acct = null; amount = 0;
+            await Reload();
+            NotificationRef?.Show("Record Deleted Successfully", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("602 delete failed: " + ex); Warn("Unable to delete."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 }

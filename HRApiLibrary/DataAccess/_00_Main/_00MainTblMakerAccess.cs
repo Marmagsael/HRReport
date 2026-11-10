@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using HRApiLibrary.DataAccess._00_Main.Interface;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._00_Main;
@@ -517,6 +517,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     OldPay          VARCHAR (60)    NULL,
                     OldPis          VARCHAR (60)    NULL,
                     CompanyCode     VARCHAR (10)    NULL,
+                    EmployeeCnt     INT             NOT NULL DEFAULT 100,
                     PRIMARY KEY (`Id`),
                     UNIQUE KEY uq_userscompany_companycode (CompanyCode)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -545,6 +546,11 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         if (!columns.Any(c => c.Field == "OldPis"))
         {
             sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN OldPis VARCHAR (60) NULL";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+        if (!columns.Any(c => c.Field == "EmployeeCnt"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN EmployeeCnt INT NOT NULL DEFAULT 100";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
