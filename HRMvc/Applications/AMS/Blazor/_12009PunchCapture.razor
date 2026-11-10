@@ -260,7 +260,7 @@
     }
 
     bool ShowCfg;
-    double CfgLimit = 0.45, CfgGap = 0.06;
+    double CfgLimit = 0.40, CfgGap = 0.06;
 
     async Task ToggleCfg()
     {
@@ -282,7 +282,7 @@
 
     async Task ResetCfg()
     {
-        CfgLimit = 0.45; CfgGap = 0.06;
+        CfgLimit = 0.40; CfgGap = 0.06;
         await ApplyCfg();
     }
 
@@ -319,7 +319,7 @@
             var rows = await _da._02Templates(Uc.SchemaUserPis!, Uc.Conn!);
             var samples = rows.Where(r => r.EmpmasId == empmasId)
                               .Select(r => System.Text.Json.JsonSerializer.Deserialize<double[]>(r.Descriptor ?? "[]"))
-                              .Where(x => x is { Length: 128 }).ToList();
+                              .Where(x => x is { Length: > 128 }).ToList();
             if (samples.Count == 0) { NoError = "No face enrolled for this employee. Use Enrollment first."; EnteredNo = ""; FocusNo = true; return; }
 
             InNumberStage = false;
@@ -335,10 +335,10 @@
                 {
                     id = g.Key,
                     samples = g.Select(r => System.Text.Json.JsonSerializer.Deserialize<double[]>(r.Descriptor ?? "[]"))
-                               .Where(x => x is { Length: 128 }).ToList()
+                               .Where(x => x is { Length: > 128 }).ToList()
                 })
                 .Where(t => t.samples.Count > 0).ToList();
-            await JS.InvokeVoidAsync("FacePunch.startMatching", "punchCam", self, templates, 0.45, empmasId, 0.06);
+            await JS.InvokeVoidAsync("FacePunch.startMatching", "punchCam", self, templates, 0.40, empmasId, 0.06);
             Status = "Look at the camera.";
 
             faceTimer?.Dispose();

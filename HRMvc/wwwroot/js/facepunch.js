@@ -1,16 +1,14 @@
 window.FacePunch = (function () {
-    const MODELS = '/lib/face-api/models';
-    let stream = null, timer = null, modelsReady = false, busy = false;
+    const BASE = '/lib/human/';
+    let stream = null, timer = null, human = null, busy = false;
     let state = null, gtimer = null, gbusy = false, capturing = false;
-    const cfg = { limit: 0.45, gap: 0.06 };
-    try { const j = JSON.parse(localStorage.getItem("facePunchCfg") || "null"); if (j) { cfg.limit = +j.limit || cfg.limit; cfg.gap = j.gap >= 0 ? +j.gap : cfg.gap; } } catch (e) { }
+    const cfg = { limit: 0.40, gap: 0.06 };
+    try { const j = JSON.parse(localStorage.getItem("facePunchCfgH") || "null"); if (j) { cfg.limit = +j.limit || cfg.limit; cfg.gap = j.gap >= 0 ? +j.gap : cfg.gap; } } catch (e) { }
     function getStrictness() { return JSON.stringify(cfg); }
     function setStrictness(limit, gap) {
         cfg.limit = limit; cfg.gap = gap;
-        try { localStorage.setItem("facePunchCfg", JSON.stringify(cfg)); } catch (e) { }
+        try { localStorage.setItem("facePunchCfgH", JSON.stringify(cfg)); } catch (e) { }
     }
-
-    const opts = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
 
     function loadScript(src) {
         return new Promise((ok, fail) => {
@@ -21,12 +19,29 @@ window.FacePunch = (function () {
     }
 
     async function loadModels() {
-        if (modelsReady) return;
-        if (!window.faceapi) await loadScript('/lib/face-api/face-api.js');
-        await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS);
-        await faceapi.nets.faceLandmark68TinyNet.loadFromUri(MODELS);
-        await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS);
-        modelsReady = true;
+        if (human) return;
+        if (!window.Human) await loadScript(BASE + 'human.js');
+        const h = new Human.Human({
+            modelBasePath: BASE + 'models/',
+            backend: 'webgl',
+            cacheSensitivity: 0,
+            filter: { enabled: false },
+            face: {
+                enabled: true,
+                detector: { rotation: false, maxDetected: 1, minConfidence: 0.5 },
+                mesh: { enabled: true },
+                iris: { enabled: false },
+                description: { enabled: true },
+                antispoof: { enabled: true },
+                liveness: { enabled: true },
+                emotion: { enabled: false }
+            },
+            body: { enabled: false }, hand: { enabled: false }, object: { enabled: false },
+            gesture: { enabled: false }, segmentation: { enabled: false }
+        });
+        await h.load();
+        await h.warmup();
+        human = h;
     }
 
     async function init(videoId) {
@@ -52,7 +67,15 @@ window.FacePunch = (function () {
         if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     }
 
-    // how well the face sits in the guide circle : 0 = centred, bigger = further away
+    // the one face of the camera frame (or null)
+    async function look(v) {
+        const r = await human.detect(v);
+        return r && r.face && r.face.length ? r.face[0] : null;
+    }
+
+    const boxOf = f => ({ x: f.box[0], y: f.box[1], width: f.box[2], height: f.box[3] });
+
+    // how well the face sits in the guide circle
     function fit(v, box, guideId) {
         const g = document.getElementById(guideId);
         if (!g || !v.videoWidth) return { ok: true };
@@ -71,37 +94,47 @@ window.FacePunch = (function () {
         return { ok: true };
     }
 
+    // a real person in front of the camera, not a photo or a screen
+    function isLive(f) {
+        const real = f.real === undefined ? 1 : f.real, live = f.live === undefined ? 1 : f.live;
+        if (real < 0.5 || live < 0.5) return { ok: false, msg: 'A live face is needed, not a photo or a screen.' };
+        return { ok: true };
+    }
+
     // turns the guide circle green while the face fits it
     function guide(videoId, guideId) {
         const v = document.getElementById(videoId), g = document.getElementById(guideId);
         if (gtimer) clearInterval(gtimer);
         gtimer = setInterval(async () => {
-            if (gbusy || capturing || !g || !v.videoWidth) return;
+            if (gbusy || capturing || !g || !v.videoWidth || !human) return;
             gbusy = true;
             try {
-                const r = await faceapi.detectSingleFace(v, opts());
-                g.classList.toggle('ok', !!r && fit(v, r.box, guideId).ok);
+                const f = await look(v);
+                g.classList.toggle('ok', !!f && fit(v, boxOf(f), guideId).ok);
             } catch (e) { }
             finally { gbusy = false; }
-        }, 350);
+        }, 400);
     }
 
-    // one face of the camera -> its 128 numbers (the face print) as JSON
+    // one face of the camera -> its face print (numbers) as JSON
     async function capture(videoId, guideId) {
         capturing = true;
         try {
             const v = document.getElementById(videoId);
-            const r = await faceapi.detectSingleFace(v, opts()).withFaceLandmarks(true).withFaceDescriptor();
-            if (!r) return JSON.stringify({ ok: false, msg: 'No face found. Face the camera.' });
-            if (r.detection.score < 0.6) return JSON.stringify({ ok: false, msg: 'The face is not clear. Improve the light.' });
-            const box = r.detection.box;
+            const f = await look(v);
+            if (!f) return JSON.stringify({ ok: false, msg: 'No face found. Face the camera.' });
+            if ((f.faceScore || f.boxScore || 0) < 0.6) return JSON.stringify({ ok: false, msg: 'The face is not clear. Improve the light.' });
+            const box = boxOf(f);
             if (guideId) {
-                const f = fit(v, box, guideId);
-                if (!f.ok) return JSON.stringify({ ok: false, msg: f.msg });
+                const r = fit(v, box, guideId);
+                if (!r.ok) return JSON.stringify({ ok: false, msg: r.msg });
             }
             if (box.width < v.videoWidth * 0.2) return JSON.stringify({ ok: false, msg: 'Move closer to the camera.' });
             if (brightness(v, box) < 85) return JSON.stringify({ ok: false, msg: 'Too dark. Move to a brighter place and face the light.' });
-            return JSON.stringify({ ok: true, descriptor: Array.from(r.descriptor) });
+            const lv = isLive(f);
+            if (!lv.ok) return JSON.stringify({ ok: false, msg: lv.msg });
+            if (!f.embedding || !f.embedding.length) return JSON.stringify({ ok: false, msg: 'The face print could not be made. Try again.' });
+            return JSON.stringify({ ok: true, descriptor: Array.from(f.embedding) });
         } finally { capturing = false; }
     }
 
@@ -119,51 +152,51 @@ window.FacePunch = (function () {
         } catch (e) { return 255; }
     }
 
-    function dist(a, b) {
-        let s = 0;
-        for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; s += d * d; }
-        return Math.sqrt(s);
-    }
-
-    // templates : [{ id, samples : [ [128 numbers], ... ] }]
+    // templates : [{ id, samples : [ [numbers], ... ] }]  ; distance = 1 - similarity (lower = closer)
     function startMatching(videoId, dotnet, templates, threshold, claimedId, margin) {
         const v = document.getElementById(videoId);
-        const list = templates.map(t => ({ id: t.id, samples: t.samples.map(s => Float32Array.from(s)) }));
+        const list = templates.map(t => ({ id: t.id, samples: t.samples }));
         state = { id: 0, hits: 0, done: false };
         void threshold; void margin;
 
         if (timer) clearInterval(timer);
         timer = setInterval(async () => {
-            if (busy || !state || state.done || !v.videoWidth) return;
+            if (busy || !state || state.done || !v.videoWidth || !human) return;
             busy = true;
             try {
-                const r = await faceapi.detectSingleFace(v, opts()).withFaceLandmarks(true).withFaceDescriptor();
-                if (!r) {
+                const f = await look(v);
+                if (!f || !f.embedding || !f.embedding.length) {
                     if (state.id !== 0) dotnet.invokeMethodAsync('OnStatus', 'Look at the camera.');
                     state.id = 0; state.hits = 0;
                     return;
                 }
 
-                // nearest distance of every enrolled person
+                const lv = isLive(f);
+                if (!lv.ok) {
+                    state.id = 0; state.hits = 0;
+                    dotnet.invokeMethodAsync('OnStatus', lv.msg);
+                    return;
+                }
+
                 const per = new Map();
                 for (const t of list) {
-                    let m = 9;
-                    for (const s of t.samples) { const d = dist(r.descriptor, s); if (d < m) m = d; }
+                    let m = 1;
+                    for (const s of t.samples) { const d = 1 - human.match.similarity(f.embedding, s); if (d < m) m = d; }
                     per.set(t.id, m);
                 }
-                let best = 0, bestD = 9, second = 9;
+                let best = 0, bestD = 1, second = 1;
                 for (const [id, d] of per) {
                     if (d < bestD) { second = bestD; bestD = d; best = id; }
                     else if (d < second) second = d;
                 }
                 const ro = document.getElementById('pcReadout');
-                if (ro) ro.textContent = 'Distance ' + bestD.toFixed(3) + '  |  gap ' + (second - bestD).toFixed(3) + (claimedId && best !== claimedId ? '  |  other person' : '');
+                if (ro) ro.textContent = 'Distance ' + bestD.toFixed(3) + '  |  gap ' + (second - bestD).toFixed(3) + '  |  real ' + (f.real ?? 0).toFixed(2) + '  live ' + (f.live ?? 0).toFixed(2) + (claimedId && best !== claimedId ? '  |  other person' : '');
                 if (bestD > cfg.limit || (claimedId && best !== claimedId)) {
                     state.id = 0; state.hits = 0;
                     dotnet.invokeMethodAsync('OnStatus', 'Face not recognized.');
                     return;
                 }
-                if (second - bestD < cfg.gap) {
+                if (per.size > 1 && second - bestD < cfg.gap) {
                     state.id = 0; state.hits = 0;
                     dotnet.invokeMethodAsync('OnStatus', 'Face not clear. Face the light and hold still.');
                     return;
@@ -177,7 +210,7 @@ window.FacePunch = (function () {
                 dotnet.invokeMethodAsync('OnRecognized', best);
             } catch (e) { /* the next frame tries again */ }
             finally { busy = false; }
-        }, 300);
+        }, 350);
     }
 
     function resume() { if (state) { state.id = 0; state.hits = 0; state.done = false; } }

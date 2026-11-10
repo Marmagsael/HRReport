@@ -28,6 +28,7 @@ public class DA_12008O : IDA_12008O
                         from   {pisdb}.FaceTemplate f
                                join {pisdb}.Empmas e on e.Id = f.EmpmasId
                                left join {opisdb}.Empmas o on trim(o.EmpNumber) = trim(e.EmpNumber)
+                        where  length(f.Descriptor) > 8000
                         group by f.EmpmasId, e.EmpNumber, e.SystemId, o.EmpLastNm, o.EmpFirstNm, o.EmpMidNm
                         order by o.EmpLastNm, o.EmpFirstNm";
         return await _sql.FetchLegacy<M12008_Enrolled, dynamic>(sql, new { }, conn) ?? [];
@@ -36,7 +37,7 @@ public class DA_12008O : IDA_12008O
     // -- All the samples, for the Punch Capturing page --
     public async Task<List<M12008_Template>> _02Templates(string pisdb, string conn)
     {
-        var r = await _sql.FetchData<M12008_Template, dynamic>($"select EmpmasId, Descriptor from {pisdb}.FaceTemplate order by EmpmasId, Id", new { }, conn);
+        var r = await _sql.FetchData<M12008_Template, dynamic>($"select EmpmasId, Descriptor from {pisdb}.FaceTemplate where length(Descriptor) > 8000 order by EmpmasId, Id", new { }, conn);
         return r ?? [];
     }
 
@@ -72,7 +73,7 @@ public class DA_12008O : IDA_12008O
 
     public async Task<int> _02Samples(int empmasId, string pisdb, string conn)
     {
-        var r = await _sql.FetchData<long, dynamic>($"select count(*) from {pisdb}.FaceTemplate where EmpmasId = @Id", new { Id = empmasId }, conn);
+        var r = await _sql.FetchData<long, dynamic>($"select count(*) from {pisdb}.FaceTemplate where EmpmasId = @Id and length(Descriptor) > 8000", new { Id = empmasId }, conn);
         return (int)r.FirstOrDefault();
     }
 
