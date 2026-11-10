@@ -134,9 +134,30 @@
             var root = doc.RootElement;
             if (!root.GetProperty("ok").GetBoolean()) { Msg = root.GetProperty("msg").GetString(); MsgOk = false; return; }
 
-            await _da._01Sample(PisEmpmasId, root.GetProperty("descriptor").GetRawText(), Uc.UserId ?? 0, Uc.SchemaUserPis!, Uc.Conn!);
+            var descText = root.GetProperty("descriptor").GetRawText();
+            var desc = System.Text.Json.JsonSerializer.Deserialize<double[]>(descText)!;
+
+            var others = (await _da._02Templates(Uc.SchemaUserPis!, Uc.Conn!)).Where(t => t.EmpmasId != PisEmpmasId);
+            int lookId = 0; double lookD = 9;
+            foreach (var t in others)
+            {
+                var o = System.Text.Json.JsonSerializer.Deserialize<double[]>(t.Descriptor ?? "[]");
+                if (o is not { Length: 128 }) continue;
+                double s = 0;
+                for (int i = 0; i < 128; i++) { var d = desc[i] - o[i]; s += d * d; }
+                s = Math.Sqrt(s);
+                if (s < lookD) { lookD = s; lookId = t.EmpmasId; }
+            }
+            if (lookId > 0 && lookD < 0.5)
+            {
+                var who = await _da._02EmpName(lookId, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!);
+                Msg = $"Not saved. This face looks too much like {who}. Face the light and try again, or check that the right person is in front of the camera.";
+                MsgOk = false; return;
+            }
+
+            await _da._01Sample(PisEmpmasId, descText, Uc.UserId ?? 0, Uc.SchemaUserPis!, Uc.Conn!);
             SampleCount++;
-            Msg = $"Sample {SampleCount} saved."; MsgOk = true;
+            Msg = SampleCount < 3 ? $"Sample {SampleCount} saved. Take at least {3 - SampleCount} more." : $"Sample {SampleCount} saved."; MsgOk = true;
             await LoadEnrolled();
         }
         catch (Exception ex)

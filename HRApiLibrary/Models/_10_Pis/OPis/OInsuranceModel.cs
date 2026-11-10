@@ -10,9 +10,9 @@
 
         public string? InsuranceType    { get; set; }
 
-        public double? FaceValue        { get; set; }
+        public double? FaceValue        { get; set; } = 0;
 
-        public double? Premiums         { get; set; }
+        public double? Premiums         { get; set; } = 0;
 
         public DateTime? InsExpire      { get; set; }
     }

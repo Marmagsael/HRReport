@@ -1,7 +1,9 @@
 ﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2054
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
+@using HRApiLibrary.DataAccess._20_Pay.Interface
 
+@inject ISettingsDataAccess _settings;
 @inject IOInsuranceDataAccess _insurance
 
 
@@ -21,33 +23,33 @@
                 <_00BT_FullW HdrCaption="Insurance Entry">
 
                     <Details>
-                            @*--- REPORT ---*@
-                                    @* <_02BTRep Rv="rv" ChildAction="ChildAction" /> *@
+                        @*--- REPORT ---*@
+                        @* <_02BTRep Rv="rv" ChildAction="ChildAction" /> *@
 
 
 
-                                <div class="p-2 flex-grow-1 overflow-hidden position-relative">
+                        <div class="p-2 flex-grow-1 overflow-hidden position-relative">
 
-                                    @*--- TELERIK LOADER (centered on the form, not the screen) ---*@
-                                    <TelerikLoaderContainer Visible="@v.IsLoading"
-                                                            LoaderType="@LoaderType.ConvergingSpinner" />
+                            @*--- TELERIK LOADER (centered on the form, not the screen) ---*@
+                            <TelerikLoaderContainer Visible="@v.IsLoading"
+                                                    LoaderType="@LoaderType.ConvergingSpinner" />
 
-                                    @*--- ENTRY FORM MODAL ---*@
-                                    @if (v.ShowInsuranceEntryModal == true)
-                                    {
-                                        <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowInsuranceEntryModal = false" ModalWidth="70vh">
+                            @*--- ENTRY FORM MODAL ---*@
+                            @if (v.ShowInsuranceEntryModal == true)
+                            {
+                                <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowInsuranceEntryModal = false" ModalWidth="70vh">
 
-                                            <Content>
-                                                <_2054_InsuranceEntryModal ChildAction="ChildAction" />
-                                            </Content>
+                                    <Content>
+                                        <_2054_InsuranceEntryModal ChildAction="ChildAction" />
+                                    </Content>
 
-                                        </_00Modal>
-                                    }
+                                </_00Modal>
+                            }
 
-                                    @*---  Grid ---*@
-                                    <_2054_InsuranceList ChildAction="ChildAction" />
+                            @*---  Grid ---*@
+                            <_2054_InsuranceList ChildAction="ChildAction" @ref="InsuranceGridRef" />
 
-                                </div>
+                        </div>
                     </Details>
 
                 </_00BT_FullW>
@@ -62,10 +64,17 @@
     public UserClaimsModel Uc { get; set; } = new();
 
     private V2054Model v = new();
+    V00_RepVars rv = new();
     private TelerikNotification? NotificationRef;
+
+
+    private _2054_InsuranceList InsuranceGridRef;
+
 
     protected override async Task OnInitializedAsync()
     {
+        v.IsLoading = true;
+
         if (Uc?.Conn == null || Uc.OpisDb == null)
         {
             v.UcLoaded = false;
@@ -78,17 +87,19 @@
 
         await _02LoadInsurances();
 
+        // Report ---------
+        InitializeReport();
+        await _02LoadCompanyInfo();
+        v.IsLoading = false;
     }
 
 
     private async Task _02LoadInsurances()
     {
-        v.IsLoading = true;
 
         try
         {
             var res = await _insurance._02(Uc.OpisDb, Uc.Conn);
-
             if (res.Any())
             {
                 v.Insurances = res;
@@ -99,15 +110,40 @@
             Console.WriteLine(ex);
             NotificationRef?.Show("Unable to load insurances", ThemeConstants.Notification.ThemeColor.Error);
         }
-        finally
-        {
-            v.IsLoading = false;
-        }
+
     }
 
-    private void ChildAction()
-    {
 
+    private void InitializeReport()
+    {
+        rv.MCaption = "Insurance Listing";
+        rv.RefreshToken = 20550000;
+        rv.ReportParams = new()
+        {
+            ["CoName"] = "-",
+            ["CoAddress"] = "-",
+            ["ReportTitle"] = "",
+            ["RunDate"] = DateTime.Now
+        };
+    }
+
+    private async Task _02LoadCompanyInfo()
+    {
+        // var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
+        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+
+        rv.ReportParams["CoName"] = res.CoFullName ?? "";
+        rv.ReportParams["CoAddress"] = res.CoAddress ?? "";
+    }
+
+
+
+    public async Task ChildAction()
+    {
+        if (v.Action == "RefreshInsuranceGrid") if (InsuranceGridRef != null) InsuranceGridRef.RebindGrid();
+        if (v.Action == "LoadInsurances") await _02LoadInsurances();
+
+        v.Action = string.Empty;
     }
 
 }
