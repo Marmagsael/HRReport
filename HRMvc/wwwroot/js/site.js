@@ -76,3 +76,12 @@ window.Blazor.start({
         retryIntervalMilliseconds: 10000
     }
 });
+
+
+// Numeric textboxes: the Up / Down arrow keys do not increment or decrement the value
+document.addEventListener("keydown", function (e) {
+    if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.target && e.target.closest && e.target.closest(".k-numerictextbox")) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+    }
+}, true);

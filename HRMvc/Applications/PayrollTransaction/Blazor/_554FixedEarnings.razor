@@ -1,15 +1,232 @@
 ﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._554O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
 
+@inject IDA_554O _da
 
-<div class="card ">
+<style>
+    .fe-root { font-size:13px; color:#1f2a37; }
+    .fe-root .k-input-inner, .fe-root .k-input-value-text, .fe-root .k-button { font-size:13px; }
+    .fe-root .k-input-inner { padding:4px 8px; }
+    .fe-root .k-input, .fe-root .k-picker { min-height:30px; }
+    .fe-root .k-grid { font-size:12.5px; }
+    .fe-root .k-grid td, .fe-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .fe-root .k-grid th, .fe-root .k-grid .k-header, .fe-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .fe-root .k-button { padding:5px 12px; }
+    .fe-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .fe-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .fe-root .k-grid tbody tr { cursor:pointer; }
+    .fe-cols { display:flex; gap:1rem; height:calc(100vh - 175px); min-height:360px; }
+    .fe-left { width:300px; flex-shrink:0; display:flex; flex-direction:column; min-height:0; }
+    .fe-right { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; min-height:0; }
+    .fe-fill { flex:1 1 auto; min-height:0; }
+    .fe-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .fe-card .k-input, .fe-card .k-picker, .fe-card .k-input-inner, .fe-card .k-input-button { border-color:#8a95a3 !important; }
+    .fe-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .fe-who { font-weight:700; font-size:15px; margin-bottom:10px; }
+    .fe-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .fe-grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:10px 14px; align-items:start; }
+    .f4 { grid-column:span 4; } .f6 { grid-column:span 6; } .f8 { grid-column:span 8; } .f12 { grid-column:span 12; }
+    .fe-checks { display:flex; gap:16px; align-items:center; height:30px; }
+    .fe-checks label { margin:0; font-size:13px; font-weight:500; color:#222; display:flex; align-items:center; gap:5px; }
+    .fe-hint { color:#8a93a0; font-size:12px; font-weight:400; }
+</style>
 
-    Fixed Earnings Entry - 554
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
 
+<_00BT_FullW HdrCaption="Fixed Earnings Entry">
+    <Details>
+    <div class="p-2 fe-root">
+        <div class="fe-cols">
 
+            <div class="fe-left">
+                <input class="form-control form-control-sm mb-2" placeholder="Locate..." @bind="empSearch" @bind:event="oninput" />
+                <div class="fe-fill">
+                    <TelerikGrid Data="@shownEmps" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                                 SelectionMode="GridSelectionMode.Single" SelectedItems="@selEmp" SelectedItemsChanged="@((IEnumerable<M554_Emp> e) => PickEmp(e.FirstOrDefault()))">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M554_Emp.EmpName)" Title="Employee Name" />
+                            <GridColumn Field="@nameof(M554_Emp.EmpNumber)" Title="Emp. No." Width="84px" />
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
+            </div>
 
-</div>
+            <div class="fe-right">
+                <div class="fe-bar">
+                    <TelerikButton OnClick="@NewEntry" Icon="@SvgIcon.Plus" Enabled="@(emp != null)">New</TelerikButton>
+                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(isNew && !busy)">Save</TelerikButton>
+                    <TelerikButton OnClick="@AskTerminate" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Stop" Enabled="@(cur != null && !isNew)">Terminate</TelerikButton>
+                </div>
 
+                <div class="fe-card">
+                    <div class="fe-who">@(emp != null ? $"[ {emp.EmpNumber} ] - {emp.EmpName}" : "Select an employee")</div>
+                    <div class="fe-grid">
+                        <div class="fe-f f8">
+                            <label>Acct. Name</label>
+                            <TelerikDropDownList Data="@accounts" @bind-Value="f.AcctNumber" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select earning" Width="100%" Enabled="@isNew" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                        <div class="fe-f f4"><label>Starting Date</label><TelerikDatePicker @bind-Value="f.DStart" Format="MM/dd/yyyy" Width="100%" Enabled="@isNew" /></div>
+                        <div class="fe-f f4">
+                            <label>Amount</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.Amount" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@isNew" />
+                        </div>
+                        <div class="fe-f f4">
+                            <label>Days Parameter</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.DaysPara" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@isNew" />
+                        </div>
+                        <div class="fe-f f4">
+                            <label>Schedule</label>
+                            <div class="fe-checks">
+                                <label><TelerikCheckBox Value="@(f.P1 == 1)" ValueChanged="@((bool v) => f.P1 = v ? 1 : 0)" Enabled="@isNew" /> 1st</label>
+                                <label><TelerikCheckBox Value="@(f.P2 == 1)" ValueChanged="@((bool v) => f.P2 = v ? 1 : 0)" Enabled="@isNew" /> 2nd</label>
+                                <label><TelerikCheckBox Value="@(f.P3 == 1)" ValueChanged="@((bool v) => f.P3 = v ? 1 : 0)" Enabled="@isNew" /> 3rd</label>
+                                <label><TelerikCheckBox Value="@(f.P4 == 1)" ValueChanged="@((bool v) => f.P4 = v ? 1 : 0)" Enabled="@isNew" /> 4th</label>
+                                <label><TelerikCheckBox Value="@(f.P5 == 1)" ValueChanged="@((bool v) => f.P5 = v ? 1 : 0)" Enabled="@isNew" /> 5th</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fe-fill">
+                    <TelerikGrid Data="@rows" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                                 SelectionMode="GridSelectionMode.Single" SelectedItems="@selRow" SelectedItemsChanged="@((IEnumerable<M554_Row> e) => PickRow(e.FirstOrDefault()))">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M554_Row.DStart)" Title="Date Start" DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
+                            <GridColumn Field="@nameof(M554_Row.AcctName)" Title="Account Name" />
+                            <GridColumn Field="@nameof(M554_Row.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                            <GridColumn Field="@nameof(M554_Row.DaysPara)" Title="Days Parameter" DisplayFormat="{0:N2}" Width="120px" TextAlign="ColumnTextAlign.Right" />
+                            <GridColumn Title="Prd1" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M554_Row)?.P1)</Template></GridColumn>
+                            <GridColumn Title="Prd2" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M554_Row)?.P2)</Template></GridColumn>
+                            <GridColumn Title="Prd3" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M554_Row)?.P3)</Template></GridColumn>
+                            <GridColumn Title="Prd4" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M554_Row)?.P4)</Template></GridColumn>
+                            <GridColumn Title="Prd5" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M554_Row)?.P5)</Template></GridColumn>
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-2 text-muted">@(emp == null ? "Select an employee." : "No fixed earnings for this employee.")</div></NoDataTemplate>
+                    </TelerikGrid>
+                </div>
+            </div>
+        </div>
+    </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showTerm" Width="420px">
+    <WindowTitle>Confirm Terminate</WindowTitle>
+    <WindowContent>
+        <div class="p-1">Terminate <b>@(cur?.AcctName?.ToUpper())</b>?</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoTerminate" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showTerm = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+    string User => (!string.IsNullOrWhiteSpace(UserClaims?.UserName) ? UserClaims!.UserName : UserClaims?.Email ?? "")!.Trim();
+
+    List<M554_Emp> emps = new();
+    string empSearch = "";
+    List<M554_Emp> shownEmps => emps.Where(e => string.IsNullOrWhiteSpace(empSearch) || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+    IEnumerable<M554_Emp> selEmp = Array.Empty<M554_Emp>();
+    M554_Emp? emp;
+
+    List<M554_Acct> accounts = new();
+    List<M554_Row> rows = new();
+    IEnumerable<M554_Row> selRow = Array.Empty<M554_Row>();
+    M554_Row? cur;
+    M554_Row f = new();
+    bool isNew, busy, showTerm;
+
+    static string Tick(int? v) => v is > 0 ? "✓" : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
+        {
+            emps = await _da._02Employees(Opis, Conn);
+            accounts = await _da._02Accounts(Opay, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("554 load failed: " + ex); Warn("Unable to load the employees."); }
+    }
+
+    async Task PickEmp(M554_Emp? e)
+    {
+        if (e == null) return;
+        emp = e; selEmp = new[] { e };
+        isNew = false; cur = null; selRow = Array.Empty<M554_Row>(); f = new();
+        await LoadRows();
+    }
+
+    async Task LoadRows()
+    {
+        if (emp == null) return;
+        try { rows = await _da._02Rows(emp.EmpNumber, Opay, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("554 rows failed: " + ex); Warn("Unable to load the fixed earnings."); rows = new(); }
+    }
+
+    void PickRow(M554_Row? r)
+    {
+        if (r == null) return;
+        cur = r; selRow = new[] { r }; isNew = false;
+        f = new() { Id = r.Id, AcctNumber = r.AcctNumber, AcctName = r.AcctName, DStart = r.DStart, Amount = r.Amount, DaysPara = r.DaysPara, P1 = r.P1, P2 = r.P2, P3 = r.P3, P4 = r.P4, P5 = r.P5 };
+    }
+
+    void NewEntry()
+    {
+        if (emp == null) return;
+        isNew = true; cur = null; selRow = Array.Empty<M554_Row>();
+        f = new() { DStart = DateTime.Today };
+    }
+
+    async Task Save()
+    {
+        if (emp == null || busy) return;
+        await Task.Delay(300);
+        busy = true;
+        try
+        {
+            var err = await _da._01Save(emp.EmpNumber, f, User, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            isNew = false; f = new();
+            await LoadRows();
+            NotificationRef?.Show("Successfully Saved.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("554 save failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    void AskTerminate() { if (cur != null) showTerm = true; }
+
+    async Task DoTerminate()
+    {
+        showTerm = false;
+        if (cur == null) return;
+        try
+        {
+            await _da._03Terminate(cur.Id, User, Opay, Conn);
+            cur = null; selRow = Array.Empty<M554_Row>(); f = new();
+            await LoadRows();
+            NotificationRef?.Show("Terminated.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("554 terminate failed: " + ex); Warn("Unable to terminate."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 }

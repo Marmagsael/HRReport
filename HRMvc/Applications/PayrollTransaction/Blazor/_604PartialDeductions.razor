@@ -1,25 +1,45 @@
 @using HRApiLibrary.Models._00_Main
-@using HRMvc.Applications._00GeneralComponents.BodyComponents
+@using HRApiLibrary.Modules._604O
 @using Telerik.Blazor.Components
 @using Telerik.SvgIcons
 
+@inject IDA_604O _da
+
 <style>
-    .pd-form { display:flex; flex-direction:column; gap:14px; }
-    .pd-card { background:#fff; border:1px solid #dfe3e8; border-radius:8px; padding:14px 18px 16px; }
-    .pd-title { font-weight:700; font-size:.95rem; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #eef0f3; }
-    .pd-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px 20px; }
-    .pd-span2 { grid-column:span 2; }
-    .pd-span4 { grid-column:span 4; }
-    .pd-f label { display:block; font-size:.78rem; font-weight:600; color:#5b6573; margin-bottom:4px; }
-    .pd-hint { font-weight:400; color:#8a93a0; }
-    .pd-checks { display:flex; gap:22px; align-items:center; height:32px; }
-    .pd-checks label { margin:0; font-size:.85rem; font-weight:500; color:#222; display:flex; align-items:center; gap:6px; }
-    .pd-tiles { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px 20px; margin-top:16px; }
-    .pd-tile { background:#f5f7fa; border:1px solid #e6e9ee; border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; text-align:right; }
-    .pd-tile span { font-size:.72rem; color:#6b7480; }
-    .pd-tile b { font-size:1.05rem; }
+    .pd-root { font-size:13px; color:#1f2a37; }
+    .pd-root .k-input-inner, .pd-root .k-picker-wrap, .pd-root .k-input-value-text, .pd-root .k-button { font-size:13px; }
+    .pd-root .k-input-inner { padding:4px 8px; }
+    .pd-root .k-input, .pd-root .k-picker { min-height:30px; }
+    .pd-root .k-grid { font-size:12.5px; }
+    .pd-root .k-grid td, .pd-root .k-grid th { padding:5px 8px; }
+    .pd-root .k-grid th, .pd-root .k-grid .k-header, .pd-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .pd-root .k-button { padding:5px 12px; }
+    .pd-side .k-grid tbody tr { cursor:pointer; }
+    .pd-tabs { border:1px solid #7d8895 !important; border-radius:6px; background:#fff; }
+    .pd-tabs .k-tabstrip-items-wrapper { border-color:#7d8895 !important; }
+    .pd-tabs .k-tabstrip-items .k-item { border-color:#7d8895 !important; }
+    .pd-tabs .k-tabstrip-content, .pd-tabs .k-content { border-color:#7d8895 !important; }
+    .pd-tabs .k-item, .pd-tabs .k-link, .pd-tabs .k-tabstrip-items-wrapper * { font-size:13px !important; }
+    .pd-tabbody { padding:10px 6px 4px; }
+    .pd-side { width:270px; flex-shrink:0; }
+    .pd-bar { display:flex; align-items:center; gap:8px; margin:10px 0; }
+    .pd-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .pd-card .k-input, .pd-card .k-picker, .pd-card .k-input-inner, .pd-card .k-input-button { border-color:#8a95a3 !important; }
+    .pd-title { font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:#5b6573; margin-bottom:10px; }
+    .pd-grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:10px 14px; align-items:start; }
+    .c2 { grid-column:span 2; } .c3 { grid-column:span 3; } .c4 { grid-column:span 4; } .c5 { grid-column:span 5; } .c6 { grid-column:span 6; } .c8 { grid-column:span 8; } .c12 { grid-column:span 12; }
+    .pd-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .pd-hint { font-weight:400; color:#8a93a0; text-transform:none; letter-spacing:0; }
+    .pd-checks { display:flex; gap:16px; align-items:center; height:30px; }
+    .pd-checks label { margin:0; font-size:13px; font-weight:500; color:#222; display:flex; align-items:center; gap:5px; }
+    .pd-tiles { display:flex; gap:10px; margin-top:12px; }
+    .pd-tile { flex:1; background:#f5f7fa; border:1px solid #e6e9ee; border-radius:5px; padding:6px 10px; display:flex; justify-content:space-between; align-items:baseline; }
+    .pd-tile span { font-size:11.5px; color:#6b7480; }
+    .pd-tile b { font-size:13.5px; }
     .pd-tile-main { background:#eaf2fd; border-color:#c9dcf6; }
-    @@media (max-width: 1100px) { .pd-grid, .pd-tiles { grid-template-columns:repeat(2, minmax(0,1fr)); } .pd-span4 { grid-column:span 2; } }
+    .pd-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .pd-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    @@media (max-width: 1200px) { .pd-grid { grid-template-columns:repeat(6, minmax(0,1fr)); } .c2,.c3 { grid-column:span 3; } .c4,.c5,.c6,.c8,.c12 { grid-column:span 6; } .pd-tiles { flex-wrap:wrap; } }
 </style>
 
 <TelerikRootComponent>
@@ -29,20 +49,19 @@
 
 <_00BT_FullW HdrCaption="Partial Deductions Entry">
     <Details>
-    <div class="p-2">
+    <div class="p-2 pd-root">
         <div class="d-flex gap-3 flex-wrap flex-lg-nowrap">
 
             @* ---------- Employee list ---------- *@
-            <div style="width:300px;flex-shrink:0;">
-                <div class="d-flex align-items-center gap-2 mb-1">
-                    <input class="form-control form-control-sm" placeholder="Find employee..." @bind="empSearch" @bind:event="oninput" />
-                </div>
-                <label class="small mb-1"><TelerikCheckBox @bind-Value="showAll" /> Show resigned employees</label>
-                <TelerikGrid Data="@shownEmployees" Height="560px" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
-                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selectedEmp" SelectedItemsChanged="@((IEnumerable<EmpRow> e) => PickEmployee(e.FirstOrDefault()))">
+            <div class="pd-side">
+                <input class="form-control form-control-sm mb-1" placeholder="Find employee..." @bind="empSearch" @bind:event="oninput" />
+                <label class="small mb-1 d-flex align-items-center gap-1"><TelerikCheckBox @bind-Value="showAll" /> Show resigned employees</label>
+                <TelerikGrid Data="@shownEmployees" Height="80vh" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                             Pageable="true" PageSize="20"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selectedEmp" SelectedItemsChanged="@((IEnumerable<M604_Emp> e) => PickEmployee(e.FirstOrDefault()))">
                     <GridColumns>
-                        <GridColumn Field="@nameof(EmpRow.EmpName)" Title="Employee List" />
-                        <GridColumn Field="@nameof(EmpRow.EmpNumber)" Title="Emp. No." Width="75px" />
+                        <GridColumn Field="@nameof(M604_Emp.EmpName)" Title="Employee" />
+                        <GridColumn Field="@nameof(M604_Emp.EmpNumber)" Title="Emp. No." Width="84px" />
                     </GridColumns>
                 </TelerikGrid>
             </div>
@@ -51,125 +70,150 @@
             <div class="flex-fill" style="min-width:0;">
 
                 <div class="d-flex align-items-center gap-3 mb-2">
-                    <span class="fw-bold">@(emp?.EmpName ?? "Select an employee")</span>
-                    <TelerikDropDownList Data="@viewOptions" @bind-Value="view" TextField="Text" ValueField="Value" Width="130px" />
+                    <span class="fw-bold fs-6">@(emp != null ? $"[ {emp.EmpNumber} ] - {FirstLast(emp.EmpName)}" : "Select an employee")</span>
+                    <div class="ms-auto d-flex align-items-center gap-2"><label class="mb-0 fw-semibold" style="font-size:12px;color:#5b6573;white-space:nowrap">Loan's Status to Show</label><TelerikDropDownList Data="@viewOptions" Value="@view" ValueChanged="@((string v) => ChangeView(v))" TextField="Text" ValueField="Value" Width="120px" /></div>
                 </div>
 
-                <TelerikGrid Data="@shownLoans" Height="190px" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
-                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selectedLoan" SelectedItemsChanged="@((IEnumerable<LoanRow> e) => PickLoan(e.FirstOrDefault()))">
+                <TelerikGrid Data="@loans" Height="165px" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                             SelectionMode="GridSelectionMode.Single" SelectedItems="@selectedLoan" SelectedItemsChanged="@((IEnumerable<M604_Loan> e) => PickLoan(e.FirstOrDefault()))">
                     <GridColumns>
-                        <GridColumn Field="@nameof(LoanRow.AcctName)" Title="Description" />
-                        <GridColumn Field="@nameof(LoanRow.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
-                        <GridColumn Field="@nameof(LoanRow.Amort)" Title="Amort" DisplayFormat="{0:N2}" Width="90px" TextAlign="ColumnTextAlign.Right" />
-                        <GridColumn Field="@nameof(LoanRow.Balance)" Title="Balance" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
-                        <GridColumn Field="@nameof(LoanRow.PayStart)" Title="Pay Start" DisplayFormat="{0:MM/dd/yyyy}" Width="95px" />
-                        <GridColumn Field="@nameof(LoanRow.PayRes)" Title="Pay Resume" DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
-                        <GridColumn Field="@nameof(LoanRow.LoanDate)" Title="Loan Date" DisplayFormat="{0:MM/dd/yyyy}" Width="95px" />
-                        <GridColumn Field="@nameof(LoanRow.Remarks)" Title="Remarks" />
-                        <GridColumn Field="@nameof(LoanRow.Status)" Title="Status" Width="60px" TextAlign="ColumnTextAlign.Center" />
+                        <GridColumn Field="@nameof(M604_Loan.AcctName)" Title="Description" />
+                        <GridColumn Field="@nameof(M604_Loan.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="95px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(M604_Loan.Amort)" Title="Amort" DisplayFormat="{0:N2}" Width="85px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(M604_Loan.Balance)" Title="Balance" DisplayFormat="{0:N2}" Width="95px" TextAlign="ColumnTextAlign.Right" />
+                        <GridColumn Field="@nameof(M604_Loan.PayStart)" Title="Pay Start" DisplayFormat="{0:MM/dd/yyyy}" Width="90px" />
+                        <GridColumn Field="@nameof(M604_Loan.PayRes)" Title="Pay Resume" DisplayFormat="{0:MM/dd/yyyy}" Width="95px" />
+                        <GridColumn Field="@nameof(M604_Loan.LoanDate)" Title="Loan Date" DisplayFormat="{0:MM/dd/yyyy}" Width="90px" />
+                        <GridColumn Field="@nameof(M604_Loan.Remarks)" Title="Remarks" />
+                        <GridColumn Field="@nameof(M604_Loan.Status)" Title="Status" Width="60px" TextAlign="ColumnTextAlign.Center" />
                     </GridColumns>
                     <NoDataTemplate><div class="p-2 text-muted">No deduction for this employee.</div></NoDataTemplate>
                 </TelerikGrid>
 
-                <div class="d-flex gap-2 my-3">
-                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(editing)">Save</TelerikButton>
+                <div class="pd-bar">
+                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(editing && !busy)">Save</TelerikButton>
                     <TelerikButton OnClick="@NewLoan" Icon="@SvgIcon.Plus" Enabled="@(emp != null)">New</TelerikButton>
                     <TelerikButton OnClick="@AskDelete" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Trash" Enabled="@(editing && !isNew)">Delete</TelerikButton>
-                    <TelerikButton OnClick="@Recompute" FillMode="outline" Icon="@SvgIcon.Calculator" Enabled="@(!isNew && f.Number > 0)">Recompute</TelerikButton>
+                    <TelerikButton OnClick="@Recompute" FillMode="outline" Icon="@SvgIcon.Calculator" Enabled="@(editing && !isNew)">Recompute</TelerikButton>
+                    @if (IsAdmin)
+                    {
+                        <TelerikButton OnClick="@OpenAccess" FillMode="outline" Icon="@SvgIcon.Lock" Class="ms-auto">Account Access</TelerikButton>
+                    }
                 </div>
 
-                <div class="pd-form">
+                <div class="pd-card">
+                    <div class="pd-title">Loan</div>
+                    <div class="pd-grid">
+                        <div class="pd-f c5">
+                            <label>Charge to</label>
+                            <TelerikDropDownList Data="@usableAccounts" @bind-Value="f.DednCode" TextField="AcctName" ValueField="AcctNumber" Width="100%" Enabled="@(editing && isNew)" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                        <div class="pd-f c3">
+                            <label>Loan Date</label>
+                            <TelerikDatePicker @bind-Value="f.LoanDate" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
+                        </div>
+                        <div class="pd-f c2">
+                            <label>CV No.</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.CvNo" Min="0" Decimals="0" Format="N0" Width="100%" Enabled="@editing" />
+                        </div>
+                        <div class="pd-f c2">
+                            <label>Status</label>
+                            <TelerikDropDownList Data="@statusOptions" @bind-Value="f.Status" TextField="Text" ValueField="Value" Width="100%" Enabled="@(editing && !isNew)" />
+                        </div>
 
-                    <div class="pd-card">
-                        <div class="pd-title">Loan details</div>
-                        <div class="pd-grid">
-                            <div class="pd-f pd-span2">
-                                <label>Charge to</label>
-                                <TelerikDropDownList Data="@accounts" @bind-Value="f.DednCode" TextField="AcctName" ValueField="AcctNumber" Width="100%" Enabled="@isNew" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains" />
-                            </div>
-                            <div class="pd-f">
-                                <label>Loan Date</label>
-                                <TelerikDatePicker @bind-Value="f.LoanDate" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
-                            </div>
-                            <div class="pd-f">
-                                <label>CV No.</label>
-                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.CvNo" Min="0" Decimals="0" Format="N0" Width="100%" Enabled="@editing" />
-                            </div>
+                        <div class="pd-f c2">
+                            <label>Amount</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.Amount" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@(editing && isNew)" />
+                        </div>
+                        <div class="pd-f c2">
+                            <label>Amort</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.Amort" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                        </div>
+                        <div class="pd-f c2">
+                            <label>Balance</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.Balance" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@(editing && !isNew)" />
+                        </div>
+                        <div class="pd-f c3">
+                            <label>Pay Start</label>
+                            <TelerikDatePicker @bind-Value="f.PayStart" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
+                        </div>
+                        <div class="pd-f c3">
+                            <label>Pay Resume</label>
+                            <TelerikDatePicker @bind-Value="f.PayRes" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
+                        </div>
 
-                            <div class="pd-f">
-                                <label>Amount</label>
-                                <TelerikNumericTextBox Class="num-right" Value="@f.Amount" ValueChanged="@((decimal v) => f.Amount = v)" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@(editing && isNew)" />
-                            </div>
-                            <div class="pd-f">
-                                <label>Amort</label>
-                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.Amort" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
-                            </div>
-                            <div class="pd-f">
-                                <label>Balance</label>
-                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.Balance" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@(editing && !isNew)" />
-                            </div>
-                            <div class="pd-f">
-                                <label>Status</label>
-                                <TelerikDropDownList Data="@statusOptions" @bind-Value="f.Status" TextField="Text" ValueField="Value" Width="100%" Enabled="@(editing && !isNew)" />
-                            </div>
-
-                            <div class="pd-f pd-span4">
-                                <label>Remarks</label>
-                                <TelerikTextBox @bind-Value="f.Remarks" MaxLength="75" Width="100%" Enabled="@editing" />
+                        <div class="pd-f c6">
+                            <label>Mode of Payment <span class="pd-hint">(periods deducted)</span></label>
+                            <div class="pd-checks">
+                                <label><TelerikCheckBox @bind-Value="f.P1" Enabled="@editing" /> P1</label>
+                                <label><TelerikCheckBox @bind-Value="f.P2" Enabled="@editing" /> P2</label>
+                                <label><TelerikCheckBox @bind-Value="f.P3" Enabled="@editing" /> P3</label>
+                                <label><TelerikCheckBox @bind-Value="f.P4" Enabled="@editing" /> P4</label>
+                                <label><TelerikCheckBox @bind-Value="f.P5" Enabled="@editing" /> P5</label>
                             </div>
                         </div>
+                        <div class="pd-f c6">
+                            <label>Remarks</label>
+                            <TelerikTextBox @bind-Value="f.Remarks" MaxLength="75" Width="100%" Enabled="@editing" />
+                        </div>
                     </div>
+                </div>
 
-                    <div class="pd-card">
-                        <div class="pd-title">Payment</div>
-                        <div class="pd-grid">
-                            <div class="pd-f">
-                                <label>Pay Start</label>
-                                <TelerikDatePicker @bind-Value="f.PayStart" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
-                            </div>
-                            <div class="pd-f">
-                                <label>Pay Resume</label>
-                                <TelerikDatePicker @bind-Value="f.PayRes" Width="100%" Format="MM/dd/yyyy" Enabled="@editing" />
-                            </div>
-                            <div class="pd-f pd-span2">
-                                <label>Mode of Payment <span class="pd-hint">(periods where it is deducted)</span></label>
-                                <div class="pd-checks">
-                                    <label><TelerikCheckBox @bind-Value="f.P1" Enabled="@editing" /> P1</label>
-                                    <label><TelerikCheckBox @bind-Value="f.P2" Enabled="@editing" /> P2</label>
-                                    <label><TelerikCheckBox @bind-Value="f.P3" Enabled="@editing" /> P3</label>
-                                    <label><TelerikCheckBox @bind-Value="f.P4" Enabled="@editing" /> P4</label>
-                                    <label><TelerikCheckBox @bind-Value="f.P5" Enabled="@editing" /> P5</label>
+                <TelerikTabStrip Class="pd-tabs">
+                    <TabStripTab Title="Loan Calculator">
+                        <div class="pd-tabbody">
+                            <div class="pd-grid">
+                                <div class="pd-f c3">
+                                    <label>Principal</label>
+                                    <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.Principal" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                                </div>
+                                <div class="pd-f c3">
+                                    <label>Interest Rate (% / month)</label>
+                                    <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.InterestRate" Min="0" Decimals="4" Format="N2" Width="100%" Enabled="@editing" />
+                                </div>
+                                <div class="pd-f c3">
+                                    <label>Months to Pay</label>
+                                    <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.MoToPay" Min="0" Decimals="0" Format="N0" Width="100%" Enabled="@editing" />
                                 </div>
                             </div>
+                            <div class="pd-tiles">
+                                <div class="pd-tile"><span>Interest / month</span><b>@interest.ToString("N2")</b></div>
+                                <div class="pd-tile"><span>Total interest</span><b>@totInterest.ToString("N2")</b></div>
+                                <div class="pd-tile"><span>Total amount</span><b>@totAmount.ToString("N2")</b></div>
+                                <div class="pd-tile pd-tile-main"><span>Expected amort</span><b>@expAmort.ToString("N2")</b></div>
+                            </div>
                         </div>
-                    </div>
+                    </TabStripTab>
+                    <TabStripTab Title="Payment Schedule">
+                        <div class="pd-tabbody">
+                            <div class="pd-hint mb-2">Click an unpaid Amort to edit it. A payment is marked paid when it is deducted in a payroll.</div>
+                            <TelerikGrid Data="@schedule" Height="230px" Size="@ThemeConstants.Grid.Size.Small"
+                                         EditMode="GridEditMode.Incell" OnEdit="@OnSchedEdit" OnUpdate="@OnSchedUpdate">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(M604_Sched.SchedNo)" Title="#" Width="60px" Editable="false" TextAlign="ColumnTextAlign.Right" />
+                                    <GridColumn Field="@nameof(M604_Sched.Amort)" Title="Amort" DisplayFormat="{0:N2}" Width="150px" TextAlign="ColumnTextAlign.Right" Editable="true" />
+                                    <GridColumn Field="@nameof(M604_Sched.Trn)" Title="Payroll (TRN)" Editable="false" />
+                                    <GridColumn Title="Paid" Width="70px" TextAlign="ColumnTextAlign.Center" Editable="false"><Template>@(string.IsNullOrEmpty((context as M604_Sched)?.Trn) ? "" : "Yes")</Template></GridColumn>
+                                </GridColumns>
+                                <NoDataTemplate><div class="p-2 text-muted">The schedule is created when the loan is saved.</div></NoDataTemplate>
+                            </TelerikGrid>
+                            @if (schedule.Count > 0)
+                            {
+                                <div class="d-flex justify-content-between small mt-2">
+                                    <span>Scheduled total: <b>@schedule.Sum(x => x.Amort).ToString("N2")</b></span>
+                                    <span>Balance: <b>@f.Balance.ToString("N2")</b></span>
+                                    @if (schedule.Where(x => string.IsNullOrEmpty(x.Trn)).Sum(x => x.Amort) != f.Balance)
+                                    {
+                                        <span class="txt-red">The unpaid payments do not add up to the balance.</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </TabStripTab>
+                </TelerikTabStrip>
 
-                    <div class="pd-card">
-                        <div class="pd-title">Loan calculator</div>
-                        <div class="pd-grid">
-                            <div class="pd-f">
-                                <label>Principal</label>
-                                <TelerikNumericTextBox Class="num-right" Value="@f.Principal" ValueChanged="@((decimal v) => { f.Principal = v; })" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
-                            </div>
-                            <div class="pd-f">
-                                <label>Interest Rate (% / month)</label>
-                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.InterestRate" Min="0" Decimals="4" Format="N2" Width="100%" Enabled="@editing" />
-                            </div>
-                            <div class="pd-f">
-                                <label>Months to Pay</label>
-                                <TelerikNumericTextBox Class="num-right" @bind-Value="f.MoToPay" Min="0" Decimals="0" Format="N0" Width="100%" Enabled="@editing" />
-                            </div>
-                        </div>
-                        <div class="pd-tiles">
-                            <div class="pd-tile"><span>Interest / month</span><b>@interest.ToString("N2")</b></div>
-                            <div class="pd-tile"><span>Total Interest</span><b>@totInterest.ToString("N2")</b></div>
-                            <div class="pd-tile"><span>Total Amount</span><b>@totAmount.ToString("N2")</b></div>
-                            <div class="pd-tile pd-tile-main"><span>Expected Amort</span><b>@expAmort.ToString("N2")</b></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="small text-muted mt-2">Preview: sample data only. Nothing is saved yet.</div>
             </div>
         </div>
     </div>
@@ -188,202 +232,280 @@
     </WindowContent>
 </TelerikWindow>
 
-<TelerikWindow Modal="true" @bind-Visible="@showRecompute" Width="640px">
+<TelerikWindow Modal="true" @bind-Visible="@showRecompute" Width="680px">
     <WindowActions><WindowAction Name="Close" /></WindowActions>
     <WindowTitle>Recompute Balance</WindowTitle>
     <WindowContent>
         <div class="p-1">
-            <div class="mb-2">Payments recorded in the loan schedule against what was actually deducted in payroll.</div>
-            <TelerikGrid Data="@schedule" Size="@ThemeConstants.Grid.Size.Small" Height="220px">
+            <div class="mb-2">Deductions made in payroll from the loan date, against the balance on record.</div>
+            <TelerikGrid Data="@rec.Trans" Size="@ThemeConstants.Grid.Size.Small" Height="220px">
                 <GridColumns>
-                    <GridColumn Field="@nameof(SchedRow.SchedNo)" Title="#" Width="50px" />
-                    <GridColumn Field="@nameof(SchedRow.Amort)" Title="Amort" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
-                    <GridColumn Field="@nameof(SchedRow.Trn)" Title="Payroll (TRN)" />
-                    <GridColumn Title="Paid" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@(string.IsNullOrEmpty((context as SchedRow)?.Trn) ? "" : "Yes")</Template></GridColumn>
+                    <GridColumn Field="@nameof(M604_Tran.XDate)" Title="Date" DisplayFormat="{0:MM/dd/yyyy}" Width="120px" />
+                    <GridColumn Field="@nameof(M604_Tran.Trn)" Title="Payroll (TRN)" />
+                    <GridColumn Field="@nameof(M604_Tran.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="130px" TextAlign="ColumnTextAlign.Right" />
                 </GridColumns>
+                <NoDataTemplate><div class="p-2 text-muted">No deduction found in payroll.</div></NoDataTemplate>
             </TelerikGrid>
             <div class="d-flex justify-content-between mt-2">
-                <span>Paid: <b>@schedule.Where(x => !string.IsNullOrEmpty(x.Trn)).Sum(x => x.Amort).ToString("N2")</b></span>
-                <span>Expected balance: <b>@(f.Amount - schedule.Where(x => !string.IsNullOrEmpty(x.Trn)).Sum(x => x.Amort)).ToString("N2")</b></span>
+                <span>Loan amount: <b>@f.Amount.ToString("N2")</b></span>
+                <span>Deducted: <b>@rec.Deducted.ToString("N2")</b></span>
+                <span>Expected balance: <b>@rec.ExpectedBalance.ToString("N2")</b></span>
                 <span>Current balance: <b>@f.Balance.ToString("N2")</b></span>
             </div>
-            <div class="mt-3"><TelerikButton OnClick="@ApplyRecompute" ThemeColor="primary">Reconstruct Balance</TelerikButton></div>
+            <div class="mt-3">
+                <TelerikButton OnClick="@ApplyRecompute" ThemeColor="primary" Enabled="@(rec.ExpectedBalance != f.Balance)">Reconstruct Balance</TelerikButton>
+            </div>
         </div>
     </WindowContent>
 </TelerikWindow>
+
+@if (IsAdmin)
+{
+    <TelerikWindow Modal="true" @bind-Visible="@showAccess" Width="520px">
+        <WindowActions><WindowAction Name="Close" /></WindowActions>
+        <WindowTitle>Account Access</WindowTitle>
+        <WindowContent>
+            <div class="p-1">
+                <div class="mb-2 small text-muted">1. Select the employee. 2. Tick the accounts they may use in Partial Deductions Entry. 3. Save. Admins are never restricted.</div>
+                <TelerikDropDownList Data="@employees" Value="@accessEmp" ValueChanged="@((string v) => LoadAccess(v))" TextField="EmpName" ValueField="EmpNumber" Width="100%" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains" DefaultText="Select an employee">
+                    <DropDownListSettings><DropDownListPopupSettings Height="400px" /></DropDownListSettings>
+                </TelerikDropDownList>
+                @if (string.IsNullOrEmpty(accessEmp)) { <div class="small txt-red mt-1">Select an employee first. The accounts below stay locked until you do.</div> }
+                <div class="border rounded mt-2 p-2" style="height:300px;overflow:auto;">
+                    @foreach (var a in allAccounts)
+                    {
+                        <div><label><TelerikCheckBox Value="@accessSet.Contains(a.AcctNumber)" ValueChanged="@((bool v) => ToggleAccess(a.AcctNumber, v))" Enabled="@(!string.IsNullOrEmpty(accessEmp))" /> @a.AcctName</label></div>
+                    }
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                    <TelerikButton OnClick="@SaveAccess" ThemeColor="primary" Enabled="@(!string.IsNullOrEmpty(accessEmp))">Save</TelerikButton>
+                    <TelerikButton OnClick="@(() => showAccess = false)">Close</TelerikButton>
+                </div>
+            </div>
+        </WindowContent>
+    </TelerikWindow>
+}
 </TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+    [Parameter] public bool IsAdmin { get; set; }
 
     TelerikNotification? NotificationRef;
-
-    class EmpRow { public string EmpNumber { get; set; } = ""; public string EmpName { get; set; } = ""; public bool Resigned { get; set; } }
-    class AcctRow { public string AcctNumber { get; set; } = ""; public string AcctName { get; set; } = ""; }
-    class LoanRow
-    {
-        public int Number { get; set; }
-        public string EmpNumber { get; set; } = "";
-        public string DednCode { get; set; } = "";
-        public string AcctName { get; set; } = "";
-        public DateTime? LoanDate { get; set; }
-        public DateTime? PayStart { get; set; }
-        public DateTime? PayRes { get; set; }
-        public decimal Amount { get; set; }
-        public decimal Amort { get; set; }
-        public decimal Balance { get; set; }
-        public decimal Principal { get; set; }
-        public decimal InterestRate { get; set; }
-        public int MoToPay { get; set; }
-        public int CvNo { get; set; }
-        public bool P1 { get; set; }
-        public bool P2 { get; set; }
-        public bool P3 { get; set; }
-        public bool P4 { get; set; }
-        public bool P5 { get; set; }
-        public string? Remarks { get; set; }
-        public string Status { get; set; } = "A";
-    }
-    class SchedRow { public int SchedNo { get; set; } public decimal Amort { get; set; } public string? Trn { get; set; } }
     record Opt(string Text, string Value);
 
-    List<EmpRow> employees = new();
-    List<AcctRow> accounts = new();
-    List<LoanRow> loans = new();
-    List<SchedRow> schedule = new();
+    List<M604_Emp> employees = new();
+    List<M604_Acct> allAccounts = new();
+    List<M604_Loan> loans = new();
+    List<M604_Sched> schedule = new();
+    M604_Recompute rec = new();
 
     string empSearch = "";
-    bool showAll, editing, isNew, showDelete, showRecompute;
+    bool showAll, editing, isNew, showDelete, showRecompute, showAccess, busy;
     string view = "A";
-    EmpRow? emp;
-    IEnumerable<EmpRow> selectedEmp = new List<EmpRow>();
-    IEnumerable<LoanRow> selectedLoan = new List<LoanRow>();
-    LoanRow f = new();
+    M604_Emp? emp;
+    IEnumerable<M604_Emp> selectedEmp = new List<M604_Emp>();
+    IEnumerable<M604_Loan> selectedLoan = new List<M604_Loan>();
+    M604_Loan f = new();
+
+    string? accessEmp;
+    HashSet<string> accessSet = new();
 
     List<Opt> viewOptions = new() { new("Active", "A"), new("Inactive", "I"), new("All", "*") };
     List<Opt> statusOptions = new() { new("Active", "A"), new("Inactive", "I") };
 
-    IEnumerable<EmpRow> shownEmployees => employees
-        .Where(e => showAll || !e.Resigned)
-        .Where(e => string.IsNullOrWhiteSpace(empSearch) || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase) || e.EmpNumber.Contains(empSearch, StringComparison.OrdinalIgnoreCase))
-        .OrderBy(e => e.EmpName);
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+    string User => (UserClaims?.OempNumber ?? "").Trim();
 
-    IEnumerable<LoanRow> shownLoans => emp == null ? [] : loans
-        .Where(l => l.EmpNumber == emp.EmpNumber && (view == "*" || l.Status == view))
-        .OrderBy(l => l.AcctName);
+    IEnumerable<M604_Acct> usableAccounts => allAccounts.Where(a => a.Mrk == 1);
+
+    IEnumerable<M604_Emp> shownEmployees => employees
+        .Where(e => showAll || !e.Resigned)
+        .Where(e => string.IsNullOrWhiteSpace(empSearch) || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase) || e.EmpNumber.Contains(empSearch, StringComparison.OrdinalIgnoreCase));
 
     decimal interest    => f.Principal > 0 && f.InterestRate > 0 && f.MoToPay > 0 ? f.Principal * f.InterestRate / 100 : 0;
     decimal totInterest => interest * f.MoToPay;
     decimal totAmount   => interest > 0 ? f.Principal + totInterest : 0;
     decimal expAmort    => interest > 0 ? totAmount / f.MoToPay : 0;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        employees = new()
+        if (string.IsNullOrEmpty(Opay) || string.IsNullOrEmpty(Opis)) { Warn("Payroll database is not set for this company."); return; }
+        try
         {
-            new() { EmpNumber = "00001", EmpName = "Dela Cruz, Juan P." },
-            new() { EmpNumber = "00002", EmpName = "Santos, Maria L." },
-            new() { EmpNumber = "00003", EmpName = "Reyes, Pedro A." },
-            new() { EmpNumber = "00004", EmpName = "Garcia, Ana B.", Resigned = true },
-        };
-        accounts = new()
-        {
-            new() { AcctNumber = "D019", AcctName = "Loans" },
-            new() { AcctNumber = "D020", AcctName = "Cash Advance" },
-            new() { AcctNumber = "D021", AcctName = "Salary Loan" },
-            new() { AcctNumber = "D022", AcctName = "Uniform" },
-        };
-        loans = new()
-        {
-            new() { Number = 1, EmpNumber = "00001", DednCode = "D021", AcctName = "Salary Loan", LoanDate = new(2026, 9, 1), PayStart = new(2026, 9, 15), Amount = 12000, Amort = 1000, Balance = 9000, Principal = 10000, InterestRate = 2, MoToPay = 12, P1 = true, P2 = true, Remarks = "Sample", Status = "A" },
-            new() { Number = 2, EmpNumber = "00001", DednCode = "D020", AcctName = "Cash Advance", LoanDate = new(2026, 5, 3), PayStart = new(2026, 5, 15), Amount = 3000, Amort = 500, Balance = 0, P1 = true, Status = "I" },
-            new() { Number = 3, EmpNumber = "00002", DednCode = "D019", AcctName = "Loans", LoanDate = new(2026, 10, 1), PayStart = new(2026, 10, 31), Amount = 20000, Amort = 2000, Balance = 20000, P2 = true, Status = "A" },
-        };
+            await _da._04AutoInactive(Opay, Conn);
+            employees = await _da._02Employees(Opis, Conn);
+            allAccounts = await _da._02Accounts(Opay, User, IsAdmin, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("604 load failed: " + ex); Warn("Unable to load the data. Please refresh the page."); }
     }
 
-    void PickEmployee(EmpRow? e)
+    async Task LoadLoans()
+    {
+        loans = emp == null ? new() : await _da._02Loans(emp.EmpNumber, User, IsAdmin, Opay, Conn);
+        if (view != "*") loans = loans.Where(l => l.Status == view).ToList();
+    }
+
+    async Task PickEmployee(M604_Emp? e)
     {
         emp = e; selectedEmp = e == null ? [] : [e];
-        selectedLoan = []; editing = false; isNew = false; f = new();
-        var first = shownLoans.FirstOrDefault();
-        if (first != null) PickLoan(first);
+        selectedLoan = []; editing = false; isNew = false; f = new(); schedule = new();
+        try
+        {
+            await LoadLoans();
+            if (loans.Count > 0) await PickLoan(loans[0]);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("604 pick failed: " + ex); Warn("Unable to load the deductions."); }
     }
 
-    void PickLoan(LoanRow? l)
+    async Task ChangeView(string v)
+    {
+        view = v;
+        try { await LoadLoans(); } catch (Exception ex) { Console.Error.WriteLine("604 view failed: " + ex); }
+        editing = false; f = new(); schedule = new(); selectedLoan = [];
+    }
+
+    async Task PickLoan(M604_Loan? l)
     {
         if (l == null) return;
         selectedLoan = [l];
-        f = new LoanRow
-        {
-            Number = l.Number, EmpNumber = l.EmpNumber, DednCode = l.DednCode, AcctName = l.AcctName, LoanDate = l.LoanDate, PayStart = l.PayStart, PayRes = l.PayRes,
-            Amount = l.Amount, Amort = l.Amort, Balance = l.Balance, Principal = l.Principal, InterestRate = l.InterestRate, MoToPay = l.MoToPay, CvNo = l.CvNo,
-            P1 = l.P1, P2 = l.P2, P3 = l.P3, P4 = l.P4, P5 = l.P5, Remarks = l.Remarks, Status = l.Status
-        };
+        f = l.Copy();
         editing = true; isNew = false;
+        try { schedule = await _da._02Schedule(l.Number, Opay, Conn); } catch { schedule = new(); }
     }
 
     void NewLoan()
     {
         selectedLoan = [];
-        f = new LoanRow { EmpNumber = emp!.EmpNumber, Status = "A" };
+        f = new M604_Loan { EmpNumber = emp!.EmpNumber, Status = "A" };
+        schedule = new();
         editing = true; isNew = true;
     }
 
-    void Save()
+    async Task Save()
     {
+        await Task.Delay(300);
         if (emp == null) { Warn("Invalid Employee"); return; }
         if (f.LoanDate == null) { Warn("Date of Loan is invalid."); return; }
         if (f.PayStart == null) { Warn("Please input start of payment."); return; }
         if (f.Amort <= 0) { Warn("Amortization is invalid."); return; }
         if (!(f.P1 || f.P2 || f.P3 || f.P4 || f.P5)) { Warn("Invalid Mode of Payment"); return; }
-
         if (isNew)
         {
             if (f.Amount <= 0) { Warn("Amount is invalid."); return; }
             if (string.IsNullOrEmpty(f.DednCode)) { Warn("Account Description is invalid."); return; }
-            if (loans.Any(l => l.EmpNumber == emp.EmpNumber && l.DednCode == f.DednCode && l.Status == "A"))
-            { Warn("Unable to save transaction! Existing account found in database."); return; }
+            f.AcctName = allAccounts.FirstOrDefault(a => a.AcctNumber == f.DednCode)?.AcctName ?? "";
         }
-        if (f.CvNo > 0 && loans.Any(l => l.Number != f.Number && l.CvNo == f.CvNo)) { Warn("CV number already in used!"); return; }
 
-        f.AcctName = accounts.FirstOrDefault(a => a.AcctNumber == f.DednCode)?.AcctName ?? f.AcctName;
-        if (isNew)
+        busy = true;
+        try
         {
-            f.Number = loans.Count == 0 ? 1 : loans.Max(l => l.Number) + 1;
-            f.Balance = f.Amount;
-            f.Status = "A";
-            loans.Add(f);
+            f.EmpNumber = emp.EmpNumber;
+            var (error, number) = await _da._01Save(f, isNew, User, Opay, Conn);
+            if (error != null) { Warn(error); return; }
+
+            if (view != "*" && view != f.Status) view = "*";
+            await LoadLoans();
+            var saved = loans.FirstOrDefault(l => l.Number == number);
+            if (saved != null) await PickLoan(saved);
+            NotificationRef?.Show("Saved Successfully", ThemeConstants.Notification.ThemeColor.Success);
         }
-        else
+        catch (Exception ex) { Console.Error.WriteLine("604 save failed: " + ex); Warn("Unable to save. Please try again or contact your system administrator."); }
+        finally { busy = false; }
+    }
+
+    void OnSchedEdit(GridCommandEventArgs args)
+    {
+        if (args.Item is M604_Sched s && !string.IsNullOrEmpty(s.Trn)) args.IsCancelled = true;
+    }
+
+    static string FirstLast(string name)
+    {
+        var i = name.IndexOf(',');
+        if (i < 0) return name;
+        var last = name[..i].Trim();
+        var parts = name[(i + 1)..].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+        if (parts.Count > 1 && parts[^1].TrimEnd('.').Length == 1) parts.RemoveAt(parts.Count - 1);
+        return $"{string.Join(' ', parts)} {last}".Trim();
+    }
+
+    async Task OnSchedUpdate(GridCommandEventArgs args)
+    {
+        if (args.Item is not M604_Sched s) return;
+        if (s.Amort < 0) { Warn("Amortization is invalid."); args.IsCancelled = true; return; }
+        try
         {
-            var idx = loans.FindIndex(l => l.Number == f.Number);
-            if (idx >= 0) loans[idx] = f;
+            if (!await _da._03ScheduleAmort(s.Id, s.Amort, Opay, Conn)) { Warn("This payment is already deducted and cannot be changed."); args.IsCancelled = true; }
+            schedule = await _da._02Schedule(f.Number, Opay, Conn);
         }
-        var saved = f.Number;
-        PickLoan(loans.First(l => l.Number == saved));
-        NotificationRef?.Show("Saved Successfully", ThemeConstants.Notification.ThemeColor.Success);
+        catch (Exception ex) { Console.Error.WriteLine("604 schedule failed: " + ex); Warn("Unable to save the amortization."); args.IsCancelled = true; }
     }
 
     void AskDelete() => showDelete = true;
 
-    void DoDelete()
+    async Task DoDelete()
     {
-        loans.RemoveAll(l => l.Number == f.Number);
-        showDelete = false; editing = false; f = new(); selectedLoan = [];
-        NotificationRef?.Show("Record Deleted Successfully", ThemeConstants.Notification.ThemeColor.Success);
+        showDelete = false;
+        try
+        {
+            await _da._04Delete(f.Number, Opay, Conn);
+            editing = false; f = new(); selectedLoan = []; schedule = new();
+            await LoadLoans();
+            NotificationRef?.Show("Record Deleted Successfully", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("604 delete failed: " + ex); Warn("Unable to delete the record."); }
     }
 
-    void Recompute()
+    async Task Recompute()
     {
-        schedule = Enumerable.Range(1, 12).Select(i => new SchedRow { SchedNo = i, Amort = f.Amort, Trn = i <= 3 ? $"2026{9 + (i - 1):00}0100" + i : null }).ToList();
-        showRecompute = true;
+        try
+        {
+            rec = await _da._02Recompute(f.Number, Opay, Conn);
+            showRecompute = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("604 recompute failed: " + ex); Warn("Unable to recompute."); }
     }
 
-    void ApplyRecompute()
+    async Task ApplyRecompute()
     {
-        f.Balance = f.Amount - schedule.Where(x => !string.IsNullOrEmpty(x.Trn)).Sum(x => x.Amort);
-        showRecompute = false;
-        NotificationRef?.Show("Balance reconstructed (preview only).", ThemeConstants.Notification.ThemeColor.Info);
+        try
+        {
+            await _da._03Reconstruct(f.Number, rec.ExpectedBalance, User, Opay, Conn);
+            showRecompute = false;
+            var number = f.Number;
+            await LoadLoans();
+            var saved = loans.FirstOrDefault(l => l.Number == number);
+            if (saved != null) await PickLoan(saved);
+            NotificationRef?.Show("Balance reconstructed.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("604 reconstruct failed: " + ex); Warn("Unable to reconstruct the balance."); }
+    }
+
+    void OpenAccess() { accessEmp = null; accessSet = new(); showAccess = true; }
+
+    async Task LoadAccess(string? empNo)
+    {
+        accessEmp = empNo;
+        try { accessSet = string.IsNullOrEmpty(empNo) ? new() : (await _da._02AccessOf(empNo, Opay, Conn)).ToHashSet(); }
+        catch { accessSet = new(); }
+    }
+
+    void ToggleAccess(string acct, bool on)
+    {
+        if (on) accessSet.Add(acct); else accessSet.Remove(acct);
+    }
+
+    async Task SaveAccess()
+    {
+        if (string.IsNullOrEmpty(accessEmp)) return;
+        try
+        {
+            await _da._03SaveAccess(accessEmp, accessSet.ToList(), Opay, Conn);
+            NotificationRef?.Show("Account access saved.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("604 access failed: " + ex); Warn("Unable to save the access."); }
     }
 
     void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);

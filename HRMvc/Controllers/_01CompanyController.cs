@@ -70,6 +70,7 @@ public class _01CompanyController : Controller
     [HttpGet("new")]
     public async Task<IActionResult> New()
     {
+        if (await _setup.CurrentAdminCompany(UserId()) == null) return OnlyAdminCanCreate();
         await LoadLookups();
         return View(Pages + "_01_06_NewCompany.cshtml", new V01NewCompany());
     }
@@ -84,6 +85,9 @@ public class _01CompanyController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Check(string companyCode)
     {
+        if (await _setup.CurrentAdminCompany(UserId()) == null)
+            return Json(new { ok = false, error = "Only the owner or a system admin of your current company can create a company." });
+
         companyCode = (companyCode ?? string.Empty).Trim().ToUpperInvariant();
         if (await _setup.CodeTaken(companyCode))
             return Json(new { ok = false, error = "This company code is already taken." });
@@ -96,6 +100,8 @@ public class _01CompanyController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Save(V01NewCompany input)
     {
+        if (await _setup.CurrentAdminCompany(UserId()) == null) return OnlyAdminCanCreate();
+
         input.CompanyCode = (input.CompanyCode ?? string.Empty).Trim().ToUpperInvariant();
         int.TryParse(User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value, out var userId);
 
@@ -399,6 +405,12 @@ public class _01CompanyController : Controller
     {
         int.TryParse(User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value, out var userId);
         return userId;
+    }
+
+    private IActionResult OnlyAdminCanCreate()
+    {
+        TempData["EngError"] = "Only the owner or a system admin of your current company can create a new company. Switch to that company first.";
+        return Redirect("~/12/003");
     }
 
     private IActionResult OnlyAdminCanInvite()

@@ -1,15 +1,296 @@
 ﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._555O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
 
+@inject IDA_555O _da
 
-<div class="card ">
+<style>
+    .gf-root { font-size:13px; color:#1f2a37; }
+    .gf-root .k-input-inner, .gf-root .k-input-value-text, .gf-root .k-button { font-size:13px; }
+    .gf-root .k-input-inner { padding:4px 8px; }
+    .gf-root .k-input, .gf-root .k-picker { min-height:30px; }
+    .gf-root .k-grid { font-size:12.5px; }
+    .gf-root .k-grid td, .gf-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .gf-root .k-grid th, .gf-root .k-grid .k-header, .gf-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .gf-root .k-button { padding:5px 12px; }
+    .gf-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .gf-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .gf-root .k-grid tbody tr { cursor:pointer; }
+    .gf-cols { display:flex; gap:1rem; height:calc(100vh - 175px); min-height:420px; }
+    .gf-left { width:300px; flex-shrink:0; display:flex; flex-direction:column; min-height:0; }
+    .gf-right { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; min-height:0; }
+    .gf-fill { flex:1 1 auto; min-height:0; }
+    .gf-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .gf-card .k-input, .gf-card .k-picker, .gf-card .k-input-inner, .gf-card .k-input-button { border-color:#8a95a3 !important; }
+    .gf-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .gf-who { font-weight:700; font-size:15px; margin-bottom:10px; }
+    .gf-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .gf-grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:10px 14px; align-items:start; }
+    .g4 { grid-column:span 4; } .g6 { grid-column:span 6; } .g8 { grid-column:span 8; } .g12 { grid-column:span 12; }
+    .gf-checks { display:flex; gap:16px; align-items:center; height:30px; }
+    .gf-checks label { margin:0; font-size:13px; font-weight:500; color:#222; display:flex; align-items:center; gap:5px; }
+    .gf-list-title { font-weight:700; font-size:13px; margin:2px 0 6px; }
+</style>
 
-    Group Fixed Earnings Entry - 555
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
 
+<_00BT_FullW HdrCaption="Group Fixed Earnings Entry">
+    <Details>
+    <div class="p-2 gf-root">
+        <div class="gf-cols">
 
+            <div class="gf-left">
+                <input class="form-control form-control-sm mb-2" placeholder="Locate..." @bind="clSearch" @bind:event="oninput" />
+                <div class="gf-fill">
+                    <TelerikGrid Data="@shownClients" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                                 SelectionMode="GridSelectionMode.Single" SelectedItems="@selClient" SelectedItemsChanged="@((IEnumerable<M555_Client> e) => PickClient(e.FirstOrDefault()))">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M555_Client.ClName)" Title="Group Name" />
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
+            </div>
 
-</div>
+            <div class="gf-right">
+                <div class="gf-bar">
+                    <TelerikButton OnClick="@NewEntry" Icon="@SvgIcon.Plus" Enabled="@(client != null)">New</TelerikButton>
+                    <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(editing && !busy)">@(isNew ? "Save" : "Update")</TelerikButton>
+                    <TelerikButton OnClick="@AskTerminate" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Stop" Enabled="@(cur != null && !isNew)">Terminate</TelerikButton>
+                </div>
 
+                <div class="gf-card">
+                    <div class="gf-who">@(client != null ? $"Pay Group : {client.ClName}" : "Select a pay group")</div>
+                    <div class="gf-grid">
+                        <div class="gf-f g6">
+                            <label>Acct. Name</label>
+                            <TelerikDropDownList Data="@accounts" @bind-Value="f.AcctNumber" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select earning" Width="100%" Enabled="@editing" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                        <div class="gf-f g6">
+                            <label>Designation</label>
+                            <TelerikDropDownList Data="@desigs" Value="@f.DesigCode" ValueChanged="@((string v) => DesigChanged(v))" TextField="Name" ValueField="Code" DefaultText="Select designation" Width="100%" Enabled="@editing" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                        <div class="gf-f g4"><label>Starting Date</label><TelerikDatePicker @bind-Value="f.DStart" Format="MM/dd/yyyy" Width="100%" Enabled="@editing" /></div>
+                        <div class="gf-f g4">
+                            <label>Amount</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="f.Amount" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                        </div>
+                        <div class="gf-f g4">
+                            <label>Days Parameter</label>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" Value="@f.DaysPara" ValueChanged="@((decimal v) => DaysChanged(v))" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@editing" />
+                        </div>
+                        <div class="gf-f g8">
+                            <label>Schedule</label>
+                            <div class="gf-checks">
+                                @if (HasPd("01")) { <label><TelerikCheckBox Value="@(f.P1 == 1)" ValueChanged="@((bool v) => f.P1 = v ? 1 : 0)" Enabled="@editing" /> 1st</label> }
+                                @if (HasPd("02")) { <label><TelerikCheckBox Value="@(f.P2 == 1)" ValueChanged="@((bool v) => f.P2 = v ? 1 : 0)" Enabled="@editing" /> 2nd</label> }
+                                @if (HasPd("03")) { <label><TelerikCheckBox Value="@(f.P3 == 1)" ValueChanged="@((bool v) => f.P3 = v ? 1 : 0)" Enabled="@editing" /> 3rd</label> }
+                                @if (HasPd("04")) { <label><TelerikCheckBox Value="@(f.P4 == 1)" ValueChanged="@((bool v) => f.P4 = v ? 1 : 0)" Enabled="@editing" /> 4th</label> }
+                                @if (HasPd("05")) { <label><TelerikCheckBox Value="@(f.P5 == 1)" ValueChanged="@((bool v) => f.P5 = v ? 1 : 0)" Enabled="@editing" /> 5th</label> }
+                            </div>
+                        </div>
+                        <div class="gf-f g4">
+                            <label>&nbsp;</label>
+                            <div class="gf-checks">
+                                <label><TelerikCheckBox Value="@(f.PerDay == 1)" ValueChanged="@((bool v) => PerDayChanged(v))" Enabled="@editing" /> per day earnings</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gf-fill">
+                    <TelerikGrid Data="@rows" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                                 SelectionMode="GridSelectionMode.Single" SelectedItems="@selRow" SelectedItemsChanged="@((IEnumerable<M555_Row> e) => PickRow(e.FirstOrDefault()))">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M555_Row.DStart)" Title="Date Start" DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
+                            <GridColumn Field="@nameof(M555_Row.AcctName)" Title="Account Name" />
+                            <GridColumn Field="@nameof(M555_Row.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                            <GridColumn Field="@nameof(M555_Row.DaysPara)" Title="Days Parameter" DisplayFormat="{0:N2}" Width="120px" TextAlign="ColumnTextAlign.Right" />
+                            <GridColumn Title="Prd1" Visible="@HasPd("01")" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M555_Row)?.P1)</Template></GridColumn>
+                            <GridColumn Title="Prd2" Visible="@HasPd("02")" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M555_Row)?.P2)</Template></GridColumn>
+                            <GridColumn Title="Prd3" Visible="@HasPd("03")" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M555_Row)?.P3)</Template></GridColumn>
+                            <GridColumn Title="Prd4" Visible="@HasPd("04")" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M555_Row)?.P4)</Template></GridColumn>
+                            <GridColumn Title="Prd5" Visible="@HasPd("05")" Width="52px" TextAlign="ColumnTextAlign.Center"><Template>@Tick((context as M555_Row)?.P5)</Template></GridColumn>
+                            <GridColumn Field="@nameof(M555_Row.Designation)" Title="Designation" Width="170px" />
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-2 text-muted">@(client == null ? "Select a pay group." : "No group fixed earnings for this pay group.")</div></NoDataTemplate>
+                    </TelerikGrid>
+                </div>
+
+                <div class="gf-fill mt-2" style="flex:0 0 28%;">
+                    <div class="gf-list-title">Listing</div>
+                    <div style="height:calc(100% - 26px);">
+                        <TelerikGrid Data="@listing" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(M555_Emp.EmpName)" Title="Name" />
+                                <GridColumn Field="@nameof(M555_Emp.EmpNumber)" Title="Emp. No." Width="90px" />
+                            </GridColumns>
+                            <NoDataTemplate><div class="p-2 text-muted">No employees.</div></NoDataTemplate>
+                        </TelerikGrid>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showTerm" Width="420px">
+    <WindowTitle>Confirm Terminate</WindowTitle>
+    <WindowContent>
+        <div class="p-1">Terminate <b>@(cur?.AcctName?.ToUpper())</b>?</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoTerminate" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showTerm = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+    string User => (!string.IsNullOrWhiteSpace(UserClaims?.UserName) ? UserClaims!.UserName : UserClaims?.Email ?? "")!.Trim();
+
+    List<M555_Client> clients = new();
+    string clSearch = "";
+    List<M555_Client> shownClients => clients.Where(c => string.IsNullOrWhiteSpace(clSearch) || c.ClName.Contains(clSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+    IEnumerable<M555_Client> selClient = Array.Empty<M555_Client>();
+    M555_Client? client;
+
+    List<M555_Acct> accounts = new();
+    List<M555_Desig> desigs = new();
+    List<string> periods = new();
+    List<M555_Row> rows = new();
+    List<M555_Emp> listing = new();
+    IEnumerable<M555_Row> selRow = Array.Empty<M555_Row>();
+    M555_Row? cur;
+    M555_Row f = new();
+    bool isNew, editing, busy, showTerm;
+
+    static string Tick(int? v) => v is > 0 ? "✓" : "";
+    bool HasPd(string n) => periods.Count == 0 || periods.Contains(n);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
+        {
+            clients = await _da._02Clients(Opis, Conn);
+            accounts = await _da._02Accounts(Opay, Conn);
+            desigs = await _da._02Designations(Opis, Conn);
+            periods = await _da._02Periods(Opay, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("555 load failed: " + ex); Warn("Unable to load the pay groups."); }
+    }
+
+    async Task PickClient(M555_Client? c)
+    {
+        if (c == null) return;
+        client = c; selClient = new[] { c };
+        isNew = false; editing = false; cur = null; selRow = Array.Empty<M555_Row>(); f = new(); listing = new();
+        await LoadRows();
+    }
+
+    async Task LoadRows()
+    {
+        if (client == null) return;
+        try { rows = await _da._02Rows(client.ClNumber, Opis, Opay, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("555 rows failed: " + ex); Warn("Unable to load the group fixed earnings."); rows = new(); }
+    }
+
+    async Task LoadListing()
+    {
+        listing = new();
+        if (client == null || string.IsNullOrWhiteSpace(f.DesigCode)) return;
+        try { listing = await _da._02Employees(client.ClNumber, f.DesigCode, Opis, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("555 listing failed: " + ex); }
+    }
+
+    async Task PickRow(M555_Row? r)
+    {
+        if (r == null) return;
+        cur = r; selRow = new[] { r }; isNew = false; editing = true;
+        f = new()
+        {
+            Id = r.Id, AcctNumber = r.AcctNumber, AcctName = r.AcctName, DStart = r.DStart, Amount = r.Amount, DaysPara = r.DaysPara,
+            P1 = r.P1, P2 = r.P2, P3 = r.P3, P4 = r.P4, P5 = r.P5, PerDay = r.PerDay, DesigCode = r.DesigCode, Designation = r.Designation
+        };
+        await LoadListing();
+    }
+
+    void NewEntry()
+    {
+        if (client == null) return;
+        isNew = true; editing = true; cur = null; selRow = Array.Empty<M555_Row>(); listing = new();
+        f = new() { DStart = DateTime.Today };
+    }
+
+    async Task DesigChanged(string v)
+    {
+        f.DesigCode = v ?? "";
+        await LoadListing();
+    }
+
+    void DaysChanged(decimal v)
+    {
+        f.DaysPara = v;
+        if (v > 0) f.PerDay = 0;
+    }
+
+    void PerDayChanged(bool v)
+    {
+        f.PerDay = v ? 1 : 0;
+        if (v) f.DaysPara = 0;
+    }
+
+    async Task Save()
+    {
+        if (client == null || busy) return;
+        await Task.Delay(300);
+        busy = true;
+        try
+        {
+            var (err, id) = await _da._01Save(client.ClNumber, f, isNew, User, Opis, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            await LoadRows();
+            var saved = rows.FirstOrDefault(x => x.Id == id);
+            if (saved != null) await PickRow(saved);
+            else { isNew = false; editing = false; f = new(); }
+            NotificationRef?.Show("Successfully Saved.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("555 save failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    void AskTerminate() { if (cur != null) showTerm = true; }
+
+    async Task DoTerminate()
+    {
+        showTerm = false;
+        if (cur == null || client == null) return;
+        try
+        {
+            await _da._04Delete(cur.Id, client.ClNumber, Opay, Conn);
+            cur = null; selRow = Array.Empty<M555_Row>(); f = new(); editing = false; isNew = false; listing = new();
+            await LoadRows();
+            NotificationRef?.Show("Terminated.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("555 terminate failed: " + ex); Warn("Unable to terminate."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 }

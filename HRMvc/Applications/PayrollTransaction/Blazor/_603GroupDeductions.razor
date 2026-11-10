@@ -1,15 +1,333 @@
-﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._603O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
 
+@using HRApiLibrary.DataAccess._10_Pis.OPis
 
-<div class="card ">
+@inject IDA_603O _da
+@inject IOPisReportDataAccess _pisRep
 
-    Group Deductions Entry - 603
+<style>
+    .gd-root { font-size:13px; color:#1f2a37; }
+    .gd-root .k-input-inner, .gd-root .k-input-value-text, .gd-root .k-button { font-size:13px; }
+    .gd-root .k-input-inner { padding:4px 8px; }
+    .gd-root .k-input, .gd-root .k-picker { min-height:30px; }
+    .gd-root .k-grid { font-size:12.5px; }
+    .gd-root .k-grid td, .gd-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .gd-root .k-grid th, .gd-root .k-grid .k-header, .gd-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .gd-root .k-button { padding:5px 12px; }
+    .gd-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .gd-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .gd-root .k-grid tbody tr { cursor:pointer; }
+    .gd-bar { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .gd-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .gd-card .k-input, .gd-card .k-picker, .gd-card .k-input-inner, .gd-card .k-input-button { border-color:#8a95a3 !important; }
+    .gd-title { font-weight:600; font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:#5b6573; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+    .gd-title small { text-transform:none; letter-spacing:0; font-weight:500; color:#8a93a0; }
+    .gd-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .gd-left { width:340px; flex-shrink:0; display:flex; flex-direction:column; }
+    .gd-grow { flex:1 1 auto; display:flex; flex-direction:column; margin-bottom:0; }
+    .gd-remarks { margin-top:auto; padding-top:12px; }
+    .gd-ded { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+    .gd-checks { display:flex; gap:14px; align-items:center; height:30px; }
+    .gd-checks label { margin:0; font-size:13px; font-weight:500; color:#222; display:flex; align-items:center; gap:5px; }
+</style>
 
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
 
+<_00BT_FullW HdrCaption="Group Deductions Entry">
+    <Details>
+    <div class="p-2 gd-root">
 
-</div>
+        <div class="gd-bar">
+            <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(!busy)">Save</TelerikButton>
+            <TelerikButton OnClick="@UnmarkProbationary" FillMode="outline" Icon="@SvgIcon.XOutline">Unmark Probationary Employee</TelerikButton>
+            <TelerikButton OnClick="@AskDelete" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Trash" Enabled="@(!busy)">Delete</TelerikButton>
+            <TelerikButton OnClick="@(() => showPrintOpt = true)" FillMode="outline" Icon="@SvgIcon.Print">Print</TelerikButton>
+            <span class="ms-auto small text-muted"><b>@marked.Count</b> employee(s) marked</span>
+        </div>
 
+        <div class="d-flex gap-3 flex-wrap flex-xl-nowrap">
+
+            <div class="gd-left">
+                <div class="gd-card">
+                    <div class="gd-f mb-2">
+                        <label>Client</label>
+                        <TelerikDropDownList Data="@clientOptions" @bind-Value="clientFilter" TextField="ClName" ValueField="ClNumber" Width="100%" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                            <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                        </TelerikDropDownList>
+                    </div>
+                    <div class="gd-f">
+                        <label>Employee Name</label>
+                        <input class="form-control form-control-sm" placeholder="Locate..." @bind="empSearch" @bind:event="oninput" />
+                    </div>
+                </div>
+
+                <div class="gd-card gd-grow">
+                    <div class="gd-title">Other deductions</div>
+                    @for (int i = 0; i < deds.Count; i++)
+                    {
+                        var d = deds[i];
+                        <div class="gd-ded">
+                            <TelerikDropDownList Data="@accounts" Value="@d.AcctNumber" ValueChanged="@((string v) => SetAcct(d, v))" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select deduction" Width="190px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                            <TelerikNumericTextBox Arrows="false" Step="0" Class="num-right" @bind-Value="d.Amount" Min="0" Decimals="2" Format="N2" Width="100px" />
+                            @if (!string.IsNullOrEmpty(d.AcctNumber)) { <TelerikButton OnClick="@(() => RemoveDed(d))" FillMode="flat" Icon="@SvgIcon.X" Title="Remove" /> }
+                        </div>
+                    }
+                    <div class="gd-f gd-remarks">
+                        <label>Remarks</label>
+                        <TelerikTextBox @bind-Value="remarks" MaxLength="45" Width="100%" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-fill" style="min-width:0;">
+                <div class="gd-card">
+                    <div class="gd-title">Posting period</div>
+                    <div class="d-flex gap-3 flex-wrap align-items-end">
+                        <div class="gd-f"><label>Year</label><TelerikDropDownList Data="@years" @bind-Value="year" Width="100px" /></div>
+                        <div class="gd-f"><label>Month</label><TelerikDropDownList Data="@months" @bind-Value="month" TextField="Text" ValueField="Value" Width="150px" /></div>
+                        <div class="gd-f"><label>Period</label><TelerikDropDownList Data="@periods" Value="@period" ValueChanged="@((string v) => SetPeriod(v))" TextField="PdName" ValueField="PdNumber" Width="150px" /></div>
+                        <div class="gd-f">
+                            <label>Payment Period</label>
+                            <div class="gd-checks">
+                                <label><TelerikCheckBox @bind-Value="p1" /> 1st</label>
+                                <label><TelerikCheckBox @bind-Value="p2" /> 2nd</label>
+                                <label><TelerikCheckBox @bind-Value="p3" /> 3rd</label>
+                                <label><TelerikCheckBox @bind-Value="p4" /> 4th</label>
+                                <label><TelerikCheckBox @bind-Value="p5" /> 5th</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <TelerikGrid Data="@shownEmps" Height="calc(100vh - 380px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                             Pageable="true" PageSize="25">
+                    <GridColumns>
+                        <GridColumn Width="44px" TextAlign="ColumnTextAlign.Center">
+                            <HeaderTemplate><TelerikCheckBox Value="@AllMarked" ValueChanged="@((bool v) => MarkAll(v))" /></HeaderTemplate>
+                            <Template>@{ var e = (M603_Emp)context; }<TelerikCheckBox Value="@marked.Contains(e.EmpNumber)" ValueChanged="@((bool v) => Mark(e, v))" /></Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(M603_Emp.EmpNumber)" Title="Emp. No." Width="90px" />
+                        <GridColumn Field="@nameof(M603_Emp.EmpName)" Title="Employee Name" />
+                        <GridColumn Field="@nameof(M603_Emp.Position)" Title="Position" Width="170px" />
+                        <GridColumn Field="@nameof(M603_Emp.Status)" Title="Status" Width="150px" />
+                        <GridColumn Field="@nameof(M603_Emp.RegDate)" Title="Reg. Date" DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-2 text-muted">No employees.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+
+        </div>
+    </div>
+    </Details>
+</_00BT_FullW>
+<TelerikWindow Modal="true" @bind-Visible="@showDelete" Width="440px">
+    <WindowTitle>Confirm Delete</WindowTitle>
+    <WindowContent>
+        <div class="p-1">
+            Delete <b>@delCount</b> deduction record(s) of the <b>@marked.Count</b> marked employee(s) for the deduction(s) in the list,
+            @months.First(x => x.Value == month).Text @year, @(periods.FirstOrDefault(x => x.PdNumber == period)?.PdName ?? period)?
+            <div class="small text-muted mt-2">Only deductions that are not yet processed are deleted.</div>
+        </div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoDelete" ThemeColor="error" Enabled="@(delCount > 0 && !busy)">Yes, delete</TelerikButton>
+            <TelerikButton OnClick="@(() => showDelete = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+<TelerikWindow Modal="true" @bind-Visible="@showPrintOpt" Width="360px">
+    <WindowTitle>Print Options</WindowTitle>
+    <WindowContent>
+        <div class="p-1">
+            <div class="small text-muted mb-2">@months.First(x => x.Value == month).Text @year, @(periods.FirstOrDefault(x => x.PdNumber == period)?.PdName ?? period)</div>
+            <label class="d-block mb-1"><input type="radio" name="gdprint" checked="@(printGroup == 1)" @onchange="@(() => printGroup = 1)" /> group by employee</label>
+            <label class="d-block mb-1"><input type="radio" name="gdprint" checked="@(printGroup == 2)" @onchange="@(() => printGroup = 2)" /> group by client</label>
+            <label class="d-block mb-1"><input type="radio" name="gdprint" checked="@(printGroup == 3)" @onchange="@(() => printGroup = 3)" /> group by deduction description</label>
+        </div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoPrint" ThemeColor="primary" Enabled="@(!busy)">Ok</TelerikButton>
+            <TelerikButton OnClick="@(() => showPrintOpt = false)">Cancel</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+<TelerikWindow Modal="true" @bind-Visible="@showReport" Width="min(1000px, 95vw)" Height="92vh">
+    <WindowTitle>Other Deductions Summary</WindowTitle>
+    <WindowContent>
+        @if (showReport)
+        {
+            <IframeReportRenderer DataSource="@reportData" ReportRelativePath="@reportPath" OutputFormat="PDF" Parameters="@reportParams"
+                                  AutoGenerate="true" RefreshToken="@reportToken" />
+        }
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    record Opt<T>(string Text, T Value);
+
+    TelerikNotification? NotificationRef;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    List<int> years = Enumerable.Range(DateTime.Today.Year - 3, 6).ToList();
+    List<Opt<int>> months = Enumerable.Range(1, 12).Select(i => new Opt<int>(System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(i), i)).ToList();
+    int year = DateTime.Today.Year, month = DateTime.Today.Month;
+    List<M603_Period> periods = new();
+    string period = "01";
+    bool p1 = true, p2, p3, p4, p5;
+
+    List<M603_Client> clientOptions = new();
+    string clientFilter = "_";
+    string empSearch = "";
+    List<M603_Emp> emps = new();
+    HashSet<string> marked = new();
+
+    List<M603_Acct> accounts = new();
+    List<M603_Ded> deds = new() { new() };
+    string remarks = "";
+    bool busy;
+
+    List<M603_Emp> shownEmps => emps.Where(e =>
+        (clientFilter == "_" || (clientFilter == "+" ? e.InPayroll : (e.ClNumber == clientFilter && e.EmpStat == "A")))
+        && (string.IsNullOrWhiteSpace(empSearch) || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase) || e.EmpNumber.Contains(empSearch))).ToList();
+
+    bool AllMarked => shownEmps.Count > 0 && shownEmps.All(e => marked.Contains(e.EmpNumber));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
+        {
+            var cl = await _da._02Clients(Opis, Conn);
+            clientOptions = new() { new() { ClNumber = "_", ClName = "***ALL***" }, new() { ClNumber = "+", ClName = "***IN PAYROLL LIST***" } };
+            clientOptions.AddRange(cl);
+            emps = await _da._02Employees(Opis, Conn);
+            accounts = await _da._02Accounts(Opay, Conn);
+            periods = await _da._02Periods(Opay, Conn);
+            if (periods.Count > 0) period = periods[0].PdNumber;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("603 load failed: " + ex); Warn("Unable to load the data."); }
+    }
+
+    void Mark(M603_Emp e, bool v) { if (v) marked.Add(e.EmpNumber); else marked.Remove(e.EmpNumber); }
+
+    void MarkAll(bool v)
+    {
+        foreach (var e in shownEmps) { if (v) marked.Add(e.EmpNumber); else marked.Remove(e.EmpNumber); }
+    }
+
+    void UnmarkProbationary()
+    {
+        foreach (var e in emps.Where(x => x.RegDate is { } d && d > DateTime.Today)) marked.Remove(e.EmpNumber);
+    }
+
+    void SetPeriod(string v)
+    {
+        period = v;
+        p1 = v == "01"; p2 = v == "02"; p3 = v == "03"; p4 = v == "04"; p5 = v == "05";
+    }
+
+    void SetAcct(M603_Ded d, string v)
+    {
+        d.AcctNumber = v;
+        d.AcctName = accounts.FirstOrDefault(a => a.AcctNumber == v)?.AcctName ?? "";
+        if (deds.Count > 0 && !string.IsNullOrEmpty(deds[^1].AcctNumber)) deds.Add(new());
+    }
+
+    void RemoveDed(M603_Ded d)
+    {
+        deds.Remove(d);
+        if (deds.Count == 0 || !string.IsNullOrEmpty(deds[^1].AcctNumber)) deds.Add(new());
+    }
+
+    async Task Save()
+    {
+        await Task.Delay(300);
+        if (busy) return;
+        busy = true;
+        try
+        {
+            var (err, rows) = await _da._01Save(marked.ToList(), deds, year, month, period, remarks, p1, p2, p3, p4, p5, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            NotificationRef?.Show("Successfully Saved! (" + rows + " record(s))", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("603 save failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    bool showDelete;
+    int delCount;
+
+    async Task AskDelete()
+    {
+        if (marked.Count < 1) { Warn("No employee selected."); return; }
+        if (!deds.Any(d => !string.IsNullOrEmpty(d.AcctNumber))) { Warn("No deductions selected."); return; }
+        try
+        {
+            delCount = await _da._02DeleteCount(marked.ToList(), deds, year, month, period, Opay, Conn);
+            if (delCount < 1) { Warn("Nothing to delete for the marked employees and deductions in this period."); return; }
+            showDelete = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("603 delete count failed: " + ex); Warn("Unable to check the records."); }
+    }
+
+    async Task DoDelete()
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            await _da._04Delete(marked.ToList(), deds, year, month, period, Opay, Conn);
+            showDelete = false;
+            NotificationRef?.Show(delCount + " record(s) deleted", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("603 delete failed: " + ex); Warn("Unable to delete."); }
+        finally { busy = false; }
+    }
+
+    bool showPrintOpt, showReport;
+    int printGroup = 1, reportToken;
+    List<R603_Print> reportData = new();
+    string reportPath = "";
+    Dictionary<string, object> reportParams = new();
+
+    async Task DoPrint()
+    {
+        if (busy) return;
+        busy = true;
+        try
+        {
+            var data = await _da._02Print(year, month, period, printGroup, Opis, Opay, Conn);
+            if (data.Count < 1) { showPrintOpt = false; Warn("No transcations at this period"); return; }
+            string name = "-", addr = "-";
+            var co = (await _pisRep._02CoInfo(Opis, Conn) ?? []).FirstOrDefault();
+            if (co != null) { name = co.CoName ?? ""; addr = co.CoAdd ?? ""; }
+            reportParams = new() { ["CoName"] = name, ["CoAddress"] = addr, ["RunDate"] = DateTime.Now };
+            reportData = data;
+            reportPath = "Reports/_03Payroll/K_OtherDed" + printGroup + ".trdp";
+            reportToken++;
+            showPrintOpt = false;
+            showReport = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("603 print failed: " + ex); Warn("Unable to print."); }
+        finally { busy = false; }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 }
