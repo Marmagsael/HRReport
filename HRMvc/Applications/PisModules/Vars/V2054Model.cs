@@ -23,13 +23,14 @@ namespace HRMvc.Applications.PisModules.Vars
 
 
 
-        public OInsuranceModel?           Insurance         { get; set; } = new();
-        public List<OInsuranceModel?>?    Insurances        { get; set; } = new();
-        public List<OEmpmasModel?>?       OEmpmass          { get; set; } = new();
+        public OInsuranceModel?           Insurance                 { get; set; } = new();
+        public OInsuranceModel?           InsuranceOriginalState     { get; set; } = new();
+        public List<OInsuranceModel?>?    Insurances                { get; set; } = new();
+        public List<OEmpmasModel?>?       OEmpmass                  { get; set; } = new();
 
-        public string? SelectedPolicyNo                     { get; set; } = string.Empty;
+        public string? SelectedPolicyNo                             { get; set; } = string.Empty;
 
-        public List<string> InsuranceTypes                  { get; set; } = new()
+        public List<string> InsuranceTypes                          { get; set; } = new()
         {
             "Life",
             "Accident"
@@ -39,6 +40,9 @@ namespace HRMvc.Applications.PisModules.Vars
         public string TypeErrorMsg { get; set; } = string.Empty;
         public string InsuranceDescErrorMsg { get; set; } = string.Empty;
         public string PolicyNoErrorMsg { get; set; } = string.Empty;
+        public string FaceValueErrorMsg { get; set; } = string.Empty;
+        public string PremiumErrorMsg { get; set; } = string.Empty;
+        public string DateExNoErrorMsg { get; set; } = string.Empty;
 
     }
 }

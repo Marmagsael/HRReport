@@ -50,11 +50,14 @@ public class _00UsersAccess : I_00UsersAccess
         //            LEFT JOIN {secpisschema}.empmas e ON e.Empnumber = u.loginname   
         //            WHERE LOWER(TRIM(u.Email)) = LOWER(TRIM(@Email))";
 
+        Console.WriteLine($" SCHEMA {mainschema} {secpisschema}");
         string sql = $@" SELECT u.Id, CONCAT_WS(' ',  CONCAT(TRIM(e.emplastnm), ','), TRIM(e.empfirstnm), TRIM(e.empmidnm)) AS AFullName, u.Email, u.LoginName
                     FROM {mainschema}.Users u
                     LEFT JOIN {secpisschema}.empmas e ON  LOWER(TRIM(e.email)) =  LOWER(TRIM(u.loginname))   
                     WHERE LOWER(TRIM(u.Email)) = LOWER(TRIM(@Email))";
         var data = await _sql.FetchData<UsersModel?, dynamic>(sql, new { Email = email }, connName);
+
+        Console.WriteLine($"data {data.Count()}");
         return data;
     }
 

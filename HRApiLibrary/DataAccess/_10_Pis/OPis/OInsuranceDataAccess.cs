@@ -45,8 +45,16 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis;
             return data;
         }
 
+    public async Task<List<OInsuranceModel?>?> _02ByTypeAndByPolicyNo(string type, string policy, string schema, string conn)
+    {
+        string sql = $@"SELECT * FROM {schema}.Insurance WHERE TRIM(UPPER(InsuranceType)) = @InsuranceType AND TRIM(UPPER(PolicyNo)) = @PolicyNo ORDER BY Name";
 
-        public async Task<OInsuranceModel?> _03(int id, OInsuranceModel insurance, string schema, string conn)
+        var data = await _sql.FetchLegacy<OInsuranceModel?, dynamic>(sql, new { InsuranceType = type, PolicyNo = policy }, conn);
+        return data;
+    }
+
+
+    public async Task<OInsuranceModel?> _03(int? id, OInsuranceModel insurance, string schema, string conn)
         {
             string sql = $@"Update {schema}.Insurance set Name = @Name, PolicyNo = @PolicyNo, InsuranceType = @InsuranceType, FaceValue = @FaceValue, Premiums = @Premiums, InsExpire = @InsExpire where Id = @Id;";
             await _sql.ExecuteLegacyCmd<dynamic>(sql, insurance, conn);
@@ -56,7 +64,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis;
             return data?.FirstOrDefault();
         }
 
-        public async Task<OInsuranceModel?> _04(int id, string schema, string conn)
+        public async Task<OInsuranceModel?> _04(int? id, string schema, string conn)
         {
             string sql = $@"Delete from {schema}.Insurance where Id = @Id;";
             await _sql.ExecuteLegacyCmd<dynamic>(sql, new { Id = id }, conn);
@@ -74,6 +82,7 @@ public interface IOInsuranceDataAccess
     Task<OInsuranceModel?> _01(OInsuranceModel insurance, string schema, string conn);
     Task<OInsuranceModel?> _02(int id, string schema, string conn);
     Task<List<OInsuranceModel?>?> _02(string schema, string conn);
-    Task<OInsuranceModel?> _03(int id, OInsuranceModel insurance, string schema, string conn);
-    Task<OInsuranceModel?> _04(int id, string schema, string conn);
+    Task<List<OInsuranceModel?>?> _02ByTypeAndByPolicyNo(string type, string policy, string schema, string conn);
+    Task<OInsuranceModel?> _03(int? id, OInsuranceModel insurance, string schema, string conn);
+    Task<OInsuranceModel?> _04(int? id, string schema, string conn);
 }

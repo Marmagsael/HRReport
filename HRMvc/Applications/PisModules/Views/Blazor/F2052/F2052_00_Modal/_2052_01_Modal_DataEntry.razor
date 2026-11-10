@@ -206,7 +206,7 @@
                         </div>
                         
                     }
-                    else if (isEmailChecked && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email) &&   V.IsEmailValid == true &&   V.IsEmailRegistered == false &&  V.IsEmailLinked == false)
+                    else if (isEmailChecked && !string.IsNullOrWhiteSpace(V.EmpmasToEdit.Email) &&   V.IsEmailValid == true &&   V.IsEmailRegistered == false &&  V.IsEmailLinked == false && V.EmpmasToEdit.UserId == 0)
                     {
                         <div class="txt-fcolor small">
                             This email address is available for use but is not yet registered.
@@ -273,6 +273,7 @@
 
     async Task OnSubmit()
     {
+   
         if (isBusy) return;
 
         isBusy = true;
@@ -366,10 +367,12 @@
         {
             // -- The employee being saved (not V.Empmas, which can be empty or another employee) --
             var empNumber   = V.EmpmasToEdit.EmpNumber?.Trim();
-            // var main        = await _user._02ByLoginName(empNumber, Uc.SchemaMain, Uc.Conn); why do we use empnumber instead of email?
 
-            var empEmail    = V.EmpmasToEdit.Email?.Trim(); //use email 
-            var main        = await _user._02ByLoginName(empEmail, Uc.SchemaMain, Uc.Conn); // pass email instead of empnumber since loginname is email
+
+            // Disable ------------------------------------------
+            // var main        = await _user._02ByLoginName(empNumber, Uc.SchemaMain, Uc.Conn); why do we use empnumber instead of email?
+            //var empEmail    = V.EmpmasToEdit.Email?.Trim(); //use email 
+           // var main        = await _user._02ByLoginName(empEmail, Uc.SchemaMain, Uc.Conn); // pass email instead of empnumber since loginname is email
 
             var empmasrec   = await _empmas._02Empmas_Empnumber(empNumber, Uc.SchemaUserPis, Uc.Conn); 
 
@@ -377,13 +380,18 @@
             EmpmasModel empmas = V.OldEmpmasToNewEmpmasMapper(V.EmpmasToEdit, new EmpmasModel());
             empmas.EmpNumber   = empNumber;
 
-            if(main != null)
-            {
-                userId = main.Id;
-            }
+
+            // Disable ------------------------------------------
+            // if(main != null)
+            // {
+            //     userId = main.Id;
+            // }
+            // empmas.SystemId = userId ;
 
 
-            empmas.SystemId = userId ;
+
+
+
             int? empmasId = 0;
 
 
@@ -563,6 +571,7 @@
 
     public async Task<bool> OnEmailLostFocus()
     {
+
         isEmailChecked = false;
 
         var email = V.EmpmasToEdit.Email?.Trim();
@@ -585,18 +594,23 @@
 
         V.IsEmailValid = true;
 
-        if (await CheckIfEmailRegisteredToOtherEmployee())
-        {
-            V.IsEmailLinked = false;
-            NotificationRef.Show("Unable to save. This email is already registered to another employee.", ThemeConstants.Notification.ThemeColor.Warning);
-            return false;
-        }
+
+        // Disable-----------------------------------------
+        // if (await CheckIfEmailRegisteredToOtherEmployee())
+        // {
+        //     V.IsEmailLinked = false;
+        //     NotificationRef.Show("Unable to save. This email is already registered to another employee.", ThemeConstants.Notification.ThemeColor.Warning);
+        //     return false;
+        // }
+
+        
 
         if (await CheckIfEmailLinkedToOtherEmployee())
         {
             NotificationRef.Show("Unable to save because this email is already associated with another employee.", ThemeConstants.Notification.ThemeColor.Warning);
             return false;
         }
+
 
 
         isEmailChecked = true;
@@ -676,14 +690,14 @@
             //     break;
             // }
 
-             else if (employee.LoginName.Trim() != V.EmpmasToEdit.Email.Trim())
+             else if (employee.LoginName.Trim().ToUpper() != V.EmpmasToEdit.Email.Trim().ToUpper())
             {
                 V.IsEmailRegistered = true;
                 V.EmailRegisteredToUser = employee.AFullName;
                 break;
             }
 
-            else if (employee.LoginName.Trim() == V.EmpmasToEdit.Email.Trim())
+            else if (employee.LoginName.Trim().ToUpper() == V.EmpmasToEdit.Email.Trim().ToUpper())
             {
                 V.IsEmailRegistered = true;
                 break;
