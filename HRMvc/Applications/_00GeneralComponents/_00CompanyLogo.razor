@@ -1,0 +1,113 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject ISettingsDataAccess _settings
+@inject HRMvc.StartupConfig.BackblazeB2Service _b2
+
+<div class="d-flex flex-column gap-1" style="width:180px;">
+    <div style="width:180px; height:180px">
+        <div class="border rounded overflow-hidden position-relative ratio ratio-1x1 img-container">
+            @if (!string.IsNullOrEmpty(preview))
+            {
+                <img src="@preview" class="w-100 h-100 object-fit-cover" />
+            }
+            else
+            {
+                <div class="d-flex justify-content-center align-items-center"><span class="text-center text-muted">Click to load image</span></div>
+            }
+            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center text-white logo-hover" style="background: rgba(0,0,0,0.4); cursor: pointer;">
+                <InputFile OnChange="OnPick" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" accept="image/*" />
+                <span class="btn btn-primary mb-2" style="pointer-events: none;">Load Image</span>
+            </div>
+        </div>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(preview))
+    {
+        <button type="button" class="btn btn-primary w-100" disabled="@(buffer == null)" @onclick="Upload">Upload</button>
+        <button type="button" class="btn btn-danger w-100" @onclick="Remove">Remove</button>
+    }
+    @if (!string.IsNullOrEmpty(msg))
+    {
+        <div class="small @(isError ? "text-danger" : "text-success")">@msg</div>
+    }
+</div>
+
+<style>
+    .logo-hover { opacity: 0; transition: opacity .2s ease; }
+    .img-container:hover .logo-hover { opacity: 1; }
+</style>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    string preview = "", msg = "", contentType = "image/png", fileName = "";
+    bool isError;
+    byte[]? buffer;
+    string? current;
+    const long MaxSize = 1 * 1024 * 1024;
+
+    string Pay => Uc.SchemaUserPay ?? "";
+    string Conn => Uc.Conn ?? "";
+
+    static string UrlOf(string? key)
+        => string.IsNullOrWhiteSpace(key) ? "" : key.StartsWith("/images/") ? key : "/company/logo?v=" + Uri.EscapeDataString(Path.GetFileNameWithoutExtension(key));
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Pay)) return;
+        try { current = (await _settings._02(1, Pay, Conn))?.LogoAddress; preview = UrlOf(current); }
+        catch (Exception ex) { Console.Error.WriteLine("logo load: " + ex.Message); }
+    }
+
+    void Say(string m, bool err = false) { msg = m; isError = err; }
+
+    async Task OnPick(InputFileChangeEventArgs e)
+    {
+        var f = e.File;
+        if (f.Size > MaxSize) { Say("The image must be 1 MB or less.", true); return; }
+        fileName = f.Name;
+        contentType = string.IsNullOrWhiteSpace(f.ContentType) ? "image/png" : f.ContentType;
+        using var ms = new MemoryStream();
+        await f.OpenReadStream(MaxSize).CopyToAsync(ms);
+        buffer = ms.ToArray();
+        preview = $"data:{contentType};base64,{Convert.ToBase64String(buffer)}";
+        Say("");
+    }
+
+    async Task DeleteStored()
+    {
+        var old = current;
+        if (string.IsNullOrWhiteSpace(old)) return;
+        if (!old.StartsWith("/images/")) { try { await _b2.DeleteAsync(old); } catch { } return; }
+        var local = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", old.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        try { if (System.IO.File.Exists(local)) System.IO.File.Delete(local); } catch { }
+    }
+
+    async Task Upload()
+    {
+        if (buffer == null) return;
+        try
+        {
+            var key = $"{Uc.OpisDb!.Trim()}/company/logo/{DateTime.UtcNow:yyyyMMddHHmmss}{Path.GetExtension(fileName).ToLowerInvariant()}";
+            await _b2.UploadAsync(key, buffer, contentType);
+            await DeleteStored();
+            await _settings._03(1, key, Pay, Conn);
+            current = key; preview = UrlOf(key); buffer = null;
+            Say("Logo was successfully saved.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("logo upload: " + ex); Say("Failed to upload the logo.", true); }
+    }
+
+    async Task Remove()
+    {
+        try
+        {
+            await DeleteStored();
+            await _settings._03(1, "", Pay, Conn);
+            current = ""; preview = ""; buffer = null;
+            Say("Logo was successfully removed.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("logo remove: " + ex); Say("Failed to remove the logo.", true); }
+    }
+}

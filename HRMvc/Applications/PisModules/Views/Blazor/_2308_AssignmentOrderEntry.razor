@@ -7,6 +7,7 @@
 
 @inject IDA_2308O _da
 @inject IJSRuntime _js
+@inject HRMvc.StartupConfig.CompanyLogoService _logo
 
 <style>
     .ao-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
@@ -291,7 +292,9 @@
     async Task Save()
     {
         if (!editing) return;
+        var chosen = clNumber;
         await OnEmpChanged();
+        clNumber = chosen;
         if (!allowed.Contains((statCode ?? "").Trim())) { Warn("Unable to proceed with deployment, Please check employee status."); return; }
         if (string.IsNullOrWhiteSpace(empName)) { Warn("Invalid Employee"); return; }
         if (dutyDate == null) { Warn("Date is empty"); return; }
@@ -430,12 +433,13 @@
         {
             var co = await _da._02Company(Opis, Conn);
             var sg = signs.FirstOrDefault(x => x.StaffId == signId);
+            var logo = (await _logo.GetAsync(Uc!))?.Data;
             var bytes = DduPdf.Build(new DduData
             {
                 Number = number, Date = dutyDate?.ToString("MM/dd/yyyy") ?? "", EmpNumber = empNumber, EmpName = empName, Client = ClientLine,
                 Designation = desigs.FirstOrDefault(x => x.Code == desig)?.Name ?? "", License = license, LicExpire = licExpire?.ToString("MM/dd/yyyy") ?? "",
                 Duty = "Effective this date until " + (dutyEnd?.ToString("MM/dd/yyyy") ?? "") + " or re-assigned.", FA = fa, Note = (note ?? "").Trim(),
-                CompName = co.Name, CompAdd = co.Address, SignNm = sg?.StaffNm ?? "", SignPos = sg?.StaffPos ?? ""
+                Logo = logo, CompName = co.Name, CompAdd = co.Address, SignNm = sg?.StaffNm ?? "", SignPos = sg?.StaffPos ?? ""
             });
             pdfBase64 = Convert.ToBase64String(bytes);
             showPdf = true;

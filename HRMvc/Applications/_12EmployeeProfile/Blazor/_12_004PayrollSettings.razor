@@ -4,6 +4,7 @@
 @using HRMvc.Applications._03Payroll.Views.BlazorPages._05_Management._0501
 @using Microsoft.AspNetCore.Components.Forms
 
+@inject HRMvc.StartupConfig.BackblazeB2Service _b2
 @inject DialogService _DialogService
 @inject NotificationService _NotificationService;
 
@@ -509,7 +510,7 @@
 
 
         Settings = await _settings._02(1, paydb!, conn!);
-        imagePreviewUrl = Settings.LogoAddress ?? "";
+        imagePreviewUrl = LogoUrl(Settings.LogoAddress);
         NotRerender = false;
         StateHasChanged();
     }
@@ -520,6 +521,21 @@
     private string? folderPath = "";
     private string? filePath = "";
     private string? fileName = "";
+    private string contentType = "image/png";
+
+    string LogoUrl(string? key)
+        => string.IsNullOrWhiteSpace(key) ? "" : key.StartsWith("/images/") ? key : "/company/logo?v=" + Uri.EscapeDataString(Path.GetFileNameWithoutExtension(key));
+
+    string LogoKey(string ext) => $"{UserClaims.OpisDb!.Trim()}/company/logo/{DateTime.UtcNow:yyyyMMddHHmmss}{ext}";
+
+    async Task DeleteStored()
+    {
+        var old = Settings?.LogoAddress;
+        if (string.IsNullOrWhiteSpace(old)) return;
+        if (!old.StartsWith("/images/")) { try { await _b2.DeleteAsync(old); } catch { } return; }
+        var local = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", old.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        try { if (File.Exists(local)) File.Delete(local); } catch { }
+    }
 
 
 
@@ -575,6 +591,7 @@
         }
 
         fileName = file.Name;
+        contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "image/png" : file.ContentType;
 
         // Read file into memory
         buffer = new byte[file.Size];
@@ -609,34 +626,20 @@
 
         }
 
-        // Determine user folder
-        string? uc = $"U{UserClaims.DefCompanyId}";
-
-        folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
-
-        if (!Directory.Exists(folderPath))
+        try
         {
-            Directory.CreateDirectory(folderPath);
+            var key = LogoKey(Path.GetExtension(fileName!).ToLowerInvariant());
+            await _b2.UploadAsync(key, buffer, contentType);
+            await DeleteStored();
+            Settings!.LogoAddress = key;
+            await _settings._03(1, key, paydb!, conn!);
+            imagePreviewUrl = LogoUrl(key);
         }
-
-        string? prefix = "complogo";
-
-        // Remove old logo files
-        DeleteFileIfExistsByPrefix(folderPath, prefix);
-
-        // Build new filename with prefix
-        string? newFileName = $"{prefix}_{fileName}";
-        filePath = Path.Combine(folderPath, newFileName);
-
-        // Relative path for DB
-        string? relativePath = $"/images/{uc}/{newFileName}".Replace("\\", "/");
-
-        // Save new file
-        await File.WriteAllBytesAsync(filePath, buffer);
-
-        Settings.LogoAddress = relativePath;
-
-        await _settings._03(1, Settings.LogoAddress!, paydb!, conn!);
+        catch (Exception ex)
+        {
+            _NotificationService.Notify(new NotificationMessage { Severity = NotificationSeverity.Error, Summary = "Error", Detail = $"Failed to upload the logo: {ex.Message}", Duration = 6000 });
+            return;
+        }
 
         _NotificationService.Notify(new NotificationMessage
         {
@@ -647,29 +650,9 @@
         });
     }
 
-    void DeleteFileIfExistsByPrefix(string? folderPath, string? prefix)
-    {
-        if (!Directory.Exists(folderPath))
-            return;
-
-        // Get all files starting with the prefix
-        var files = Directory.GetFiles(folderPath, prefix + "*");
-
-        foreach (var file in files)
-        {
-            File.Delete(file);
-        }
-    }
-
     private async Task RemoveImage()
     {
-        string? uc   = $"U{UserClaims.DefCompanyId}";
-       
-        folderPath  = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", uc);
-        string? prefix = "complogo";
- 
-        // Delete existing logo file(s)
-        DeleteFileIfExistsByPrefix(folderPath, prefix);
+        await DeleteStored();
 
         // Clear DB value
         Settings.LogoAddress = "";

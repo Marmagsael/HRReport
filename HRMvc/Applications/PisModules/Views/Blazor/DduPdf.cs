@@ -6,6 +6,7 @@ namespace HRMvc.Applications.PisModules.Views.Blazor;
 public class DduData
 {
     public string Number = "", Date = "", EmpNumber = "", EmpName = "", Client = "", Designation = "", License = "", LicExpire = "";
+    public byte[]? Logo;
     public string Duty = "", FA = "", Note = "", CompName = "", CompAdd = "", SignNm = "", SignPos = "";
 }
 
@@ -50,6 +51,22 @@ public static class DduPdf
                 det.Items.Add(t);
             }
 
+            if (d.Logo != null)
+            {
+                System.Drawing.Image? img = null;
+                try { img = System.Drawing.Image.FromStream(new MemoryStream(d.Logo)); } catch { }
+                if (img != null)
+                {
+                    var pic = new Telerik.Reporting.PictureBox
+                    {
+                        Value = img,
+                        Sizing = Telerik.Reporting.Drawing.ImageSizeMode.ScaleProportional,
+                        Location = new PointU(Unit.Inch(0.75), Unit.Inch(0.333 + dy)),
+                        Size = new SizeU(Unit.Inch(0.76), Unit.Inch(0.76))
+                    };
+                    det.Items.Add(pic);
+                }
+            }
             T(d.CompName, 0.490, 1.5, 5.49, 0.22, 13, true, "Arial");
             T(d.CompAdd, 0.677, 1.5, 5.49, 0.18, 9, false, "Arial");
             T("Run Date:", 0.969, 5.375, 0.55, 0.14);

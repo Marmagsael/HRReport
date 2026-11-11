@@ -83,6 +83,7 @@ public static class DependencyExt
 
         // -- Employee photos in Backblaze (appsettings "BlackBlaze"); the B2 tokens are shared, so one instance --
         builder.Services.AddSingleton<BackblazeB2Service>();
+        builder.Services.AddScoped<CompanyLogoService>();
         builder.Services.AddScoped<EmployeePhotoService>();
         builder.Services.AddScoped<I_00ClientDataAccess, _00ClientDataAccess>();
         builder.Services.AddScoped<I_00CompanyusersDataAccess, _00CompanyusersDataAccess>();
