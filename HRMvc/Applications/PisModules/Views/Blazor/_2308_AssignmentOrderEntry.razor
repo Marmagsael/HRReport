@@ -1,112 +1,445 @@
-﻿@using HRApiLibrary.Models._10_Pis.OPis;
-@using HRMvc.Applications.PisModules.Views.Blazor._2303
-@using HRMvc.Applications.PisModules.Views.Blazor._2308
-@using HRApiLibrary.DataAccess._10_Pis.OPis;
-@using HRApiLibrary.DataAccess._20_Pay.Interface
+﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._2308O
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+@using HRMvc.Applications._00GeneralComponents
 
-@inject ISettingsDataAccess _settings;
-@inject IOOfstaffDataAccess _oofstaff
-@inject IOOfstaff2DataAccess _oofstaff2
+@inject IDA_2308O _da
+@inject IJSRuntime _js
 
+<style>
+    .ao-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .ao-card { padding:12px 16px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .ao-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+    .ao-row > label { width:150px; font-weight:600; }
+    .ao-note { color:#6c757d; font-size:12px; }
+</style>
 
 <TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+<TelerikLoaderContainer Visible="@busy" Text="Please wait..." LoaderType="@LoaderType.ConvergingSpinner" />
 
-    <TelerikNotification @ref="@NotificationRef"
-                         HorizontalPosition="@NotificationHorizontalPosition.Right"
-                         VerticalPosition="@NotificationVerticalPosition.Top"
-                         AnimationType="@AnimationType.SlideLeft" />
+<_00BT_FullW HdrCaption="Assignment Order Entry">
+    <Details>
+        <div class="p-2">
+            <div class="ao-bar">
+                <TelerikButton OnClick="@New" Icon="@SvgIcon.FileAdd" Enabled="@(!busy)">New</TelerikButton>
+                <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(editing && !busy)">Save</TelerikButton>
+                <TelerikButton OnClick="@Delete" Icon="@SvgIcon.Trash" Enabled="@(!editing && number != "" && !busy)">Delete</TelerikButton>
+                <TelerikButton OnClick="@Print" Icon="@SvgIcon.FilePdf" Enabled="@(!editing && number != "")">Print</TelerikButton>
+                <span class="mx-2">|</span>
+                <TelerikButton OnClick="@OpenFind" Icon="@SvgIcon.Search" Enabled="@editing">Search Employee</TelerikButton>
+                <TelerikButton OnClick="@OpenTrans" Icon="@SvgIcon.Search">Search Transaction</TelerikButton>
+                <TelerikButton OnClick="@OpenStatus" Icon="@SvgIcon.Gear">Status Settings</TelerikButton>
+            </div>
 
-    <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
+            <div class="ao-card">
+                <div class="ao-row">
+                    <label>Duty Detail Order No.</label>
+                    <TelerikTextBox Value="@number" Enabled="false" Width="160px" />
+                    <label class="ms-4" style="width:60px;">Date</label>
+                    <TelerikDatePicker @bind-Value="dutyDate" Format="MM/dd/yyyy" Width="150px" Enabled="@editing" OnChange="@OnDateChanged" />
+                    <span class="ao-note">mm/dd/yyyy</span>
+                </div>
+            </div>
 
-    <CascadingValue Value="@v">
-        <CascadingValue Value="@NotificationRef">
+            <div class="ao-card">
+                <div class="ao-row">
+                    <label>Employee No.</label>
+                    <TelerikTextBox Value="@empNumber" ValueChanged="@((string v) => OnEmpChanged(v))" MaxLength="5" Width="120px" Enabled="@editing" />
+                    <TelerikTextBox Value="@empName" Enabled="false" Width="320px" />
+                </div>
+                <div class="ao-row">
+                    <label>Status</label>
+                    <TelerikTextBox Value="@statCode" Enabled="false" Width="60px" />
+                    <TelerikTextBox Value="@statName" Enabled="false" Width="260px" />
+                </div>
+                <div class="ao-row">
+                    <label>Lic. #</label>
+                    <TelerikTextBox Value="@license" Enabled="false" Width="200px" />
+                    <label class="ms-3" style="width:90px;">Expiry Date</label>
+                    <TelerikDatePicker Value="@licExpire" Format="MM/dd/yyyy" Width="150px" Enabled="false" />
+                </div>
+                <div class="ao-row">
+                    <label>Designation</label>
+                    <TelerikDropDownList Data="@desigs" @bind-Value="desig" TextField="Name" ValueField="Code" Width="320px" Enabled="@editing" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains" />
+                </div>
+            </div>
 
-            <_00BT_FullW HdrCaption="Assignment Order Entry">
+            <div class="ao-card">
+                <div class="ao-row">
+                    <label>Place of Duty</label>
+                    <TelerikDropDownList Data="@clients" @bind-Value="clNumber" TextField="ClName2" ValueField="ClNumber" Width="460px" Enabled="@editing" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                        <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                    </TelerikDropDownList>
+                </div>
+                <div class="ao-row">
+                    <label>Address</label>
+                    <TelerikTextBox Value="@ClientLine" Enabled="false" Width="620px" />
+                </div>
+                <div class="ao-row">
+                    <label>Effective Until</label>
+                    <TelerikDatePicker @bind-Value="dutyEnd" Format="MM/dd/yyyy" Width="150px" Enabled="@editing" />
+                    <span class="ao-note">Effective this date until the end date, or re-assigned.</span>
+                </div>
+                <div class="ao-row">
+                    <label>FA's Issued</label>
+                    <TelerikTextBox @bind-Value="fa" Width="460px" Enabled="@editing" />
+                </div>
+                <div class="ao-row">
+                    <label>Note</label>
+                    <TelerikTextBox @bind-Value="note" Width="620px" Enabled="@editing" />
+                </div>
+            </div>
 
-                <Details>
+            <div class="ao-card" style="width:420px;">
+                <div class="ao-note mb-2 text-center">BY THE AUTHORITY OF THE CHIEF SECURITY OFFICER</div>
+                <TelerikDropDownList Data="@signs" @bind-Value="signId" TextField="StaffNm" ValueField="StaffId" Width="100%" Class="mb-2" />
+                <TelerikTextBox Value="@SignPos" Enabled="false" Width="100%" Class="mb-2" />
+                <TelerikButton OnClick="@OpenSign" Icon="@SvgIcon.UserOutline" Class="w-100">Signatory Manager</TelerikButton>
+            </div>
+        </div>
+    </Details>
+</_00BT_FullW>
 
+<TelerikWindow Modal="true" @bind-Visible="@showFind" Width="640px" Height="520px">
+    <WindowTitle>Search Employee</WindowTitle>
+    <WindowContent>
+        <div class="ao-row">
+            <TelerikTextBox @bind-Value="findText" Width="320px" Placeholder="Emp. no. or name" />
+            <TelerikButton OnClick="@DoFind" ThemeColor="primary" Icon="@SvgIcon.Search">Search</TelerikButton>
+        </div>
+        <TelerikGrid Data="@found" Height="360px" Size="@ThemeConstants.Grid.Size.Small" OnRowDoubleClick="@PickEmp">
+            <GridColumns>
+                <GridColumn Field="@nameof(M2308_Employee.EmpNumber)" Title="Emp. No." Width="90px" />
+                <GridColumn Field="@nameof(M2308_Employee.FullName)" Title="Name" />
+                <GridColumn Field="@nameof(M2308_Employee.StatName)" Title="Status" Width="130px" />
+            </GridColumns>
+            <NoDataTemplate><div class="p-3 text-muted">Double-click an employee to select.</div></NoDataTemplate>
+        </TelerikGrid>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
 
+<TelerikWindow Modal="true" @bind-Visible="@showTrans" Width="420px" Height="200px">
+    <WindowTitle>Search Transaction</WindowTitle>
+    <WindowContent>
+        <div class="ao-row">
+            <label style="width:140px;">Duty Detail Order No.</label>
+            <TelerikTextBox @bind-Value="findNumber" Width="140px" />
+        </div>
+        <TelerikButton OnClick="@DoTrans" ThemeColor="primary" Icon="@SvgIcon.Search">Open</TelerikButton>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
 
-                    @*--- SEARCH EMPLOYEE  ---*@
-                    @if (v.ShowSearchEmployeeModal == true)
-                    {
-                        <_00Modal ModuleCaption="@v.SearchEmployeeModalCaption" ChildAction="() => v.ShowSearchEmployeeModal = false">
-                            <Content>
-                                <_2303_SearchEmployeeModal ChildAction="@ChildAction" />
-                            </Content>
-                        </_00Modal>
-                    }
+<TelerikWindow Modal="true" @bind-Visible="@showStatus" Width="420px" Height="560px">
+    <WindowTitle>Assignment Employee Status Settings</WindowTitle>
+    <WindowContent>
+        <div class="ao-note mb-2">Uncheck the status not applicable to the Assignment transaction.</div>
+        <TelerikGrid Data="@statuses" Height="420px" Size="@ThemeConstants.Grid.Size.Small">
+            <GridColumns>
+                <GridColumn Field="@nameof(M2308_Status.IsMarked)" Title="" Width="50px">
+                    <Template>
+                        @{ var s = (M2308_Status)context; }
+                        <TelerikCheckBox Value="@s.IsMarked" ValueChanged="@((bool v) => ToggleStatus(s, v))" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="@nameof(M2308_Status.Name)" Title="Employee Status" />
+            </GridColumns>
+        </TelerikGrid>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
 
+<TelerikWindow Modal="true" @bind-Visible="@showSign" Width="620px" Height="560px">
+    <WindowTitle>Signatory Manager</WindowTitle>
+    <WindowContent>
+        <TelerikGrid Data="@signs" Height="250px" Size="@ThemeConstants.Grid.Size.Small" SelectionMode="GridSelectionMode.Single" SelectedItems="@signSel" SelectedItemsChanged="@((IEnumerable<M2308_Signatory> l) => PickSign(l))">
+            <GridColumns>
+                <GridColumn Field="@nameof(M2308_Signatory.StaffNm)" Title="Name" />
+                <GridColumn Field="@nameof(M2308_Signatory.StaffPos)" Title="Position" />
+                <GridColumn Field="@nameof(M2308_Signatory.Defa)" Title="Default" Width="80px" TextAlign="ColumnTextAlign.Center"><Template>@(((M2308_Signatory)context).Defa == 1 ? "Yes" : "")</Template></GridColumn>
+            </GridColumns>
+        </TelerikGrid>
+        <div class="ao-row mt-3"><label style="width:90px;">Name</label><TelerikTextBox @bind-Value="sgNm" DebounceDelay="150" MaxLength="60" Width="360px" /></div>
+        <div class="ao-row"><label style="width:90px;">Position</label><TelerikTextBox @bind-Value="sgPos" DebounceDelay="150" MaxLength="60" Width="360px" /></div>
+        <div class="ao-row"><label style="width:90px;"></label><TelerikCheckBox @bind-Value="sgDef" /> <span>Default signatory</span></div>
+        <div class="ao-bar">
+            <TelerikButton OnClick="@NewSign" Icon="@SvgIcon.FileAdd">New</TelerikButton>
+            <TelerikButton OnClick="@SaveSign" ThemeColor="primary" Icon="@SvgIcon.Save">Save</TelerikButton>
+            <TelerikButton OnClick="@DeleteSign" Icon="@SvgIcon.Trash" Enabled="@(sgId > 0)">Delete</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
 
-                    @*--- ENTRY  ---*@
-                    <_2308_AOE ChildAction="@ChildAction" />
-
-                </Details>
-
-            </_00BT_FullW>
-
-        </CascadingValue>
-    </CascadingValue>
-
+<TelerikWindow Modal="true" @bind-Visible="@showPdf" Width="90vw" Height="92vh">
+    <WindowTitle>Duty Detail Order</WindowTitle>
+    <WindowContent>
+        @if (pdfBase64 != null)
+        {
+            <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+        }
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
 </TelerikRootComponent>
 
-
 @code {
-    [Parameter]
-    public UserClaimsModel Uc { get; set; } = new();
+    [Parameter] public UserClaimsModel? Uc { get; set; }
 
-    private V2304Model v = new();
+    const string DefaultFa = "Any issued firearms in the said detachment";
+    const string DefaultNote = "Subject guard will assume duty.";
 
-    private TelerikNotification NotificationRef;
+    TelerikNotification? NotificationRef;
+    string Opis => Uc?.OpisDb ?? "";
+    string Conn => Uc?.Conn ?? "";
+
+    List<M2308_Client> clients = new();
+    List<M2308_Desig> desigs = new();
+    List<M2308_Signatory> signs = new();
+    List<M2308_Employee> found = new();
+    List<M2308_Status> statuses = new();
+    List<string> allowed = new();
+
+    string number = "", empNumber = "", empName = "", statCode = "", statName = "", license = "", desig = "SG", clNumber = "_", fa = DefaultFa, note = DefaultNote;
+    string findText = "", findNumber = "";
+    DateTime? dutyDate = DateTime.Today, dutyEnd, licExpire;
+    DateTime? dateHired;
+    int signId;
+    bool showSign, sgDef;
+    int sgId;
+    string sgNm = "", sgPos = "";
+    IEnumerable<M2308_Signatory> signSel = new List<M2308_Signatory>();
+    bool busy, editing, showFind, showTrans, showStatus, showPdf;
+    string? pdfBase64;
+
+    string SignPos => signs.FirstOrDefault(s => s.StaffId == signId)?.StaffPos ?? "";
+    string ClientLine
+    {
+        get
+        {
+            var c = clients.FirstOrDefault(x => x.ClNumber == clNumber);
+            return c == null || clNumber == "_" ? "" : $"[{c.ClNumber}] {c.ClName} - {c.Addr1}";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        v.IsLoading = true;
-
-        if (Uc?.Conn == null || Uc.OpisDb == null)
+        if (string.IsNullOrEmpty(Opis)) return;
+        try
         {
-            v.UcLoaded = false;
-            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-            return;
+            var list = new List<M2308_Client> { new M2308_Client { ClNumber = "_", ClName2 = "**********Select Deployment**********" } };
+            list.AddRange(await _da._02Clients(Opis, Conn));
+            clients = list;
+            desigs = await _da._02Designations(Opis, Conn);
+            signs = await _da._02Signatories(Opis, Conn);
+            signId = (signs.FirstOrDefault(s => s.Defa == 1) ?? signs.FirstOrDefault())?.StaffId ?? 0;
+            allowed = await _da._02AllowedStatuses(Opis, Conn);
         }
-        v.UcLoaded = true;
-
-        v.OPisdb = Uc.OpisDb;
-        v.Conn = Uc.Conn;
-
-        await LoadPreparers();
-        await LoadApprovers();
-        v.IsLoading = false;
-
+        catch (Exception ex) { Console.Error.WriteLine("2308 load: " + ex); Warn("Unable to load the lists."); }
     }
 
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+    void Ok(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
+    async Task<bool> Ask(string msg) => await _js.InvokeAsync<bool>("confirm", msg);
 
-    private async Task LoadPreparers()
+    static DateTime EndOfMonth(DateTime d) => new DateTime(d.Year, d.Month, DateTime.DaysInMonth(d.Year, d.Month));
+
+    void OnDateChanged() { if (dutyDate != null) dutyEnd = EndOfMonth(dutyDate.Value); }
+
+    void ClearEmployee()
     {
-        var res = await _oofstaff._02s(v.OPisdb, v.Conn);
-        if (res.Any())
+        empNumber = ""; empName = ""; statCode = ""; statName = ""; license = ""; licExpire = null; dateHired = null;
+    }
+
+    async Task New()
+    {
+        if (allowed.Count == 0) { await OpenStatus(); return; }
+        number = ""; ClearEmployee();
+        dutyDate = DateTime.Today; dutyEnd = EndOfMonth(DateTime.Today);
+        clNumber = "_"; desig = desigs.Any(d => d.Code == "SG") ? "SG" : desigs.FirstOrDefault()?.Code ?? "";
+        fa = DefaultFa; note = DefaultNote;
+        editing = true;
+    }
+
+    async Task OnEmpChanged(string? v = null)
+    {
+        if (v != null) empNumber = v;
+        var n = (empNumber ?? "").Trim();
+        if (n == "") { ClearEmployee(); return; }
+        if (v != null && n.Length < 5) { empName = ""; statCode = ""; statName = ""; license = ""; licExpire = null; return; }
+        try
         {
-            v.Preparers = res;
-            v.Preparer = v.Preparers?.Where(p => p.Defa == 1).FirstOrDefault();
+            var e = await _da._02Employee(n, Opis, Conn);
+            if (e == null) { ClearEmployee(); Warn("Employee not found."); return; }
+            ApplyEmployee(e);
+            if (e.StatCode == "A") clNumber = e.ClNumber != "" ? e.ClNumber : "_"; else clNumber = "_";
         }
-
+        catch (Exception ex) { Console.Error.WriteLine("2308 emp: " + ex); Warn("Unable to load the employee."); }
     }
 
-    private async Task LoadApprovers()
+    void ApplyEmployee(M2308_Employee e)
     {
-        var res = await _oofstaff2._02s(v.OPisdb, v.Conn);
-        if (res.Any())
+        empNumber = e.EmpNumber; empName = e.FullName; statCode = e.StatCode; statName = e.StatName;
+        license = e.License; licExpire = e.LicExpire; dateHired = e.DateHired;
+        if (e.Desig != "") desig = e.Desig;
+    }
+
+    async Task Save()
+    {
+        if (!editing) return;
+        await OnEmpChanged();
+        if (!allowed.Contains((statCode ?? "").Trim())) { Warn("Unable to proceed with deployment, Please check employee status."); return; }
+        if (string.IsNullOrWhiteSpace(empName)) { Warn("Invalid Employee"); return; }
+        if (dutyDate == null) { Warn("Date is empty"); return; }
+        if (dutyEnd == null) { Warn("End of Duty Date is empty"); return; }
+        if (dutyDate > dutyEnd) { Warn("End of Duty Date must not be greater than Starting Date"); return; }
+        if (clNumber == "_" || string.IsNullOrEmpty(clNumber)) { Warn("Please select a deployment"); return; }
+        if (string.IsNullOrWhiteSpace(license) && !await Ask("License Number is empty. Do you still want to proceed?")) return;
+        if (licExpire == null) { if (!await Ask("License expiration is empty. Do you still want to proceed?")) return; }
+        else if (licExpire <= DateTime.Today && !await Ask("License has expired. Do you still want to proceed?")) return;
+
+        busy = true; StateHasChanged();
+        try
         {
-            v.Approvers = res;
-            v.Approver = v.Approvers?.Where(p => p.Defa == 1).FirstOrDefault();
+            var cl = clients.First(c => c.ClNumber == clNumber);
+            number = await _da._01Save(new M2308_Save
+            {
+                EmpNumber = empNumber.Trim(), ClNumber = clNumber, ClName = cl.ClName2, DutyDate = dutyDate.Value, DutyEnd = dutyEnd.Value,
+                Desig = desig ?? "", Note = note, SetHired = dateHired == null
+            }, Opis, Conn);
+            editing = false;
+            Ok("New transaction saved successfully.");
         }
-
+        catch (Exception ex) { Console.Error.WriteLine("2308 save: " + ex); Warn("Unable to save the transaction."); }
+        finally { busy = false; }
+        if (number != "" && await Ask("New transaction saved successfully. Print this record?")) await Print();
     }
 
-    private async Task ChildAction()
+    async Task Delete()
     {
-
+        if (number == "" || editing) return;
+        if (!await Ask("Are you sure you want to delete this record?")) return;
+        busy = true; StateHasChanged();
+        try
+        {
+            await _da._04Delete(number, empNumber.Trim(), Opis, Conn);
+            editing = false; number = ""; ClearEmployee(); clNumber = "_";
+            Ok("Record deleted.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2308 delete: " + ex); Warn("Unable to delete the record."); }
+        finally { busy = false; }
     }
 
+    void OpenFind() { found = new(); findText = ""; showFind = true; }
 
+    async Task DoFind()
+    {
+        try { found = await _da._02SearchEmployees(findText, Opis, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("2308 find: " + ex); Warn("Unable to search."); }
+    }
+
+    async Task PickEmp(GridRowClickEventArgs a)
+    {
+        if (a.Item is not M2308_Employee e) return;
+        empNumber = e.EmpNumber;
+        showFind = false;
+        await OnEmpChanged();
+    }
+
+    void OpenTrans() { findNumber = ""; showTrans = true; }
+
+    async Task DoTrans()
+    {
+        if (string.IsNullOrWhiteSpace(findNumber)) return;
+        try
+        {
+            var o = await _da._02Order(findNumber, Opis, Conn);
+            if (o == null) { Warn("DDO Number does not exist in the database"); return; }
+            var e = await _da._02Employee(o.EmpNumber, Opis, Conn);
+            number = o.Number; dutyDate = o.DutyDate; clNumber = o.ClNumber != "" ? o.ClNumber : "_"; note = o.Note.Trim();
+            if (e != null) { ApplyEmployee(e); }
+            if (dutyDate != null) dutyEnd = EndOfMonth(dutyDate.Value);
+            fa = DefaultFa;
+            editing = false;
+            showTrans = false;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2308 trans: " + ex); Warn("Unable to open the transaction."); }
+    }
+
+    async Task OpenStatus()
+    {
+        try { statuses = await _da._02Statuses(Opis, Conn); showStatus = true; }
+        catch (Exception ex) { Console.Error.WriteLine("2308 status: " + ex); Warn("Unable to load the statuses."); }
+    }
+
+    async Task ToggleStatus(M2308_Status s, bool v)
+    {
+        try
+        {
+            await _da._03Status(s.Code, v, Uc?.UserName ?? Uc?.Email ?? "", Opis, Conn);
+            s.IsMarked = v;
+            allowed = await _da._02AllowedStatuses(Opis, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2308 toggle: " + ex); Warn("Unable to save the setting."); }
+    }
+
+    void OpenSign() { NewSign(); showSign = true; }
+    void NewSign() { sgId = 0; sgNm = ""; sgPos = ""; sgDef = false; signSel = new List<M2308_Signatory>(); }
+    void PickSign(IEnumerable<M2308_Signatory> l)
+    {
+        signSel = l;
+        var x = l.FirstOrDefault();
+        if (x == null) return;
+        sgId = x.StaffId; sgNm = x.StaffNm; sgPos = x.StaffPos; sgDef = x.Defa == 1;
+    }
+
+    async Task ReloadSigns()
+    {
+        var keep = signId;
+        signs = await _da._02Signatories(Opis, Conn);
+        signId = signs.Any(s => s.StaffId == keep) ? keep : (signs.FirstOrDefault(s => s.Defa == 1) ?? signs.FirstOrDefault())?.StaffId ?? 0;
+    }
+
+    async Task SaveSign()
+    {
+        if (string.IsNullOrWhiteSpace(sgNm) || string.IsNullOrWhiteSpace(sgPos)) { Warn("Name and position are required."); return; }
+        try
+        {
+            await _da._01Signatory(new M2308_Signatory { StaffId = sgId, StaffNm = sgNm.Trim(), StaffPos = sgPos.Trim(), Defa = sgDef ? 1 : 0 }, Opis, Conn);
+            await ReloadSigns();
+            NewSign();
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2308 sign: " + ex); Warn("Unable to save the signatory."); }
+    }
+
+    async Task DeleteSign()
+    {
+        if (sgId <= 0 || !await Ask("Are you sure you want to delete this record?")) return;
+        try { await _da._04Signatory(sgId, Opis, Conn); await ReloadSigns(); NewSign(); }
+        catch (Exception ex) { Console.Error.WriteLine("2308 sign: " + ex); Warn("Unable to delete the signatory."); }
+    }
+
+    async Task Print()
+    {
+        if (number == "") return;
+        try
+        {
+            var co = await _da._02Company(Opis, Conn);
+            var sg = signs.FirstOrDefault(x => x.StaffId == signId);
+            var bytes = DduPdf.Build(new DduData
+            {
+                Number = number, Date = dutyDate?.ToString("MM/dd/yyyy") ?? "", EmpNumber = empNumber, EmpName = empName, Client = ClientLine,
+                Designation = desigs.FirstOrDefault(x => x.Code == desig)?.Name ?? "", License = license, LicExpire = licExpire?.ToString("MM/dd/yyyy") ?? "",
+                Duty = "Effective this date until " + (dutyEnd?.ToString("MM/dd/yyyy") ?? "") + " or re-assigned.", FA = fa, Note = (note ?? "").Trim(),
+                CompName = co.Name, CompAdd = co.Address, SignNm = sg?.StaffNm ?? "", SignPos = sg?.StaffPos ?? ""
+            });
+            pdfBase64 = Convert.ToBase64String(bytes);
+            showPdf = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2308 pdf: " + ex); Warn("Unable to create the PDF."); }
+    }
 }
