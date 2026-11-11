@@ -115,7 +115,7 @@
                                 @*---- Switch : also becomes the default company (users.DefaultCoId) ----*@
                                 @if (c.IsDefault != 1 && c.Status == "A")
                                 {
-                                    <form action="~/company/switch/@c.CompanyId" method="post" class="d-inline">
+                                    <form action="~/company/switch/@c.CompanyId" method="post" class="d-inline eng12-switch" data-company="@c.CompanyName">
                                         <button type="submit" class="btn btn-sm btn-outline-success" title="Work in this company and make it your default">
                                             <i class="fa-solid fa-right-left"></i> Switch
                                         </button>
@@ -186,3 +186,32 @@
     </div>
 </div>
 
+<div id="eng12SwitchLoader" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(255,255,255,.82);align-items:center;justify-content:center;flex-direction:column;gap:14px">
+    <div class="eng12-rings">
+        <span></span><span></span><span></span><span></span>
+    </div>
+    <div id="eng12SwitchText" style="font-weight:600;color:#1f2a37">Switching company...</div>
+</div>
+
+<style>
+    .eng12-rings { position:relative; width:96px; height:96px; }
+    .eng12-rings span { position:absolute; border-radius:50%; border:4px solid transparent; }
+    .eng12-rings span:nth-child(1) { inset:0;    border-top-color:#198754; border-bottom-color:#198754; animation:eng12spin 1.6s linear infinite; }
+    .eng12-rings span:nth-child(2) { inset:12px; border-left-color:#20c997; border-right-color:#20c997; animation:eng12spin 1.2s linear infinite reverse; }
+    .eng12-rings span:nth-child(3) { inset:24px; border-top-color:#0d6efd; border-bottom-color:#0d6efd; animation:eng12spin 0.9s linear infinite; }
+    .eng12-rings span:nth-child(4) { inset:36px; border-left-color:#6ea8fe; border-right-color:#6ea8fe; animation:eng12spin 0.7s linear infinite reverse; }
+    @@keyframes eng12spin { to { transform:rotate(360deg); } }
+</style>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('form.eng12-switch').forEach(function (f) {
+            f.addEventListener('submit', function () {
+                var name = f.getAttribute('data-company');
+                document.getElementById('eng12SwitchText').textContent = name ? 'Switching to ' + name + '...' : 'Switching company...';
+                document.getElementById('eng12SwitchLoader').style.display = 'flex';
+                document.querySelectorAll('form.eng12-switch button').forEach(function (b) { b.disabled = true; });
+            });
+        });
+    </script>
+}
