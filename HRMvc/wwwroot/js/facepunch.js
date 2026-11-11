@@ -1,7 +1,7 @@
 window.FacePunch = (function () {
     const MODELS = '/lib/face-api/models';
     let stream = null, timer = null, modelsReady = false, busy = false;
-    let state = null;
+    let state = null, gtimer = null, gbusy = false, capturing = false;
     const cfg = { limit: 0.45, gap: 0.06 };
     try { const j = JSON.parse(localStorage.getItem("facePunchCfg") || "null"); if (j) { cfg.limit = +j.limit || cfg.limit; cfg.gap = j.gap >= 0 ? +j.gap : cfg.gap; } } catch (e) { }
     function getStrictness() { return JSON.stringify(cfg); }
@@ -47,20 +47,62 @@ window.FacePunch = (function () {
 
     function stop() {
         if (timer) { clearInterval(timer); timer = null; }
+        if (gtimer) { clearInterval(gtimer); gtimer = null; }
         state = null;
         if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     }
 
+    // how well the face sits in the guide circle : 0 = centred, bigger = further away
+    function fit(v, box, guideId) {
+        const g = document.getElementById(guideId);
+        if (!g || !v.videoWidth) return { ok: true };
+        const vr = v.getBoundingClientRect(), gr = g.getBoundingClientRect();
+        const sc = Math.max(vr.width / v.videoWidth, vr.height / v.videoHeight);
+        const offX = (vr.width - v.videoWidth * sc) / 2, offY = (vr.height - v.videoHeight * sc) / 2;
+        const cxMirror = vr.width - (box.x + box.width / 2) * sc - offX;
+        const cx = vr.left + cxMirror, cy = vr.top + (box.y + box.height / 2) * sc + offY;
+        const a = gr.width / 2, b = gr.height / 2;
+        const dx = (cx - (gr.left + a)) / a, dy = (cy - (gr.top + b)) / b;
+        const off = Math.sqrt(dx * dx + dy * dy);
+        const w = box.width * sc / gr.width;
+        if (w < 0.6) return { ok: false, msg: 'Move closer so your face fills the circle.' };
+        if (w > 1.2) return { ok: false, msg: 'Move back a little so your face fits the circle.' };
+        if (off > 0.3) return { ok: false, msg: 'Center your face inside the circle.' };
+        return { ok: true };
+    }
+
+    // turns the guide circle green while the face fits it
+    function guide(videoId, guideId) {
+        const v = document.getElementById(videoId), g = document.getElementById(guideId);
+        if (gtimer) clearInterval(gtimer);
+        gtimer = setInterval(async () => {
+            if (gbusy || capturing || !g || !v.videoWidth) return;
+            gbusy = true;
+            try {
+                const r = await faceapi.detectSingleFace(v, opts());
+                g.classList.toggle('ok', !!r && fit(v, r.box, guideId).ok);
+            } catch (e) { }
+            finally { gbusy = false; }
+        }, 350);
+    }
+
     // one face of the camera -> its 128 numbers (the face print) as JSON
-    async function capture(videoId) {
-        const v = document.getElementById(videoId);
-        const r = await faceapi.detectSingleFace(v, opts()).withFaceLandmarks(true).withFaceDescriptor();
-        if (!r) return JSON.stringify({ ok: false, msg: 'No face found. Face the camera.' });
-        if (r.detection.score < 0.6) return JSON.stringify({ ok: false, msg: 'The face is not clear. Improve the light.' });
-        const box = r.detection.box;
-        if (box.width < v.videoWidth * 0.2) return JSON.stringify({ ok: false, msg: 'Move closer to the camera.' });
-        if (brightness(v, box) < 85) return JSON.stringify({ ok: false, msg: 'Too dark. Move to a brighter place and face the light.' });
-        return JSON.stringify({ ok: true, descriptor: Array.from(r.descriptor) });
+    async function capture(videoId, guideId) {
+        capturing = true;
+        try {
+            const v = document.getElementById(videoId);
+            const r = await faceapi.detectSingleFace(v, opts()).withFaceLandmarks(true).withFaceDescriptor();
+            if (!r) return JSON.stringify({ ok: false, msg: 'No face found. Face the camera.' });
+            if (r.detection.score < 0.6) return JSON.stringify({ ok: false, msg: 'The face is not clear. Improve the light.' });
+            const box = r.detection.box;
+            if (guideId) {
+                const f = fit(v, box, guideId);
+                if (!f.ok) return JSON.stringify({ ok: false, msg: f.msg });
+            }
+            if (box.width < v.videoWidth * 0.2) return JSON.stringify({ ok: false, msg: 'Move closer to the camera.' });
+            if (brightness(v, box) < 85) return JSON.stringify({ ok: false, msg: 'Too dark. Move to a brighter place and face the light.' });
+            return JSON.stringify({ ok: true, descriptor: Array.from(r.descriptor) });
+        } finally { capturing = false; }
     }
 
     // average brightness (0-255) of the face area
@@ -149,5 +191,5 @@ window.FacePunch = (function () {
         if (document.fullscreenElement) document.exitFullscreen();
     }
 
-    return { fullscreen, leaveFullscreen, init, stop, capture, startMatching, resume, getStrictness, setStrictness };
+    return { guide, fullscreen, leaveFullscreen, init, stop, capture, startMatching, resume, getStrictness, setStrictness };
 })();
