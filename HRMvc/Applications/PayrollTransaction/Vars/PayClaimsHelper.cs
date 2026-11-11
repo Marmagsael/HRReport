@@ -22,6 +22,7 @@ public static class PayClaimsHelper
             DefCompanyId    = user.FindFirst("DefCompanyId")?.Value ?? string.Empty,
             SchemaMain      = user.FindFirst("SchemaMain")?.Value ?? "Main",
             SchemaMainPis   = user.FindFirst("SchemaMainPis")?.Value ?? "MainPis",
+            SchemaMainPay   = user.FindFirst("SchemaMainPay")?.Value ?? "MainPay",
             //SchemaUserPis       = user.FindFirst("SchemaUserPis")?.Value    ?? string.Empty,
             SchemaUserPis   = user.FindFirst("PisSchema")?.Value ?? string.Empty,
             //SchemaUserPay       = user.FindFirst("SchemaUserPay")?.Value    ?? string.Empty,

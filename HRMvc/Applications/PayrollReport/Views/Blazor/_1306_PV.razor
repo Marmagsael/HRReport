@@ -1,0 +1,207 @@
+@using HRApiLibrary.Modules._1306O
+@using HRApiLibrary.Models._10_Pis.OPis
+@using ClosedXML.Excel
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using HRMvc.Applications.PayrollReport.Class
+
+@inject NotificationService _NotificationService
+@inject IDA_1306O _da
+@inject IJSRuntime _js
+
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="PIS Deployment Validation" Rv="@rv">
+    <Details>
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (pdfBase64 != null)
+                {
+                    <div style="height:90vh; margin-top:10px;">
+                        <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="fw-bold">Period</span>
+                    <RadzenDropDown @bind-Value="yr" Data="@years" Change="@(() => Reset())" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="mo" Data="@months" TextProperty="Text" ValueProperty="Id" Change="@(() => Reset())" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="pd" Data="@periods" Change="@(() => Reset())" Style="width:90px;" />
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchGroups">Fetch Data</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="ViewData">View Data</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="DownloadExcel">Excel Report</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="DownloadPdf">PDF Report</div>
+                </div>
+            </div>
+        </div>
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .tg-chk td:first-child, .tg-chk th:first-child { text-align:center; }
+    .tg-chk th:first-child .k-column-title, .tg-chk th:first-child .k-cell-inner { justify-content:center; }
+</style>
+        <TelerikRootComponent>
+        <div class="d-flex gap-3 p-2 tg-root">
+            <div style="width:340px;flex-shrink:0" class="tg-chk">
+                <div class="fw-bold mb-1">Payroll Group (@groups.Count(g => g.IsSelectedB) of @groups.Count)</div>
+                <TelerikGrid Data="@groups" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Width="44px" Title="">
+                            <HeaderTemplate>
+                                <TelerikCheckBox Value="@(groups.Count > 0 && groups.All(x => x.IsSelectedB))" ValueChanged="@((bool v) => { foreach (var x in groups) x.IsSelectedB = v; })" />
+                            </HeaderTemplate>
+                            <Template>
+                                @{ var g = (OClientModel)context; }
+                                <TelerikCheckBox @bind-Value="g.IsSelectedB" />
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(OClientModel.ClName)" Title="Payroll Group" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">Click Fetch Data.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+
+            <div style="flex:1 1 auto;min-width:0">
+                <TelerikGrid Data="@rows" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M1306_Row.PayrollGrp)" Title="Payroll Group" Width="220px" />
+                        <GridColumn Field="@nameof(M1306_Row.EmpName)" Title="Emp. Name" Width="200px" />
+                        <GridColumn Field="@nameof(M1306_Row.CurrDeployment)" Title="Curr. Deployment" Width="220px" />
+                        <GridColumn Field="@nameof(M1306_Row.StatusOnPayroll)" Title="Employee Status" Width="130px" />
+                        <GridColumn Field="@nameof(M1306_Row.TransStatus)" Title="Payroll Status" Width="110px" />
+                        <GridColumn Field="@nameof(M1306_Row.BasicPay)" Title="Basic Pay" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="110px" />
+                        <GridColumn Field="@nameof(M1306_Row.GrossPay)" Title="Gross Earnings" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="130px" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">Select payroll group, then View Data.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+        </div>
+        </TelerikRootComponent>
+    </Details>
+</_00BT_FullW>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
+
+    class Opt { public int Id { get; set; } public string Text { get; set; } = ""; }
+    List<Opt> months = new();
+    List<string> years = new(), periods = new();
+    List<OClientModel> groups = new();
+    Dictionary<string, object> listClass = new() { ["VH"] = "vh60" };
+    void ChildActionCatcher() { }
+    List<M1306_Row> rows = new();
+    string yr = "", pd = "";
+    int mo = DateTime.Today.Month;
+
+    string Prd => yr[^2..] + mo.ToString("00") + pd[^2..];
+    string User => (!string.IsNullOrWhiteSpace(Uc.UserName) ? Uc.UserName : Uc.Email ?? "")!.Trim();
+
+    string? pdfBase64;
+    void CloseReportModal(bool ans) { rv.ShowModal = ans; if (!ans) pdfBase64 = null; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        rv.MCaption = "PIS Deployment Validation";
+        if (string.IsNullOrWhiteSpace(Uc.OpayDb)) return;
+        string[] mn = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+        months = mn.Select((m, i) => new Opt { Id = i + 1, Text = m }).ToList();
+        for (int y = DateTime.Today.Year + 1; y >= 2007; y--) years.Add(y.ToString());
+        yr = DateTime.Today.Year.ToString();
+        periods = await _da._02Periods(Uc.OpayDb!, Uc.Conn!);
+        pd = periods.FirstOrDefault() ?? "";
+    }
+
+    static string Money(decimal? v) => v is null ? "" : v.Value.ToString("N2");
+
+    void Notify(NotificationSeverity s, string summary, string detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = s, Summary = summary, Detail = detail, Duration = 5000 });
+
+    void Reset() { groups = new(); rows = new(); }
+
+    async Task FetchGroups()
+    {
+        Reset();
+        try
+        {
+            rv.Isloaded = true;
+            groups = (await _da._02Groups(Prd, Uc.OpisDb!, Uc.OpayDb!, Uc.Conn!)).Select(g => new OClientModel { ClNumber = g.ClNumber, ClName = g.ClName }).ToList();
+            if (groups.Count == 0) Notify(NotificationSeverity.Info, "Message", "No payroll found for the period.");
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator."); }
+        finally { rv.Isloaded = false; }
+    }
+
+    async Task ViewData()
+    {
+        rows = new();
+        if (groups.Count == 0) { Notify(NotificationSeverity.Warning, "Msg", "Payroll Group is empty"); return; }
+        var sel = groups.Where(g => g.IsSelectedB).Select(g => g.ClNumber!).ToList();
+        if (sel.Count == 0) { Notify(NotificationSeverity.Warning, "Empty Selection", "Nothing to view, please select payroll group from the list"); return; }
+        try
+        {
+            rv.Isloaded = true;
+            rows = await _da._02Fetch(Prd, sel, User, Uc.OpisDb!, Uc.OpayDb!, Uc.Conn!);
+            if (rows.Count == 0) Notify(NotificationSeverity.Info, "Message", "No records found.");
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator."); }
+        finally { rv.Isloaded = false; }
+    }
+
+    string PeriodText => $"Period {yr}  {months[mo - 1].Text} {pd}";
+
+    async Task DownloadExcel()
+    {
+        if (!rows.Any()) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("PIS Validation");
+        ws.Cell(1, 1).Value = "PIS - Payroll Validation Report"; ws.Cell(1, 1).Style.Font.FontSize = 16; ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(2, 1).Value = PeriodText; ws.Cell(2, 1).Style.Font.FontSize = 12;
+        string[] hd = { "Payroll Group", "Emp Name", "Deployment", "Emp. Status", "Payroll Status", "Gross Earnings" };
+        for (int i = 0; i < hd.Length; i++) ws.Cell(4, i + 1).Value = hd[i];
+        ws.Row(4).Style.Font.Bold = true;
+        int n = 4;
+        foreach (var r in rows)
+        {
+            n++;
+            ws.Cell(n, 1).Value = r.PayrollGrp.Trim(); ws.Cell(n, 2).Value = r.EmpName.Trim(); ws.Cell(n, 3).Value = r.CurrDeployment.Trim();
+            ws.Cell(n, 4).Value = r.StatusOnPayroll; ws.Cell(n, 5).Value = r.TransStatus;
+            if (r.GrossPay != null) ws.Cell(n, 6).Value = r.GrossPay.Value;
+        }
+        ws.Columns().AdjustToContents();
+        ws.Column(6).Style.NumberFormat.Format = "#,##0.00;-#,##0.00;\"-\"";
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await _js.InvokeVoidAsync("downloadFile", $"PISValidation_{Prd}.xlsx", Convert.ToBase64String(ms.ToArray()));
+    }
+
+    async Task DownloadPdf()
+    {
+        if (!rows.Any()) return;
+        try
+        {
+            var cols = new List<PdfCol>
+            {
+                new() { Title = "Payroll Group", Width = 2.4 }, new() { Title = "Emp. Name", Width = 2.4 }, new() { Title = "Curr. Deployment", Width = 2.4 },
+                new() { Title = "Employee Status", Width = 1.3 }, new() { Title = "Payroll Status", Width = 1.1 },
+                new() { Title = "Basic Pay", Width = 1.1, Right = true }, new() { Title = "Gross Earnings", Width = 1.2, Right = true }
+            };
+            var list = rows.Select(r => (new[] { r.PayrollGrp.Trim(), r.EmpName.Trim(), r.CurrDeployment.Trim(), r.StatusOnPayroll, r.TransStatus, Money(r.BasicPay), Money(r.GrossPay) }, 0)).ToList();
+            var bytes = TablePdf.Build("PIS - Payroll Validation Report", new List<string> { PeriodText }, cols, list);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            rv.ShowModal = true;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "PDF failed", ex.Message); }
+    }
+}

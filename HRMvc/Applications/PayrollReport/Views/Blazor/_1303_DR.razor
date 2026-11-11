@@ -1,0 +1,221 @@
+@using HRApiLibrary.Modules._1303O
+@using ClosedXML.Excel
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using HRMvc.Applications.PayrollReport.Class
+
+@inject NotificationService _NotificationService
+@inject IDA_1303O _da
+@inject IJSRuntime _js
+
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="Payroll Hours Rendered Report" Rv="@rv">
+    <Details>
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (pdfBase64 != null)
+                {
+                    <div style="height:90vh; margin-top:10px;">
+                        <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="fw-bold">Payroll</span>
+                    <RadzenDropDown @bind-Value="option" Data="@options" TextProperty="Text" ValueProperty="Id" Disabled="@fetched" Style="width:170px;" />
+                    <span class="fw-bold">Payroll Group</span>
+                    <RadzenDropDown @bind-Value="clNumber" Data="@clients" TextProperty="ClName" ValueProperty="ClNumber" AllowFiltering="true"
+                                    FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Disabled="@fetched" Style="width:260px;" />
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    <span class="fw-bold">Coverage :</span>
+                    <span>Start</span>
+                    <RadzenDropDown @bind-Value="yr1" Data="@years" Disabled="@fetched" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="mo1" Data="@months" TextProperty="Text" ValueProperty="Id" Disabled="@fetched" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="pd1" Data="@periods" Disabled="@fetched" Style="width:90px;" />
+                    <span class="ms-3">End</span>
+                    <RadzenDropDown @bind-Value="yr2" Data="@years" Disabled="@fetched" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="mo2" Data="@months" TextProperty="Text" ValueProperty="Id" Disabled="@fetched" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="pd2" Data="@periods" Disabled="@fetched" Style="width:90px;" />
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="NewQuery">New Query</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">Fetch Data</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="DownloadExcel">Excel Report</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="DownloadPdf">PDF Report</div>
+                </div>
+            </div>
+        </div>
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .tg-chk td:first-child, .tg-chk th:first-child { text-align:center; }
+    .tg-chk th:first-child .k-column-title, .tg-chk th:first-child .k-cell-inner { justify-content:center; }
+</style>
+        <TelerikRootComponent>
+        <div class="p-2 tg-root">
+            <TelerikGrid Data="@res.Rows" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                <GridColumns>
+                    <GridColumn Field="@nameof(M1303_Row.EmpName)" Title="Emp. Name" Width="220px" />
+                    <GridColumn Field="@nameof(M1303_Row.Prd)" Title="Period" Width="90px" />
+                    <GridColumn Field="@nameof(M1303_Row.Rate)" Title="Rate" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                    <GridColumn Field="@nameof(M1303_Row.Th)" Title="TH" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="80px" />
+                    @foreach (var a in res.Accts)
+                    {
+                        var ac = a;
+                        <GridColumn Title="@ac.Caption" TextAlign="ColumnTextAlign.Right" Width="95px">
+                            <Template>@Z(((M1303_Row)context).Amt.GetValueOrDefault(ac.AcctNumber))</Template>
+                        </GridColumn>
+                    }
+                    <GridColumn Field="@nameof(M1303_Row.Gross)" Title="Gross Salary" TextAlign="ColumnTextAlign.Right" Width="120px">
+                        <Template>@Z(((M1303_Row)context).Gross)</Template>
+                    </GridColumn>
+                </GridColumns>
+                <NoDataTemplate><div class="p-3 text-muted">Select the filters, then Fetch Data.</div></NoDataTemplate>
+            </TelerikGrid>
+        </div>
+        </TelerikRootComponent>
+    </Details>
+</_00BT_FullW>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
+
+    class Opt { public int Id { get; set; } public string Text { get; set; } = ""; }
+    List<Opt> options = new() { new() { Id = 1, Text = "Lock Records" }, new() { Id = 2, Text = "Saved Transaction" } };
+    List<Opt> months = new();
+    List<string> years = new(), periods = new();
+    List<M1303_Client> clients = new();
+    M1303_Result res = new();
+    int option = 1, mo1 = DateTime.Today.Month, mo2 = DateTime.Today.Month;
+    string clNumber = "", yr1 = "", yr2 = "", pd1 = "", pd2 = "";
+    bool fetched;
+
+    string? pdfBase64;
+    void CloseReportModal(bool ans) { rv.ShowModal = ans; if (!ans) pdfBase64 = null; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        rv.MCaption = "Payroll Hours Rendered Report";
+        if (string.IsNullOrWhiteSpace(Uc.OpayDb)) return;
+        string[] mn = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+        months = mn.Select((m, i) => new Opt { Id = i + 1, Text = m }).ToList();
+        for (int y = DateTime.Today.Year; y >= 2007; y--) years.Add(y.ToString());
+        yr1 = yr2 = years.First();
+        clients = await _da._02Clients(Uc.OpisDb!, Uc.Conn!);
+        clNumber = clients.FirstOrDefault()?.ClNumber ?? "";
+        periods = await _da._02Periods(Uc.OpayDb!, Uc.Conn!);
+        pd1 = pd2 = periods.FirstOrDefault() ?? "";
+    }
+
+    static string Z(decimal? v) => v is null or 0 ? "" : v.Value.ToString("N2");
+
+    static string Trn(string yr, int mo, string pd) => yr[^2..] + mo.ToString("00") + pd[^2..];
+
+    void Notify(NotificationSeverity s, string summary, string detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = s, Summary = summary, Detail = detail, Duration = 5000 });
+
+    void NewQuery() { res = new(); fetched = false; }
+
+    async Task FetchData()
+    {
+        if (fetched) return;
+        try
+        {
+            rv.Isloaded = true;
+            res = await _da._02Fetch(clNumber, Trn(yr1, mo1, pd1), Trn(yr2, mo2, pd2), option == 2, Uc.OpisDb!, Uc.OpayDb!, Uc.Conn!);
+            fetched = res.Rows.Any();
+            if (!fetched) Notify(NotificationSeverity.Info, "Message", "No records found on parameters given!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator.");
+        }
+        finally { rv.Isloaded = false; }
+    }
+
+    async Task DownloadPdf()
+    {
+        if (!res.Rows.Any()) return;
+        try
+        {
+            string cov = $"{yr1} {months[mo1 - 1].Text} prd {pd1} to {yr2} {months[mo2 - 1].Text} prd {pd2}";
+            var bytes = DutyRenderedPdf.Build(res, cov, clients.FirstOrDefault(c => c.ClNumber == clNumber)?.ClName ?? "");
+            pdfBase64 = Convert.ToBase64String(bytes);
+            rv.ShowModal = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            Notify(NotificationSeverity.Error, "PDF failed", ex.Message);
+        }
+    }
+
+    async Task DownloadExcel()
+    {
+        if (!res.Rows.Any()) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Duty Rendered");
+        ws.Cell(1, 1).Value = "Duty rendered Report"; ws.Cell(1, 1).Style.Font.FontSize = 16; ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(2, 1).Value = $"For the period covering {yr1}  {months[mo1 - 1].Text}  prd {pd1}  to  {yr2} {months[mo2 - 1].Text}  prd {pd2}";
+        ws.Cell(2, 1).Style.Font.FontSize = 12;
+        ws.Cell(3, 1).Value = "Payroll Group : " + clients.FirstOrDefault(c => c.ClNumber == clNumber)?.ClName;
+
+        int hr = 5;
+        var heads = new List<string> { "Emp No", "Emp Name", "Period", "Rate", "TH" };
+        heads.AddRange(res.Accts.Select(a => a.Caption));
+        heads.Add("Gross");
+        for (int i = 0; i < heads.Count; i++) ws.Cell(hr, i + 1).Value = heads[i];
+        ws.Row(hr).Style.Font.Bold = true;
+        int lastCol = heads.Count;
+
+        int n = hr, start = hr + 1;
+        string prd = res.Rows[0].Prd;
+        void PeriodTotal()
+        {
+            ws.Cell(n, 2).Value = "Period Total";
+            for (int c = 4; c <= lastCol; c++)
+            {
+                ws.Cell(n, c).FormulaA1 = $"=SUM({ws.Cell(start, c).Address}:{ws.Cell(n - 1, c).Address})";
+                ws.Cell(n, c).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+                ws.Cell(n, c).Style.Border.BottomBorder = XLBorderStyleValues.Double;
+            }
+            ws.Row(n).Style.Font.Bold = true;
+        }
+        foreach (var r in res.Rows)
+        {
+            n++;
+            if (r.Prd != prd)
+            {
+                PeriodTotal();
+                n += 2; start = n; prd = r.Prd;
+            }
+            ws.Cell(n, 1).SetValue(r.EmpNumber);
+            ws.Cell(n, 2).Value = r.EmpName.Trim();
+            ws.Cell(n, 3).Value = r.Prd;
+            ws.Cell(n, 4).Value = r.Rate;
+            ws.Cell(n, 5).Value = r.Th;
+            for (int i = 0; i < res.Accts.Count; i++) ws.Cell(n, 6 + i).Value = r.Amt.GetValueOrDefault(res.Accts[i].AcctNumber);
+            if (r.Gross != null) ws.Cell(n, lastCol).Value = r.Gross.Value;
+        }
+        n++;
+        PeriodTotal();
+        ws.Columns().AdjustToContents();
+        for (int c = 4; c <= lastCol; c++) ws.Column(c).Style.NumberFormat.Format = "#,##0.00;-#,##0.00;\"-\"";
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await _js.InvokeVoidAsync("downloadFile", $"DutyRendered_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx", Convert.ToBase64String(ms.ToArray()));
+    }
+}

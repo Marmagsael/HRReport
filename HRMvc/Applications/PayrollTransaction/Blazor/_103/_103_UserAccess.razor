@@ -241,7 +241,7 @@
         try
         {
             var result = await _menu._02ByIdParent( idparent, V.Mainpaydb, V.Conn);
-            V.DtlsMenus = result ?? [];
+            V.DtlsMenus = (result ?? []).Where(x => x?.Type == null || !x.Type.StartsWith("Separator", StringComparison.OrdinalIgnoreCase)).ToList();
 
             var access          = await _domainaccess._02ByUserName_Module( V.User.Empnumber, V.Module, V.OPaydb, V.Conn) ?? [];
             var accessMenuIds   = access.Where(x => x.Idsysmenu.HasValue).Select(x => x.Idsysmenu!.Value).ToList();

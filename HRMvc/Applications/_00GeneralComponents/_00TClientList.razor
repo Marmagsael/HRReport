@@ -8,15 +8,24 @@
 <div class="bg-lightgray ms-1 p-2 bordered-bottom bordered-left  bordered-right mt-1">
     <div class="d-flex p-0 fw-bold ">
         <div class=" w-65p text-center bordered-right ">
-            <div class="d-flex gap-1  p-1">
-                <div class="w-25p h-35p card p-1 mb-cbtn" @onclick="@(() => Mark(true))">
-                    <i class="fa-solid fa-check-double"></i>
+            @if (CheckAllMode)
+            {
+                <div class="p-2">
+                    <InputCheckbox Value="@(Clients.Count > 0 && Clients.All(x => x.IsSelectedB))" ValueChanged="(bool v) => Mark(v)"
+                                   ValueExpression="() => allMarked" />
                 </div>
-                <div class=" w-25p h-35p card p-1 mb-cbtn text-danger " @onclick="@(() => Mark(false))">
-                    <i class="fa-solid fa-xmark"></i>
+            }
+            else
+            {
+                <div class="d-flex gap-1  p-1">
+                    <div class="w-25p h-35p card p-1 mb-cbtn" @onclick="@(() => Mark(true))">
+                        <i class="fa-solid fa-check-double"></i>
+                    </div>
+                    <div class=" w-25p h-35p card p-1 mb-cbtn text-danger " @onclick="@(() => Mark(false))">
+                        <i class="fa-solid fa-xmark"></i>
+                    </div>
                 </div>
-            </div>
-
+            }
         </div>
         <div class="p-2 flex-fill">Deployment Name </div>
     </div>
@@ -46,6 +55,8 @@
 @code {
     [Parameter] public List<OClientModel> Clients { get; set; } = [];
     [Parameter] public EventCallback<object> ChildAction { get; set; }
+    [Parameter] public bool CheckAllMode { get; set; }
+    bool allMarked;
     [Parameter]
     public Dictionary<string, object> ClassParams { get; set; } = new()
     {

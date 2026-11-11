@@ -1,27 +1,359 @@
-﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._503O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+@using ClosedXML.Excel
 
+@inject IDA_503O _da
+@inject IJSRuntime JS
 
-<div class="card ">
+<style>
+    .tm-root { font-size:13px; color:#1f2a37; }
+    .tm-root .k-input-inner, .tm-root .k-input-value-text, .tm-root .k-button { font-size:13px; }
+    .tm-root .k-input-inner { padding:4px 8px; }
+    .tm-root .k-input, .tm-root .k-picker { min-height:30px; }
+    .tm-root .k-grid { font-size:12.5px; }
+    .tm-root .k-grid td, .tm-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tm-root .k-grid th, .tm-root .k-grid .k-header, .tm-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .tm-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .tm-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .tm-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .tm-bar .tm-lbl { font-weight:700; }
+    .tm-cols { display:flex; gap:1rem; height:calc(100vh - 235px); min-height:420px; }
+    .tm-left { width:360px; flex-shrink:0; display:flex; flex-direction:column; gap:8px; min-height:0; }
+    .tm-right { flex:1 1 auto; min-width:0; min-height:0; }
+    .tm-box { border:1px solid #c5ccd6; border-radius:6px; background:#fff; overflow:auto; min-height:0; }
+    .tm-title { font-weight:700; font-size:12.5px; margin:0 0 4px; }
+    .tm-st .k-grid th:first-child .k-column-title, .tm-st .k-grid th:first-child .k-cell-inner { justify-content:center; }
+    .tm-st .k-grid td:first-child { text-align:center; }
+    .tm-posted td { color:#c00000; }
+</style>
 
-    13th Month Entry - 503 >>
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+<TelerikLoaderContainer Visible="@busy" Text="Please wait..." LoaderType="@LoaderType.ConvergingSpinner" />
 
-    <div class="card-body">
-        <div class="" @onclick="test">Test >>>>>></div>
+<_00BT_FullW HdrCaption="13th Month Salary Deduction Setter">
+    <Details>
+    <div class="p-2 tm-root">
+
+        <div class="tm-bar">
+            <span class="tm-lbl">Payroll Posting</span>
+            <TelerikDropDownList Data="@years" Value="@year" ValueChanged="@((string v) => { year = v; ClearRows(); })" Width="85px" />
+            <TelerikDropDownList Data="@months" Value="@month" ValueChanged="@((int v) => { month = v; ClearRows(); })" TextField="Text" ValueField="Id" Width="85px" />
+            <TelerikDropDownList Data="@periods" Value="@periodId" ValueChanged="@((string v) => { periodId = v; ClearRows(); })" Width="80px" />
+            <span class="tm-lbl ms-3">13th Mo Acct</span>
+            <TelerikDropDownList Data="@accounts" Value="@acctNumber" ValueChanged="@((string v) => AcctChanged(v))" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select account" Width="260px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+            </TelerikDropDownList>
+        </div>
+
+        <div class="tm-bar">
+            <span class="tm-lbl">Select Coverage Date</span>
+            <TelerikDropDownList Data="@halves" Value="@half" ValueChanged="@((string v) => HalfChanged(v))" TextField="Text" ValueField="Id" Width="150px" />
+            <TelerikDropDownList Data="@covYears" Value="@covYear" ValueChanged="@((string v) => CovYearChanged(v))" Width="85px" />
+            <TelerikButton OnClick="@FetchData" ThemeColor="primary" Icon="@SvgIcon.Download" Class="ms-3">Fetch Data</TelerikButton>
+            <TelerikButton OnClick="@Save" Icon="@SvgIcon.Save" Enabled="@canAct">Save</TelerikButton>
+            <TelerikButton OnClick="@ToExcel" Icon="@SvgIcon.FileExcel" Enabled="@canAct">To Excel</TelerikButton>
+            <TelerikButton OnClick="@AskRemove" Icon="@SvgIcon.Trash" Enabled="@canAct">Remove Save Amt</TelerikButton>
+        </div>
+
+        <div class="tm-cols">
+            <div class="tm-left">
+                <div>
+                    <div class="tm-title">Emp. Status</div>
+                    <div class="tm-box tm-st" style="height:170px">
+                        <TelerikGrid Data="@statuses" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                            <GridColumns>
+                                <GridColumn Width="40px" Title="" TextAlign="ColumnTextAlign.Center">
+                                    <HeaderTemplate>
+                                        <TelerikCheckBox Value="@(statuses.Count > 0 && statuses.All(x => x.Mrk))" ValueChanged="@((bool v) => { foreach (var x in statuses) x.Mrk = v; ClearRows(); })" />
+                                    </HeaderTemplate>
+                                    <Template>
+                                        @{ var s = (M503_Status)context; }
+                                        <TelerikCheckBox Value="@s.Mrk" ValueChanged="@((bool v) => { s.Mrk = v; ClearRows(); })" />
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn Field="@nameof(M503_Status.Name)" Title="Emp. Status" />
+                            </GridColumns>
+                        </TelerikGrid>
+                    </div>
+                </div>
+                <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column">
+                    <div class="tm-title">Pay Groups and Periods</div>
+                    <div class="tm-box" style="flex:1 1 auto">
+                        <TelerikTreeView Data="@nodes" @bind-ExpandedItems="@expanded" CheckBoxMode="@TreeViewCheckBoxMode.Multiple"
+                                         CheckedItems="@checkedNodes" CheckedItemsChanged="@NodesChecked">
+                            <TreeViewSettings><TreeViewCheckBoxSettings CheckChildren="false" CheckParents="false" /></TreeViewSettings>
+                            <TreeViewBindings>
+                                <TreeViewBinding ItemsField="Items" TextField="Text" />
+                            </TreeViewBindings>
+                        </TelerikTreeView>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tm-right tm-box">
+                <TelerikGrid Data="@rows" Height="100%" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                             EditMode="GridEditMode.Incell" OnRowRender="@OnRowRender">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M503_Row.EmpName)" Title="Employee Name" Editable="false" Width="230px" />
+                        <GridColumn Field="@nameof(M503_Row.NewAmt)" Title="13th Month" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="110px">
+                            <EditorTemplate>
+                                @{ var r = (M503_Row)context; }
+                                <TelerikNumericTextBox @bind-Value="r.NewAmt" Arrows="false" Step="0" Decimals="4" Format="N2" Class="num-right" Width="100%" Enabled="@(r.IsPosted != 1)" />
+                            </EditorTemplate>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(M503_Row.PrevAmt)" Title="Saved Amt" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Editable="false" Width="110px" />
+                        <GridColumn Title="Posted" Editable="false" Width="70px" TextAlign="ColumnTextAlign.Center">
+                            <Template>@(((M503_Row)context).IsPosted == 1 ? "✔" : "")</Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(M503_Row.Bsal)" Title="T. BSal" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Editable="false" Width="120px" />
+                        <GridColumn Field="@nameof(M503_Row.ClName)" Title="Deployment" Editable="false" Width="160px" />
+                        <GridColumn Field="@nameof(M503_Row.EmpStatus)" Title="Emp. Status" Editable="false" Width="130px" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">Select the periods, then Fetch Data.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+        </div>
     </div>
+    </Details>
+</_00BT_FullW>
 
-</div>
-
+<TelerikWindow Modal="true" @bind-Visible="@showRemove" Width="420px">
+    <WindowTitle>Remove Save Amt</WindowTitle>
+    <WindowContent>
+        <div class="p-1">This will delete unposted record(s) only!</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoRemove" ThemeColor="primary">OK</TelerikButton>
+            <TelerikButton OnClick="@(() => showRemove = false)">Cancel</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
 
 @code {
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
 
-    protected override void OnInitialized()
+    TelerikNotification? NotificationRef;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    class Opt { public int Id { get; set; } public string Text { get; set; } = ""; }
+    class Half { public string Id { get; set; } = ""; public string Text { get; set; } = ""; }
+    class Node
     {
-        Console.WriteLine("test 1");
+        public string Text { get; set; } = "";
+        public string ClNumber { get; set; } = "";
+        public string Prd { get; set; } = "";
+        public List<Node> Items { get; set; } = new();
     }
 
-    void test()
+    List<string> years = new(), periods = new(), covYears = new();
+    List<Opt> months = new();
+    List<Half> halves = new() { new() { Id = "01", Text = "June - November" }, new() { Id = "02", Text = "December - May" } };
+    List<M503_Acct> accounts = new();
+    List<M503_Status> statuses = new();
+    List<M503_Client> clients = new();
+    List<M503_Row> rows = new();
+    List<Node> nodes = new();
+    IEnumerable<object> expanded = new List<object>();
+    IEnumerable<object> checkedNodes = new List<object>();
+
+    string year = "", periodId = "", acctNumber = "", half = "01", covYear = "";
+    int month = DateTime.Today.Month;
+    bool busy, canAct, showRemove;
+
+    protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("test 2");
+        if (string.IsNullOrEmpty(Opay)) return;
+        int y = DateTime.Today.Year;
+        years = new() { (y + 1).ToString(), y.ToString(), (y - 1).ToString() };
+        year = y.ToString();
+        string[] mn = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+        months = mn.Select((m, i) => new Opt { Id = i + 1, Text = m }).ToList();
+        try
+        {
+            periods = await _da._02Periods(Opay, Conn);
+            periodId = periods.Count == 0 ? "" : (DateTime.Today.Day < 7 ? periods[0] : periods[Math.Min(1, periods.Count - 1)]);
+            accounts = await _da._02Accounts(Opay, Conn);
+            var setting = await _da._02Setting(Opay, Conn);
+            acctNumber = accounts.Any(a => a.AcctNumber == setting) ? setting : "";
+            statuses = await _da._02Statuses(Opis, Conn);
+            clients = await _da._02Clients(Opis, Conn);
+            string prefix = y.ToString()[..2];
+            covYears = (await _da._02TranYears(Opay, Conn)).Select(t => prefix + t.Trim()).Where(t => int.TryParse(t, out var v) && y >= v).ToList();
+            covYear = covYears.FirstOrDefault() ?? "";
+            BuildTree();
+        }
+        catch (Exception ex) { Console.Error.WriteLine("503 load failed: " + ex); Warn("Unable to load the 13th month setter."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+    void Info(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
+
+    void ClearRows() { rows = new(); canAct = false; }
+
+    async Task AcctChanged(string v)
+    {
+        acctNumber = v; ClearRows();
+        if (string.IsNullOrEmpty(v)) return;
+        try { await _da._01Setting(v, Opay, Conn); } catch (Exception ex) { Console.Error.WriteLine("503 setting: " + ex); }
+    }
+
+    void HalfChanged(string v) { half = v; BuildTree(); }
+    void CovYearChanged(string v) { covYear = v; BuildTree(); }
+
+    List<string> CoveragePrefixes(IEnumerable<string> pdNumbers)
+    {
+        var l = new List<string>();
+        if (string.IsNullOrEmpty(covYear)) return l;
+        string yy = covYear[^2..];
+        if (half == "01")
+        {
+            for (int m = 6; m <= 11; m++) foreach (var p in pdNumbers) l.Add(yy + m.ToString("00") + p);
+        }
+        else
+        {
+            string py = (int.Parse(yy) - 1).ToString("00");
+            foreach (var p in pdNumbers) l.Add(py + "12" + p);
+            for (int m = 1; m <= 5; m++) foreach (var p in pdNumbers) l.Add(yy + m.ToString("00") + p);
+        }
+        return l;
+    }
+
+    void BuildTree()
+    {
+        ClearRows();
+        checkedNodes = new List<object>();
+        var list = new List<Node>();
+        var keys = CoveragePrefixes(periods);
+        foreach (var g in clients.GroupBy(c => c.Status))
+        {
+            var sn = new Node { Text = g.Key };
+            foreach (var c in g)
+            {
+                var cn = new Node { Text = (string.IsNullOrWhiteSpace(c.ClName) ? "No Name" : c.ClName) + " (" + c.Status + ")", ClNumber = c.ClNumber };
+                foreach (var k in keys)
+                    cn.Items.Add(new Node { Text = k[..2] + " " + k.Substring(2, 2) + " " + k[4..], ClNumber = c.ClNumber, Prd = k });
+                sn.Items.Add(cn);
+            }
+            list.Add(sn);
+        }
+        nodes = list;
+        expanded = nodes.Cast<object>().ToList();
+    }
+
+    void NodesChecked(IEnumerable<object> v)
+    {
+        var now = v.OfType<Node>().ToHashSet();
+        var was = checkedNodes.OfType<Node>().ToHashSet();
+        foreach (var n in now.Except(was).ToList()) Cascade(n, true, now);
+        foreach (var n in was.Except(now).ToList()) Cascade(n, false, now);
+        checkedNodes = now.Cast<object>().ToList();
+        ClearRows();
+    }
+
+    static void Cascade(Node n, bool on, HashSet<Node> set)
+    {
+        foreach (var c in n.Items) { if (on) set.Add(c); else set.Remove(c); Cascade(c, on, set); }
+    }
+
+    void OnRowRender(GridRowRenderEventArgs a)
+    {
+        if (a.Item is M503_Row r && r.IsPosted == 1) a.Class = "tm-posted";
+    }
+
+    async Task FetchData()
+    {
+        if (string.IsNullOrEmpty(acctNumber)) { Warn("Please select the 13th month account."); return; }
+        var periodNodes = checkedNodes.OfType<Node>().Where(n => n.Prd != "").ToList();
+        var prds = periodNodes.Select(n => n.Prd).Distinct().ToList();
+        var cls = periodNodes.Select(n => n.ClNumber).Distinct().ToList();
+        var sts = statuses.Where(s => s.Mrk).Select(s => s.Code).ToList();
+        busy = true; StateHasChanged();
+        try
+        {
+            rows = await _da._02Fetch(covYear, month, periodId, acctNumber, prds, cls, sts, Opis, Opay, Conn);
+            canAct = rows.Count > 0;
+            if (rows.Count == 0) Warn("No record found on search criteria.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("503 fetch: " + ex); Warn("Unable to fetch data."); }
+        finally { busy = false; }
+    }
+
+    async Task Save()
+    {
+        if (rows.Count == 0) return;
+        Warn("Record marked posted will not be updated");
+        busy = true; StateHasChanged();
+        try
+        {
+            await _da._01Save(rows, year, month, periodId, periods.IndexOf(periodId) + 1, acctNumber, Opay, Conn);
+            busy = false;
+            await FetchData();
+            Info("Save complete");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("503 save: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    void AskRemove() => showRemove = true;
+
+    async Task DoRemove()
+    {
+        showRemove = false;
+        var ids = rows.Where(r => r.ControlNo > 0 && r.IsPosted == 0).Select(r => r.ControlNo).ToList();
+        if (ids.Count == 0) return;
+        try
+        {
+            await _da._04Remove(ids, Opay, Conn);
+            foreach (var r in rows.Where(r => r.ControlNo > 0 && r.IsPosted == 0)) { r.PrevAmt = 0; r.ControlNo = 0; }
+            Info("Saved amount removed.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("503 remove: " + ex); Warn("Unable to remove."); }
+    }
+
+    async Task ToExcel()
+    {
+        if (rows.Count == 0) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("13th Month");
+        ws.Cell(1, 1).Value = "Employee 13th Month Generation";
+        ws.Cell(2, 1).Value = "For the period of [" + halves.First(h => h.Id == half).Text + " " + covYear + "]";
+        string[] hd = { "Employee Name", "13th Amount", "Existing Amt", "Tot. Basic", "Status", "Payroll Grp", "Acct #", "Emp. Status" };
+        for (int i = 0; i < hd.Length; i++) ws.Cell(4, i + 1).Value = hd[i];
+        ws.Row(4).Style.Font.Bold = true;
+        int n = 4;
+        foreach (var r in rows)
+        {
+            n++;
+            ws.Cell(n, 1).Value = r.EmpName.Trim();
+            ws.Cell(n, 2).Value = r.NewAmt;
+            ws.Cell(n, 3).Value = r.PrevAmt;
+            ws.Cell(n, 4).Value = r.Bsal;
+            ws.Cell(n, 5).Value = r.IsPosted == 1 ? "Posted" : "Unposted";
+            ws.Cell(n, 6).Value = r.ClName.Trim();
+            ws.Cell(n, 7).Value = r.AcctCode;
+            ws.Cell(n, 8).Value = r.EmpStatus.Trim();
+            if (r.IsPosted == 1) ws.Row(n).Style.Font.FontColor = XLColor.Red;
+        }
+        n++;
+        ws.Cell(n, 1).Value = "TOTAL";
+        ws.Cell(n, 2).Value = rows.Sum(r => r.NewAmt);
+        ws.Cell(n, 4).Value = rows.Sum(r => r.Bsal);
+        ws.Range(n, 1, n, 8).Style.Font.Bold = true;
+        ws.Range(n, 1, n, 8).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+        ws.Columns().AdjustToContents();
+        ws.Column(1).Width = 30;
+        foreach (var c in new[] { 2, 3, 4 }) ws.Column(c).Style.NumberFormat.Format = "#,##0.00;(#,##0.00);\"-\"";
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await JS.InvokeVoidAsync("downloadFile", $"13thMonth_{covYear}_{half}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx", Convert.ToBase64String(ms.ToArray()));
     }
 }

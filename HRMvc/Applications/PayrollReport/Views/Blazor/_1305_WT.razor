@@ -1,0 +1,237 @@
+@using HRApiLibrary.Modules._1305O
+@using HRApiLibrary.Models._10_Pis.OPis
+@using ClosedXML.Excel
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using HRMvc.Applications.PayrollReport.Class
+
+@inject NotificationService _NotificationService
+@inject IDA_1305O _da
+@inject IJSRuntime _js
+
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="Withholding Tax Compliance Report" Rv="@rv">
+    <Details>
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (pdfBase64 != null)
+                {
+                    <div style="height:90vh; margin-top:10px;">
+                        <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="fw-bold">FROM:</span>
+                    <RadzenDropDown @bind-Value="yr1" Data="@years" Change="@(() => Reset())" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="mo1" Data="@months" TextProperty="Text" ValueProperty="Id" Change="@(() => Reset())" Style="width:150px;" />
+                    <span class="fw-bold ms-3">TO:</span>
+                    <RadzenDropDown @bind-Value="yr2" Data="@years" Change="@(() => Reset())" Style="width:110px;" />
+                    <RadzenDropDown @bind-Value="mo2" Data="@months" TextProperty="Text" ValueProperty="Id" Change="@(() => Reset())" Style="width:150px;" />
+                    <span class="fw-bold ms-3">Report Type</span>
+                    <RadzenDropDown @bind-Value="type" Data="@types" TextProperty="Text" ValueProperty="Id" Style="width:260px;" />
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">Fetch Data</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="DownloadPdf">PDF Report</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="DownloadExcel">Excel Report</div>
+                </div>
+            </div>
+        </div>
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .tg-chk td:first-child, .tg-chk th:first-child { text-align:center; }
+    .tg-chk th:first-child .k-column-title, .tg-chk th:first-child .k-cell-inner { justify-content:center; }
+</style>
+        <TelerikRootComponent>
+        <div style="width:460px" class="p-2 tg-root tg-chk">
+            <div class="fw-bold mb-1">Available Clients (@groups.Count(g => g.IsSelectedB) of @groups.Count)</div>
+            <TelerikGrid Data="@groups" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                <GridColumns>
+                    <GridColumn Width="44px" Title="">
+                        <HeaderTemplate>
+                            <TelerikCheckBox Value="@(groups.Count > 0 && groups.All(x => x.IsSelectedB))" ValueChanged="@((bool v) => { foreach (var x in groups) x.IsSelectedB = v; })" />
+                        </HeaderTemplate>
+                        <Template>
+                            @{ var g = (OClientModel)context; }
+                            <TelerikCheckBox @bind-Value="g.IsSelectedB" />
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(OClientModel.ClName)" Title="Available Clients" />
+                </GridColumns>
+                <NoDataTemplate><div class="p-3 text-muted">Click Fetch Data.</div></NoDataTemplate>
+            </TelerikGrid>
+        </div>
+        </TelerikRootComponent>
+    </Details>
+</_00BT_FullW>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
+
+    class Opt { public int Id { get; set; } public string Text { get; set; } = ""; }
+    List<Opt> months = new();
+    List<Opt> types = new() { new() { Id = 1, Text = "Based on period deployment" }, new() { Id = 2, Text = "Group per employee" }, new() { Id = 3, Text = "Based on Duty per Client" } };
+    List<string> years = new();
+    List<OClientModel> groups = new();
+    Dictionary<string, object> listClass = new() { ["VH"] = "vh60" };
+    string yr1 = "", yr2 = "";
+    int mo1 = DateTime.Today.Month, mo2 = DateTime.Today.Month, type = 1;
+    bool fetched;
+    string? pdfBase64;
+
+    void CloseReportModal(bool ans) { rv.ShowModal = ans; if (!ans) pdfBase64 = null; }
+
+    void ChildActionCatcher() { }
+
+    string Yymm1 => yr1[^2..] + mo1.ToString("00");
+    string Yymm2 => yr2[^2..] + mo2.ToString("00");
+    string Coverage => $"{months[mo1 - 1].Text} {yr1} to {months[mo2 - 1].Text} {yr2}";
+
+    protected override void OnInitialized()
+    {
+        rv.MCaption = "Withholding Tax Compliance Report";
+        string[] mn = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+        months = mn.Select((m, i) => new Opt { Id = i + 1, Text = m }).ToList();
+        for (int y = DateTime.Today.Year + 1; y > DateTime.Today.Year - 19; y--) years.Add(y.ToString());
+        yr1 = yr2 = DateTime.Today.Year.ToString();
+    }
+
+    void Notify(NotificationSeverity s, string summary, string detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = s, Summary = summary, Detail = detail, Duration = 6000 });
+
+    void Reset() { groups = new(); fetched = false; }
+
+    async Task FetchData()
+    {
+        Reset();
+        try
+        {
+            rv.Isloaded = true;
+            var r = await _da._02Fetch(Yymm1, Yymm2, Uc.OpisDb!, Uc.OpayDb!, Uc.Conn!);
+            if (r.Error != null) { Notify(NotificationSeverity.Warning, "Message", r.Error); return; }
+            groups = r.Groups.Select(g => new OClientModel { ClNumber = g.ClNumber, ClName = g.ClName, IsSelectedB = true }).ToList();
+            fetched = groups.Count > 0;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator."); }
+        finally { rv.Isloaded = false; }
+    }
+
+    async Task<List<M1305_Row>?> Rows()
+    {
+        if (!fetched) { Notify(NotificationSeverity.Warning, "Message", "Please click Fetch Data first."); return null; }
+        var sel = groups.Where(g => g.IsSelectedB).Select(g => g.ClNumber!).ToList();
+        if (sel.Count == 0) { Notify(NotificationSeverity.Warning, "Message", "Please select client from the list."); return null; }
+        try
+        {
+            rv.Isloaded = true;
+            var rows = await _da._02Report(type, Yymm1, Yymm2, sel, Uc.OpisDb!, Uc.OpayDb!, Uc.Conn!);
+            if (rows.Count == 0) { Notify(NotificationSeverity.Info, "Message", "No records found."); return null; }
+            return rows;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator."); return null; }
+        finally { rv.Isloaded = false; }
+    }
+
+    static string M(decimal v) => v.ToString("N2");
+
+    async Task DownloadPdf()
+    {
+        var rows = await Rows();
+        if (rows == null) return;
+        try
+        {
+            bool perEmp = type == 2;
+            var cols = new List<PdfCol> { new() { Title = "Emp. Name", Width = 2.2 } };
+            if (perEmp) cols.Add(new() { Title = "Payroll Grp", Width = 2.2 });
+            cols.AddRange(new[]
+            {
+                new PdfCol { Title = "TIN", Width = 1.0 }, new PdfCol { Title = "Date Hired", Width = 0.9 },
+                new PdfCol { Title = "Gross", Width = 1.1, Right = true }, new PdfCol { Title = "Tax", Width = 0.9, Right = true },
+                new PdfCol { Title = "Basic", Width = 1.1, Right = true }, new PdfCol { Title = "SSS", Width = 0.9, Right = true },
+                new PdfCol { Title = "PHIC", Width = 0.9, Right = true }, new PdfCol { Title = "PAG-IBIG", Width = 0.9, Right = true },
+                new PdfCol { Title = "13th Month", Width = 1.0, Right = true }
+            });
+
+            string[] Line(M1305_Row r)
+            {
+                var l = new List<string> { r.EmpName.Trim() };
+                if (perEmp) l.Add(r.ClName);
+                l.AddRange(new[] { r.Tin, r.DateHired?.ToString("MM/dd/yyyy") ?? "", M(r.Gross), M(r.Tax), M(r.Basic), M(r.Sss), M(r.Phic), M(r.Pagibig), M(r.Basic / 12) });
+                return l.ToArray();
+            }
+            string[] Tot(string label, IEnumerable<M1305_Row> rs)
+            {
+                var l = new List<string> { label };
+                if (perEmp) l.Add("");
+                l.AddRange(new[] { "", "", M(rs.Sum(r => r.Gross)), M(rs.Sum(r => r.Tax)), M(rs.Sum(r => r.Basic)), M(rs.Sum(r => r.Sss)), M(rs.Sum(r => r.Phic)), M(rs.Sum(r => r.Pagibig)), M(rs.Sum(r => r.Basic / 12)) });
+                return l.ToArray();
+            }
+
+            var list = new List<(string[] Cells, int Kind)>();
+            if (perEmp)
+            {
+                foreach (var r in rows) list.Add((Line(r), 0));
+            }
+            else
+            {
+                foreach (var g in rows.GroupBy(r => r.ClNumber))
+                {
+                    var hdr = new string[cols.Count]; hdr[0] = "Payroll Grp : " + g.First().ClName;
+                    list.Add((hdr, 1));
+                    foreach (var r in g) list.Add((Line(r), 0));
+                    list.Add((Tot("GROUP TOTAL:", g), 1));
+                    list.Add((new string[cols.Count], 0));
+                }
+            }
+            list.Add((Tot("GRAND TOTAL:", rows), 1));
+
+            var bytes = TablePdf.Build("Withholding Tax Compliance Report", new List<string> { "For the period covering " + Coverage }, cols, list,
+                                       landscape: true, paper: System.Drawing.Printing.PaperKind.Letter);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            rv.ShowModal = true;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "PDF failed", ex.Message); }
+    }
+
+    async Task DownloadExcel()
+    {
+        var rows = await Rows();
+        if (rows == null) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("WTax Compliance");
+        ws.Cell(1, 1).Value = "Withholding Tax Compliance Report"; ws.Cell(1, 1).Style.Font.FontSize = 14; ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(2, 1).Value = "For the period covering " + Coverage;
+        string[] hd = { "Last Name", "First Name", "Mid. Name", "Payroll Group", "Date Hired", "Separated", "Date of Birth", "TIN", "SSS No", "HDMF No", "Pagibig No", "PHIC No.", "PIS Code",
+                        "Basic Sal.", "Gross Sal.", "Tax", "SSS", "PHIC", "Pagibig", "Sex" };
+        for (int i = 0; i < hd.Length; i++) ws.Cell(4, i + 1).Value = hd[i];
+        ws.Row(4).Style.Font.Bold = true;
+        int n = 4;
+        foreach (var r in rows)
+        {
+            n++;
+            ws.Cell(n, 1).Value = r.LastName; ws.Cell(n, 2).Value = r.FirstName; ws.Cell(n, 3).Value = r.MidName; ws.Cell(n, 4).Value = r.ClName;
+            ws.Cell(n, 5).Value = r.DateHired?.ToString("MM/dd/yyyy") ?? ""; ws.Cell(n, 6).Value = r.Separate?.ToString("MM/dd/yyyy") ?? ""; ws.Cell(n, 7).Value = r.Birth?.ToString("MM/dd/yyyy") ?? "";
+            ws.Cell(n, 8).SetValue(r.Tin); ws.Cell(n, 9).SetValue(r.SssNo); ws.Cell(n, 10).SetValue(r.HdmfNo); ws.Cell(n, 11).SetValue(r.PagibigNo); ws.Cell(n, 12).SetValue(r.PhicNo);
+            ws.Cell(n, 13).Value = r.EmpStat;
+            ws.Cell(n, 14).Value = r.Basic; ws.Cell(n, 15).Value = r.Gross; ws.Cell(n, 16).Value = r.Tax; ws.Cell(n, 17).Value = r.Sss; ws.Cell(n, 18).Value = r.Phic; ws.Cell(n, 19).Value = r.Pagibig;
+            ws.Cell(n, 20).Value = r.Sex;
+        }
+        ws.Columns().AdjustToContents();
+        for (int c = 14; c <= 19; c++) ws.Column(c).Style.NumberFormat.Format = "#,##0.00;-#,##0.00;\"-\"";
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await _js.InvokeVoidAsync("downloadFile", $"WTaxCompliance_{Yymm1}_{Yymm2}.xlsx", Convert.ToBase64String(ms.ToArray()));
+    }
+}

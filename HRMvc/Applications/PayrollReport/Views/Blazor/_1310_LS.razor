@@ -1,5 +1,7 @@
 @using HRApiLibrary.Models._10_Pis.OPis
 @using HRMvc.Applications.PayrollReport.Class
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
 
 @* --- Loan Summary (MBPay loans_management): one loan, the latest loan of each chosen employee. Screen grid + Excel
        (MBPay only had the Excel export). Employees are all selected at first; MBPay started with none --- *@
@@ -14,6 +16,18 @@
         @*--- Looader ------------------------------------------------*@
         <_00Loader Rv="@rv" />
 
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (pdfBase64 != null)
+                {
+                    <div style="height:90vh; margin-top:10px;">
+                        <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+
         <div class="p-0">
             <div class="card-header">
                 <div class="d-flex gap-2 align-items-center flex-wrap">
@@ -26,42 +40,56 @@
                     @*--- Fetch / Excel ------------------------------------------------*@
                     <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="FetchData"> Fetch Data</div>
                     <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="DownloadExcel"> Export to Excel</div>
+                    <div class="p-2  card mb-cbtn mb-cbtn-gray" @onclick="DownloadPdf"> Export to PDF</div>
                 </div>
             </div>
         </div>
 
-        @*--- Employees ------------------------------------------------*@
-        <div class="w-100"><div class="fw-bold p-1">Employees (@emps.Count)</div><_00TClientList Clients="@emps" ClassParams="@listClass" ChildAction="ChildActionCatcher" /></div>
-
-        @*--- Result ------------------------------------------------*@
-        @if (reps.Any())
-        {
-            <div class="d-flex gap-2 py-2 border-bottom fw-bold bg-lightgray">
-                <div class=" w-250p">Emp. Name</div>
-                <div class=" w-125p">Loan Date</div>
-                <div class=" w-125p text-end">Loan Amt</div>
-                <div class=" w-125p text-end">Pay Pymt</div>
-                <div class=" w-125p text-end">Pay Bal.</div>
-                <div class=" w-125p text-end">Actual Pymt</div>
-                <div class=" w-125p text-end">Balance</div>
-                <div class=" w-75p">Stat.</div>
-                <div class=" w-200p">Client</div>
-            </div>
-            @foreach (var r in reps)
-            {
-                <div class="d-flex gap-2 border-bottom py-1">
-                    <div class=" w-250p">@r.Empname</div>
-                    <div class=" w-125p">@r.Date?.ToString("MM/dd/yyyy")</div>
-                    <div class=" w-125p text-end">@r.Amount.ToString("N2")</div>
-                    <div class=" w-125p text-end">@r.PayrollDeduction.ToString("N2")</div>
-                    <div class=" w-125p text-end">@r.Balance.ToString("N2")</div>
-                    <div class=" w-125p text-end">@r.Pymt.ToString("N2")</div>
-                    <div class=" w-125p text-end">@r.Unpaid.ToString("N2")</div>
-                    <div class=" w-75p">@r.Status</div>
-                    <div class=" w-200p">@r.Clname</div>
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .tg-chk td:first-child, .tg-chk th:first-child { text-align:center; }
+</style>
+        <TelerikRootComponent>
+        <div class="p-2 tg-root">
+            <div class="d-flex gap-3">
+                <div style="width:420px;flex-shrink:0" class="tg-chk">
+                    <div class="fw-bold mb-1">Employees (@emps.Count(e => e.IsSelectedB) of @emps.Count)</div>
+                    <TelerikGrid Data="@emps" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                        <GridColumns>
+                            <GridColumn Width="44px" Title="">
+                                <HeaderTemplate>
+                                    <TelerikCheckBox Value="@(emps.Count > 0 && emps.All(x => x.IsSelectedB))" ValueChanged="@((bool v) => { foreach (var x in emps) x.IsSelectedB = v; })" />
+                                </HeaderTemplate>
+                                <Template>
+                                    @{ var e = (OClientModel)context; }
+                                    <TelerikCheckBox @bind-Value="e.IsSelectedB" />
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(OClientModel.ClName)" Title="Employee" />
+                        </GridColumns>
+                    </TelerikGrid>
                 </div>
-            }
-        }
+                <div style="flex:1 1 auto;min-width:0">
+                    <TelerikGrid Data="@reps" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Empname)" Title="Emp. Name" Width="220px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Date)" Title="Loan Date" DisplayFormat="{0:MM/dd/yyyy}" Width="110px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Amount)" Title="Loan Amt" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="110px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.PayrollDeduction)" Title="Pay Pymt" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="110px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Balance)" Title="Pay Bal." DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="110px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Pymt)" Title="Actual Pymt" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="110px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Unpaid)" Title="Balance" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="110px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Status)" Title="Stat." Width="70px" />
+                            <GridColumn Field="@nameof(RLoanSummaryModel.Clname)" Title="Client" Width="200px" />
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-3 text-muted">Select loan, then Fetch Data.</div></NoDataTemplate>
+                    </TelerikGrid>
+                </div>
+            </div>
+        </div>
+        </TelerikRootComponent>
     </Details>
 </_00BT_FullW>
 
@@ -81,6 +109,9 @@
     //--- Employee list reuses the client list component: ClNumber holds the employee number ---
     List<OClientModel>                  emps        = [];
     Dictionary<string, object>          listClass   = new() { ["VH"] = "vh60" };
+
+    string? pdfBase64;
+    void CloseReportModal(bool ans) { rv.ShowModal = ans; if (!ans) pdfBase64 = null; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -133,6 +164,33 @@
         catch (Exception ex)
         {
             Notify(NotificationSeverity.Error, "Excel download failed", ex.Message);
+            Console.WriteLine(ex);
+        }
+    }
+
+    private async Task DownloadPdf()
+    {
+        if (!reps.Any()) { Notify(NotificationSeverity.Warning, "Warning", "Nothing to export."); return; }
+        try
+        {
+            string loanName = loans.FirstOrDefault(l => l.Code == loanCode)?.Name ?? "";
+            var cols = new List<PdfCol>
+            {
+                new() { Title = "Emp. Name", Width = 2.4 }, new() { Title = "Loan Date", Width = 0.9 },
+                new() { Title = "Loan Amount", Width = 1.1, Right = true }, new() { Title = "Payroll Deduction", Width = 1.2, Right = true },
+                new() { Title = "Payroll Balance", Width = 1.2, Right = true }, new() { Title = "Payment Made", Width = 1.2, Right = true },
+                new() { Title = "Unpaid Balance", Width = 1.2, Right = true }, new() { Title = "Status", Width = 0.7 },
+                new() { Title = "Client", Width = 2.0 }, new() { Title = "Amort", Width = 0.9, Right = true }
+            };
+            var rows = reps.Select(r => (new[] { r.Empname ?? "", r.Date?.ToString("MM/dd/yyyy") ?? "", r.Amount.ToString("N2"), r.PayrollDeduction.ToString("N2"),
+                r.Balance.ToString("N2"), r.Pymt.ToString("N2"), r.Unpaid.ToString("N2"), r.Status ?? "", r.Clname ?? "", r.Amort.ToString("N2") }, 0)).ToList();
+            var bytes = TablePdf.Build("Loan Report Summary", new List<string> { "Loan Name : " + loanName }, cols, rows);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            rv.ShowModal = true;
+        }
+        catch (Exception ex)
+        {
+            Notify(NotificationSeverity.Error, "PDF download failed", ex.Message);
             Console.WriteLine(ex);
         }
     }

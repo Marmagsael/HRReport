@@ -1,0 +1,265 @@
+@using HRApiLibrary.Modules._1304O
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using HRMvc.Applications.PayrollReport.Class
+
+@inject NotificationService _NotificationService
+@inject IDA_1304O _da
+@inject IJSRuntime _js
+
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="Quit Claim Management" Rv="@rv">
+    <Details>
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (pdfBase64 != null)
+                {
+                    <div style="height:90vh; margin-top:10px;">
+                        <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="fw-bold">Employee</span>
+                    <RadzenDropDown TValue="string" Value="@empNumber" ValueChanged="@((string v) => PickEmp(v))" Data="@emps" TextProperty="Label" ValueProperty="EmpNumber"
+                                    AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Placeholder="Select employee" Style="width:480px;" />
+                </div>
+                <div class="d-flex gap-3 align-items-center flex-wrap mt-2">
+                    <span><span class="fw-bold">Curr. Deployment :</span> @emp?.ClName</span>
+                    <span><span class="fw-bold">Status :</span> @emp?.EmpStatus</span>
+                    <span><span class="fw-bold">Hired :</span> @emp?.DateHired?.ToString("MM/dd/yyyy")</span>
+                    <span><span class="fw-bold">Resigned :</span> @emp?.Separate?.ToString("MM/dd/yyyy")</span>
+                </div>
+                <div class="d-flex gap-3 align-items-center flex-wrap mt-2">
+                    <span class="fw-bold">13th MONTH BASE</span>
+                    <span class="fw-bold">BASE Yr</span>
+                    <RadzenDropDown @bind-Value="baseYr" Data="@years" Style="width:110px;" />
+                    <label><input type="radio" name="qcprd" checked="@(opt == 1)" @onchange="@(() => SetOpt(1))" /> 1st prd</label>
+                    <label><input type="radio" name="qcprd" checked="@(opt == 2)" @onchange="@(() => SetOpt(2))" /> 2nd prd</label>
+                    <label><input type="radio" name="qcprd" checked="@(opt == 3)" @onchange="@(() => SetOpt(3))" /> whole yr</label>
+                </div>
+                <div class="d-flex gap-3 align-items-center flex-wrap mt-2">
+                    @for (int i = 0; i < 13; i++)
+                    {
+                        int k = i;
+                        <label><input type="checkbox" @bind="chk[k]" /> @monthNames[k]</label>
+                    }
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="Generate">Generate</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="PrintPdf">Print (PDF)</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="OpenSettings">Setup</div>
+                </div>
+            </div>
+        </div>
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .tg-chk td:first-child, .tg-chk th:first-child { text-align:center; }
+</style>
+        <TelerikRootComponent>
+        <div class="tg-root">
+        <div class="d-flex gap-3 p-2 flex-wrap">
+            <div style="flex:1 1 420px;min-width:380px">
+                <div class="fw-bold mb-1">EARNINGS</div>
+                <TelerikGrid Data="@res.Earnings" Height="340px" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Width="44px" Title="">
+                            <Template>@{ var l = (M1304_Line)context; }<TelerikCheckBox @bind-Value="l.Mrk" /></Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(M1304_Line.Descr)" Title="Description" />
+                        <GridColumn Field="@nameof(M1304_Line.Amount)" Title="Amount" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="130px" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">No record.</div></NoDataTemplate>
+                </TelerikGrid>
+                <div class="d-flex justify-content-between fw-bold p-2"><span>Total Earnings</span><span>@totE.ToString("N2")</span></div>
+            </div>
+            <div style="flex:1 1 420px;min-width:380px">
+                <div class="fw-bold mb-1">DEDUCTIONS</div>
+                <TelerikGrid Data="@res.Deductions" Height="340px" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Width="44px" Title="">
+                            <Template>@{ var l = (M1304_Line)context; }<TelerikCheckBox @bind-Value="l.Mrk" /></Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(M1304_Line.Descr)" Title="Description" />
+                        <GridColumn Field="@nameof(M1304_Line.Amount)" Title="Amount" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="130px" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">No record.</div></NoDataTemplate>
+                </TelerikGrid>
+                <div class="d-flex justify-content-between fw-bold p-2"><span>Total Deduction</span><span>@totD.ToString("N2")</span></div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-end gap-3 fw-bold p-2" style="font-size:15px">
+            <span>Net Amount</span><span style="color:#c00000;min-width:140px;text-align:right">@((totE - totD).ToString("N2"))</span>
+        </div>
+
+        @if (showSettings)
+        {
+            <div class="p-2 mt-2" style="border:1px solid #c5ccd6;border-radius:6px">
+                <div class="d-flex gap-2 align-items-center mb-2">
+                    <span class="fw-bold">Quit Claim Settings</span>
+                    @foreach (var g in groupsDef)
+                    {
+                        var gg = g;
+                        <div class="p-2 card mb-cbtn @(setGrp == gg.Key ? "mb-cbtn-gray fw-bold" : "")" @onclick="() => LoadSettings(gg.Key)">@gg.Value</div>
+                    }
+                    <div class="p-2 card mb-cbtn" @onclick="() => showSettings = false">Close</div>
+                </div>
+                <div class="text-muted small mb-1">@groupsNote[setGrp]</div>
+                <div class="tg-chk">
+                    <TelerikGrid Data="@accts" Height="380px" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                        <GridColumns>
+                            <GridColumn Width="44px" Title="">
+                                <Template>
+                                    @{ var aa = (M1304_Acct)context; }
+                                    <TelerikCheckBox Value="@aa.Mrk" ValueChanged="@((bool v) => ToggleAcct(aa, v))" />
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(M1304_Acct.AcctName)" Title="Account Name" />
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
+            </div>
+        }
+        </div>
+        </TelerikRootComponent>
+    </Details>
+</_00BT_FullW>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
+
+    static readonly string[] monthNames = { "Dec. (prev)", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    List<M1304_Emp> emps = new();
+    List<string> years = new();
+    M1304_Emp? emp;
+    M1304_Result res = new();
+    string empNumber = "", baseYr = "";
+    int opt;
+    bool[] chk = new bool[13];
+    bool generated, showSettings;
+    string setGrp = "13MoAcct";
+    List<M1304_Acct> accts = new();
+    readonly Dictionary<string, string> groupsDef = new() { ["13MoAcct"] = "13th Month", ["OE"] = "Other Earnings", ["SB"] = "Suretybond", ["PDed"] = "Partial Deductions" };
+    readonly Dictionary<string, string> groupsNote = new()
+    {
+        ["13MoAcct"] = "NOTE: Check account included in 13th month computation",
+        ["OE"] = "NOTE: Check account included in Other Earnings computation",
+        ["SB"] = "NOTE: Check account for Suretybond contribution",
+        ["PDed"] = "NOTE: Check account NOT included in Partial Deduction"
+    };
+
+    decimal totE => res.Earnings.Sum(x => x.Amount);
+    decimal totD => res.Deductions.Sum(x => x.Amount);
+
+    string? pdfBase64;
+    void CloseReportModal(bool ans) { rv.ShowModal = ans; if (!ans) pdfBase64 = null; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        rv.MCaption = "Quit Claim Management";
+        if (string.IsNullOrWhiteSpace(Uc.OpayDb)) return;
+        for (int y = DateTime.Today.Year; y >= 2007; y--) years.Add(y.ToString());
+        baseYr = years.First();
+        SetOpt(DateTime.Today.Month < 6 ? 1 : 2);
+        emps = await _da._02Employees(Uc.OpisDb!, Uc.Conn!);
+    }
+
+    void SetOpt(int o)
+    {
+        opt = o;
+        for (int i = 0; i < 13; i++)
+            chk[i] = o switch { 1 => i <= 5, 2 => i >= 6 && i <= 11, _ => i <= 11 };
+    }
+
+    void Notify(NotificationSeverity s, string summary, string detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = s, Summary = summary, Detail = detail, Duration = 5000 });
+
+    void PickEmp(string v)
+    {
+        empNumber = v;
+        emp = emps.FirstOrDefault(e => e.EmpNumber == v);
+        res = new(); generated = false;
+    }
+
+    List<string> Yymm()
+    {
+        int yy = int.Parse(baseYr) % 100;
+        string cur = yy.ToString("00"), prev = ((yy + 99) % 100).ToString("00");
+        var l = new List<string>();
+        if (chk[0]) l.Add(prev + "12");
+        for (int m = 1; m <= 11; m++) if (chk[m]) l.Add(cur + m.ToString("00"));
+        if (chk[12]) l.Add(cur + "12");
+        return l;
+    }
+
+    async Task Generate()
+    {
+        if (emp == null) { Notify(NotificationSeverity.Warning, "Message", "Please select employee from the list"); return; }
+        try
+        {
+            rv.Isloaded = true;
+            res = await _da._02Generate(emp, Yymm(), Uc.OpayDb!, Uc.Conn!);
+            generated = true;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator."); }
+        finally { rv.Isloaded = false; }
+    }
+
+    static string Par(decimal v) => v < 0 ? $"({Math.Abs(v):N2})" : v.ToString("N2");
+
+    async Task PrintPdf()
+    {
+        if (!generated || emp == null || res.Print.Count <= 1) { Notify(NotificationSeverity.Warning, "Message", "Nothing to print."); return; }
+        try
+        {
+            var cols = new List<PdfCol> { new() { Title = "Description", Width = 5.6 }, new() { Title = "Amount", Width = 1.6, Right = true } };
+            var rows = new List<(string[] Cells, int Kind)>();
+            foreach (var g in res.Print.GroupBy(p => p.GrpName))
+            {
+                rows.Add((new[] { "", "" }, 0));
+                rows.Add((new[] { g.Key, "" }, 1));
+                foreach (var p in g) rows.Add((new[] { "    " + p.Dtls, Par(Math.Abs(p.Amt)) }, 0));
+                rows.Add((new[] { "Total for " + g.Key, Par(g.Sum(p => p.Amt)) }, 1));
+            }
+            rows.Add((new[] { "", "" }, 0));
+            rows.Add((new[] { "Total Amount :", Par(res.Print.Sum(p => p.Amt)) }, 1));
+            var subs = new List<string>
+            {
+                $"Emp. Name : {emp.EmpName}      Status : {emp.EmpStatus}",
+                $"Curr. Deployment : {emp.ClName}",
+                $"Hired : {emp.DateHired?.ToString("MM/dd/yyyy")}      Separate : {emp.Separate?.ToString("MM/dd/yyyy")}"
+            };
+            var bytes = TablePdf.Build("Employee Quit Claims", subs, cols, rows, landscape: false, paper: System.Drawing.Printing.PaperKind.Letter);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            rv.ShowModal = true;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "PDF failed", ex.Message); }
+    }
+
+    async Task OpenSettings() { showSettings = true; await LoadSettings(setGrp); }
+
+    async Task LoadSettings(string grp)
+    {
+        setGrp = grp;
+        accts = await _da._02Accounts(grp, Uc.OpayDb!, Uc.Conn!);
+    }
+
+    async Task ToggleAcct(M1304_Acct a, bool on)
+    {
+        a.Mrk = on;
+        try { await _da._01Toggle(setGrp, a.AcctNumber, on, Uc.OpayDb!, Uc.Conn!); }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Unable to save", ex.Message); }
+    }
+}

@@ -267,7 +267,9 @@
         try
         {
             var result = await _menu._02ByIdParent( idparent, V.Mainpisdb, V.Conn);
-            V.DtlsMenus = V.Module == "ams" ? (result ?? []).Where(x => x?.Type != "Separator" && !string.IsNullOrEmpty(x?.Action)).ToList() : (result ?? []);
+            V.DtlsMenus = V.Module == "ams"
+                ? (result ?? []).Where(x => x?.Type != "Separator" && !string.IsNullOrEmpty(x?.Action)).ToList()
+                : (result ?? []).Where(x => x?.Type == null || !x.Type.StartsWith("Separator", StringComparison.OrdinalIgnoreCase)).ToList();
 
             var access          = await _domainaccess._02ByUserName_Module( V.User.Empnumber, V.Module, V.OPisdb, V.Conn) ?? [];
             var accessMenuIds   = access.Where(x => x.Idsysmenu.HasValue).Select(x => x.Idsysmenu!.Value).ToList();

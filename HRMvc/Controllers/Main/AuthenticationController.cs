@@ -497,7 +497,7 @@ public class AuthenticationController : Controller
         
     }
 
-    // -- 02.05 Tables of the current company (login / switch company) : only when appsettings "Migrations" is "true" --
+    // -- 02.05 Tables of the current company (login only) : only when appsettings "Migrations" is "true" --
     // -- a new company gets its tables + initial data in L01CompanySetup.CreateSchemas --
     private async Task _01CurrentCompanyTables(UsersModel? user, UserCompanyModel? uc, string conn)
     {
@@ -576,7 +576,6 @@ public class AuthenticationController : Controller
         UsersModel? user        = await _mainDA._02UsersById(userId, schema, conn);
         UserCompanyModel? uc    = await _02UserCompany(user!, schema, conn);
         await CreateClaims(user!, uc);
-        await _01CurrentCompanyTables(user, uc, conn);
 
         TempData["EngOk"] = $"You are now working in {uc?.CompanyName}.";
         return Redirect("~/12/003");

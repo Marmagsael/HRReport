@@ -1155,6 +1155,20 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (107,   'Dtl-Report',      101,   1, 'settings', 'Payroll Settings', '12/004', 107);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
+        // -- AMS Settings menu : the parent and its base items (the later AMS items are seeded below / above) --
+        sql = @"INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (11001, 'SHdr-Report',      1000,  1, 'functions',        'AMS Settings',                    '1100/11001', 11001),
+                            (11002, 'Dtl-Transaction',  11001, 1, 'work_history',     'Standard Working Hours Schedule', '1100/11002', 11002),
+                            (11003, 'Dtl-Transaction',  11001, 1, 'groups',           'Employee Schedule',               '1100/11003', 11003),
+                            (11004, 'Dtl-Transaction',  11001, 1, 'today',            'Daily Schedule Template',         '1100/11004', 11004),
+                            (11005, 'Dtl-Transaction',  11001, 1, 'date_range',       'Weekly Schedule Template',        '1100/11005', 11005),
+                            (11008, 'Dtl-Transaction',  11001, 1, 'more_time',        'Overtime Settings',               '1100/11008', 11008),
+                            (12002, 'Dtl-Transaction',  11001, 1, 'manage_history',   'Attendance Processing',           '1100/12002', 12002),
+                            (12003, 'Dtl-Transaction',  11001, 1, 'alarm_add',        'OT Entry',                        '1100/12003', 12003),
+                            (12004, 'Dtl-Transaction',  11001, 1, 'directions_walk',  'OB / Direct Assignment',          '1100/12004', 12005),
+                            (12005, 'Dtl-Transaction',  11001, 1, 'fingerprint',      'Punch Management',                '1100/12005', 12006);";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
         // -- Corrections for tables seeded before; each only touches the old wrong value --
         sql = @"UPDATE MainPay.Menu SET IdParent = 1151 WHERE Id IN (1152, 1153, 1154, 1155) AND IdParent = 1051;
                 UPDATE MainPay.Menu SET DispText = 'SSS Contribution'  WHERE Id = 1252 AND DispText = 'SSS Contribution ';

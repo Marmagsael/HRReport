@@ -1,0 +1,321 @@
+@using HRApiLibrary.Modules._1302O
+@using ClosedXML.Excel
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using HRMvc.Applications.PayrollReport.Class
+
+@inject NotificationService _NotificationService
+@inject IDA_1302O _da
+@inject IJSRuntime _js
+
+<RadzenNotification />
+
+<_00BT_FullW HdrCaption="Tax Annualization" Rv="@rv">
+    <Details>
+        <_00Loader Rv="@rv" />
+
+        <_02BTModal MCaption="@rv.MCaption" ShowModal="rv.ShowModal" ChildAction="CloseReportModal">
+            <Details>
+                @if (pdfBase64 != null)
+                {
+                    <div style="height:90vh; margin-top:10px;">
+                        <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                }
+            </Details>
+        </_02BTModal>
+
+        <div class="p-0">
+            <div class="card-header">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="fw-bold">Year to Query</span>
+                    <RadzenDropDown TValue="int" Value="@year" ValueChanged="@((int v) => { year = v; Reset(); })" Data="@years" Style="width:110px;" />
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="FetchData">Fetch Data</div>
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="Generate">Generate</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="TaxDeductionExcel">Send To Excel</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="TaxDeductionPdf">PDF Report</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="IncomeExcel">Income Report</div>
+                    <div class="p-2 card mb-cbtn mb-cbtn-gray" @onclick="DetailedExcel">Income Report (Detailed)</div>
+                </div>
+            </div>
+        </div>
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .tg-chk td:first-child, .tg-chk th:first-child { text-align:center; }
+</style>
+        <TelerikRootComponent>
+        <div class="d-flex gap-3 p-2 tg-root">
+            <div style="width:340px;flex-shrink:0" class="tg-chk">
+                <div class="fw-bold mb-1">Payroll Group (@groups.Count(g => g.Mrk) of @groups.Count)</div>
+                <TelerikGrid Data="@groups" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Width="44px" Title="">
+                            <HeaderTemplate>
+                                <TelerikCheckBox Value="@(groups.Count > 0 && groups.All(x => x.Mrk))" ValueChanged="@((bool v) => { foreach (var x in groups) x.Mrk = v; })" />
+                            </HeaderTemplate>
+                            <Template>
+                                @{ var g = (M1302_Group)context; }
+                                <TelerikCheckBox @bind-Value="g.Mrk" />
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(M1302_Group.PayGrp)" Title="Payroll Group" />
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">Click Fetch Data.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+
+            <div style="flex:1 1 auto;min-width:0">
+                <TelerikGrid Data="@proc" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(M1302_Emp.EmpName)" Title="Emp. Name" Width="210px" />
+                        <GridColumn Field="@nameof(M1302_Emp.PayGrp)" Title="Payroll Grp" Width="200px" />
+                        <GridColumn Field="@nameof(M1302_Emp.EmpStatus)" Title="Status" Width="110px" />
+                        <GridColumn Field="@nameof(M1302_Emp.Rate)" Title="Rate" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                        @for (int i = 0; i < 12; i++)
+                        {
+                            int k = i;
+                            <GridColumn Title="@(MonthShort[k] + " Tax")" TextAlign="ColumnTextAlign.Right" Width="100px">
+                                <Template>@Z(((M1302_Emp)context).Tax[k])</Template>
+                            </GridColumn>
+                        }
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">Select payroll group, then Generate.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+        </div>
+        </TelerikRootComponent>
+    </Details>
+</_00BT_FullW>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+    V00_RepVars rv = new();
+
+    static readonly string[] MonthShort = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    List<int> years = new();
+    int year = DateTime.Today.Year;
+    M1302_Fetch? data;
+    List<M1302_Group> groups = new();
+    List<M1302_Emp> proc = new();
+    string? pdfBase64;
+
+    void CloseReportModal(bool ans) { rv.ShowModal = ans; if (!ans) pdfBase64 = null; }
+
+    protected override void OnInitialized()
+    {
+        rv.MCaption = "Tax Annualization";
+        for (int y = DateTime.Today.Year + 1; y >= 2000; y--) years.Add(y);
+    }
+
+    static string Z(decimal v) => v == 0 ? "" : v.ToString("N2");
+
+    void Notify(NotificationSeverity s, string summary, string detail)
+        => _NotificationService.Notify(new NotificationMessage { Severity = s, Summary = summary, Detail = detail, Duration = 5000 });
+
+    void Reset() { data = null; groups = new(); proc = new(); }
+
+    async Task FetchData()
+    {
+        Reset();
+        try
+        {
+            rv.Isloaded = true;
+            data = await _da._02Fetch(year.ToString(), Uc.OpisDb!, Uc.OpayDb!, Uc.Conn!);
+            groups = data.Groups;
+            if (data.Employees.Count == 0) Notify(NotificationSeverity.Info, "Message", "No withholding tax found for the year.");
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", "Please refresh or contact your system administrator."); }
+        finally { rv.Isloaded = false; }
+    }
+
+    void Generate()
+    {
+        proc = new();
+        if (data == null) { Notify(NotificationSeverity.Warning, "Message", "Please click Fetch Data first."); return; }
+        var sel = groups.Where(g => g.Mrk).Select(g => g.PayGrpCd).ToHashSet();
+        if (sel.Count == 0) { Notify(NotificationSeverity.Warning, "Message", "Please select item from payroll group"); return; }
+        proc = data.Employees.Where(e => e.PayGrpCd != null && sel.Contains(e.PayGrpCd)).ToList();
+    }
+
+    bool Ready()
+    {
+        if (proc.Count == 0) { Notify(NotificationSeverity.Warning, "Message", "Please click Generate first."); return false; }
+        return true;
+    }
+
+    void Header(IXLWorksheet ws)
+    {
+        ws.Cell(1, 1).Value = data?.CoName; ws.Cell(1, 1).Style.Font.FontSize = 15; ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(2, 1).Value = data?.CoAdd;
+    }
+
+    void Title(IXLWorksheet ws, string text)
+    {
+        ws.Cell(4, 1).Value = text;
+        ws.Row(4).Style.Font.FontSize = 14;
+        ws.Row(4).Style.Font.FontColor = XLColor.Blue;
+    }
+
+    async Task Save(XLWorkbook wb, string name)
+    {
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await _js.InvokeVoidAsync("downloadFile", name, Convert.ToBase64String(ms.ToArray()));
+    }
+
+    const string Money = "#,##0.00;(#,##0.00);\"-\"";
+
+    async Task TaxDeductionExcel()
+    {
+        if (!Ready()) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Tax Deduction Report");
+        Header(ws); Title(ws, "Tax Deduction Report");
+        ws.Range(6, 5, 6, 17).Merge(); ws.Cell(6, 5).Value = "W. TAX"; ws.Cell(6, 5).Style.Font.Bold = true;
+        ws.Range(6, 5, 6, 17).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        string[] h = { "Payroll Group", "Emp. Name", "Status", "Rate" };
+        for (int i = 0; i < 4; i++) ws.Cell(7, i + 1).Value = h[i];
+        for (int m = 0; m < 12; m++) ws.Cell(7, 5 + m).Value = MonthShort[m];
+        ws.Cell(7, 17).Value = "Total";
+        ws.Row(7).Style.Font.Bold = true;
+        int n = 7; string grp = "-1";
+        foreach (var e in proc)
+        {
+            n++;
+            if ((e.PayGrp ?? "") != grp) { ws.Cell(n, 1).Value = (e.PayGrp ?? "").Trim(); grp = e.PayGrp ?? ""; }
+            ws.Cell(n, 2).Value = (e.EmpName ?? "").Trim(); ws.Cell(n, 3).Value = e.EmpStatus; if (e.Rate != null) ws.Cell(n, 4).Value = e.Rate.Value;
+            for (int m = 0; m < 12; m++) ws.Cell(n, 5 + m).Value = e.Tax[m];
+            ws.Cell(n, 17).FormulaA1 = $"=SUM({ws.Cell(n, 5).Address}:{ws.Cell(n, 16).Address})";
+        }
+        for (int c = 4; c <= 17; c++) ws.Column(c).Style.NumberFormat.Format = Money;
+        ws.Columns().AdjustToContents();
+        await Save(wb, $"TaxDeduction_{year}.xlsx");
+    }
+
+    async Task TaxDeductionPdf()
+    {
+        if (!Ready()) return;
+        try
+        {
+            var cols = new List<PdfCol> { new() { Title = "Emp. Name", Width = 2.2 }, new() { Title = "Payroll Group", Width = 1.9 }, new() { Title = "Status", Width = 0.9 }, new() { Title = "Rate", Width = 0.7, Right = true } };
+            foreach (var m in MonthShort) cols.Add(new PdfCol { Title = m, Width = 0.8, Right = true });
+            cols.Add(new PdfCol { Title = "Total", Width = 1.0, Right = true });
+            var rows = new List<(string[] Cells, int Kind)>();
+            foreach (var e in proc)
+            {
+                var l = new List<string> { (e.EmpName ?? "").Trim(), (e.PayGrp ?? "").Trim(), e.EmpStatus ?? "", e.Rate?.ToString("N2") ?? "" };
+                l.AddRange(e.Tax.Select(Z)); l.Add(Z(e.Total));
+                rows.Add((l.ToArray(), 0));
+            }
+            var tot = new List<string> { "TOTAL", "", "", "" };
+            for (int m = 0; m < 12; m++) tot.Add(Z(proc.Sum(e => e.Tax[m])));
+            tot.Add(Z(proc.Sum(e => e.Total)));
+            rows.Add((tot.ToArray(), 1));
+            var subs = new List<string> { data?.CoName ?? "", "Year " + year };
+            var bytes = TablePdf.Build("Tax Deduction Report", subs, cols, rows, landscape: true, paper: System.Drawing.Printing.PaperKind.Legal);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            rv.ShowModal = true;
+        }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "PDF failed", ex.Message); }
+    }
+
+    async Task IncomeExcel()
+    {
+        if (!Ready()) return;
+        Dictionary<string, decimal[][]> inc;
+        try { rv.Isloaded = true; inc = await _da._02Income(year.ToString(), Uc.OpayDb!, Uc.Conn!); }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", ex.Message); return; }
+        finally { rv.Isloaded = false; }
+
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Earnings and Tax Report");
+        Header(ws); Title(ws, "Earnings and Tax Report");
+        string[] h = { "Payroll Group", "Emp. Name", "Status", "Rate" };
+        for (int i = 0; i < 4; i++) ws.Cell(7, i + 1).Value = h[i];
+        for (int m = 0; m <= 12; m++)
+        {
+            int c = 5 + m * 3;
+            ws.Range(6, c, 6, c + 2).Merge(); ws.Cell(6, c).Value = m < 12 ? MonthShort[m] : "Total";
+            ws.Range(6, c, 6, c + 2).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            ws.Cell(7, c).Value = "Taxable"; ws.Cell(7, c + 1).Value = "N-Taxable"; ws.Cell(7, c + 2).Value = "W. Tax";
+        }
+        ws.Cell(6, 44).Value = "Tax Code"; ws.Cell(6, 45).Value = "Exemption";
+        ws.Row(6).Style.Font.Bold = true; ws.Row(7).Style.Font.Bold = true;
+        int n = 7; string grp = "-1";
+        foreach (var e in proc)
+        {
+            n++;
+            if ((e.PayGrp ?? "") != grp) { ws.Cell(n, 1).Value = (e.PayGrp ?? "").Trim(); grp = e.PayGrp ?? ""; }
+            ws.Cell(n, 2).Value = (e.EmpName ?? "").Trim(); ws.Cell(n, 3).Value = e.EmpStatus; if (e.Rate != null) ws.Cell(n, 4).Value = e.Rate.Value;
+            inc.TryGetValue(e.EmpNumber, out var a);
+            var f1 = new List<string>(); var f2 = new List<string>(); var f3 = new List<string>();
+            for (int m = 0; m < 12; m++)
+            {
+                int c = 5 + m * 3;
+                ws.Cell(n, c).Value = a?[0][m] ?? 0; ws.Cell(n, c + 1).Value = a?[1][m] ?? 0; ws.Cell(n, c + 2).Value = e.Tax[m];
+                f1.Add(ws.Cell(n, c).Address.ToString()); f2.Add(ws.Cell(n, c + 1).Address.ToString()); f3.Add(ws.Cell(n, c + 2).Address.ToString());
+            }
+            ws.Cell(n, 41).FormulaA1 = "=SUM(" + string.Join(",", f1) + ")";
+            ws.Cell(n, 42).FormulaA1 = "=SUM(" + string.Join(",", f2) + ")";
+            ws.Cell(n, 43).FormulaA1 = "=SUM(" + string.Join(",", f3) + ")";
+            ws.Cell(n, 44).Value = e.TaxCode; ws.Cell(n, 45).Value = e.Exemption;
+        }
+        for (int c = 4; c <= 45; c++) if (c != 44) ws.Column(c).Style.NumberFormat.Format = Money;
+        ws.Columns().AdjustToContents();
+        await Save(wb, $"EarningsAndTax_{year}.xlsx");
+    }
+
+    async Task DetailedExcel()
+    {
+        if (!Ready()) return;
+        Dictionary<string, M1302_Detail> det;
+        try { rv.Isloaded = true; det = await _da._02Detailed(year.ToString(), Uc.OpayDb!, Uc.Conn!); }
+        catch (Exception ex) { Console.WriteLine(ex); Notify(NotificationSeverity.Error, "Failed to load data", ex.Message); return; }
+        finally { rv.Isloaded = false; }
+
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Dtld Earnings and Tax Rpt");
+        Header(ws); Title(ws, "Detailed Earnings and Tax Report");
+        string[] h = { "Payroll Group", "Emp. Name", "Status", "Rate" };
+        for (int i = 0; i < 4; i++) ws.Cell(6, i + 1).Value = h[i];
+        for (int m = 0; m < 12; m++) ws.Cell(6, 5 + m).Value = MonthShort[m];
+        ws.Cell(6, 17).Value = "Total";
+        ws.Row(6).Style.Font.Bold = true;
+        int n = 6; string grp = "-1";
+
+        void Lines(string caption, List<M1302_DetLine> lines)
+        {
+            n++;
+            ws.Cell(n, 2).Value = "     " + caption; ws.Cell(n, 2).Style.Font.Bold = true; ws.Cell(n, 2).Style.Font.Italic = true;
+            foreach (var l in lines)
+            {
+                n++;
+                ws.Cell(n, 2).SetValue("          " + l.AcctName);
+                for (int m = 0; m < 12; m++) ws.Cell(n, 5 + m).Value = l.M[m];
+                ws.Cell(n, 17).FormulaA1 = $"=SUM({ws.Cell(n, 5).Address}:{ws.Cell(n, 16).Address})";
+            }
+        }
+
+        foreach (var e in proc)
+        {
+            n++;
+            if ((e.PayGrp ?? "") != grp) { ws.Cell(n, 1).Value = (e.PayGrp ?? "").Trim(); grp = e.PayGrp ?? ""; }
+            ws.Cell(n, 2).Value = (e.EmpName ?? "").Trim(); ws.Cell(n, 3).Value = e.EmpStatus; if (e.Rate != null) ws.Cell(n, 4).Value = e.Rate.Value;
+            ws.Cell(n, 2).Style.Font.FontColor = XLColor.Blue; ws.Cell(n, 2).Style.Font.Bold = true;
+            det.TryGetValue(e.EmpNumber, out var d);
+            d ??= new M1302_Detail();
+            Lines("TAXABLE EARNINGS", d.Taxable);
+            Lines("NON-TAXABLE EARNINGS", d.NonTaxable);
+            Lines("TAX and PREMIUMS", d.Premiums);
+            n++;
+        }
+        for (int c = 4; c <= 17; c++) ws.Column(c).Style.NumberFormat.Format = Money;
+        ws.Columns().AdjustToContents();
+        await Save(wb, $"DetailedEarningsAndTax_{year}.xlsx");
+    }
+}
