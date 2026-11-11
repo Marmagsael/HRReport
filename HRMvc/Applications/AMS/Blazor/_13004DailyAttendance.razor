@@ -1,0 +1,175 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._13003O
+@using ClosedXML.Excel
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+@using HRMvc.Applications.PayrollReport.Class
+@using HRMvc.Applications._00GeneralComponents
+
+@inject IDA_13003O _da
+@inject IJSRuntime _js
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .da-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .da-bar .da-lbl { font-weight:700; }
+    .da-cnt { display:inline-block; padding:2px 10px; border-radius:12px; background:#eef2f7; font-weight:600; margin-right:6px; }
+    .da-absent td { color:#c00000; }
+    .da-late td { color:#b36b00; }
+</style>
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+<TelerikLoaderContainer Visible="@busy" Text="Please wait..." LoaderType="@LoaderType.ConvergingSpinner" />
+
+<_00BT_FullW HdrCaption="Daily Attendance">
+    <Details>
+        <div class="p-2 tg-root">
+            <div class="da-bar">
+                <span class="da-lbl">Payroll Group</span>
+                <TelerikDropDownList Data="@clients" @bind-Value="clNumber" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                    <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                </TelerikDropDownList>
+                <span class="da-lbl ms-3">Date</span>
+                <TelerikDatePicker @bind-Value="date" Format="MM/dd/yyyy" Width="150px" />
+            </div>
+            <div class="da-bar">
+                <TelerikButton OnClick="@Fetch" ThemeColor="primary" Icon="@SvgIcon.Download">Fetch Data</TelerikButton>
+                <TelerikButton OnClick="@ToExcel" Icon="@SvgIcon.FileExcel" Enabled="@(rows.Count > 0)">Excel</TelerikButton>
+                <TelerikButton OnClick="@ToPdf" Icon="@SvgIcon.FilePdf" Enabled="@(rows.Count > 0)">PDF</TelerikButton>
+                <span class="ms-3">
+                    @foreach (var g in rows.GroupBy(r => r.Status).OrderBy(g => g.Key))
+                    {
+                        <span class="da-cnt">@g.Key : @g.Count()</span>
+                    }
+                </span>
+            </div>
+
+            <TelerikGrid Data="@rows" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false" OnRowRender="@OnRowRender">
+                <GridColumns>
+                    <GridColumn Field="@nameof(M13004_Row.EmpNumber)" Title="Emp. No." Width="90px" />
+                    <GridColumn Field="@nameof(M13004_Row.EmpName)" Title="Employee" Width="240px" />
+                    <GridColumn Field="@nameof(M13004_Row.Status)" Title="Status" Width="110px" />
+                    <GridColumn Field="@nameof(M13004_Row.SchedIn)" Title="Sched. In" Width="100px" />
+                    <GridColumn Field="@nameof(M13004_Row.TimeIn)" Title="Time In" DisplayFormat="{0:hh:mm tt}" Width="100px" />
+                    <GridColumn Field="@nameof(M13004_Row.TimeOut)" Title="Time Out" DisplayFormat="{0:hh:mm tt}" Width="100px" />
+                    <GridColumn Field="@nameof(M13004_Row.LateMinutes)" Title="Late (min.)" TextAlign="ColumnTextAlign.Right" Width="100px" />
+                    <GridColumn Field="@nameof(M13004_Row.Client)" Title="Payroll Group" />
+                </GridColumns>
+                <NoDataTemplate><div class="p-3 text-muted">Select the payroll group and date, then Fetch Data.</div></NoDataTemplate>
+            </TelerikGrid>
+        </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showPdf" Width="90vw" Height="92vh">
+    <WindowTitle>Daily Attendance</WindowTitle>
+    <WindowContent>
+        @if (pdfBase64 != null)
+        {
+            <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+        }
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+    string Pis  => UserClaims?.SchemaUserPis ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    List<M13003_Client> clients = new();
+    List<M13004_Row> rows = new();
+    string clNumber = "";
+    DateTime? date = DateTime.Today;
+    bool busy, showPdf;
+    string? pdfBase64;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opis)) return;
+        try
+        {
+            clients = new() { new M13003_Client { ClNumber = "", ClName = "All Payroll Groups" } };
+            clients.AddRange(await _da._02Clients(Opis, Conn));
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13004 load: " + ex); Warn("Unable to load the payroll groups."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+
+    void OnRowRender(GridRowRenderEventArgs a)
+    {
+        if (a.Item is M13004_Row r) a.Class = r.Status == "Absent" ? "da-absent" : r.Status == "Late" ? "da-late" : "";
+    }
+
+    async Task Fetch()
+    {
+        rows = new();
+        if (date == null) { Warn("The date is invalid."); return; }
+        busy = true; StateHasChanged();
+        try
+        {
+            rows = await _da._02Daily(clNumber ?? "", date.Value, Pis, Opis, Conn);
+            if (rows.Count == 0) Warn("No employee found.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13004 fetch: " + ex); Warn("Unable to load the daily attendance."); }
+        finally { busy = false; }
+    }
+
+    string GroupName => clients.FirstOrDefault(c => c.ClNumber == (clNumber ?? ""))?.ClName ?? "";
+    static string T(DateTime? d) => d?.ToString("hh:mm tt") ?? "";
+
+    async Task ToPdf()
+    {
+        if (rows.Count == 0) return;
+        try
+        {
+            var cols = new List<PdfCol>
+            {
+                new() { Title = "Emp. No.", Width = 0.8 }, new() { Title = "Employee", Width = 2.4 }, new() { Title = "Status", Width = 0.9 },
+                new() { Title = "Sched. In", Width = 0.8 }, new() { Title = "Time In", Width = 0.9 }, new() { Title = "Time Out", Width = 0.9 },
+                new() { Title = "Late (min.)", Width = 0.8, Right = true }
+            };
+            var list = rows.Select(r => (new[] { r.EmpNumber, r.EmpName.Trim(), r.Status, r.SchedIn, T(r.TimeIn), T(r.TimeOut), r.LateMinutes > 0 ? r.LateMinutes.ToString() : "" }, r.Status == "Absent" ? 1 : 0)).ToList();
+            var summary = string.Join("    ", rows.GroupBy(r => r.Status).OrderBy(g => g.Key).Select(g => $"{g.Key}: {g.Count()}"));
+            var subs = new List<string> { $"Date : {date:MMMM dd, yyyy}", "Payroll Group : " + GroupName, summary };
+            var bytes = TablePdf.Build("Daily Attendance", subs, cols, list, landscape: false, paper: System.Drawing.Printing.PaperKind.Letter);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            showPdf = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13004 pdf: " + ex); Warn("Unable to create the PDF."); }
+    }
+
+    async Task ToExcel()
+    {
+        if (rows.Count == 0) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Daily Attendance");
+        ws.Cell(1, 1).Value = "Daily Attendance"; ws.Cell(1, 1).Style.Font.FontSize = 14; ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(2, 1).Value = $"Date : {date:MMMM dd, yyyy}";
+        ws.Cell(3, 1).Value = "Payroll Group : " + GroupName;
+        string[] hd = { "Emp. No.", "Employee", "Status", "Sched. In", "Time In", "Time Out", "Late (min.)", "Payroll Group" };
+        for (int i = 0; i < hd.Length; i++) ws.Cell(5, i + 1).Value = hd[i];
+        ws.Row(5).Style.Font.Bold = true;
+        int n = 5;
+        foreach (var r in rows)
+        {
+            n++;
+            ws.Cell(n, 1).SetValue(r.EmpNumber); ws.Cell(n, 2).Value = r.EmpName.Trim(); ws.Cell(n, 3).Value = r.Status; ws.Cell(n, 4).Value = r.SchedIn;
+            ws.Cell(n, 5).Value = T(r.TimeIn); ws.Cell(n, 6).Value = T(r.TimeOut); ws.Cell(n, 7).Value = r.LateMinutes; ws.Cell(n, 8).Value = r.Client;
+            if (r.Status == "Absent") ws.Row(n).Style.Font.FontColor = XLColor.Red;
+        }
+        ws.Columns().AdjustToContents();
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await _js.InvokeVoidAsync("downloadFile", $"DailyAttendance_{date:yyyyMMdd}.xlsx", Convert.ToBase64String(ms.ToArray()));
+    }
+}

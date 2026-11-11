@@ -1169,6 +1169,14 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (12005, 'Dtl-Transaction',  11001, 1, 'fingerprint',      'Punch Management',                '1100/12005', 12006);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
+        // -- AMS Report Module : the parent and its reports --
+        sql = @"INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (13001, 'SHdr-Report', 1000,  1, 'summarize',    'AMS Reports',            '1100/13001', 13001),
+                            (13002, 'Dtl-Report',  13001, 1, 'schedule',     'Daily Time Record',      '1100/13002', 13002),
+                            (13003, 'Dtl-Report',  13001, 1, 'event_busy',   'Late and Absent Summary','1100/13003', 13003),
+                            (13004, 'Dtl-Report',  13001, 1, 'how_to_reg',   'Daily Attendance',       '1100/13004', 13004);";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
         // -- Corrections for tables seeded before; each only touches the old wrong value --
         sql = @"UPDATE MainPay.Menu SET IdParent = 1151 WHERE Id IN (1152, 1153, 1154, 1155) AND IdParent = 1051;
                 UPDATE MainPay.Menu SET DispText = 'SSS Contribution'  WHERE Id = 1252 AND DispText = 'SSS Contribution ';
@@ -1186,6 +1194,19 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                     (12009, 'Dtl-Transaction', 11001, 1, 'camera_front', 'Punch Capturing', '1100/12009', 12009),
                     (12010, 'Dtl-Transaction', 11001, 1, 'manage_accounts', 'User Management', '1100/12010', 12010);
                 DELETE FROM Main.Menu WHERE Id = 1004 AND DispText = 'Payroll Settings' AND Action = '12/004';";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- AMS left menu groups : each group is a row, the items are its children (same as the Payroll and PIS menus) --
+        sql = @"INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (11101, 'SHdr-Report', 1000, 1, 'face',                 'Employee Punches', '1100/11101', 11101),
+                            (11201, 'SHdr-Report', 1000, 1, 'verified',             'Compliance',       '1100/11201', 11201),
+                            (11301, 'SHdr-Report', 1000, 1, 'admin_panel_settings', 'Administration',   '1100/11301', 11301),
+                            (12091, 'Separator',   11201, 1, NULL,                  '-',                NULL,         12003);
+                UPDATE MainPay.Menu SET DispText = 'Settings', Icon = 'settings' WHERE Id = 11001 AND DispText = 'AMS Settings';
+                UPDATE MainPay.Menu SET DispText = 'Attendance Reports' WHERE Id = 13001 AND DispText = 'AMS Reports';
+                UPDATE MainPay.Menu SET IdParent = 11101 WHERE Id IN (12008, 12009) AND IdParent = 11001;
+                UPDATE MainPay.Menu SET IdParent = 11201 WHERE Id IN (12002, 12003, 12007, 12004, 12005) AND IdParent = 11001;
+                UPDATE MainPay.Menu SET IdParent = 11301 WHERE Id = 12010 AND IdParent = 11001;";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 

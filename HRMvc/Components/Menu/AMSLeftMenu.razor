@@ -32,32 +32,9 @@
                 <i class="fa fa-chevron-right arrow"></i>
             </a>
             <ul class="submenu">
-                <li class="menu-item">
-                    <a href="#" onclick="event.preventDefault();">
-                        <div class="d-flex justify-content-between">
-                            <div class="d-flex gap-2"><span class="material-symbols-outlined">settings</span><span>Settings</span></div>
-                            <i class="fa fa-chevron-right arrow"></i>
-                        </div>
-                    </a>
-                    <ul class="submenu">
-                        @Items(11002, 11003, 11004, 11005, 11006)
-                        <li><hr class="my-1" /></li>
-                        @Items(11008, 11009, 11010)
-                    </ul>
-                </li>
-                <li class="menu-item">
-                    <a href="#" onclick="event.preventDefault();">
-                        <div class="d-flex justify-content-between">
-                            <div class="d-flex gap-2"><span class="material-symbols-outlined">face</span><span>Employee Punches</span></div>
-                            <i class="fa fa-chevron-right arrow"></i>
-                        </div>
-                    </a>
-                    <ul class="submenu">
-                        @Items(12008, 12009)
-                    </ul>
-                </li>
-                <li><hr class="my-1" /></li>
-                @Items(12010)
+                <ReportLeftMenuDtl1 Menus="menusPay" ParentId="11001" />
+                <ReportLeftMenuDtl1 Menus="menusPay" ParentId="11101" />
+                <ReportLeftMenuDtl1 Menus="menusPay" ParentId="11301" />
             </ul>
         </li>
     </ul>
@@ -74,19 +51,7 @@
                 <i class="fa fa-chevron-right arrow"></i>
             </a>
             <ul class="submenu">
-                <li class="menu-item">
-                    <a href="#" onclick="event.preventDefault();">
-                        <div class="d-flex justify-content-between">
-                            <div class="d-flex gap-2"><span class="material-symbols-outlined">verified</span><span>Compliance</span></div>
-                            <i class="fa fa-chevron-right arrow"></i>
-                        </div>
-                    </a>
-                    <ul class="submenu">
-                        @Items(12002, 12003)
-                        <li><hr class="my-1" /></li>
-                        @Items(12007, 12004, 12005)
-                    </ul>
-                </li>
+                <ReportLeftMenuDtl1 Menus="menusPay" ParentId="11201" />
             </ul>
         </li>
     </ul>
@@ -102,7 +67,9 @@
                 </div>
                 <i class="fa fa-chevron-right arrow"></i>
             </a>
-            <ul class="submenu"></ul>
+            <ul class="submenu">
+                <ReportLeftMenuDtl1 Menus="menusPay" ParentId="13001" />
+            </ul>
         </li>
     </ul>
 </div>
@@ -121,45 +88,21 @@
 </style>
 
 @code {
-    RenderFragment Items(params int[] ids) => __builder =>
-    {
-        foreach (var id in ids)
-        {
-            var d = menusPay.FirstOrDefault(m => m?.Id == id);
-            if (d == null || string.IsNullOrEmpty(d.Action)) continue;
-            if (allowed != null && !allowed.Contains(id))
-            {
-                <li title="No access">
-                    <div class="d-flex align-items-center p-1 gap-2" style="display:block;padding:9px 14px;color:#9ca3af;cursor:not-allowed;font-size:13px;">
-                        <span class="material-symbols-outlined">@d.Icon</span>
-                        @d.DispText
-                    </div>
-                </li>
-                continue;
-            }
-            <li>
-                <a href="@d.Action">
-                    <div class="d-flex align-items-center p-1 gap-2">
-                        <span class="material-symbols-outlined">@d.Icon</span>
-                        @d.DispText
-                    </div>
-                </a>
-            </li>
-        }
-    };
-
     [Parameter] public UserClaimsModel? Uc { get; set; }
 
     [CascadingParameter] public HttpContext? HttpContext { get; set; }
 
     List<MainmenuModel?> menus      = new();
     List<MainmenuModel?> menusPay   = new();
-    HashSet<int>? allowed;
 
     protected override async Task OnInitializedAsync()
     {
         menus       = await _menu._02("Main", Uc?.Conn ?? "") ?? [];
         menusPay    = await _menu._02("MainPay", Uc?.Conn ?? "") ?? [];
-        if (HttpContext != null) allowed = await _access.AllowedMenuIdsAsync(HttpContext.User);
+        if (HttpContext != null)
+        {
+            var allowed = await _access.AllowedMenuIdsAsync(HttpContext.User);
+            menusPay    = HRMvc.StartupConfig.PisAccessService.Filter(menusPay, allowed);
+        }
     }
 }

@@ -224,9 +224,11 @@
         {
             if (V.Module == "ams")
             {
-                V.SystemMenus = [new MenuModel { Id = 11001, Type = "shdr", DispText = "Attendance (AMS)" }];
-                V.SelectedSystemMenu = V.SystemMenus.ToList();
-                await LoadDetailsMenu(11001);
+                // -- the AMS groups of the left menu : the "shdr" rows of MainPay.Menu whose Action starts with 1100/ --
+                var groups = await _menu._02ByType("shdr", V.Mainpisdb, V.Conn) ?? [];
+                V.SystemMenus = groups.Where(g => g != null && (g.Action ?? "").StartsWith("1100/")).OrderBy(g => g!.Odr).ThenBy(g => g!.Id).ToList();
+                V.SelectedSystemMenu = V.SystemMenus.Take(1).ToList();
+                if (V.SystemMenus.FirstOrDefault()?.Id is int first) await LoadDetailsMenu(first);
                 return;
             }
             var result = await _menu._02ByType( "shdr", V.Mainpisdb,V.Conn);

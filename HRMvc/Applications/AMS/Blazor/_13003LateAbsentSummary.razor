@@ -1,0 +1,175 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._13003O
+@using ClosedXML.Excel
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+@using HRMvc.Applications.PayrollReport.Class
+@using HRMvc.Applications._00GeneralComponents
+
+@inject IDA_13003O _da
+@inject IJSRuntime _js
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .la-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .la-bar .la-lbl { font-weight:700; }
+</style>
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+<TelerikLoaderContainer Visible="@busy" Text="Please wait..." LoaderType="@LoaderType.ConvergingSpinner" />
+
+<_00BT_FullW HdrCaption="Late and Absent Summary">
+    <Details>
+        <div class="p-2 tg-root">
+            <div class="la-bar">
+                <span class="la-lbl">Payroll Group</span>
+                <TelerikDropDownList Data="@clients" @bind-Value="clNumber" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                    <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                </TelerikDropDownList>
+                <span class="la-lbl ms-3">From</span>
+                <TelerikDatePicker @bind-Value="dFrom" Format="MM/dd/yyyy" Width="150px" />
+                <span class="la-lbl">To</span>
+                <TelerikDatePicker @bind-Value="dTo" Format="MM/dd/yyyy" Width="150px" />
+            </div>
+            <div class="la-bar">
+                <TelerikButton OnClick="@Fetch" ThemeColor="primary" Icon="@SvgIcon.Download">Fetch Data</TelerikButton>
+                <TelerikButton OnClick="@ToExcel" Icon="@SvgIcon.FileExcel" Enabled="@(rows.Count > 0)">Excel</TelerikButton>
+                <TelerikButton OnClick="@ToPdf" Icon="@SvgIcon.FilePdf" Enabled="@(rows.Count > 0)">PDF</TelerikButton>
+            </div>
+
+            <TelerikGrid Data="@rows" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                <GridColumns>
+                    <GridColumn Field="@nameof(M13003_Sum.EmpNumber)" Title="Emp. No." Width="90px" />
+                    <GridColumn Field="@nameof(M13003_Sum.EmpName)" Title="Employee" Width="240px" />
+                    <GridColumn Field="@nameof(M13003_Sum.ScheduledDays)" Title="Sched. Days" TextAlign="ColumnTextAlign.Right" Width="110px" />
+                    <GridColumn Field="@nameof(M13003_Sum.DaysPresent)" Title="Present" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                    <GridColumn Field="@nameof(M13003_Sum.DaysAbsent)" Title="Absent" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                    <GridColumn Field="@nameof(M13003_Sum.DaysLate)" Title="Late (days)" TextAlign="ColumnTextAlign.Right" Width="100px" />
+                    <GridColumn Field="@nameof(M13003_Sum.LateMinutes)" Title="Late (min.)" TextAlign="ColumnTextAlign.Right" Width="100px" />
+                    <GridColumn Field="@nameof(M13003_Sum.DaysLeaveOb)" Title="Leave / OB" TextAlign="ColumnTextAlign.Right" Width="100px" />
+                    <GridColumn Field="@nameof(M13003_Sum.Client)" Title="Payroll Group" />
+                </GridColumns>
+                <NoDataTemplate><div class="p-3 text-muted">Select the payroll group and dates, then Fetch Data.</div></NoDataTemplate>
+            </TelerikGrid>
+            <div class="small text-muted mt-1">Based on the schedule of each employee. Late = time in after the scheduled time in; no grace period and no holiday applied.</div>
+        </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showPdf" Width="90vw" Height="92vh">
+    <WindowTitle>Late and Absent Summary</WindowTitle>
+    <WindowContent>
+        @if (pdfBase64 != null)
+        {
+            <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+        }
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+    string Pis  => UserClaims?.SchemaUserPis ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    List<M13003_Client> clients = new();
+    List<M13003_Sum> rows = new();
+    string clNumber = "";
+    DateTime? dFrom, dTo;
+    bool busy, showPdf;
+    string? pdfBase64;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var today = DateTime.Today;
+        dFrom = today.Day <= 15 ? new DateTime(today.Year, today.Month, 1) : new DateTime(today.Year, today.Month, 16);
+        dTo   = today.Day <= 15 ? new DateTime(today.Year, today.Month, 15) : new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+        if (string.IsNullOrEmpty(Opis)) return;
+        try
+        {
+            clients = new() { new M13003_Client { ClNumber = "", ClName = "All Payroll Groups" } };
+            clients.AddRange(await _da._02Clients(Opis, Conn));
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13003 load: " + ex); Warn("Unable to load the payroll groups."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+
+    async Task Fetch()
+    {
+        rows = new();
+        if (dFrom == null || dTo == null || dFrom > dTo) { Warn("The dates are invalid."); return; }
+        if ((dTo.Value - dFrom.Value).TotalDays > 62) { Warn("The coverage is too long. Use 62 days or less."); return; }
+        busy = true; StateHasChanged();
+        try
+        {
+            rows = await _da._02Summary(clNumber ?? "", dFrom.Value, dTo.Value, Pis, Opis, Conn);
+            if (rows.Count == 0) Warn("No employee found.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13003 fetch: " + ex); Warn("Unable to load the summary."); }
+        finally { busy = false; }
+    }
+
+    string Coverage => $"{dFrom:MMMM dd, yyyy} to {dTo:MMMM dd, yyyy}";
+    string GroupName => clients.FirstOrDefault(c => c.ClNumber == (clNumber ?? ""))?.ClName ?? "";
+
+    async Task ToPdf()
+    {
+        if (rows.Count == 0) return;
+        try
+        {
+            var cols = new List<PdfCol>
+            {
+                new() { Title = "Emp. No.", Width = 0.8 }, new() { Title = "Employee", Width = 2.3 },
+                new() { Title = "Sched. Days", Width = 0.9, Right = true }, new() { Title = "Present", Width = 0.8, Right = true },
+                new() { Title = "Absent", Width = 0.8, Right = true }, new() { Title = "Late (days)", Width = 0.9, Right = true },
+                new() { Title = "Late (min.)", Width = 0.9, Right = true }, new() { Title = "Leave / OB", Width = 0.9, Right = true }
+            };
+            var list = rows.Select(r => (new[] { r.EmpNumber, r.EmpName.Trim(), r.ScheduledDays.ToString(), r.DaysPresent.ToString(), r.DaysAbsent.ToString(), r.DaysLate.ToString(), r.LateMinutes.ToString(), r.DaysLeaveOb.ToString() }, 0)).ToList();
+            list.Add((new[] { "", "TOTAL", rows.Sum(r => r.ScheduledDays).ToString(), rows.Sum(r => r.DaysPresent).ToString(), rows.Sum(r => r.DaysAbsent).ToString(),
+                              rows.Sum(r => r.DaysLate).ToString(), rows.Sum(r => r.LateMinutes).ToString(), rows.Sum(r => r.DaysLeaveOb).ToString() }, 1));
+            var subs = new List<string> { "For the period covering " + Coverage, "Payroll Group : " + GroupName };
+            var bytes = TablePdf.Build("Late and Absent Summary", subs, cols, list, landscape: false, paper: System.Drawing.Printing.PaperKind.Letter);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            showPdf = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13003 pdf: " + ex); Warn("Unable to create the PDF."); }
+    }
+
+    async Task ToExcel()
+    {
+        if (rows.Count == 0) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("Late and Absent");
+        ws.Cell(1, 1).Value = "Late and Absent Summary"; ws.Cell(1, 1).Style.Font.FontSize = 14; ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(2, 1).Value = "For the period covering " + Coverage;
+        ws.Cell(3, 1).Value = "Payroll Group : " + GroupName;
+        string[] hd = { "Emp. No.", "Employee", "Sched. Days", "Present", "Absent", "Late (days)", "Late (min.)", "Leave / OB", "Payroll Group" };
+        for (int i = 0; i < hd.Length; i++) ws.Cell(5, i + 1).Value = hd[i];
+        ws.Row(5).Style.Font.Bold = true;
+        int n = 5;
+        foreach (var r in rows)
+        {
+            n++;
+            ws.Cell(n, 1).SetValue(r.EmpNumber); ws.Cell(n, 2).Value = r.EmpName.Trim();
+            ws.Cell(n, 3).Value = r.ScheduledDays; ws.Cell(n, 4).Value = r.DaysPresent; ws.Cell(n, 5).Value = r.DaysAbsent;
+            ws.Cell(n, 6).Value = r.DaysLate; ws.Cell(n, 7).Value = r.LateMinutes; ws.Cell(n, 8).Value = r.DaysLeaveOb; ws.Cell(n, 9).Value = r.Client;
+        }
+        n++;
+        ws.Cell(n, 2).Value = "TOTAL";
+        for (int c = 3; c <= 8; c++) ws.Cell(n, c).FormulaA1 = $"=SUM({ws.Cell(6, c).Address}:{ws.Cell(n - 1, c).Address})";
+        ws.Row(n).Style.Font.Bold = true;
+        ws.Columns().AdjustToContents();
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await _js.InvokeVoidAsync("downloadFile", $"LateAbsent_{dFrom:yyyyMMdd}_{dTo:yyyyMMdd}.xlsx", Convert.ToBase64String(ms.ToArray()));
+    }
+}

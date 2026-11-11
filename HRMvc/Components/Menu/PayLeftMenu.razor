@@ -31,7 +31,6 @@
             </a>
             <ul class="submenu">
                 <ReportLeftMenuDtl1 Menus="menuspay" ParentId="101" />
-                <ReportLeftMenuDtl1 Menus="menuspay" ParentId="11001" />
             </ul>
         </li>
 
@@ -84,8 +83,7 @@
         if (HttpContext != null)
         {
             var allowed = await _access.AllowedMenuIdsAsync(HttpContext.User);
-            var locked  = HRMvc.StartupConfig.PisAccessService.Filter(menuspay.Where(m => m?.IdParent != 11001).ToList(), allowed);
-            menuspay    = locked.Concat(menuspay.Where(m => m?.IdParent == 11001)).ToList();
+            menuspay    = HRMvc.StartupConfig.PisAccessService.Filter(menuspay, allowed);
         }
     }
 }

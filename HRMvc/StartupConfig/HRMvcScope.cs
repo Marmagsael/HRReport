@@ -18,6 +18,8 @@ using HRApiLibrary.Modules._1306O;
 using HRApiLibrary.Modules._1304O;
 using HRApiLibrary.Modules._1305O;
 using HRApiLibrary.Modules._1302O;
+using HRApiLibrary.Modules._13002O;
+using HRApiLibrary.Modules._13003O;
 using HRApiLibrary.Modules._602O;
 using HRApiLibrary.Modules._603O;
 using HRApiLibrary.Modules._604O;
@@ -72,6 +74,8 @@ public static class HRMvcScope
         services.AddScoped<IDA_1304O, DA_1304O>();
         services.AddScoped<IDA_1305O, DA_1305O>();
         services.AddScoped<IDA_1302O, DA_1302O>();
+        services.AddScoped<IDA_13002O, DA_13002O>();
+        services.AddScoped<IDA_13003O, DA_13003O>();
         services.AddScoped<IDA_602O, DA_602O>();
         services.AddScoped<IDA_603O, DA_603O>();
         services.AddScoped<IDA_604O, DA_604O>();

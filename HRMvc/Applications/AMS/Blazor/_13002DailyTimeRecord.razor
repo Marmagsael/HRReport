@@ -1,0 +1,177 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._13002O
+@using ClosedXML.Excel
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+@using HRMvc.Applications.PayrollReport.Class
+@using HRMvc.Applications._00GeneralComponents
+
+@inject IDA_13002O _da
+@inject IJSRuntime _js
+
+<style>
+    .tg-root .k-grid { font-size:12.5px; }
+    .tg-root .k-grid td, .tg-root .k-grid th { padding:4px 8px; font-size:12.5px !important; }
+    .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
+    .dtr-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .dtr-bar .dtr-lbl { font-weight:700; }
+</style>
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+<TelerikLoaderContainer Visible="@busy" Text="Please wait..." LoaderType="@LoaderType.ConvergingSpinner" />
+
+<_00BT_FullW HdrCaption="Daily Time Record">
+    <Details>
+        <div class="p-2 tg-root">
+            <div class="dtr-bar">
+                <span class="dtr-lbl">Payroll Group</span>
+                <TelerikDropDownList Data="@clients" @bind-Value="clNumber" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                    <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                </TelerikDropDownList>
+                <span class="dtr-lbl ms-3">From</span>
+                <TelerikDatePicker @bind-Value="dFrom" Format="MM/dd/yyyy" Width="150px" />
+                <span class="dtr-lbl">To</span>
+                <TelerikDatePicker @bind-Value="dTo" Format="MM/dd/yyyy" Width="150px" />
+            </div>
+            <div class="dtr-bar">
+                <TelerikButton OnClick="@Fetch" ThemeColor="primary" Icon="@SvgIcon.Download">Fetch Data</TelerikButton>
+                <TelerikButton OnClick="@ToExcel" Icon="@SvgIcon.FileExcel" Enabled="@(rows.Count > 0)">Excel</TelerikButton>
+                <TelerikButton OnClick="@ToPdf" Icon="@SvgIcon.FilePdf" Enabled="@(rows.Count > 0)">PDF</TelerikButton>
+            </div>
+
+            <TelerikGrid Data="@rows" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                <GridColumns>
+                    <GridColumn Field="@nameof(M13002_Row.EmpNumber)" Title="Emp. No." Width="90px" />
+                    <GridColumn Field="@nameof(M13002_Row.EmpName)" Title="Employee" Width="240px" />
+                    <GridColumn Field="@nameof(M13002_Row.PunchDate)" Title="Date" DisplayFormat="{0:MM/dd/yyyy}" Width="110px" />
+                    <GridColumn Field="@nameof(M13002_Row.DayName)" Title="Day" Width="110px" />
+                    <GridColumn Field="@nameof(M13002_Row.DutyType)" Title="Duty Type" Width="140px" />
+                    <GridColumn Field="@nameof(M13002_Row.TimeIn)" Title="Time In" DisplayFormat="{0:hh:mm tt}" Width="100px" />
+                    <GridColumn Field="@nameof(M13002_Row.TimeOut)" Title="Time Out" DisplayFormat="{0:hh:mm tt}" Width="100px" />
+                    <GridColumn Field="@nameof(M13002_Row.Hours)" Title="Hours" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                    <GridColumn Field="@nameof(M13002_Row.Client)" Title="Payroll Group" />
+                </GridColumns>
+                <NoDataTemplate><div class="p-3 text-muted">Select the payroll group and dates, then Fetch Data.</div></NoDataTemplate>
+            </TelerikGrid>
+        </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showPdf" Width="90vw" Height="92vh">
+    <WindowTitle>Daily Time Record</WindowTitle>
+    <WindowContent>
+        @if (pdfBase64 != null)
+        {
+            <iframe src="data:application/pdf;base64,@pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+        }
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+    string Pis  => UserClaims?.SchemaUserPis ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    List<M13002_Client> clients = new();
+    List<M13002_Row> rows = new();
+    string clNumber = "";
+    DateTime? dFrom, dTo;
+    bool busy, showPdf;
+    string? pdfBase64;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var today = DateTime.Today;
+        dFrom = today.Day <= 15 ? new DateTime(today.Year, today.Month, 1) : new DateTime(today.Year, today.Month, 16);
+        dTo   = today.Day <= 15 ? new DateTime(today.Year, today.Month, 15) : new DateTime(today.Year, today.Month, DateTime.DaysInMonth(today.Year, today.Month));
+        if (string.IsNullOrEmpty(Opis)) return;
+        try
+        {
+            clients = new() { new M13002_Client { ClNumber = "", ClName = "All Payroll Groups" } };
+            clients.AddRange(await _da._02Clients(Opis, Conn));
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13002 load: " + ex); Warn("Unable to load the payroll groups."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+
+    async Task Fetch()
+    {
+        rows = new();
+        if (dFrom == null || dTo == null || dFrom > dTo) { Warn("The dates are invalid."); return; }
+        busy = true; StateHasChanged();
+        try
+        {
+            rows = await _da._02Dtr(clNumber ?? "", dFrom.Value, dTo.Value, Pis, Opis, Conn);
+            if (rows.Count == 0) Warn("No record found.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13002 fetch: " + ex); Warn("Unable to load the daily time record."); }
+        finally { busy = false; }
+    }
+
+    string Coverage => $"{dFrom:MMMM dd, yyyy} to {dTo:MMMM dd, yyyy}";
+    string GroupName => clients.FirstOrDefault(c => c.ClNumber == (clNumber ?? ""))?.ClName ?? "";
+    static string T(DateTime? d) => d?.ToString("hh:mm tt") ?? "";
+    static string H(decimal? h) => h?.ToString("N2") ?? "";
+
+    async Task ToPdf()
+    {
+        if (rows.Count == 0) return;
+        try
+        {
+            var cols = new List<PdfCol>
+            {
+                new() { Title = "Date", Width = 1.0 }, new() { Title = "Day", Width = 1.1 }, new() { Title = "Duty Type", Width = 1.5 },
+                new() { Title = "Time In", Width = 1.0 }, new() { Title = "Time Out", Width = 1.0 }, new() { Title = "Hours", Width = 0.9, Right = true }
+            };
+            var list = new List<(string[] Cells, int Kind)>();
+            foreach (var g in rows.GroupBy(r => r.EmpNumber))
+            {
+                list.Add((new[] { "", "", "", "", "", "" }, 0));
+                list.Add((new[] { $"{g.First().EmpName.Trim()}  ({g.Key})", "", "", "", "", "" }, 1));
+                foreach (var r in g) list.Add((new[] { r.PunchDate.ToString("MM/dd/yyyy"), r.DayName, r.DutyType, T(r.TimeIn), T(r.TimeOut), H(r.Hours) }, 0));
+                list.Add((new[] { "Total", "", "", "", "", (g.Sum(r => r.Hours ?? 0)).ToString("N2") }, 1));
+            }
+            var subs = new List<string> { "For the period covering " + Coverage, "Payroll Group : " + GroupName };
+            var bytes = TablePdf.Build("Daily Time Record", subs, cols, list, landscape: false, paper: System.Drawing.Printing.PaperKind.Letter);
+            pdfBase64 = Convert.ToBase64String(bytes);
+            showPdf = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("13002 pdf: " + ex); Warn("Unable to create the PDF."); }
+    }
+
+    async Task ToExcel()
+    {
+        if (rows.Count == 0) return;
+        using var wb = new XLWorkbook();
+        var ws = wb.AddWorksheet("DTR");
+        ws.Cell(1, 1).Value = "Daily Time Record"; ws.Cell(1, 1).Style.Font.FontSize = 14; ws.Cell(1, 1).Style.Font.Bold = true;
+        ws.Cell(2, 1).Value = "For the period covering " + Coverage;
+        ws.Cell(3, 1).Value = "Payroll Group : " + GroupName;
+        string[] hd = { "Emp. No.", "Employee", "Date", "Day", "Duty Type", "Time In", "Time Out", "Hours", "Payroll Group" };
+        for (int i = 0; i < hd.Length; i++) ws.Cell(5, i + 1).Value = hd[i];
+        ws.Row(5).Style.Font.Bold = true;
+        int n = 5;
+        foreach (var r in rows)
+        {
+            n++;
+            ws.Cell(n, 1).SetValue(r.EmpNumber); ws.Cell(n, 2).Value = r.EmpName.Trim();
+            ws.Cell(n, 3).Value = r.PunchDate.ToString("MM/dd/yyyy"); ws.Cell(n, 4).Value = r.DayName; ws.Cell(n, 5).Value = r.DutyType;
+            ws.Cell(n, 6).Value = T(r.TimeIn); ws.Cell(n, 7).Value = T(r.TimeOut);
+            if (r.Hours != null) ws.Cell(n, 8).Value = r.Hours.Value;
+            ws.Cell(n, 9).Value = r.Client;
+        }
+        ws.Column(8).Style.NumberFormat.Format = "#,##0.00";
+        ws.Columns().AdjustToContents();
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        await _js.InvokeVoidAsync("downloadFile", $"DTR_{dFrom:yyyyMMdd}_{dTo:yyyyMMdd}.xlsx", Convert.ToBase64String(ms.ToArray()));
+    }
+}
