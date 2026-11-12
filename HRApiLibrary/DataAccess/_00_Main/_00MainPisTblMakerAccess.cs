@@ -559,6 +559,18 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
                             MacAddressOut    Char(20),
                             UserIdOut        BigInt, 
                             Status          Char(3) default '-',
+                            LatIn           DOUBLE NULL,
+                            LngIn           DOUBLE NULL,
+                            AccIn           DOUBLE NULL,
+                            LatOut          DOUBLE NULL,
+                            LngOut          DOUBLE NULL,
+                            AccOut          DOUBLE NULL,
+                            FaceDistIn      DOUBLE NULL,
+                            FaceDistOut     DOUBLE NULL,
+                            Source          Char(1) default 'W',
+                            IsOffline       TINYINT default 0,
+                            ForReview       TINYINT default 0,
+                            SyncedAt        DATETIME NULL,
                         PRIMARY KEY (EmpmasId, PunchInDate)) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await _sql.ExecuteCmd(sql, new { });
 
@@ -583,6 +595,18 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         }
 
         if (isStatusChar1) fixes.Add("MODIFY COLUMN Status Char(3) default '-'");
+
+        // --- mobile face punch : GPS, face distance, source (W web / M mobile), offline and for-review flags
+        var mobileColumns = new (string Name, string Def)[]
+        {
+            ("LatIn", "DOUBLE NULL"), ("LngIn", "DOUBLE NULL"), ("AccIn", "DOUBLE NULL"),
+            ("LatOut", "DOUBLE NULL"), ("LngOut", "DOUBLE NULL"), ("AccOut", "DOUBLE NULL"),
+            ("FaceDistIn", "DOUBLE NULL"), ("FaceDistOut", "DOUBLE NULL"),
+            ("Source", "Char(1) default 'W'"), ("IsOffline", "TINYINT default 0"), ("ForReview", "TINYINT default 0"),
+            ("SyncedAt", "DATETIME NULL")
+        };
+        foreach (var mc in mobileColumns)
+            if (!existingColumns.Any(c => c.Field == mc.Name)) fixes.Add($"ADD COLUMN {mc.Name} {mc.Def}");
 
         if (fixes.Count > 0)
         {

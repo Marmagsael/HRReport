@@ -26,6 +26,20 @@ public class Attpunches1Model
 
     public string?      Status              { get; set; } = string.Empty;
 
+    //--- Mobile face punch -------------//
+    public double?      LatIn               { get; set; }
+    public double?      LngIn               { get; set; }
+    public double?      AccIn               { get; set; }
+    public double?      LatOut              { get; set; }
+    public double?      LngOut              { get; set; }
+    public double?      AccOut              { get; set; }
+    public double?      FaceDistIn          { get; set; }
+    public double?      FaceDistOut         { get; set; }
+    public string?      Source              { get; set; }
+    public int?         IsOffline           { get; set; }
+    public int?         ForReview           { get; set; }
+    public DateTime?    SyncedAt            { get; set; }
+
     //--- Extra Fields -----------------//
 	public int? 		TotalHrs      	 	{ get; set; } = 0;
 	public int? 		Hour      	 		{ get; set; } = 0;

@@ -77,7 +77,7 @@ public class DA_12008O : IDA_12008O
     }
 
     // -- Time in when the employee has no open punch, Time out when there is one (same records as the self service punch) --
-    public async Task<M12008_PunchResult> _01Punch(int empmasId, string pisdb, string opisdb, string conn, int? timeZoneId, string? ip, string? mac)
+    public async Task<M12008_PunchResult> _01Punch(int empmasId, string pisdb, string opisdb, string conn, int? timeZoneId, string? ip, string? mac, M12008_MobileInfo? mob = null)
     {
         var emp = (await _sql.FetchData<M12008_PisEmp, dynamic>(
             $"select Id, ifnull(SystemId, 0) SystemId, trim(EmpNumber) EmpNumber from {pisdb}.Empmas where Id = @Id", new { Id = empmasId }, conn)).FirstOrDefault();
@@ -88,7 +88,14 @@ public class DA_12008O : IDA_12008O
             return new() { Ok = false, EmpName = name, Msg = "This employee has no system id yet. Open the employee in Employee Entry and save it." };
 
         int systemId = emp.SystemId;
-        var now = DateTime.Now;
+        var now = mob?.At ?? DateTime.Now;
+
+        if (mob != null)
+        {
+            var dup = await _sql.FetchData<long, dynamic>($"select count(*) from {pisdb}.Attpunches1 where EmpmasId = @Id and (PunchInDate = @At or PunchOutDate = @At)", new { Id = systemId, At = now }, conn);
+            if (dup.FirstOrDefault() > 0) return new() { Ok = true, Type = "DUP", EmpName = name, At = now, Msg = "Already recorded." };
+        }
+
         var open = (await _punches._02NoPunchOut(systemId, pisdb, conn))?.FirstOrDefault(x => x != null);
 
         if (open == null)
@@ -109,6 +116,11 @@ public class DA_12008O : IDA_12008O
                 EmpmasId = systemId, DayNo = dayNo, PunchInDate = now, PunchT = s.InTime, SchedDuration = s.HrsLength,
                 DutyTypeId = dutyId, TimeZoneIdIn = timeZoneId, IpAddressIn = ip, MacAddressIn = mac, UserIdIn = systemId, Status = "N"
             }, pisdb, conn);
+
+            if (mob != null)
+                await _sql.ExecuteCmd($@"update {pisdb}.Attpunches1 set LatIn = @Lat, LngIn = @Lng, AccIn = @Acc, FaceDistIn = @Fd, Source = 'M', IsOffline = @Off, ForReview = @Rev, SyncedAt = now()
+                                         where EmpmasId = @Id and PunchInDate = @At",
+                    new { Id = systemId, At = now, Lat = mob.Lat, Lng = mob.Lng, Acc = mob.Acc, Fd = mob.FaceDist, Off = mob.Offline ? 1 : 0, Rev = mob.ForReview ? 1 : 0 }, conn);
 
             return new() { Ok = true, Type = "IN", EmpName = name, At = now, Msg = "Punch IN" };
         }
@@ -136,8 +148,37 @@ public class DA_12008O : IDA_12008O
                 TimeZoneIdOut = timeZoneId, IpAddressOut = ip, MacAddressOut = mac, UserIdOut = systemId, Status = "L"
             }, pisdb, conn);
 
+            if (mob != null)
+                await _sql.ExecuteCmd($@"update {pisdb}.Attpunches1 set LatOut = @Lat, LngOut = @Lng, AccOut = @Acc, FaceDistOut = @Fd, Source = 'M',
+                                                IsOffline = if(IsOffline = 1, 1, @Off), ForReview = if(ForReview = 1, 1, @Rev), SyncedAt = now()
+                                         where EmpmasId = @Id and PunchInDate = @InAt",
+                    new { Id = systemId, InAt = inDate, Lat = mob.Lat, Lng = mob.Lng, Acc = mob.Acc, Fd = mob.FaceDist, Off = mob.Offline ? 1 : 0, Rev = mob.ForReview ? 1 : 0 }, conn);
+
             return new() { Ok = true, Type = "OUT", EmpName = name, At = now, Msg = "Punch OUT" };
         }
+    }
+
+    // -- Face samples (128 numbers each) of one employee, for the mobile app --
+    public async Task<List<string>> _02OwnSamples(int empmasId, string pisdb, string conn)
+    {
+        var r = await _sql.FetchData<string, dynamic>($"select Descriptor from {pisdb}.FaceTemplate where EmpmasId = @Id order by Id", new { Id = empmasId }, conn);
+        return r ?? [];
+    }
+
+    // -- Next action (IN when there is no open punch, OUT when there is one) and the last punch of the employee --
+    public async Task<M12008_MobileStatus> _02MobileStatus(int empmasId, string pisdb, string opisdb, string conn)
+    {
+        var emp = (await _sql.FetchData<M12008_PisEmp, dynamic>(
+            $"select Id, ifnull(SystemId, 0) SystemId, trim(EmpNumber) EmpNumber from {pisdb}.Empmas where Id = @Id", new { Id = empmasId }, conn)).FirstOrDefault();
+        var st = new M12008_MobileStatus { EmpName = await _02EmpName(empmasId, pisdb, opisdb, conn), EmpNumber = emp?.EmpNumber, NextAction = "IN" };
+        if (emp == null || emp.SystemId <= 0) return st;
+
+        var open = (await _punches._02NoPunchOut(emp.SystemId, pisdb, conn))?.FirstOrDefault(x => x != null);
+        if (open != null) { st.NextAction = "OUT"; st.LastAt = open.PunchInDate; st.LastType = "IN"; return st; }
+
+        var last = (await _punches._02LastPunches(emp.SystemId, 1, pisdb, conn))?.FirstOrDefault(x => x != null);
+        if (last != null) { st.LastAt = last.PunchOutDate ?? last.PunchInDate; st.LastType = last.PunchOutDate != null ? "OUT" : "IN"; }
+        return st;
     }
 
     private async Task<int> DutyId(string? code, string pisdb, string conn)
@@ -172,7 +213,29 @@ public interface IDA_12008O
     Task _01Sample(int empmasId, string descriptor, int userId, string pisdb, string conn);
     Task _04Delete(int empmasId, string pisdb, string conn);
     Task<int> _02Samples(int empmasId, string pisdb, string conn);
-    Task<M12008_PunchResult> _01Punch(int empmasId, string pisdb, string opisdb, string conn, int? timeZoneId, string? ip, string? mac);
+    Task<M12008_PunchResult> _01Punch(int empmasId, string pisdb, string opisdb, string conn, int? timeZoneId, string? ip, string? mac, M12008_MobileInfo? mob = null);
+    Task<List<string>> _02OwnSamples(int empmasId, string pisdb, string conn);
+    Task<M12008_MobileStatus> _02MobileStatus(int empmasId, string pisdb, string opisdb, string conn);
+}
+
+public class M12008_MobileInfo
+{
+    public DateTime? At { get; set; }
+    public double? Lat { get; set; }
+    public double? Lng { get; set; }
+    public double? Acc { get; set; }
+    public double? FaceDist { get; set; }
+    public bool Offline { get; set; }
+    public bool ForReview { get; set; }
+}
+
+public class M12008_MobileStatus
+{
+    public string? EmpName { get; set; }
+    public string? EmpNumber { get; set; }
+    public string NextAction { get; set; } = "IN";
+    public DateTime? LastAt { get; set; }
+    public string? LastType { get; set; }
 }
 
 public class M12008_Enrolled
