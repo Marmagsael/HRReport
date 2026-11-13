@@ -342,6 +342,12 @@ public class _00MainDA : I_00MainDA
         var data = await _sql.FetchData<CurrencyModel?, dynamic>(sql, new { }, conn);
         return data;
     }
+    public async Task<List<CompanyTypeModel?>> _02CompanyTypeList(string? schema, string? conn)
+    {
+        string? sql = $@"select  Id, Code, Name from {schema}.CompanyType order by Id";
+        var data = await _sql.FetchData<CompanyTypeModel?, dynamic>(sql, new { }, conn);
+        return data;
+    }
     public async Task<CountryModel?> _03Country(int? id, CountryModel country, string? schema, string? conn)
     {
         string? sql = $@"Update {schema}.Country set Code = @Code, Name = @Name where Id = @Id;";

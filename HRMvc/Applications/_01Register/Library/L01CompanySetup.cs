@@ -54,6 +54,11 @@ public class L01CompanySetup
         return await _mainDA._02CurrencyList(Main, Conn);
     }
 
+    public async Task<List<CompanyTypeModel?>> CompanyTypes()
+    {
+        return await _mainDA._02CompanyTypeList(Main, Conn);
+    }
+
     public async Task<CountryModel?> Country(int? id)
     {
         return await _mainDA._02Country(id, Main, Conn);

@@ -279,6 +279,7 @@ public class _01RegisterController : Controller
     {
         ViewData["Country"]  = await _setup.Countries();
         ViewData["Currency"] = await _setup.Currencies();
+        ViewData["CompanyType"] = await _setup.CompanyTypes();
     }
 
     // -- 01.04.02 Employee : users + companyusers (pending) + MainPis.Empmas -----------------------
@@ -345,7 +346,8 @@ public class _01RegisterController : Controller
             CompanyName = input.CompanyName.Trim(),
             CompanyCode = input.CompanyCode.ToUpperInvariant(),
             CountryId   = input.CountryId,
-            CurrencyId  = input.CurrencyId
+            CurrencyId  = input.CurrencyId,
+            CoTypeCode  = input.CoTypeCode
         };
 
         // -- 1). users + userscompany + companyusers + MainPis.Empmas (one transaction) --

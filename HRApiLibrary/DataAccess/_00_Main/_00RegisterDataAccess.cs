@@ -32,9 +32,9 @@ public class _00RegisterDataAccess : I_00RegisterDataAccess
 
             // -- userscompany : schemas are prefixed by the company code --
             sql = $@"insert into {schema}.UsersCompany (OwnerId, CompanySName, CompanyName, CompanyCode, CountryId, CurrencyId,
-                                                        AMSSchema, ApplicantSchema, PISSchema, PaySchema, AcctgSchema, OldPis, OldPay)
+                                                        AMSSchema, ApplicantSchema, PISSchema, PaySchema, AcctgSchema, OldPis, OldPay, CoTypeCode)
                                                 values (@UserId, @CompanyCode, @CompanyName, @CompanyCode, @CountryId, @CurrencyId,
-                                                        @AMSSchema, @ApplicantSchema, @PISSchema, @PaySchema, @AcctgSchema, @OldPis, @OldPay);
+                                                        @AMSSchema, @ApplicantSchema, @PISSchema, @PaySchema, @AcctgSchema, @OldPis, @OldPay, ifnull(@CoTypeCode, ''));
                      select last_insert_id();";
             owner.CompanyId = await cn.ExecuteScalarAsync<int>(sql, owner, tran);
 
@@ -74,9 +74,9 @@ public class _00RegisterDataAccess : I_00RegisterDataAccess
         try
         {
             string sql = $@"insert into {schema}.UsersCompany (OwnerId, CompanySName, CompanyName, CompanyCode, CountryId, CurrencyId,
-                                                               AMSSchema, ApplicantSchema, PISSchema, PaySchema, AcctgSchema, OldPis, OldPay)
+                                                               AMSSchema, ApplicantSchema, PISSchema, PaySchema, AcctgSchema, OldPis, OldPay, CoTypeCode)
                                                        values (@UserId, @CompanyCode, @CompanyName, @CompanyCode, @CountryId, @CurrencyId,
-                                                               @AMSSchema, @ApplicantSchema, @PISSchema, @PaySchema, @AcctgSchema, @OldPis, @OldPay);
+                                                               @AMSSchema, @ApplicantSchema, @PISSchema, @PaySchema, @AcctgSchema, @OldPis, @OldPay, ifnull(@CoTypeCode, ''));
                             select last_insert_id();";
             owner.CompanyId = await cn.ExecuteScalarAsync<int>(sql, owner, tran);
 

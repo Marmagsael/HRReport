@@ -131,6 +131,7 @@ public class _01CompanyController : Controller
         owner.CompanyCode   = input.CompanyCode;
         owner.CountryId     = input.CountryId;
         owner.CurrencyId    = input.CurrencyId;
+        owner.CoTypeCode    = input.CoTypeCode;
 
         // -- 1). userscompany + companyusers (one transaction) --
         try
@@ -467,5 +468,6 @@ public class _01CompanyController : Controller
     {
         ViewData["Country"]  = await _setup.Countries();
         ViewData["Currency"] = await _setup.Currencies();
+        ViewData["CompanyType"] = await _setup.CompanyTypes();
     }
 }

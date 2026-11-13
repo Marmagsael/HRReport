@@ -17,7 +17,7 @@ public class CompaniesAssignedToUserModel
     public string? ApplicantSchema { get; set; }
     public string? PisSchema { get; set; }
     public string? PaySchema { get; set; }
-    public int CoTypeId { get; set; } = 0;
+    public string CoTypeCode { get; set; } = string.Empty;
 
     //---- Company User ------------------------------
     public int? UserId { get; set; }

@@ -26,6 +26,7 @@ namespace HRApiLibrary.DataAccess._00_Main.Interface
         Task<CountryModel?>                         _02Country(int? id, string? schema, string? conn);
         Task<List<CountryModel?>>                   _02CountryList(string? schema, string? conn);
         Task<List<CurrencyModel?>>                  _02CurrencyList(string? schema, string? conn);
+        Task<List<CompanyTypeModel?>>               _02CompanyTypeList(string? schema, string? conn);
         Task<MenusModel?>                           _02Menu(string? menuName, int? id, string? schema, string? conn);
         Task<List<MenusModel?>>                     _02MenuList(string? menuName, int? id, string? schema, string? conn);
         Task<List<MenusModel?>>                     _02MenuList_ByModule(string? menuName, string? moduleNo, string? schema, string? conn);

@@ -16,6 +16,7 @@ public class RegisterOwnerModel
     public string   CompanyCode     { get; set; } = string.Empty;   // letters/numbers, upper case, schema prefix
     public int?     CountryId       { get; set; }
     public int?     CurrencyId      { get; set; }
+    public string?  CoTypeCode      { get; set; }                   // Main.CompanyType.Code
 
     // -- Schema names : company code + "_" + suffix, e.g. MBI_Pis --
     public string   PISSchema       => $"{CompanyCode}_Pis";

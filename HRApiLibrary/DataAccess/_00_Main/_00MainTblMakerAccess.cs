@@ -521,7 +521,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     CompanyCode     VARCHAR (10)    NULL,
                     EmployeeCnt     INT             NOT NULL DEFAULT 100,
                     TimeZone        VARCHAR (50)    NOT NULL DEFAULT 'Asia/Manila',
-                    CoTypeId        INT UNSIGNED    NOT NULL DEFAULT 0,
+                    CoTypeCode      VARCHAR (10)    NOT NULL DEFAULT '',
                     PRIMARY KEY (`Id`),
                     UNIQUE KEY uq_userscompany_companycode (CompanyCode)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -562,9 +562,14 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
             sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN TimeZone VARCHAR (50) NOT NULL DEFAULT 'Asia/Manila'";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
-        if (!columns.Any(c => c.Field == "CoTypeId"))
+        if (!columns.Any(c => c.Field == "CoTypeCode"))
         {
-            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN CoTypeId INT UNSIGNED NOT NULL DEFAULT 0";
+            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN CoTypeCode VARCHAR (10) NOT NULL DEFAULT ''";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+        if (columns.Any(c => c.Field == "CoTypeId"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany DROP COLUMN CoTypeId";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
@@ -727,7 +732,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
 
 
-    // -- Main.CompanyType : the type of a company (UsersCompany.CoTypeId and Menu.CoTypeId point to its Id); alphabetical by name, Others last --
+    // -- Main.CompanyType : the type of a company (UsersCompany.CoTypeCode and Menu.CoTypeCode hold its Code); alphabetical by name, Others last --
     private async Task _01CompanyType(string? schema, string? connName)
     {
         var sql = $@"CREATE TABLE IF NOT EXISTS {schema}.CompanyType (
@@ -889,17 +894,18 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         }
     }
 
-    // -- Main.Menu.CoTypeId : 0 = every company, otherwise only the companies with that UsersCompany.CoTypeId --
+    // -- Main.Menu.CoTypeCode : 'ALL' = every company, otherwise only the companies with that UsersCompany.CoTypeCode (CompanyType.Code) --
     private async Task _01MenuCoTypeId(string? schema, string? connName)
     {
         var tbl = await _sql.FetchData<long, dynamic>(
             "select count(*) from information_schema.tables where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu'", new { Schema = schema }, connName);
         if (tbl.FirstOrDefault() == 0) return;
-        var has = await _sql.FetchData<long, dynamic>(
-            @"select count(*) from information_schema.columns
-              where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu' and column_name = 'CoTypeId'", new { Schema = schema }, connName);
-        if (has.FirstOrDefault() == 0)
-            await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN CoTypeId INT UNSIGNED NOT NULL DEFAULT 0", new { }, connName);
+        var cols = await _sql.FetchData<string, dynamic>(
+            "select column_name from information_schema.columns where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu' and column_name in ('CoTypeCode', 'CoTypeId')", new { Schema = schema }, connName);
+        if (!cols.Contains("CoTypeCode"))
+            await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN CoTypeCode VARCHAR (10) NOT NULL DEFAULT 'ALL'", new { }, connName);
+        if (cols.Contains("CoTypeId"))
+            await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu DROP COLUMN CoTypeId", new { }, connName);
     }
 
     // -- System Application (15/502) in the left menu; main.Menu itself is not made here --

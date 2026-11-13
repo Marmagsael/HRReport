@@ -112,6 +112,10 @@ public class V01RegisterOwner : V01RegisterOwnerCheck
     [Required(ErrorMessage = "Please select a currency.")]
     [Range(1, int.MaxValue, ErrorMessage = "Please select a currency.")]
     public int? CurrencyId          { get; set; }
+
+    [Display(Name = "Company Type")]
+    [Required(ErrorMessage = "Please select a company type.")]
+    public string? CoTypeCode       { get; set; }
 }
 
 // -- 01.06 Create New Company (logged-in user, from My Engagement) ------------------
@@ -137,6 +141,10 @@ public class V01NewCompany
     [Required(ErrorMessage = "Please select a currency.")]
     [Range(1, int.MaxValue, ErrorMessage = "Please select a currency.")]
     public int? CurrencyId          { get; set; }
+
+    [Display(Name = "Company Type")]
+    [Required(ErrorMessage = "Please select a company type.")]
+    public string? CoTypeCode       { get; set; }
 }
 
 // -- 01.07 Invite User (owner of the current company, from My Engagement) -----------
