@@ -20,6 +20,7 @@ public class UserCompanyModel
     public string?      OldPis             { get; set; } = string.Empty;
     public string?      OldPay              { get; set; } = string.Empty;
     public string?      TimeZone            { get; set; } = "Asia/Manila";
+    public int          CoTypeId            { get; set; } = 0;
 
     //--------------------------------------------------------------------
     public string?      CountryName         { get; set; } = string.Empty;

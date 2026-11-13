@@ -40,6 +40,8 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _01CompanyInvite(schema, connName);
         await _01CompanyUserType(schema, connName);
         await _01EmailOtp(schema, connName);
+        await _01CompanyType(schema, connName);
+        await _01MenuCoTypeId(schema, connName);
         await _01MenuSystemApplication(schema, connName);
 
 
@@ -519,6 +521,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     CompanyCode     VARCHAR (10)    NULL,
                     EmployeeCnt     INT             NOT NULL DEFAULT 100,
                     TimeZone        VARCHAR (50)    NOT NULL DEFAULT 'Asia/Manila',
+                    CoTypeId        INT UNSIGNED    NOT NULL DEFAULT 0,
                     PRIMARY KEY (`Id`),
                     UNIQUE KEY uq_userscompany_companycode (CompanyCode)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -557,6 +560,11 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         if (!columns.Any(c => c.Field == "TimeZone"))
         {
             sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN TimeZone VARCHAR (50) NOT NULL DEFAULT 'Asia/Manila'";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+        if (!columns.Any(c => c.Field == "CoTypeId"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN CoTypeId INT UNSIGNED NOT NULL DEFAULT 0";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }
@@ -718,6 +726,181 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
     }
 
 
+
+    // -- Main.CompanyType : the type of a company (UsersCompany.CoTypeId and Menu.CoTypeId point to its Id); alphabetical by name, Others last --
+    private async Task _01CompanyType(string? schema, string? connName)
+    {
+        var sql = $@"CREATE TABLE IF NOT EXISTS {schema}.CompanyType (
+                        Id      INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+                        Code    VARCHAR (10)    NOT NULL,
+                        Name    VARCHAR (80)    NOT NULL,
+                        PRIMARY KEY (`Id`),
+                        UNIQUE KEY uq_companytype_code (Code)) Engine = InnoDB;";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        (string Code, string Name)[] types =
+        {
+            ("ACC", "Accounting / Auditing Firm"),
+            ("ADV", "Advertising / Marketing Agency"),
+            ("AGS", "Agricultural Supply"),
+            ("AIR", "Airline / Aviation"),
+            ("APL", "Appliance / Electronics Store"),
+            ("AQU", "Aquaculture / Fishpond"),
+            ("ARC", "Architectural / Design Firm"),
+            ("ARM", "Armored Car / Cash Delivery Services"),
+            ("ASN", "Association / Union"),
+            ("AUT", "Automotive / Auto Parts"),
+            ("BAK", "Bakery"),
+            ("BNK", "Bank"),
+            ("BAR", "Bar / Club"),
+            ("BEV", "Beverage Manufacturing"),
+            ("BPO", "BPO / Call Center"),
+            ("MNT", "Building Maintenance"),
+            ("BUS", "Bus / Land Transport"),
+            ("CAF", "Café / Coffee Shop"),
+            ("CAR", "Car Dealership"),
+            ("CAS", "Casino / Gaming"),
+            ("CTR", "Catering Services"),
+            ("CEM", "Cement / Construction Materials"),
+            ("CHM", "Chemicals"),
+            ("CIN", "Cinema / Theater"),
+            ("CIV", "Civil Works / Infrastructure"),
+            ("CLN", "Clinic / Medical Center"),
+            ("COL", "College / University"),
+            ("CON2", "Condominium Corporation / HOA"),
+            ("CNV", "Convenience Store"),
+            ("CSM", "Cosmetics / Personal Care"),
+            ("CUR", "Courier / Delivery"),
+            ("COP", "Credit Cooperative"),
+            ("CBR", "Customs Brokerage"),
+            ("DAT", "Data Center / Hosting"),
+            ("DNT", "Dental Clinic"),
+            ("DPT", "Department Store / Mall"),
+            ("LAB", "Diagnostic Laboratory"),
+            ("DRV", "Driver / Chauffeur Services"),
+            ("DRG", "Drugstore / Pharmacy"),
+            ("ECM", "E-commerce / Online Selling"),
+            ("ELC", "Electric Distribution / Cooperative"),
+            ("ELE", "Electrical Contractor"),
+            ("ELX", "Electronics / Semiconductor"),
+            ("ENG", "Engineering Consultancy"),
+            ("ENT", "Entertainment / Amusement"),
+            ("EVT", "Events / Function Venue"),
+            ("FAC", "Facility Management"),
+            ("AGR", "Farming / Agriculture"),
+            ("FFD", "Fast Food"),
+            ("FEE", "Feed Mill"),
+            ("FSH", "Fishing"),
+            ("FDM", "Food Manufacturing / Processing"),
+            ("SHO", "Footwear / Leather"),
+            ("FRN", "Franchise Business"),
+            ("FUR", "Furniture / Woodworks"),
+            ("GAR", "Garments / Textile"),
+            ("GSS", "Gasoline Station"),
+            ("CON", "General Construction"),
+            ("MFG", "General Manufacturing"),
+            ("GCC", "GOCC"),
+            ("GYM", "Gym / Fitness Center"),
+            ("HDW", "Hardware / Construction Supply"),
+            ("HSP", "Hospital"),
+            ("HTL", "Hotel"),
+            ("HKP", "Housekeeping Services"),
+            ("IMP", "Import / Export"),
+            ("INN", "Inn / Pension House"),
+            ("INS", "Insurance"),
+            ("ISP", "Internet Service Provider"),
+            ("INV", "Investigation / Detective Agency"),
+            ("ITS", "IT Services / Software Development"),
+            ("JAN", "Janitorial Services"),
+            ("LND", "Landscaping / Gardening Services"),
+            ("LAU", "Laundry Services"),
+            ("LAW", "Law Firm"),
+            ("LEN", "Lending / Financing Company"),
+            ("LGU", "Local Government Unit"),
+            ("LOG", "Logistics / Freight Forwarding"),
+            ("GAS", "LPG / Fuel Distribution"),
+            ("CNS", "Management Consultancy"),
+            ("MPW", "Manpower Agency"),
+            ("MEC", "Mechanical / HVAC Contractor"),
+            ("MED", "Media / Broadcasting"),
+            ("MSG", "Messengerial Services"),
+            ("MIN", "Mining"),
+            ("MTR", "Motorcycle Dealership"),
+            ("GOV", "National Government Agency"),
+            ("NGO", "NGO / Foundation"),
+            ("NUR", "Nursing Home / Caregiving"),
+            ("OIL", "Oil and Gas"),
+            ("OVR", "Overseas Recruitment Agency"),
+            ("PPR", "Paper / Printing"),
+            ("PRK", "Parking Services"),
+            ("PWN", "Pawnshop"),
+            ("PYR", "Payroll / HR Outsourcing"),
+            ("PST", "Pest Control Services"),
+            ("PHM", "Pharmaceutical Manufacturing"),
+            ("HOG", "Piggery / Livestock"),
+            ("PLT", "Plantation (Banana, Sugar, Coconut)"),
+            ("PLS", "Plastics / Packaging"),
+            ("PLB", "Plumbing Contractor"),
+            ("PRT", "Port / Arrastre Services"),
+            ("PLY", "Poultry"),
+            ("PWR", "Power Generation"),
+            ("PRE", "Pre-need"),
+            ("PMG", "Property Management"),
+            ("PUB", "Publishing"),
+            ("QRY", "Quarrying"),
+            ("REB", "Real Estate Brokerage"),
+            ("RED", "Real Estate Developer"),
+            ("REL", "Religious Organization"),
+            ("REM", "Remittance / Money Changer"),
+            ("RNE", "Renewable Energy (Solar, Wind, Hydro)"),
+            ("RSR", "Resort"),
+            ("RST", "Restaurant"),
+            ("RET", "Retail Store"),
+            ("REV", "Review Center"),
+            ("RCM", "Rice Mill"),
+            ("RBK", "Rural / Thrift Bank"),
+            ("SAR", "Sari-sari / Mini Mart"),
+            ("SCH", "School (Basic Education)"),
+            ("SEC", "Security Agency"),
+            ("SHP", "Shipbuilding / Ship Repair"),
+            ("SHI", "Shipping / Maritime"),
+            ("SPA", "Spa / Wellness / Salon"),
+            ("STF", "Staffing / Recruitment Agency"),
+            ("STL", "Steel / Metal Fabrication"),
+            ("SGM", "Sugar Mill"),
+            ("SUP", "Supermarket / Grocery"),
+            ("TAX", "Taxi / TNVS"),
+            ("TEL", "Telecommunications"),
+            ("TRC", "Training Center / TESDA"),
+            ("TRV", "Travel Agency / Tours"),
+            ("TRK", "Trucking / Hauling"),
+            ("VET", "Veterinary Clinic"),
+            ("WRH", "Warehousing"),
+            ("WTR", "Water Utility / Water District"),
+            ("WHS", "Wholesale / Distribution"),
+            ("OTH", "Others")
+        };
+
+        var have = (await _sql.FetchData<string, dynamic>($"select Code from {schema}.CompanyType", new { }, connName)).ToHashSet();
+        foreach (var t in types)
+        {
+            if (have.Contains(t.Code)) continue;
+            await _sql.ExecuteCmd($"INSERT INTO {schema}.CompanyType (Code, Name) VALUES (@Code, @Name)", new { t.Code, t.Name }, connName);
+        }
+    }
+
+    // -- Main.Menu.CoTypeId : 0 = every company, otherwise only the companies with that UsersCompany.CoTypeId --
+    private async Task _01MenuCoTypeId(string? schema, string? connName)
+    {
+        var tbl = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.tables where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu'", new { Schema = schema }, connName);
+        if (tbl.FirstOrDefault() == 0) return;
+        var has = await _sql.FetchData<long, dynamic>(
+            @"select count(*) from information_schema.columns
+              where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu' and column_name = 'CoTypeId'", new { Schema = schema }, connName);
+        if (has.FirstOrDefault() == 0)
+            await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN CoTypeId INT UNSIGNED NOT NULL DEFAULT 0", new { }, connName);
+    }
 
     // -- System Application (15/502) in the left menu; main.Menu itself is not made here --
     private async Task _01MenuSystemApplication(string? schema, string? connName)

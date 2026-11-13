@@ -11,4 +11,5 @@ public class MainmenuModel
     public string?  Action     {get; set; } = string.Empty; 
     public int?     Odr        {get; set; } = 0; 
     public bool     IsCommercialUse  {get; set; } = true;
+    public int      CoTypeId         {get; set; } = 0;
 }

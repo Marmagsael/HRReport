@@ -19,10 +19,19 @@ public class MainmenuDataAccess : IMainmenuDataAccess
         var data = await _sql.FetchData<MainmenuModel?, dynamic>(sql, new { }, conn);
         return data;
     }
+
+    // -- CoTypeId 0 = for every company; otherwise only for the companies of that type (UsersCompany.CoTypeId) --
+    public async Task<List<MainmenuModel?>?> _02(string? schema, int coTypeId, string? conn)
+    {
+        var sql = $@"select  Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse, CoTypeId from {schema}.Menu where CoTypeId = 0 or CoTypeId = @CoTypeId order by Odr, Id";
+        var data = await _sql.FetchData<MainmenuModel?, dynamic>(sql, new { CoTypeId = coTypeId }, conn);
+        return data;
+    }
 }
 
 
 public interface IMainmenuDataAccess
 {
     Task<List<MainmenuModel?>?> _02(string? schema, string? conn);
+    Task<List<MainmenuModel?>?> _02(string? schema, int coTypeId, string? conn);
 }
