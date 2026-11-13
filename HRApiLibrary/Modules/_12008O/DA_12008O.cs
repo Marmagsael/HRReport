@@ -204,6 +204,8 @@ public class DA_12008O : IDA_12008O
     }
 
     // -- Time of the punch follows the company time zone (Main.UsersCompany.TimeZone, default Asia/Manila), not the server clock --
+    public Task<TimeZoneInfo> _02CompanyZone(string pisdb, string conn) => CompanyZone(pisdb, conn);
+
     private async Task<TimeZoneInfo> CompanyZone(string pisdb, string conn)
     {
         string? id = null;
@@ -261,6 +263,7 @@ public interface IDA_12008O
     Task<M12008_PunchResult> _01Punch(int empmasId, string pisdb, string opisdb, string conn, int? timeZoneId, string? ip, string? mac, M12008_MobileInfo? mob = null);
     Task<List<string>> _02OwnSamples(int empmasId, string pisdb, string conn);
     Task<M12008_MobileStatus> _02MobileStatus(int empmasId, string pisdb, string opisdb, string conn);
+    Task<TimeZoneInfo> _02CompanyZone(string pisdb, string conn);
 }
 
 public class M12008_MobileInfo
