@@ -914,13 +914,15 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _sql.ExecuteCmd($"UPDATE {schema}.Menu SET CoTypeCode = 'ALL' WHERE CoTypeCode IS NULL OR TRIM(CoTypeCode) = ''", new { }, connName);
     }
 
-    // -- Security Agency only (CompanyType.Code SEC): Assignment Order Entry, Special Duty Order, Return To Unit (RTU), Recall Order Entry, Group Recall Order, Deviation Penalty --
+    // -- Security Agency only (CompanyType.Code SEC): the guard modules of Transaction and Compliance Report --
     private async Task _01MenuSecurityOnly(string? connName)
     {
         var tbl = await _sql.FetchData<long, dynamic>(
             "select count(*) from information_schema.tables where lower(table_schema) = 'mainpis' and lower(table_name) = 'menu'", new { }, connName);
         if (tbl.FirstOrDefault() == 0) return;
-        await _sql.ExecuteCmd("UPDATE MainPis.Menu SET CoTypeCode = 'SEC' WHERE Id IN (2303, 2304, 2305, 2307, 2308, 2309, 2392, 2393) AND CoTypeCode = 'ALL'", new { }, connName);
+        // -- Deviation Penalty (2309) was once saved as the literal header row (Type, DispText ...) --
+        await _sql.ExecuteCmd("UPDATE MainPis.Menu SET Type = 'Dtl-Report', IdParent = 2301, Indent = 1, Icon = 'report_problem', DispText = 'Deviation Penalty', Action = '14/2309', Odr = 2310, CoTypeCode = 'SEC' WHERE Id = 2309 AND Type = 'Type'", new { }, connName);
+        await _sql.ExecuteCmd("UPDATE MainPis.Menu SET CoTypeCode = 'SEC' WHERE Id IN (2303, 2304, 2305, 2307, 2308, 2309, 2392, 2393, 2202, 2204, 2205, 2206, 2207, 2208, 2209, 2210, 2211, 2212, 2214, 2215, 2216, 2217) AND CoTypeCode = 'ALL'", new { }, connName);
     }
 
     // -- System Application (15/502) in the left menu; main.Menu itself is not made here --
