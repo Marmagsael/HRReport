@@ -1,0 +1,134 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Models._90_Utils
+@using HRApiLibrary.DataAccess._90_Utils
+@using HRMvc.StartupConfig
+
+@inject UserClaimsContextService ClaimsContext
+@inject PayAccessService _payAccess
+@inject AmsAccessService _amsAccess
+@inject IMainmenuDataAccess _menu
+@inject PisAccessService _pisAccess
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider _auth
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+<style>
+    .ql-wrap { padding:16px 20px; }
+    .ql-title { font-size:1.15rem; font-weight:700; margin-bottom:12px; }
+    .ql-group { display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none; font-weight:700; font-size:1.05rem; margin:18px 0 8px; padding-bottom:4px; border-bottom:2px solid; }
+    .ql-cat { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; font-weight:600; font-size:1rem; margin:12px 0 8px 24px; padding-bottom:3px; border-bottom:1px solid; text-transform:uppercase; letter-spacing:.4px; }
+    .ql-cat .material-symbols-outlined { font-size:24px; }
+    .ql-chev { font-size:22px; transition:transform .15s ease; }
+    .ql-open > .ql-chev { transform:rotate(90deg); }
+    .ql-tiles { display:flex; flex-wrap:wrap; gap:10px; margin-left:54px; }
+    .ql-tile { display:flex; align-items:center; gap:8px; width:250px; padding:10px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; color:#222; text-decoration:none; }
+    .ql-tile:hover { background:#f3f6fb; }
+    .ql-tile .material-symbols-outlined { font-size:22px; }
+    .ql-tile { position:relative; overflow:hidden; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .ql-tile::after { content:""; position:absolute; left:50%; bottom:0; width:0; height:3px; background:var(--c); transform:translateX(-50%); transition:width .25s ease; }
+    .ql-tile:not(.ql-off):hover { transform:translateY(-3px); border-color:var(--c); box-shadow:0 8px 16px -4px color-mix(in srgb, var(--c) 45%, transparent); }
+    .ql-tile:not(.ql-off):hover::after { width:100%; }
+    .ql-off { overflow:visible; }
+    .ql-off:hover::after { content:"No access"; position:absolute; left:50%; top:-26px; transform:translateX(-50%); padding:3px 8px; border-radius:4px; background:#374151; color:#fff; font-size:.75rem; white-space:nowrap; pointer-events:none; z-index:5; }
+    .ql-off { color:#9ca3af; background:#f3f4f6; cursor:not-allowed; }
+    .ql-off:hover { background:#f3f4f6; }
+</style>
+
+<div class="ql-wrap">
+    <div class="ql-title">Quick Links</div>
+    @foreach (var g in groups)
+    {
+        if (!g.Cats.Any(c => c.Items.Count > 0)) continue;
+        var gOpen = openGroups.Contains(g.Caption);
+        <div class="ql-group @(gOpen ? "ql-open" : "")" style="color:@g.Color;border-color:@g.Color;" @onclick="() => Toggle(openGroups, g.Caption)">
+            <span class="material-symbols-outlined ql-chev">chevron_right</span>@g.Caption
+        </div>
+        if (!gOpen) continue;
+        foreach (var c in g.Cats)
+        {
+            if (c.Items.Count == 0) continue;
+            var key = g.Caption + "|" + c.Caption;
+            var cOpen = openCats.Contains(key);
+            <div class="ql-cat @(cOpen ? "ql-open" : "")" style="color:@g.Color;border-color:@g.Color;" @onclick="() => Toggle(openCats, key)">
+                <span class="material-symbols-outlined ql-chev">chevron_right</span>
+                <span class="material-symbols-outlined">@c.Icon</span>@c.Caption
+            </div>
+            if (cOpen)
+            {
+                <div class="ql-tiles">
+                    @foreach (var m in c.Items)
+                    {
+                        if (m.Type == "NoAccess")
+                        {
+                            <span class="ql-tile ql-off">
+                                <span class="material-symbols-outlined">@(m.Icon?.Trim())</span>
+                                <span>@m.DispText?.Trim()</span>
+                            </span>
+                            continue;
+                        }
+                        <a class="ql-tile" href="@m.Action" style="--c:@g.Color;">
+                            <span class="material-symbols-outlined" style="color:@g.Color;">@(m.Icon?.Trim())</span>
+                            <span>@m.DispText?.Trim()</span>
+                        </a>
+                    }
+                </div>
+            }
+        }
+    }
+</div>
+
+@code {
+    record QlCat(string Caption, string Icon, List<MainmenuModel> Items);
+    record QlGroup(string Caption, string Color,  string Icon, int[] Parents, List<QlCat> Cats);
+
+    [Parameter] public string Module { get; set; } = "pis";
+
+    List<QlGroup> groups = new();
+
+    List<QlGroup> BuildGroups() => Module switch
+    {
+        "pay" => new()
+        {
+            new("Transaction", "#1a56c4", "receipt_long", new[] { 501, 551, 601 }, new()),
+            new("Report", "#2e7d32", "description", new[] { 1101, 1151, 1201, 1251, 1301 }, new()),
+            new("Management", "#d9480f", "settings", new[] { 101 }, new()),
+        },
+        "ams" => new()
+        {
+            new("Transaction", "#1a56c4", "receipt_long", new[] { 11201 }, new()),
+            new("Report", "#2e7d32", "description", new[] { 13001 }, new()),
+            new("Management", "#d9480f", "settings", new[] { 11001, 11101, 11301 }, new()),
+        },
+        _ => new()
+        {
+            new("Transaction", "#1a56c4", "receipt_long", new[] { 2301 }, new()),
+            new("Report", "#2e7d32", "description", new[] { 2101, 2201 }, new()),
+            new("Management", "#d9480f", "settings", new[] { 2001, 2051, 2401 }, new()),
+        }
+    };
+
+    HashSet<string> openGroups = new() { "Transaction" };
+    HashSet<string> openCats = new();
+
+    static void Toggle(HashSet<string> set, string key) { if (!set.Remove(key)) set.Add(key); }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uc = ClaimsContext.Build((await _auth.GetAuthenticationStateAsync()).User);
+        groups = BuildGroups();
+        var user = (await _auth.GetAuthenticationStateAsync()).User;
+        var menus = await _menu._02(Module == "pay" || Module == "ams" ? "MainPay" : "MainPis", uc?.Conn ?? "") ?? [];
+        var allowed = Module == "pay" ? await _payAccess.AllowedMenuIdsAsync(user)
+                    : Module == "ams" ? await _amsAccess.AllowedMenuIdsAsync(user)
+                    : await _pisAccess.AllowedMenuIdsAsync(user);
+        menus = PisAccessService.Filter(menus, allowed);
+        foreach (var g in groups)
+            foreach (var pid in g.Parents)
+            {
+                var parent = menus.FirstOrDefault(m => m != null && m.Id == pid);
+                var items = menus.Where(m => m != null && m.IdParent == pid && ((m.Type ?? "").StartsWith("Dtl") || m.Type == "NoAccess") && !string.IsNullOrEmpty(m.Action)).Select(m => m!).ToList();
+                g.Cats.Add(new QlCat(parent?.DispText?.Trim() ?? "", parent?.Icon?.Trim() ?? "folder", items));
+            }
+        foreach (var c in groups[0].Cats) openCats.Add(groups[0].Caption + "|" + c.Caption);
+    }
+}

@@ -233,6 +233,8 @@
     [Parameter] public UserClaimsModel Uc { get; set; } = new();
 
     string? Status = "Enter your employee number.", CameraMsg, EnteredNo, NoError;
+    TimeZoneInfo? Zone;
+    DateTime CompanyNow => Zone == null ? DateTime.Now : TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, Zone);
     DateTime Now = DateTime.Now;
     M12008_PunchResult? Last;
     List<M12008_PunchResult> Recent = new();
@@ -256,7 +258,8 @@
         if (FocusNo && InNumberStage) { FocusNo = false; try { await NoInput.FocusAsync(); } catch { } }
         if (!firstRender) return;
 
-        clock = new System.Threading.Timer(_ => { Now = DateTime.Now; InvokeAsync(StateHasChanged); }, null, 1000, 1000);
+        try { Zone = await _da._02CompanyZone(Uc.SchemaUserPis!, Uc.Conn!); Now = CompanyNow; } catch { }
+        clock = new System.Threading.Timer(_ => { Now = CompanyNow; InvokeAsync(StateHasChanged); }, null, 1000, 1000);
     }
 
     bool ShowCfg;
@@ -376,7 +379,7 @@
         try
         {
             M12008_PunchResult res;
-            if (LastPunch.TryGetValue(empmasId, out var at) && (DateTime.Now - at).TotalSeconds < 60)
+            if (LastPunch.TryGetValue(empmasId, out var at) && (CompanyNow - at).TotalSeconds < 60)
             {
                 var name = await _da._02EmpName(empmasId, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!);
                 res = new() { Ok = false, EmpName = name, Msg = $"Already recorded at {at:hh:mm:ss tt}." };
@@ -385,7 +388,7 @@
             {
                 var t = await _terminal.GetAsync();
                 res = await _da._01Punch(empmasId, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!, t.TimeZoneId, t.IpAddress, t.MacAddress);
-                if (res.Ok) { LastPunch[empmasId] = DateTime.Now; Recent.Insert(0, res); if (Recent.Count > 8) Recent.RemoveAt(8); }
+                if (res.Ok) { LastPunch[empmasId] = CompanyNow; Recent.Insert(0, res); if (Recent.Count > 8) Recent.RemoveAt(8); }
             }
             Last = res;
             Status = res.Ok ? $"{res.Msg} recorded." : res.Msg;
