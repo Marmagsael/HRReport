@@ -1003,9 +1003,11 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                           Action        VARCHAR (45),
                           Odr           INTEGER,
                           IsCommercialUse     TINYINT         UNSIGNED NOT NULL DEFAULT 1,
+                          CoTypeCode          VARCHAR (10)    NOT NULL DEFAULT 'ALL',
                           PRIMARY KEY (`Id`))   ENGINE = InnoDB; ";
         await _sql.ExecuteCmd(sql, new { }, connName);
         await AddIsCommercialUse(schema, connName);
+        await AddMenuCoTypeCode(schema, connName);
     }
 
     // -- Menu.IsCommercialUse on Main, MainPis and MainPay : added when the table already exists without it --
@@ -1018,6 +1020,18 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
             "select count(*) from information_schema.tables where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu'", new { Schema = schema }, connName);
         if (tbl.FirstOrDefault() > 0 && has.FirstOrDefault() == 0)
             await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN IsCommercialUse TINYINT UNSIGNED NOT NULL DEFAULT 1 AFTER Odr", new { }, connName);
+    }
+
+    // -- Menu.CoTypeCode on MainPis and MainPay : 'ALL' = every company, otherwise only the companies of that CompanyType.Code --
+    private async Task AddMenuCoTypeCode(string? schema, string? connName)
+    {
+        var has = await _sql.FetchData<long, dynamic>(
+            @"select count(*) from information_schema.columns
+              where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu' and column_name = 'CoTypeCode'", new { Schema = schema }, connName);
+        var tbl = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.tables where lower(table_schema) = lower(@Schema) and lower(table_name) = 'menu'", new { Schema = schema }, connName);
+        if (tbl.FirstOrDefault() > 0 && has.FirstOrDefault() == 0)
+            await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN CoTypeCode VARCHAR (10) NOT NULL DEFAULT 'ALL' AFTER IsCommercialUse", new { }, connName);
     }
 
     // -- MainPis.Menu 14/Compliance order: Status Mgt | Assignment Order, Special Duty Order | RTU, Recall Order, the rest --

@@ -121,6 +121,31 @@ public static class MigrationExt
         }
     }
 
+    // -- After login / switch company : the current company first, then every other company the user owns --
+    public static async Task RunOwnedCompanies(IServiceProvider sp, int userId, int? currentCompanyId)
+    {
+        var config = sp.GetRequiredService<IConfiguration>();
+        if (!On(config)) return;
+
+        var ids = new List<int>();
+        if (currentCompanyId is > 0) ids.Add(currentCompanyId.Value);
+
+        try
+        {
+            string main = config.GetSection("Schema:Main").Value ?? "Main";
+            string conn = config.GetSection("Schema:DefConn").Value ?? "MySqlConn";
+            var sql     = sp.GetRequiredService<I_90_001_MySqlDataAccess>();
+            var owned   = await sql.FetchData<int, dynamic>($"select Id from {main}.UsersCompany where OwnerId = @UserId order by Id", new { UserId = userId }, conn);
+            foreach (var id in owned) if (!ids.Contains(id)) ids.Add(id);
+        }
+        catch (Exception ex)
+        {
+            sp.GetRequiredService<ILoggerFactory>().CreateLogger("Migrations").LogError(ex, "Migrations : owned companies of user {UserId} could not be listed.", userId);
+        }
+
+        foreach (var id in ids) await RunCompany(sp, id);
+    }
+
     // -- The company's schemas that exist on this server, each schema run once ------------------------------
     private static async Task RunCompanySchemas(IServiceProvider sp, I_90_001_MySqlDataAccess sql, ILogger log, string main, string mainPis, string conn, int companyId)
     {

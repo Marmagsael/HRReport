@@ -42,6 +42,8 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _01EmailOtp(schema, connName);
         await _01CompanyType(schema, connName);
         await _01MenuCoTypeId(schema, connName);
+        await _01MenuCoTypeId("MainPis", connName);
+        await _01MenuCoTypeId("MainPay", connName);
         await _01MenuSystemApplication(schema, connName);
 
 
@@ -906,6 +908,9 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
             await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu ADD COLUMN CoTypeCode VARCHAR (10) NOT NULL DEFAULT 'ALL'", new { }, connName);
         if (cols.Contains("CoTypeId"))
             await _sql.ExecuteCmd($"ALTER TABLE {schema}.Menu DROP COLUMN CoTypeId", new { }, connName);
+
+        // -- every menu without a company type is for all companies --
+        await _sql.ExecuteCmd($"UPDATE {schema}.Menu SET CoTypeCode = 'ALL' WHERE CoTypeCode IS NULL OR TRIM(CoTypeCode) = ''", new { }, connName);
     }
 
     // -- System Application (15/502) in the left menu; main.Menu itself is not made here --

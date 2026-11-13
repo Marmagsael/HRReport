@@ -15,7 +15,7 @@ public class MainmenuDataAccess : IMainmenuDataAccess
 
     public async Task<List<MainmenuModel?>?> _02(string? schema, string? conn)
     {
-        var sql = $@"select  Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse from {schema}.Menu order by Odr, Id";
+        var sql = $@"select  Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse, CoTypeCode from {schema}.Menu order by Odr, Id";
         var data = await _sql.FetchData<MainmenuModel?, dynamic>(sql, new { }, conn);
         return data;
     }

@@ -17,7 +17,7 @@ public class MenuDataAccess : IMenuDataAccess
 
     public async Task<MenuModel?> _01(MenuModel menu, string schema, string conn)
     {
-        string sql = $@"Insert into {schema}.Menu (Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse) values (@Type, @IdParent, @Indent, @Icon, @DispText, @Action, @Odr, @IsCommercialUse)";
+        string sql = $@"Insert into {schema}.Menu (Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse, CoTypeCode) values (@Type, @IdParent, @Indent, @Icon, @DispText, @Action, @Odr, @IsCommercialUse, ifnull(@CoTypeCode, 'ALL'))";
         await _sql.ExecuteCmd<dynamic>(sql, menu, conn);
 
         sql = $@"SELECT * FROM {schema}.Menu WHERE ID = (SELECT @@IDENTITY)";
@@ -30,7 +30,7 @@ public class MenuDataAccess : IMenuDataAccess
 
     public async Task<MenuModel?> _02(int id, string schema, string conn)
     {
-        string sql = $@"select  Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse from {schema}.Menu where Id = @Id";
+        string sql = $@"select  Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse, CoTypeCode from {schema}.Menu where Id = @Id";
         var data = await _sql.FetchData<MenuModel?, dynamic>(sql, new { Id = id }, conn);
         return data?.FirstOrDefault();
     }
@@ -39,14 +39,14 @@ public class MenuDataAccess : IMenuDataAccess
 
     public async Task<List<MenuModel?>?> _02ByType(string type, string schema, string conn)
     {
-        string sql = $@" SELECT Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse FROM {schema}.Menu WHERE LOWER(Type) LIKE CONCAT(LOWER(@Type),'%')";
+        string sql = $@" SELECT Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse, CoTypeCode FROM {schema}.Menu WHERE LOWER(Type) LIKE CONCAT(LOWER(@Type),'%')";
         var data = await _sql.FetchData<MenuModel?, dynamic>(sql, new { Type = type }, conn);
         return data;
     }
 
     public async Task<List<MenuModel?>?> _02ByIdParent(int? idParent, string schema, string conn)
     {
-        string sql = $@" SELECT Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse FROM {schema}.Menu WHERE IdParent = @IdParent";
+        string sql = $@" SELECT Id, Type, IdParent, Indent, Icon, DispText, Action, Odr, IsCommercialUse, CoTypeCode FROM {schema}.Menu WHERE IdParent = @IdParent";
 
         var data = await _sql.FetchData<MenuModel?, dynamic>(sql, new { IdParent = idParent }, conn);
         return data;
@@ -55,7 +55,7 @@ public class MenuDataAccess : IMenuDataAccess
 
     public async Task<MenuModel?> _03(int id, MenuModel menu, string schema, string conn)
     {
-        string sql = $@"Update {schema}.Menu set Type = @Type, IdParent = @IdParent, Indent = @Indent, Icon = @Icon, DispText = @DispText, Action = @Action, Odr = @Odr, IsCommercialUse = @IsCommercialUse where Id = @Id;";
+        string sql = $@"Update {schema}.Menu set Type = @Type, IdParent = @IdParent, Indent = @Indent, Icon = @Icon, DispText = @DispText, Action = @Action, Odr = @Odr, IsCommercialUse = @IsCommercialUse, CoTypeCode = ifnull(@CoTypeCode, 'ALL') where Id = @Id;";
         await _sql.ExecuteCmd<dynamic>(sql, menu, conn);
 
         sql = $@" select  * from {schema}.Menu x where x.Id = @Id ;";

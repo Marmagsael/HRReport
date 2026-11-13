@@ -19,4 +19,6 @@ public class MenuModel
     public int?         Odr         { get; set; }
 
     public bool         IsCommercialUse   { get; set; } = true;
+
+    public string       CoTypeCode        { get; set; } = "ALL";
 }

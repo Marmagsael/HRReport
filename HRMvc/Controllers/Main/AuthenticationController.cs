@@ -509,7 +509,7 @@ public class AuthenticationController : Controller
         }
         catch (Exception ex) { Console.WriteLine($"Migrations : user tables failed : {ex.Message}"); }
 
-        await MigrationExt.RunCompany(HttpContext.RequestServices, uc.Id);
+        await MigrationExt.RunOwnedCompanies(HttpContext.RequestServices, user.Id ?? 0, uc.Id);
     }
 
     private async Task CreateCompany(UsersModel user, UserCompanyModel? uc, string conn)
