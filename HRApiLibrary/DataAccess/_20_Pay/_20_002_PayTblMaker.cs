@@ -1043,12 +1043,24 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (2391, 'Separator', 2301, 1, NULL, '-', NULL, 2303),
                             (2392, 'Separator', 2301, 1, NULL, '-', NULL, 2306),
                             (2393, 'Separator', 2301, 1, NULL, '-', NULL, 2311),
-                            (2394, 'Separator', 2051, 1, NULL, '-', NULL, 2053),
+                            (2066, 'Dtl-Report', 2051, 1, 'account_tree', 'Division Entry', '14/2066', 2054),
+                            (2067, 'Dtl-Report', 2051, 1, 'corporate_fare', 'Department Entry', '14/2067', 2055),
+                            (2068, 'Dtl-Report', 2051, 1, 'segment', 'Section Entry', '14/2068', 2056),
                             (2065, 'Dtl-Report', 2051, 1, 'badge', 'Designation Entry', '14/2065', 2058),
+                            (2394, 'Separator', 2051, 1, NULL, '-', NULL, 2053),
                             (2395, 'Separator', 2051, 1, NULL, '-', NULL, 2055),
-                            (2396, 'Separator', 2051, 1, NULL, '-', NULL, 2060),
-                            (2397, 'Separator', 2051, 1, NULL, '-', NULL, 2063),
-                            (2398, 'Separator', 2051, 1, NULL, '-', NULL, 2067);
+                            (2396, 'Separator', 2051, 1, NULL, '-', NULL, 2057),
+                            (2397, 'Separator', 2051, 1, NULL, '-', NULL, 2059),
+                            (2398, 'Separator', 2051, 1, NULL, '-', NULL, 2061),
+                            (2411, 'Separator', 2051, 1, NULL, '-', NULL, 2063),
+                            (2412, 'Separator', 2051, 1, NULL, '-', NULL, 2065),
+                            (2413, 'Separator', 2051, 1, NULL, '-', NULL, 2067),
+                            (2414, 'Separator', 2051, 1, NULL, '-', NULL, 2069),
+                            (2415, 'Separator', 2051, 1, NULL, '-', NULL, 2071),
+                            (2416, 'Separator', 2051, 1, NULL, '-', NULL, 2073),
+                            (2417, 'Separator', 2051, 1, NULL, '-', NULL, 2075),
+                            (2418, 'Separator', 2051, 1, NULL, '-', NULL, 2077),
+                            (2419, 'Separator', 2051, 1, NULL, '-', NULL, 2079);
                         UPDATE MainPis.Menu SET Odr = 2302 WHERE Id = 2302 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2303 WHERE Id = 2391 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2304 WHERE Id = 2308 AND IdParent = 2301;
@@ -1062,23 +1074,35 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = 2313 WHERE Id = 2310 AND IdParent = 2301;
                         UPDATE MainPis.Menu SET Odr = 2052 WHERE IdParent = 2051 AND Id = 2052;
                         UPDATE MainPis.Menu SET Odr = 2053 WHERE IdParent = 2051 AND Id = 2394;
-                        UPDATE MainPis.Menu SET Odr = 2054 WHERE IdParent = 2051 AND Id = 2053;
+                        UPDATE MainPis.Menu SET Odr = 2054 WHERE IdParent = 2051 AND Id = 2066;
                         UPDATE MainPis.Menu SET Odr = 2055 WHERE IdParent = 2051 AND Id = 2395;
-                        UPDATE MainPis.Menu SET Odr = 2056 WHERE IdParent = 2051 AND Id = 2055;
-                        UPDATE MainPis.Menu SET Odr = 2057 WHERE IdParent = 2051 AND Id = 2065;
-                        UPDATE MainPis.Menu SET Odr = 2058 WHERE IdParent = 2051 AND Id = 2062;
-                        UPDATE MainPis.Menu SET Odr = 2059 WHERE IdParent = 2051 AND Id = 2063;
+                        UPDATE MainPis.Menu SET Odr = 2056 WHERE IdParent = 2051 AND Id = 2067;
+                        UPDATE MainPis.Menu SET Odr = 2057 WHERE IdParent = 2051 AND Id = 2396;
+                        UPDATE MainPis.Menu SET Odr = 2058 WHERE IdParent = 2051 AND Id = 2068;
+                        UPDATE MainPis.Menu SET Odr = 2059 WHERE IdParent = 2051 AND Id = 2397;
+                        UPDATE MainPis.Menu SET Odr = 2060 WHERE IdParent = 2051 AND Id = 2053;
+                        UPDATE MainPis.Menu SET Odr = 2061 WHERE IdParent = 2051 AND Id = 2398;
+                        UPDATE MainPis.Menu SET Odr = 2062 WHERE IdParent = 2051 AND Id = 2055;
+                        UPDATE MainPis.Menu SET Odr = 2063 WHERE IdParent = 2051 AND Id = 2411;
+                        UPDATE MainPis.Menu SET Odr = 2064 WHERE IdParent = 2051 AND Id = 2065;
+                        UPDATE MainPis.Menu SET Odr = 2065 WHERE IdParent = 2051 AND Id = 2412;
+                        UPDATE MainPis.Menu SET Odr = 2066 WHERE IdParent = 2051 AND Id = 2062;
+                        UPDATE MainPis.Menu SET Odr = 2067 WHERE IdParent = 2051 AND Id = 2413;
+                        UPDATE MainPis.Menu SET Odr = 2068 WHERE IdParent = 2051 AND Id = 2063;
+                        UPDATE MainPis.Menu SET Odr = 2069 WHERE IdParent = 2051 AND Id = 2414;
+                        UPDATE MainPis.Menu SET Odr = 2070 WHERE IdParent = 2051 AND Id = 2057;
+                        UPDATE MainPis.Menu SET Odr = 2071 WHERE IdParent = 2051 AND Id = 2415;
+                        UPDATE MainPis.Menu SET Odr = 2072 WHERE IdParent = 2051 AND Id = 2058;
+                        UPDATE MainPis.Menu SET Odr = 2073 WHERE IdParent = 2051 AND Id = 2416;
+                        UPDATE MainPis.Menu SET Odr = 2074 WHERE IdParent = 2051 AND Id = 2059;
+                        UPDATE MainPis.Menu SET Odr = 2075 WHERE IdParent = 2051 AND Id = 2417;
+                        UPDATE MainPis.Menu SET Odr = 2076 WHERE IdParent = 2051 AND Id = 2061;
+                        UPDATE MainPis.Menu SET Odr = 2077 WHERE IdParent = 2051 AND Id = 2418;
+                        UPDATE MainPis.Menu SET Odr = 2078 WHERE IdParent = 2051 AND Id = 2060;
+                        UPDATE MainPis.Menu SET Odr = 2079 WHERE IdParent = 2051 AND Id = 2419;
+                        UPDATE MainPis.Menu SET Odr = 2080 WHERE IdParent = 2051 AND Id = 2054;
                         UPDATE MainPis.Menu SET DispText = 'State / Province Entry' WHERE Id = 2060;
                         UPDATE MainPis.Menu SET DispText = 'City / Municipality Entry' WHERE Id = 2061;
-                        UPDATE MainPis.Menu SET Odr = 2060 WHERE IdParent = 2051 AND Id = 2396;
-                        UPDATE MainPis.Menu SET Odr = 2061 WHERE IdParent = 2051 AND Id = 2057;
-                        UPDATE MainPis.Menu SET Odr = 2062 WHERE IdParent = 2051 AND Id = 2058;
-                        UPDATE MainPis.Menu SET Odr = 2063 WHERE IdParent = 2051 AND Id = 2397;
-                        UPDATE MainPis.Menu SET Odr = 2064 WHERE IdParent = 2051 AND Id = 2059;
-                        UPDATE MainPis.Menu SET Odr = 2065 WHERE IdParent = 2051 AND Id = 2061;
-                        UPDATE MainPis.Menu SET Odr = 2066 WHERE IdParent = 2051 AND Id = 2060;
-                        UPDATE MainPis.Menu SET Odr = 2067 WHERE IdParent = 2051 AND Id = 2398;
-                        UPDATE MainPis.Menu SET Odr = 2068 WHERE IdParent = 2051 AND Id = 2054;
                         DELETE FROM MainPis.Menu WHERE Id = 2056 AND DispText = 'Leave Type Entry';
                         DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';
                         DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';

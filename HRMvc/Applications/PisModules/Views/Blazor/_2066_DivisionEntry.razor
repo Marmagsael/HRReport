@@ -1,0 +1,143 @@
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.Models._10_Pis
+@using HRMvc.Applications._00GeneralComponents
+
+@inject IRdivisionDataAccess _da
+
+<TelerikRootComponent>
+
+    <TelerikNotification @ref="@NotificationRef"
+                         HorizontalPosition="@NotificationHorizontalPosition.Right"
+                         VerticalPosition="@NotificationVerticalPosition.Top"
+                         AnimationType="@AnimationType.SlideLeft" />
+
+    <_00BT_FullW HdrCaption="Division Entry">
+        <Details>
+            <div class="p-0">
+                <div class="card-header d-flex gap-2">
+                    <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="button" @onclick="OpenAdd">Add Division</button>
+                </div>
+
+                <div class="p-2">
+                    <TelerikGrid Data="@Items" Sortable="true" Pageable="true" PageSize="30" Height="calc(100vh - 210px)">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(RdivisionModel.Sname)" Title="Short Name" Width="140px" />
+                            <GridColumn Field="@nameof(RdivisionModel.Name)" Title="Name" />
+                            <GridCommandColumn Width="170px" Title="">
+                                <GridCommandButton Command="Edit" OnClick="@((GridCommandEventArgs a) => OpenEdit((RdivisionModel)a.Item))">Edit</GridCommandButton>
+                                <GridCommandButton Command="Delete" OnClick="@((GridCommandEventArgs a) => AskDelete((RdivisionModel)a.Item))">Delete</GridCommandButton>
+                            </GridCommandColumn>
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-3 text-muted">No division yet. Click Add Division.</div></NoDataTemplate>
+                    </TelerikGrid>
+                </div>
+            </div>
+
+            <TelerikWindow Modal="true" @bind-Visible="@ShowEntry" Width="460px">
+                <WindowActions><WindowAction Name="Close" /></WindowActions>
+                <WindowTitle>@(IsEdit ? "Edit Division" : "Add Division")</WindowTitle>
+                <WindowContent>
+                    <div class="p-2">
+                        <div class="mb-2">
+                            <label class="form-label fw-bold mb-0">Short Name</label><br />
+                            <TelerikTextBox @bind-Value="@F.Sname" MaxLength="10" Width="140px" />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold mb-0">Name</label><br />
+                            <TelerikTextBox @bind-Value="@F.Name" MaxLength="65" Width="100%" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(ErrorMsg)) { <div class="txt-red small mb-2">@ErrorMsg</div> }
+                        <div class="d-flex gap-2">
+                            <TelerikButton OnClick="@SaveEntry" ThemeColor="primary">Save</TelerikButton>
+                            <TelerikButton OnClick="@(() => ShowEntry = false)">Cancel</TelerikButton>
+                        </div>
+                    </div>
+                </WindowContent>
+            </TelerikWindow>
+
+            <TelerikWindow Modal="true" @bind-Visible="@ShowDelete" Width="420px">
+                <WindowActions><WindowAction Name="Close" /></WindowActions>
+                <WindowTitle>Delete Division</WindowTitle>
+                <WindowContent>
+                    <div class="p-2">
+                        <p>Delete <b>@F.Name</b>?</p>
+                        <div class="d-flex gap-2">
+                            <TelerikButton OnClick="@DoDelete" ThemeColor="primary">Delete</TelerikButton>
+                            <TelerikButton OnClick="@(() => ShowDelete = false)">Cancel</TelerikButton>
+                        </div>
+                    </div>
+                </WindowContent>
+            </TelerikWindow>
+        </Details>
+    </_00BT_FullW>
+
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    TelerikNotification? NotificationRef;
+    List<RdivisionModel> Items = new();
+    RdivisionModel F = new();
+    bool ShowEntry, ShowDelete, IsEdit;
+    string? ErrorMsg;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Uc?.Conn == null || Uc.SchemaUserPis == null) return;
+        await Load();
+    }
+
+    async Task Load()
+    {
+        try { Items = (await _da._02(Uc.SchemaUserPis, Uc.Conn))?.Where(x => x != null).Select(x => x!).ToList() ?? new(); }
+        catch { NotificationRef?.Show("Unable to load division.", ThemeConstants.Notification.ThemeColor.Error); }
+    }
+
+    void OpenAdd()
+    {
+        F = new RdivisionModel();
+        IsEdit = false; ErrorMsg = null; ShowEntry = true;
+    }
+
+    void OpenEdit(RdivisionModel d)
+    {
+        F = new RdivisionModel { Id = d.Id, Sname = d.Sname, Name = d.Name };
+        IsEdit = true; ErrorMsg = null; ShowEntry = true;
+    }
+
+    async Task SaveEntry()
+    {
+        ErrorMsg = null;
+        F.Sname = F.Sname?.Trim();
+        F.Name = F.Name?.Trim();
+        if (string.IsNullOrWhiteSpace(F.Name)) { ErrorMsg = "Name is required."; return; }
+        try
+        {
+            if (IsEdit) await _da._03(F.Id, F, Uc.SchemaUserPis, Uc.Conn);
+            else await _da._01(F, Uc.SchemaUserPis, Uc.Conn);
+            ShowEntry = false;
+            NotificationRef?.Show("Division saved.", ThemeConstants.Notification.ThemeColor.Success);
+            await Load();
+        }
+        catch { NotificationRef?.Show("Unable to save the division.", ThemeConstants.Notification.ThemeColor.Error); }
+    }
+
+    void AskDelete(RdivisionModel d)
+    {
+        F = new RdivisionModel { Id = d.Id, Sname = d.Sname, Name = d.Name };
+        ShowDelete = true;
+    }
+
+    async Task DoDelete()
+    {
+        try
+        {
+            await _da._04(F.Id, Uc.SchemaUserPis, Uc.Conn);
+            ShowDelete = false;
+            NotificationRef?.Show("Division deleted.", ThemeConstants.Notification.ThemeColor.Success);
+            await Load();
+        }
+        catch { NotificationRef?.Show("Unable to delete the division.", ThemeConstants.Notification.ThemeColor.Error); }
+    }
+}
