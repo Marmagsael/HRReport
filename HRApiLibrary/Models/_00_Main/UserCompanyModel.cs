@@ -19,6 +19,7 @@ public class UserCompanyModel
     public string?      AcctgSchema         { get; set; } = string.Empty;
     public string?      OldPis             { get; set; } = string.Empty;
     public string?      OldPay              { get; set; } = string.Empty;
+    public string?      TimeZone            { get; set; } = "Asia/Manila";
 
     //--------------------------------------------------------------------
     public string?      CountryName         { get; set; } = string.Empty;

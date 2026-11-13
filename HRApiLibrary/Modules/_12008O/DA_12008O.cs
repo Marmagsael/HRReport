@@ -88,15 +88,32 @@ public class DA_12008O : IDA_12008O
             return new() { Ok = false, EmpName = name, Msg = "This employee has no system id yet. Open the employee in Employee Entry and save it." };
 
         int systemId = emp.SystemId;
-        var now = mob?.At ?? DateTime.Now;
+        var zone = await CompanyZone(pisdb, conn);
+        var now = mob?.AtUtc != null ? TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(mob.AtUtc.Value, DateTimeKind.Utc), zone)
+                                     : TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zone);
 
         if (mob != null)
         {
             var dup = await _sql.FetchData<long, dynamic>($"select count(*) from {pisdb}.Attpunches1 where EmpmasId = @Id and (PunchInDate = @At or PunchOutDate = @At)", new { Id = systemId, At = now }, conn);
-            if (dup.FirstOrDefault() > 0) return new() { Ok = true, Type = "DUP", EmpName = name, At = now, Msg = "Already recorded." };
+            if (dup.FirstOrDefault() > 0) return new() { Ok = true, Type = "DUP", EmpName = name, At = now, AtUtc = ToUtc(now, zone), Msg = "Already recorded." };
         }
 
-        var open = (await _punches._02NoPunchOut(systemId, pisdb, conn))?.FirstOrDefault(x => x != null);
+        Attpunches1Model? open;
+        if (mob != null)
+        {
+            // -- From the phone : when the table already has a later record (IN or OUT), this punch is no longer valid (void).
+            //    Otherwise it is an OUT when an earlier IN is still open, and an IN when not. OB / Leave rows are not counted. --
+            var latest = (await _sql.FetchData<DateTime?, dynamic>($@"select greatest(max(PunchInDate), ifnull(max(PunchOutDate), max(PunchInDate)))
+                                from {pisdb}.Attpunches1 where EmpmasId = @Id and Status not like 'OB%' and Status not like 'LV%'", new { Id = systemId }, conn)).FirstOrDefault();
+            if (latest != null && latest > now)
+                return new() { Ok = false, Code = "EXISTS", EmpName = name, At = now, AtUtc = ToUtc(now, zone),
+                    Msg = $"Not uploaded: there is already a later record ({Fmt(latest)}), so this punch can no longer be added." };
+
+            open = (await _sql.FetchData<Attpunches1Model, dynamic>($@"select * from {pisdb}.Attpunches1
+                            where EmpmasId = @Id and PunchOutDate is null and PunchInDate <= @At
+                            order by PunchInDate desc limit 1", new { Id = systemId, At = now }, conn)).FirstOrDefault();
+        }
+        else open = (await _punches._02NoPunchOut(systemId, pisdb, conn))?.FirstOrDefault(x => x != null);
 
         if (open == null)
         {
@@ -122,7 +139,7 @@ public class DA_12008O : IDA_12008O
                                          where EmpmasId = @Id and PunchInDate = @At",
                     new { Id = systemId, At = now, Lat = mob.Lat, Lng = mob.Lng, Acc = mob.Acc, Fd = mob.FaceDist, Off = mob.Offline ? 1 : 0, Rev = mob.ForReview ? 1 : 0 }, conn);
 
-            return new() { Ok = true, Type = "IN", EmpName = name, At = now, Msg = "Punch IN" };
+            return new() { Ok = true, Type = "IN", EmpName = name, At = now, AtUtc = ToUtc(now, zone), Msg = "Punch IN" };
         }
         else
         {
@@ -154,7 +171,7 @@ public class DA_12008O : IDA_12008O
                                          where EmpmasId = @Id and PunchInDate = @InAt",
                     new { Id = systemId, InAt = inDate, Lat = mob.Lat, Lng = mob.Lng, Acc = mob.Acc, Fd = mob.FaceDist, Off = mob.Offline ? 1 : 0, Rev = mob.ForReview ? 1 : 0 }, conn);
 
-            return new() { Ok = true, Type = "OUT", EmpName = name, At = now, Msg = "Punch OUT" };
+            return new() { Ok = true, Type = "OUT", EmpName = name, At = now, AtUtc = ToUtc(now, zone), Msg = "Punch OUT" };
         }
     }
 
@@ -172,14 +189,42 @@ public class DA_12008O : IDA_12008O
             $"select Id, ifnull(SystemId, 0) SystemId, trim(EmpNumber) EmpNumber from {pisdb}.Empmas where Id = @Id", new { Id = empmasId }, conn)).FirstOrDefault();
         var st = new M12008_MobileStatus { EmpName = await _02EmpName(empmasId, pisdb, opisdb, conn), EmpNumber = emp?.EmpNumber, NextAction = "IN" };
         if (emp == null || emp.SystemId <= 0) return st;
+        var zone = await CompanyZone(pisdb, conn);
 
         var open = (await _punches._02NoPunchOut(emp.SystemId, pisdb, conn))?.FirstOrDefault(x => x != null);
-        if (open != null) { st.NextAction = "OUT"; st.LastAt = open.PunchInDate; st.LastType = "IN"; return st; }
+        if (open != null) { st.NextAction = "OUT"; st.LastAt = open.PunchInDate; st.LastType = "IN"; st.LastAtUtc = open.PunchInDate == null ? null : ToUtc(open.PunchInDate.Value, zone); return st; }
 
         var last = (await _punches._02LastPunches(emp.SystemId, 1, pisdb, conn))?.FirstOrDefault(x => x != null);
-        if (last != null) { st.LastAt = last.PunchOutDate ?? last.PunchInDate; st.LastType = last.PunchOutDate != null ? "OUT" : "IN"; }
+        if (last != null)
+        {
+            st.LastAt = last.PunchOutDate ?? last.PunchInDate; st.LastType = last.PunchOutDate != null ? "OUT" : "IN";
+            st.LastAtUtc = st.LastAt == null ? null : ToUtc(st.LastAt.Value, zone);
+        }
         return st;
     }
+
+    // -- Time of the punch follows the company time zone (Main.UsersCompany.TimeZone, default Asia/Manila), not the server clock --
+    private async Task<TimeZoneInfo> CompanyZone(string pisdb, string conn)
+    {
+        string? id = null;
+        try
+        {
+            var r = await _sql.FetchData<string, dynamic>("select TimeZone from Main.UsersCompany where PISSchema = @Pis limit 1", new { Pis = pisdb }, conn);
+            id = r.FirstOrDefault();
+        }
+        catch { }
+        foreach (var name in new[] { id, "Asia/Manila", "Singapore Standard Time" })
+        {
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            try { return TimeZoneInfo.FindSystemTimeZoneById(name); } catch { }
+        }
+        return TimeZoneInfo.CreateCustomTimeZone("PH", TimeSpan.FromHours(8), "PH", "PH");
+    }
+
+    private static string Fmt(DateTime? d) => d?.ToString("MMM d, h:mm tt") ?? "";
+
+    private static DateTime ToUtc(DateTime companyTime, TimeZoneInfo zone) =>
+        TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(companyTime, DateTimeKind.Unspecified), zone);
 
     private async Task<int> DutyId(string? code, string pisdb, string conn)
     {
@@ -220,7 +265,7 @@ public interface IDA_12008O
 
 public class M12008_MobileInfo
 {
-    public DateTime? At { get; set; }
+    public DateTime? AtUtc { get; set; }
     public double? Lat { get; set; }
     public double? Lng { get; set; }
     public double? Acc { get; set; }
@@ -235,6 +280,7 @@ public class M12008_MobileStatus
     public string? EmpNumber { get; set; }
     public string NextAction { get; set; } = "IN";
     public DateTime? LastAt { get; set; }
+    public DateTime? LastAtUtc { get; set; }
     public string? LastType { get; set; }
 }
 
@@ -267,5 +313,7 @@ public class M12008_PunchResult
     public string? Type { get; set; }
     public string? EmpName { get; set; }
     public DateTime At { get; set; }
+    public DateTime? AtUtc { get; set; }
+    public string? Code { get; set; }
     public string? Msg { get; set; }
 }

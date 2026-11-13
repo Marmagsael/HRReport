@@ -518,6 +518,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
                     OldPis          VARCHAR (60)    NULL,
                     CompanyCode     VARCHAR (10)    NULL,
                     EmployeeCnt     INT             NOT NULL DEFAULT 100,
+                    TimeZone        VARCHAR (50)    NOT NULL DEFAULT 'Asia/Manila',
                     PRIMARY KEY (`Id`),
                     UNIQUE KEY uq_userscompany_companycode (CompanyCode)) Engine = InnoDB;";
         await _sql.ExecuteCmd(sql, new { }, connName);
@@ -551,6 +552,11 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         if (!columns.Any(c => c.Field == "EmployeeCnt"))
         {
             sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN EmployeeCnt INT NOT NULL DEFAULT 100";
+            await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+        if (!columns.Any(c => c.Field == "TimeZone"))
+        {
+            sql = $@"ALTER TABLE {schema}.UsersCompany ADD COLUMN TimeZone VARCHAR (50) NOT NULL DEFAULT 'Asia/Manila'";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
     }

@@ -126,7 +126,7 @@ public class HR_10_002_MobilePunchController : ControllerBase
         {
             r.Offline = true;
             var res = await Record(s, r);
-            results.Add(new { clientId = r.ClientId, res.Ok, res.Type, res.Msg, at = res.At });
+            results.Add(new { clientId = r.ClientId, res.Ok, res.Type, res.Code, res.Msg, at = res.At, atUtc = res.AtUtc });
         }
         return Ok(new { ok = true, results });
     }
@@ -148,9 +148,13 @@ public class HR_10_002_MobilePunchController : ControllerBase
             // -- online : not recorded when the face does not match ; offline : recorded, but HR must review it --
             if (!matched && r.Offline != true) return new() { Ok = false, Msg = "Face not recognized." };
 
-            var now = DateTime.Now;
-            DateTime? at = null;
-            if (r.Offline == true && r.PunchAt != null) at = r.PunchAt > now ? now : r.PunchAt;
+            var nowUtc = DateTime.UtcNow;
+            DateTime? atUtc = null;
+            if (r.Offline == true && r.PunchAt != null)
+            {
+                var p = r.PunchAt.Value.Kind == DateTimeKind.Local ? r.PunchAt.Value.ToUniversalTime() : DateTime.SpecifyKind(r.PunchAt.Value, DateTimeKind.Utc);
+                atUtc = p > nowUtc ? nowUtc : p;
+            }
 
             string? ip  = HttpContext.Connection.RemoteIpAddress?.ToString();
             string? dev = string.IsNullOrWhiteSpace(r.DeviceId) ? null : (r.DeviceId.Length > 20 ? r.DeviceId[..20] : r.DeviceId);
@@ -158,7 +162,7 @@ public class HR_10_002_MobilePunchController : ControllerBase
 
             return await _da._01Punch(s.EmpmasId, s.Pis, s.OldPis, s.Conn, null, ip, dev, new M12008_MobileInfo
             {
-                At = at, Lat = r.Lat, Lng = r.Lng, Acc = r.Accuracy, FaceDist = Math.Round(best, 4),
+                AtUtc = atUtc, Lat = r.Lat, Lng = r.Lng, Acc = r.Accuracy, FaceDist = Math.Round(best, 4),
                 Offline = r.Offline == true, ForReview = !matched
             });
         }
