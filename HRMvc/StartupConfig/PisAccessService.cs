@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HRApiLibrary.DataAccess._10_Pis.OPis;
+using HRApiLibrary.DataAccess._90_Utils;
 using HRApiLibrary.Models._90_Utils;
 using HRMvc.Applications.PayrollTransaction.Vars;
 
@@ -11,13 +12,15 @@ public class PisAccessService
 
     private readonly IOPisDomainaccessDataAccess _access;
     private readonly IOEmpmasDataAccess             _oldEmpmas;
+    private readonly IMainmenuDataAccess            _menu;
     private HashSet<int>? _allowed;
     private bool _loaded;
 
-    public PisAccessService(IOPisDomainaccessDataAccess access, IOEmpmasDataAccess oldEmpmas)
+    public PisAccessService(IOPisDomainaccessDataAccess access, IOEmpmasDataAccess oldEmpmas, IMainmenuDataAccess menu)
     {
         _access    = access;
         _oldEmpmas = oldEmpmas;
+        _menu      = menu;
     }
 
     private static readonly string[] UnrestrictedEmails = ["marmagsael@gmail.com", "00003@email.com"];
@@ -77,8 +80,21 @@ public class PisAccessService
         return rows.Where(r => r?.Idsysmenu != null).Select(r => r!.Idsysmenu!.Value).ToList();
     }
 
+    // -- A menu tagged with a company type (Menu.CoTypeCode) is only for the companies of that type; 'ALL' is for every company --
+    // -- A company without a type only gets the 'ALL' menus --
+    private async Task<bool> IsForCompanyTypeAsync(ClaimsPrincipal user, int menuId)
+    {
+        var uc     = PayClaimsHelper.UserToClaims(user);
+        var schema = Module == "pis" ? "MainPis" : "MainPay";
+        var menus  = await _menu._02(schema, uc.CoTypeCode, uc.Conn ?? "") ?? [];
+        var row    = (await _menu._02(schema, uc.Conn ?? "") ?? []).FirstOrDefault(m => m?.Id == menuId);
+        if (row == null) return true;
+        return menus.Any(m => m?.Id == menuId);
+    }
+
     public async Task<bool> CanOpenAsync(ClaimsPrincipal user, int menuId)
     {
+        if (!await IsForCompanyTypeAsync(user, menuId)) return false;
         var allowed = await AllowedMenuIdsAsync(user);
         return allowed == null || allowed.Contains(menuId);
     }

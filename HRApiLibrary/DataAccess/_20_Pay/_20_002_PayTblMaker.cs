@@ -1081,7 +1081,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                         UPDATE MainPis.Menu SET Odr = 2068 WHERE IdParent = 2051 AND Id = 2054;
                         DELETE FROM MainPis.Menu WHERE Id = 2056 AND DispText = 'Leave Type Entry';
                         DELETE FROM MainPis.Menu WHERE Id = 2064 AND DispText = 'Employee Archiving';
-                        DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';";
+                        DELETE FROM MainPis.Menu WHERE Id = 2004 AND DispText = 'Attendance Management';
+                        UPDATE MainPis.Menu SET CoTypeCode = 'SEC' WHERE Id IN (2303, 2304, 2305, 2307, 2308, 2309, 2392, 2393) AND CoTypeCode = 'ALL';";
         await _sql.ExecuteCmd(sql, new { }, connName);
     }
 

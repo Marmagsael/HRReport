@@ -23,6 +23,7 @@ public class UserClaimsModel
     public string?                  OempNumber              { get; set; } = string.Empty;
     public string?                  OpisDb                  { get; set; } = string.Empty;
     public string?                  OpayDb                  { get; set; } = string.Empty;
+    public string?                  CoTypeCode              { get; set; } = string.Empty;
 
     //------------------------------------------------------------------------------------
     public string?                  Email                   { get; set; } = string.Empty;    

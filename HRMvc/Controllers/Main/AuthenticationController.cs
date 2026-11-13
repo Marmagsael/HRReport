@@ -835,6 +835,7 @@ public class AuthenticationController : Controller
             new("Empnumber",            empnumber  ?? "00000"),  
             new("OldPis",               oldPis  ?? "secpis"),  
             new("OldPay",               oldPay  ?? "pay"),  
+            new("CoTypeCode",           uc?.CoTypeCode ?? ""),
             
             new("IsExclusiveCompany",   isExclusiveCompany),
             new("ExclusiveCompany",    exclusiveCompany), // For GSIA

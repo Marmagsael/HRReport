@@ -80,6 +80,7 @@ public class _00MainDA : I_00MainDA
             uc.OempNumber           = claims.FirstOrDefault(c => c?.Type == "Empnumber")?.Value;
             uc.OpayDb               = claims.FirstOrDefault(c => c?.Type == "OldPay")?.Value;
             uc.OpisDb               = claims.FirstOrDefault(c => c?.Type == "OldPis")?.Value;
+            uc.CoTypeCode           = claims.FirstOrDefault(c => c?.Type == "CoTypeCode")?.Value ?? string.Empty;
             
             uc.EmpmasId             = 0;
             var empmasId            = claims.FirstOrDefault(c => c?.Type == "EmpmasId")?.Value;

@@ -1,6 +1,7 @@
 using HRApiLibrary.DataAccess._10_Pis.OPis;
 using HRApiLibrary.DataAccess._20_Pay.OPay;
 using HRApiLibrary.Models._00_Main;
+using HRApiLibrary.DataAccess._90_Utils;
 
 namespace HRMvc.StartupConfig;
 
@@ -8,7 +9,7 @@ public class PayAccessService : PisAccessService
 {
     private readonly IODomainaccessDataAccess _payAccess;
 
-    public PayAccessService(IOPisDomainaccessDataAccess access, IOEmpmasDataAccess oldEmpmas, IODomainaccessDataAccess payAccess) : base(access, oldEmpmas)
+    public PayAccessService(IOPisDomainaccessDataAccess access, IOEmpmasDataAccess oldEmpmas, IODomainaccessDataAccess payAccess, IMainmenuDataAccess menu) : base(access, oldEmpmas, menu)
     {
         _payAccess = payAccess;
     }

@@ -44,6 +44,7 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
         await _01MenuCoTypeId(schema, connName);
         await _01MenuCoTypeId("MainPis", connName);
         await _01MenuCoTypeId("MainPay", connName);
+        await _01MenuSecurityOnly(connName);
         await _01MenuSystemApplication(schema, connName);
 
 
@@ -911,6 +912,15 @@ public class _00MainTblMakerAccess : I_00MainTblMakerAccess
 
         // -- every menu without a company type is for all companies --
         await _sql.ExecuteCmd($"UPDATE {schema}.Menu SET CoTypeCode = 'ALL' WHERE CoTypeCode IS NULL OR TRIM(CoTypeCode) = ''", new { }, connName);
+    }
+
+    // -- Security Agency only (CompanyType.Code SEC): Assignment Order Entry, Special Duty Order, Return To Unit (RTU), Recall Order Entry, Group Recall Order, Deviation Penalty --
+    private async Task _01MenuSecurityOnly(string? connName)
+    {
+        var tbl = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.tables where lower(table_schema) = 'mainpis' and lower(table_name) = 'menu'", new { }, connName);
+        if (tbl.FirstOrDefault() == 0) return;
+        await _sql.ExecuteCmd("UPDATE MainPis.Menu SET CoTypeCode = 'SEC' WHERE Id IN (2303, 2304, 2305, 2307, 2308, 2309, 2392, 2393) AND CoTypeCode = 'ALL'", new { }, connName);
     }
 
     // -- System Application (15/502) in the left menu; main.Menu itself is not made here --

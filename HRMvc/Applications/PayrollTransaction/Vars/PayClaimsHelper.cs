@@ -37,6 +37,7 @@ public static class PayClaimsHelper
             OempNumber      = user.FindFirst("EmpNumber")?.Value ?? string.Empty,
             OpisDb          = user.FindFirst("OldPis")?.Value ?? string.Empty,
             OpayDb          = user.FindFirst("OldPay")?.Value ?? string.Empty,
+            CoTypeCode      = user.FindFirst("CoTypeCode")?.Value ?? string.Empty,
             Conn            = user.FindFirst("Conn")?.Value ?? string.Empty,
             ConnNoDb        = user.FindFirst("ConnNoDb")?.Value ?? string.Empty,
             ConnPay         = user.FindFirst("ConnPay")?.Value ?? string.Empty,
