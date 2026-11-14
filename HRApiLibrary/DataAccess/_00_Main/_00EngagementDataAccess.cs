@@ -21,6 +21,7 @@ public class _00EngagementDataAccess : I_00EngagementDataAccess
         string sql = $@"select  uc.Id                   CompanyId,
                                 uc.CompanyName,
                                 uc.CompanyCode,
+                                ct.Name                 CompanyType,
                                 cu.CompanyUserTypeId,
                                 t.Name                  UserType,
                                 cu.Status,
@@ -31,6 +32,7 @@ public class _00EngagementDataAccess : I_00EngagementDataAccess
                                 join      {schema}.UsersCompany    uc on uc.Id = cu.CompanyId
                                 join      {schema}.Users           u  on u.Id  = cu.UserId
                                 left join {schema}.CompanyUserType t  on t.Id  = cu.CompanyUserTypeId
+                                left join {schema}.CompanyType     ct on ct.Code = uc.CoTypeCode
                         where   cu.UserId = @UserId
                         order by IsDefault desc, uc.CompanyName";
         return await _sql.FetchData<MyEngagementModel, dynamic>(sql, new { UserId = userId }, connName);

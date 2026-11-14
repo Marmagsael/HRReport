@@ -56,8 +56,16 @@ public class DA_2310O : IDA_2310O
         return prefix + (maxes.FirstOrDefault() + 1).ToString("000");
     }
 
+    // One save at a time per schema and month, so two encoders can never get the same control number.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _numLocks = new();
+    private static SemaphoreSlim NumLock(string key) => _numLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+
     public async Task<string> _01Save(M2310_Save s, string? encodeBy, string opisdb, string conn)
     {
+        var gate = NumLock(opisdb + "|ob|" + s.ObDate.ToString("yy-MM"));
+        await gate.WaitAsync();
+        try
+        {
         string obNumber = await _02NextNumber(s.ObDate, opisdb, conn);
         string sql = $@"insert into {opisdb}.ob1
                             (OBNUMBER, OBDATE, EMPNUMBER, `START`, `END`, NO_DAYS, DAYS_WITHPAY, DESTINATION, PURPOSE, CONTACTPERSON, TELNO, REMARKS, ENCODEBY, ENCODEDT, `mode`)
@@ -69,6 +77,8 @@ public class DA_2310O : IDA_2310O
             s.Destination, s.Purpose, s.ContactPerson, s.TelNo, s.Remarks, EncodeBy = encodeBy?.Trim(), EncodeDt = DateTime.Now.ToString("yyyy-MM-dd")
         }, conn);
         return obNumber;
+        }
+        finally { gate.Release(); }
     }
 
     public async Task _03Update(string obNumber, M2310_Save s, string? changeBy, string opisdb, string conn)

@@ -47,7 +47,7 @@
                     <div class="d-flex flex-column flex-md-row mb-2">
                         <label class="fw-normal w-180p">Control Number</label>
                         <div class="col-12 col-md-7 col-lg-3">
-                            <TelerikTextBox Value="@ControlNumber" Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                            <TelerikTextBox Value="@ControlNumber" Placeholder="New" Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                             ReadOnly Enabled="false" />
                         </div>
                     </div>
@@ -165,7 +165,7 @@
                         <div class="d-flex flex-column flex-md-row mb-2">
                             <label class="fw-normal w-180p">Number of Days</label>
                             <div class="col-12 col-md-7 col-lg-3">
-                                <TelerikNumericTextBox @bind-Value="@NoDays" Format="N2" Decimals="2" Min="0.5m" Max="365m" Step="0.5m" Class="text-end"
+                                <TelerikNumericTextBox @bind-Value="@NoDays" Format="N2" Decimals="2" Min="0.5m" Max="@RangeDays" Step="0.5m" Class="text-end"
                                                        Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" TabIndex="8" />
                             </div>
                             <div class="ms-md-2 small text-muted align-self-center">Counted from the dates; change it for a half day.</div>
@@ -175,7 +175,7 @@
                         <div class="d-flex flex-column flex-md-row mb-2">
                             <label class="fw-normal w-180p">Days With Pay</label>
                             <div class="col-12 col-md-7 col-lg-3">
-                                <TelerikNumericTextBox @bind-Value="@DaysWithPay" Format="N2" Decimals="2" Min="0m" Max="365m" Step="0.5m" Class="text-end"
+                                <TelerikNumericTextBox @bind-Value="@DaysWithPay" Format="N2" Decimals="2" Min="0m" Max="@NoDays" Step="0.5m" Class="text-end"
                                                        Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" TabIndex="9" />
                             </div>
                             <div class="ms-md-2 small text-muted align-self-center">Without pay : @((NoDays - DaysWithPay).ToString("N2")) day(s)</div>
@@ -329,6 +329,7 @@
     private DateTime LvStart = DateTime.Today;
     private DateTime LvEnd   = DateTime.Today;
     private decimal NoDays   = 1;
+    private decimal RangeDays => (decimal)((LvEnd.Date - LvStart.Date).TotalDays + 1);
     private decimal DaysWithPay = 1;
 
     private List<M2306_LeaveType> LeaveTypes = [];
@@ -436,7 +437,7 @@
         {
             LeaveTypes    = (await _da._02LeaveTypes(OPis, Conn)) ?? [];
             LeaveStatuses = (await _da._02LeaveStatuses(OPis, Conn)) ?? [];
-            ControlNumber = await _da._02NextNumber(LvDate, OPis, Conn);
+            ControlNumber = "";
         }
         catch (Exception ex)
         {
@@ -454,13 +455,13 @@
         History = []; Summary = [];
         LeaveCode = null; SetStatusCode = null; Balance = null; BalanceNote = ""; PisEmp = null; PisTypeId = 0; OrigEmpNumber = OrigLeaveCode = null;
         LvStart = LvEnd = DateTime.Today; NoDays = 1; DaysWithPay = 1;
-        ControlNumber = await _da._02NextNumber(LvDate, OPis, Conn);
+        ControlNumber = "";
     }
 
     private async Task DateFiledChanged(DateTime v)
     {
         LvDate = v.Date;
-        if (!IsExisting) ControlNumber = await _da._02NextNumber(LvDate, OPis, Conn);
+        if (!IsExisting) ControlNumber = "";
     }
 
     // -- No. of days is counted from the dates (both days included); it can be changed afterwards, e.g. for a half day --
@@ -578,6 +579,7 @@
         if (string.IsNullOrWhiteSpace(EmpNumber) || !string.IsNullOrEmpty(EmpError) || EmpName == "") { NotificationRef.Show("Choose an employee.", ThemeConstants.Notification.ThemeColor.Warning); return; }
         if (string.IsNullOrWhiteSpace(LeaveCode)) { NotificationRef.Show("Choose a leave type.", ThemeConstants.Notification.ThemeColor.Warning); return; }
         if (LvEnd < LvStart) { NotificationRef.Show("The end date must not be earlier than the start date.", ThemeConstants.Notification.ThemeColor.Warning); return; }
+        if (NoDays > RangeDays) { NotificationRef.Show($"Number of days cannot be more than the days in the date range ({RangeDays:N2}).", ThemeConstants.Notification.ThemeColor.Warning); return; }
         if (NoDays <= 0) { NotificationRef.Show("Number of days must be more than zero.", ThemeConstants.Notification.ThemeColor.Warning); return; }
         if (DaysWithPay < 0 || DaysWithPay > NoDays) { NotificationRef.Show("Number of days with pay must be from 0 up to the number of days.", ThemeConstants.Notification.ThemeColor.Warning); return; }
 

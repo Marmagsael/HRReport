@@ -6,6 +6,7 @@ public class MyEngagementModel
     public int          CompanyId           { get; set; }
     public string?      CompanyName         { get; set; }
     public string?      CompanyCode         { get; set; }
+    public string?      CompanyType         { get; set; }
     public int?         CompanyUserTypeId   { get; set; }   // 1 Owner, 2 User
     public string?      UserType            { get; set; }
     public string?      Status              { get; set; }   // P pending, A approved, R rejected

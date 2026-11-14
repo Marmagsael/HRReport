@@ -112,8 +112,16 @@ public class DA_2306O : IDA_2306O
     }
 
     // -- Save : LVNUMBER = yy-MM of the leave date + the running number of that month. Returns the LVNUMBER. --
+    // One save at a time per schema and month, so two encoders can never get the same control number.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _numLocks = new();
+    private static SemaphoreSlim NumLock(string key) => _numLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+
     public async Task<string> _01Save(M2306_Save s, string? encodeBy, string opisdb, string conn)
     {
+        var gate = NumLock(opisdb + "|lv|" + s.LvDate.ToString("yy-MM"));
+        await gate.WaitAsync();
+        try
+        {
         string lvNumber = await _02NextNumber(s.LvDate, opisdb, conn);
 
         string sql = $@"insert into {opisdb}.leave1 (LVNUMBER, LVDATE, EMPNUMBER, LVCODE, `START`, `END`, NO_DAYS, WITHPAY, DAYS_WITHPAY, ENCODEBY, ENCODEDT, `mode`)
@@ -124,6 +132,8 @@ public class DA_2306O : IDA_2306O
             WithPay = s.DaysWithPay > 0 ? "Y" : "N", s.DaysWithPay, EncodeBy = encodeBy?.Trim(), EncodeDt = DateTime.Now.ToString("yyyy-MM-dd")
         }, conn);
         return lvNumber;
+        }
+        finally { gate.Release(); }
     }
 
     public async Task _03Update(string lvNumber, M2306_Save s, string? changeBy, string opisdb, string conn)
