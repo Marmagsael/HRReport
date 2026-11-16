@@ -26,6 +26,7 @@ public class R2102Model
     public string?   EmpNumber       { get; set; } = ""; 
     public string?   EmpName         { get; set; } = ""; 
     public string?   ClName          { get; set; } = ""; 
-    public string?   EmpStatus       { get; set; } = ""; 
-    
+    public string?   EmpStatus       { get; set; } = "";
+    public byte[]? Logo              { get; set; } = null;
+
 }

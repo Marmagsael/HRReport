@@ -3,8 +3,14 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._20_Pay.Interface
 
+@inject HRMvc.StartupConfig.CompanyLogoService _logo
 @inject IOPisReportDataAccess _pisRep
 @inject IOCoinfoDataAccess _coinfo
+
+
+<style>
+    .ao-note { color:#6c757d; font-size:12px; }
+</style>
 
 <TelerikRootComponent>
     <div class="position-relative">
@@ -25,11 +31,16 @@
                                         <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray" type="button" tabindex="2" @onclick="GenerateReport">Print</button>
                                     </div>
 
+
+
                                     <_2102_EmployeeMasterList ChildAction="ChildAction" />
+
+
 
                                     <TelerikWindow Modal="true" @bind-Visible="@showStatus" Width="420px" Height="560px">
                                         <WindowTitle>Employee Status Settings</WindowTitle>
                                         <WindowContent>
+                                            <div class="ao-note mb-2">Check the statuses of the employees you want to display in the list.</div>
                                             <TelerikGrid Data="@v.OEmpStatuses" Height="420px" Size="@ThemeConstants.Grid.Size.Small">
                                                 <GridColumns>
                                                     <GridColumn Field="@nameof(OEmpstatModel.IsMarked)" Title="" Width="50px">
@@ -48,6 +59,7 @@
                                             <WindowAction Name="Close" />
                                         </WindowActions>
                                     </TelerikWindow>
+                                
                                 </div>
                             </Details>
                         </_00BT_FullW>
@@ -171,25 +183,28 @@
         return Task.CompletedTask;
     }
 
-    private Task GenerateReport()
+    private async Task GenerateReport()
     {
         if (v.RepDtls == null || !v.RepDtls.Any())
         {
             NotificationRef?.Show("No employee records available for printing.", ThemeConstants.Notification.ThemeColor.Warning);
-            return Task.CompletedTask;
+            return;   // not "return Task.CompletedTask;"
         }
 
         try
         {
-            v.IsLoading     = true;
-            rv.RelativePath = "";
-            rv.ReportData   = [];
-            rv.ReportData   = v.RepDtls;
-            rv.ReportParams["ReportTitle"] = "Employee Master List";
-            rv.RelativePath = "Reports/_01Pis/J_2102_EML1.trdp";
-            rv.SelectedFormat   = "PDF";
-            rv.ShowModal        = true;
+            v.IsLoading = true;
 
+            var logo = (await _logo.GetAsync(Uc!))?.Data;
+
+            var first = v.RepDtls.FirstOrDefault();
+            if (first != null) first.Logo = logo;
+
+            rv.RelativePath = "Reports/_01Pis/J_2102_EML1.trdp";
+            rv.ReportData = v.RepDtls;
+            rv.ReportParams["ReportTitle"] = "Employee Master List";
+            rv.SelectedFormat = "PDF";
+            rv.ShowModal = true;
         }
         catch (Exception ex)
         {
@@ -200,8 +215,7 @@
         {
             v.IsLoading = false;
         }
-
-        return Task.CompletedTask;
+        // no return needed at the end
     }
 
     private void InitializeReport()
