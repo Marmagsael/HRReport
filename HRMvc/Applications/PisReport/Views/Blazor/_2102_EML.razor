@@ -3,72 +3,33 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._20_Pay.Interface
 
+@inject IOPisReportDataAccess _pisRep
+@inject IOCoinfoDataAccess _coinfo
+
 <TelerikRootComponent>
     <div class="position-relative">
+        <TelerikNotification @ref="@NotificationRef" HorizontalPosition="@NotificationHorizontalPosition.Right" VerticalPosition="@NotificationVerticalPosition.Top" AnimationType="@AnimationType.SlideLeft" />
+        <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" />
 
-        @*--- TELERIK NOTIFICATION ---*@
-        <TelerikNotification @ref="@NotificationRef"
-                             HorizontalPosition="@NotificationHorizontalPosition.Right"
-                             VerticalPosition="@NotificationVerticalPosition.Top"
-                             AnimationType="@AnimationType.SlideLeft" />
-
-        @*--- TELERIK LOADER ---*@
-        <TelerikLoaderContainer Visible="@v.IsLoading"
-                                LoaderType="@LoaderType.ConvergingSpinner" />
-
-        @*--- PARAMETERS ---*@
         <CascadingValue Value="@Uc">
             <CascadingValue Value="@v">
                 <CascadingValue Value="@rv">
                     <CascadingValue Value="@NotificationRef">
                         <_00BT_FullW HdrCaption="Employee Masterlist">
                             <Details>
-
-                                @*--- REPORT ---*@
                                 <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
-
-
                                 <div class="p-0">
-
                                     <div class="card-header d-flex gap-2">
-                                        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
-                                                type="button" tabindex="1" @onclick="ShowFilterModal">
-                                            Filter List
-                                        </button>
-
-                                        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray"
-                                                type="button" tabindex="2" @onclick="GenerateReport">
-                                            Print
-                                        </button>
+                                        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue" type="button" tabindex="1" @onclick="ShowFilterModal">Filter List</button>
+                                        <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray" type="button" tabindex="2" @onclick="GenerateReport">Print</button>
                                     </div>
 
-
-
-                                  
                                     <_2102_EmployeeMasterList ChildAction="ChildAction" />
-
-
-
 
                                     <TelerikWindow Modal="true" @bind-Visible="@showStatus" Width="420px" Height="560px">
                                         <WindowTitle>Employee Status Settings</WindowTitle>
                                         <WindowContent>
-
-                                            @* <TelerikTabStrip @bind-ActiveTabId="@TabStripActiveTabId">
-                                                <TabStripTab Id="tab1" Title="Deviation Entry">
-                                                    <_2309_DeviationEntry />
-                                                </TabStripTab>
-
-
-                                                <TabStripTab Id="tab2" Title="Deviation Line-Up">
-                                                    <_2309_DeviationLineUp />
-                                                </TabStripTab>
-                                            </TelerikTabStrip> *@
-                                            @* <div class="ao-note mb-2">Uncheck the status not applicable to the Assignment transaction.</div> *@
-
-
-
                                             <TelerikGrid Data="@v.OEmpStatuses" Height="420px" Size="@ThemeConstants.Grid.Size.Small">
                                                 <GridColumns>
                                                     <GridColumn Field="@nameof(OEmpstatModel.IsMarked)" Title="" Width="50px">
@@ -76,19 +37,18 @@
                                                             @{
                                                                 var s = (OEmpstatModel)context;
                                                             }
-                                                            <TelerikCheckBox Value="@s.IsMarked" ValueChanged="@((bool v) => ToggleStatus(s, v))" />
+                                                            <TelerikCheckBox Value="@s.IsMarked" ValueChanged="@((bool value) => ToggleStatus(s, value))" />
                                                         </Template>
                                                     </GridColumn>
                                                     <GridColumn Field="@nameof(OEmpstatModel.Name)" Title="Employee Status" />
                                                 </GridColumns>
                                             </TelerikGrid>
                                         </WindowContent>
-                                        <WindowActions><WindowAction Name="Close" /></WindowActions>
+                                        <WindowActions>
+                                            <WindowAction Name="Close" />
+                                        </WindowActions>
                                     </TelerikWindow>
-
-                                 
                                 </div>
-
                             </Details>
                         </_00BT_FullW>
                     </CascadingValue>
@@ -96,135 +56,157 @@
             </CascadingValue>
         </CascadingValue>
     </div>
-
 </TelerikRootComponent>
-
-@inject IOPisReportDataAccess _pisRep;
-@inject ISettingsDataAccess _settings;
 
 @code {
     [Parameter]
     public UserClaimsModel Uc { get; set; } = new();
 
-    V2102Model v    = new();
-    V00_RepVars rv  = new();
-
+    private V2102Model v = new();
+    private V00_RepVars rv = new();
     private TelerikNotification? NotificationRef;
     private bool showStatus = false;
 
+    // INITIALIZATION
     protected override async Task OnInitializedAsync()
     {
         v.IsLoading = true;
-
-        if (Uc?.Conn == null || Uc.OpisDb == null)
+        try
         {
-            NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
-            return;
+            if (Uc?.Conn == null || Uc.OpisDb == null)
+            {
+                NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
+                return;
+            }
+
+            await LoadEmployeeStatuses();
+
+            foreach (var s in v.OEmpStatuses)
+            {
+                if (s.Code == "A")
+                {
+                    s.IsMarked = true;
+                }
+            }
+
+            await _02LoadMasterEmployeeList();
+            InitializeReport();
+            await _02LoadCompanyInfo();
         }
-
-        await LoadEmployeeStatuses();
-        await _02LoadMasterEmployeeList();
-
-        // Report ---------
-        InitializeReport();
-        await _02LoadCompanyInfo();
-
-        v.IsLoading = false;
-
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to initialize Employee Masterlist.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
+        }
     }
 
-
-    private async Task ChildAction()
+    // CHILD ACTION
+    private Task ChildAction()
     {
-        if (v == null) return;
-
         v.Action = "";
+        return Task.CompletedTask;
     }
-
 
     private async Task _02LoadMasterEmployeeList()
     {
-        v.OEmpmass = [];
-        List<string> statuses = v.OEmpStatuses.Where(s => s.IsMarked == true && !string.IsNullOrEmpty(s.Name)).Select(s => s.Code!).ToList();
-
-
         try
         {
-            v.OEmpmass = await _pisRep._02EmpmasByStatusByClient(statuses ?? [], Uc.OpisDb, Uc.Conn);
+            List<string> statuses = v.OEmpStatuses.Where(s => s.IsMarked && !string.IsNullOrEmpty(s.Name)).Select(s => s.Code!).ToList();
+
+            var result = await _pisRep._02EmpmasByStatusByClient(statuses, Uc.OpisDb, Uc.Conn);
+            v.OEmpmass = result ?? [];
+
             v.RepDtls = v.OEmpmass.Select(x => new R2102Model
             {
-                EmpNumber   = x.EmpNumber,
-                EmpName     = x.EmpName,
-                ClName      = x.ClName,
-                EmpStatus   = x.EmpStatus
+                EmpNumber = x.EmpNumber,
+                EmpName = x.EmpName,
+                ClName = x.ClName,
+                EmpStatus = x.EmpStatus
             }).ToList();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
             NotificationRef?.Show("Unable to load employee master list. Please try again or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
-
     private async Task LoadEmployeeStatuses()
     {
-        v.OEmpStatuses = [];
         try
         {
-            v.OEmpStatuses = await _pisRep._02Empstats(Uc.OpisDb, Uc.Conn);
+            var result = await _pisRep._02Empstats(Uc.OpisDb, Uc.Conn);
+            v.OEmpStatuses = result ?? [];
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
+            v.OEmpStatuses = [];
             NotificationRef?.Show("Unable to load employee status. Please try again or contact your system administrator.", ThemeConstants.Notification.ThemeColor.Error);
         }
     }
 
-
-
-
-
-
-
-    private async Task GenerateReport()
+    private async Task ToggleStatus(OEmpstatModel s, bool status)
     {
-        if (!v.RepDtls.Any()) { return; }
-        v.IsLoading = true;
-
-        rv.RelativePath = "";
-        rv.ReportData   = [];
-        rv.ReportData   = v.RepDtls;
-
-        rv.ReportParams["ReportTitle"] = "Employee Master List";
-        rv.RelativePath = "Reports/_01Pis/K_2102_EML.trdp";
-        rv.SelectedFormat = "PDF";
-
-        rv.ShowModal = true;
-
-        v.IsLoading = false;
-    }
-
-    private async Task ShowFilterModal()
-    {
-        showStatus = true;
-    }
-
-
-    async Task ToggleStatus(OEmpstatModel s, bool status)
-    {
-        v.RepDtls = [];
+        bool previousStatus = s.IsMarked;
         try
         {
-
             s.IsMarked = status;
             await _02LoadMasterEmployeeList();
         }
-        catch (Exception ex) { Console.WriteLine(ex); }
+        catch (Exception ex)
+        {
+            s.IsMarked = previousStatus;
+            Console.WriteLine(ex);
+        }
     }
 
+    private Task ShowFilterModal()
+    {
+        showStatus = true;
+        return Task.CompletedTask;
+    }
+
+    private Task GenerateReport()
+    {
+        if (v.RepDtls == null || !v.RepDtls.Any())
+        {
+            NotificationRef?.Show("No employee records available for printing.", ThemeConstants.Notification.ThemeColor.Warning);
+            return Task.CompletedTask;
+        }
+
+        try
+        {
+            v.IsLoading     = true;
+            rv.RelativePath = "";
+            rv.ReportData   = [];
+            rv.ReportData   = v.RepDtls;
+            rv.ReportParams["ReportTitle"] = "Employee Master List";
+            rv.RelativePath = "Reports/_01Pis/J_2102_EML1.trdp";
+            rv.SelectedFormat   = "PDF";
+            rv.ShowModal        = true;
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to generate employee masterlist report.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
+        }
+
+        return Task.CompletedTask;
+    }
 
     private void InitializeReport()
     {
-        rv.MCaption = "Employee Mater List";
+        rv.MCaption = "Employee Master List";
         rv.RefreshToken = 21020000;
         rv.ReportParams = new()
         {
@@ -237,10 +219,20 @@
 
     private async Task _02LoadCompanyInfo()
     {
-        // var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        try
+        {
+           
+            var res = await _coinfo._02(Uc.OpisDb, Uc.Conn);
+            Console.WriteLine($"report {res.CoName} {res.CoAdd}");
+            if (res == null) return;
 
-        rv.ReportParams["CoName"] = res.CoFullName ?? "";
-        rv.ReportParams["CoAddress"] = res.CoAddress ?? "";
+            rv.ReportParams["CoName"] = res.CoName ?? "";
+            rv.ReportParams["CoAddress"] = res.CoAdd ?? "";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to load company information.", ThemeConstants.Notification.ThemeColor.Error);
+        }
     }
 }
