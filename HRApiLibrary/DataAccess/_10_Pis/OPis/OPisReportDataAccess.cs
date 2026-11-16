@@ -1,5 +1,6 @@
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 using HRApiLibrary.Models._10_Pis.OPis;
+using Org.BouncyCastle.Asn1.X509;
 
 namespace HRApiLibrary.DataAccess._10_Pis.OPis;
 
@@ -346,6 +347,40 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, StartDate = startDate, EndDate = endDate }, conn);
         return data ?? [];
     }
+
+
+    public async Task<List<OEmpmasModel>> _02EmpmasByStatusByClient(List<string?>? statuses, string? schema, string? conn)
+    {
+        var flds = EmpmasFields();
+        List<OEmpmasModel> data = new List<OEmpmasModel>();
+
+        
+ 
+        //string? sql = $@"select  {flds}, s.Name EmpStatus, c.ClName  
+        //                from {schema}.Empmas e 
+        //                left join {schema}.EmpStat s on s.Code = e.Empstat_  
+        //                left join {schema}.client c on c.ClNumber = e.Client_  
+        //                where e.Empstat_ in @Statuses 
+        //                order by empLastNm, EmpFirstNm ";
+        //data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, }, conn);
+
+
+        string? sql = $@"select  {flds}, s.Name EmpStatus, c.ClName  
+                        from {schema}.Empmas e 
+                        left join {schema}.EmpStat s on s.Code = e.Empstat_  
+                        left join {schema}.client c on c.ClNumber = e.Client_
+                        where e.empstat_ in @Statuses
+                        order by empLastNm, EmpFirstNm ";
+        data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, }, conn);
+
+        return data ?? [];
+    }
+
+
+
+
+
+
     public async Task<List<OCompanyInfoModel?>> _02CoInfo(string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Coinfo ";
@@ -596,4 +631,5 @@ public interface IOPisReportDataAccess
     Task<List<OEmpmasModel>> _02Empmas_EmployeeClearance(List<string?>? clnumbers, List<string?>? statuses, string? schema, string? conn);
     Task<List<OEmpmasModel>> _02Empmas_ForRegularization(List<string?>? statuses, int? year, int? month, string? schema, string? conn);
     Task<List<OEmpstatModel>> _02Empstats(string? schema, string? conn);
+    Task<List<OEmpmasModel>> _02EmpmasByStatusByClient(List<string?>? statuses, string? schema, string? conn);
 }

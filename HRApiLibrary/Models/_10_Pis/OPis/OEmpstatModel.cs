@@ -16,5 +16,6 @@ public class OEmpstatModel
 	// --- Others -------------------------------------
 	public int? 		IsSelected 			{ get; set; } = 0; 
 	public bool     	IsSelectedB         { get => IsSelected == 1; set => IsSelected = value ? 1 : 0; }
+	public bool     	IsMarked			{ get ; set ; } = false;
 
 }
