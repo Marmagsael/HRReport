@@ -93,13 +93,6 @@
 
             await LoadEmployeeStatuses();
 
-            foreach (var s in v.OEmpStatuses)
-            {
-                if (s.Code == "A")
-                {
-                    s.IsMarked = true;
-                }
-            }
 
             await _02LoadMasterEmployeeList();
             InitializeReport();
@@ -153,6 +146,15 @@
         {
             var result = await _pisRep._02Empstats(Uc.OpisDb, Uc.Conn);
             v.OEmpStatuses = result ?? [];
+
+
+            foreach (var s in v.OEmpStatuses)
+            {
+                if (s.IsResigned == "0")
+                {
+                    s.IsMarked = true;
+                }
+            }
         }
         catch (Exception ex)
         {
