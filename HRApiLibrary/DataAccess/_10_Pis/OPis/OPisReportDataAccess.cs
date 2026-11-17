@@ -354,13 +354,13 @@ public class OPisReportDataAccess : IOPisReportDataAccess
         var flds = EmpmasFields();
         List<OEmpmasModel> data = new List<OEmpmasModel>();
 
-        
- 
-        //string? sql = $@"select  {flds}, s.Name EmpStatus, c.ClName  
-        //                from {schema}.Empmas e 
-        //                left join {schema}.EmpStat s on s.Code = e.Empstat_  
-        //                left join {schema}.client c on c.ClNumber = e.Client_  
-        //                where e.Empstat_ in @Statuses 
+        if (statuses == null || statuses.Count == 0) return data;
+
+        //string? sql = $@"select  {flds}, s.Name EmpStatus, c.ClName
+        //                from {schema}.Empmas e
+        //                left join {schema}.EmpStat s on s.Code = e.Empstat_
+        //                left join {schema}.client c on c.ClNumber = e.Client_
+        //                where e.Empstat_ in @Statuses
         //                order by empLastNm, EmpFirstNm ";
         //data = await _sql.FetchLegacy<OEmpmasModel, dynamic>(sql, new { Statuses = statuses, }, conn);
 
