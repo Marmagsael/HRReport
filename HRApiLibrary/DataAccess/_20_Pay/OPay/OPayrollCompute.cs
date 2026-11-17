@@ -42,6 +42,7 @@ public static class OPayrollCompute
             var a = Acct(s, c);
             if (a == "" || !coa.TryGetValue(a, out var x)) return false;
             if (c.StartsWith("custom")) return true;
+            if (s.ShownAccts != null) return s.ShownAccts.Contains(a);
             if (s.Prd == "01") return x.Show01 != 0;
             if (s.Prd == "02") return x.Show02 != 0;
             return true;

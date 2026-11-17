@@ -20,7 +20,9 @@ window.attachGridKeyboardNav = function (gridContainerId) {
         let active = document.activeElement;
         if (!active || active.tagName !== 'INPUT') return;
 
-        let allInputs = Array.from(container.querySelectorAll('input'));
+        // Telerik locked columns live in their own table: navigate inside the table body that holds the active input
+        let scope = active.closest('tbody') || container;
+        let allInputs = Array.from(scope.querySelectorAll('input'));
         let currentIndex = allInputs.indexOf(active);
         if (currentIndex === -1) return;
 
@@ -30,7 +32,7 @@ window.attachGridKeyboardNav = function (gridContainerId) {
         let rowInputs = Array.from(currentRow.querySelectorAll('input'));
         let colIndexInRow = rowInputs.indexOf(active);
 
-        let allRows = Array.from(container.querySelectorAll('tbody tr'));
+        let allRows = Array.from(scope.querySelectorAll('tr'));
         let rowIndex = allRows.indexOf(currentRow);
 
         // DOWN ARROW or ENTER

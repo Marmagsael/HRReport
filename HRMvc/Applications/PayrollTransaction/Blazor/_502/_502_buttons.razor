@@ -6,10 +6,11 @@
 
 <div class="p-1 bordered-bottom d-flex gap-1 ">
 
-    <div class="card p-2 w-75p text-center h-35p mb-btn mb-btn-gray mb-tooltip disabled-div">
-        <span class="tooltip-text">Upload Excel File</span>
-        <i class="fa-solid fa-file-circle-plus fa-lg txt-blue"></i>
+    <div class="card p-2 w-65p text-center h-35p mb-btn mb-btn-gray mb-tooltip @cssNew" @onclick="OpenNew">
+        <span class="tooltip-text">New Payroll Entry</span>
+        <i class="fa-solid fa-file-circle-plus fa-lg txt-green"></i>
     </div>
+    <div class="bordered-right"></div>
     <div class="card p-2 w-65p text-center h-35p mb-btn mb-btn-gray mb-tooltip @cssSave" @onclick="Save">
         <span class="tooltip-text">Save Transaction</span>
         <i class="fa-solid fa-floppy-disk fa-lg txt-fcolor1"></i>
@@ -86,6 +87,7 @@
     bool hasSession   => v502.Session != null && v502.Session.Results.Count > 0;
     bool editable     => hasSession && !v502.Session!.IsLocked && !v502.IsBusy;
 
+    string? cssNew              => v502.IsBusy ? " disabled-div " : "";
     string? cssSave             => editable ? "" : " disabled-div ";
     string? cssProcess          => editable ? "" : " disabled-div ";
     string? cssLock             => editable && v502.IsProcessed ? "" : " disabled-div ";
@@ -93,6 +95,14 @@
     string? cssRemoveEmployee   => editable && v502.Session!.Results.Any(r => r.IsSelected) ? "" : " disabled-div ";
     string? cssCreateExcel      => hasSession && !v502.IsBusy ? "" : " disabled-div ";
     string? cssUploadExcel      => editable ? "" : " disabled-div ";
+
+    //--- payroll4 New : opens payrollNew4 (group, period, attendance, employees); its Load brings the payroll in ---
+    async Task OpenNew()
+    {
+        if (v502.IsBusy) return;
+        v502.IsNewPayrollOpen = true;
+        if (v502.Changed != null) await v502.Changed();
+    }
 
     //--- payroll4 bProcess: compute every employee from the manhours, then bSave.Click runs by itself -------------------
     async Task Process()

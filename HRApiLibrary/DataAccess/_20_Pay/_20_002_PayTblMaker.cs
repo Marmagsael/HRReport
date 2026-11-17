@@ -1193,7 +1193,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (104,   'Dtl-Report',      101,   1, 'military_tech', 'Salary Grade', '13T/104', 104),
                             (105,   'Dtl-Report',      101,   1, 'account_tree', 'Payroll Account Mapping', '13T/105', 105),
                             (106,   'Dtl-Report',      101,   1, 'price_change', 'Rate Setup', '13T/106', 106),
-                            (107,   'Dtl-Report',      101,   1, 'settings', 'Payroll Settings', '12/004', 107);";
+                            (107,   'Dtl-Report',      101,   1, 'settings', 'Payroll Settings', '12/004', 107),
+                            (108,   'Dtl-Report',      101,   1, 'rule', 'Employee Status Visible in Payroll', '13T/108', 108);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         // -- AMS Settings menu : the parent and its base items (the later AMS items are seeded below / above) --

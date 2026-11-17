@@ -70,7 +70,7 @@ public class OPayrollDataAccess : IOPayrollDataAccess
     // Load
     //========================================================================================================================
     public async Task<OPayrollSession> _01Load(string yy4, string mm, string prd, string grpCode, DateTime attStart, DateTime attEnd,
-                                               string paydb, string pisdb, string conn, IProgress<string>? progress = null)
+                                               string paydb, string pisdb, string conn, IProgress<string>? progress = null, IEnumerable<string>? selected = null)
     {
         var s = new OPayrollSession
         {
@@ -120,7 +120,7 @@ public class OPayrollDataAccess : IOPayrollDataAccess
         s.TaxTbl     = await _sql.FetchLegacy<TaxBracket, dynamic>($"select SAmt, EAmt, Fix, Percentage from {paydb}.semimonthlytax", new { }, conn);
 
         //--- paymain_save : the header, and for a new payroll the employee list, are written when the payroll is loaded ------
-        if (!s.IsLocked) await PaymainSave(s);
+        if (!s.IsLocked) await PaymainSave(s, selected?.ToList());
 
         //--- Employees: from the draft/locked TRN, otherwise the group's employees ({OldPis}.deprec.PayrollgrpId) in payroll -
         progress?.Report("Loading employees...");
@@ -163,8 +163,38 @@ public class OPayrollDataAccess : IOPayrollDataAccess
         return s;
     }
 
+    //--- payrollnew4 bFetchData.Click : a draft or locked TRN lists its own employees, a new one the group's (fill_dtl_saved / fill_dtl_new) ---
+    public async Task<OPayNewFetch> _02NewFetch(string yy4, string mm, string prd, string grpCode, string paydb, string pisdb, string conn)
+    {
+        var r = new OPayNewFetch();
+        var client = (await _sql.FetchLegacy<OPayClient, dynamic>(ClientSql(paydb, pisdb) + " where g.Code = @Code limit 1", new { Code = grpCode.Trim() }, conn)).FirstOrDefault();
+        if (client == null) return r;
+        var p = new { Trn = MakeTrn(yy4, mm, prd, grpCode), GrpId = client.Id };
+
+        var locked = await _sql.FetchLegacy<string, dynamic>($"select trn from {paydb}.paymainhdr where trn = @Trn", p, conn);
+        var draft  = await _sql.FetchLegacy<(string AttStart, string AttEnd), dynamic>(
+                         $"select date_format(attStart,'%Y-%m-%d') AttStart, date_format(attEnd,'%Y-%m-%d') AttEnd from {paydb}.tmppaymainhdr where trn = @Trn", p, conn);
+        r.Status = locked.Count > 0 ? "Lock" : draft.Count > 0 ? "Updated" : "New";
+        if (r.Status == "Updated")
+        {
+            if (DateTime.TryParse(draft[0].AttStart, out var d1)) r.AttStart = d1;
+            if (DateTime.TryParse(draft[0].AttEnd,   out var d2)) r.AttEnd   = d2;
+        }
+
+        var dtlTbl = r.Status == "Lock" ? "paymaindtl" : "tmppaymaindtl";
+        var nums   = (await _sql.FetchLegacy<string, dynamic>($"select trim(empnumber) from {paydb}.{dtlTbl} where trn = @Trn", p, conn)).ToList();
+        var empSql = EmpSql(paydb, pisdb);
+        if (nums.Count > 0)
+            r.Employees = await _sql.FetchLegacy<OPayEmp, dynamic>(empSql + " where e.EmpNumber in @Nums order by Name", new { Nums = nums }, conn);
+        else if (r.Status != "Lock")
+            r.Employees = await _sql.FetchLegacy<OPayEmp, dynamic>(
+                empSql + $@" join {pisdb}.deprec dp on dp.EmpNumber = e.EmpNumber
+                             where dp.PayrollgrpId = @GrpId and e.EmpStat_ in (select code from {pisdb}.empstat where isInPayroll = 1) order by Name", p, conn);
+        return r;
+    }
+
     //--- payrollnew4.paymain_save ---
-    async Task PaymainSave(OPayrollSession s)
+    async Task PaymainSave(OPayrollSession s, List<string>? selected = null)
     {
         var db = s.Paydb;
         var c = s.Client;
@@ -195,6 +225,7 @@ public class OPayrollDataAccess : IOPayrollDataAccess
                 var nums = (await cn.QueryAsync<string>(
                     $@"select e.EmpNumber from {s.Pisdb}.empmas e join {s.Pisdb}.deprec dp on dp.EmpNumber = e.EmpNumber
                        where dp.PayrollgrpId = @GrpId and e.EmpStat_ in (select code from {s.Pisdb}.empstat where isInPayroll = 1)", new { GrpId = c.Id })).ToList();
+                if (selected != null) nums = selected.Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => n.Trim()).Distinct().ToList();
                 await cn.ExecuteAsync($"delete from {db}.tmppaymaindtl where trn = @Trn", new { s.Trn });
                 if (nums.Count > 0)
                     await cn.ExecuteAsync($"insert into {db}.tmppaymaindtl (trn, empnumber) values (@Trn, @EmpNumber)", nums.Select(n => new { s.Trn, EmpNumber = n.Trim() }));

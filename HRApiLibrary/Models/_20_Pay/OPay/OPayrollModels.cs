@@ -238,6 +238,7 @@ public class OPayrollSession
     public string?      Yy          { get; set; }       //--- 4-digit year
     public string?      Mm          { get; set; }
     public string?      Prd         { get; set; }
+    public HashSet<string>? ShownAccts { get; set; }   //--- accounts checked in the New Payroll dialog; null = no selection (periods 03-05) ---
     public DateTime     AttStart    { get; set; }
     public DateTime     AttEnd      { get; set; }
     public string?      Status      { get; set; } = "New";     //--- New, Updated (draft saved), Lock
