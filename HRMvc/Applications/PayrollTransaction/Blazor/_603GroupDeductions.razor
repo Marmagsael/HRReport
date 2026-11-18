@@ -6,6 +6,7 @@
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 
 @inject IDA_603O _da
+@inject NavigationManager _nav
 @inject IOPisReportDataAccess _pisRep
 
 <style>
@@ -56,7 +57,7 @@
             <div class="gd-left">
                 <div class="gd-card">
                     <div class="gd-f mb-2">
-                        <label>Client</label>
+                        <label>Payroll Group</label>
                         <TelerikDropDownList Data="@clientOptions" @bind-Value="clientFilter" TextField="ClName" ValueField="ClNumber" Width="100%" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
                             <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
                         </TelerikDropDownList>
@@ -150,7 +151,7 @@
         <div class="p-1">
             <div class="small text-muted mb-2">@months.First(x => x.Value == month).Text @year, @(periods.FirstOrDefault(x => x.PdNumber == period)?.PdName ?? period)</div>
             <label class="d-block mb-1"><input type="radio" name="gdprint" checked="@(printGroup == 1)" @onchange="@(() => printGroup = 1)" /> group by employee</label>
-            <label class="d-block mb-1"><input type="radio" name="gdprint" checked="@(printGroup == 2)" @onchange="@(() => printGroup = 2)" /> group by client</label>
+            <label class="d-block mb-1"><input type="radio" name="gdprint" checked="@(printGroup == 2)" @onchange="@(() => printGroup = 2)" /> group by payroll group</label>
             <label class="d-block mb-1"><input type="radio" name="gdprint" checked="@(printGroup == 3)" @onchange="@(() => printGroup = 3)" /> group by deduction description</label>
         </div>
         <div class="d-flex gap-2 justify-content-end mt-3">
@@ -204,7 +205,7 @@
     bool busy;
 
     List<M603_Emp> shownEmps => emps.Where(e =>
-        (clientFilter == "_" || (clientFilter == "+" ? e.InPayroll : (e.ClNumber == clientFilter && e.EmpStat == "A")))
+        (clientFilter == "_" || (clientFilter == "+" ? e.InPayroll : (e.ClNumber == clientFilter && e.InPayroll)))
         && (string.IsNullOrWhiteSpace(empSearch) || e.EmpName.Contains(empSearch, StringComparison.OrdinalIgnoreCase) || e.EmpNumber.Contains(empSearch))).ToList();
 
     bool AllMarked => shownEmps.Count > 0 && shownEmps.All(e => marked.Contains(e.EmpNumber));
@@ -214,13 +215,19 @@
         if (string.IsNullOrEmpty(Opay)) return;
         try
         {
-            var cl = await _da._02Clients(Opis, Conn);
+            var cl = await _da._02Clients(Opay, Conn);
             clientOptions = new() { new() { ClNumber = "_", ClName = "***ALL***" }, new() { ClNumber = "+", ClName = "***IN PAYROLL LIST***" } };
             clientOptions.AddRange(cl);
             emps = await _da._02Employees(Opis, Conn);
             accounts = await _da._02Accounts(Opay, Conn);
             periods = await _da._02Periods(Opay, Conn);
             if (periods.Count > 0) period = periods[0].PdNumber;
+            if (PeriodQuery.Read(_nav.Uri) is { } pq)
+            {
+                year = pq.Year; month = pq.Month;
+                var pd = pq.Period.ToString("00");
+                if (periods.Any(x => x.PdNumber == pd)) period = pd;
+            }
         }
         catch (Exception ex) { Console.Error.WriteLine("603 load failed: " + ex); Warn("Unable to load the data."); }
     }

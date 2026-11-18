@@ -93,6 +93,8 @@ public class OPayEr
     public double   Phic        { get; set; }       //--- phicpremer_get_saved sums the PHIC (EE) column
 }
 
+public record OPayIssue(string Text, string LinkText, string Link);
+
 public class OPayLoan
 {
     public int      Number      { get; set; }
@@ -100,6 +102,7 @@ public class OPayLoan
     public string?  DedNCode    { get; set; }
     public double   Amort       { get; set; }
     public double   Balance     { get; set; }
+    public int      SchedId     { get; set; }
 }
 
 public class OPayOtherDed

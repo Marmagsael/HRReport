@@ -1,0 +1,105 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._109O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+@inject IDA_109O _da
+
+<style>
+    .wt-root { font-size:13px; color:#1f2a37; }
+    .wt-root .k-input-inner, .wt-root .k-button { font-size:13px; }
+    .wt-root .k-input-inner { padding:4px 8px; }
+    .wt-root .k-input, .wt-root .k-picker { min-height:30px; }
+    .wt-root .k-grid td, .wt-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .wt-root .k-grid th, .wt-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:700; background:#f4f6f9; }
+    .wt-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .wt-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .wt-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+    .wt-note { font-size:12px; color:#7a8491; margin-bottom:8px; max-width:900px; }
+</style>
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+
+<_00BT_FullW HdrCaption="Withholding Tax Table">
+    <Details>
+    <div class="p-3 wt-root">
+        <div class="wt-bar">
+            <TelerikButton OnClick="@(() => rows.Add(new M109_Tax()))" Icon="@SvgIcon.Plus">Add Row</TelerikButton>
+            <TelerikButton OnClick="@LoadDefault" Icon="@SvgIcon.Download">Load System Defaults</TelerikButton>
+            <TelerikButton OnClick="@Save" ThemeColor="success" Icon="@SvgIcon.Save" Enabled="@(!busy)">Save</TelerikButton>
+        </div>
+        <div class="wt-note">
+            Semi-monthly withholding tax. Tax = Fixed Tax + Percent of the amount over the start of the bracket.
+            The system defaults are the latest revision kept by the system, with the fixed tax worked out from the brackets above it. They are only saved when you press Save.
+        </div>
+        <TelerikGrid Data="@rows" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+            <GridColumns>
+                <GridColumn Title="Tax Code" Width="100px"><Template>@{ var r = (M109_Tax)context; }<TelerikTextBox Value="@r.TaxCode" ValueChanged="@((string v) => r.TaxCode = v)" MaxLength="5" Width="100%" /></Template></GridColumn>
+                <GridColumn Title="From" Width="140px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Tax)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.SAmt" ValueChanged="@((double v) => r.SAmt = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                <GridColumn Title="To" Width="140px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Tax)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.EAmt" ValueChanged="@((double v) => r.EAmt = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                <GridColumn Title="Fixed Tax" Width="140px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Tax)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Fix" ValueChanged="@((double v) => r.Fix = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                <GridColumn Title="Percent of Excess (e.g. 0.20)" Width="190px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Tax)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Percentage" ValueChanged="@((double v) => r.Percentage = v)" Decimals="4" Format="N4" Width="100%" /></Template></GridColumn>
+                <GridColumn Title="" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@{ var r = (M109_Tax)context; }<TelerikButton OnClick="@(() => rows.Remove(r))" Icon="@SvgIcon.Trash" FillMode="@ThemeConstants.Button.FillMode.Flat" /></Template></GridColumn>
+            </GridColumns>
+            <NoDataTemplate><div class="p-3 text-muted">No tax bracket. Add a row or load the system defaults.</div></NoDataTemplate>
+        </TelerikGrid>
+    </div>
+    </Details>
+</_00BT_FullW>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+    List<M109_Tax> rows = new();
+    bool busy;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+    void Ok(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try { rows = await _da._02Tax(Opay, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("111 load failed: " + ex); Warn("Unable to load the table."); }
+    }
+
+    async Task LoadDefault()
+    {
+        try
+        {
+            var d = await _da._02DefaultTax(Conn);
+            if (d.Count == 0) Warn("The system has no tax defaults."); else rows = d;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("111 default: " + ex); Warn("Unable to load the defaults."); }
+    }
+
+    async Task Save()
+    {
+        if (rows.Count == 0) { Warn("Add at least one bracket."); return; }
+        if (rows.Any(r => string.IsNullOrWhiteSpace(r.TaxCode))) { Warn("Every bracket needs a tax code."); return; }
+        foreach (var g in rows.GroupBy(r => r.TaxCode.Trim()))
+        {
+            var l = g.OrderBy(r => r.SAmt).ToList();
+            for (int i = 0; i < l.Count; i++)
+            {
+                if (l[i].EAmt < l[i].SAmt) { Warn($"Bracket {l[i].SAmt:N2}: the end is lower than the start."); return; }
+                if (i > 0 && l[i].SAmt <= l[i - 1].EAmt) { Warn($"Bracket {l[i].SAmt:N2} overlaps the one before it."); return; }
+            }
+        }
+        busy = true;
+        try
+        {
+            foreach (var r in rows) r.TaxCode = r.TaxCode.Trim();
+            await _da._03Tax(rows, Opay, Conn);
+            Ok("Withholding tax table saved.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("111 save failed: " + ex); Warn("Unable to save the table."); }
+        finally { busy = false; }
+    }
+}

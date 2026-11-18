@@ -87,6 +87,16 @@
         </div>
         </div>
 
+        @if (issues.Count > 0)
+        {
+            <div class="small mt-1 p-2" style="border:1px solid #f1b5b5; background:#fdeaea; border-radius:6px; color:#8a1f1f;">
+                <div class="fw-bold mb-1">Payroll cannot be loaded yet. Please complete the setup:</div>
+                @foreach (var i in issues)
+                {
+                    <div>&bull; @i.Text @if (!string.IsNullOrEmpty(i.Link)) { <a href="@i.Link" target="_blank">Open @i.LinkText</a> }</div>
+                }
+            </div>
+        }
         @if (!string.IsNullOrEmpty(msg))
         {
             <div class="small text-danger mt-1">@msg</div>
@@ -101,6 +111,7 @@
 
 @inject IOPayrollDataAccess _payroll
 @inject IOVisibleAccountDataAccess _visible
+@inject NavigationManager _nav
 
 @code {
     [CascadingParameter] public UserClaimsModel Uc   { get; set; } = new();
@@ -138,7 +149,8 @@
     string? msg;
     bool busy, wasOpen, listsLoaded;
 
-    bool canLoad => !busy && status != null && status != "Lock" && rows.Any(r => r.Mrk);
+    List<OPayIssue> issues = [];
+    bool canLoad => !busy && status != null && status != "Lock" && rows.Any(r => r.Mrk) && issues.Count == 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -153,7 +165,11 @@
 
     async Task Opened()
     {
-        rows = []; status = null; msg = null;
+        rows = []; status = null; msg = null; issues = [];
+        if (!listsLoaded && PeriodQuery.Read(_nav.Uri) is { } pq && years.Contains(pq.Year.ToString()))
+        {
+            year = pq.Year.ToString(); month = pq.Month.ToString("00"); period = pq.Period.ToString("00");
+        }
         SetDefaultDates();
         if (listsLoaded || string.IsNullOrEmpty(Uc.OpayDb) || string.IsNullOrEmpty(Uc.OpisDb) || string.IsNullOrEmpty(Uc.Conn)) return;
         try
@@ -186,12 +202,12 @@
     void GroupChanged(string? v)
     {
         if (v == grpCode) return;
-        grpCode = v; rows = []; status = null; msg = null;
+        grpCode = v; rows = []; status = null; msg = null; issues = [];
     }
 
     async Task PeriodChanged()
     {
-        rows = []; status = null; msg = null;
+        rows = []; status = null; msg = null; issues = [];
         SetDefaultDates();
         await LoadAccounts();
     }
@@ -219,14 +235,28 @@
             if (f.AttEnd != null)   attEnd   = f.AttEnd;
             rows = f.Employees.Select((e, i) => new Row { No = i + 1, EmpNumber = e.EmpNumber ?? "", Name = e.Name ?? "", StatName = e.StatName ?? "" }).ToList();
             if (rows.Count == 0) msg = "No employee found for this payroll group.";
+            await CheckReady();
         }
         catch (Exception ex) { msg = "Fetch failed: " + ex.Message; }
         finally { busy = false; }
     }
 
-    void FilterSelected()
+    async Task FilterSelected()
     {
         rows = rows.Where(r => r.Mrk).Select((r, i) => { r.No = i + 1; return r; }).ToList();
+        await CheckReady();
+    }
+
+    async Task CheckReady()
+    {
+        issues = [];
+        if (rows.Count == 0) return;
+        try
+        {
+            var rate = clients.FirstOrDefault(c => c.Code == grpCode)?.Rate ?? 0;
+            issues = await _payroll._02Readiness(rate, rows.Where(r => r.Mrk).Select(r => r.EmpNumber), Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        catch (Exception ex) { msg = "Unable to check the setup: " + ex.Message; }
     }
 
     async Task Load()
@@ -236,6 +266,8 @@
         if (attEnd < attStart) { msg = "Invalid attendance date range.";  return; }
         var picked = rows.Where(r => r.Mrk).Select(r => r.EmpNumber).ToList();
         if (picked.Count == 0) { msg = "Nothing to load."; return; }
+        await CheckReady();
+        if (issues.Count > 0) return;
 
         busy = true; msg = null;
         v502.IsNewPayrollOpen = false;

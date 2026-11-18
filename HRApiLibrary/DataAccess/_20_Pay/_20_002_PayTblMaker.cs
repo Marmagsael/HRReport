@@ -1194,7 +1194,9 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (105,   'Dtl-Report',      101,   1, 'account_tree', 'Payroll Account Mapping', '13T/105', 105),
                             (106,   'Dtl-Report',      101,   1, 'price_change', 'Rate Setup', '13T/106', 106),
                             (107,   'Dtl-Report',      101,   1, 'settings', 'Payroll Settings', '12/004', 107),
-                            (108,   'Dtl-Report',      101,   1, 'rule', 'Employee Status Visible in Payroll', '13T/108', 108);";
+                            (108,   'Dtl-Report',      101,   1, 'rule', 'Employee Status Visible in Payroll', '13T/108', 108),
+                            (109,   'Dtl-Report',      101,   1, 'account_balance', 'SSS, PhilHealth and Pag-IBIG Tables', '13T/109', 109),
+                            (111,   'Dtl-Report',      101,   1, 'receipt_long', 'Withholding Tax Table', '13T/111', 111);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         // -- AMS Settings menu : the parent and its base items (the later AMS items are seeded below / above) --
@@ -1217,6 +1219,11 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (13002, 'Dtl-Report',  13001, 1, 'schedule',     'Daily Time Record',      '1100/13002', 13002),
                             (13003, 'Dtl-Report',  13001, 1, 'event_busy',   'Late and Absent Summary','1100/13003', 13003),
                             (13004, 'Dtl-Report',  13001, 1, 'how_to_reg',   'Daily Attendance',       '1100/13004', 13004);";
+        await _sql.ExecuteCmd(sql, new { }, connName);
+
+        // -- Hospitalization (Deductions Schedule) --
+        sql = @"INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                            (606, 'Dtl-Report', 601, 1, 'local_hospital', 'Hospitalization', '13T/606', 606);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         // -- Corrections for tables seeded before; each only touches the old wrong value --

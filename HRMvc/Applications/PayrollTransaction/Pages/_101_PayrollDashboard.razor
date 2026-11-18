@@ -1,0 +1,269 @@
+@page "/13T/101"
+@layout HRMvc.Components.Layout.PayLayout
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using HRApiLibrary.Modules._101O
+@using HRMvc.Applications.PayrollTransaction.Vars
+
+@inject IDA_101O _da
+@inject HRApiLibrary.Modules._100O.IDA_100O _pre
+@inject NavigationManager _nav
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+
+<style>
+    .ph-wrap { padding:18px 22px 28px; }
+    .ph-head h4 { margin:0; font-weight:700; }
+    .ph-head .ph-date { color:#6b7480; font-size:.9rem; margin-bottom:16px; }
+    .ph-tiles { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:14px; margin-bottom:18px; }
+    .ph-tile { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:14px 16px; display:flex; gap:12px; align-items:center; }
+    .ph-ic { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .ph-ic .material-symbols-outlined { font-size:24px; }
+    .ph-num { font-size:1.6rem; font-weight:700; line-height:1; }
+    .ph-lbl { font-size:.78rem; color:#6b7480; margin-top:3px; }
+    .c-green { background:#e6f4ea; color:#1e7d34; }
+    .c-red   { background:#fdeaea; color:#c62828; }
+    .c-amber { background:#fff4e0; color:#b26a00; }
+    .c-blue  { background:#e8f0fe; color:#1a56c4; }
+    .c-gray  { background:#eef0f3; color:#515b68; }
+    .ph-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; margin-bottom:18px; }
+    .ph-card { background:#fff; border:1px solid #dfe3e8; border-radius:10px; padding:14px 18px 10px; }
+    .ph-title { font-weight:700; font-size:.95rem; padding-bottom:9px; margin-bottom:6px; border-bottom:1px solid #eef0f3; display:flex; justify-content:space-between; align-items:center; }
+    .ph-title small { font-weight:500; color:#8a93a0; }
+    .ph-row { display:flex; align-items:center; gap:12px; padding:9px 0; border-bottom:1px solid #f1f3f6; }
+    .ph-row:last-child { border-bottom:0; }
+    .ph-row .ph-ic { width:34px; height:34px; border-radius:8px; }
+    .ph-row .ph-ic .material-symbols-outlined { font-size:20px; }
+    .ph-grow { flex:1; min-width:0; }
+    .ph-main { font-size:.9rem; font-weight:600; }
+    .ph-sub { font-size:.78rem; color:#7a8491; }
+    .ph-badge { font-size:.72rem; font-weight:700; padding:2px 9px; border-radius:20px; }
+    .b-lock { background:#e6f4ea; color:#1e7d34; }
+    .b-draft { background:#fff4e0; color:#b26a00; }
+    .b-none { background:#fdeaea; color:#c62828; }
+    .ph-count { background:#1a56c4; color:#fff; border-radius:20px; font-size:.75rem; font-weight:700; min-width:26px; text-align:center; padding:2px 8px; }
+    .ph-count.warn { background:#c62828; }
+    .ph-count.ok { background:#1e7d34; }
+    .ph-row a { color:inherit; text-decoration:none; display:contents; }
+    .ph-tot { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; padding:8px 0; border-bottom:1px solid #f1f3f6; }
+    .ph-tot:last-child { border-bottom:0; }
+    .ph-tot div { text-align:right; font-variant-numeric:tabular-nums; }
+    .ph-tot .h { font-size:.72rem; color:#8a93a0; font-weight:600; }
+    .ph-tot .t { text-align:left; font-weight:700; font-size:.85rem; }
+    .ph-trend { display:flex; align-items:flex-end; gap:12px; height:130px; padding:6px 4px 0; }
+    .ph-bar { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; min-width:0; }
+    .ph-bar span { display:block; width:100%; background:#1a56c4; border-radius:5px 5px 0 0; min-height:2px; }
+    .ph-bar small { font-size:.7rem; color:#6b7480; margin-top:4px; }
+    .ph-bar em { font-size:.68rem; color:#6b7480; font-style:normal; margin-bottom:2px; }
+    .ph-pick { display:flex; align-items:center; gap:8px; margin:-6px 0 12px; font-size:.85rem; font-weight:600; }
+    .ph-pick select { border:1px solid #dfe3e8; border-radius:6px; padding:3px 8px; background:#fff; }
+    .ph-quick { display:flex; gap:10px; flex-wrap:wrap; margin:-6px 0 16px; }
+    .ph-qbtn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #dfe3e8; border-radius:8px; padding:6px 14px; color:#1f2a37; text-decoration:none; font-size:.85rem; font-weight:600; }
+    .ph-qbtn:hover { box-shadow:0 2px 8px rgba(0,0,0,.08); border-color:#b9c4d3; color:#1f2a37; }
+    .ph-qbtn .material-symbols-outlined { font-size:20px; color:#1a56c4; }
+    @@media (max-width: 1200px) { .ph-tiles { grid-template-columns:repeat(2, minmax(0,1fr)); } .ph-grid { grid-template-columns:1fr; } }
+</style>
+
+<div class="ph-wrap">
+    <div class="ph-head">
+        <h4>Payroll</h4>
+        <div class="ph-date">@DateTime.Now.ToString("dddd, MMMM dd, yyyy")</div>
+        @if (h.Periods.Count > 0)
+        {
+            <form method="get" class="ph-pick">
+                <label>Period</label>
+                <select name="period" onchange="this.form.submit()">
+                    @foreach (var pr in h.Periods)
+                    {
+                        <option value="@pr" selected="@(pr == h.CurrentPeriod)">@pr</option>
+                    }
+                </select>
+            </form>
+        }
+    </div>
+
+    <div class="ph-quick">
+        <a class="ph-qbtn" href="@Q("13T/502")"><span class="material-symbols-outlined">payments</span>Payroll Entry</a>
+        <a class="ph-qbtn" href="@Q("13T/503")"><span class="material-symbols-outlined">event_available</span>13th Month</a>
+        <a class="ph-qbtn" href="@Q("13T/552")"><span class="material-symbols-outlined">add_card</span>Earnings</a>
+        <a class="ph-qbtn" href="@Q("13T/602")"><span class="material-symbols-outlined">remove_circle_outline</span>Deductions</a>
+    </div>
+
+    <div class="ph-tiles">
+        <div class="ph-tile"><div class="ph-ic c-blue"><span class="material-symbols-outlined">calendar_month</span></div><div><div class="ph-num">@(string.IsNullOrEmpty(h.CurrentPeriod) ? "-" : h.CurrentPeriod)</div><div class="ph-lbl">Current Period@(h.PeriodStart != null ? $" ({h.PeriodStart:MM/dd} - {h.PeriodEnd:MM/dd/yyyy})" : "")</div></div></div>
+        <div class="ph-tile"><div class="ph-ic c-green"><span class="material-symbols-outlined">account_tree</span></div><div><div class="ph-num">@h.Groups</div><div class="ph-lbl">Payroll Group</div></div></div>
+        <div class="ph-tile"><div class="ph-ic c-amber"><span class="material-symbols-outlined">edit_note</span></div><div><div class="ph-num">@h.Drafts</div><div class="ph-lbl">Draft Payroll</div></div></div>
+        <div class="ph-tile"><div class="ph-ic c-gray"><span class="material-symbols-outlined">lock</span></div><div><div class="ph-num">@h.LockedInPeriod</div><div class="ph-lbl">Locked Payrolls in Period @h.CurrentPeriod</div></div></div>
+    </div>
+
+    <div class="ph-grid">
+        <div class="ph-card">
+            <div class="ph-title">Before payroll <small>@(string.IsNullOrEmpty(h.CurrentPeriod) ? "" : "period " + h.CurrentPeriod)</small></div>
+            @foreach (var a in checks)
+            {
+                <div class="ph-row">
+                    <a href="@a.Link">
+                        <div class="ph-ic @a.Color"><span class="material-symbols-outlined">@a.Icon</span></div>
+                        <div class="ph-grow">
+                            <div class="ph-main">@a.Title</div>
+                            <div class="ph-sub">@a.Sub</div>
+                        </div>
+                        <span class="ph-count @(a.Count == 0 ? "ok" : a.Warn ? "warn" : "")">@a.Count</span>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="ph-card">
+            <div class="ph-title">Payroll per group <small>@h.GroupStatus.Count(g => g.Status == "Locked") of @h.GroupStatus.Count locked</small></div>
+            @if (h.GroupStatus.Count == 0) { <div class="ph-sub p-2">No payroll group.</div> }
+            @foreach (var g in h.GroupStatus)
+            {
+                <div class="ph-row">
+                    <div class="ph-grow">
+                        <div class="ph-main">@g.Name</div>
+                        <div class="ph-sub">@g.Employees employees</div>
+                    </div>
+                    <span class="ph-badge @(g.Status == "Locked" ? "b-lock" : g.Status == "Draft" ? "b-draft" : "b-none")">@(g.Status == "None" ? "No payroll" : g.Status)</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="ph-grid">
+        <div class="ph-card">
+            <div class="ph-title">Totals <small>period @h.CurrentPeriod</small></div>
+            <div class="ph-tot"><div class="h t"></div><div class="h">Locked</div><div class="h">Draft</div></div>
+            <div class="ph-tot"><div class="t">Gross</div><div>@h.Locked.Gross.ToString("N2")</div><div>@h.Draft.Gross.ToString("N2")</div></div>
+            <div class="ph-tot"><div class="t">Deductions</div><div>@h.Locked.Deductions.ToString("N2")</div><div>@h.Draft.Deductions.ToString("N2")</div></div>
+            <div class="ph-tot"><div class="t">Net</div><div><b>@h.Locked.Net.ToString("N2")</b></div><div><b>@h.Draft.Net.ToString("N2")</b></div></div>
+        </div>
+
+        <div class="ph-card">
+            <div class="ph-title">Net pay trend <small>last @h.Trend.Count periods (locked)</small></div>
+            @if (h.Trend.Count == 0) { <div class="ph-sub p-2">No locked payroll yet.</div> }
+            else
+            {
+                var max = h.Trend.Max(x => Math.Abs(x.Net));
+                <div class="ph-trend">
+                    @foreach (var t in h.Trend)
+                    {
+                        <div class="ph-bar">
+                            <em>@t.Net.ToString("N0")</em>
+                            <span style="height:@(max <= 0 ? 2 : (int)Math.Round(Math.Abs(t.Net) / max * 90))%"></span>
+                            <small>@t.Period</small>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="ph-grid">
+        <div class="ph-card">
+            <div class="ph-title">Cut-off and holidays</div>
+            @if (h.PeriodEnd != null)
+            {
+                <div class="ph-row">
+                    <div class="ph-ic c-blue"><span class="material-symbols-outlined">event</span></div>
+                    <div class="ph-grow">
+                        <div class="ph-main">Cut-off @h.PeriodEnd.Value.ToString("MMMM dd, yyyy")</div>
+                        <div class="ph-sub">@(h.DaysLeft > 0 ? $"{h.DaysLeft} day(s) left" : h.DaysLeft == 0 ? "Today" : $"{-h.DaysLeft} day(s) ago")</div>
+                    </div>
+                </div>
+            }
+            @foreach (var x in h.Holidays)
+            {
+                <div class="ph-row">
+                    <div class="ph-grow">
+                        <div class="ph-main">@x.Name</div>
+                        <div class="ph-sub">@x.HDate.ToString("dddd, MMMM dd") &nbsp;·&nbsp; @HolType(x.TypeCode)</div>
+                    </div>
+                </div>
+            }
+            @if (h.Holidays.Count == 0) { <div class="ph-sub p-2">No upcoming holiday.</div> }
+        </div>
+
+        <div class="ph-card">
+            <div class="ph-title">Loans and employees</div>
+            <div class="ph-row"><div class="ph-grow"><div class="ph-main">Loans with balance</div><div class="ph-sub">Active partial deductions (604)</div></div><span class="ph-count">@h.ActiveLoans</span></div>
+            <div class="ph-row"><div class="ph-grow"><div class="ph-main">Loans ending soon</div><div class="ph-sub">Balance is 2 amortizations or less</div></div><span class="ph-count">@h.LoansEnding</span></div>
+            <div class="ph-row"><div class="ph-grow"><div class="ph-main">Unpaid installments</div><div class="ph-sub">Schedule rows not yet posted</div></div><span class="ph-count">@h.UnpaidInstallments</span></div>
+            <div class="ph-row"><div class="ph-grow"><div class="ph-main">New hires in period</div><div class="ph-sub">Date hired within the cut-off</div></div><span class="ph-count">@h.NewHires</span></div>
+            <div class="ph-row"><div class="ph-grow"><div class="ph-main">Separated in period</div><div class="ph-sub">Date separated within the cut-off</div></div><span class="ph-count">@h.Separated</span></div>
+        </div>
+    </div>
+
+    <div class="ph-grid">
+        <div class="ph-card">
+            <div class="ph-title">Recent lock activity</div>
+            @if (h.Audit.Count == 0) { <div class="ph-sub p-2">No lock or unlock yet.</div> }
+            @foreach (var a in h.Audit)
+            {
+                <div class="ph-row">
+                    <div class="ph-grow">
+                        <div class="ph-main">@a.Action &nbsp;<span class="ph-sub">@a.Trn</span></div>
+                        <div class="ph-sub">@a.UserName &nbsp;·&nbsp; @(a.Date?.ToString("MM/dd/yyyy hh:mm tt"))</div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="ph-card">
+            <div class="ph-title">Recent payrolls <small>latest @h.Runs.Count</small></div>
+            @if (h.Runs.Count == 0) { <div class="ph-sub p-2">No payroll yet.</div> }
+            @foreach (var r in h.Runs)
+            {
+                <div class="ph-row">
+                    <div class="ph-grow">
+                        <div class="ph-main">@r.Trn</div>
+                        <div class="ph-sub">@(r.AttStart?.ToString("MM/dd/yyyy")) - @(r.AttEnd?.ToString("MM/dd/yyyy")) &nbsp;·&nbsp; @r.UserName</div>
+                    </div>
+                    <span class="ph-badge @(r.Status == "Locked" ? "b-lock" : "b-draft")">@r.Status</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    record CheckRow(string Icon, string Color, string Title, string Sub, int Count, string Link, bool Warn = true);
+
+    [SupplyParameterFromQuery(Name = "period")] public string? PeriodSel { get; set; }
+
+    M101_Home h = new();
+    List<CheckRow> checks = new();
+
+    string Q(string path) => h.CurrentPeriod.Length == 6 ? $"{path}?y={2000 + int.Parse(h.CurrentPeriod[..2])}&m={int.Parse(h.CurrentPeriod.Substring(2, 2))}&p={int.Parse(h.CurrentPeriod.Substring(4, 2))}" : path;
+
+    static string HolType(string? c) => c switch { "LH" => "Legal Holiday", "SH" => "Special Holiday", "DH" => "Double Holiday", _ => "Holiday" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (HttpContext == null) return;
+        var uc = PayClaimsHelper.UserToClaims(HttpContext.User);
+        if (string.IsNullOrEmpty(uc.OpisDb) || string.IsNullOrEmpty(uc.OpayDb)) return;
+
+        List<HRApiLibrary.Modules._100O.M100_Step> prereq = new();
+        try { prereq = await _pre._02Steps(uc.OpisDb!, uc.OpayDb!, uc.Conn!); } catch { }
+        if (prereq.Count > 0 && prereq.All(s => s.Status != "Confirmed") && string.IsNullOrEmpty(PeriodSel)) { _nav.NavigateTo("13T/100"); return; }
+        try { h = await _da._02Home(uc.SchemaUserPis ?? "", uc.OpisDb!, uc.OpayDb!, uc.Conn!, PeriodSel); }
+        catch (Exception ex) { Console.Error.WriteLine("101 dashboard failed: " + ex); }
+
+        checks = new()
+        {
+            new("list_alt_check",        "c-blue",  "Pre-requisites not confirmed",  "Review the payroll setup",                 prereq.Count(s => s.Status != "Confirmed"), "13T/100", false),
+            new("person_off",            "c-red",   "No payroll group",              "In payroll but not deployed to a group", h.Undeployed,        "13T/102"),
+            new("price_change",          "c-red",   "No rate",                       "No rate, and the payroll group has no rate", h.NoRate, "13T/106"),
+            new("grade",                 "c-amber", "No salary grade",               "In a group but no salary grade",           h.NoSalgrade,        "13T/104", false),
+            new("group_off",             "c-amber", "No payroll in period",          "In a group but no payroll for the period", h.NoEntry,         Q("13T/502")),
+            new("pending_actions",       "c-amber", "Approvals pending",             "Leave, OB and OT waiting for approval",    h.PendingAttendance, "1100/11000"),
+            new("add_card",              "c-green", "Earnings not processed",        "552 / 553 for the period",                 h.OpenEarnings,      Q("13T/552"), false),
+            new("remove_circle_outline", "c-red",   "Deductions not processed",      "602 / 603 for the period",                 h.OpenDeductions,    Q("13T/602"), false),
+            new("edit_note",             "c-amber", "Draft payroll in period",       "Not yet locked",                           h.DraftsInPeriod,    Q("13T/502")),
+        };
+    }
+}

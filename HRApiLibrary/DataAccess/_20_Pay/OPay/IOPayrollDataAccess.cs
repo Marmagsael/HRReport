@@ -30,6 +30,7 @@ public interface IOPayrollDataAccess
                                   string paydb, string pisdb, string conn, IProgress<string>? progress = null, IEnumerable<string>? selected = null);
 
     //--- payrollnew4 bFetchData.Click ---
+    Task<List<OPayIssue>> _02Readiness(double groupRate, IEnumerable<string> empNumbers, string paydb, string pisdb, string conn);
     Task<OPayNewFetch> _02NewFetch(string yy4, string mm, string prd, string grpCode, string paydb, string pisdb, string conn);
 
     Task _01LoadEmployeeData(OPayrollSession s, IProgress<string>? progress = null);

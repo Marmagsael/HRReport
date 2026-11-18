@@ -7,6 +7,7 @@
 @using Telerik.SvgIcons
 
 @inject IDA_553O _da
+@inject NavigationManager _nav
 @inject IDA_552O _da552
 @inject IOPisReportDataAccess _pisRep
 
@@ -314,6 +315,12 @@
             accounts = await _da._02Accounts(Opay, Conn);
             periods = await _da._02Periods(Opay, Conn);
             if (periods.Count > 0) period = periods[0].PdNumber;
+            if (PeriodQuery.Read(_nav.Uri) is { } pq)
+            {
+                year = pq.Year; month = pq.Month;
+                var pd = pq.Period.ToString("00");
+                if (periods.Any(x => x.PdNumber == pd)) period = pd;
+            }
         }
         catch (Exception ex) { Console.Error.WriteLine("553 load failed: " + ex); Warn("Unable to load the data."); }
     }

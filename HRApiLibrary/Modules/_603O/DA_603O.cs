@@ -9,17 +9,15 @@ public class DA_603O : IDA_603O
 
     public DA_603O(I_90_001_MySqlDataAccess sql) { _sql = sql; }
 
-    public async Task<List<M603_Client>> _02Clients(string opis, string conn)
+    public async Task<List<M603_Client>> _02Clients(string opay, string conn)
     {
-        string sql = $@"select trim(a.clNumber) ClNumber, concat(trim(a.clName), ' - ', trim(ifnull(b.areaname, ''))) ClName
-                        from {opis}.client a left join {opis}.area b on a.areacode = b.areacode
-                        where a.status = 'Active' order by ClName";
+        string sql = $@"select cast(Id as char) ClNumber, trim(Name) ClName from {opay}.payrollgrp where Status = 'A' order by Name";
         return await _sql.FetchLegacy<M603_Client, dynamic>(sql, new { }, conn) ?? [];
     }
 
     public async Task<List<M603_Emp>> _02Employees(string opis, string conn)
     {
-        string sql = $@"select trim(a.empNumber) EmpNumber, trim(ifnull(a.client_, '')) ClNumber,
+        string sql = $@"select trim(a.empNumber) EmpNumber, ifnull(cast(dp.PayrollgrpId as char), '') ClNumber,
                                concat(trim(ifnull(a.empLastNm, '')), ', ', trim(ifnull(a.EmpFirstNm, '')), ' ', left(trim(ifnull(a.EmpMidNm, '')), 1)) EmpName,
                                trim(ifnull(b.name, '')) Position, trim(ifnull(a.EmpStat_, '')) EmpStat, trim(ifnull(c.name, '')) Status,
                                if(ifnull(c.isInPayroll, 0) = 1, 1, 0) InPayroll,
@@ -27,6 +25,7 @@ public class DA_603O : IDA_603O
                         from {opis}.empmas a
                              left join {opis}.position b on a.position_ = b.code
                              left join {opis}.empstat c on a.empStat_ = c.code
+                             left join {opis}.deprec dp on dp.EmpNumber = a.EmpNumber
                         where a.empnumber is not null
                         order by a.empLastNm, a.empFirstNm";
         var r = await _sql.FetchLegacy<M603_Emp, dynamic>(sql, new { }, conn) ?? [];
@@ -108,17 +107,17 @@ public class DA_603O : IDA_603O
     {
         string pd = (period ?? "").Trim();
         string pd2 = pd.TrimStart('0');
-        string order = group switch { 2 => "ClName2, a.EmpLastNm, a.EmpFirstNm", 3 => "AcctName, a.EmpLastNm, a.EmpFirstNm", _ => "a.EmpLastNm, a.EmpFirstNm" };
+        string order = group switch { 2 => "ClName2, AcctName, a.EmpLastNm, a.EmpFirstNm", 3 => "AcctName, a.EmpLastNm, a.EmpFirstNm", _ => "a.EmpLastNm, a.EmpFirstNm" };
         string sql = $@"select trim(d.empNumber) Empnumber, trim(ifnull(a.EmpLastNm, '')) Emplastnm, trim(ifnull(a.EmpFirstNm, '')) Empfirstnm, trim(ifnull(a.EmpMidNm, '')) Empmidnm,
                                trim(ifnull(c.AcctName, d.acctNumber)) Acctname, d.amount Amount, ifnull(d.remarks, '') Remarks,
                                d.year Year, d.month Month, @Pd Periodid,
                                concat(trim(ifnull(a.EmpLastNm, '')), ', ', trim(ifnull(a.EmpFirstNm, '')), ' ', left(trim(ifnull(a.EmpMidNm, '')), 1), '.') Empname,
-                               concat(trim(ifnull(cl.clName, '')), ' - ', trim(ifnull(ar.areaname, ''))) Clname2
+                               ifnull(trim(g.Name), 'Undeployed') Clname2
                         from {opay}.tblotherdeductions d
                              left join {opay}.chartofacct c on trim(c.AcctNumber) = trim(d.acctNumber)
                              join {opis}.empmas a on trim(a.empNumber) = trim(d.empNumber)
-                             left join {opis}.client cl on a.client_ = cl.clNumber
-                             left join {opis}.area ar on cl.areacode = ar.areacode
+                             left join {opis}.deprec dp on dp.EmpNumber = a.EmpNumber
+                             left join {opay}.payrollgrp g on g.Id = dp.PayrollgrpId
                         where d.year = @Y and d.month = @M and d.periodID in (@Pd, @Pd2)
                         order by {order.Replace("ClName2", "Clname2").Replace("AcctName", "Acctname")}";
         sql = sql.Replace("a.EmpLastNm, a.EmpFirstNm", "Emplastnm, Empfirstnm");
@@ -128,7 +127,7 @@ public class DA_603O : IDA_603O
 
 public interface IDA_603O
 {
-    Task<List<M603_Client>> _02Clients(string opis, string conn);
+    Task<List<M603_Client>> _02Clients(string opay, string conn);
     Task<List<M603_Emp>> _02Employees(string opis, string conn);
     Task<List<M603_Acct>> _02Accounts(string opay, string conn);
     Task<List<M603_Period>> _02Periods(string opay, string conn);

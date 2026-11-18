@@ -117,6 +117,7 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await _01Sbpl(schema, connName);
         await _01Semimonthlytax(schema, connName);
         await _01Semimonthlytaxold(schema, connName);
+        await _01Setupreview(schema, connName);
         await _01Sssloandtl(schema, connName);
         await _01Sssloanhdr(schema, connName);
         await _01Sssprempaydtl(schema, connName);
@@ -189,6 +190,75 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         // -- Added from the reference (192.168.0.103 pay) --
         await _01Domainusr(schema, connName);
         await _01ReportSettings(schema, connName);
+        await _02SeedContributionTables(schema, connName);
+        await _02SeedAccountMapping(schema, connName);
+    }
+
+    private static readonly (string Table, string Key, (string Field, string Name)[] Map)[] AccountMaps =
+    [
+        ("paymaindtlsetup", "idpaymaindtlsetup",
+        [
+            ("daywrk", "Basic Pay"), ("absent", "Absences/Undertime"), ("late", "Late"), ("rot", "Reg. OT"),
+            ("rd", "Rest Day Pay"), ("rdot", "Rest Day OT Pay"), ("lh", "Legal Holiday Pay"), ("lhot", "Legal Holiday OT Pay"),
+            ("rdlh", "Rest Day - Legal Holiday Pay"), ("rdlhot", "Rest Day - Legal Holiday OT Pay"),
+            ("sh", "Special Holiday Pay"), ("shot", "Special Holiday OT Pay"),
+            ("rdsh", "Rest Day - Special Holiday Pay"), ("rdshot", "Rest Day - Special Holiday OT Pay"),
+            ("nd", "Night Diff. Pay"), ("sea", "SEA"), ("sealh", "Sea Reg Hol"), ("ctpa", "CTPA"), ("ctpalh", "CTPA Reg Holiday"), ("ctpardlh", "CTPA RDLH"),
+            ("sss", "SSS Premium"), ("pagibig", "Pagibig Premium"), ("phic", "Phil. Health Premium"),
+            ("IncentLeave", "Incentive Leave"), ("mealAllowance", "Meal Allowance"), ("ProvForRetirement", "Provision for Retirement"),
+            ("FreeUniform", "Uniform Allowance"), ("_13thMo", "13th Month"), ("retropay", "RETRO PAY"),
+        ]),
+        ("acctconfig", "",
+        [
+            ("BasicPay", "Basic Pay"), ("MealAllow", "Meal Allowance"), ("Uniform", "Uniform Allowance"), ("ProvRetirement", "Provision for Retirement"),
+            ("ctpa", "CTPA"), ("ctpa_LH", "CTPA Reg Holiday"), ("ctpa_rd", "CTPA"), ("ctpa_rdlh", "CTPA RDLH"),
+            ("sea", "SEA"), ("sea_LH", "Sea Reg Hol"), ("sea_rd", "SEA"), ("sea_rdlh", "Sea RDSH"),
+            ("ecola", "ECOLA"), ("ecola_rd", "COLA"), ("ecola_lh", "ECOLA LH"), ("ecola_rdlh", "ECOLA RDLH"),
+            ("incentiveLeave", "Incentive Leave"), ("_3thMo", "13th Month"),
+        ]),
+    ];
+
+    // -- Account columns of the payroll setup tables are filled from chartofacct by account name; only blank fields, and the row is added when missing --
+    private async Task _02SeedAccountMapping(string? schema, string? conn)
+    {
+        foreach (var (table, _, map) in AccountMaps)
+        {
+            try
+            {
+                var cols = (await _sql.FetchData<string, dynamic>(
+                    "select column_name from information_schema.columns where table_schema = @Schema and table_name = @Table",
+                    new { Schema = schema, Table = table }, conn)).Select(c => c.ToLowerInvariant()).ToHashSet();
+                var n = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.{table}", new { }, conn);
+                if (n.FirstOrDefault() == 0) await ExecLegacy($"insert into {schema}.{table} () values ()", conn);
+                foreach (var (field, name) in map)
+                {
+                    if (!cols.Contains(field.ToLowerInvariant())) continue;
+                    await ExecLegacy($@"update {schema}.{table} set `{field}` = (select trim(AcctNumber) from {schema}.chartofacct where trim(AcctName) = '{name}' order by AcctNumber limit 1)
+                                        where (`{field}` is null or trim(`{field}`) in ('', '0')) and exists (select 1 from {schema}.chartofacct where trim(AcctName) = '{name}')", conn);
+                }
+            }
+            catch { }
+        }
+    }
+
+    private async Task _02SeedContributionTables(string? schema, string? conn)
+    {
+        string latest(string t) => $"join (select DateStart ds, Revision rv from mainpay.{t} order by DateStart desc, Revision desc limit 1) l on l.ds = m.DateStart and l.rv = m.Revision";
+        var seeds = new (string Target, string Sql)[]
+        {
+            ("ssstbl",     $"insert into {schema}.ssstbl (FSTART, FEND, FSSSEE, FSSSER, FECC, compensation) select m.FStart, m.FEnd, m.Ee, m.Er, m.Ecc, m.Compensation from mainpay.matrixsss m {latest("matrixsss")} order by m.FStart"),
+            ("medtbl",     $"insert into {schema}.medtbl (FSTART, FEND, FMEDEE, FMEDER, `percent`) select m.FStart, m.FEnd, m.Ee, m.Er, m.`Percent` from mainpay.matrixphic m {latest("matrixphic")} order by m.FStart"),
+            ("pagibigtbl", $"insert into {schema}.pagibigtbl (FSTART, FEND, EmpCont, Emplyr) select m.FStart, m.FEnd, m.Ee, m.Er from mainpay.matrixpagibig m {latest("matrixpagibig")} order by m.FStart"),
+        };
+        foreach (var (target, sql) in seeds)
+        {
+            try
+            {
+                var n = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.{target}", new { }, conn);
+                if (n.FirstOrDefault() == 0) await ExecLegacy(sql, conn);
+            }
+            catch { }
+        }
     }
 
     private async Task _0113thmogrp(string? schema, string? conn)
@@ -1789,6 +1859,17 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`sbpl` (
                         `empno` char(5) NOT NULL DEFAULT '',
                         PRIMARY KEY (`empno`)
+                        ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
+        await ExecLegacy(sql, conn);
+    }
+
+    private async Task _01Setupreview(string? schema, string? conn)
+    {
+        string? sql = $@"CREATE TABLE IF NOT EXISTS {schema}.`setupreview` (
+                        `StepKey` varchar(20) NOT NULL,
+                        `ConfirmedBy` varchar(60) DEFAULT NULL,
+                        `ConfirmedAt` datetime DEFAULT NULL,
+                        PRIMARY KEY (`StepKey`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
     }

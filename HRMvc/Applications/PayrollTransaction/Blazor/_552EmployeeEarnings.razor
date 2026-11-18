@@ -4,6 +4,7 @@
 @using Telerik.SvgIcons
 
 @inject IDA_552O _da
+@inject NavigationManager _nav
 
 <style>
     .ee-root { font-size:13px; color:#1f2a37; }
@@ -271,6 +272,11 @@
         if (emp == null) return;
         isNew = true;
         f = new() { Year = DateTime.Today.Year, Month = DateTime.Today.Month, Effective = DateTime.Today, Processed = 0, P1 = 1 };
+        if (PeriodQuery.Read(_nav.Uri) is { } pq)
+        {
+            f.Year = pq.Year; f.Month = pq.Month;
+            f.P1 = pq.Period == 1 ? 1 : 0; f.P2 = pq.Period == 2 ? 1 : 0; f.P3 = pq.Period == 3 ? 1 : 0; f.P4 = pq.Period == 4 ? 1 : 0; f.P5 = pq.Period == 5 ? 1 : 0;
+        }
         showForm = true;
     }
 

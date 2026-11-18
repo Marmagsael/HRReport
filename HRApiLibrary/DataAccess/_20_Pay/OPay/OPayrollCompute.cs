@@ -654,7 +654,7 @@ public static class OPayrollCompute
             if (saved) continue;
 
             Add(c, r, acct, deduction);
-            r.Loans.Add(new OPayLoan { Number = l.Number, EmpNumber = l.EmpNumber, DedNCode = acct, Amort = l.Amort, Balance = l.Balance });
+            r.Loans.Add(new OPayLoan { Number = l.Number, EmpNumber = l.EmpNumber, DedNCode = acct, Amort = l.SchedId > 0 ? deduction : l.Amort, Balance = l.Balance, SchedId = l.SchedId });
         }
     }
 
@@ -693,7 +693,9 @@ public static class OPayrollCompute
         {
             var r = c.S.Results.FirstOrDefault(y => y.EmpNumber == (x.EmpNumber ?? "").Trim());
             if (r == null) continue;
-            Set(c, r, (x.AcctNumber ?? "").Trim(), 0);
+            var acct = (x.AcctNumber ?? "").Trim();
+            Set(c, r, acct, 0);
+            r.Loans.RemoveAll(l => (l.DedNCode ?? "").Trim() == acct);
         }
     }
 

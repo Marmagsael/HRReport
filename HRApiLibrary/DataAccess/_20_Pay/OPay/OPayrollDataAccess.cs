@@ -164,6 +164,30 @@ public class OPayrollDataAccess : IOPayrollDataAccess
     }
 
     //--- payrollnew4 bFetchData.Click : a draft or locked TRN lists its own employees, a new one the group's (fill_dtl_saved / fill_dtl_new) ---
+    //--- readiness : what must be set up before this payroll can be loaded ---
+    public async Task<List<OPayIssue>> _02Readiness(double groupRate, IEnumerable<string> empNumbers, string paydb, string pisdb, string conn)
+    {
+        var issues = new List<OPayIssue>();
+        async Task<long> Cnt(string sql, object? p = null) => (await _sql.FetchLegacy<long, dynamic>(sql, p ?? new { }, conn)).FirstOrDefault();
+
+        var nums = empNumbers.Select(n => (n ?? "").Trim()).Where(n => n != "").ToList();
+        if (groupRate <= 0 && nums.Count > 0)
+        {
+            var names = await _sql.FetchLegacy<string, dynamic>(
+                $@"select concat(trim(EmpLastNm), ', ', trim(EmpFirstNm)) from {pisdb}.empmas
+                   where trim(EmpNumber) in @Nums and ifnull(EmpBasicRate, 0) = 0 order by EmpLastNm, EmpFirstNm", new { Nums = nums }, conn);
+            if (names.Count > 0)
+                issues.Add(new OPayIssue("The payroll group has no rate, and these employees have no rate: " + string.Join("; ", names.Take(10)) + (names.Count > 10 ? $"; and {names.Count - 10} more" : ""), "Rate Setup", "13T/106"));
+        }
+        if (await Cnt($"select count(*) from {paydb}.ssstbl") == 0)
+            issues.Add(new OPayIssue("The SSS contribution table is empty.", "", ""));
+        if (await Cnt($"select count(*) from {paydb}.medtbl") == 0)
+            issues.Add(new OPayIssue("The PhilHealth contribution table is empty.", "", ""));
+        if (await Cnt($"select count(*) from {paydb}.pagibigtbl") == 0)
+            issues.Add(new OPayIssue("The Pag-IBIG contribution table is empty.", "", ""));
+        return issues;
+    }
+
     public async Task<OPayNewFetch> _02NewFetch(string yy4, string mm, string prd, string grpCode, string paydb, string pisdb, string conn)
     {
         var r = new OPayNewFetch();
@@ -298,7 +322,10 @@ public class OPayrollDataAccess : IOPayrollDataAccess
         //--- payrollnew4.loans_fetch ---
         progress?.Report("Loading loans...");
         s.Loans = await _sql.FetchLegacy<OPayLoan, dynamic>(
-            $@"select Number, EmpNumber, trim(DedNCode) DedNCode, ifnull(Amort,0) Amort, ifnull(Balance,0) Balance from {db}.loans
+            $@"select Number, EmpNumber, trim(DedNCode) DedNCode,
+                      ifnull((select x.Amort from {db}.loansSchedule x where x.LoansId = loans.Number and x.TRN is null order by x.SchedNo limit 1), ifnull(Amort,0)) Amort,
+                      ifnull((select x.Id from {db}.loansSchedule x where x.LoansId = loans.Number and x.TRN is null order by x.SchedNo limit 1), 0) SchedId,
+                      ifnull(Balance,0) Balance from {db}.loans
                where left(trnLastPosted,6) != left(@Trn,6) and Status = 'A' and Balance > 0 and {fld} = 1
                  and payRes <= @AttEnd and payStart <= @AttStart and EmpNumber in @Nums", p, cn);
 
@@ -553,6 +580,12 @@ public class OPayrollDataAccess : IOPayrollDataAccess
                            select NUMBER, EMPNUMBER, DATE, DEDNCODE, DEDNDESC, AMOUNT, AMORT, BALANCE, STATUS, ENCODEBY, ENCODEDT,
                                   CHANGEBY, CHANGEDT, POSTED, EMPLASTNM, POSTFLAG, REMARKS, payMode, payStart, payRes, @Trn
                            from {db}.loans where NUMBER = @Number", loans, tx);
+                var sched = s.Results.SelectMany(r => r.Loans).Where(l => l.SchedId > 0).Select(l => new { s.Trn, l.Number, l.SchedId, l.Amort }).ToList();
+                if (sched.Count > 0)
+                {
+                    await cn.ExecuteAsync($"update {db}.tmploans set AMORT = @Amort where trn = @Trn and NUMBER = @Number", sched, tx);
+                    await cn.ExecuteAsync($"update {db}.loansSchedule set TRN = @Trn where Id = @SchedId and TRN is null", sched, tx);
+                }
 
                 //--- save_03_otherdeductions_tmp ---
                 await cn.ExecuteAsync($"delete from {db}.tmptblotherdeductions where trn = @Trn", p, tx);
