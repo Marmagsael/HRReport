@@ -9,7 +9,7 @@
 
             <button class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue"
                     type="submit"
-                    tabindex="5">
+                    tabindex="7">
                 Save
             </button>
 
@@ -23,7 +23,7 @@
             @* --- Insurance Type --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
-                <label class="fw-normal w-180p">
+                <label class="fw-normal w-120p">
                     Insurance Type
                 </label>
 
@@ -55,7 +55,7 @@
             @* --- Insurance Name --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
-                <label class="fw-normal w-180p">
+                <label class="fw-normal w-120p">
                     Insurance
                 </label>
 
@@ -65,7 +65,7 @@
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     TabIndex="2"
-                                    MaxLength="45" 
+                                    MaxLength="45"
                                     Class="@(string.IsNullOrWhiteSpace(V.InsuranceDescErrorMsg) ? "" : "k-invalid")" />
 
                     @if (!string.IsNullOrWhiteSpace(V.InsuranceDescErrorMsg))
@@ -84,7 +84,7 @@
             @* --- Policy No. --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
-                <label class="fw-normal w-180p">
+                <label class="fw-normal w-120p">
                     Policy No.
                 </label>
 
@@ -94,7 +94,7 @@
                                     Rounded="@ThemeConstants.TextBox.Rounded.Large"
                                     FillMode="@ThemeConstants.TextBox.FillMode.Solid"
                                     TabIndex="3"
-                                    MaxLength="25" 
+                                    MaxLength="25"
                                     Class="@(string.IsNullOrWhiteSpace(V.PolicyNoErrorMsg) ? "" : "k-invalid")" />
 
                     @if (!string.IsNullOrWhiteSpace(V.PolicyNoErrorMsg))
@@ -110,7 +110,7 @@
             @* --- Face Value --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
-                <label class="fw-normal w-180p">
+                <label class="fw-normal w-120p">
                     Face Value
                 </label>
 
@@ -121,7 +121,7 @@
                                            FillMode="@ThemeConstants.NumericTextBox.FillMode.Solid"
                                            TabIndex="4"
                                            Min="0"
-                                           Max="9999999999.99"
+                                           Max="999999.99"
                                            Decimals="2"
                                            Format="N2" 
                                            Class="@(string.IsNullOrWhiteSpace(V.FaceValueErrorMsg) ? "" : "k-invalid")" />
@@ -141,7 +141,7 @@
             @* --- Premiums --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
-                <label class="fw-normal w-180p">
+                <label class="fw-normal w-120p">
                     Premiums
                 </label>
 
@@ -152,7 +152,7 @@
                                            FillMode="@ThemeConstants.NumericTextBox.FillMode.Solid"
                                            TabIndex="5"
                                            Min="0"
-                                           Max="9999999999.99"
+                                           Max="999999.99"
                                            Decimals="2"
                                            Format="N2"
                                            Class="@(string.IsNullOrWhiteSpace(V.PremiumErrorMsg) ? "" : "k-invalid")" />
@@ -170,7 +170,7 @@
             @* --- Insurance Expiration --- *@
             <div class="d-flex flex-column flex-md-row mb-2">
 
-                <label class="fw-normal w-180p">
+                <label class="fw-normal w-120p">
                     Date Expire
                 </label>
 
@@ -179,7 +179,13 @@
                     <TelerikDatePicker @bind-Value="@V.Insurance.InsExpire"
                                        Rounded="@ThemeConstants.DatePicker.Rounded.Large"
                                        FillMode="@ThemeConstants.DatePicker.FillMode.Solid"
-                                       TabIndex="6"/>
+                                       TabIndex="6"
+                                       Class="@(string.IsNullOrWhiteSpace(V.DateExNoErrorMsg) ? "" : "k-invalid")" />
+
+                    @if (!string.IsNullOrWhiteSpace(V.DateExNoErrorMsg))
+                    {
+                        <div class="txt-red small">@V.DateExNoErrorMsg</div>
+                    }
 
                 </div>
 
@@ -194,8 +200,13 @@
 
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
 @inject IOInsuranceDataAccess _insurance
+@inject IOEmpmasDataAccess _empmas
+@inject IOInsuranceaccidentDataAccess _accident
 
 @code {
+
+
+
     [CascadingParameter]
     public UserClaimsModel Uc { get; set; } = new();
 
@@ -218,27 +229,27 @@
         ResetErrorMessage();
         if (!IsFormValid()) return;
 
-        var insType = V.Insurance.InsuranceType?.Trim().ToUpper();
-        var insName = V.Insurance.Name?.Trim().ToUpper();
-        var insPolicy = V.Insurance.PolicyNo?.Trim().ToUpper();
-
-        var origType = V.InsuranceOriginalState?.InsuranceType?.Trim().ToUpper();
-        var origName = V.InsuranceOriginalState?.Name?.Trim().ToUpper();
-        var origPolicy = V.InsuranceOriginalState?.PolicyNo?.Trim().ToUpper();
-
-        // Validate if insurance type and policy number already exist
-        var existingRecord = await _insurance._02ByTypeAndByPolicyNo(insType, insPolicy, Uc.OpisDb, Uc.Conn);
-
-        if (existingRecord != null && existingRecord.Any())
+        // Same values are allowed in any field, but not the same values in ALL fields
+        // (type, name, policy no., face value, premiums and date expire)
+        try
         {
-            bool policyExists = existingRecord.Any(c => c.InsuranceType?.Trim().ToUpper() == insType 
-                    &&  c.PolicyNo?.Trim().ToUpper() == insPolicy && (V.InsuranceOriginalState == null || c.Id != V.InsuranceOriginalState.Id));
+            var existingRecord = await _insurance._02ByAllFields(V.Insurance, Uc.OpisDb, Uc.Conn);
 
-            if (policyExists)
+            // When editing, the record itself is not a duplicate
+            bool duplicate = existingRecord != null && existingRecord.Any(c =>
+                V.InsuranceOriginalState == null || c?.Id != V.InsuranceOriginalState.Id);
+
+            if (duplicate)
             {
-                V.PolicyNoErrorMsg = "Policy number already exists for this insurance type.";
+                NotificationRef?.Show("An insurance with the same details already exists.", ThemeConstants.Notification.ThemeColor.Warning);
                 return;
             }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to validate insurance.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
         }
 
         if (V.Insurance.Id == 0)
@@ -283,7 +294,24 @@
 
     private async Task _03UpdateRecord()
     {
-
+        // Employees hold a copy of the insurance fields (not a link by Id), so editing an assigned insurance
+        // would leave its employees stuck. Block it. (The list also blocks opening Edit; this covers
+        // employees assigned while the form was open.)
+        try
+        {
+            if (V.InsuranceOriginalState != null && await IsAssigned(V.InsuranceOriginalState))
+            {
+                NotificationRef?.Show("This insurance is already assigned to employees and can't be edited.",
+                                      ThemeConstants.Notification.ThemeColor.Warning);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to check the employees assigned to this insurance.", ThemeConstants.Notification.ThemeColor.Error);
+            return;
+        }
 
         try
         {
@@ -318,6 +346,17 @@
             NotificationRef.Show("Unable to update insurance.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
+    }
+
+
+    // True if any employee is assigned to the insurance (Life: Empmas, Accident: Insurance_accident)
+    private async Task<bool> IsAssigned(OInsuranceModel insurance)
+    {
+        var res = string.Equals(insurance.InsuranceType?.Trim(), "Life", StringComparison.OrdinalIgnoreCase)
+            ? await _empmas._02ByInsurance(insurance, Uc.OpisDb, Uc.Conn)
+            : await _accident._02ByInsurance(insurance, Uc.OpisDb, Uc.Conn);
+
+        return res?.Any(e => e != null) == true;
     }
 
 
@@ -358,8 +397,16 @@
             isValid = false;
         }
 
+        if (V.Insurance.InsExpire == null)
+        {
+            V.DateExNoErrorMsg = "Date Expire is required";
+            isValid = false;
+        }
+
         return isValid;
     }
+
+
 
     private void ResetErrorMessage()
     {
@@ -368,5 +415,6 @@
         V.PolicyNoErrorMsg = string.Empty;
         V.FaceValueErrorMsg = string.Empty;
         V.PremiumErrorMsg = string.Empty;
+        V.DateExNoErrorMsg = string.Empty;
     }
 }

@@ -1,30 +1,34 @@
 ﻿@using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using HRMvc.Applications.PisModules.Views.Blazor._2054
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.OPis;
-@using HRApiLibrary.DataAccess._20_Pay.Interface
 
-@inject ISettingsDataAccess _settings;
 @inject IOInsuranceDataAccess _insurance
+@inject IOCoinfoDataAccess _coinfo
+@inject IRCoInfoDataAccess _rcoinfo
+@inject HRMvc.StartupConfig.CompanyLogoService _logo
 
 
-<TelerikRootComponent>
+@* Cascading values must wrap TelerikRootComponent: TelerikWindow content is rendered
+   inside the root component, so cascades declared inside it never reach the modals. *@
+<CascadingValue Value="@v">
+    <CascadingValue Value="@Uc">
+        <CascadingValue Value="@NotificationRef">
+            <TelerikRootComponent>
 
-    <TelerikNotification @ref="@NotificationRef"
-                         HorizontalPosition="@NotificationHorizontalPosition.Right"
-                         VerticalPosition="@NotificationVerticalPosition.Top"
-                         AnimationType="@AnimationType.SlideLeft" />
+                <TelerikNotification @ref="@NotificationRef"
+                                     HorizontalPosition="@NotificationHorizontalPosition.Right"
+                                     VerticalPosition="@NotificationVerticalPosition.Top"
+                                     AnimationType="@AnimationType.SlideLeft" />
 
 
-    @* <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" /> *@
+                @* <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" /> *@
 
-    <CascadingValue Value="@v">
-        <CascadingValue Value="@Uc">
-            <CascadingValue Value="@NotificationRef">
                 <_00BT_FullW HdrCaption="Insurance Entry">
 
                     <Details>
                         @*--- REPORT ---*@
-                        @* <_02BTRep Rv="rv" ChildAction="ChildAction" /> *@
+                        <_02BTRep Rv="rv" ChildAction="ChildAction" />
 
 
 
@@ -35,16 +39,28 @@
                                                     LoaderType="@LoaderType.ConvergingSpinner" />
 
                             @*--- ENTRY FORM MODAL ---*@
-                            @if (v.ShowInsuranceEntryModal == true)
-                            {
-                                <_00Modal ModuleCaption="@v.ModalCaption" ChildAction="() => v.ShowInsuranceEntryModal = false" ModalWidth="70vh">
+                            <TelerikWindow Modal="true" @bind-Visible="@v.ShowInsuranceEntryModal" Width="500px" Height="560px">
+                                <WindowTitle>@v.ModalCaption</WindowTitle>
+                                <WindowContent>
+                                    <_2054_InsuranceEntryModal ChildAction="ChildAction" />
+                                </WindowContent>
+                                <WindowActions>
+                                    <WindowAction Name="Close" />
+                                </WindowActions>
+                            </TelerikWindow>
 
-                                    <Content>
-                                        <_2054_InsuranceEntryModal ChildAction="ChildAction" />
-                                    </Content>
 
-                                </_00Modal>
-                            }
+                            @*--- INSURANCE ASSIGNMENT MODAL ---*@
+                            <TelerikWindow Modal="true" @bind-Visible="@v.ShowInsuranceAssignmentModal" Width="90vw" Height="560px">
+                                <WindowTitle>@v.ModalCaption</WindowTitle>
+                                <WindowContent>
+                                    <_2054_InsuranceAssignmentModal ChildAction="ChildAction" />
+                                </WindowContent>
+                                <WindowActions>
+                                    <WindowAction Name="Close" />
+                                </WindowActions>
+                            </TelerikWindow>
+
 
                             @*---  Grid ---*@
                             <_2054_InsuranceList ChildAction="ChildAction" @ref="InsuranceGridRef" />
@@ -53,10 +69,11 @@
                     </Details>
 
                 </_00BT_FullW>
-            </CascadingValue>
+
+            </TelerikRootComponent>
         </CascadingValue>
     </CascadingValue>
-</TelerikRootComponent>
+</CascadingValue>
 
 
 @code {
@@ -71,13 +88,27 @@
     private _2054_InsuranceList InsuranceGridRef;
 
 
-    protected override async Task OnInitializedAsync()
+    // Data is loaded in OnAfterRenderAsync (not OnInitializedAsync) because OnAfterRenderAsync
+    // does not run during prerendering. The prerendered HTML is sent right away with the loader
+    // visible (v.IsLoading defaults to true), and the data is fetched only once, after the
+    // interactive circuit connects. NotificationRef is also available by then.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await LoadPageData();
+        StateHasChanged();
+    }
+
+
+    private async Task LoadPageData()
     {
         v.IsLoading = true;
 
         if (Uc?.Conn == null || Uc.OpisDb == null)
         {
             v.UcLoaded = false;
+            v.IsLoading = false;
             NotificationRef?.Show("Something went wrong. Please try again.", ThemeConstants.Notification.ThemeColor.Error);
             return;
         }
@@ -127,23 +158,173 @@
         };
     }
 
+    // Company logo for the report header, loaded once with the company info.
+    // (Telerik report parameters can't hold an image, so the reports read it as =Fields.Logo from the rows.)
+    private byte[]? CompanyLogo;
+
+
+    // Company name / address for the report header, read the same way as Company Information (_2005):
+    // the old PIS (Coinfo) comes first; what it does not have is taken from the new PIS (RCoInfo).
+    // The logo comes from CompanyLogoService.
     private async Task _02LoadCompanyInfo()
     {
-        // var res = await _pisRep._02CoInfo(Uc.OpisDb!, Uc.Conn!);
-        var res = await _settings._02(1, Uc.SchemaUserPay!, Uc.Conn!);
+        try
+        {
+            var o = await _coinfo._02(Uc.OpisDb, Uc.Conn);
+            var r = await _rcoinfo._02(Uc.SchemaUserPis, Uc.Conn);
 
-        rv.ReportParams["CoName"] = res.CoFullName ?? "";
-        rv.ReportParams["CoAddress"] = res.CoAddress ?? "";
+            rv.ReportParams["CoName"] = Pick(o?.CoName, r?.CoName) ?? "";
+
+            // Old PIS keeps the full address in CoAdd (Address 1 + Address 2); otherwise join the two lines
+            rv.ReportParams["CoAddress"] = Pick(o?.CoAdd,
+                                                JoinAddress(o?.Add1, o?.Add2),
+                                                JoinAddress(r?.Add1, r?.Add2)) ?? "";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to load company information.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+
+        // Separate try: a missing logo should not stop the name / address from loading, and vice versa
+        try
+        {
+            CompanyLogo = (await _logo.GetAsync(Uc))?.Data;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
     }
+
+
+    // First value that is not empty (same helper as Company Information)
+    private static string? Pick(params string?[] values)
+        => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+
+    private static string? JoinAddress(string? add1, string? add2)
+        => string.Join(" ", new[] { add1, add2 }.Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a!.Trim()));
 
 
 
     public async Task ChildAction()
     {
-        if (v.Action == "RefreshInsuranceGrid") if (InsuranceGridRef != null) InsuranceGridRef.RebindGrid();
-        if (v.Action == "LoadInsurances") await _02LoadInsurances();
-
+        var action = v.Action;
         v.Action = string.Empty;
+
+        if (action == "RefreshInsuranceGrid") if (InsuranceGridRef != null) InsuranceGridRef.RebindGrid();
+        if (action == "LoadInsurances") await _02LoadInsurances();
+
+        // Print buttons (Insurance list toolbar / Insurance Assignment modal)
+        if (action == "PrintInsuranceList")       await PrintInsuranceList();
+        if (action == "PrintInsuranceAssignment") await PrintInsuranceAssignment();
+    }
+
+
+    // Insurance Listing report: all insurances grouped by type
+    private async Task PrintInsuranceList()
+    {
+        var rows = (v.Insurances ?? new())
+            .Where(i => i != null)
+            .Select(i => new R2054ILModel
+            {
+                InsuranceType = i!.InsuranceType,
+                InsuranceName = i.Name,
+                PolicyNo      = i.PolicyNo,
+                FaceValue     = i.FaceValue,
+                Premiums      = i.Premiums,
+                InsExpire     = i.InsExpire
+            })
+            .ToList();
+
+        if (!rows.Any())
+        {
+            NotificationRef?.Show("No insurance records available for printing.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        try
+        {
+            v.IsLoading = true;
+            // Logo loaded once in _02LoadCompanyInfo. The report re-sorts rows (by type), so put it on every row (same byte[], no copy)
+            foreach (var r in rows) r.Logo = CompanyLogo;
+
+            ShowReport("Reports/_01Pis/J_2054_IL.trdp", "Insurance Listing", rows);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to generate the insurance listing report.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
+        }
+    }
+
+
+    // Insurance Assignment report: type -> insurance -> assigned employees
+    private async Task PrintInsuranceAssignment()
+    {
+        try
+        {
+            v.IsLoading = true;
+
+            var res = await _insurance._02AssignmentReport(Uc.OpisDb, Uc.Conn) ?? new();
+
+            var rows = res
+                .Where(r => r != null)
+                .Select(r => new R2054IAModel
+                {
+                    InsuranceType = r!.InsuranceType,
+                    InsuranceName = r.InsuranceName,
+                    PolicyNo      = r.PolicyNo,
+                    FaceValue     = r.FaceValue,
+                    Premiums      = r.Premiums,
+                    InsExpire     = r.InsExpire,
+                    EmpNumber     = r.EmpNumber,
+                    EmpName       = r.EmpName,
+                    ClName        = r.ClName,
+                    EmpStatus     = r.EmpStatus
+                })
+                .ToList();
+
+            if (!rows.Any())
+            {
+                NotificationRef?.Show("No employees are assigned to any insurance yet.", ThemeConstants.Notification.ThemeColor.Warning);
+                return;
+            }
+
+            // Logo loaded once in _02LoadCompanyInfo. The report re-sorts rows (by type), so put it on every row (same byte[], no copy)
+            foreach (var r in rows) r.Logo = CompanyLogo;
+
+            // The report viewer is a page overlay that sits below Telerik windows, so close the modal first
+            v.ShowInsuranceAssignmentModal = false;
+
+            ShowReport("Reports/_01Pis/J_2054_IA.trdp", "Insurance Assignment", rows);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to generate the insurance assignment report.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            v.IsLoading = false;
+        }
+    }
+
+
+    private void ShowReport(string relativePath, string title, IEnumerable<object> rows)
+    {
+        rv.RelativePath               = relativePath;
+        rv.ReportData                 = rows;
+        rv.MCaption                   = title;
+        rv.ReportParams["ReportTitle"] = title;
+        rv.ReportParams["RunDate"]     = DateTime.Now;
+        rv.SelectedFormat             = "PDF";
+        rv.RefreshToken               = (rv.RefreshToken ?? 0) + 1;   // both reports share the viewer, so force a refresh
+        rv.ShowModal                  = true;
     }
 
 }

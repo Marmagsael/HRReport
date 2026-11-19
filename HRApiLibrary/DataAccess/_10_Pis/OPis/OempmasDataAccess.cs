@@ -429,6 +429,82 @@ public class OEmpmasDataAccess : IOEmpmasDataAccess
         return data.FirstOrDefault();
     }
 
+
+    public async Task<List<OEmpmasModel?>?> _02ByInsurance(OInsuranceModel insurance, string? schema, string? conn)
+    {
+        string sql = $@"SELECT e.EmpNumber, e.Email,
+                           CONCAT_WS(', ', NULLIF(TRIM(e.EmpLastNm), ''),
+                                           CONCAT_WS(' ', NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), ''))) AS Fullname,
+                           s.Name AS EmpStatus,
+                           c.ClName
+                    FROM {schema}.Empmas e
+                    LEFT JOIN {schema}.EmpStat s ON s.Code     = e.EmpStat_
+                    LEFT JOIN {schema}.Client  c ON c.ClNumber = e.Client_
+                    WHERE TRIM(e.Insurance)     = TRIM(@Insurance)
+                      AND TRIM(e.PolicyNo)      = TRIM(@PolicyNo)
+                      AND ROUND(e.FaceValue, 2) = ROUND(@FaceValue, 2)
+                      AND ROUND(e.Premium, 2)   = ROUND(@Premium, 2)
+                      AND DATE(e.InsExpire)     = DATE(@InsExpire)
+                    ORDER BY e.EmpLastNm, e.EmpFirstNm;";
+        var param = new
+        {
+            Insurance = insurance.Name,
+            insurance.PolicyNo,
+            insurance.FaceValue,
+            Premium   = insurance.Premiums,
+            insurance.InsExpire
+        };
+
+        var data = await _sql.FetchLegacy<OEmpmasModel?, dynamic>(sql, param, conn);
+
+        return data;
+    }
+
+
+    // Assigns a Life insurance to the given employees (writes the insurance fields on Empmas)
+    public async Task _03AssignInsurance(List<string> empnumbers, OInsuranceModel insurance, string? schema, string? conn)
+    {
+        if (empnumbers == null || empnumbers.Count == 0) return;
+
+        string sql = $@"UPDATE {schema}.Empmas
+                           SET Insurance = @Insurance,
+                               PolicyNo  = @PolicyNo,
+                               FaceValue = @FaceValue,
+                               Premium   = @Premium,
+                               InsExpire = @InsExpire
+                         WHERE EmpNumber IN @EmpNumbers;";
+
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new
+        {
+            EmpNumbers = empnumbers,
+            Insurance  = insurance.Name?.Trim(),
+            PolicyNo   = insurance.PolicyNo?.Trim(),
+            insurance.FaceValue,
+            Premium    = insurance.Premiums,
+            insurance.InsExpire
+        }, conn);
+    }
+
+
+    // Removes the Life insurance from the given employees (clears the insurance fields on Empmas)
+    public async Task _03ClearInsurance(List<string> empnumbers, string? schema, string? conn)
+    {
+        if (empnumbers == null || empnumbers.Count == 0) return;
+
+        string sql = $@"UPDATE {schema}.Empmas
+                           SET Insurance = NULL,
+                               PolicyNo  = NULL,
+                               FaceValue = NULL,
+                               Premium   = NULL,
+                               InsExpire = NULL
+                         WHERE EmpNumber IN @EmpNumbers;";
+
+        await _sql.ExecuteLegacyCmd<dynamic>(sql, new { EmpNumbers = empnumbers }, conn);
+    }
+
+
+
+
     public async Task<OEmpmasModel?> _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn)
 	{
 		string sql = $@"Update {schema}.Empmas set 
@@ -868,9 +944,10 @@ public interface IOEmpmasDataAccess
     Task<List<OEmpmasModel?>?> _02EmailLinkedToOthers(string? email, string? schema, string? conn);
     Task<OEmpmasModel?>         _02MaxEmpnumber(string? schema, string? conn);
     Task<string?>               _02EmployeeLimitReached(string? opisdb, string? pisSchema, string? mainSchema, string? conn);
-
+    Task<List<OEmpmasModel?>?>  _02ByInsurance(OInsuranceModel insurance, string? schema, string? conn);
+    Task                        _03AssignInsurance(List<string> empnumbers, OInsuranceModel insurance, string? schema, string? conn);
+    Task                        _03ClearInsurance(List<string> empnumbers, string? schema, string? conn);
     Task<OEmpmasModel?>         _03(string? empnumber, OEmpmasModel empmas, string? schema, string? conn);
-
     Task<OEmpmasModel?>         _03_EmployeeName(string empnumber, OEmpmasModel empmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_PersonalData(string empnumber, OEmpmasModel mempmas, string schema, string conn);
     Task<OEmpmasModel?>         _03_Address(string empnumber, OEmpmasModel empmas, string schema, string conn);

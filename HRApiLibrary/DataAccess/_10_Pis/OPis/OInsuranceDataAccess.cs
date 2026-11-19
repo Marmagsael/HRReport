@@ -45,11 +45,80 @@ namespace HRApiLibrary.DataAccess._10_Pis.OPis;
             return data;
         }
 
-    public async Task<List<OInsuranceModel?>?> _02ByTypeAndByPolicyNo(string type, string policy, string schema, string conn)
+    public async Task<List<OInsuranceModel?>?> _02ByAllFields( OInsuranceModel insurance, string schema, string conn)
     {
-        string sql = $@"SELECT * FROM {schema}.Insurance WHERE TRIM(UPPER(InsuranceType)) = @InsuranceType AND TRIM(UPPER(PolicyNo)) = @PolicyNo ORDER BY Name";
+        string sql = $@" SELECT *
+                            FROM {schema}.Insurance
+                            WHERE TRIM(UPPER(Name)) = TRIM(UPPER(@Name))
+                              AND TRIM(UPPER(PolicyNo)) = TRIM(UPPER(@PolicyNo))
+                              AND TRIM(UPPER(InsuranceType)) = TRIM(UPPER(@InsuranceType))
+                              AND FaceValue = @FaceValue
+                              AND Premiums = @Premiums
+                              AND DATE(InsExpire) = DATE(@InsExpire)
+                            ORDER BY Name";
 
-        var data = await _sql.FetchLegacy<OInsuranceModel?, dynamic>(sql, new { InsuranceType = type, PolicyNo = policy }, conn);
+        var data = await _sql.FetchLegacy<OInsuranceModel?, dynamic>(
+            sql,
+            new
+            {
+                insurance.Name,
+                insurance.PolicyNo,
+                insurance.InsuranceType,
+                insurance.FaceValue,
+                insurance.Premiums,
+                insurance.InsExpire
+            },
+            conn);
+
+        return data;
+    }
+
+
+    // Insurance Assignment report: every employee assigned to an insurance, for both types.
+    // Life is stored on Empmas, Accident in Insurance_accident; both are matched to the insurance
+    // by ALL its fields (same rule as the assignment screen).
+    public async Task<List<OInsuranceAssignmentModel?>?> _02AssignmentReport(string? schema, string? conn)
+    {
+        string sql = $@"SELECT i.InsuranceType, i.Name AS InsuranceName, i.PolicyNo, i.FaceValue, i.Premiums, i.InsExpire,
+                               e.EmpNumber,
+                               CONCAT_WS(', ', NULLIF(TRIM(e.EmpLastNm), ''),
+                                               CONCAT_WS(' ', NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), ''))) AS EmpName,
+                               c.ClName,
+                               s.Name AS EmpStatus
+                        FROM {schema}.Insurance i
+                        INNER JOIN {schema}.Empmas e
+                                ON TRIM(UPPER(e.Insurance)) = TRIM(UPPER(i.Name))
+                               AND TRIM(UPPER(e.PolicyNo))  = TRIM(UPPER(i.PolicyNo))
+                               AND ROUND(e.FaceValue, 2)    = ROUND(i.FaceValue, 2)
+                               AND ROUND(e.Premium, 2)      = ROUND(i.Premiums, 2)
+                               AND DATE(e.InsExpire)        = DATE(i.InsExpire)
+                        LEFT JOIN {schema}.EmpStat s ON s.Code     = e.EmpStat_
+                        LEFT JOIN {schema}.Client  c ON c.ClNumber = e.Client_
+                        WHERE i.InsuranceType = 'Life'
+
+                        UNION ALL
+
+                        SELECT i.InsuranceType, i.Name AS InsuranceName, i.PolicyNo, i.FaceValue, i.Premiums, i.InsExpire,
+                               e.EmpNumber,
+                               CONCAT_WS(', ', NULLIF(TRIM(e.EmpLastNm), ''),
+                                               CONCAT_WS(' ', NULLIF(TRIM(e.EmpFirstNm), ''), NULLIF(TRIM(e.EmpMidNm), ''))) AS EmpName,
+                               c.ClName,
+                               s.Name AS EmpStatus
+                        FROM {schema}.Insurance i
+                        INNER JOIN {schema}.Insurance_accident a
+                                ON TRIM(UPPER(a.Insurance)) = TRIM(UPPER(i.Name))
+                               AND TRIM(UPPER(a.PolicyNo))  = TRIM(UPPER(i.PolicyNo))
+                               AND ROUND(a.FaceValue, 2)    = ROUND(i.FaceValue, 2)
+                               AND ROUND(a.Premium, 2)      = ROUND(i.Premiums, 2)
+                               AND DATE(a.InsExpire)        = DATE(i.InsExpire)
+                        INNER JOIN {schema}.Empmas  e ON e.EmpNumber = a.EmpNumber
+                        LEFT JOIN  {schema}.EmpStat s ON s.Code      = e.EmpStat_
+                        LEFT JOIN  {schema}.Client  c ON c.ClNumber  = e.Client_
+                        WHERE i.InsuranceType = 'Accident'
+
+                        ORDER BY InsuranceType, InsuranceName, InsExpire, EmpName;";
+
+        var data = await _sql.FetchLegacy<OInsuranceAssignmentModel?, dynamic>(sql, new { }, conn);
         return data;
     }
 
@@ -82,7 +151,8 @@ public interface IOInsuranceDataAccess
     Task<OInsuranceModel?> _01(OInsuranceModel insurance, string schema, string conn);
     Task<OInsuranceModel?> _02(int id, string schema, string conn);
     Task<List<OInsuranceModel?>?> _02(string schema, string conn);
-    Task<List<OInsuranceModel?>?> _02ByTypeAndByPolicyNo(string type, string policy, string schema, string conn);
+    Task<List<OInsuranceModel?>?> _02ByAllFields(OInsuranceModel insurance, string schema, string conn);
+    Task<List<OInsuranceAssignmentModel?>?> _02AssignmentReport(string? schema, string? conn);
     Task<OInsuranceModel?> _03(int? id, OInsuranceModel insurance, string schema, string conn);
     Task<OInsuranceModel?> _04(int? id, string schema, string conn);
 }

@@ -1,11 +1,13 @@
 ﻿@using HRMvc.Applications.PisReport.Vars
 @using HRMvc.Applications.PisReport.Views.Blazor._2102
+@using HRApiLibrary.DataAccess._10_Pis
 @using HRApiLibrary.DataAccess._10_Pis.OPis
 @using HRApiLibrary.DataAccess._20_Pay.Interface
 
 @inject HRMvc.StartupConfig.CompanyLogoService _logo
 @inject IOPisReportDataAccess _pisRep
 @inject IOCoinfoDataAccess _coinfo
+@inject IRCoInfoDataAccess _rcoinfo
 
 
 <style>
@@ -197,10 +199,9 @@
         {
             v.IsLoading = true;
 
-            var logo = (await _logo.GetAsync(Uc!))?.Data;
-
-            var first = v.RepDtls.FirstOrDefault();
-            if (first != null) first.Logo = logo;
+            // Logo loaded once in _02LoadCompanyInfo. The report groups/sorts rows by status,
+            // so put it on every row, not just the first (same byte[], no copy)
+            foreach (var r in v.RepDtls) r.Logo = CompanyLogo;
 
             rv.RelativePath = "Reports/_01Pis/J_2102_EML1.trdp";
             rv.ReportData = v.RepDtls;
@@ -233,22 +234,49 @@
         };
     }
 
+    // Company logo for the report header, loaded once with the company info (OnInitializedAsync).
+    // (Telerik report parameters can't hold an image, so the report reads it as =Fields.Logo from the rows.)
+    private byte[]? CompanyLogo;
+
+
+    // Company name / address / logo for the report header, read the same way as Company Information (_2005):
+    // the old PIS (Coinfo) comes first; what it does not have is taken from the new PIS (RCoInfo).
     private async Task _02LoadCompanyInfo()
     {
         try
         {
-           
-            var res = await _coinfo._02(Uc.OpisDb, Uc.Conn);
-            Console.WriteLine($"report {res.CoName} {res.CoAdd}");
-            if (res == null) return;
+            var o = await _coinfo._02(Uc.OpisDb, Uc.Conn);
+            var r = await _rcoinfo._02(Uc.SchemaUserPis, Uc.Conn);
 
-            rv.ReportParams["CoName"] = res.CoName ?? "";
-            rv.ReportParams["CoAddress"] = res.CoAdd ?? "";
+            rv.ReportParams["CoName"] = Pick(o?.CoName, r?.CoName) ?? "";
+
+            // Old PIS keeps the full address in CoAdd (Address 1 + Address 2); otherwise join the two lines
+            rv.ReportParams["CoAddress"] = Pick(o?.CoAdd,
+                                                JoinAddress(o?.Add1, o?.Add2),
+                                                JoinAddress(r?.Add1, r?.Add2)) ?? "";
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
             NotificationRef?.Show("Unable to load company information.", ThemeConstants.Notification.ThemeColor.Error);
         }
+
+        // Separate try: a missing logo should not stop the name / address from loading, and vice versa
+        try
+        {
+            CompanyLogo = (await _logo.GetAsync(Uc))?.Data;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
     }
+
+
+    // First value that is not empty (same helper as Company Information)
+    private static string? Pick(params string?[] values)
+        => values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v))?.Trim();
+
+    private static string? JoinAddress(string? add1, string? add2)
+        => string.Join(" ", new[] { add1, add2 }.Where(a => !string.IsNullOrWhiteSpace(a)).Select(a => a!.Trim()));
 }

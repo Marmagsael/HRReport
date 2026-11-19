@@ -1,1 +1,74 @@
 ﻿
+
+<div class="d-flex flex-column position-relative">
+
+    @* --- PRINT (Insurance Assignment report: all types, insurances and their employees) ---
+       Sits on the same line as the Life / Accident tabs (right side), so it takes no extra height *@
+    <button type="button"
+            class="card p-2 px-3 text-center h-35p mb-btn mb-btn-gray ins-assign-print"
+            @onclick="@PrintAssignment">
+        Print
+    </button>
+
+    @* PersistTabContent keeps the inactive tab alive, so switching tabs does not lose the employees added there *@
+    <TelerikTabStrip @bind-ActiveTabId="@ActiveTab" PersistTabContent="true">
+
+        @* ======================= LIFE ======================= *@
+        <TabStripTab Title="Life" Id="life">
+
+            <_2054_InsuranceAssignmentTab InsuranceType="Life" ChildAction="ChildAction" />
+
+        </TabStripTab>
+
+
+        @* ======================= ACCIDENT ======================= *@
+        <TabStripTab Title="Accident" Id="accident">
+
+            <_2054_InsuranceAssignmentTab InsuranceType="Accident" ChildAction="ChildAction" />
+
+        </TabStripTab>
+
+    </TelerikTabStrip>
+
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2054Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+    private string ActiveTab { get; set; } = "life";
+
+
+    // Prints the Insurance Assignment report (handled by the page, which owns the report viewer)
+    private async Task PrintAssignment()
+    {
+        V.Action = "PrintInsuranceAssignment";
+        await ChildAction.InvokeAsync();
+    }
+}
+
+
+<style>
+    /* Print button on the right of the Life / Accident tab line */
+    .ins-assign-print {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 5;
+    }
+</style>

@@ -1,0 +1,667 @@
+@using HRApiLibrary.DataAccess._10_Pis.OPis
+
+@inject IOEmpmasDataAccess _empmas
+@inject IOInsuranceaccidentDataAccess _insurance
+
+<div class="px-2 pt-2 d-flex flex-column flex-md-row gap-3" @onclick="@CloseResultsOnOutsideClick">
+
+    @* ======================= INSURANCES OF THE GIVEN TYPE (Life / Accident) ======================= *@
+    <div class="w-100 flex-md-fill ins-col">
+        <div class="ins-grid-fill">
+        <TelerikGrid TItem="OInsuranceModel"
+                     Data="@Insurances"
+                     Navigable="true"
+                     Sortable="true"
+                     SelectionMode="@GridSelectionMode.Single"
+                     @bind-SelectedItems="@SelectedInsurances"
+                     OnRowClick="@OnInsuranceRowClick"
+                     Class="ins-clickable-grid"
+                     Pageable="true"
+                     @bind-PageSize="@InsurancePageSize"
+                     Height="100%">
+
+            <GridSettings>
+                <GridPagerSettings PageSizes="@PageSizes" ButtonCount="3" />
+            </GridSettings>
+
+            <GridColumns>
+
+                @* --- INSURANCE --- *@
+                <GridColumn Field="@nameof(OInsuranceModel.Name)"
+                            Title="Insurance"
+                            Width="150px" />
+
+                @* --- POLICY NO. --- *@
+                <GridColumn Field="@nameof(OInsuranceModel.PolicyNo)"
+                            Title="Policy No."
+                            Width="130px" />
+
+                @* --- FACE VALUE --- *@
+                <GridColumn Field="@nameof(OInsuranceModel.FaceValue)"
+                            Title="Face Value"
+                            Width="120px"
+                            DisplayFormat="{0:N2}" />
+
+                @* --- PREMIUMS --- *@
+                <GridColumn Field="@nameof(OInsuranceModel.Premiums)"
+                            Title="Premiums"
+                            Width="120px"
+                            DisplayFormat="{0:N2}" />
+
+                @* --- EXPIRY --- *@
+                <GridColumn Field="@nameof(OInsuranceModel.InsExpire)"
+                            Title="Expiry"
+                            Width="110px"
+                            DisplayFormat="{0:MM/dd/yyyy}" />
+
+            </GridColumns>
+
+            <NoDataTemplate>
+                <div class="text-center text-secondary p-4">
+                    No @InsuranceType insurance records found.
+                </div>
+            </NoDataTemplate>
+
+        </TelerikGrid>
+        </div>
+    </div>
+
+
+    @* ======================= EMPLOYEES ASSIGNED TO SELECTED INSURANCE ======================= *@
+    <div class="w-100 flex-md-fill emp-grid-card ins-col">
+        @* --- SEARCH + ADD EMPLOYEE ---
+           Styled as the grid toolbar (gray bar attached to the top of the grid), but kept
+           outside the TelerikGrid so the results popup is not clipped behind the grid. *@
+        <div class="emp-search k-toolbar k-grid-toolbar w-100" @onclick:stopPropagation="true">
+
+            <div class="d-flex gap-2 w-100">
+
+                <div class="flex-fill" style="min-width:0" @onkeydown="@OnSearchKeyDown">
+                    <TelerikTextBox @bind-Value="@SearchKey"
+                                    Placeholder="@SearchPlaceholder"
+                                    Enabled="@(SelectedInsurance != null)"
+                                    Rounded="@ThemeConstants.TextBox.Rounded.Large"
+                                    FillMode="@ThemeConstants.TextBox.FillMode.Solid"
+                                    Width="100%" />
+                </div>
+
+                <button type="button"
+                        class="card p-2 px-3 text-center h-35p mb-btn mb-btn-blue text-nowrap"
+                        disabled="@(SelectedInsurance == null || IsSearching)"
+                        @onclick="@SearchEmployees">
+                    @(IsSearching ? "Searching..." : "Search Employee")
+                </button>
+
+            </div>
+
+            @* --- Helper text (visible on mobile too, unlike a tooltip); only once an insurance is selected --- *@
+            @if (SelectedInsurance != null)
+            {
+                <small class="d-block text-secondary text-truncate w-100 mt-1">
+                    Search the employee you want to add to @SelectedInsurance.Name.
+                </small>
+            }
+
+            @* --- SEARCH RESULTS (combo box style options) --- *@
+            @if (ShowResults)
+            {
+
+                <div class="emp-search-popup k-popup">
+
+                    @* --- Header stays fixed; only the list below scrolls --- *@
+                    <div class="emp-search-popup-header d-flex justify-content-between align-items-center px-2 py-1 border-bottom bg-lightgray">
+                        <small class="text-secondary">@SearchResults.Count result(s)</small>
+                        <button type="button"
+                                class="card px-2 py-1 text-center mb-btn mb-btn-gray emp-close-btn"
+                                @onclick="@CloseResults">
+                            Close &#x2715;
+                        </button>
+                    </div>
+
+                    <div class="emp-search-popup-list">
+                    @if (!SearchResults.Any())
+                    {
+                        <div class="text-center text-secondary p-3 small">No employees found.</div>
+                    }
+                    else
+                    {
+                        <ul class="k-list-ul list-unstyled m-0">
+                            @foreach (var emp in SearchResults)
+                            {
+                                var isAdded = AssignedEmployees.Any(a => a.EmpNumber == emp.EmpNumber);
+
+                                <li class="k-list-item d-flex justify-content-between align-items-center gap-2 px-2 py-1">
+                                    <div class="d-flex flex-column" style="min-width:0">
+                                        <span class="text-truncate">@emp.Fullname</span>
+                                        <small class="text-secondary text-truncate">@emp.EmpNumber@(string.IsNullOrWhiteSpace(emp.ClName) ? "" : $" - {emp.ClName}")</small>
+                                    </div>
+
+                                    <button type="button"
+                                            class="card text-center mb-btn @(isAdded ? "mb-btn-gray" : "mb-btn-blue") emp-add-btn"
+                                            title="@(isAdded ? "Already added" : "Add to this insurance")"
+                                            disabled="@isAdded"
+                                            @onclick="@(() => AddEmployee(emp))">
+                                        @(isAdded ? "✓" : "+")
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    </div>
+
+                </div>
+            }
+
+        </div>
+
+        <div class="ins-grid-fill">
+        <TelerikGrid TItem="OEmpmasModel"
+                     Data="@AssignedEmployees"
+                     Navigable="true"
+                     Sortable="true"
+                     FilterMode="@GridFilterMode.FilterMenu"
+                     SelectionMode="@GridSelectionMode.Multiple"
+                     SelectedItems="@SelectedEmployees"
+                     SelectedItemsChanged="@((IEnumerable<OEmpmasModel> items) => OnEmployeeSelectionChanged(items))"
+                     Pageable="true"
+                     @bind-PageSize="@EmployeePageSize"
+                     Height="100%">
+
+            <GridColumns>
+
+                @* --- CHECKBOX --- *@
+                <GridCheckboxColumn SelectAll="true"
+                                    SelectAllMode="@GridSelectAllMode.All"
+                                    CheckBoxOnlySelection="true"
+                                    Width="50px" />
+
+                @* --- EMPLOYEE NAME --- *@
+                <GridColumn Field="@nameof(OEmpmasModel.Fullname)"
+                            Title="Employee Name"
+                            Width="220px" />
+
+                @* --- EMPLOYEE STATUS --- *@
+                <GridColumn Field="@nameof(OEmpmasModel.EmpStatus)"
+                            Title="Employee Status"
+                            Width="140px" />
+
+                @* --- CLIENT NAME --- *@
+                <GridColumn Field="@nameof(OEmpmasModel.ClName)"
+                            Title="Client Name"
+                            Width="180px" />
+
+            </GridColumns>
+
+            <NoDataTemplate>
+                <div class="text-center text-secondary p-4">
+                    @(SelectedInsurance == null
+                        ? "Select an insurance to view or add employees."
+                        : "No employees added to this insurance yet.")
+                </div>
+            </NoDataTemplate>
+
+        </TelerikGrid>
+        </div>
+    </div>
+
+</div>
+
+
+@code {
+    [CascadingParameter]
+    public UserClaimsModel Uc { get; set; } = new();
+
+    [CascadingParameter]
+    public V2054Model V { get; set; } = new();
+
+    [CascadingParameter]
+    public TelerikNotification? NotificationRef { get; set; }
+
+    [CascadingParameter]
+    public DialogFactory? DialogsRef { get; set; }
+
+
+    [Parameter]
+    public EventCallback ChildAction { get; set; }
+
+
+    // Insurance type shown in this tab: "Life" or "Accident" (see V2054Model.InsuranceTypes)
+    [Parameter]
+    public string InsuranceType { get; set; } = "Life";
+
+    private IEnumerable<OInsuranceModel> Insurances =>
+        (V.Insurances ?? new()).Where(i => i != null
+            && string.Equals(i.InsuranceType?.Trim(), InsuranceType, StringComparison.OrdinalIgnoreCase))!;
+
+    private IEnumerable<OInsuranceModel> SelectedInsurances { get; set; } = new List<OInsuranceModel>();
+
+    private OInsuranceModel? SelectedInsurance { get; set; }
+
+
+    // Employees assigned to the selected insurance (loaded from the DB when an insurance row is clicked)
+    private List<OEmpmasModel> AssignedEmployees { get; set; } = new();
+
+    private IEnumerable<OEmpmasModel> SelectedEmployees { get; set; } = new List<OEmpmasModel>();
+
+    // True while an add / remove is being written to the DB (prevents double clicks)
+    private bool IsSaving { get; set; }
+
+    private bool IsLife => string.Equals(InsuranceType, "Life", StringComparison.OrdinalIgnoreCase);
+
+
+    // Search box
+    private string? SearchKey { get; set; }
+
+    private bool IsSearching { get; set; }
+
+    private bool ShowResults { get; set; }
+
+    private List<OEmpmasModel> SearchResults { get; set; } = new();
+
+    private string SearchPlaceholder =>
+        SelectedInsurance == null
+            ? "Select an insurance first"
+            : "Enter employee name";
+
+
+    private int InsurancePageSize { get; set; } = 10;
+
+    private int EmployeePageSize { get; set; } = 10;
+
+    private List<int?> PageSizes = new() { 10, 25, 50, null };
+
+
+    private async Task OnInsuranceRowClick(GridRowClickEventArgs args)
+    {
+        if (args.Item is not OInsuranceModel insurance) return;
+
+        SelectedInsurance  = insurance;
+        SelectedInsurances = new List<OInsuranceModel> { insurance };
+        CloseResults();
+
+        await LoadAssignedEmployees();
+    }
+
+
+    // Loads the employees assigned to the selected insurance from the DB
+    private async Task LoadAssignedEmployees()
+    {
+        AssignedEmployees  = [];
+        SelectedEmployees  = [];
+
+        if (SelectedInsurance == null) return;
+
+        try
+        {
+            // Life insurance is stored on Empmas; Accident insurance is stored in Insurance_accident
+            List<OEmpmasModel?>? res;
+
+            if (IsLife)
+            {
+                res = await _empmas._02ByInsurance(SelectedInsurance, Uc.OpisDb, Uc.Conn);
+            }
+            else
+            {
+                res = await _insurance._02ByInsurance(SelectedInsurance, Uc.OpisDb, Uc.Conn);
+            }
+
+            AssignedEmployees = (res ?? new()).Where(e => e != null).Select(e => e!).ToList();
+
+            // every employee in the table is shown checked; unchecking removes it
+            SelectedEmployees = AssignedEmployees.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to load employees for this insurance.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+    }
+
+
+    private async Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == "NumpadEnter") await SearchEmployees();
+        else if (e.Key == "Escape") CloseResults();
+    }
+
+
+    private async Task SearchEmployees()
+    {
+        if (SelectedInsurance == null)
+        {
+            NotificationRef?.Show("Please select an insurance first.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        var skey = SearchKey?.Trim();
+        if (string.IsNullOrWhiteSpace(skey) || skey.Length < 2)
+        {
+            NotificationRef?.Show("Enter at least 2 letters of the employee name.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        IsSearching = true;
+
+        try
+        {
+            var res = await _empmas._02ByLNameAndFNames(skey, Uc.OpisDb, Uc.Conn) ?? new();
+
+            SearchResults = res
+                .Where(e => e != null)
+                .Select(e =>
+                {
+                    e!.Fullname = $"{e.EmpLastNm?.Trim()}, {e.EmpFirstNm?.Trim()} {e.EmpMidNm?.Trim()}".Trim().TrimEnd(',');
+                    return e;
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            SearchResults = new();
+            NotificationRef?.Show("Unable to search employees.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            IsSearching = false;
+            ShowResults = true;
+        }
+    }
+
+
+    // Any click inside this tab (except the search bar, which stops propagation) closes the results.
+    // Unlike a full-screen backdrop, this does not block touch scrolling on mobile.
+    private void CloseResultsOnOutsideClick()
+    {
+        if (ShowResults) CloseResults();
+    }
+
+
+    private void CloseResults()
+    {
+        ShowResults   = false;
+        SearchResults = new();
+    }
+
+
+    // Every employee in the table stays checked; unchecking removes the insurance from the employee right away
+    private async Task OnEmployeeSelectionChanged(IEnumerable<OEmpmasModel> items)
+    {
+        if (SelectedInsurance == null || IsSaving) return;
+
+        var current = AssignedEmployees;
+
+        var keep    = items.Select(i => i.EmpNumber).ToHashSet();
+        var removed = current.Where(e => !keep.Contains(e.EmpNumber)).ToList();
+
+        if (removed.Count == 0)
+        {
+            SelectedEmployees = current.ToList();
+            return;
+        }
+
+        // Removing deletes the insurance from the employee right away, so every untick is confirmed
+        bool removingAll = removed.Count == current.Count;
+
+        if (DialogsRef != null)
+        {
+            var text = removed.Count == 1
+                ? $"Remove {removed[0].Fullname} from {SelectedInsurance.Name}?"
+                : removingAll
+                    ? $"Remove all {removed.Count} employees from {SelectedInsurance.Name}?"
+                    : $"Remove {removed.Count} employees from {SelectedInsurance.Name}?";
+
+            var confirmed = await DialogsRef.ConfirmAsync(text, "Remove Employees");
+
+            if (!confirmed)
+            {
+                await RestoreSelection(current);
+                return;
+            }
+        }
+
+        IsSaving = true;
+
+        try
+        {
+            var empnumbers = removed.Select(e => e.EmpNumber ?? "").Where(n => n != "").ToList();
+
+            if (IsLife) await _empmas._03ClearInsurance(empnumbers, Uc.OpisDb, Uc.Conn);
+            else        await _insurance._04ByEmpnumbers(empnumbers, Uc.OpisDb, Uc.Conn);
+
+            AssignedEmployees = current.Where(e => keep.Contains(e.EmpNumber)).ToList();
+            SelectedEmployees = AssignedEmployees.ToList();
+
+            var msg = removed.Count == 1
+                ? $"{removed[0].Fullname} removed from {SelectedInsurance.Name}."
+                : $"{removed.Count} employees removed from {SelectedInsurance.Name}.";
+
+            NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show("Unable to remove the employee(s) from this insurance.", ThemeConstants.Notification.ThemeColor.Error);
+            await RestoreSelection(current);   // nothing removed: keep them checked
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+
+    // Puts the checkboxes back after a cancelled / failed removal.
+    // The grid has already unticked the boxes itself (incl. the header "select all"), and it ignores a
+    // selection that is identical to the one before the click, so clear it for one render, then restore.
+    private async Task RestoreSelection(List<OEmpmasModel> employees)
+    {
+        SelectedEmployees = new List<OEmpmasModel>();
+        StateHasChanged();
+        await Task.Yield();
+
+        SelectedEmployees = employees.ToList();
+        StateHasChanged();
+    }
+
+
+    // Clicking + assigns the insurance to the employee right away (no separate Save)
+    private async Task AddEmployee(OEmpmasModel emp)
+    {
+        if (SelectedInsurance == null)
+        {
+            NotificationRef?.Show("Please select an insurance first.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        if (IsSaving) return;
+
+        if (AssignedEmployees.Any(e => e.EmpNumber == emp.EmpNumber))
+        {
+            NotificationRef?.Show($"{emp.Fullname} is already in this insurance.", ThemeConstants.Notification.ThemeColor.Warning);
+            return;
+        }
+
+        IsSaving = true;
+
+        try
+        {
+            // An employee can have only one insurance in total
+            var conflict = await GetInsuranceConflict(emp);
+            if (conflict != null)
+            {
+                NotificationRef?.Show(conflict, ThemeConstants.Notification.ThemeColor.Warning);
+                return;
+            }
+
+            var empnumbers = new List<string> { emp.EmpNumber ?? "" };
+
+            if (IsLife) await _empmas._03AssignInsurance(empnumbers, SelectedInsurance, Uc.OpisDb, Uc.Conn);
+            else        await _insurance._03AssignInsurance(empnumbers, SelectedInsurance, Uc.OpisDb, Uc.Conn);
+
+            // Replace the list instance so the grid picks up the change
+            AssignedEmployees = new List<OEmpmasModel>(AssignedEmployees) { emp };
+            SelectedEmployees = new List<OEmpmasModel>(SelectedEmployees) { emp };
+
+            NotificationRef?.Show($"{emp.Fullname} added to {SelectedInsurance.Name}.", ThemeConstants.Notification.ThemeColor.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            NotificationRef?.Show($"Unable to add {emp.Fullname} to this insurance.", ThemeConstants.Notification.ThemeColor.Error);
+        }
+        finally
+        {
+            IsSaving = false;
+        }
+    }
+
+
+    // An employee can have only ONE insurance in total (Life OR Accident).
+    // Returns a warning message if the employee already has a different insurance, otherwise null.
+    private async Task<string?> GetInsuranceConflict(OEmpmasModel emp)
+    {
+        var empnumber = emp.EmpNumber ?? "";
+        var name      = string.IsNullOrWhiteSpace(emp.Fullname) ? empnumber : emp.Fullname;
+
+        // Life insurance lives on Empmas
+        var life = (await _empmas._02(empnumber, Uc.OpisDb, Uc.Conn))?.FirstOrDefault();
+        if (life != null && !string.IsNullOrWhiteSpace(life.Insurance)
+            && !IsSelectedInsurance("Life", life.Insurance, life.PolicyNo, life.FaceValue, life.Premium, life.InsExpire))
+        {
+            return $"{name} already has Life insurance {life.Insurance?.Trim()} " +
+                   $"(Policy {life.PolicyNo?.Trim()}, expires {life.InsExpire:MM/dd/yyyy}). " +
+                   "Remove them from that insurance first.";
+        }
+
+        // Accident insurance lives in Insurance_accident
+        var accident = await _insurance._02(empnumber, Uc.OpisDb!, Uc.Conn!);
+        if (accident != null && !string.IsNullOrWhiteSpace(accident.Insurance)
+            && !IsSelectedInsurance("Accident", accident.Insurance, accident.PolicyNo, accident.FaceValue, accident.Premium, accident.InsExpire))
+        {
+            return $"{name} already has Accident insurance {accident.Insurance?.Trim()} " +
+                   $"(Policy {accident.PolicyNo?.Trim()}, expires {accident.InsExpire:MM/dd/yyyy}). " +
+                   "Remove them from that insurance first.";
+        }
+
+        return null;
+    }
+
+
+    // An insurance is identified by ALL its fields (the same policy can exist again with another date / amounts),
+    // compared the same way as the SQL: text trimmed and case-insensitive, amounts to 2 decimals, date only.
+    private bool IsSelectedInsurance(string type, string? insurance, string? policyNo,
+                                     double? faceValue, double? premium, DateTime? insExpire)
+    {
+        return SelectedInsurance != null
+            && string.Equals(InsuranceType, type, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(insurance?.Trim(), SelectedInsurance.Name?.Trim(), StringComparison.OrdinalIgnoreCase)
+            && string.Equals(policyNo?.Trim(), SelectedInsurance.PolicyNo?.Trim(), StringComparison.OrdinalIgnoreCase)
+            && Math.Round(faceValue ?? 0, 2) == Math.Round(SelectedInsurance.FaceValue ?? 0, 2)
+            && Math.Round(premium ?? 0, 2)   == Math.Round(SelectedInsurance.Premiums ?? 0, 2)
+            && insExpire?.Date == SelectedInsurance.InsExpire?.Date;
+    }
+}
+
+
+<style>
+    /* Both columns (insurance grid / search + employee grid) have the same height, with a min and a max.
+       The grid fills whatever space is left in its column, so both sides end at the same line. */
+    .ins-col {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        height: clamp(320px, 50vh, 420px);
+    }
+
+    .ins-grid-fill {
+        flex: 1 1 0;
+        min-height: 0;
+    }
+
+    .ins-clickable-grid .k-grid-content tr {
+        cursor: pointer;
+    }
+
+    /* Search bar looks like the grid toolbar and is attached to the top of the grid */
+    .emp-search {
+        position: relative;
+        z-index: 20;
+        display: block;
+        overflow: visible;
+        border-width: 1px 1px 0 1px;
+        border-style: solid;
+        border-color: rgba(0, 0, 0, .08);
+        border-radius: 4px 4px 0 0;
+    }
+
+    /* k-toolbar adds an empty ::before for item alignment; with display:block it becomes
+       an empty ~30px line above the search row, so hide it */
+    .emp-search::before {
+        display: none;
+    }
+
+    .emp-grid-card .k-grid {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+
+
+    .emp-close-btn {
+        font-size: .8rem;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    /* .k-toolbar > * makes toolbar children inline-flex with centered items; make the popup a full-width
+       column instead: fixed header on top, scrollable list below */
+    .emp-search > .emp-search-popup {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        text-align: left;
+    }
+
+    .emp-search-popup-header {
+        flex-shrink: 0;
+    }
+
+    .emp-search-popup-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .emp-search-popup .k-list-ul,
+    .emp-search-popup .k-list-item {
+        width: 100%;
+    }
+
+    .emp-search-popup {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        max-height: 300px;
+        overflow: hidden;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, .15);
+    }
+
+    .emp-search-popup .k-list-item:hover {
+        background-color: rgba(0, 0, 0, .04);
+    }
+
+    .emp-add-btn {
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        line-height: 1;
+        padding: 0;
+    }
+</style>
