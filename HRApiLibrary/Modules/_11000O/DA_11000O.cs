@@ -1,3 +1,4 @@
+using HRApiLibrary.DataAccess._10_Pis;
 using HRApiLibrary.DataAccess._90_Utils.Interface;
 
 namespace HRApiLibrary.Modules._11000O;
@@ -6,7 +7,21 @@ public class DA_11000O : IDA_11000O
 {
     private readonly I_90_001_MySqlDataAccess _sql;
 
-    public DA_11000O(I_90_001_MySqlDataAccess sql) { _sql = sql; }
+    private readonly IAtttemplatereqhdrDataAccess _tplReq;
+
+    public DA_11000O(I_90_001_MySqlDataAccess sql, IAtttemplatereqhdrDataAccess tplReq) { _sql = sql; _tplReq = tplReq; }
+
+    private async Task ApplyDueScheduleChanges(string pisdb, string conn)
+    {
+        try
+        {
+            var due = await _sql.FetchData<M11000_DueReq, dynamic>($@"select distinct h.UserId, e.Id EmpmasId
+                    from {pisdb}.Atttemplatereqhdr h join {pisdb}.Empmas e on e.SystemId = h.UserId
+                    where h.Status = 'A' and date(h.Effectivity) <= curdate()", new { }, conn) ?? [];
+            foreach (var d in due) await _tplReq._03AttTemplateReqhdr_to_AttTemplate(d.UserId, d.EmpmasId, pisdb, conn);
+        }
+        catch { }
+    }
 
     private async Task<int> Count(string sql, object p, bool legacy, string conn)
     {
@@ -44,7 +59,7 @@ public class DA_11000O : IDA_11000O
                     where date(PunchInDate) = @Today group by EmpmasId", p, conn) ?? []).ToDictionary(x => x.EmpmasId, x => x.FirstIn);
 
             var away = new HashSet<string>(((await _sql.FetchLegacy<string, dynamic>($@"select trim(EMPNUMBER) from {opisdb}.ob1 where `START` <= @Today and `END` >= @Today
-                    union select trim(EMPNUMBER) from {opisdb}.leave1 where `START` <= @Today and `END` >= @Today", p, conn)) ?? []));
+                    union select trim(EMPNUMBER) from {opisdb}.leave1 where `START` <= @Today and `END` >= @Today and ifnull(NO_DAYS, 1) >= 1", p, conn)) ?? []));
 
             var grace = new Dictionary<int, int>();
             if (!string.IsNullOrEmpty(paydb) && !string.IsNullOrEmpty(opaydb))
@@ -94,6 +109,7 @@ public class DA_11000O : IDA_11000O
         var today = DateTime.Today;
         var p = new { Today = today };
         var h = new M11000_Home { Today = today };
+        await ApplyDueScheduleChanges(pisdb, conn);
 
         h.Active = await Count($@"select count(*) from {opisdb}.Empmas e left join {opisdb}.empstat s on s.CODE = e.EmpStat_
                                   where ifnull(s.ISRESIGNED, '0') <> '1'", p, true, conn);
@@ -209,3 +225,5 @@ public class M11000_SchedEmp { public int EmpmasId { get; set; } public string? 
 public class M11000_Tpl { public int EmpmasId { get; set; } public int? Att { get; set; } public int? SchedIn { get; set; } public string? Duty { get; set; } }
 public class M11000_FirstIn { public int EmpmasId { get; set; } public DateTime FirstIn { get; set; } }
 public class M11000_Grace { public int EmpmasId { get; set; } public int Minutes { get; set; } }
+
+public class M11000_DueReq { public int UserId { get; set; } public int EmpmasId { get; set; } }

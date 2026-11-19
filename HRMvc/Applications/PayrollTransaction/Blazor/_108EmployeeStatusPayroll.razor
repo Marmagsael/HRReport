@@ -1,0 +1,58 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using Telerik.Blazor.Components
+
+@inject IOEmpStatusDataAccess _status
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef"
+                     HorizontalPosition="NotificationHorizontalPosition.Center"
+                     VerticalPosition="NotificationVerticalPosition.Top" />
+
+<_00BT_FullW HdrCaption="Employee Status Visible in Payroll Computation">
+    <Details>
+    <div class="p-2" style="max-width:560px;">
+        <div class="small text-muted mb-2">Employees with a checked status are included when a payroll is created. A check is saved at once.</div>
+        <TelerikGrid Data="@statuses" Height="calc(100vh - 260px)" Pageable="false" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+            <GridColumns>
+                <GridColumn Field="@nameof(EmpStatusModel.Name)" Title="Employee Status" />
+                <GridColumn Title="In Payroll" Width="100px" TextAlign="ColumnTextAlign.Center">
+                    <Template>
+                        @{ var s = (EmpStatusModel)context; }
+                        <TelerikCheckBox Value="@s.IsInPayroll" ValueChanged="@((bool v) => Toggle(s, v))" />
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+            <NoDataTemplate><div class="p-3 text-muted">No employee status found.</div></NoDataTemplate>
+        </TelerikGrid>
+    </div>
+    </Details>
+</_00BT_FullW>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    TelerikNotification? NotificationRef;
+    List<EmpStatusModel> statuses = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Uc?.OpisDb) || string.IsNullOrEmpty(Uc.Conn)) return;
+        try { statuses = await _status._02(Uc.OpisDb, Uc.Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("108 load failed: " + ex); }
+    }
+
+    async Task Toggle(EmpStatusModel s, bool v)
+    {
+        try
+        {
+            await _status._03(s.Code, v ? 1 : 0, Uc!.OpisDb!, Uc.Conn!);
+            s.IsInPayroll = v;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine("108 save failed: " + ex);
+            NotificationRef?.Show("Unable to save the status.", ThemeConstants.Notification.ThemeColor.Warning);
+        }
+    }
+}

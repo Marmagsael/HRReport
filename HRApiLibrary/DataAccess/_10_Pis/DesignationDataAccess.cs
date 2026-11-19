@@ -16,11 +16,11 @@ public class DesignationDataAccess : IDesignationDataAccess
 
     public async Task<DesignationModel?> _01(DesignationModel designation, string? schema, string? conn)
     {
-        string? sql = $@"Insert into {schema}.Designation (CODE, NAME, sort) values (@CODE, @NAME, @sort)";
+        string? sql = $@"Insert into {schema}.Designation (CODE,  NAME,  sort) values 
+                                                          (@CODE, @NAME, @sort)";
         await _sql.ExecuteCmd<dynamic>(sql, designation, conn);
 
         sql = $@"SELECT * FROM {schema}.Designation WHERE ID = (SELECT @@IDENTITY)";
-
         var res = await _sql.FetchData<DesignationModel?, dynamic>(sql, new { }, conn);
 
         return res.FirstOrDefault();

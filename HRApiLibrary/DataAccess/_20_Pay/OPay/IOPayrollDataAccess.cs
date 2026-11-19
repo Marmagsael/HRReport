@@ -11,6 +11,15 @@ public class OPayLockCheck
     public List<string>  Over40Percent  { get; set; } = [];     //--- deductions are 40% or more of earnings : asks the same
 }
 
+//--- payrollnew4 bFetchData.Click : status of the TRN and the employees the dialog lists (draft/locked employees, otherwise the group's) ---
+public class OPayNewFetch
+{
+    public string        Status    { get; set; } = "New";       //--- New, Updated (draft) or Lock
+    public DateTime?     AttStart  { get; set; }                //--- from the draft header
+    public DateTime?     AttEnd    { get; set; }
+    public List<OPayEmp> Employees { get; set; } = [];
+}
+
 public interface IOPayrollDataAccess
 {
     Task<List<OPayClient>> _02Clients(string paydb, string pisdb, string conn);
@@ -18,7 +27,11 @@ public interface IOPayrollDataAccess
 
     //--- payrollnew4 bLoad.Click : paymain_save and all the *_fetch procedures ---
     Task<OPayrollSession> _01Load(string yy4, string mm, string prd, string grpCode, DateTime attStart, DateTime attEnd,
-                                  string paydb, string pisdb, string conn, IProgress<string>? progress = null);
+                                  string paydb, string pisdb, string conn, IProgress<string>? progress = null, IEnumerable<string>? selected = null);
+
+    //--- payrollnew4 bFetchData.Click ---
+    Task<List<OPayIssue>> _02Readiness(double groupRate, IEnumerable<string> empNumbers, string paydb, string pisdb, string conn);
+    Task<OPayNewFetch> _02NewFetch(string yy4, string mm, string prd, string grpCode, string paydb, string pisdb, string conn);
 
     Task _01LoadEmployeeData(OPayrollSession s, IProgress<string>? progress = null);
     Task<List<OPayEmp>> _02Employees(OPayrollSession s, IEnumerable<string> empNumbers);

@@ -48,6 +48,27 @@ public class OVisibleAccountDataAccess : IOVisibleAccountDataAccess
         return rows;
     }
 
+    //--- payrollnew4 grdCOA : accounts of chartofacct (AcctType E, hasRateOverBasic 1) marked by show01 / show02 of the period, exactly as saved ---
+    public async Task<List<VisibleAccountModel>> _02Show(string? period, string schema, string conn)
+    {
+        var col  = Column(period);
+        var rows = await _sql.FetchLegacy<VisibleAccountModel, dynamic>(
+            $@"select trim(AcctNumber) AcctNumber, trim(AcctName) AcctName, trim(ifnull(shortDesc,'')) ShortDesc, ifnull({col},0) Shown
+               from {schema}.chartofacct
+               where AcctType = 'E' and hasRateOverBasic = '1'
+               order by AcctType desc, AcctNumber", new { }, conn) ?? new();
+        foreach (var r in rows) r.IsShown = r.Shown != 0;
+        return rows;
+    }
+
+    //--- payrollnew4 Check1.Click : update chartofacct set show01 / show02 = mark where acctNumber = the clicked account ---
+    public async Task _03Show(string? period, string acctNumber, bool shown, string schema, string conn)
+    {
+        if (period is not ("01" or "02")) return;
+        await _sql.ExecuteLegacyCmd($"update {schema}.chartofacct set {Column(period)} = @Mrk where trim(AcctNumber) = @Acct",
+            new { Mrk = shown ? 1 : 0, Acct = acctNumber.Trim() }, conn);
+    }
+
     public async Task _03(string? period, List<string> shown, string schema, string conn)
     {
         var col = Column(period);
@@ -63,4 +84,6 @@ public interface IOVisibleAccountDataAccess
 {
     Task<List<VisibleAccountModel>> _02(string? period, string schema, string conn);
     Task                            _03(string? period, List<string> shown, string schema, string conn);
+    Task<List<VisibleAccountModel>> _02Show(string? period, string schema, string conn);
+    Task                            _03Show(string? period, string acctNumber, bool shown, string schema, string conn);
 }

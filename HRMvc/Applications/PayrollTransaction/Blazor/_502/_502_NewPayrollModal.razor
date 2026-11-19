@@ -1,0 +1,306 @@
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay.OPay
+@using Telerik.Blazor.Components
+
+<TelerikWindow Modal="true" @bind-Visible="@v502.IsNewPayrollOpen" Width="1060px" Height="640px">
+    <WindowTitle>New Payroll Entry</WindowTitle>
+    <WindowContent>
+        <div class="d-flex gap-2 align-items-end flex-wrap mb-2">
+            <div>
+                <div class="small fw-bold">PAYROLL GROUP</div>
+                <TelerikDropDownList Data="@clients" TItem="OPayClient" TValue="string"
+                                     TextField="@nameof(OPayClient.ClName)" ValueField="@nameof(OPayClient.Code)"
+                                     Value="@grpCode" ValueChanged="@((string v) => GroupChanged(v))" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains"
+                                     Width="360px" DefaultText="Select payroll group">
+                    <DropDownListSettings>
+                        <DropDownListPopupSettings Height="50vh" />
+                    </DropDownListSettings>
+                </TelerikDropDownList>
+            </div>
+            <div>
+                <div class="small fw-bold">YEAR</div>
+                <TelerikDropDownList Data="@years" TItem="string" TValue="string" Value="@year" ValueChanged="@(async (string v) => { year = v; await PeriodChanged(); })" Width="90px" />
+            </div>
+            <div>
+                <div class="small fw-bold">MONTH</div>
+                <TelerikDropDownList Data="@months" TItem="string" TValue="string" Value="@month" ValueChanged="@(async (string v) => { month = v; await PeriodChanged(); })" Width="75px" />
+            </div>
+            <div>
+                <div class="small fw-bold">PERIOD</div>
+                <TelerikDropDownList Data="@periods" TItem="OPayPeriod" TValue="string"
+                                     TextField="@nameof(OPayPeriod.PdNumber)" ValueField="@nameof(OPayPeriod.PdNumber)"
+                                     Value="@period" ValueChanged="@(async (string v) => { period = v; await PeriodChanged(); })" Width="75px" />
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 align-items-end flex-wrap mb-2">
+            <div>
+                <div class="small fw-bold">ATTENDANCE START</div>
+                <TelerikDatePicker @bind-Value="@attStart" Format="MMM dd, yyyy" Width="160px" />
+            </div>
+            <div>
+                <div class="small fw-bold">ATTENDANCE END</div>
+                <TelerikDatePicker @bind-Value="@attEnd" Format="MMM dd, yyyy" Width="160px" />
+            </div>
+            <TelerikButton OnClick="@FetchData" ThemeColor="primary" Enabled="@(!string.IsNullOrEmpty(grpCode) && !busy)">Fetch Data</TelerikButton>
+            <TelerikButton OnClick="@FilterSelected" Enabled="@(rows.Count > 0 && !busy)">Filter Selected</TelerikButton>
+            <div class="ms-auto small">
+                <span class="fw-bold">Payroll Status:</span> @(status ?? "-") &nbsp; <span class="fw-bold">Employees:</span> @rows.Count
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+        <div style="flex:1 1 60%; min-width:0;">
+        <TelerikGrid Data="@rows" Height="340px" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+            <GridColumns>
+                <GridColumn Width="40px" Title="" TextAlign="ColumnTextAlign.Center">
+                    <HeaderTemplate>
+                        <TelerikCheckBox Value="@(rows.Count > 0 && rows.All(x => x.Mrk))" ValueChanged="@((bool v) => { foreach (var x in rows) x.Mrk = v; })" />
+                    </HeaderTemplate>
+                    <Template>
+                        @{ var r = (Row)context; }
+                        <TelerikCheckBox @bind-Value="r.Mrk" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="@nameof(Row.No)" Title="No." Width="60px" TextAlign="ColumnTextAlign.Right" />
+                <GridColumn Field="@nameof(Row.EmpNumber)" Title="Emp. No." Width="100px" />
+                <GridColumn Field="@nameof(Row.Name)" Title="Emp. Name" />
+                <GridColumn Field="@nameof(Row.StatName)" Title="Status" Width="140px" />
+            </GridColumns>
+            <NoDataTemplate><div class="p-3 text-muted">Select the payroll group and period, then Fetch Data.</div></NoDataTemplate>
+        </TelerikGrid>
+        </div>
+        <div style="flex:1 1 40%; min-width:0;">
+        <TelerikGrid Data="@accts" Height="340px" Sortable="false" Size="@ThemeConstants.Grid.Size.Small">
+            <GridColumns>
+                <GridColumn Width="40px" Title="" TextAlign="ColumnTextAlign.Center">
+                    <Template>
+                        @{ var a = (VisibleAccountModel)context; }
+                        <TelerikCheckBox Value="@a.IsShown" ValueChanged="@((bool v) => ToggleAccount(a, v))" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Field="@nameof(VisibleAccountModel.AcctName)" Title="Account Name" />
+            </GridColumns>
+            <NoDataTemplate><div class="p-3 text-muted">No accounts.</div></NoDataTemplate>
+        </TelerikGrid>
+        <div class="small text-muted mt-1">@(period is "01" or "02" ? $"Checked accounts show in the manhour grid for period {period}." : "Checked accounts show in the manhour grid. Default marks follow period 01 and are not saved.")</div>
+        </div>
+        </div>
+
+        @if (issues.Count > 0)
+        {
+            <div class="small mt-1 p-2" style="border:1px solid #f1b5b5; background:#fdeaea; border-radius:6px; color:#8a1f1f;">
+                <div class="fw-bold mb-1">Payroll cannot be loaded yet. Please complete the setup:</div>
+                @foreach (var i in issues)
+                {
+                    <div>&bull; @i.Text @if (!string.IsNullOrEmpty(i.Link)) { <a href="@i.Link" target="_blank">Open @i.LinkText</a> }</div>
+                }
+            </div>
+        }
+        @if (!string.IsNullOrEmpty(msg))
+        {
+            <div class="small text-danger mt-1">@msg</div>
+        }
+        <div class="d-flex gap-2 justify-content-end mt-2">
+            <TelerikButton OnClick="@Load" ThemeColor="primary" Enabled="@canLoad">Load</TelerikButton>
+            <TelerikButton OnClick="@Close">Close</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+@inject IOPayrollDataAccess _payroll
+@inject IOVisibleAccountDataAccess _visible
+@inject NavigationManager _nav
+
+@code {
+    [CascadingParameter] public UserClaimsModel Uc   { get; set; } = new();
+    [CascadingParameter] public V502            v502 { get; set; } = new();
+
+    class Row
+    {
+        public bool Mrk { get; set; } = true;
+        public int No { get; set; }
+        public string EmpNumber { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string StatName { get; set; } = "";
+    }
+
+    List<OPayClient> clients = [];
+    List<string> years   = Enumerable.Range(DateTime.Now.Year - 2, 4).Select(y => y.ToString()).ToList();
+    List<string> months  = Enumerable.Range(1, 12).Select(m => m.ToString("00")).ToList();
+    static readonly List<OPayPeriod> DefaultPeriods =
+    [
+        new() { PdNumber = "01", PdName = "1st period" }, new() { PdNumber = "02", PdName = "2nd period" },
+        new() { PdNumber = "03", PdName = "3rd period" }, new() { PdNumber = "04", PdName = "4th period" },
+        new() { PdNumber = "05", PdName = "5th period" },
+    ];
+    List<OPayPeriod> periods = DefaultPeriods;
+    List<Row> rows = [];
+    List<VisibleAccountModel> accts = [];
+
+    string? grpCode;
+    string year   = DateTime.Now.Year.ToString();
+    string month  = DateTime.Now.Month.ToString("00");
+    string period = DateTime.Now.Day > 15 ? "02" : "01";
+    DateTime? attStart;
+    DateTime? attEnd;
+    string? status;
+    string? msg;
+    bool busy, wasOpen, listsLoaded;
+
+    List<OPayIssue> issues = [];
+    bool canLoad => !busy && status != null && status != "Lock" && rows.Any(r => r.Mrk) && issues.Count == 0;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (v502.IsNewPayrollOpen && !wasOpen)
+        {
+            wasOpen = true;
+            await Opened();
+            StateHasChanged();
+        }
+        else if (!v502.IsNewPayrollOpen) wasOpen = false;
+    }
+
+    async Task Opened()
+    {
+        rows = []; status = null; msg = null; issues = [];
+        if (!listsLoaded && PeriodQuery.Read(_nav.Uri) is { } pq && years.Contains(pq.Year.ToString()))
+        {
+            year = pq.Year.ToString(); month = pq.Month.ToString("00"); period = pq.Period.ToString("00");
+        }
+        SetDefaultDates();
+        if (listsLoaded || string.IsNullOrEmpty(Uc.OpayDb) || string.IsNullOrEmpty(Uc.OpisDb) || string.IsNullOrEmpty(Uc.Conn)) return;
+        try
+        {
+            clients = await _payroll._02Clients(Uc.OpayDb, Uc.OpisDb, Uc.Conn);
+            var fromDb = await _payroll._02Periods(Uc.OpayDb, Uc.Conn);
+            if (fromDb.Count > 0) periods = fromDb;
+            listsLoaded = true;
+        }
+        catch (Exception ex) { msg = "Unable to load payroll groups: " + ex.Message; }
+        await LoadAccounts();
+    }
+
+    async Task LoadAccounts()
+    {
+        if (string.IsNullOrEmpty(Uc.OpayDb) || string.IsNullOrEmpty(Uc.Conn)) return;
+        try { accts = await _visible._02Show(period, Uc.OpayDb, Uc.Conn); }
+        catch (Exception ex) { accts = []; msg = "Unable to load accounts: " + ex.Message; }
+    }
+
+    //--- payrollnew4 Check1.Click : the mark is saved at once to chartofacct.show01 / show02 of the period ---
+    async Task ToggleAccount(VisibleAccountModel a, bool v)
+    {
+        a.IsShown = v;
+        if (period is not ("01" or "02")) return;
+        try { await _visible._03Show(period, a.AcctNumber, v, Uc.OpayDb!, Uc.Conn!); }
+        catch (Exception ex) { msg = "Unable to save account: " + ex.Message; }
+    }
+
+    void GroupChanged(string? v)
+    {
+        if (v == grpCode) return;
+        grpCode = v; rows = []; status = null; msg = null; issues = [];
+    }
+
+    async Task PeriodChanged()
+    {
+        rows = []; status = null; msg = null; issues = [];
+        SetDefaultDates();
+        await LoadAccounts();
+    }
+
+    void SetDefaultDates()
+    {
+        if (!int.TryParse(year, out var y) || !int.TryParse(month, out var m)) return;
+        (attStart, attEnd) = period switch
+        {
+            "01" => (new DateTime(y, m, 1),  new DateTime(y, m, 15)),
+            "02" => (new DateTime(y, m, 16), new DateTime(y, m, DateTime.DaysInMonth(y, m))),
+            _    => ((DateTime?)null, (DateTime?)null),
+        };
+    }
+
+    async Task FetchData()
+    {
+        if (string.IsNullOrEmpty(grpCode)) { msg = "Please select group from the list."; return; }
+        busy = true; msg = null;
+        try
+        {
+            var f = await _payroll._02NewFetch(year, month, period, grpCode, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+            status = f.Status;
+            if (f.AttStart != null) attStart = f.AttStart;
+            if (f.AttEnd != null)   attEnd   = f.AttEnd;
+            rows = f.Employees.Select((e, i) => new Row { No = i + 1, EmpNumber = e.EmpNumber ?? "", Name = e.Name ?? "", StatName = e.StatName ?? "" }).ToList();
+            if (rows.Count == 0) msg = "No employee found for this payroll group.";
+            await CheckReady();
+        }
+        catch (Exception ex) { msg = "Fetch failed: " + ex.Message; }
+        finally { busy = false; }
+    }
+
+    async Task FilterSelected()
+    {
+        rows = rows.Where(r => r.Mrk).Select((r, i) => { r.No = i + 1; return r; }).ToList();
+        await CheckReady();
+    }
+
+    async Task CheckReady()
+    {
+        issues = [];
+        if (rows.Count == 0) return;
+        try
+        {
+            var rate = clients.FirstOrDefault(c => c.Code == grpCode)?.Rate ?? 0;
+            issues = await _payroll._02Readiness(rate, rows.Where(r => r.Mrk).Select(r => r.EmpNumber), Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!);
+        }
+        catch (Exception ex) { msg = "Unable to check the setup: " + ex.Message; }
+    }
+
+    async Task Load()
+    {
+        if (attStart == null)  { msg = "Start of Attendance is invalid."; return; }
+        if (attEnd == null)    { msg = "End of Attendance is invalid.";   return; }
+        if (attEnd < attStart) { msg = "Invalid attendance date range.";  return; }
+        var picked = rows.Where(r => r.Mrk).Select(r => r.EmpNumber).ToList();
+        if (picked.Count == 0) { msg = "Nothing to load."; return; }
+        await CheckReady();
+        if (issues.Count > 0) return;
+
+        busy = true; msg = null;
+        v502.IsNewPayrollOpen = false;
+        v502.Session = null; v502.CurrentEmp = null; v502.IsProcessed = false; v502.TRN = "YYMMPP-00000";
+        v502.IsBusy = true; v502.Msg = "Loading payroll..."; await Notify();
+        try
+        {
+            var progress = new StepProgress(m => { v502.Msg = m; _ = Notify(); });
+            var s = await _payroll._01Load(year, month, period, grpCode!, attStart.Value, attEnd.Value, Uc.OpayDb!, Uc.OpisDb!, Uc.Conn!, progress, picked);
+            s.ShownAccts = accts.Where(a => a.IsShown).Select(a => a.AcctNumber.Trim()).ToHashSet();
+            v502.Msg = "Computing payroll...";
+            await Notify();
+            if (!s.IsLocked) OPayrollCompute.Compute(s);
+            v502.Session     = s;
+            v502.CurrentEmp  = s.Results.FirstOrDefault();
+            v502.IsProcessed = s.Status != "New";
+            v502.TRN         = s.Trn;
+            v502.Msg         = $"{s.Results.Count} employee(s) loaded. Status: {s.Status}.";
+        }
+        catch (Exception ex) { v502.Msg = "Load failed: " + ex.Message; }
+        finally { busy = false; v502.IsBusy = false; await Notify(); }
+    }
+
+    async Task Close()
+    {
+        v502.IsNewPayrollOpen = false;
+        await Notify();
+    }
+
+    async Task Notify() { if (v502.Changed != null) await v502.Changed(); }
+
+    sealed class StepProgress(Action<string> report) : IProgress<string>
+    {
+        public void Report(string value) => report(value);
+    }
+}

@@ -2,82 +2,55 @@
 @using HRApiLibrary.Models._20_Pay.M0605
 @using HRApiLibrary.Models._20_Pay.OPay
 
-<style>
-    /* First 3 TD - frozen horizontally */
-    .payroll-table td:nth-child(1) { position: sticky; left: 0; background: white; z-index: 10; }
-    .payroll-table td:nth-child(2) { position: sticky; left: 50px; background: white; z-index: 10; }
-    .payroll-table td:nth-child(3) { position: sticky; left: 85px; background: white; z-index: 10; box-shadow: inset -1px 0 0 #198754;}
-
-    /* Header - frozen vertically */
-    .payroll-table thead th { position: sticky; top: 0; background-color: white; z-index: 20; box-shadow: inset 0 -1px 0 #198754; }
-
-    /* Header + first 3 columns = highest layer */
-    .payroll-table thead th:nth-child(1) { left: 0; z-index: 30; }
-    .payroll-table thead th:nth-child(2) { left: 50px; z-index: 30; }
-    .payroll-table thead th:nth-child(3) { left: 85px; z-index: 30; border-right: 1px solid #dee2e6;}
-
-    /* Remove gaps between cells */
-    .payroll-table { border-collapse: collapse !important; border-spacing: 0 !important; }
-
-    .payroll-table th:nth-child(n+4),
-    .payroll-table td:nth-child(n+4) { border-right: 1px solid #dee2e6; }
-
-    .payroll-table tr.current td { background-color: #e8f4ec; }
-
-    /* Numbers right-aligned inside the Telerik numeric inputs */
-    .payroll-table .k-numerictextbox input.k-input-inner { text-align: right; }
-</style>
-
 @if (s != null)
 {
-    <div id="manhourGridContainer" style="width: 100%; overflow-x: auto; max-height: 80vh; overflow-y: auto; padding-bottom: .5rem;">
-        <table class="p-0 payroll-table " style="width: max-content;">
-            <thead>
-                <tr>
-                    <th class="w-50p text-center p-0 "  > No.</th>
-                    <th class="w-35p text-center p-0 "  > Mrk</th>
-                    <th class="w-250p p-0"              >Name ↔</th>
-                    @foreach (var c in cols)
-                    {
-                        <th class="w-100p text-center" title="@OPayrollCompute.Acct(s, c)">@((MarkupString)Label(c))</th>
-                    }
-                    <th class="w-100p text-center">Earnings</th>
-                    <th class="w-100p text-center">Deductions</th>
-                    <th class="w-100p text-center">Net Pay</th>
-                </tr>
-            </thead>
-            <tbody>
-                @{ int rowNumber = 0; }
-                @foreach (var r in s.Results)
+    <div id="manhourGridContainer">
+        <TelerikGrid Data="@s.Results" Class="payroll-grid" Height="80vh" Pageable="false" Sortable="false"
+                     Size="@ThemeConstants.Grid.Size.Small" OnRowClick="@OnRowClick" OnRowRender="@OnRowRender">
+            <GridColumns>
+                <GridColumn Title="No." Width="50px" Locked="true" TextAlign="ColumnTextAlign.Center">
+                    <Template>@((s.Results.IndexOf((OPayEmpResult)context) + 1)) )</Template>
+                </GridColumn>
+                <GridColumn Title="Mrk" Width="50px" Locked="true" TextAlign="ColumnTextAlign.Center">
+                    <Template>
+                        @{ var r = (OPayEmpResult)context; }
+                        <TelerikCheckBox @bind-Value="@r.IsSelected" Enabled="@(!s.IsLocked)" />
+                    </Template>
+                </GridColumn>
+                <GridColumn Title="Name ↔" Width="250px" Locked="true">
+                    <Template>@(((OPayEmpResult)context).Name)</Template>
+                </GridColumn>
+                @foreach (var c in cols)
                 {
-                    rowNumber++;
-                    <tr class="@(r == v502.CurrentEmp ? "current" : "")" @onclick="() => Select(r)">
-                        <td class="text-center"> <span> @rowNumber ) </span> </td>
-                        <td class="text-center"> <TelerikCheckBox @bind-Value="@r.IsSelected" Enabled="@(!s.IsLocked)" /> </td>
-                        <td class="text-left"> @r.Name </td>
-                        @foreach (var c in cols)
-                        {
-                            var col = c;
-                            <td class="text-end">
-                                <TelerikNumericTextBox T="double"
-                                                       Value="@(r.Hours.TryGetValue(col, out var h) ? h : 0)"
-                                                       ValueChanged="@((double v) => SetHours(r, col, v))"
-                                                       Enabled="@(!s.IsLocked)"
-                                                       Decimals="2"
-                                                       Format="N2"
-                                                       Arrows="false"
-                                                       Step="0"
-                                                       FillMode="flat"
-                                                       Width="100%" />
-                            </td>
-                        }
-                        <td class="text-end pe-1">@r.Earnings.ToString("N2")</td>
-                        <td class="text-end pe-1">@r.Deductions.ToString("N2")</td>
-                        <td class="text-end pe-1 @(r.NetStatus == NetPayStatus.Negative ? "text-danger fw-bold" : r.NetStatus == NetPayStatus.BelowMinimum ? "text-warning fw-bold" : "")">@r.Net.ToString("N2")</td>
-                    </tr>
+                    var col = c;
+                    <GridColumn Width="100px" TextAlign="ColumnTextAlign.Right">
+                        <HeaderTemplate><span title="@OPayrollCompute.Acct(s, col)">@((MarkupString)Label(col))</span></HeaderTemplate>
+                        <Template>
+                            @{ var r = (OPayEmpResult)context; }
+                            <TelerikNumericTextBox T="double"
+                                                   Value="@(r.Hours.TryGetValue(col, out var h) ? h : 0)"
+                                                   ValueChanged="@((double v) => SetHours(r, col, v))"
+                                                   Enabled="@(!s.IsLocked)"
+                                                   Decimals="2" Format="N2" Arrows="false" Step="0"
+                                                   FillMode="flat" Width="100%" />
+                        </Template>
+                    </GridColumn>
                 }
-            </tbody>
-        </table>
+                
+                <GridColumn Title="Earnings" Width="100px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@(((OPayEmpResult)context).Earnings.ToString("N2"))</Template>
+                </GridColumn>
+                <GridColumn Title="Deductions" Width="100px" TextAlign="ColumnTextAlign.Right">
+                    <Template>@(((OPayEmpResult)context).Deductions.ToString("N2"))</Template>
+                </GridColumn>
+                <GridColumn Title="Net Pay" Width="110px" TextAlign="ColumnTextAlign.Right">
+                    <Template>
+                        @{ var r = (OPayEmpResult)context; }
+                        <span class="@(r.NetStatus == NetPayStatus.Negative ? "text-danger fw-bold" : r.NetStatus == NetPayStatus.BelowMinimum ? "text-warning fw-bold" : "")">@r.Net.ToString("N2")</span>
+                    </Template>
+                </GridColumn>
+            </GridColumns>
+        </TelerikGrid>
     </div>
 }
 else
@@ -90,10 +63,19 @@ else
 @code {
     [CascadingParameter]    public  V502? v502 { get; set; } = new();
 
-    //--- Up/Down/Enter move between rows, Left/Right between cells (wwwroot/js/grid-nav.js) ------------------------------
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (s != null) await JSRuntime.InvokeVoidAsync("attachGridKeyboardNav", "manhourGridContainer");
+    }
+
+    void OnRowRender(GridRowRenderEventArgs e)
+    {
+        if (e.Item is OPayEmpResult r && r == v502?.CurrentEmp) e.Class = "current";
+    }
+
+    async Task OnRowClick(GridRowClickEventArgs e)
+    {
+        if (e.Item is OPayEmpResult r) await Select(r);
     }
 
     OPayrollSession? s => v502?.Session;

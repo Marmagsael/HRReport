@@ -1,0 +1,150 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._109O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+@inject IDA_109O _da
+
+<style>
+    .ct-root { font-size:13px; color:#1f2a37; }
+    .ct-root .k-input-inner, .ct-root .k-button { font-size:13px; }
+    .ct-root .k-input-inner { padding:4px 8px; }
+    .ct-root .k-input, .ct-root .k-picker { min-height:30px; }
+    .ct-root .k-grid td, .ct-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .ct-root .k-grid th, .ct-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:700; background:#f4f6f9; }
+    .ct-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .ct-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .ct-bar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+    .ct-note { font-size:12px; color:#7a8491; margin-bottom:8px; }
+</style>
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+
+<_00BT_FullW HdrCaption="SSS, PhilHealth and Pag-IBIG Tables">
+    <Details>
+    <div class="p-2 ct-root">
+        <TelerikTabStrip Height="calc(100vh - 150px)">
+
+            <TabStripTab Title="SSS">
+                <div class="ct-bar">
+                    <TelerikButton OnClick="@(() => sss.Add(new M109_Sss()))" Icon="@SvgIcon.Plus">Add Row</TelerikButton>
+                    <TelerikButton OnClick="@LoadSssDefault" Icon="@SvgIcon.Download">Load System Defaults</TelerikButton>
+                    <TelerikButton OnClick="@SaveSss" ThemeColor="success" Icon="@SvgIcon.Save" Enabled="@(!busy)">Save</TelerikButton>
+                </div>
+                <div class="ct-note">Defaults are the latest revision kept by the system. They are only saved when you press Save.</div>
+                <TelerikGrid Data="@sss" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Title="From" Width="130px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Sss)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Start" ValueChanged="@((double v) => r.Start = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="To" Width="130px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Sss)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.End" ValueChanged="@((double v) => r.End = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Employee" Width="110px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Sss)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Ee" ValueChanged="@((double v) => r.Ee = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Employer" Width="110px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Sss)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Er" ValueChanged="@((double v) => r.Er = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="EC" Width="100px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Sss)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Ecc" ValueChanged="@((double v) => r.Ecc = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Compensation" Width="140px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Sss)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Compensation" ValueChanged="@((double v) => r.Compensation = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@{ var r = (M109_Sss)context; }<TelerikButton OnClick="@(() => sss.Remove(r))" Icon="@SvgIcon.Trash" FillMode="@ThemeConstants.Button.FillMode.Flat" /></Template></GridColumn>
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">No SSS bracket. Add a row or load the system defaults.</div></NoDataTemplate>
+                </TelerikGrid>
+            </TabStripTab>
+
+            <TabStripTab Title="PhilHealth">
+                <div class="ct-bar">
+                    <TelerikButton OnClick="@(() => phic.Add(new M109_Phic()))" Icon="@SvgIcon.Plus">Add Row</TelerikButton>
+                    <TelerikButton OnClick="@LoadPhicDefault" Icon="@SvgIcon.Download">Load System Defaults</TelerikButton>
+                    <TelerikButton OnClick="@SavePhic" ThemeColor="success" Icon="@SvgIcon.Save" Enabled="@(!busy)">Save</TelerikButton>
+                </div>
+                <div class="ct-note">Use the fixed Employee and Employer amounts, or the percent of the salary when the amounts are zero.</div>
+                <TelerikGrid Data="@phic" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Title="From" Width="130px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Phic)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Start" ValueChanged="@((double v) => r.Start = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="To" Width="130px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Phic)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.End" ValueChanged="@((double v) => r.End = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Employee" Width="110px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Phic)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Ee" ValueChanged="@((double v) => r.Ee = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Employer" Width="110px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Phic)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Er" ValueChanged="@((double v) => r.Er = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Percent" Width="100px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Phic)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Percent" ValueChanged="@((double v) => r.Percent = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@{ var r = (M109_Phic)context; }<TelerikButton OnClick="@(() => phic.Remove(r))" Icon="@SvgIcon.Trash" FillMode="@ThemeConstants.Button.FillMode.Flat" /></Template></GridColumn>
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">No PhilHealth bracket. Add a row or load the system defaults.</div></NoDataTemplate>
+                </TelerikGrid>
+            </TabStripTab>
+
+            <TabStripTab Title="Pag-IBIG">
+                <div class="ct-bar">
+                    <TelerikButton OnClick="@(() => pagibig.Add(new M109_Pagibig()))" Icon="@SvgIcon.Plus">Add Row</TelerikButton>
+                    <TelerikButton OnClick="@LoadPagibigDefault" Icon="@SvgIcon.Download">Load System Defaults</TelerikButton>
+                    <TelerikButton OnClick="@SavePagibig" ThemeColor="success" Icon="@SvgIcon.Save" Enabled="@(!busy)">Save</TelerikButton>
+                </div>
+                <TelerikGrid Data="@pagibig" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridColumn Title="From" Width="140px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Pagibig)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Start" ValueChanged="@((double v) => r.Start = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="To" Width="150px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Pagibig)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.End" ValueChanged="@((double v) => r.End = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Employee" Width="110px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Pagibig)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Ee" ValueChanged="@((double v) => r.Ee = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="Employer" Width="110px" TextAlign="ColumnTextAlign.Right"><Template>@{ var r = (M109_Pagibig)context; }<TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Er" ValueChanged="@((double v) => r.Er = v)" Decimals="2" Format="N2" Width="100%" /></Template></GridColumn>
+                        <GridColumn Title="" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@{ var r = (M109_Pagibig)context; }<TelerikButton OnClick="@(() => pagibig.Remove(r))" Icon="@SvgIcon.Trash" FillMode="@ThemeConstants.Button.FillMode.Flat" /></Template></GridColumn>
+                    </GridColumns>
+                    <NoDataTemplate><div class="p-3 text-muted">No Pag-IBIG bracket. Add a row or load the system defaults.</div></NoDataTemplate>
+                </TelerikGrid>
+            </TabStripTab>
+
+        </TelerikTabStrip>
+    </div>
+    </Details>
+</_00BT_FullW>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+    List<M109_Sss> sss = new();
+    List<M109_Phic> phic = new();
+    List<M109_Pagibig> pagibig = new();
+    bool busy;
+
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+    void Ok(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
+        {
+            sss = await _da._02Sss(Opay, Conn);
+            phic = await _da._02Phic(Opay, Conn);
+            pagibig = await _da._02Pagibig(Opay, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("109 load failed: " + ex); Warn("Unable to load the tables."); }
+    }
+
+    static string? Check(IEnumerable<(double Start, double End)> rows)
+    {
+        var l = rows.OrderBy(r => r.Start).ToList();
+        if (l.Count == 0) return "Add at least one bracket.";
+        for (int i = 0; i < l.Count; i++)
+        {
+            if (l[i].End < l[i].Start) return $"Bracket {l[i].Start:N2}: the end is lower than the start.";
+            if (i > 0 && l[i].Start <= l[i - 1].End) return $"Bracket {l[i].Start:N2} overlaps the one before it.";
+            if (i > 0 && l[i].Start == l[i - 1].Start) return $"Bracket {l[i].Start:N2} is entered twice.";
+        }
+        return null;
+    }
+
+    async Task Save(string? err, Func<Task> save, string name)
+    {
+        if (err != null) { Warn(err); return; }
+        busy = true;
+        try { await save(); Ok(name + " table saved."); }
+        catch (Exception ex) { Console.Error.WriteLine("109 save failed: " + ex); Warn("Unable to save the " + name + " table."); }
+        finally { busy = false; }
+    }
+
+    Task SaveSss() => Save(Check(sss.Select(r => (r.Start, r.End))), () => _da._03Sss(sss, Opay, Conn), "SSS");
+    Task SavePhic() => Save(Check(phic.Select(r => (r.Start, r.End))), () => _da._03Phic(phic, Opay, Conn), "PhilHealth");
+    Task SavePagibig() => Save(Check(pagibig.Select(r => (r.Start, r.End))), () => _da._03Pagibig(pagibig, Opay, Conn), "Pag-IBIG");
+
+    async Task LoadSssDefault() { try { var d = await _da._02DefaultSss(Conn); if (d.Count == 0) Warn("The system has no SSS defaults."); else sss = d; } catch (Exception ex) { Console.Error.WriteLine("109 default: " + ex); Warn("Unable to load the defaults."); } }
+    async Task LoadPhicDefault() { try { var d = await _da._02DefaultPhic(Conn); if (d.Count == 0) Warn("The system has no PhilHealth defaults."); else phic = d; } catch (Exception ex) { Console.Error.WriteLine("109 default: " + ex); Warn("Unable to load the defaults."); } }
+    async Task LoadPagibigDefault() { try { var d = await _da._02DefaultPagibig(Conn); if (d.Count == 0) Warn("The system has no Pag-IBIG defaults."); else pagibig = d; } catch (Exception ex) { Console.Error.WriteLine("109 default: " + ex); Warn("Unable to load the defaults."); } }
+}

@@ -1,0 +1,468 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._606O
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+
+@inject IDA_606O _da
+
+<style>
+    .hp-root { font-size:13px; color:#1f2a37; }
+    .hp-root .k-input-inner, .hp-root .k-input-value-text, .hp-root .k-button { font-size:13px; }
+    .hp-root .k-input-inner { padding:4px 8px; }
+    .hp-root .k-input, .hp-root .k-picker { min-height:30px; }
+    .hp-root .k-grid { font-size:12.5px; }
+    .hp-root .k-grid td, .hp-root .k-grid th { padding:5px 8px; font-size:12.5px !important; }
+    .hp-root .k-grid th, .hp-root .k-grid .k-header, .hp-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:700; background:#f4f6f9; }
+    .hp-root .k-button { padding:5px 12px; }
+    .hp-root .k-numerictextbox .k-input-inner { text-align:right !important; }
+    .hp-root .k-numerictextbox .k-input-spinner { display:none !important; }
+    .hp-root .k-grid tbody tr { cursor:pointer; }
+    .hp-bar { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+    .hp-f label { display:block; font-size:11.5px; font-weight:600; color:#5b6573; margin-bottom:3px; }
+    .hp-card { background:#fff; border:1px solid #7d8895; border-radius:6px; padding:12px 16px 14px; margin-bottom:12px; }
+    .hp-cols { display:flex; gap:1rem; }
+    .hp-left { width:46%; min-width:0; }
+    .hp-right { flex:1; min-width:0; }
+    .hp-total { font-weight:700; text-align:right; padding:6px 8px; }
+    .hp-grid { display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:10px 14px; align-items:start; }
+    .g4 { grid-column:span 4; } .g6 { grid-column:span 6; } .g12 { grid-column:span 12; }
+</style>
+
+<TelerikRootComponent>
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+
+<_00BT_FullW HdrCaption="Hospitalization">
+    <Details>
+    <div class="p-2 hp-root">
+        <TelerikTabStrip Height="calc(100vh - 150px)">
+
+            <TabStripTab Title="Deductions">
+                <div class="hp-bar">
+                    <div class="hp-f"><label>Year</label><TelerikDropDownList Data="@years" Value="@year" ValueChanged="@((int v) => { year = v; ResetDed(); })" Width="100px" /></div>
+                    <div class="hp-f"><label>Month</label><TelerikDropDownList Data="@months" Value="@month" ValueChanged="@((int v) => { month = v; ResetDed(); })" TextField="Text" ValueField="Id" Width="140px" /></div>
+                    <div class="hp-f"><label>Period</label><TelerikDropDownList Data="@periods" Value="@period" ValueChanged="@((string v) => { period = v; ResetDed(); })" TextField="PdName" ValueField="PdNumber" Width="130px" /></div>
+                    <TelerikButton OnClick="@LoadSaved" Icon="@SvgIcon.Download">Load Saved</TelerikButton>
+                    <TelerikButton OnClick="@Apply" ThemeColor="primary" Icon="@SvgIcon.Calculator">Apply Breakdown</TelerikButton>
+                    <TelerikButton OnClick="@SaveAccounts" Enabled="@(canSaveAcct && !busy)" Icon="@SvgIcon.Save">Save Accounts</TelerikButton>
+                    <TelerikButton OnClick="@SaveDeductions" Enabled="@(canSaveDed && !busy)" ThemeColor="success" Icon="@SvgIcon.Save">Save Deductions</TelerikButton>
+                </div>
+                <div class="hp-cols">
+                    <div class="hp-left">
+                        <TelerikGrid Data="@rows" Height="calc(100vh - 330px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(AcctRow.AcctName)" Title="Account Name" Editable="false" />
+                                <GridColumn Title="Deduction" Width="130px" TextAlign="ColumnTextAlign.Right">
+                                    <Template>
+                                        @{ var r = (AcctRow)context; }
+                                        <TelerikNumericTextBox Arrows="false" Step="0" Value="@r.Ded" ValueChanged="@((decimal v) => { r.Ded = v; canSaveAcct = false; canSaveDed = false; })" Min="0" Decimals="2" Format="N2" Width="100%" />
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn Field="@nameof(AcctRow.Fund)" Title="Fund" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
+                                <GridColumn Field="@nameof(AcctRow.TotDed)" Title="Total Deduction" DisplayFormat="{0:N2}" Width="130px" TextAlign="ColumnTextAlign.Right" />
+                                <GridColumn Title="Default" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@(((AcctRow)context).IsDefault == 1 ? "✓" : "")</Template></GridColumn>
+                            </GridColumns>
+                            <NoDataTemplate><div class="p-2 text-muted">No hospitalization account. Add one in the Accounts tab.</div></NoDataTemplate>
+                        </TelerikGrid>
+                        <div class="hp-total">Total: @rows.Sum(x => x.TotDed).ToString("N2")</div>
+                    </div>
+                    <div class="hp-right">
+                        <TelerikGrid Data="@emps" Height="calc(100vh - 295px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="true">
+                            <GridToolBarTemplate><GridCommandButton Command="ExcelExport" Icon="@SvgIcon.FileExcel">Export to Excel</GridCommandButton></GridToolBarTemplate>
+                            <GridExport><GridExcelExport FileName="Hospitalization" /></GridExport>
+                            <GridColumns>
+                                <GridColumn Field="@nameof(M606_Emp.EmpName)" Title="Employee Name" Width="260px" />
+                                <GridColumn Field="@nameof(M606_Emp.AcctName)" Title="Membership Account" Width="190px" />
+                                <GridColumn Field="@nameof(M606_Emp.Ded)" Title="Deduction" DisplayFormat="{0:N2}" Width="100px" TextAlign="ColumnTextAlign.Right" />
+                                <GridColumn Field="@nameof(M606_Emp.EmpStatus)" Title="Employee Status" Width="130px" />
+                                <GridColumn Field="@nameof(M606_Emp.PayrollGroup)" Title="Payroll Group" Width="150px" />
+                            </GridColumns>
+                            <NoDataTemplate><div class="p-2 text-muted">No employee. Set the included employee status in the Settings tab.</div></NoDataTemplate>
+                        </TelerikGrid>
+                    </div>
+                </div>
+            </TabStripTab>
+
+            <TabStripTab Title="Accounts">
+                <div class="hp-cols">
+                    <div class="hp-left">
+                        <TelerikGrid Data="@haccts" Height="calc(100vh - 260px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                                     SelectionMode="GridSelectionMode.Single" SelectedItems="@selAcct" SelectedItemsChanged="@((IEnumerable<M606_HAcct> e) => PickAcct(e.FirstOrDefault()))">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(M606_HAcct.AcctName)" Title="Account Name" />
+                                <GridColumn Field="@nameof(M606_HAcct.Fund)" Title="Fund" DisplayFormat="{0:N2}" Width="90px" TextAlign="ColumnTextAlign.Right" />
+                                <GridColumn Field="@nameof(M606_HAcct.Amort)" Title="Amortization" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                                <GridColumn Title="Default" Width="70px" TextAlign="ColumnTextAlign.Center"><Template>@(((M606_HAcct)context).IsDefault == 1 ? "✓" : "")</Template></GridColumn>
+                                <GridColumn Field="@nameof(M606_HAcct.Remarks)" Title="Remarks" />
+                            </GridColumns>
+                        </TelerikGrid>
+                    </div>
+                    <div class="hp-right">
+                        <div class="hp-bar">
+                            <TelerikButton OnClick="@SaveAcct" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(afOn && !busy)">@(af.Id > 0 ? "Update" : "Save")</TelerikButton>
+                            <TelerikButton OnClick="@NewAcct" Icon="@SvgIcon.Plus">New</TelerikButton>
+                            <TelerikButton OnClick="@(() => showDelAcct = true)" ThemeColor="error" FillMode="outline" Icon="@SvgIcon.Trash" Enabled="@(afOn && af.Id > 0)">Delete</TelerikButton>
+                        </div>
+                        <div class="hp-card">
+                            <div class="hp-grid">
+                                <div class="hp-f g6"><label>Contribution Account</label>
+                                    <TelerikDropDownList Data="@dAccts" @bind-Value="af.AcctNumber" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select account" Width="100%" Enabled="@afOn" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains" /></div>
+                                <div class="hp-f g6"><label>Savings Account</label>
+                                    <TelerikDropDownList Data="@dAccts" @bind-Value="af.SavingsAcct" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select account" Width="100%" Enabled="@afOn" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains" /></div>
+                                <div class="hp-f g4"><label>Fund</label><TelerikNumericTextBox Arrows="false" Step="0" @bind-Value="af.Fund" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@afOn" /></div>
+                                <div class="hp-f g4"><label>Amortization</label><TelerikNumericTextBox Arrows="false" Step="0" @bind-Value="af.Amort" Min="0" Decimals="2" Format="N2" Width="100%" Enabled="@afOn" /></div>
+                                <div class="hp-f g4"><label>&nbsp;</label><label style="font-weight:500;color:#222;"><TelerikCheckBox Value="@(af.IsDefault == 1)" ValueChanged="@((bool v) => af.IsDefault = v ? 1 : 0)" Enabled="@afOn" /> Default account</label></div>
+                                <div class="hp-f g12"><label>Remarks</label><TelerikTextBox @bind-Value="af.Remarks" Width="100%" Enabled="@afOn" /></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </TabStripTab>
+
+            <TabStripTab Title="Members">
+                <div class="hp-bar">
+                    <div class="hp-f"><label>Membership Account</label>
+                        <TelerikDropDownList Data="@haccts" @bind-Value="memberAcct" TextField="AcctName" ValueField="AcctNumber" DefaultText="Select account" Width="260px" /></div>
+                    <TelerikButton OnClick="@AssignMembers" ThemeColor="primary" Icon="@SvgIcon.Check">@(IsDefaultAcct(memberAcct) ? "Remove Membership" : "Assign Membership")</TelerikButton>
+                    <div class="hp-f"><label>Locate Employee</label><input class="form-control form-control-sm" style="width:220px" @bind="memberSearch" @bind:event="oninput" /></div>
+                </div>
+                <TelerikGrid Data="@shownMembers" Height="calc(100vh - 300px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                             SelectionMode="GridSelectionMode.Multiple" @bind-SelectedItems="@selMembers">
+                    <GridColumns>
+                        <GridCheckboxColumn SelectAll="true" Width="40px" />
+                        <GridColumn Field="@nameof(M606_Emp.EmpName)" Title="Employee Name" Width="260px" />
+                        <GridColumn Field="@nameof(M606_Emp.AcctName)" Title="Membership Account" Width="200px" />
+                        <GridColumn Field="@nameof(M606_Emp.PayrollGroup)" Title="Payroll Group" Width="170px" />
+                        <GridColumn Field="@nameof(M606_Emp.EmpStatus)" Title="Employee Status" Width="140px" />
+                    </GridColumns>
+                </TelerikGrid>
+            </TabStripTab>
+
+            <TabStripTab Title="Query">
+                <div class="hp-cols">
+                    <div class="hp-left">
+                        <div class="hp-bar"><div class="hp-f"><label>Search</label><input class="form-control form-control-sm" style="width:260px" @bind="qSearch" @bind:event="oninput" /></div></div>
+                        <TelerikGrid Data="@shownQ" Height="calc(100vh - 310px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="true"
+                                     SelectionMode="GridSelectionMode.Single" SelectedItems="@selQ" SelectedItemsChanged="@((IEnumerable<M606_QEmp> e) => PickQ(e.FirstOrDefault()))">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(M606_QEmp.EmpName)" Title="Employee Name" Width="240px" />
+                                <GridColumn Field="@nameof(M606_QEmp.PayrollGroup)" Title="Payroll Group" Width="150px" />
+                                <GridColumn Field="@nameof(M606_QEmp.EmpStatus)" Title="Emp. Status" Width="120px" />
+                            </GridColumns>
+                        </TelerikGrid>
+                    </div>
+                    <div class="hp-right">
+                        <div class="hp-bar">
+                            <div style="font-weight:700;font-size:15px;">@(qEmp?.EmpName ?? "Select an employee")</div>
+                            <TelerikButton OnClick="@OpenTransfer" Icon="@SvgIcon.ArrowsLeftRight" Enabled="@(qEmp != null && selSav != null)">Transfer Savings</TelerikButton>
+                        </div>
+                        <TelerikGrid Data="@savSummary" Height="170px" Size="@ThemeConstants.Grid.Size.Small" Sortable="false"
+                                     SelectionMode="GridSelectionMode.Single" SelectedItems="@selSavRow" SelectedItemsChanged="@((IEnumerable<SavRow> e) => { selSav = e.FirstOrDefault(); selSavRow = e; })">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(SavRow.SavingsName)" Title="Savings Account" />
+                                <GridColumn Field="@nameof(SavRow.Amount)" Title="Total Savings" DisplayFormat="{0:N2}" Width="130px" TextAlign="ColumnTextAlign.Right" />
+                            </GridColumns>
+                        </TelerikGrid>
+                        <div class="mt-2"><TelerikGrid Data="@savTran" Height="calc(100vh - 560px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(M606_Tran.Trn)" Title="TRN" Width="130px" />
+                                <GridColumn Field="@nameof(M606_Tran.AcctName)" Title="Account Name" />
+                                <GridColumn Field="@nameof(M606_Tran.Amount)" Title="Amount" DisplayFormat="{0:N2}" Width="110px" TextAlign="ColumnTextAlign.Right" />
+                            </GridColumns>
+                            <NoDataTemplate><div class="p-2 text-muted">No payroll transaction.</div></NoDataTemplate>
+                        </TelerikGrid></div>
+                    </div>
+                </div>
+            </TabStripTab>
+
+            <TabStripTab Title="Settings">
+                <div class="mb-2" style="font-weight:700;">Employee Status Included</div>
+                <TelerikGrid Data="@statuses" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false" Width="420px">
+                    <GridColumns>
+                        <GridColumn Title="Include" Width="80px" TextAlign="ColumnTextAlign.Center">
+                            <Template>
+                                @{ var s = (M606_Status)context; }
+                                <TelerikCheckBox Value="@(s.Included == 1)" ValueChanged="@((bool v) => ToggleStatus(s, v))" />
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(M606_Status.Name)" Title="Employee Status" />
+                    </GridColumns>
+                </TelerikGrid>
+            </TabStripTab>
+
+        </TelerikTabStrip>
+    </div>
+    </Details>
+</_00BT_FullW>
+
+<TelerikWindow Modal="true" @bind-Visible="@showDelAcct" Width="420px">
+    <WindowTitle>Delete Account</WindowTitle>
+    <WindowContent>
+        <div class="p-1">Delete <b>@af.AcctName</b>?</div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DeleteAcct" ThemeColor="primary">Yes</TelerikButton>
+            <TelerikButton OnClick="@(() => showDelAcct = false)">No</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+
+<TelerikWindow Modal="true" @bind-Visible="@showTransfer" Width="440px">
+    <WindowTitle>Transfer Savings</WindowTitle>
+    <WindowContent>
+        <div class="p-1 mb-2">From <b>@selSav?.SavingsName</b> (@selSav?.Amount.ToString("N2"))</div>
+        <div class="hp-f"><label>Transfer to</label>
+            <TelerikDropDownList Data="@transferTargets" @bind-Value="transferTo" TextField="SavingsName" ValueField="SavingsAcct" DefaultText="Select account" Width="100%" /></div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@DoTransfer" ThemeColor="primary">Transfer</TelerikButton>
+            <TelerikButton OnClick="@(() => showTransfer = false)">Cancel</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel? UserClaims { get; set; }
+
+    TelerikNotification? NotificationRef;
+    string Opay => UserClaims?.OpayDb ?? "";
+    string Opis => UserClaims?.OpisDb ?? "";
+    string Conn => UserClaims?.Conn ?? "";
+
+    class AcctRow
+    {
+        public string AcctNumber { get; set; } = "";
+        public string AcctName { get; set; } = "";
+        public decimal Fund { get; set; }
+        public decimal Ded { get; set; }
+        public decimal TotDed { get; set; }
+        public int IsDefault { get; set; }
+    }
+    class SavRow { public string SavingsAcct { get; set; } = ""; public string SavingsName { get; set; } = ""; public decimal Amount { get; set; } }
+    record Opt(int Id, string Text);
+
+    bool busy, canSaveAcct, canSaveDed, showDelAcct, showTransfer;
+
+    List<int> years = Enumerable.Range(DateTime.Today.Year - 3, 6).ToList();
+    List<Opt> months = Enumerable.Range(1, 12).Select(i => new Opt(i, System.Globalization.CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(i))).ToList();
+    List<M606_Period> periods = new();
+    int year = DateTime.Today.Year, month = DateTime.Today.Month;
+    string period = "01";
+
+    List<M606_HAcct> haccts = new();
+    List<AcctRow> rows = new();
+    List<M606_Emp> emps = new();
+    List<M606_Acct> dAccts = new();
+
+    IEnumerable<M606_HAcct> selAcct = Array.Empty<M606_HAcct>();
+    M606_HAcct af = new();
+    bool afOn;
+
+    string memberAcct = "", memberSearch = "";
+    IEnumerable<M606_Emp> selMembers = Array.Empty<M606_Emp>();
+    List<M606_Emp> shownMembers => emps.Where(e => string.IsNullOrWhiteSpace(memberSearch) || e.EmpName.Contains(memberSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    List<M606_Status> statuses = new();
+
+    List<M606_QEmp> qEmps = new();
+    string qSearch = "";
+    List<M606_QEmp> shownQ => qEmps.Where(e => string.IsNullOrWhiteSpace(qSearch) || e.EmpName.Contains(qSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+    IEnumerable<M606_QEmp> selQ = Array.Empty<M606_QEmp>();
+    M606_QEmp? qEmp;
+    List<SavRow> savSummary = new();
+    List<M606_Tran> savTran = new();
+    IEnumerable<SavRow> selSavRow = Array.Empty<SavRow>();
+    SavRow? selSav;
+    string transferTo = "";
+    List<SavRow> transferTargets => haccts.Where(a => !string.IsNullOrWhiteSpace(a.SavingsAcct) && a.SavingsAcct.Trim() != selSav?.SavingsAcct)
+                                          .Select(a => new SavRow { SavingsAcct = a.SavingsAcct, SavingsName = a.SavingsAcctName }).DistinctBy(x => x.SavingsAcct).ToList();
+
+    bool IsDefaultAcct(string acct) => haccts.Any(a => a.AcctNumber == acct && a.IsDefault == 1);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(Opay)) return;
+        try
+        {
+            periods = await _da._02Periods(Opay, Conn);
+            if (periods.Count > 0) period = periods[0].PdNumber;
+            dAccts = await _da._02DeductionAccounts(Opay, Conn);
+            await ReloadAll();
+            statuses = await _da._02Statuses(Opis, Opay, Conn);
+            qEmps = await _da._02QueryEmployees(Opis, Opay, Conn);
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 load failed: " + ex); Warn("Unable to load the hospitalization data."); }
+    }
+
+    async Task ReloadAll()
+    {
+        haccts = await _da._02Accounts(Opay, Conn);
+        var def = haccts.FirstOrDefault(a => a.IsDefault == 1);
+        emps = await _da._02Employees(Opis, Opay, Conn);
+        foreach (var e in emps)
+        {
+            if (string.IsNullOrWhiteSpace(e.AcctNumber) && def != null) e.AcctNumber = def.AcctNumber;
+            e.AcctName = haccts.FirstOrDefault(a => a.AcctNumber == e.AcctNumber)?.AcctName ?? "";
+            e.Ded = 0;
+        }
+        rows = haccts.Select(a => new AcctRow { AcctNumber = a.AcctNumber, AcctName = a.AcctName, Fund = a.Fund, IsDefault = a.IsDefault }).ToList();
+        canSaveAcct = canSaveDed = false;
+    }
+
+    void ResetDed()
+    {
+        foreach (var r in rows) { r.Ded = 0; r.TotDed = 0; }
+        foreach (var e in emps) e.Ded = 0;
+        canSaveAcct = canSaveDed = false;
+    }
+
+    string Mo => month.ToString("00");
+
+    async Task LoadSaved()
+    {
+        try
+        {
+            var hdr = await _da._02Header(year, Mo, period, Opay, Conn);
+            foreach (var r in rows) r.Ded = hdr.FirstOrDefault(h => h.AcctNumber == r.AcctNumber)?.Ded ?? 0;
+            Apply();
+            canSaveAcct = false;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 load saved failed: " + ex); Warn("Unable to load the saved deductions."); }
+    }
+
+    void Apply()
+    {
+        foreach (var e in emps) e.Ded = rows.FirstOrDefault(r => r.AcctNumber == e.AcctNumber)?.Ded ?? 0;
+        foreach (var r in rows) r.TotDed = emps.Where(e => e.AcctNumber == r.AcctNumber).Sum(e => e.Ded);
+        canSaveAcct = true; canSaveDed = false;
+    }
+
+    async Task SaveAccounts()
+    {
+        busy = true;
+        try
+        {
+            await _da._01SaveHeader(year, Mo, period, rows.Select(r => new M606_Hdr { AcctNumber = r.AcctNumber, Ded = r.Ded, TotDed = r.TotDed, IsDefault = r.IsDefault }).ToList(), Opay, Conn);
+            canSaveAcct = false; canSaveDed = true;
+            Ok("Accounts saved.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 save accounts failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    async Task SaveDeductions()
+    {
+        busy = true;
+        try
+        {
+            int n = await _da._01PostDeductions(year, Mo, period, emps.Where(e => e.Ded > 0).Select(e => new M606_Post { EmpNumber = e.EmpNumber, AcctNumber = e.AcctNumber, Ded = e.Ded }).ToList(), Opay, Conn);
+            canSaveDed = false;
+            Ok($"Processing complete. {n} deduction(s) saved.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 save deductions failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    void PickAcct(M606_HAcct? a)
+    {
+        if (a == null) return;
+        selAcct = new[] { a }; afOn = true;
+        af = new M606_HAcct { Id = a.Id, AcctNumber = a.AcctNumber, AcctName = a.AcctName, SavingsAcct = a.SavingsAcct, SavingsAcctName = a.SavingsAcctName, Fund = a.Fund, Amort = a.Amort, IsDefault = a.IsDefault, Remarks = a.Remarks };
+    }
+
+    void NewAcct() { selAcct = Array.Empty<M606_HAcct>(); af = new M606_HAcct(); afOn = true; }
+
+    async Task SaveAcct()
+    {
+        if (!afOn || busy) return;
+        busy = true;
+        try
+        {
+            var err = await _da._01SaveAccount(af, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            await ReloadAll();
+            var saved = haccts.FirstOrDefault(a => a.AcctNumber == af.AcctNumber);
+            if (saved != null) PickAcct(saved); else { af = new(); afOn = false; }
+            Ok("Successfully Saved.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 save account failed: " + ex); Warn("Unable to save."); }
+        finally { busy = false; }
+    }
+
+    async Task DeleteAcct()
+    {
+        showDelAcct = false;
+        if (!afOn || af.Id == 0) return;
+        try
+        {
+            await _da._04DeleteAccount(af.Id, Opay, Conn);
+            af = new(); afOn = false; selAcct = Array.Empty<M606_HAcct>();
+            await ReloadAll();
+            Ok("Deleted.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 delete account failed: " + ex); Warn("Unable to delete."); }
+    }
+
+    async Task AssignMembers()
+    {
+        var list = selMembers.Select(e => e.EmpNumber).ToList();
+        if (string.IsNullOrWhiteSpace(memberAcct)) { Warn("Please select membership account from the list."); return; }
+        if (list.Count == 0) { Warn("Please check the employees first."); return; }
+        try
+        {
+            if (IsDefaultAcct(memberAcct)) await _da._04Remove(list, Opay, Conn);
+            else await _da._01Assign(list, memberAcct, Opay, Conn);
+            selMembers = Array.Empty<M606_Emp>();
+            await ReloadAll();
+            Ok("Done.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 assign failed: " + ex); Warn("Unable to save."); }
+    }
+
+    async Task ToggleStatus(M606_Status s, bool on)
+    {
+        try
+        {
+            await _da._01SetStatus(s.Code, on, Opay, Conn);
+            s.Included = on ? 1 : 0;
+            await ReloadAll();
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 status failed: " + ex); Warn("Unable to save."); }
+    }
+
+    async Task PickQ(M606_QEmp? e)
+    {
+        if (e == null) return;
+        qEmp = e; selQ = new[] { e }; selSav = null; selSavRow = Array.Empty<SavRow>();
+        try
+        {
+            savTran = await _da._02Savings(e.EmpNumber, Opay, Conn);
+            savSummary = haccts.Where(a => !string.IsNullOrWhiteSpace(a.SavingsAcct)).DistinctBy(a => a.SavingsAcct.Trim())
+                .Select(a => new SavRow { SavingsAcct = a.SavingsAcct.Trim(), SavingsName = a.SavingsAcctName, Amount = savTran.Where(t => t.AcctNumber == a.SavingsAcct.Trim()).Sum(t => t.Amount) }).ToList();
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 query failed: " + ex); Warn("Unable to load the savings."); }
+    }
+
+    void OpenTransfer()
+    {
+        if (selSav == null) { Warn("Please select the savings account."); return; }
+        transferTo = ""; showTransfer = true;
+    }
+
+    async Task DoTransfer()
+    {
+        if (qEmp == null || selSav == null) return;
+        try
+        {
+            var err = await _da._01Transfer(qEmp.EmpNumber, selSav.SavingsAcct, transferTo, Opay, Conn);
+            if (err != null) { Warn(err); return; }
+            showTransfer = false;
+            await PickQ(qEmp);
+            Ok("Transferred.");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("606 transfer failed: " + ex); Warn("Unable to transfer."); }
+    }
+
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+    void Ok(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
+}

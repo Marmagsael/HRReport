@@ -88,21 +88,27 @@ public class OAcctMappingDataAccess : IOAcctMappingDataAccess
                            .ToDictionary(g => g.Key, g => g.First().OtRate, StringComparer.OrdinalIgnoreCase);
 
         var labels  = Fields.ToDictionary(f => f.Field, f => (f.Group, f.Label), StringComparer.OrdinalIgnoreCase);
-        var order   = rows.FirstOrDefault() is IDictionary<string, object> raw ? raw.Keys.ToList() : Fields.Select(f => f.Field).ToList();
+        var order   = await _02Columns(schema, conn);
 
         var list = new List<AcctMapRowModel>();
         foreach (var field in order)
         {
-            if (!labels.TryGetValue(field, out var info)) continue;
-            var code = (setup[field]?.ToString() ?? string.Empty).Trim();
+            labels.TryGetValue(field, out var info);
+            var code = (setup.TryGetValue(field, out var cv) ? cv?.ToString() ?? string.Empty : string.Empty).Trim();
             list.Add(new AcctMapRowModel
             {
-                Field = field, Label = info.Label, Group = info.Group, AcctCode = code,
+                Field = field, Label = info.Label ?? field, Group = info.Group ?? string.Empty, AcctCode = code,
                 OtRate = rates.TryGetValue(code, out var r) ? r : 0
             });
         }
         return list;
     }
+
+    //--- acctmapping.Init : every column of paymaindtlsetup after the id, in table order, whether or not the table has a row ---
+    async Task<List<string>> _02Columns(string schema, string conn)
+        => (await _sql.FetchLegacy<string, dynamic>(
+                "select column_name from information_schema.columns where table_schema = @Schema and table_name = 'paymaindtlsetup' order by ordinal_position",
+                new { Schema = schema }, conn) ?? new()).Skip(1).ToList();
 
     public async Task<List<AcctMapAccountModel>> _02Accounts(string schema, string conn)
     {
@@ -114,7 +120,7 @@ public class OAcctMappingDataAccess : IOAcctMappingDataAccess
 
     public async Task<string?> _03(List<AcctMapRowModel> changed, string schema, string conn)
     {
-        var known = Fields.Select(f => f.Field).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var known = (await _02Columns(schema, conn)).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var accts = (await _02Accounts(schema, conn)).Select(a => a.AcctNumber ?? string.Empty).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         foreach (var row in changed)
@@ -130,7 +136,7 @@ public class OAcctMappingDataAccess : IOAcctMappingDataAccess
 
         foreach (var row in changed)
         {
-            var field = Fields.First(f => string.Equals(f.Field, row.Field, StringComparison.OrdinalIgnoreCase)).Field;
+            var field = row.Field;
             var code  = (row.AcctCode ?? string.Empty).Trim();
 
             await _sql.ExecuteLegacyCmd($"update {schema}.paymaindtlsetup set `{field}` = @Code where idpaymaindtlsetup != 0", new { Code = code }, conn);
