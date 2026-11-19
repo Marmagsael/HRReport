@@ -22,7 +22,6 @@
                                      AnimationType="@AnimationType.SlideLeft" />
 
 
-                @* <TelerikLoaderContainer Visible="@v.IsLoading" LoaderType="@LoaderType.ConvergingSpinner" /> *@
 
                 <_00BT_FullW HdrCaption="Insurance Entry">
 
@@ -158,14 +157,9 @@
         };
     }
 
-    // Company logo for the report header, loaded once with the company info.
-    // (Telerik report parameters can't hold an image, so the reports read it as =Fields.Logo from the rows.)
     private byte[]? CompanyLogo;
 
 
-    // Company name / address for the report header, read the same way as Company Information (_2005):
-    // the old PIS (Coinfo) comes first; what it does not have is taken from the new PIS (RCoInfo).
-    // The logo comes from CompanyLogoService.
     private async Task _02LoadCompanyInfo()
     {
         try
@@ -174,8 +168,6 @@
             var r = await _rcoinfo._02(Uc.SchemaUserPis, Uc.Conn);
 
             rv.ReportParams["CoName"] = Pick(o?.CoName, r?.CoName) ?? "";
-
-            // Old PIS keeps the full address in CoAdd (Address 1 + Address 2); otherwise join the two lines
             rv.ReportParams["CoAddress"] = Pick(o?.CoAdd,
                                                 JoinAddress(o?.Add1, o?.Add2),
                                                 JoinAddress(r?.Add1, r?.Add2)) ?? "";
@@ -186,7 +178,6 @@
             NotificationRef?.Show("Unable to load company information.", ThemeConstants.Notification.ThemeColor.Error);
         }
 
-        // Separate try: a missing logo should not stop the name / address from loading, and vice versa
         try
         {
             CompanyLogo = (await _logo.GetAsync(Uc))?.Data;
@@ -246,7 +237,6 @@
         try
         {
             v.IsLoading = true;
-            // Logo loaded once in _02LoadCompanyInfo. The report re-sorts rows (by type), so put it on every row (same byte[], no copy)
             foreach (var r in rows) r.Logo = CompanyLogo;
 
             ShowReport("Reports/_01Pis/J_2054_IL.trdp", "Insurance Listing", rows);
@@ -295,10 +285,7 @@
                 return;
             }
 
-            // Logo loaded once in _02LoadCompanyInfo. The report re-sorts rows (by type), so put it on every row (same byte[], no copy)
             foreach (var r in rows) r.Logo = CompanyLogo;
-
-            // The report viewer is a page overlay that sits below Telerik windows, so close the modal first
             v.ShowInsuranceAssignmentModal = false;
 
             ShowReport("Reports/_01Pis/J_2054_IA.trdp", "Insurance Assignment", rows);
