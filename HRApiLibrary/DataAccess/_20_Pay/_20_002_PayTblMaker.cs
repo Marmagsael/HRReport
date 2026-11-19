@@ -1207,7 +1207,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (11004, 'Dtl-Transaction',  11001, 1, 'today',            'Daily Schedule Template',         '1100/11004', 11004),
                             (11005, 'Dtl-Transaction',  11001, 1, 'date_range',       'Weekly Schedule Template',        '1100/11005', 11005),
                             (11008, 'Dtl-Transaction',  11001, 1, 'more_time',        'Overtime Settings',               '1100/11008', 11008),
-                            (12002, 'Dtl-Transaction',  11001, 1, 'manage_history',   'Attendance Processing',           '1100/12002', 12002),
+                            (12002, 'Dtl-Transaction',  11001, 1, 'manage_history',   'Biometrics Uploading',             '1100/12002', 12020),
                             (12003, 'Dtl-Transaction',  11001, 1, 'alarm_add',        'OT Entry',                        '1100/12003', 12003),
                             (12004, 'Dtl-Transaction',  11001, 1, 'directions_walk',  'OB / Direct Assignment',          '1100/12004', 12005),
                             (12005, 'Dtl-Transaction',  11001, 1, 'fingerprint',      'Punch Management',                '1100/12005', 12006);";
@@ -1228,6 +1228,10 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
 
         // -- Corrections for tables seeded before; each only touches the old wrong value --
         sql = @"UPDATE MainPay.Menu SET IdParent = 1151 WHERE Id IN (1152, 1153, 1154, 1155) AND IdParent = 1051;
+                UPDATE MainPay.Menu SET DispText = 'Biometrics Uploading' WHERE Id = 12002 AND DispText IN ('Attendance Processing', 'Biometrics Upload');
+                INSERT IGNORE INTO MainPay.Menu (Id, Type, IdParent, Indent, Icon, DispText, Action, Odr) VALUES
+                    (12011, 'Dtl-Transaction', 11201, 1, 'manage_history', 'Attendance Processing', '1100/12011', 12002);
+                UPDATE MainPay.Menu SET Odr = 12020 WHERE Id = 12002 AND Odr <> 12020;
                 UPDATE MainPay.Menu SET DispText = 'SSS Contribution'  WHERE Id = 1252 AND DispText = 'SSS Contribution ';
                 UPDATE MainPay.Menu SET DispText = 'Tax Annualization' WHERE Id = 1302 AND DispText = 'Tax Annunalization';
                 DELETE FROM MainPay.Menu WHERE Id = 1313 AND DispText = 'Account Total' AND Action IN ('13/PayRep_1313', '13/1313');
