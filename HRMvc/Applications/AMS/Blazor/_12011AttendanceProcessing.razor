@@ -14,6 +14,7 @@
 @using ClosedXML.Excel
 @using HRMvc.Applications.PayrollReport.Class
 @using Microsoft.JSInterop
+@using Telerik.SvgIcons
 
 <TelerikRootComponent>
 
@@ -33,10 +34,29 @@
     </TelerikDialog>
 
     <style>
-        .att-emp-grid .k-grid-content tr,
-        .att-emp-grid .k-grid-content td { cursor: pointer; }
-        .att-legend { display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-size:12px; padding:2px 0; }
-        .att-legend span.sw { display:inline-block; width:14px; height:14px; border:1px solid #999; margin-right:4px; vertical-align:middle; }
+        .att-page { --att-ink:#1f2a37; --att-mute:#6b7785; --att-line:#e3e8ef; --att-soft:#f6f8fb; --att-accent:#3b5bdb; }
+        .att-filter { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; padding:12px 14px; background:var(--att-soft); border:1px solid var(--att-line); border-radius:10px; }
+        .att-lbl { font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--att-mute); margin-bottom:3px; }
+        .att-strip { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:12px 0 4px; }
+        .att-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; background:#fff; border:1px solid var(--att-line); font-size:12.5px; color:var(--att-ink); }
+        .att-chip b { font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--att-mute); font-weight:700; }
+        .att-chip.code { background:#eef2ff; border-color:#c7d2fe; color:#2f3fa8; font-weight:700; }
+        .att-chip.ok { background:#e8f7ee; border-color:#bde5cb; color:#1b6b3a; }
+        .att-chip.bad { background:#fdecec; border-color:#f4c3c3; color:#a12727; }
+        .att-chip.lock { background:#f6e9ec; border-color:#e5c2ca; color:#7a1f35; }
+        .att-card { border:1px solid var(--att-line); border-radius:10px; overflow:hidden; background:#fff; }
+        .att-card .k-grid { border:0; }
+        .att-card .k-grid-header th { background:var(--att-soft); font-weight:700; color:var(--att-ink); }
+        .att-card .k-grid-toolbar { background:#fff; border-bottom:1px solid var(--att-line); font-size:14px; }
+        .att-emp-grid .k-grid-content tr, .att-emp-grid .k-grid-content td { cursor:pointer; }
+        .att-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:16px 0 8px; padding-top:12px; border-top:1px dashed var(--att-line); }
+        .att-kpis { margin-left:auto; display:flex; gap:10px; flex-wrap:wrap; }
+        .att-kpi { min-width:96px; padding:6px 14px; border:1px solid var(--att-line); border-radius:10px; background:#fff; text-align:right; }
+        .att-kpi small { display:block; font-size:10px; letter-spacing:.06em; text-transform:uppercase; color:var(--att-mute); font-weight:700; }
+        .att-kpi span { font-size:18px; font-weight:700; color:var(--att-accent); line-height:1.2; }
+        .att-legend { display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:11.5px; padding:8px 4px 0; }
+        .att-legend .lg { display:inline-flex; align-items:center; gap:5px; padding:2px 10px 2px 4px; border:1px solid var(--att-line); border-radius:999px; background:#fff; }
+        .att-legend span.sw { display:inline-block; width:14px; height:14px; border:1px solid #b7c0cc; border-radius:50%; }
         .att-r-RD  td, .att-sw-RD  { background:#dee2e6 !important; color:#212529; }
         .att-r-RN  td, .att-sw-RN  { background:#cfd4f7 !important; color:#212529; }
         .att-r-OB  td, .att-sw-OB  { background:#c9ecf5 !important; color:#212529; }
@@ -47,13 +67,13 @@
         .att-r-DH  td, .att-sw-DH  { background:#ffd3a8 !important; color:#212529; }
     </style>
 
-    <div class="card w-100 p-1">
+    <div class="card w-100 p-1 att-page">
         <BodyHdr pageTitle="Attendance Processing" />
         <div class="card-body p-1 w-100">
 
-            <div class="d-flex gap-2 align-items-end flex-wrap bordered-bottom py-1">
+            <div class="att-filter mt-1">
                 <div>
-                    <div class="small fw-bold">PAYROLL GROUP</div>
+                    <div class="att-lbl">PAYROLL GROUP</div>
                     <TelerikDropDownList Data="@_payrollGrps"
                                          Value="@_payrollGrpId"
                                          ValueChanged="@((int? val) => OnPayrollGrpChanged(val))"
@@ -64,56 +84,42 @@
                     </TelerikDropDownList>
                 </div>
                 <div>
-                    <div class="small fw-bold">YEAR</div>
+                    <div class="att-lbl">YEAR</div>
                     <TelerikDropDownList Data="@_years" Value="@_year" ValueChanged="@((string v) => OnPeriodChanged(() => _year = v))" Width="90px" />
                 </div>
                 <div>
-                    <div class="small fw-bold">MONTH</div>
+                    <div class="att-lbl">MONTH</div>
                     <TelerikDropDownList Data="@_months" Value="@_month" ValueChanged="@((string v) => OnPeriodChanged(() => _month = v))" Width="75px" />
                 </div>
                 <div>
-                    <div class="small fw-bold">PERIOD</div>
+                    <div class="att-lbl">PERIOD</div>
                     <TelerikDropDownList Data="@_periods" TextField="@nameof(OPayPeriod.PdNumber)" ValueField="@nameof(OPayPeriod.PdNumber)"
                                          Value="@_period" ValueChanged="@((string v) => OnPeriodChanged(() => _period = v))" Width="75px" />
                 </div>
                 <div>
-                    <div class="small fw-bold">ATTENDANCE START</div>
+                    <div class="att-lbl">ATTENDANCE START</div>
                     <TelerikDatePicker Value="@_start" ValueChanged="@((DateTime v) => { _start = v; ResetResults(); })" Format="MMM dd, yyyy" Width="150px" />
                 </div>
                 <div>
-                    <div class="small fw-bold">ATTENDANCE END</div>
+                    <div class="att-lbl">ATTENDANCE END</div>
                     <TelerikDatePicker Value="@_end" ValueChanged="@((DateTime v) => { _end = v; ResetResults(); })" Format="MMM dd, yyyy" Width="150px" />
                 </div>
-                <TelerikButton OnClick="OnLoad" ThemeColor="primary" Enabled="@(!_busy && _payrollGrpId is not null)">@(_busy ? "Loading..." : "Load")</TelerikButton>
-                <TelerikButton OnClick="OnPushClick" Enabled="@(!_busy && _dailyByEmp.Count > 0)">Push to Payroll Entry</TelerikButton>
-                <TelerikButton OnClick="ExportExcel" FillMode="outline" Enabled="@(SummaryView.Count > 0)">Excel</TelerikButton>
-                <TelerikButton OnClick="ExportPdf" FillMode="outline" Enabled="@(SummaryView.Count > 0)">PDF</TelerikButton>
+                <TelerikButton OnClick="OnLoad" ThemeColor="primary" Icon="@SvgIcon.ArrowRotateCw" Enabled="@(!_busy && _payrollGrpId is not null)">@(_busy ? "Loading..." : "Load")</TelerikButton>
             </div>
 
-            <div class="w-100 p-2 bg-white bordered-bottom">
-                <div class="d-flex flex-wrap align-items-baseline row-gap-2">
-                    <div class="d-flex align-items-baseline gap-2 pe-4">
-                        <span class="fw-bold small">PAYROLL CODE :</span>
-                        <span>@PayrollCode</span>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2 px-4 border-start">
-                        <span class="fw-bold small">PAYROLL GROUP :</span>
-                        <span>@(_payrollGrps.FirstOrDefault(x => x.Id == _payrollGrpId) is { } g ? $"{g.Code} - {g.Name}" : "")</span>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2 px-4 border-start">
-                        <span class="fw-bold small">PAYROLL PERIOD :</span>
-                        <span>@_start.ToString("MMM dd") - @_end.ToString("MMM dd, yyyy")</span>
-                    </div>
-                    <div class="d-flex align-items-baseline gap-2 px-4 border-start">
-                        <span class="fw-bold small">STATUS :</span>
-                        <span class="@(_trnStatus is null && !string.IsNullOrEmpty(PayrollCode) ? "text-danger" : _trnStatus == "Lock" ? "txt-maroon fw-bold" : "")">@(_trnStatus ?? (string.IsNullOrEmpty(PayrollCode) ? "" : "No open transaction"))</span>
-                    </div>
-                </div>
+            <div class="att-strip">
+                <span class="att-chip code"><b>Payroll Code</b>@(string.IsNullOrEmpty(PayrollCode) ? "-" : PayrollCode)</span>
+                <span class="att-chip"><b>Group</b>@(_payrollGrps.FirstOrDefault(x => x.Id == _payrollGrpId) is { } g ? $"{g.Code} - {g.Name}" : "-")</span>
+                <span class="att-chip"><b>Period</b>@_start.ToString("MMM dd") - @_end.ToString("MMM dd, yyyy")</span>
+                @if (!string.IsNullOrEmpty(PayrollCode))
+                {
+                    <span class="att-chip @(_trnStatus is null ? "bad" : _trnStatus == "Lock" ? "lock" : "ok")"><b>Status</b>@(_trnStatus ?? "No open transaction")</span>
+                }
             </div>
 
             <div class="d-flex gap-3 mt-2">
 
-                <div style="width:360px; flex:none;">
+                <div class="att-card" style="width:360px; flex:none;">
                     <TelerikGrid Data="@_emps"
                                  Class="att-emp-grid"
                                  Height="320px"
@@ -122,7 +128,7 @@
                                  @bind-SelectedItems="@_selectedEmps"
                                  OnRowClick="@OnEmpRowClick">
                         <GridToolBarTemplate>
-                            <span class="fw-bold">Employee List</span>
+                            <span class="fw-bold">Employee List</span><span class="ms-auto small text-muted">@_selectedEmps.Count() of @_emps.Count selected</span>
                         </GridToolBarTemplate>
                         <GridColumns>
                             <GridCheckboxColumn Width="40px" SelectAll="true" />
@@ -132,7 +138,8 @@
                     </TelerikGrid>
                 </div>
 
-                <div class="flex-grow-1">
+                <div class="flex-grow-1" style="min-width:0;">
+                    <div class="att-card">
                     <TelerikGrid Data="@_daily"
                                  OnRowRender="@OnDailyRowRender"
                                  Height="320px"
@@ -157,22 +164,35 @@
                             <GridColumn Field="@nameof(AttDailyRow.DutyEnd)"   Title="Duty End"   Width="90px" />
                         </GridColumns>
                     </TelerikGrid>
+                    </div>
                     <div class="att-legend">
-                        <b>Legend:</b>
-                        <span><span class="sw" style="background:#fff"></span>R - Regular Day</span>
-                        <span><span class="sw att-sw-RD"></span>RD - Rest Day</span>
-                        <span><span class="sw att-sw-RN"></span>RN - Regular Night</span>
-                        <span><span class="sw att-sw-OB"></span>OB - Official Business (paid)</span>
-                        <span><span class="sw att-sw-LV"></span>LV - Paid Leave</span>
-                        <span><span class="sw att-sw-AB"></span>AB - Absent</span>
-                        <span><span class="sw att-sw-LH"></span>LH - Legal Holiday</span>
-                        <span><span class="sw att-sw-SH"></span>SH - Special Holiday</span>
-                        <span><span class="sw att-sw-DH"></span>DH - Double Holiday</span>
+                        <b>Legend</b>
+                        <span class="lg"><span class="sw" style="background:#fff"></span>R - Regular Day</span>
+                        <span class="lg"><span class="sw att-sw-RD"></span>RD - Rest Day</span>
+                        <span class="lg"><span class="sw att-sw-RN"></span>RN - Regular Night</span>
+                        <span class="lg"><span class="sw att-sw-OB"></span>OB - Official Business (paid)</span>
+                        <span class="lg"><span class="sw att-sw-LV"></span>LV - Paid Leave</span>
+                        <span class="lg"><span class="sw att-sw-AB"></span>AB - Absent</span>
+                        <span class="lg"><span class="sw att-sw-LH"></span>LH - Legal Holiday</span>
+                        <span class="lg"><span class="sw att-sw-SH"></span>SH - Special Holiday</span>
+                        <span class="lg"><span class="sw att-sw-DH"></span>DH - Double Holiday</span>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-3">
+            <div class="att-actions">
+                <TelerikButton OnClick="OnPushClick" ThemeColor="primary" Icon="@SvgIcon.Upload" Enabled="@(!_busy && _dailyByEmp.Count > 0)">Push to Payroll Entry</TelerikButton>
+                <TelerikButton OnClick="ExportExcel" FillMode="outline" Icon="@SvgIcon.FileExcel" Enabled="@(SummaryView.Count > 0)">Excel</TelerikButton>
+                <TelerikButton OnClick="ExportPdf" FillMode="outline" Icon="@SvgIcon.FilePdf" Enabled="@(SummaryView.Count > 0)">PDF</TelerikButton>
+                <div class="att-kpis">
+                    <div class="att-kpi"><small>Employees</small><span>@SummaryView.Count</span></div>
+                    <div class="att-kpi"><small>Tardiness (min)</small><span>@(SummaryView.Sum(r => r.RegTard + r.LegTard + r.SpTard + r.DbTard).ToString("#,##0;-#,##0;0"))</span></div>
+                    <div class="att-kpi"><small>OT (hrs)</small><span>@(SummaryView.Sum(r => r.RegOT + r.LegOT + r.SpOT + r.DbOT).ToString("#,##0.00"))</span></div>
+                    <div class="att-kpi"><small>ND (hrs)</small><span>@(SummaryView.Sum(r => r.RegND + r.LegND + r.SpND + r.DbND).ToString("#,##0.00"))</span></div>
+                </div>
+            </div>
+
+            <div class="att-card">
                 <TelerikGrid Data="@SummaryView"
                              Height="320px"
                              Size="sm"
