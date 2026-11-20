@@ -41,7 +41,7 @@ public class OSalgradeDataAccess : IOSalgradeDataAccess
 
         var cur = await _sql.FetchLegacy<int, dynamic>($"select isLock from {schema}.salgrade where trim(sgcode) = @SgCode", new { SgCode = m.SgCode!.Trim() }, conn);
         if (cur.Count == 0) return "Salary grade was not found.";
-        if (cur[0] == 1) return "This salary grade is locked. Unlock it first to change it.";
+        if (cur[0] == 1) return "This salary grade is locked. It cannot be edited.";
 
         await _sql.ExecuteLegacyCmd($@"update {schema}.salgrade set sgrade = @SGrade, monthlyRate = @MonthlyRate, dailyRate = @DailyRate,
                                               wtax = @WTax, wSSS = @WSSS, wGSIS = @WGSIS, wPHIC = @WPHIC, wPagibig = @WPagibig
@@ -50,20 +50,26 @@ public class OSalgradeDataAccess : IOSalgradeDataAccess
         return null;
     }
 
-    public async Task _03Lock(string sgCode, bool locked, string schema, string conn)
-    {
-        await _sql.ExecuteLegacyCmd($"update {schema}.salgrade set isLock = @IsLock where trim(sgcode) = @SgCode",
-                                    new { SgCode = sgCode.Trim(), IsLock = locked ? 1 : 0 }, conn);
-    }
-
     public async Task<string?> _04(string sgCode, string paySchema, string pisSchema, string conn)
     {
         var cur = await _sql.FetchLegacy<int, dynamic>($"select isLock from {paySchema}.salgrade where trim(sgcode) = @SgCode", new { SgCode = sgCode.Trim() }, conn);
         if (cur.Count == 0) return "Salary grade was not found.";
-        if (cur[0] == 1) return "This salary grade is locked. Unlock it first to delete it.";
+        if (cur[0] == 1) return "This salary grade is locked. It cannot be deleted.";
 
-        var used = await _sql.FetchLegacy<long, dynamic>($"select count(*) from {pisSchema}.empmas where trim(sgcode) = @SgCode", new { SgCode = sgCode.Trim() }, conn);
-        if (used.FirstOrDefault() > 0) return $"{used.First()} employee(s) use this salary grade. It cannot be deleted.";
+        var code = new { SgCode = sgCode.Trim() };
+        async Task<long> Used(string sql) => (await _sql.FetchLegacy<long, dynamic>(sql, code, conn)).FirstOrDefault();
+
+        var emps = await Used($"select count(*) from {pisSchema}.empmas where trim(sgcode) = @SgCode");
+        if (emps > 0) return $"{emps} employee(s) use this salary grade. It cannot be deleted.";
+
+        var archived = await Used($"select count(*) from {pisSchema}.empmasarchieved where trim(sgcode) = @SgCode");
+        if (archived > 0) return $"{archived} archived employee record(s) use this salary grade. It cannot be deleted.";
+
+        var clients = await Used($"select count(*) from {pisSchema}.client where trim(sgcode) = @SgCode");
+        if (clients > 0) return $"{clients} client(s) use this salary grade. It cannot be deleted.";
+
+        var groups = await Used($"select count(*) from {paySchema}.payrollgrp where trim(SgCode) = @SgCode");
+        if (groups > 0) return $"{groups} payroll group(s) use this salary grade. It cannot be deleted.";
 
         await _sql.ExecuteLegacyCmd($"delete from {paySchema}.salgrade where trim(sgcode) = @SgCode and isLock = 0", new { SgCode = sgCode.Trim() }, conn);
         return null;
@@ -86,6 +92,5 @@ public interface IOSalgradeDataAccess
     Task<List<SalgradeModel>>   _02(string schema, string conn);
     Task<string?>               _01(SalgradeModel m, string schema, string conn);
     Task<string?>               _03(SalgradeModel m, string schema, string conn);
-    Task                        _03Lock(string sgCode, bool locked, string schema, string conn);
     Task<string?>               _04(string sgCode, string paySchema, string pisSchema, string conn);
 }

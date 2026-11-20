@@ -10,9 +10,7 @@ public class OAcctMappingDataAccess : IOAcctMappingDataAccess
     private static readonly (string Group, string Field, string Label)[] Fields =
     {
         ("Regular pay",          "daywrk",       "Days worked"),
-        ("Regular pay",          "absent",       "Absent"),
-        ("Regular pay",          "late",         "Late"),
-        ("Regular pay",          "utime",        "Undertime"),
+        ("Regular pay",          "absent",       "Tardiness"),
         ("Regular pay",          "retropay",     "Retro pay"),
         ("Overtime and holiday", "rot",          "Regular overtime"),
         ("Overtime and holiday", "rd",           "Rest day"),
@@ -91,7 +89,7 @@ public class OAcctMappingDataAccess : IOAcctMappingDataAccess
         var order   = await _02Columns(schema, conn);
 
         var list = new List<AcctMapRowModel>();
-        foreach (var field in order)
+        foreach (var field in order.Where(f => !f.Equals("late", StringComparison.OrdinalIgnoreCase) && !f.Equals("utime", StringComparison.OrdinalIgnoreCase)))
         {
             labels.TryGetValue(field, out var info);
             var code = (setup.TryGetValue(field, out var cv) ? cv?.ToString() ?? string.Empty : string.Empty).Trim();
@@ -140,8 +138,10 @@ public class OAcctMappingDataAccess : IOAcctMappingDataAccess
             var code  = (row.AcctCode ?? string.Empty).Trim();
 
             await _sql.ExecuteLegacyCmd($"update {schema}.paymaindtlsetup set `{field}` = @Code where idpaymaindtlsetup != 0", new { Code = code }, conn);
+            if (field.Equals("absent", StringComparison.OrdinalIgnoreCase))
+                await _sql.ExecuteLegacyCmd($"update {schema}.paymaindtlsetup set `late` = @Code, `utime` = @Code where idpaymaindtlsetup != 0", new { Code = code }, conn);
             if (code.Length > 0)
-                await _sql.ExecuteLegacyCmd($"update {schema}.chartofacct set OTrate = @Rate where trim(AcctNumber) = @Code", new { Rate = row.OtRate, Code = code }, conn);
+                await _sql.ExecuteLegacyCmd($"update {schema}.chartofacct set OTrate = @Rate, islock = '1' where trim(AcctNumber) = @Code", new { Rate = row.OtRate, Code = code }, conn);
         }
         return null;
     }

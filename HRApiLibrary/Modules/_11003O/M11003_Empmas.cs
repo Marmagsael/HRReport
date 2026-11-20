@@ -3,6 +3,7 @@
 public class M11003_Empmas
 {
     public int      SystemId        { get; set; }
+    public int      EmpmasId        { get; set; }
     public string?  EmpNumber       { get; set; }
     public string?  EmpName         { get; set; }
     public int      PayrollgrpId    { get; set; }

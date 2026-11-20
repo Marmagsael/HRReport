@@ -76,11 +76,10 @@
                         <span class="badge @((g.IsLock ?? 0) == 1 ? "bg-secondary" : "bg-success")">@((g.IsLock ?? 0) == 1 ? "Locked" : "Open")</span>
                     </Template>
                 </GridColumn>
-                <GridColumn Title="" Width="260px">
+                <GridColumn Title="" Width="160px">
                     <Template>
                         @{ var r = (SalgradeModel)context; var locked = (r.IsLock ?? 0) == 1; }
                         <TelerikButton OnClick="@(() => Edit(r))" FillMode="outline" Size="sm" Enabled="@(!locked)">Edit</TelerikButton>
-                        <TelerikButton OnClick="@(() => ToggleLock(r))" FillMode="outline" Size="sm">@(locked ? "Unlock" : "Lock")</TelerikButton>
                         @if (deleteCode == r.SgCode)
                         {
                             <TelerikButton OnClick="@(() => Delete(r))" ThemeColor="error" Size="sm">Confirm</TelerikButton>
@@ -118,7 +117,7 @@
     string                  search          = string.Empty;
     bool                    saving;
 
-    static SalgradeModel NewForm() => new() { WGsis = 1, WPhic = 1, WPagibig = 1, WTax = 0, WSss = 0 };
+    static SalgradeModel NewForm() => new() { WGsis = 0, WPhic = 1, WPagibig = 1, WTax = 0, WSss = 1 };
 
     List<SalgradeModel> shown => grades.Where(g =>
         string.IsNullOrWhiteSpace(search)
@@ -185,17 +184,6 @@
     {
         editingCode = null;
         form = NewForm();
-    }
-
-    async Task ToggleLock(SalgradeModel r)
-    {
-        try
-        {
-            await _salgradeDa._03Lock(r.SgCode!, (r.IsLock ?? 0) != 1, Uc!.OpayDb!, Uc.Conn!);
-            if (editingCode == r.SgCode) ClearForm();
-            await Reload();
-        }
-        catch (Exception ex) { Show("error", $"Failed: {ex.Message}"); }
     }
 
     async Task Delete(SalgradeModel r)

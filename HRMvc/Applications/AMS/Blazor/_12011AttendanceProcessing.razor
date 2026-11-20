@@ -1,10 +1,19 @@
 @using HRApiLibrary.Models._00_Main
-@using HRApiLibrary.Models._11_AMS
+@using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Modules._11003O
-@using HRMvc.Applications.AMS.Blazor._12011
-@using HRMvc.Applications.AMS.Vars
+@using HRApiLibrary.DataAccess._10_Pis
+@using HRApiLibrary.DataAccess._10_Pis.Interface
+@using HRApiLibrary.DataAccess._11_AMS
+@using HRApiLibrary.DataAccess._20_Pay
+@using HRApiLibrary.DataAccess._20_Pay.Interface
+@using HRApiLibrary.DataAccess._20_Pay.OPay
+@using HRApiLibrary.Models._20_Pay
+@using HRApiLibrary.Models._20_Pay.OPay
 @using HRMvc.Applications._00GeneralComponents.BodyComponents
 @using Telerik.Blazor.Components
+@using ClosedXML.Excel
+@using HRMvc.Applications.PayrollReport.Class
+@using Microsoft.JSInterop
 
 <TelerikRootComponent>
 
@@ -12,326 +21,880 @@
                          HorizontalPosition="NotificationHorizontalPosition.Center"
                          VerticalPosition="NotificationVerticalPosition.Top" />
 
-    <!-- Remove Employee Confirmation -->
-    <TelerikDialog @bind-Visible="@v.IsRemoveEmpConfirmOpen" Title="Confirm Remove" Width="400px">
+    <TelerikDialog @bind-Visible="@_pushConfirmOpen" Title="Push to Payroll Entry" Width="460px">
         <DialogContent>
-            <p>Are you sure you want to remove the selected employee(s) from the list?</p>
+            <p>Push the manhours of <b>@_pushCount</b> selected employee(s) to payroll transaction <b>@_pushTrn</b> (@_start.ToString("MM/dd/yyyy") - @_end.ToString("MM/dd/yyyy"))?</p>
+            <p class="mb-0">The attendance manhour columns of those employees in the transaction will be replaced.</p>
         </DialogContent>
         <DialogButtons>
-            <TelerikButton OnClick="OnConfirmRemove" ThemeColor="error">Yes, Remove</TelerikButton>
-            <TelerikButton OnClick="OnCancelRemove">Cancel</TelerikButton>
+            <TelerikButton OnClick="OnPushConfirm" ThemeColor="primary">Yes, Push</TelerikButton>
+            <TelerikButton OnClick="@(() => _pushConfirmOpen = false)">Cancel</TelerikButton>
         </DialogButtons>
     </TelerikDialog>
+
+    <style>
+        .att-emp-grid .k-grid-content tr,
+        .att-emp-grid .k-grid-content td { cursor: pointer; }
+        .att-legend { display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-size:12px; padding:2px 0; }
+        .att-legend span.sw { display:inline-block; width:14px; height:14px; border:1px solid #999; margin-right:4px; vertical-align:middle; }
+        .att-r-RD  td, .att-sw-RD  { background:#dee2e6 !important; color:#212529; }
+        .att-r-RN  td, .att-sw-RN  { background:#cfd4f7 !important; color:#212529; }
+        .att-r-OB  td, .att-sw-OB  { background:#c9ecf5 !important; color:#212529; }
+        .att-r-LV  td, .att-sw-LV  { background:#f8d0e0 !important; color:#212529; }
+        .att-r-LH  td, .att-sw-LH  { background:#c8f0d2 !important; color:#212529; }
+        .att-r-SH  td, .att-sw-SH  { background:#fff3b0 !important; color:#212529; }
+        .att-r-AB  td, .att-sw-AB  { background:#f5b7b1 !important; color:#212529; }
+        .att-r-DH  td, .att-sw-DH  { background:#ffd3a8 !important; color:#212529; }
+    </style>
 
     <div class="card w-100 p-1">
         <BodyHdr pageTitle="Attendance Processing" />
         <div class="card-body p-1 w-100">
 
-            <CascadingValue Value="@v">
-                <CascadingValue Value="@Uc">
-                    <CascadingValue Value="@NotifyChanged">
+            <div class="d-flex gap-2 align-items-end flex-wrap bordered-bottom py-1">
+                <div>
+                    <div class="small fw-bold">PAYROLL GROUP</div>
+                    <TelerikDropDownList Data="@_payrollGrps"
+                                         Value="@_payrollGrpId"
+                                         ValueChanged="@((int? val) => OnPayrollGrpChanged(val))"
+                                         TextField="Name" ValueField="Id" Width="300px" DefaultText="Select payroll group">
+                        <DropDownListSettings>
+                            <DropDownListPopupSettings Height="300px" />
+                        </DropDownListSettings>
+                    </TelerikDropDownList>
+                </div>
+                <div>
+                    <div class="small fw-bold">YEAR</div>
+                    <TelerikDropDownList Data="@_years" Value="@_year" ValueChanged="@((string v) => OnPeriodChanged(() => _year = v))" Width="90px" />
+                </div>
+                <div>
+                    <div class="small fw-bold">MONTH</div>
+                    <TelerikDropDownList Data="@_months" Value="@_month" ValueChanged="@((string v) => OnPeriodChanged(() => _month = v))" Width="75px" />
+                </div>
+                <div>
+                    <div class="small fw-bold">PERIOD</div>
+                    <TelerikDropDownList Data="@_periods" TextField="@nameof(OPayPeriod.PdNumber)" ValueField="@nameof(OPayPeriod.PdNumber)"
+                                         Value="@_period" ValueChanged="@((string v) => OnPeriodChanged(() => _period = v))" Width="75px" />
+                </div>
+                <div>
+                    <div class="small fw-bold">ATTENDANCE START</div>
+                    <TelerikDatePicker Value="@_start" ValueChanged="@((DateTime v) => { _start = v; ResetResults(); })" Format="MMM dd, yyyy" Width="150px" />
+                </div>
+                <div>
+                    <div class="small fw-bold">ATTENDANCE END</div>
+                    <TelerikDatePicker Value="@_end" ValueChanged="@((DateTime v) => { _end = v; ResetResults(); })" Format="MMM dd, yyyy" Width="150px" />
+                </div>
+                <TelerikButton OnClick="OnLoad" ThemeColor="primary" Enabled="@(!_busy && _payrollGrpId is not null)">@(_busy ? "Loading..." : "Load")</TelerikButton>
+                <TelerikButton OnClick="OnPushClick" Enabled="@(!_busy && _dailyByEmp.Count > 0)">Push to Payroll Entry</TelerikButton>
+                <TelerikButton OnClick="ExportExcel" FillMode="outline" Enabled="@(SummaryView.Count > 0)">Excel</TelerikButton>
+                <TelerikButton OnClick="ExportPdf" FillMode="outline" Enabled="@(SummaryView.Count > 0)">PDF</TelerikButton>
+            </div>
 
-                        <!-- Top Buttons -->
-                        <div class="d-flex gap-1 bordered-bottom py-1">
-                            <div class="col-auto">
-                                <TelerikButton OnClick="OnSave" ThemeColor="primary"
-                                               Enabled="@(v.SelectedPayrollGrpId is not null
-                                                       && v.Hdr.CoverageStart != default
-                                                       && v.Hdr.CoverageEnd != default
-                                                       && v.ManHours.Count > 0
-                                                       && !v.IsBusy)">
-                                    Save
-                                </TelerikButton>
-                            </div>
-                            <div class="col-auto">
-                                <TelerikButton OnClick="OnPostToPayroll">Post to Payroll</TelerikButton>
-                            </div>
-                            <div class="col-auto">
-                                <TelerikButton OnClick="OnPrint">Print</TelerikButton>
-                            </div>
-                        </div>
+            <div class="w-100 p-2 bg-white bordered-bottom">
+                <div class="d-flex flex-wrap align-items-baseline row-gap-2">
+                    <div class="d-flex align-items-baseline gap-2 pe-4">
+                        <span class="fw-bold small">PAYROLL CODE :</span>
+                        <span>@PayrollCode</span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-2 px-4 border-start">
+                        <span class="fw-bold small">PAYROLL GROUP :</span>
+                        <span>@(_payrollGrps.FirstOrDefault(x => x.Id == _payrollGrpId) is { } g ? $"{g.Code} - {g.Name}" : "")</span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-2 px-4 border-start">
+                        <span class="fw-bold small">PAYROLL PERIOD :</span>
+                        <span>@_start.ToString("MMM dd") - @_end.ToString("MMM dd, yyyy")</span>
+                    </div>
+                    <div class="d-flex align-items-baseline gap-2 px-4 border-start">
+                        <span class="fw-bold small">STATUS :</span>
+                        <span class="@(_trnStatus is null && !string.IsNullOrEmpty(PayrollCode) ? "text-danger" : _trnStatus == "Lock" ? "txt-maroon fw-bold" : "")">@(_trnStatus ?? (string.IsNullOrEmpty(PayrollCode) ? "" : "No open transaction"))</span>
+                    </div>
+                </div>
+            </div>
 
-                        <!-- Payroll Group -->
-                        <div class="row mb-2 align-items-center border-bottom">
-                            <div class="col-auto">
-                                <label class="form-label fw-bold txt-fcolor1 mb-0">Payroll Group</label>
-                            </div>
-                            <div class="col-auto p-1">
-                                <TelerikDropDownList Data="@v.PayrollGrps"
-                                                     Value="@v.SelectedPayrollGrpId"
-                                                     ValueChanged="@((int? val) => OnPayrollGrpChanged(val))"
-                                                     TextField="Name" ValueField="Id" Width="400px">
-                                    <DropDownListSettings>
-                                        <DropDownListPopupSettings Height="400px" />
-                                    </DropDownListSettings>
-                                </TelerikDropDownList>
-                            </div>
-                        </div>
+            <div class="d-flex gap-3 mt-2">
 
-                        <!-- Coverage + Load Button -->
-                        <div class="d-flex gap-2 align-items-center bordered-bottom py-1">
-                            <div class="">
-                                <label class="form-label fw-bold mb-0">Punches Coverage :</label>
-                            </div>
-                            <div class="col-auto">
-                                <label class="form-label mb-0 me-1">Start</label>
-                                <TelerikDatePicker Value="@v.Hdr.CoverageStart" ValueChanged="@((DateTime val) => { v.Hdr.CoverageStart = val; })" Width="160px" />
-                            </div>
-                            <div class="col-auto">
-                                <label class="form-label mb-0 me-1 txt-orange">End</label>
-                                <TelerikDatePicker Value="@v.Hdr.CoverageEnd" ValueChanged="@((DateTime val) => { v.Hdr.CoverageEnd = val; })" Width="160px" />
-                            </div>
-                            <div class="col-auto">
-                                <TelerikButton OnClick="OnLoad" ThemeColor="primary" Enabled="@(!v.IsBusy)">
-                                    @(v.IsBusy ? "Loading..." : "Load")
-                                </TelerikButton>
-                            </div>
-                        </div>
+                <div style="width:360px; flex:none;">
+                    <TelerikGrid Data="@_emps"
+                                 Class="att-emp-grid"
+                                 Height="320px"
+                                 Size="sm"
+                                 SelectionMode="GridSelectionMode.Multiple"
+                                 @bind-SelectedItems="@_selectedEmps"
+                                 OnRowClick="@OnEmpRowClick">
+                        <GridToolBarTemplate>
+                            <span class="fw-bold">Employee List</span>
+                        </GridToolBarTemplate>
+                        <GridColumns>
+                            <GridCheckboxColumn Width="40px" SelectAll="true" />
+                            <GridColumn Field="@nameof(AttEmpRow.EmpNumber)" Title="Emp. No." Width="80px" />
+                            <GridColumn Field="@nameof(AttEmpRow.EmpName)"   Title="Name" />
+                        </GridColumns>
+                    </TelerikGrid>
+                </div>
 
-                        <!-- BioManHour Grid -->
-                        <_12011_ManHourGrid />
+                <div class="flex-grow-1">
+                    <TelerikGrid Data="@_daily"
+                                 OnRowRender="@OnDailyRowRender"
+                                 Height="320px"
+                                 Size="sm"
+                                 Pageable="false">
+                        <GridToolBarTemplate>
+                            <span class="fw-bold">@(_current is null ? "<<Employee Name>>" : _current.EmpName)</span>
+                        </GridToolBarTemplate>
+                        <GridColumns>
+                            <GridColumn Field="@nameof(AttDailyRow.Date)"      Title="Date"       DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
+                            <GridColumn Field="@nameof(AttDailyRow.Day)"       Title="Day"        Width="60px" />
+                            <GridColumn Field="@nameof(AttDailyRow.DayType)"   Title="Day Type"   Width="80px" />
+                            <GridColumn Field="@nameof(AttDailyRow.Holiday)"   Title="Holiday"    Width="70px" />
+                            <GridColumn Field="@nameof(AttDailyRow.Remarks)"   Title="Remarks"    Width="110px" />
+                            <GridColumn Field="@nameof(AttDailyRow.TimeIn)"    Title="Time In"    Width="80px" />
+                            <GridColumn Field="@nameof(AttDailyRow.TimeOut)"   Title="Time Out"   Width="80px" />
+                            <GridColumn Field="@nameof(AttDailyRow.Tardiness)" Title="Tardiness"  DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                            <GridColumn Field="@nameof(AttDailyRow.Undertime)" Title="Undertime"  DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                            <GridColumn Field="@nameof(AttDailyRow.Overtime)"  Title="Overtime"   DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                            <GridColumn Field="@nameof(AttDailyRow.ND)"        Title="ND"         DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                            <GridColumn Field="@nameof(AttDailyRow.DutyStart)" Title="Duty Start" Width="90px" />
+                            <GridColumn Field="@nameof(AttDailyRow.DutyEnd)"   Title="Duty End"   Width="90px" />
+                        </GridColumns>
+                    </TelerikGrid>
+                    <div class="att-legend">
+                        <b>Legend:</b>
+                        <span><span class="sw" style="background:#fff"></span>R - Regular Day</span>
+                        <span><span class="sw att-sw-RD"></span>RD - Rest Day</span>
+                        <span><span class="sw att-sw-RN"></span>RN - Regular Night</span>
+                        <span><span class="sw att-sw-OB"></span>OB - Official Business (paid)</span>
+                        <span><span class="sw att-sw-LV"></span>LV - Paid Leave</span>
+                        <span><span class="sw att-sw-AB"></span>AB - Absent</span>
+                        <span><span class="sw att-sw-LH"></span>LH - Legal Holiday</span>
+                        <span><span class="sw att-sw-SH"></span>SH - Special Holiday</span>
+                        <span><span class="sw att-sw-DH"></span>DH - Double Holiday</span>
+                    </div>
+                </div>
+            </div>
 
-                        <!-- Bottom Buttons -->
-                        <div class="row mt-2 mb-1">
-                            <div class="col-auto">
-                                <TelerikButton OnClick="OnLoadAttendance" ThemeColor="primary">Load Attendance</TelerikButton>
-                            </div>
-                            <div class="col-auto">
-                                <TelerikButton OnClick="OnProcessData">Process Data</TelerikButton>
-                            </div>
-                            <div class="col-auto">
-                                <TelerikButton OnClick="OnSaveDailyPunches">Save</TelerikButton>
-                            </div>
-                        </div>
-
-                        <!-- Daily Transaction Label -->
-                        <div class="row mb-1">
-                            <div class="col-auto">
-                                <label class="fw-bold txt-fcolor1">Daily Transaction</label>
-                            </div>
-                        </div>
-
-                        <!-- BioDailyPunches Grid -->
-                        <_12011_DailyTransactionGrid />
-
-                        <!-- Load Attendance Modal -->
-                        <_12011_LoadAttendanceModal />
-
-                        <!-- Add Employee Modal -->
-                        <_12011_AddEmployeeModal />
-
-                        <_12011_UploadExcelModal />
-
-                    </CascadingValue>
-                </CascadingValue>
-            </CascadingValue>
+            <div class="mt-3">
+                <TelerikGrid Data="@SummaryView"
+                             Height="320px"
+                             Size="sm"
+                             Pageable="false">
+                    <GridColumns>
+                        <GridColumn Field="@nameof(AttSummaryRow.EmpNumber)" Title="Emp#" Width="80px" />
+                        <GridColumn Field="@nameof(AttSummaryRow.EmpName)"   Title="Name" Width="200px" />
+                        <GridColumn Title="Regular Day" HeaderClass="bg-primary-subtle">
+                            <Columns>
+                                <GridColumn Field="@nameof(AttSummaryRow.RegDays)"  Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.RegRD)"    Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.RegTard)"  Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.RegOT)"    Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.RegND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                            </Columns>
+                        </GridColumn>
+                        <GridColumn Title="Legal Holiday" HeaderClass="bg-success-subtle">
+                            <Columns>
+                                <GridColumn Field="@nameof(AttSummaryRow.LegDays)"  Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.LegRD)"    Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.LegTard)"  Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.LegOT)"    Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.LegND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                            </Columns>
+                        </GridColumn>
+                        <GridColumn Title="Special Holiday" HeaderClass="bg-warning-subtle">
+                            <Columns>
+                                <GridColumn Field="@nameof(AttSummaryRow.SpDays)"   Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.SpRD)"     Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.SpTard)"   Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.SpOT)"     Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.SpND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                            </Columns>
+                        </GridColumn>
+                        <GridColumn Title="Double Holiday" HeaderClass="bg-danger-subtle">
+                            <Columns>
+                                <GridColumn Field="@nameof(AttSummaryRow.DbDays)"   Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.DbRD)"     Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.DbTard)"   Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.DbOT)"     Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.DbND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                            </Columns>
+                        </GridColumn>
+                    </GridColumns>
+                </TelerikGrid>
+            </div>
 
         </div>
     </div>
 
+    <TelerikWindow Modal="true" @bind-Visible="@_showPdf" Width="90vw" Height="92vh">
+        <WindowTitle>Attendance Processing</WindowTitle>
+        <WindowContent>
+            @if (_pdfBase64 != null)
+            {
+                <iframe src="data:application/pdf;base64,@_pdfBase64" style="width:100%;height:100%;border:none;"></iframe>
+            }
+        </WindowContent>
+        <WindowActions><WindowAction Name="Close" /></WindowActions>
+    </TelerikWindow>
+
 </TelerikRootComponent>
 
-@inject IDA_11003O               _daO
-@inject IBioManHourHdrDataAccess _hdrDa
-@inject IBioManHourDataAccess    _manHourDa
+@inject IDA_11003O          _daO
+@inject IAttpunches1DataAccess _punchDa
+@inject IOHolidayDataAccess    _holidayDa
+@inject IOtreqdtlDataAccess    _otDtlDa
+@inject ISettingsDataAccess    _settingsDa
+@inject IAms_otsettingsDataAccess _otSetDa
+@inject IAtttemplateDataAccess _tplDa
+@inject IOManhourPushDataAccess _pushDa
+@inject IOPayrollDataAccess _payroll
+@inject IJSRuntime _js
 
 @code {
-    [Parameter] public UserClaimsModel? Uc        { get; set; }
-    private TelerikNotification NotificationRef   { get; set; } = new();
-    private V12011Model         v                 { get; set; } = new();
-    private bool                _initialized      = false;
-    private Func<Task>? _notifyChanged;
-    private Func<Task> NotifyChanged => _notifyChanged ??= async () =>
-    {
-        try
-        {
-            if (!string.IsNullOrEmpty(v.Notification.Type))
-            {
-                NotificationRef.Show(new NotificationModel
-                {
-                    Text       = v.Notification.Message,
-                    ThemeColor = v.Notification.Type,
-                    CloseAfter = 4000
-                });
-                v.Notification = (string.Empty, string.Empty);
-            }
-            await InvokeAsync(StateHasChanged);
-        }
-        catch (ObjectDisposedException) { }
-    };
+    [Parameter] public UserClaimsModel? Uc { get; set; }
 
-    protected async override Task OnParametersSetAsync()
+    private TelerikNotification NotificationRef { get; set; } = new();
+
+    private DateTime _start = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime _end   = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1);
+    private bool     _busy;
+    private List<string>      _years   = Enumerable.Range(DateTime.Now.Year - 2, 4).Select(y => y.ToString()).ToList();
+    private List<string>      _months  = Enumerable.Range(1, 12).Select(m => m.ToString("00")).ToList();
+    private List<OPayPeriod>  _periods = Enumerable.Range(1, 5).Select(i => new OPayPeriod { PdNumber = i.ToString("00"), PdName = $"{i} period" }).ToList();
+    private string            _year    = DateTime.Now.Year.ToString();
+    private string            _month   = DateTime.Now.Month.ToString("00");
+    private string            _period  = DateTime.Now.Day > 15 ? "02" : "01";
+    private string?           _trnStatus;
+    private string PayrollCode
     {
-        await LoadData();
+        get
+        {
+            var cl = _payrollGrps.FirstOrDefault(x => x.Id == _payrollGrpId)?.Clnumber?.Trim();
+            return string.IsNullOrEmpty(cl) || _year.Length < 4 ? string.Empty : $"{_year[2..]}{_month}{_period}-{cl}";
+        }
     }
+    private bool     _pushConfirmOpen;
+    private string   _pushTrn = string.Empty;
+    private int      _pushCount;
 
-    private async Task LoadData()
+    private List<M11003_Payrollgrp> _payrollGrps = [];
+    private int?                 _payrollGrpId;
+    private List<AttEmpRow>      _emps         = [];
+    private IEnumerable<AttEmpRow> _selectedEmps = [];
+    private AttEmpRow?           _current;
+    private List<AttDailyRow>    _daily        = [];
+    private bool    _showPdf;
+    private string? _pdfBase64;
+    private List<AttSummaryRow>  _summary      = [];
+    private List<AttSummaryRow>  SummaryView   => _summary.Where(x => _selectedEmps.Any(e => e.EmpNumber == x.EmpNumber)).ToList();
+    private Dictionary<int, List<AttDailyRow>> _dailyByEmp = [];
+
+    protected override async Task OnParametersSetAsync()
     {
-        if (_initialized) return;
-        _initialized = true;
-
-        if (Uc is null) return;
+        if (Uc is null || _payrollGrps.Count > 0) return;
         try
         {
-            v.PayrollGrps = await _daO._02Payrollgrps(Uc.OpayDb!, Uc.Conn!) ?? [];
+            _payrollGrps = await _daO._02Payrollgrps(Uc.OpayDb!, Uc.Conn!) ?? [];
+            var fromDb = await _payroll._02Periods(Uc.OpayDb!, Uc.Conn!);
+            if (fromDb.Count > 0) _periods = fromDb;
+            SetDefaultDates();
         }
-        catch (Exception ex)
-        {
-            NotificationRef.Show(new NotificationModel
-            {
-                Text       = $"Load failed: {ex.Message}",
-                ThemeColor = "error",
-                CloseAfter = 4000
-            });
-        }
+        catch (Exception ex) { Notify($"Load failed: {ex.Message}", "error"); }
     }
 
     private async Task OnPayrollGrpChanged(int? val)
     {
-        v.SelectedPayrollGrpId = val;
-        v.ManHours             = [];
-        v.DailyPunches         = [];
-        await NotifyChanged.Invoke();
+        _payrollGrpId  = val;
+        _dailyByEmp    = [];
+        _daily         = [];
+        _summary       = [];
+        _current       = null;
+        _selectedEmps  = [];
+        _emps          = [];
+        await RefreshTrn();
+        if (Uc is null || val is null) return;
+        try
+        {
+            var list = await _daO._02Deprec_ByFieldId("PayrollgrpId", val, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!) ?? [];
+            _emps = list.Select(x => new AttEmpRow { SystemId = x.EmpmasId, EmpNumber = x.EmpNumber ?? string.Empty, EmpName = x.EmpName ?? string.Empty }).ToList();
+        }
+        catch (Exception ex) { Notify($"Load failed: {ex.Message}", "error"); }
     }
 
     private async Task OnLoad()
     {
         if (Uc is null) return;
+        if (_payrollGrpId is null) { Notify("Please select a Payroll Group.", "warning"); return; }
+        if (_end < _start) { Notify("End date must not be earlier than Start date.", "warning"); return; }
 
-        if (v.SelectedPayrollGrpId is null)
-        {
-            v.Notification = ("warning", "Please select a Payroll Group.");
-            await NotifyChanged.Invoke();
-            return;
-        }
-
-        if (v.Hdr.CoverageStart == default || v.Hdr.CoverageEnd == default)
-        {
-            v.Notification = ("warning", "Please set Coverage Start and End date.");
-            await NotifyChanged.Invoke();
-            return;
-        }
-
-        v.IsBusy = true;
-        await NotifyChanged.Invoke();
-
+        _busy = true;
         try
         {
-            var hdrs     = await _hdrDa._02sByPayrollGrp(v.SelectedPayrollGrpId.Value, Uc.SchemaUserPis!, Uc.Conn!) ?? [];
-            var existing = hdrs.FirstOrDefault(x => x is not null && x.CoverageStart == v.Hdr.CoverageStart);
+            _dailyByEmp = [];
+            _summary    = [];
+            var dstart  = DateOnly.FromDateTime(_start);
+            var dend    = DateOnly.FromDateTime(_end);
+            var holidays = await LoadHolidays();
+            var pay      = await _settingsDa._02(1, Uc.SchemaUserPay, Uc.Conn);
+            var nd       = pay is null || pay.NdStart is null || pay.NdEnd is null ? ((int, int)?)null : (pay.NdStart.Value, pay.NdEnd.Value);
+            if (nd is null) Notify("ND not computed: ND Start/End not found in Pay Settings.", "warning");
+            var otSettings = (await _otSetDa._02sByPayrollgrpid(_payrollGrpId!.Value, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!) ?? [])
+                                .Where(x => x is not null)
+                                .GroupBy(x => x!.Empnumber.Trim())
+                                .ToDictionary(g => g.Key, g => g.First()!.NeedsotfilingBool);
 
-            if (existing is not null)
+            var ids       = _emps.Where(x => x.SystemId > 0).Select(x => x.SystemId).Distinct().ToList();
+            var allPunch  = (await _punchDa._02ByIdsByRange(ids, dstart, dend, Uc.SchemaUserPis, Uc.Conn) ?? [])
+                                .Where(p => p is not null).GroupBy(p => p!.EmpmasId ?? 0).ToDictionary(g => g.Key, g => g.ToList());
+
+            var needIds   = _emps.Where(x => x.SystemId > 0 && otSettings.TryGetValue(x.EmpNumber.Trim(), out var nn) && nn).Select(x => x.SystemId).Distinct().ToList();
+            var allFiled  = (await _otDtlDa._02ApprovedByEmpmasIds_RangeByPunchIn(needIds, _start, _end, Uc.SchemaUserPis, Uc.Conn) ?? [])
+                                .Where(o => o is not null).GroupBy(o => o!.EmpmasId).ToDictionary(g => g.Key, g => g.ToList());
+
+            var tpls       = (await _tplDa._02ByEmpmasIds(ids, Uc.SchemaUserPis, Uc.Conn) ?? []).Where(t => t is not null).ToDictionary(t => t!.EmpmasId ?? 0, t => t!);
+            var defaultTpl = await _tplDa._02NoSchedule(0, Uc.SchemaUserPis, Uc.Conn);
+
+            foreach (var e in _emps)
             {
-                v.Hdr      = existing;
-                var detail = await _manHourDa._02sByHdr(existing.Id, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!);
-                v.ManHours = detail.Where(x => x is not null).Cast<BioManHourModel>().ToList();
-            }
-            else
-            {
-                v.Hdr.PayrollGrpId = v.SelectedPayrollGrpId.Value;
-                var emps    = await _daO._02Deprec_ByFieldId("PayrollgrpId", v.SelectedPayrollGrpId.Value, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!) ?? [];
-                v.ManHours  = emps.Where(x => x is not null).Select(x => new BioManHourModel
+                var rows = new List<AttDailyRow>();
+                var empTpl = e.SystemId > 0 && tpls.TryGetValue(e.SystemId, out var et) ? et : defaultTpl;
+                Func<DateTime, bool> isRdDay = d => empTpl is not null && DutyOf(empTpl, d) == "RD";
+                if (e.SystemId > 0 && allPunch.TryGetValue(e.SystemId, out var punches))
                 {
-                    EmpNumber = x!.EmpNumber ?? string.Empty,
-                    EmpName   = x.EmpName    ?? string.Empty
-                }).ToList();
+                    bool needsOt = otSettings.TryGetValue(e.EmpNumber.Trim(), out var n) && n;
+                    var filed = new Dictionary<DateTime, double>();
+                    if (needsOt && allFiled.TryGetValue(e.SystemId, out var ots))
+                        filed = ots.GroupBy(o => o!.PunchIn.Date).ToDictionary(g => g.Key, g => g.Sum(o => o!.TotHrs));
+                    rows = punches.Select(p => ToDaily(p!, holidays, needsOt, filed, nd, isRdDay)).ToList();
+                }
+                if (e.SystemId > 0)
+                {
+                    var tpl = tpls.TryGetValue(e.SystemId, out var t) ? t : defaultTpl;
+                    if (tpl is not null)
+                    {
+                        var seen = rows.Select(r => r.Date).ToHashSet();
+                        var last = _end.Date < DateTime.Today ? _end.Date : DateTime.Today;
+                        for (var d = _start.Date; d <= last; d = d.AddDays(1))
+                        {
+                            if (seen.Contains(d) || holidays.ContainsKey(d) || DutyOf(tpl, d) != "R") continue;
+                            rows.Add(new AttDailyRow
+                            {
+                                Date = d, Day = d.ToString("ddd", System.Globalization.CultureInfo.InvariantCulture), DayType = "R", Kind = "AB",
+                                Remarks = "Absent", AbsentHrs = OPayrollConstants.HoursPerDay
+                            });
+                        }
+                        rows = rows.OrderBy(r => r.Date).ToList();
+                    }
+                }
+                _dailyByEmp[e.SystemId] = rows;
+                _summary.Add(ToSummary(e, rows));
             }
 
-            v.Notification = ("success", $"{v.ManHours.Count} employee(s) loaded.");
+            _selectedEmps = _emps.ToList();
+            ShowCurrent(_current ?? _emps.FirstOrDefault());
+            Notify($"{_emps.Count} employee(s) loaded.", "success");
         }
-        catch (Exception ex)
+        catch (Exception ex) { Notify($"Load failed: {ex.Message}", "error"); }
+        _busy = false;
+    }
+
+    static string Z(double v, string fmt) => v == 0 ? string.Empty : v.ToString(fmt);
+
+    string ReportFile(string ext) => $"AttendanceProcessing_{PayrollCode}_{_start:yyyyMMdd}_{_end:yyyyMMdd}.{ext}".Replace("-", "_");
+
+    List<string> ReportSubtitles()
+    {
+        var grp = _payrollGrps.FirstOrDefault(x => x.Id == _payrollGrpId);
+        return new List<string>
         {
-            v.Notification = ("error", $"Load failed: {ex.Message}");
+            "For the period covering " + _start.ToString("MMM dd, yyyy") + " - " + _end.ToString("MMM dd, yyyy"),
+            "Payroll Group : " + (grp is null ? "" : $"{grp.Code} - {grp.Name}") + (string.IsNullOrEmpty(PayrollCode) ? "" : "     Payroll Code : " + PayrollCode)
+        };
+    }
+
+    static readonly string[] GroupNames = ["Regular Day", "Legal Holiday", "Special Holiday", "Double Holiday"];
+
+    static double[] GroupValues(AttSummaryRow r) =>
+    [
+        r.RegDays, r.RegRD, r.RegTard, r.RegOT, r.RegND,
+        r.LegDays, r.LegRD, r.LegTard, r.LegOT, r.LegND,
+        r.SpDays,  r.SpRD,  r.SpTard,  r.SpOT,  r.SpND,
+        r.DbDays,  r.DbRD,  r.DbTard,  r.DbOT,  r.DbND
+    ];
+
+    static readonly string[] MetricNames = ["Days", "RD", "Tard", "OT", "ND"];
+    static string Metric(int i, double v) => Z(v, i % 5 is 0 or 1 ? "0.##" : i % 5 == 2 ? "#,##0" : "#,##0.00");
+
+    async Task ExportExcel()
+    {
+        var sum = SummaryView;
+        if (sum.Count == 0) return;
+        try
+        {
+            using var wb = new XLWorkbook();
+            var ws = wb.AddWorksheet("Summary");
+            var subs = ReportSubtitles();
+            ws.Cell(1, 1).Value = "Attendance Processing"; ws.Cell(1, 1).Style.Font.FontSize = 14; ws.Cell(1, 1).Style.Font.Bold = true;
+            ws.Cell(2, 1).Value = subs[0];
+            ws.Cell(3, 1).Value = subs[1];
+
+            ws.Cell(5, 1).Value = "Emp#"; ws.Cell(5, 2).Value = "Name";
+            for (int g = 0; g < 4; g++)
+            {
+                ws.Cell(5, 3 + g * 5).Value = GroupNames[g];
+                ws.Range(5, 3 + g * 5, 5, 7 + g * 5).Merge().Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                for (int m = 0; m < 5; m++) ws.Cell(6, 3 + g * 5 + m).Value = MetricNames[m];
+            }
+            ws.Range(5, 1, 6, 22).Style.Font.Bold = true;
+            ws.Range(5, 1, 6, 22).Style.Fill.BackgroundColor = XLColor.FromHtml("#F4F6F9");
+
+            int n = 6;
+            foreach (var r in sum)
+            {
+                n++;
+                ws.Cell(n, 1).SetValue(r.EmpNumber); ws.Cell(n, 2).Value = r.EmpName.Trim();
+                var v = GroupValues(r);
+                for (int i = 0; i < v.Length; i++)
+                    if (v[i] != 0) ws.Cell(n, 3 + i).Value = v[i];
+            }
+            ws.Range(7, 3, n, 22).Style.NumberFormat.Format = "#,##0.##";
+            ws.Columns().AdjustToContents();
+
+            var wd = wb.AddWorksheet("Daily");
+            string[] hd = ["Emp#", "Name", "Date", "Day", "Day Type", "Holiday", "Remarks", "Time In", "Time Out", "Tardiness", "Undertime", "Overtime", "ND"];
+            for (int i = 0; i < hd.Length; i++) wd.Cell(1, i + 1).Value = hd[i];
+            wd.Row(1).Style.Font.Bold = true;
+            wd.Row(1).Style.Fill.BackgroundColor = XLColor.FromHtml("#F4F6F9");
+            int d = 1;
+            foreach (var e in _selectedEmps)
+                foreach (var x in _dailyByEmp.TryGetValue(e.SystemId, out var rowsOf) ? rowsOf : [])
+                {
+                    d++;
+                    wd.Cell(d, 1).SetValue(e.EmpNumber); wd.Cell(d, 2).Value = e.EmpName.Trim();
+                    wd.Cell(d, 3).Value = x.Date.ToString("MM/dd/yyyy"); wd.Cell(d, 4).Value = x.Day; wd.Cell(d, 5).Value = x.DayType;
+                    wd.Cell(d, 6).Value = x.Holiday; wd.Cell(d, 7).Value = x.Remarks; wd.Cell(d, 8).Value = x.TimeIn; wd.Cell(d, 9).Value = x.TimeOut;
+                    if (x.Tardiness != 0) wd.Cell(d, 10).Value = x.Tardiness;
+                    if (x.Undertime != 0) wd.Cell(d, 11).Value = x.Undertime;
+                    if (x.Overtime != 0)  wd.Cell(d, 12).Value = x.Overtime;
+                    if (x.ND != 0)        wd.Cell(d, 13).Value = x.ND;
+                }
+            wd.Range(2, 10, Math.Max(d, 2), 13).Style.NumberFormat.Format = "#,##0.##";
+            wd.Columns().AdjustToContents();
+
+            using var ms = new MemoryStream();
+            wb.SaveAs(ms);
+            await _js.InvokeVoidAsync("downloadFile", ReportFile("xlsx"), Convert.ToBase64String(ms.ToArray()));
         }
-
-        v.IsBusy = false;
-        await NotifyChanged.Invoke();
+        catch (Exception ex) { Console.Error.WriteLine("12011 excel: " + ex); Notify("Unable to create the Excel file.", "error"); }
     }
 
-private async Task OnConfirmRemove()
+    async Task ExportPdf()
     {
-        var selected = v.ManHours.Where(x => x.IsSelected).ToList();
-        v.ManHours               = v.ManHours.Where(x => !x.IsSelected).ToList();
-        v.IsRemoveEmpConfirmOpen = false;
-        v.Notification           = ("success", $"{selected.Count} employee(s) removed.");
-        await NotifyChanged.Invoke();
+        var sum = SummaryView;
+        if (sum.Count == 0) return;
+        try
+        {
+            var cols = new List<PdfCol> { new() { Title = "Emp#", Width = 0.6 }, new() { Title = "Name", Width = 1.7 } };
+            string[] mt = ["Days", "RD", "Tardiness", "OT", "ND"];
+            for (int g = 0; g < 4; g++)
+                for (int m = 0; m < 5; m++)
+                    cols.Add(new PdfCol { Title = mt[m], Width = m == 2 ? 0.6 : 0.5, Right = true });
+            var bands = new List<(string Title, int Span)> { ("", 2) };
+            foreach (var gn in GroupNames) bands.Add((gn, 5));
+
+            var list = new List<(string[] Cells, int Kind)>();
+            foreach (var r in sum)
+            {
+                var cells = new List<string> { r.EmpNumber, r.EmpName.Trim() };
+                var v = GroupValues(r);
+                for (int i = 0; i < v.Length; i++) cells.Add(Metric(i, v[i]));
+                list.Add((cells.ToArray(), 0));
+            }
+            var tot = new List<string> { "", "TOTAL" };
+            for (int i = 0; i < 20; i++) tot.Add(Metric(i, sum.Sum(r => GroupValues(r)[i])));
+            list.Add((tot.ToArray(), 1));
+            var subs = ReportSubtitles();
+            subs.Add("Tardiness in minutes; OT and ND in hours.");
+            var bytes = TablePdf.Build("Attendance Processing", subs, cols, list, landscape: true, paper: System.Drawing.Printing.PaperKind.Legal, bands: bands);
+            _pdfBase64 = Convert.ToBase64String(bytes);
+            _showPdf = true;
+        }
+        catch (Exception ex) { Console.Error.WriteLine("12011 pdf: " + ex); Notify("Unable to create the PDF.", "error"); }
     }
 
-    private async Task OnCancelRemove()
+    private async Task OnPushClick()
     {
-        v.IsRemoveEmpConfirmOpen = false;
-        await NotifyChanged.Invoke();
-    }
-
-private async Task OnSave()
-    {
-        if (Uc is null) return;
-
-        v.IsBusy = true;
-        await NotifyChanged.Invoke();
+        if (Uc is null || _payrollGrpId is null) return;
+        var grp = _payrollGrps.FirstOrDefault(x => x.Id == _payrollGrpId);
+        var sel = _selectedEmps.ToList();
+        if (sel.Count == 0) { Notify("Please select at least one employee.", "warning"); return; }
 
         try
         {
-            v.Hdr.PayrollGrpId = v.SelectedPayrollGrpId!.Value;
-            await _hdrDa._01(v.Hdr, Uc.SchemaUserPis!, Uc.Conn!);
-
-            var hdrs  = await _hdrDa._02sByPayrollGrp(v.SelectedPayrollGrpId.Value, Uc.SchemaUserPis!, Uc.Conn!) ?? [];
-            var saved = hdrs.FirstOrDefault(x => x is not null && x.CoverageStart == v.Hdr.CoverageStart);
-            if (saved is null)
+            await RefreshTrn(false);
+            if (_trnStatus is null or "Lock")
             {
-                v.Notification = ("error", "Failed to retrieve saved header.");
-                v.IsBusy = false;
-                await NotifyChanged.Invoke();
+                Notify($"No open payroll transaction for payroll group {grp?.Name}, payroll period {_start:MMM dd} - {_end:MMM dd, yyyy} (code {PayrollCode}).", "warning");
                 return;
             }
-            v.Hdr = saved;
+            _pushTrn         = PayrollCode;
+            _pushCount       = sel.Count;
+            _pushConfirmOpen = true;
+        }
+        catch (Exception ex) { Notify($"Push failed: {ex.Message}", "error"); }
+    }
 
-            foreach (var row in v.ManHours)
+    private async Task OnPushConfirm()
+    {
+        _pushConfirmOpen = false;
+        if (Uc is null) return;
+        _busy = true;
+        try
+        {
+            var byEmp = new Dictionary<string, Dictionary<string, double>>();
+            foreach (var e in _selectedEmps)
+                byEmp[e.EmpNumber.Trim()] = BuildManhour(_dailyByEmp.TryGetValue(e.SystemId, out var r) ? r : []);
+
+            var (updated, skipped) = await _pushDa._03Push(_pushTrn, byEmp, Uc.OpayDb!, Uc.Conn!);
+            Notify($"{updated} employee(s) pushed to {_pushTrn}." + (skipped.Count > 0 ? $" Not in the transaction: {string.Join(", ", skipped)}." : string.Empty),
+                   skipped.Count > 0 ? "warning" : "success");
+        }
+        catch (Exception ex) { Notify($"Push failed: {ex.Message}", "error"); }
+        _busy = false;
+    }
+
+    private static Dictionary<string, double> BuildManhour(List<AttDailyRow> rows)
+    {
+        var m = new Dictionary<string, double>();
+        void Add(string col, double v) { if (v != 0 && col != "") m[col] = (m.TryGetValue(col, out var c) ? c : 0) + v; }
+
+        foreach (var x in rows)
+        {
+            Add("absent", x.AbsentHrs + x.Tardiness / 60.0 + x.Undertime / 60.0);
+
+            if (x.Kind is "OB" or "LV") { Add("daywrk", x.Credit); continue; }
+            if (x.Kind == "AB") continue;
+
+            Add("daywrk", x.Credit);
+
+            foreach (var g in x.Segs)
             {
-                row.BioManHourHdrId = saved.Id;
-                await _manHourDa._01(row, Uc.SchemaUserPis!, Uc.Conn!);
+                // [hours column, OT column, ND column, ND OT column] of the day type of this part of the duty
+                string[] c = (g.Holiday, g.IsRd) switch
+                {
+                    ("LH", false) => ["lh", "lhot", "ndlh", "ndlhot"],
+                    ("LH", true)  => ["rdlh", "rdlhot", "ndrdlh", "ndrdlhot"],
+                    ("SH", false) => ["sh", "shot", "ndsh", "ndshot"],
+                    ("SH", true)  => ["rdsh", "rdshot", "ndrdsh", "ndrdshot"],
+                    ("DH", false) => ["dh", "dhot", "", ""],
+                    ("DH", true)  => ["rddh", "rddhot", "", ""],
+                    (_, true)     => ["rd", "rdot", "ndrd", "ndrdot"],
+                    _             => ["", "rot", "nd", "ndot"]
+                };
+                Add(c[0], g.Hours);
+                Add(c[1], g.OtHrs);
+                Add(c[2], g.Nd);
+                Add(c[3], g.NdOt);
+            }
+        }
+        return m;
+    }
+
+    private void OnDailyRowRender(GridRowRenderEventArgs args)
+    {
+        if (args.Item is not AttDailyRow r) return;
+        var key = r.Kind != string.Empty ? r.Kind : r.Holiday != string.Empty ? r.Holiday : r.DayType;
+        if (key is "RD" or "RN" or "LH" or "SH" or "DH" or "OB" or "LV" or "AB") args.Class = $"att-r-{key}";
+    }
+
+    private void SetDefaultDates()
+    {
+        if (!int.TryParse(_year, out var y) || !int.TryParse(_month, out var m)) return;
+        switch (_period)
+        {
+            case "01": _start = new DateTime(y, m, 1);  _end = new DateTime(y, m, 15); break;
+            case "02": _start = new DateTime(y, m, 16); _end = new DateTime(y, m, DateTime.DaysInMonth(y, m)); break;
+        }
+    }
+
+    private async Task OnPeriodChanged(Action set)
+    {
+        set();
+        SetDefaultDates();
+        ResetResults();
+        await RefreshTrn();
+    }
+
+    private async Task RefreshTrn(bool setDates = true)
+    {
+        _trnStatus = null;
+        var code = PayrollCode;
+        if (Uc is null || string.IsNullOrEmpty(code)) return;
+        try
+        {
+            var info = await _pushDa._02TrnInfo(code, Uc.OpayDb!, Uc.Conn!);
+            if (info is null) return;
+            _trnStatus = info.Status;
+            if (setDates) { _start = info.AttStart; _end = info.AttEnd; }
+        }
+        catch (Exception ex) { Notify($"Unable to check the payroll transaction: {ex.Message}", "error"); }
+    }
+
+    private void ResetResults()
+    {
+        _dailyByEmp = [];
+        _daily      = [];
+        _summary    = [];
+    }
+
+    private void OnEmpRowClick(GridRowClickEventArgs args) => ShowCurrent(args.Item as AttEmpRow);
+
+    private void ShowCurrent(AttEmpRow? e)
+    {
+        _current = e;
+        _daily   = e is not null && _dailyByEmp.TryGetValue(e.SystemId, out var r) ? r : [];
+    }
+
+    private static List<(DateTime Date, DateTime Start, DateTime End)> SplitByMidnight(DateTime s, DateTime e)
+    {
+        var list = new List<(DateTime, DateTime, DateTime)>();
+        var cur = s;
+        while (cur < e)
+        {
+            var next = cur.Date.AddDays(1);
+            var end  = next < e ? next : e;
+            list.Add((cur.Date, cur, end));
+            cur = end;
+        }
+        return list;
+    }
+
+    private static AttDailyRow ToDaily(Attpunches1Model p, Dictionary<DateTime, string> holidays, bool needsOt, Dictionary<DateTime, double> filed, (int Start, int End)? nd, Func<DateTime, bool> isRdDay)
+    {
+        var date      = (p.PunchInDate ?? DateTime.MinValue).Date;
+        int sched     = p.PunchT ?? 0;
+        var dutyStart = date.AddHours(sched / 100).AddMinutes(sched % 100);
+        var dutyEnd   = dutyStart.AddMinutes((p.SchedDuration ?? 0) / 100 * 60 + (p.SchedDuration ?? 0) % 100);
+
+        var st      = (p.Status ?? string.Empty).Trim().ToUpper();
+        var kind    = st.StartsWith("OB") ? "OB" : st.StartsWith("LV") ? "LV" : string.Empty;
+        var half    = st.EndsWith("1") ? " - 1st Half" : st.EndsWith("2") ? " - 2nd Half" : string.Empty;
+        double tard = kind == "" && p.PunchInDate is not null && p.PunchInDate > dutyStart ? Math.Floor((p.PunchInDate.Value - dutyStart).TotalMinutes) : 0;
+        double ot   = kind == "" && p.PunchOutDate is not null && p.PunchOutDate > dutyEnd ? Math.Round((p.PunchOutDate.Value - dutyEnd).TotalHours, 2) : 0;
+        string otNote = string.Empty;
+        if (needsOt)
+        {
+            double fh = kind == "" && filed.TryGetValue(date, out var f) ? f : 0;
+            if (fh > ot) otNote = $"Filed OT {fh:N2} > actual {ot:N2} (capped)";
+            ot = Math.Min(fh, ot);
+        }
+
+        double ndReg = 0, ndOt = 0, regHrs = 0, under = 0;
+        var segs = new Dictionary<DateTime, AttSeg>();
+        AttSeg Seg(DateTime d)
+        {
+            if (!segs.TryGetValue(d, out var sg))
+                segs[d] = sg = new AttSeg
+                {
+                    Date = d, Holiday = holidays.TryGetValue(d, out var hh) ? hh : string.Empty,
+                    IsRd = (d == date && p.DutyTypeId == 2) || isRdDay(d)
+                };
+            return sg;
+        }
+
+        if (kind == "" && p.PunchInDate is not null && p.PunchOutDate is not null)
+        {
+            var ws  = p.PunchInDate.Value > dutyStart ? p.PunchInDate.Value : dutyStart;
+            var we0 = p.PunchOutDate.Value < dutyEnd ? p.PunchOutDate.Value : dutyEnd;
+            if (p.PunchOutDate.Value < dutyEnd) under = Math.Floor((dutyEnd - p.PunchOutDate.Value).TotalMinutes);
+
+            // break : the on-site duty above the 8 working hours; it is taken out of the longest part of the duty, not out of the night differential
+            double breakHrs = Math.Max(0, (dutyEnd - dutyStart).TotalHours - OPayrollConstants.HoursPerDay);
+            var parts = SplitByMidnight(ws, we0).Select(x => (x.Date, Hours: (x.End - x.Start).TotalHours, Nd: nd is null ? 0 : NdOverlap(x.Start, x.End, nd.Value.Start, nd.Value.End))).ToList();
+            if (parts.Count > 0 && breakHrs > 0)
+            {
+                int longest = 0;
+                for (int i = 1; i < parts.Count; i++) if (parts[i].Hours > parts[longest].Hours) longest = i;
+                parts[longest] = (parts[longest].Date, Math.Max(0, parts[longest].Hours - breakHrs), parts[longest].Nd);
+            }
+            foreach (var x in parts)
+            {
+                var sg = Seg(x.Date);
+                sg.Hours += x.Hours;
+                sg.Nd    += x.Nd;
+            }
+            regHrs = Math.Round(Math.Min(parts.Sum(x => x.Hours), OPayrollConstants.HoursPerDay), 2);
+
+            if (ot > 0)
+                foreach (var x in SplitByMidnight(dutyEnd, dutyEnd.AddHours(ot)))
+                {
+                    var sg = Seg(x.Date);
+                    sg.OtHrs += (x.End - x.Start).TotalHours;
+                    sg.NdOt  += nd is null ? 0 : NdOverlap(x.Start, x.End, nd.Value.Start, nd.Value.End);
+                }
+
+            foreach (var sg in segs.Values)
+            {
+                sg.Hours = Math.Round(sg.Hours, 2); sg.Nd = Math.Round(sg.Nd, 2);
+                sg.OtHrs = Math.Round(sg.OtHrs, 2); sg.NdOt = Math.Round(sg.NdOt, 2);
+            }
+            ndReg = segs.Values.Sum(x => x.Nd);
+            ndOt  = segs.Values.Sum(x => x.NdOt);
+        }
+        double ndHrs = Math.Round(ndReg + ndOt, 2);
+
+        return new AttDailyRow
+        {
+            Date      = date,
+            Day       = date.ToString("ddd", System.Globalization.CultureInfo.InvariantCulture),
+            DayType   = p.DutyTypeId switch { 2 => "RD", 3 => "RN", _ => "R" },
+            Kind      = kind,
+            Remarks   = kind == "OB" ? "OB" + half : kind == "LV" ? "Paid Leave" + half : otNote != string.Empty ? otNote : segs.Count > 1 ? "Crosses midnight" : string.Empty,
+            Credit    = kind != "" && half != string.Empty ? 0.5 : 1,
+            Holiday   = holidays.TryGetValue(date, out var h) ? h : string.Empty,
+            TimeIn    = p.PunchInDate?.ToString("HH:mm") ?? string.Empty,
+            TimeOut   = p.PunchOutDate?.ToString("HH:mm") ?? string.Empty,
+            Tardiness = tard,
+            Overtime  = ot,
+            ND        = ndHrs,
+            NdReg     = ndReg,
+            NdOt      = ndOt,
+            RegHrs    = regHrs,
+            Undertime = under,
+            DutyStart = dutyStart.ToString("HH:mm"),
+            DutyEnd   = dutyEnd.ToString("HH:mm"),
+            Segs      = segs.Values.OrderBy(x => x.Date).ToList()
+        };
+    }
+
+    private static string DutyOf(AtttemplateModel t, DateTime d)
+    {
+        var x = ((int)d.DayOfWeek + 1) switch
+        {
+            1 => t.D1_dutytype, 2 => t.D2_dutytype, 3 => t.D3_dutytype, 4 => t.D4_dutytype,
+            5 => t.D5_dutytype, 6 => t.D6_dutytype, _ => t.D7_dutytype
+        };
+        return (x ?? "RD").Trim();
+    }
+
+    private static double NdOverlap(DateTime s, DateTime e, int ndStart, int ndEnd)
+    {
+        if (e <= s) return 0;
+        double total = 0;
+        for (var d = s.Date.AddDays(-1); d <= e.Date; d = d.AddDays(1))
+        {
+            var ws = d.AddHours(ndStart / 100).AddMinutes(ndStart % 100);
+            var we = (ndEnd <= ndStart ? d.AddDays(1) : d).AddHours(ndEnd / 100).AddMinutes(ndEnd % 100);
+            var a = s > ws ? s : ws;
+            var b = e < we ? e : we;
+            if (b > a) total += (b - a).TotalHours;
+        }
+        return Math.Round(total, 2);
+    }
+
+    private async Task<Dictionary<DateTime, string>> LoadHolidays()
+    {
+        var found = new Dictionary<DateTime, List<string>>();
+        void Add(DateTime d, string? code)
+        {
+            if (string.IsNullOrWhiteSpace(code)) return;
+            if (!found.TryGetValue(d.Date, out var l)) found[d.Date] = l = [];
+            l.Add(code.Trim().ToUpper());
+        }
+
+        for (int year = _start.Year; year <= _end.Year; year++)
+        {
+            foreach (var g in await _holidayDa._02Global(year, Uc!.OpayDb!, Uc.Conn!))
+                Add(g.HDate, g.TypeCode);
+            foreach (var l in await _holidayDa._02Local(year, Uc.OpayDb!, Uc.Conn!))
+            {
+                var ids = (l.GroupIds ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                if (ids.Contains(_payrollGrpId.ToString())) Add(l.HDate, l.TypeCode);
+            }
+        }
+
+        return found.ToDictionary(x => x.Key, x => x.Value.Contains("DH") || x.Value.Distinct().Count() > 1 ? "DH" : x.Value[0]);
+    }
+
+    private static AttSummaryRow ToSummary(AttEmpRow e, List<AttDailyRow> rows)
+    {
+        var r = new AttSummaryRow { EmpNumber = e.EmpNumber, EmpName = e.EmpName };
+        foreach (var x in rows)
+        {
+            bool rd = x.DayType == "RD";
+            switch (x.Holiday)
+            {
+                case "LH": if (rd) r.LegRD += x.Credit; else r.LegDays += x.Credit; r.LegTard += x.Tardiness; break;
+                case "SH": if (rd) r.SpRD += x.Credit;  else r.SpDays += x.Credit;  r.SpTard  += x.Tardiness; break;
+                case "DH": if (rd) r.DbRD += x.Credit;  else r.DbDays += x.Credit;  r.DbTard  += x.Tardiness; break;
+                default:   if (rd) r.RegRD += x.Credit; else r.RegDays += x.Credit; r.RegTard += x.Tardiness; break;
             }
 
-            v.Notification = ("success", $"Saved successfully — {v.ManHours.Count} employee(s).");
+            var parts = x.Segs.Count > 0 ? x.Segs.Select(g => (g.Holiday, g.OtHrs, g.Nd + g.NdOt)).ToList()
+                                         : [(x.Holiday, x.Overtime, x.ND)];
+            foreach (var (h, ot, ndh) in parts)
+            {
+                switch (h)
+                {
+                    case "LH": r.LegOT += ot; r.LegND += ndh; break;
+                    case "SH": r.SpOT  += ot; r.SpND  += ndh; break;
+                    case "DH": r.DbOT  += ot; r.DbND  += ndh; break;
+                    default:   r.RegOT += ot; r.RegND += ndh; break;
+                }
+            }
         }
-        catch (Exception ex)
-        {
-            v.Notification = ("error", $"Save failed: {ex.Message}");
-        }
-
-        v.IsBusy = false;
-        await NotifyChanged.Invoke();
+        return r;
     }
 
-    private async Task OnPostToPayroll()
+    private void Notify(string text, string theme) =>
+        NotificationRef.Show(new NotificationModel { Text = text, ThemeColor = theme, CloseAfter = 4000 });
+
+    public class AttEmpRow
     {
-        await NotifyChanged.Invoke();
+        public int    SystemId  { get; set; }
+        public string EmpNumber { get; set; } = string.Empty;
+        public string EmpName   { get; set; } = string.Empty;
     }
 
-    private async Task OnPrint()
+    public class AttDailyRow
     {
-        await NotifyChanged.Invoke();
+        public DateTime Date      { get; set; }
+        public string   Day       { get; set; } = string.Empty;
+        public string   DayType   { get; set; } = string.Empty;
+        public string   Holiday   { get; set; } = string.Empty;
+        public string   Kind      { get; set; } = string.Empty;
+        public string   Remarks   { get; set; } = string.Empty;
+        public double   Credit    { get; set; } = 1;
+        public string   TimeIn    { get; set; } = string.Empty;
+        public string   TimeOut   { get; set; } = string.Empty;
+        public double   Tardiness { get; set; }
+        public double   Undertime { get; set; }
+        public double   Overtime  { get; set; }
+        public double   RegHrs    { get; set; }
+        public double   NdReg     { get; set; }
+        public double   NdOt      { get; set; }
+        public double   AbsentHrs { get; set; }
+        public double   ND        { get; set; }
+        public string   DutyStart { get; set; } = string.Empty;
+        public string   DutyEnd   { get; set; } = string.Empty;
+        public List<AttSeg> Segs  { get; set; } = [];
     }
 
-    private async Task OnLoadAttendance()
+    public class AttSeg
     {
-        if (v.Hdr.CoverageStart == default || v.Hdr.CoverageEnd == default)
-        {
-            v.Notification = ("warning", "Please set Coverage Start and End date.");
-            await NotifyChanged.Invoke();
-            return;
-        }
-        v.IsLoadModalOpen = true;
-        await NotifyChanged.Invoke();
+        public DateTime Date    { get; set; }
+        public string   Holiday { get; set; } = string.Empty;
+        public bool     IsRd    { get; set; }
+        public double   Hours   { get; set; }
+        public double   Nd      { get; set; }
+        public double   OtHrs   { get; set; }
+        public double   NdOt    { get; set; }
     }
 
-    private async Task OnProcessData()
+    public class AttSummaryRow
     {
-        await NotifyChanged.Invoke();
-    }
-
-    private async Task OnSaveDailyPunches()
-    {
-        await NotifyChanged.Invoke();
+        public string EmpNumber { get; set; } = string.Empty;
+        public string EmpName   { get; set; } = string.Empty;
+        public double RegDays { get; set; } public double RegRD { get; set; } public double RegTard { get; set; } public double RegOT { get; set; } public double RegND { get; set; }
+        public double LegDays { get; set; } public double LegRD { get; set; } public double LegTard { get; set; } public double LegOT { get; set; } public double LegND { get; set; }
+        public double SpDays  { get; set; } public double SpRD  { get; set; } public double SpTard  { get; set; } public double SpOT  { get; set; } public double SpND  { get; set; }
+        public double DbDays  { get; set; } public double DbRD  { get; set; } public double DbTard  { get; set; } public double DbOT  { get; set; } public double DbND  { get; set; }
     }
 }

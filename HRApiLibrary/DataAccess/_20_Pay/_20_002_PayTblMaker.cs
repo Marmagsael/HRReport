@@ -105,6 +105,7 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         await _01_104_MatrixPagibig(schema, connName, country);
 
         if (schema != "MainPay") await _01_303_PaymaindtlsetupPH(schema, connName, country);
+        if (schema != "MainPay" && country == "PH") await _02SeedPayDefaults(schema, connName);
 
     }
 
@@ -399,8 +400,14 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
         var res = await _sql.FetchData<SettingsModel, dynamic>(sql, new { }, connName);
         if (res == null || res.Count == 0)
         {
-            sql = $@" insert into {schema}.Settings (Daytohours) values (8)";
+            // -- Night differential window per the Labor Code (Art. 86) : 10:00 PM to 6:00 AM --
+            sql = $@" insert into {schema}.Settings (Daytohours, NDStart, NDEnd) values (8, 2200, 600)";
             await _sql.ExecuteCmd(sql, new { }, connName);
+        }
+        else
+        {
+            await _sql.ExecuteCmd($"update {schema}.Settings set NDStart = 2200 where NDStart is null", new { }, connName);
+            await _sql.ExecuteCmd($"update {schema}.Settings set NDEnd = 600 where NDEnd is null", new { }, connName);
         }
     }
     private async Task _00_001_PayrollPrd(string? schema, string? connName)
@@ -1196,7 +1203,8 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                             (107,   'Dtl-Report',      101,   1, 'settings', 'Payroll Settings', '12/004', 107),
                             (108,   'Dtl-Report',      101,   1, 'rule', 'Employee Status Visible in Payroll', '13T/108', 108),
                             (109,   'Dtl-Report',      101,   1, 'account_balance', 'SSS, PhilHealth and Pag-IBIG Tables', '13T/109', 109),
-                            (111,   'Dtl-Report',      101,   1, 'receipt_long', 'Withholding Tax Table', '13T/111', 111);";
+                            (111,   'Dtl-Report',      101,   1, 'receipt_long', 'Withholding Tax Table', '13T/111', 111),
+                            (112,   'Dtl-Report',      101,   1, 'list_alt', 'Chart of Accounts', '13T/112', 112);";
         await _sql.ExecuteCmd(sql, new { }, connName);
 
         // -- AMS Settings menu : the parent and its base items (the later AMS items are seeded below / above) --
@@ -1866,6 +1874,77 @@ public class _20_002_PayTblMaker : I_20_002_PayTblMaker
                 await _sql.ExecuteCmd(sql, new { }, connName);
             }
         }
+    }
+
+    // -- Seeds of the company Pay schema : NWPC Wage Order NCR-28 salary grades (locked), accounts missing from Coa, and the payroll account mapping by account name --
+    private static readonly (string Name, string Type, string Short, double Rate)[] PayAccounts =
+    [
+        ("Regular Night Pay", "E", "RN", 1.00), ("Regular Night OT Pay", "E", "RNOT", 1.25), ("ND OT Pay", "E", "NDOT", 0.13),
+        ("ND - Double Hol Pay", "E", "NDDH", 0.20), ("ND - Double Hol OT", "E", "NDDHOT", 0.39),
+        ("ND - RD Double Hol Pay", "E", "NDRDDH", 0.29), ("ND - RD Double Hol OT", "E", "NDRDDHOT", 0.51),
+        ("Provision for Retirement", "E", "", 0.00), ("Uniform Allowance", "E", "", 0.00),
+        ("Cash Bond", "D", "", 0.00),
+    ];
+
+    private static readonly (string Field, string Name)[] PayMapping =
+    [
+        ("daywrk", "Basic Pay"), ("absent", "Tardiness"), ("late", "Tardiness"), ("utime", "Tardiness"),
+        ("rn", "Regular Night Pay"), ("rnot", "Regular Night OT Pay"), ("rot", "Reg. OT"),
+        ("rd", "Rest Day Pay"), ("rdot", "Rest Day OT Pay"), ("lh", "Legal Holiday Pay"), ("lhot", "Legal Holiday OT Pay"),
+        ("rdlh", "RD - Legal Holiday Pay"), ("rdlhot", "RD - Legal Holiday OT Pay"),
+        ("sh", "Special Holiday Pay"), ("shot", "Special Holiday OT Pay"),
+        ("rdsh", "RD - Special Holiday Pay"), ("rdshot", "RD - Special Holiday OT Pay"),
+        ("nd", "ND Pay"), ("ndot", "ND OT Pay"), ("ndrd", "ND - Restday Pay"), ("ndrdot", "ND - Restday OT Pay"),
+        ("ndlh", "ND - Legal Holiday Pay"), ("ndlhot", "ND - Legal Holiday OT"),
+        ("ndrdlh", "ND - Restday Legal Hol Pay"), ("ndrdlhot", "ND - Restday Legal Hol OT Pay"),
+        ("ndsh", "ND - Special Holiday Pay"), ("ndshot", "ND - Special Holiday OT"),
+        ("ndrdsh", "ND - Restday Special Hol Pay"), ("ndrdshot", "ND - Restday Special Hol OT Pay"),
+        ("DH", "Double Hol"), ("DHOT", "Double Hol OT"), ("RDDH", "RD - Double Hol"), ("RDDHOT", "RD - Double Hol OT"),
+        ("NDDH", "ND - Double Hol Pay"), ("NDDHOT", "ND - Double Hol OT"), ("NDRDDH", "ND - RD Double Hol Pay"), ("NDRDDHOT", "ND - RD Double Hol OT"),
+        ("sss", "SSS Premium"), ("pagibig", "Pagibig Premium"), ("phic", "Phil. Health Premium"),
+        ("Allowance", "Allowance"), ("CashBond", "Cash Bond"), ("IncentLeave", "Incentive Leave"), ("mealAllowance", "Meal Allowance"),
+        ("ProvForRetirement", "Provision for Retirement"), ("FreeUniform", "Uniform Allowance"), ("_13thMo", "13th Month"), ("retropay", "Retro Pay"),
+    ];
+
+    private async Task _02SeedPayDefaults(string? schema, string? connName)
+    {
+        try
+        {
+            var n = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.Salgrade", new { }, connName);
+            if (n.FirstOrDefault() == 0)
+                await _sql.ExecuteCmd($@"insert into {schema}.Salgrade (SgCode, SGrade, MonthlyRate, DailyRate, HourlyRate, WTax, WSss, WGsis, WPhic, WPagibig, IsLock) values
+                        ('NCR-28',  'NCR 755.00 Sept. 26, 2026', 22650, 755, 94.375, 0, 1, 0, 1, 1, 1),
+                        ('NCR-28B', 'NCR 718.00 Sept. 26, 2026 (Agri/Small Est.)', 21540, 718, 89.75, 0, 1, 0, 1, 1, 1)", new { }, connName);
+
+            foreach (var (name, type, shortDesc, rate) in PayAccounts)
+            {
+                var exists = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.Coa where lower(trim(AcctName)) = lower(@Name)", new { Name = name }, connName);
+                if (exists.FirstOrDefault() > 0) continue;
+
+                var next = await _sql.FetchData<long, dynamic>($"select ifnull(max(cast(substring(AcctNumber, 2) as unsigned)), 0) + 1 from {schema}.Coa where AcctNumber like @Prefix", new { Prefix = type + "%" }, connName);
+                var number = type + next.FirstOrDefault().ToString("000");
+                await _sql.ExecuteCmd($@"insert into {schema}.Coa (AcctNumber, AcctName, AcctType, ShortDesc, HasRateOverBasic, RateOverBasic, IsLock)
+                                         values (@Number, @Name, @Type, @Short, @Has, @Rate, 1)",
+                    new { Number = number, Name = name, Type = type, Short = shortDesc, Has = type == "E" && rate > 0 ? 1 : 0, Rate = rate }, connName);
+            }
+
+            var cols = (await _sql.FetchData<string, dynamic>("select column_name from information_schema.columns where table_schema = @Schema and table_name = 'paymaindtlsetup'", new { Schema = schema }, connName))
+                        .Select(c => c.ToLowerInvariant()).ToHashSet();
+            foreach (var (field, name) in PayMapping)
+            {
+                if (!cols.Contains(field.ToLowerInvariant())) continue;
+                await _sql.ExecuteCmd($@"update {schema}.paymaindtlsetup set `{field}` = (select AcctNumber from {schema}.Coa where lower(trim(AcctName)) = lower('{name}') order by AcctNumber limit 1)
+                                         where exists (select 1 from {schema}.Coa where lower(trim(AcctName)) = lower('{name}'))", new { }, connName);
+            }
+
+            var mapCols = cols.Where(c => c != "id").ToList();
+            if (mapCols.Count > 0)
+            {
+                var union = string.Join(" union ", mapCols.Select(c => $"select trim(`{c}`) from {schema}.paymaindtlsetup"));
+                await _sql.ExecuteCmd($"update {schema}.Coa set IsLock = 1 where trim(AcctNumber) in ({union})", new { }, connName);
+            }
+        }
+        catch { }
     }
 
     private async Task _01_304_PayMainHistory(string? schema, string? connName, string? country)

@@ -29,6 +29,17 @@ public class OVisibleAccountDataAccess : IOVisibleAccountDataAccess
 
     private static string Column(string? period) => period == "02" ? "show02" : "show01";
 
+    //--- accounts mapped in Payroll Account Mapping (13T/105) for the manhour columns of Payroll Entry ---
+    private async Task<string> MappedAccountsSql(string schema, string conn)
+    {
+        var cols = await _sql.FetchLegacy<string, dynamic>(
+            "select column_name from information_schema.columns where table_schema = @Schema and table_name = 'paymaindtlsetup'", new { Schema = schema }, conn) ?? new();
+        var hour = OPayrollCompute.HourColumns.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var use  = cols.Where(c => hour.Contains(c)).ToList();
+        if (use.Count == 0) return "select ''";
+        return string.Join(" union ", use.Select(c => $"select trim(`{c}`) from {schema}.paymaindtlsetup"));
+    }
+
     public async Task<List<VisibleAccountModel>> _02(string? period, string schema, string conn)
     {
         bool saved = period is "01" or "02";
@@ -36,7 +47,7 @@ public class OVisibleAccountDataAccess : IOVisibleAccountDataAccess
         var rows = await _sql.FetchLegacy<VisibleAccountModel, dynamic>(
             $@"select trim(AcctNumber) AcctNumber, trim(AcctName) AcctName, trim(ifnull(shortDesc,'')) ShortDesc, ifnull({col},0) Shown
                from {schema}.chartofacct
-               where AcctType = 'E' and hasRateOverBasic = '1'
+               where trim(AcctNumber) in ({await MappedAccountsSql(schema, conn)})
                order by sort, AcctName", new { }, conn) ?? new();
 
         bool noneSaved = !saved || rows.All(r => r.Shown == 0);
@@ -55,7 +66,7 @@ public class OVisibleAccountDataAccess : IOVisibleAccountDataAccess
         var rows = await _sql.FetchLegacy<VisibleAccountModel, dynamic>(
             $@"select trim(AcctNumber) AcctNumber, trim(AcctName) AcctName, trim(ifnull(shortDesc,'')) ShortDesc, ifnull({col},0) Shown
                from {schema}.chartofacct
-               where AcctType = 'E' and hasRateOverBasic = '1'
+               where trim(AcctNumber) in ({await MappedAccountsSql(schema, conn)})
                order by AcctType desc, AcctNumber", new { }, conn) ?? new();
         foreach (var r in rows) r.IsShown = r.Shown != 0;
         return rows;
@@ -75,7 +86,7 @@ public class OVisibleAccountDataAccess : IOVisibleAccountDataAccess
         await _sql.ExecuteLegacyCmd(
             $@"update {schema}.chartofacct
                set {col} = if(trim(AcctNumber) in @Shown, 1, 0)
-               where AcctType = 'E' and hasRateOverBasic = '1'",
+               where trim(AcctNumber) in ({await MappedAccountsSql(schema, conn)})",
             new { Shown = shown.Count == 0 ? new List<string> { "" } : shown }, conn);
     }
 }

@@ -44,6 +44,17 @@ public class Attpunches1DataAccess : IAttpunches1DataAccess
 
     }
 
+    public async Task<List<Attpunches1Model?>?> _02ByIdsByRange(IEnumerable<int> empmasIds, DateOnly dstart, DateOnly dend, string? schema, string? conn)
+    {
+        var ids = empmasIds.ToList();
+        if (ids.Count == 0) return [];
+        string? sql = $@"select * from {schema}.Attpunches1
+                        where EmpmasId in @Ids and PunchInDate >= @DStart and PunchInDate < @DEnd
+                        order by EmpmasId, PunchInDate";
+        var data = await _sql.FetchData<Attpunches1Model?, dynamic>(sql, new { Ids = ids, DStart = dstart.ToDateTime(TimeOnly.MinValue), DEnd = dend.AddDays(1).ToDateTime(TimeOnly.MinValue) }, conn);
+        return data;
+    }
+
     public async Task<List<Attpunches1Model?>?> _02NoPunchOut(int? empmasId, string? schema, string? conn)
     {
         string? sql = $@"select  * from {schema}.Attpunches1 where EmpmasId=@EmpmasId and status != 'L' order by PunchInDate desc  "; ;
@@ -161,6 +172,7 @@ public interface IAttpunches1DataAccess
     Task                                _01Approved(int? empmasId, IEnumerable<(DateTime Date, int? DayTypeId, string Status)> days, int? approverUserId,
                                                 int? timeZone, string? ipAdd, string? macAddress, string? schema, string? conn);
     Task<List<Attpunches1Model?>?>      _02LastPunches(int? empmasId, int? reccount, string? schema, string? conn);
+    Task<List<Attpunches1Model?>?>      _02ByIdsByRange(IEnumerable<int> empmasIds, DateOnly dstart, DateOnly dend, string? schema, string? conn);
     Task<List<Attpunches1Model?>?>      _02NoPunchOut(int? empmasId, string? schema, string? conn);
     Task<List<Attpunches1Model?>?>      _02ByIdByRange( int? empmasId, DateOnly dstart, DateOnly dend, string? schema, string? conn) ; 
     Task<List<Attpunches1Model?>?>      _03s(Attpunches1Model attpunches1, string? schema, string? conn);

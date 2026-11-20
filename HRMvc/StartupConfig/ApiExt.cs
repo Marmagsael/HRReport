@@ -254,9 +254,11 @@ public static class ApiExt
         builder.Services.AddScoped<IOPaymainhdrDataAccess, OPaymainhdrDataAccess>();
         builder.Services.AddScoped<IOLoansDataAccess, OLoansDataAccess>();
         builder.Services.AddScoped<IOChartofacctDataAccess, OChartofacctDataAccess>();
+        builder.Services.AddScoped<IOChartAccountDataAccess, OChartAccountDataAccess>();
         builder.Services.AddScoped<IOEmpportalDataAccess, OEmpportalDataAccess>();
         builder.Services.AddScoped<IOPayrollgrpDataAccess, OPayrollgrpDataAccess>();
         builder.Services.AddScoped<IOHolidayDataAccess, OHolidayDataAccess>();
+        builder.Services.AddScoped<IOManhourPushDataAccess, OManhourPushDataAccess>();
         builder.Services.AddScoped<IOSalgradeDataAccess, OSalgradeDataAccess>();
         builder.Services.AddScoped<IOAcctMappingDataAccess, OAcctMappingDataAccess>();
         builder.Services.AddScoped<IORateSetupDataAccess, ORateSetupDataAccess>();

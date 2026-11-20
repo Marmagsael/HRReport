@@ -46,7 +46,7 @@ public class DA_11003O : IDA_11003O
 
     public async Task<List<M11003_Empmas>?> _02Deprec_ByFieldId(string? fieldName, int? fieldIdValue, string? pisdb, string? opisdb, string? conn)
     {
-        string? sql = $@"SELECT COALESCE(e1.systemid, 0) AS Systemid, d.Empnumber, d.PayrollgrpId, d.IdDeployment,
+        string? sql = $@"SELECT COALESCE(e1.systemid, 0) AS Systemid, COALESCE(e1.Id, 0) AS EmpmasId, d.Empnumber, d.PayrollgrpId, d.IdDeployment,
                             CONCAT(TRIM(COALESCE(e.EmpLastNm, '')), ', ', 
                             TRIM(COALESCE(e.EmpFirstNm, '')), ' ', 
                             TRIM(COALESCE(e.EmpMidNm, ''))) AS EmpName
@@ -62,6 +62,7 @@ public class DA_11003O : IDA_11003O
     public async Task<List<M11003_Empmas>?> _02EmpmasByKeyword(string keyword, string pisdb, string opisdb, string conn)
     {
         string sql = $@"SELECT COALESCE(e1.SystemId, 0) AS SystemId,
+                               COALESCE(e1.Id, 0) AS EmpmasId,
                                e.EmpNumber,
                                CONCAT(TRIM(COALESCE(e.EmpLastNm, '')), ', ',
                                       TRIM(COALESCE(e.EmpFirstNm, '')), ' ',

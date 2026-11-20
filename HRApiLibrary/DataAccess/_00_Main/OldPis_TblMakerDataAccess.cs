@@ -660,9 +660,16 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `IsOnDiciplinary` smallint DEFAULT '0',
                         `IsOnInvestigation` smallint DEFAULT '0',
                         `IdInvestigate` int DEFAULT '0',
-                        PRIMARY KEY (`EmpNumber`)
+                        PRIMARY KEY (`EmpNumber`),
+                        KEY `idx_deprec_payrollgrp` (`PayrollgrpId`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+
+        var hasIdx = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.statistics where table_schema = @Schema and table_name = 'deprec' and index_name = 'idx_deprec_payrollgrp'",
+            new { Schema = schema }, conn);
+        if (hasIdx.FirstOrDefault() == 0)
+            await ExecLegacy($"ALTER TABLE {schema}.`deprec` ADD KEY `idx_deprec_payrollgrp` (`PayrollgrpId`)", conn);
     }
 
     private async Task _01Designation(string? schema, string? conn)

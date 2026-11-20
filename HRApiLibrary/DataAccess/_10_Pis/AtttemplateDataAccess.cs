@@ -69,6 +69,14 @@ public class AtttemplateDataAccess : IAtttemplateDataAccess
         public int     Duration { get; set; }
     }
 
+    public async Task<List<AtttemplateModel?>?> _02ByEmpmasIds(IEnumerable<int> empmasIds, string? schema, string? conn)
+    {
+        var ids = empmasIds.ToList();
+        if (ids.Count == 0) return [];
+        string sql = $@"select * from {schema}.Atttemplate where EmpmasId in @Ids";
+        return await _sql.FetchData<AtttemplateModel?, dynamic>(sql, new { Ids = ids }, conn);
+    }
+
     // -- No schedule assigned : Mon-Fri follow the first Attscheddaily row, Sat the first RN row, Sun the first RD row --
     public async Task<AtttemplateModel?> _02NoSchedule(int? empmasId, string? schema, string? conn)
     {

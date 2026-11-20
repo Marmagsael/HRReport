@@ -6,6 +6,7 @@ namespace HRApiLibrary.DataAccess._10_Pis.Interface
     {
         Task<AtttemplateModel?>         _01(AtttemplateModel atttemplate, string? schema, string? conn);
         Task<AtttemplateModel?>         _02(int? empmasId, string? schema, string? conn);
+        Task<List<AtttemplateModel?>?>  _02ByEmpmasIds(IEnumerable<int> empmasIds, string? schema, string? conn);
         Task<List<AtttemplateModel?>?>  _02s(int? empmasId, string? schema, string? conn);
         Task<AtttemplateModel?>         _02NoSchedule(int? empmasId, string? schema, string? conn);
         Task<AtttemplateModel?>         _03(int? empmasId, AtttemplateModel atttemplate, string? schema, string? conn);

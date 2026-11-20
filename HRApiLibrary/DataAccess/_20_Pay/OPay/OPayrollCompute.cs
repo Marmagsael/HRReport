@@ -15,19 +15,19 @@ public static class OPayrollCompute
     //--- paymaindtl hour/day columns, in the order of the FoxPro grid (grdPayrollDtls columns 4-45) ---
     public static readonly string[] HourColumns =
     [
-        "daywrk", "rn", "absent", "rot", "rd", "rdot", "lh", "lhot", "rdlh", "rdlhot", "sh", "shot", "rdsh", "rdshot",
+        "daywrk", "rn", "rnot", "absent", "rot", "rd", "rdot", "lh", "lhot", "rdlh", "rdlhot", "sh", "shot", "rdsh", "rdshot",
         "sea", "sealh", "seardlh", "ctpa", "ctpalh", "ctpardlh", "custom1", "custom2", "custom3", "late", "utime",
         "nd", "ndot", "ndlh", "ndlhot", "ndsh", "ndshot", "ndrd", "ndrdot", "ndrdlh", "ndrdlhot", "ndrdsh", "ndrdshot",
         "dh", "dhot", "rddh", "rddhot"
     ];
 
     //--- paymaindtl columns saved besides the ones in HourColumns ---
-    public static readonly string[] OtherHourColumns = ["rnot"];
+    public static readonly string[] OtherHourColumns = [];
 
     //--- Order of the compute_ot calls in bProcess.Click ---
     static readonly string[] OtOrder =
     [
-        "rot", "rd", "rdot", "lh", "lhot", "rdlh", "rdlhot", "sh", "shot", "rdsh", "rdshot",
+        "rnot", "rot", "rd", "rdot", "lh", "lhot", "rdlh", "rdlhot", "sh", "shot", "rdsh", "rdshot",
         "nd", "ndot", "ndlh", "ndlhot", "ndsh", "ndshot",
         "ndrd", "ndrdot", "ndrdlh", "ndrdlhot", "ndrdsh", "ndrdshot",
         "custom1", "custom2", "custom3", "dh", "dhot", "rddh", "rddhot"

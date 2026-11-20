@@ -14,6 +14,12 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
 
     // -- The legacy tables use '0000-00-00' date defaults, which strict mode rejects --
     // -- Zero dates are allowed for this statement only, then the session goes back to the global sql_mode --
+    private Task ExecLegacy(string? sql, string? conn, object? prm)
+    {
+        string mode = "TRIM(BOTH ',' FROM REPLACE(REPLACE(REPLACE(REPLACE(@@SESSION.sql_mode, 'NO_ZERO_IN_DATE', ''), 'NO_ZERO_DATE', ''), ',,', ','), ',,', ','))";
+        return _sql.ExecuteCmd($"SET SESSION sql_mode = {mode}; {sql?.TrimEnd().TrimEnd(';')}; SET SESSION sql_mode = @@GLOBAL.sql_mode;", prm ?? new { }, conn);
+    }
+
     private Task ExecLegacy(string? sql, string? conn)
     {
         string mode = "TRIM(BOTH ',' FROM REPLACE(REPLACE(REPLACE(REPLACE(@@SESSION.sql_mode, 'NO_ZERO_IN_DATE', ''), 'NO_ZERO_DATE', ''), ',,', ','), ',,', ','))";
@@ -191,6 +197,8 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await _01Domainusr(schema, connName);
         await _01ReportSettings(schema, connName);
         await _02SeedContributionTables(schema, connName);
+        await _02SeedSalaryGrades(schema, connName);
+        await _02SeedPayrollAccounts(schema, connName);
         await _02SeedAccountMapping(schema, connName);
     }
 
@@ -198,12 +206,23 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
     [
         ("paymaindtlsetup", "idpaymaindtlsetup",
         [
-            ("daywrk", "Basic Pay"), ("absent", "Absences/Undertime"), ("late", "Late"), ("rot", "Reg. OT"),
+            ("daywrk", "Basic Pay"), ("absent", "Tardiness"), ("late", "Tardiness"), ("utime", "Tardiness"), ("rot", "Reg. OT"),
             ("rd", "Rest Day Pay"), ("rdot", "Rest Day OT Pay"), ("lh", "Legal Holiday Pay"), ("lhot", "Legal Holiday OT Pay"),
             ("rdlh", "Rest Day - Legal Holiday Pay"), ("rdlhot", "Rest Day - Legal Holiday OT Pay"),
             ("sh", "Special Holiday Pay"), ("shot", "Special Holiday OT Pay"),
             ("rdsh", "Rest Day - Special Holiday Pay"), ("rdshot", "Rest Day - Special Holiday OT Pay"),
-            ("nd", "Night Diff. Pay"), ("sea", "SEA"), ("sealh", "Sea Reg Hol"), ("ctpa", "CTPA"), ("ctpalh", "CTPA Reg Holiday"), ("ctpardlh", "CTPA RDLH"),
+            ("nd", "Night Diff. Pay"),
+            ("rn", "Regular Night Pay"), ("rnot", "Regular Night OT Pay"),
+            ("ndot", "Night Diff. OT Pay"), ("ndrd", "Night Diff. Rest Day Pay"), ("ndrdot", "Night Diff. Rest Day OT Pay"),
+            ("ndlh", "Night Diff. Legal Holiday Pay"), ("ndlhot", "Night Diff. Legal Holiday OT Pay"),
+            ("ndrdlh", "Night Diff. Rest Day - Legal Holiday Pay"), ("ndrdlhot", "Night Diff. Rest Day - Legal Holiday OT Pay"),
+            ("ndsh", "Night Diff. Special Holiday Pay"), ("ndshot", "Night Diff. Special Holiday OT Pay"),
+            ("ndrdsh", "Night Diff. Rest Day - Special Holiday Pay"), ("ndrdshot", "Night Diff. Rest Day - Special Holiday OT Pay"),
+            ("DH", "Double Holiday Pay"), ("DHOT", "Double Holiday OT Pay"), ("RDDH", "Rest Day - Double Holiday Pay"), ("RDDHOT", "Rest Day - Double Holiday OT Pay"),
+            ("NDDH", "Night Diff. Double Holiday Pay"), ("NDDHOT", "Night Diff. Double Holiday OT Pay"),
+            ("NDRDDH", "Night Diff. Rest Day - Double Holiday Pay"), ("NDRDDHOT", "Night Diff. Rest Day - Double Holiday OT Pay"),
+            ("seardlh", "SEA RDLH"), ("Allowance", "Allowance"), ("CashBond", "Cash Bond"),
+            ("sea", "SEA"), ("sealh", "Sea Reg Hol"), ("ctpa", "CTPA"), ("ctpalh", "CTPA Reg Holiday"), ("ctpardlh", "CTPA RDLH"),
             ("sss", "SSS Premium"), ("pagibig", "Pagibig Premium"), ("phic", "Phil. Health Premium"),
             ("IncentLeave", "Incentive Leave"), ("mealAllowance", "Meal Allowance"), ("ProvForRetirement", "Provision for Retirement"),
             ("FreeUniform", "Uniform Allowance"), ("_13thMo", "13th Month"), ("retropay", "RETRO PAY"),
@@ -219,6 +238,73 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
     ];
 
     // -- Account columns of the payroll setup tables are filled from chartofacct by account name; only blank fields, and the row is added when missing --
+    // -- Accounts every mapped payroll field needs : (field, account name, type, short desc, OT, ...). Missing names are added to chartofacct, locked --
+    private static readonly (string Name, string Type, string Short, int Ot, int Lh, double Rate)[] RequiredAccounts =
+    [
+        ("Regular Night Pay", "E", "RN", 0, 0, 1.0), ("Regular Night OT Pay", "E", "RNOT", 1, 0, 1.25),
+        ("Night Diff. OT Pay", "E", "NDOT", 1, 0, 0.125), ("Night Diff. Rest Day Pay", "E", "NDRD", 0, 0, 0.03), ("Night Diff. Rest Day OT Pay", "E", "NDRDOT", 1, 0, 0.169),
+        ("Night Diff. Legal Holiday Pay", "E", "NDLH", 0, 0, 0.10), ("Night Diff. Legal Holiday OT Pay", "E", "NDLHOT", 1, 0, 0.26),
+        ("Night Diff. Rest Day - Legal Holiday Pay", "E", "NDRDLH", 0, 0, 0.16), ("Night Diff. Rest Day - Legal Holiday OT Pay", "E", "NDRDLHOT", 1, 0, 0.338),
+        ("Night Diff. Special Holiday Pay", "E", "NDSH", 0, 0, 0.03), ("Night Diff. Special Holiday OT Pay", "E", "NDSHOT", 1, 0, 0.169),
+        ("Night Diff. Rest Day - Special Holiday Pay", "E", "NDRDSH", 0, 0, 0.05), ("Night Diff. Rest Day - Special Holiday OT Pay", "E", "NDRDSHOT", 1, 0, 0.195),
+        ("Double Holiday Pay", "E", "DH", 0, 0, 2.0), ("Double Holiday OT Pay", "E", "DHOT", 1, 0, 3.9),
+        ("Rest Day - Double Holiday Pay", "E", "RDDH", 0, 0, 2.9), ("Rest Day - Double Holiday OT Pay", "E", "RDDHOT", 1, 0, 5.07),
+        ("Night Diff. Double Holiday Pay", "E", "NDDH", 0, 0, 0.20), ("Night Diff. Double Holiday OT Pay", "E", "NDDHOT", 1, 0, 0.39),
+        ("Night Diff. Rest Day - Double Holiday Pay", "E", "NDRDDH", 0, 0, 0.29), ("Night Diff. Rest Day - Double Holiday OT Pay", "E", "NDRDDHOT", 1, 0, 0.507),
+        ("SEA RDLH", "E", "", 0, 0, 1.0), ("Allowance", "E", "", 0, 0, 1.0),
+        ("Cash Bond", "D", "", 0, 0, 1.0), ("Tardiness", "E", "TARDY", 0, 0, -1.0),
+    ];
+
+    private async Task _02SeedPayrollAccounts(string? schema, string? conn)
+    {
+        try
+        {
+            await CopyIfEmpty(schema, "chartofacct", "pay", conn);
+            await CopyIfEmpty(schema, "paymaindtlsetup", "test", conn);
+
+            foreach (var (name, type, shortDesc, ot, lh, rate) in RequiredAccounts)
+            {
+                var exists = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.chartofacct where lower(trim(AcctName)) = lower(@Name)", new { Name = name }, conn);
+                if (exists.FirstOrDefault() > 0) continue;
+
+                var next = await _sql.FetchData<long, dynamic>(
+                    $"select ifnull(max(cast(substring(trim(AcctNumber), 2) as unsigned)), 0) + 1 from {schema}.chartofacct where AcctNumber like @Prefix",
+                    new { Prefix = type + "%" }, conn);
+                var number = type + Math.Max(next.FirstOrDefault(), type == "D" ? 7 : 1).ToString("000");   // D001-D006 are the government accounts
+
+                bool hours  = type == "E" && shortDesc != "";
+                bool tard   = name == "Tardiness";
+                await ExecLegacy($@"insert into {schema}.chartofacct
+                        (AcctNumber, AcctName, AcctType, isTaxable, isYTDAcct, islock, hasRateOverBasic, isOthers, timedMode, shortDesc, isTH, isOT, isLegalHoliday, withSSS, OTrate)
+                        values (@Number, @Name, @Type, @Taxable, 1, '1', @Rate, 0, @Timed, @Short, @Th, @Ot, @Lh, @Sss, @OtRate)",
+                    conn, new { Number = number, Name = name, Type = type, Taxable = type == "E" ? "1" : "0", Rate = hours || tard ? "1" : "0",
+                                Timed = hours || tard ? 1 : 0, Short = shortDesc, Th = ot, Ot = ot, Lh = lh, Sss = type == "E" ? 1 : 0, OtRate = rate });
+            }
+
+            var tardiness = await _sql.FetchData<string, dynamic>($"select trim(AcctNumber) from {schema}.chartofacct where lower(trim(AcctName)) = 'tardiness' order by AcctNumber limit 1", new { }, conn);
+            var code = tardiness.FirstOrDefault();
+            if (!string.IsNullOrEmpty(code))
+                foreach (var field in new[] { "absent", "late", "utime" })
+                    await ExecLegacy($"update {schema}.paymaindtlsetup set `{field}` = '{code}'", conn);
+        }
+        catch { }
+    }
+
+    // -- Every account used in Payroll Account Mapping (paymaindtlsetup) is locked --
+    private async Task _02LockMappedAccounts(string? schema, string? conn)
+    {
+        try
+        {
+            var cols = await _sql.FetchData<string, dynamic>(
+                "select column_name from information_schema.columns where table_schema = @Schema and table_name = 'paymaindtlsetup' and column_name <> 'idpaymaindtlsetup'",
+                new { Schema = schema }, conn);
+            if (!cols.Any()) return;
+            var union = string.Join(" union ", cols.Select(c => $"select trim(`{c}`) from {schema}.paymaindtlsetup"));
+            await ExecLegacy($"update {schema}.chartofacct set islock = '1' where trim(AcctNumber) in ({union})", conn);
+        }
+        catch { }
+    }
+
     private async Task _02SeedAccountMapping(string? schema, string? conn)
     {
         foreach (var (table, _, map) in AccountMaps)
@@ -239,6 +325,21 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
             }
             catch { }
         }
+    }
+
+    // -- NWPC Wage Order NCR-28 (effective 26 Sep 2026) : added only when the company has no salary grade yet; monthly = daily x 30, locked --
+    private async Task _02SeedSalaryGrades(string? schema, string? conn)
+    {
+        try
+        {
+            var n = await _sql.FetchData<long, dynamic>($"select count(*) from {schema}.salgrade", new { }, conn);
+            if (n.FirstOrDefault() > 0) return;
+            await ExecLegacy($@"insert into {schema}.salgrade (sgcode, sgrade, monthlyRate, dailyRate, wtax, wSSS, wGSIS, wPHIC, wPagibig, isLock) values
+                                ('NCR-28',  'NCR 755.00 Sept. 26, 2026', 22650, 755, 0, 1, 0, 1, 1, 1),
+                                ('NCR-28B', 'NCR 718.00 Sept. 26, 2026 (Agri/Small Est.)', 21540, 718, 0, 1, 0, 1, 1, 1)", conn);
+        }
+        catch { }
+        await _02LockMappedAccounts(schema, conn);
     }
 
     private async Task _02SeedContributionTables(string? schema, string? conn)
@@ -1546,6 +1647,14 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await CopyIfEmpty(schema, "paymaindtlsetup", "test", connName);
     }
 
+    // -- Accounts of the reference chart that are not copied to a new company --
+    private static readonly string[] ChartSeedExcluded =
+    [
+        "ECOLA (Added)", "Meal Allow Adj. (Nov. 1-15)", "13th Month (Nov. 16-30)", "Retro Pay (GSIA)", "Retro Pay(GSIA)",
+        "Retro Pay (Blueflame)", "Retro Pay(Blueflame)", "Tax Refund 2014", "Tax Refund 2016", "Tax Refund 2017",
+        "ICA fair/Variety show", "ICA fair / Variety Show", "Annual Incentive Leave 2017", "Adjustment for Rice Subsidy"
+    ];
+
     private async Task CopyIfEmpty(string? schema, string table, string source, string? conn)
     {
         if (string.Equals(schema, source, StringComparison.OrdinalIgnoreCase)) return;
@@ -1564,8 +1673,11 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
             new { Source = source, Target = schema, Table = table }, conn);
         if (!cols.Any()) return;
 
-        var list = string.Join(",", cols);
-        await ExecLegacy($"INSERT INTO {schema}.`{table}` ({list}) SELECT {list} FROM {source}.`{table}`", conn);
+        var list  = string.Join(",", cols);
+        var where = table == "chartofacct"
+            ? $" WHERE trim(AcctName) NOT IN ({string.Join(",", ChartSeedExcluded.Select(n => $"'{n}'"))})"
+            : string.Empty;
+        await ExecLegacy($"INSERT INTO {schema}.`{table}` ({list}) SELECT {list} FROM {source}.`{table}`{where}", conn);
     }
 
     // -- Data from the company's old PIS : payrollgrp from client when payrollgrp is empty (13T/502 payroll groups) --

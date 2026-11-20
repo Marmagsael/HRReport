@@ -41,6 +41,29 @@ public class OtreqdtlDataAccess : IOtreqdtlDataAccess
         return data;
     }
 
+    public async Task<List<OtreqdtlModel?>?> _02ApprovedByEmpmasId_RangeByPunchIn(int? empmasId, DateTime dStart, DateTime dEnd, string? schema, string? conn)
+    {
+        var start = dStart.Date;
+        var end   = dEnd.Date.AddDays(1);
+
+        string? sql = $@"select d.* from {schema}.Otreqdtl d
+                         join {schema}.Otreqhdr h on h.Id = d.OtReqHdrId
+                         where h.Status = 'A' and d.EmpmasId = @EmpmasId and d.PunchIn >= @Start and d.PunchIn < @End;";
+        var data = await _sql.FetchData<OtreqdtlModel?, dynamic>(sql, new { EmpmasId = empmasId, Start = start, End = end }, conn);
+        return data;
+    }
+
+    public async Task<List<OtreqdtlModel?>?> _02ApprovedByEmpmasIds_RangeByPunchIn(IEnumerable<int> empmasIds, DateTime dStart, DateTime dEnd, string? schema, string? conn)
+    {
+        var ids = empmasIds.ToList();
+        if (ids.Count == 0) return [];
+        string? sql = $@"select d.* from {schema}.Otreqdtl d
+                         join {schema}.Otreqhdr h on h.Id = d.OtReqHdrId
+                         where h.Status = 'A' and d.EmpmasId in @Ids and d.PunchIn >= @Start and d.PunchIn < @End;";
+        var data = await _sql.FetchData<OtreqdtlModel?, dynamic>(sql, new { Ids = ids, Start = dStart.Date, End = dEnd.Date.AddDays(1) }, conn);
+        return data;
+    }
+
     public async Task<List<OtreqdtlModel?>?> _02RangeByPunchIn(DateTime dStart, DateTime dEnd, string? schema, string? conn)
     {
         var start = dStart.Date; // 00:00:00
@@ -88,6 +111,8 @@ public class OtreqdtlDataAccess : IOtreqdtlDataAccess
 
 public interface IOtreqdtlDataAccess
 {
+    Task<List<OtreqdtlModel?>?> _02ApprovedByEmpmasIds_RangeByPunchIn(IEnumerable<int> empmasIds, DateTime dStart, DateTime dEnd, string? schema, string? conn);
+    Task<List<OtreqdtlModel?>?> _02ApprovedByEmpmasId_RangeByPunchIn(int? empmasId, DateTime dStart, DateTime dEnd, string? schema, string? conn);
     Task _01(OtreqdtlModel otreqdtl, string? schema, string? conn);
     Task<List<OtreqdtlModel?>?>     _02ByEmpmasId_RangeByPunchIn(int? empmasId, DateTime dStart, DateTime dEnd, string? schema, string? conn);
     Task<List<OtreqdtlModel?>?>     _02ByOtReqHdrId(int? otReqHdrId, string? schema, string? conn);

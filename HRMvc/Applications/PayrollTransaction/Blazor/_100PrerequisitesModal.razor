@@ -1,0 +1,68 @@
+@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._100O
+@using Telerik.Blazor.Components
+
+@inject IDA_100O _da
+@inject NavigationManager _nav
+
+<TelerikRootComponent>
+<TelerikWindow Modal="true" @bind-Visible="@visible" Width="900px">
+    <WindowTitle>Pre-requisites</WindowTitle>
+    <WindowContent>
+        <div class="prm-intro">Some setup is still missing. Open a step to complete it, or review all of them in Pre-requisites.</div>
+        <div class="prm-card">
+            <div class="prm-row prm-head"><div>Setup</div><div>What is set</div><div>Status</div><div></div></div>
+            @foreach (var s in steps)
+            {
+                <div class="prm-row">
+                    <div class="prm-title">@s.Title</div>
+                    <div>@s.Detail</div>
+                    <div><span class="prm-badge prm-@s.Status">@s.Status</span></div>
+                    <div class="text-end"><a class="prm-link" href="@s.Link">Open</a></div>
+                </div>
+            }
+        </div>
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <TelerikButton OnClick="@(() => _nav.NavigateTo("13T/100"))" ThemeColor="primary">Go to Pre-requisites</TelerikButton>
+            <TelerikButton OnClick="@Close" FillMode="outline">Close</TelerikButton>
+        </div>
+    </WindowContent>
+    <WindowActions><WindowAction Name="Close" /></WindowActions>
+</TelerikWindow>
+</TelerikRootComponent>
+
+<style>
+    .prm-intro { color:#5b6573; margin-bottom:10px; }
+    .prm-card { border:1px solid #7d8895; border-radius:6px; background:#fff; }
+    .prm-row { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) 100px 60px; gap:12px; align-items:center; padding:9px 14px; border-bottom:1px solid #e5e8ec; font-size:13px; }
+    .prm-row:last-child { border-bottom:0; }
+    .prm-head { font-size:11.5px; font-weight:700; color:#5b6573; background:#f4f6f9; border-radius:6px 6px 0 0; }
+    .prm-title { font-weight:700; }
+    .prm-badge { font-size:11.5px; font-weight:700; padding:2px 10px; border-radius:20px; display:inline-block; }
+    .prm-Confirmed { background:#e6f4ea; color:#1e7d34; }
+    .prm-Review { background:#fff4e0; color:#b26a00; }
+    .prm-Missing { background:#fdeaea; color:#c62828; }
+    .prm-link { font-size:12.5px; text-decoration:none; color:#1a56c4; font-weight:600; }
+</style>
+
+@code {
+    [Parameter] public UserClaimsModel? Uc { get; set; }
+
+    List<M100_Step> steps = new();
+    bool visible;
+    bool loaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (loaded || Uc is null || string.IsNullOrEmpty(Uc.OpisDb) || string.IsNullOrEmpty(Uc.OpayDb)) return;
+        loaded = true;
+        try
+        {
+            steps   = await _da._02Steps(Uc.OpisDb!, Uc.OpayDb!, Uc.Conn!);
+            visible = steps.Any(s => s.Status == "Missing");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("Pre-requisites modal failed: " + ex); }
+    }
+
+    void Close() => visible = false;
+}

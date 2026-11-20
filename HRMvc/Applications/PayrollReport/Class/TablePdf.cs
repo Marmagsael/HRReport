@@ -9,7 +9,7 @@ public class PdfCol { public string Title { get; set; } = ""; public double Widt
 public static class TablePdf
 {
     // widths in inches; rows are pre-formatted strings; kind 1 = bold row
-    public static byte[] Build(string title, List<string> subtitles, List<PdfCol> cols, List<(string[] Cells, int Kind)> rows, bool landscape = true, System.Drawing.Printing.PaperKind paper = System.Drawing.Printing.PaperKind.Legal)
+    public static byte[] Build(string title, List<string> subtitles, List<PdfCol> cols, List<(string[] Cells, int Kind)> rows, bool landscape = true, System.Drawing.Printing.PaperKind paper = System.Drawing.Printing.PaperKind.Legal, List<(string Title, int Span)>? bands = null)
     {
         int n = cols.Count;
         var dt = new DataTable();
@@ -32,10 +32,26 @@ public static class TablePdf
         double k = usable / sum;
 
         double hy = 0.3 + 0.25 * subtitles.Count;
-        var hdr = new PageHeaderSection { Height = Unit.Inch(hy + 0.3) };
+        var hdr = new PageHeaderSection { Height = Unit.Inch(hy + 0.3 + (bands != null ? 0.25 : 0)) };
         hdr.Items.Add(Tb(title, 0, 0, usable, 0.3, 14, true));
         for (int i = 0; i < subtitles.Count; i++) hdr.Items.Add(Tb(subtitles[i], 0, 0.3 + 0.25 * i, usable, 0.25, 9, false));
         report.Items.Add(hdr);
+        if (bands != null)
+        {
+            double bx = 0; int ci = 0;
+            foreach (var (bt, span) in bands)
+            {
+                double bw = 0;
+                for (int j = 0; j < span && ci < n; j++, ci++) bw += cols[ci].Width * k;
+                var b = Tb(bt, bx, hy, bw, 0.25, 8, true);
+                b.Style.TextAlign = HorizontalAlign.Center;
+                b.Style.BackgroundColor = System.Drawing.Color.FromArgb(0xE3, 0xE8, 0xEF);
+                b.Style.BorderStyle.Left = BorderType.Solid; b.Style.BorderColor.Left = System.Drawing.Color.White;
+                hdr.Items.Add(b);
+                bx += bw;
+            }
+            hy += 0.25;
+        }
 
         var ods = new ObjectDataSource { DataSource = dt };
         var det = new DetailSection { Height = Unit.Inch(0.3) };
