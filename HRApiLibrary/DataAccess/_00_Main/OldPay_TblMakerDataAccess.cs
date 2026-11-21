@@ -174,6 +174,7 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
         await _01Tmploans(schema, connName);
         await _01Tmppaymaindtl(schema, connName);
         await _01Tmppaymaindtl01(schema, connName);
+        await _02AddNdDoubleHolidayColumns(schema, connName);
         await _01Tmppaymainhdr(schema, connName);
         await _01Tmpretropay(schema, connName);
         await _01Tmptblotherdeductions(schema, connName);
@@ -1544,6 +1545,10 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         `dhot` double(12,4) NOT NULL DEFAULT '0.0000',
                         `rddh` double(12,4) NOT NULL DEFAULT '0.0000',
                         `rddhot` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `nddh` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `nddhot` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `ndrddh` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `ndrddhot` double(12,4) NOT NULL DEFAULT '0.0000',
                         PRIMARY KEY (`trn`,`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
@@ -2753,6 +2758,10 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         `dhot` double(12,4) NOT NULL DEFAULT '0.0000',
                         `rddh` double(12,4) NOT NULL DEFAULT '0.0000',
                         `rddhot` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `nddh` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `nddhot` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `ndrddh` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `ndrddhot` double(12,4) NOT NULL DEFAULT '0.0000',
                         PRIMARY KEY (`trn`,`empnumber`)
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
@@ -2815,9 +2824,26 @@ public class OldPay_TblMakerDataAccess : IOldPay_TblMakerDataAccess
                         `dh` double(12,4) NOT NULL DEFAULT '0.0000',
                         `dhot` double(12,4) NOT NULL DEFAULT '0.0000',
                         `rddh` double(12,4) NOT NULL DEFAULT '0.0000',
-                        `rddhot` double(12,4) NOT NULL DEFAULT '0.0000'
+                        `rddhot` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `nddh` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `nddhot` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `ndrddh` double(12,4) NOT NULL DEFAULT '0.0000',
+                        `ndrddhot` double(12,4) NOT NULL DEFAULT '0.0000'
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
+    }
+
+    private async Task _02AddNdDoubleHolidayColumns(string? schema, string? conn)
+    {
+        foreach (var table in new[] { "paymaindtl", "tmppaymaindtl", "tmppaymaindtl01" })
+        {
+            var columns = await _sql.FetchData<dynamic, dynamic>($"DESC {schema}.`{table}`", new { }, conn);
+            foreach (var name in new[] { "nddh", "nddhot", "ndrddh", "ndrddhot" })
+            {
+                if (columns.Any(c => string.Equals((string)c.Field, name, StringComparison.OrdinalIgnoreCase))) continue;
+                await ExecLegacy($"ALTER TABLE {schema}.`{table}` ADD COLUMN `{name}` double(12,4) NOT NULL DEFAULT '0.0000'", conn);
+            }
+        }
     }
 
     private async Task _01Tmppaymainhdr(string? schema, string? conn)

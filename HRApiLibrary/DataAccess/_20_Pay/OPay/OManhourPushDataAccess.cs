@@ -15,7 +15,7 @@ public class OManhourPushDataAccess : IOManhourPushDataAccess
     public static readonly string[] Columns =
     [
         "daywrk", "absent", "late", "utime", "rn", "rnot", "rot", "rd", "rdot", "lh", "lhot", "rdlh", "rdlhot", "sh", "shot", "rdsh", "rdshot",
-        "dh", "dhot", "rddh", "rddhot",
+        "dh", "dhot", "rddh", "rddhot", "nddh", "nddhot", "ndrddh", "ndrddhot",
         "nd", "ndot", "ndrd", "ndrdot", "ndlh", "ndlhot", "ndrdlh", "ndrdlhot", "ndsh", "ndshot", "ndrdsh", "ndrdshot"
     ];
 
@@ -26,6 +26,13 @@ public class OManhourPushDataAccess : IOManhourPushDataAccess
                      select status, attStart, attEnd from {paydb}.tmppaymainhdr where trn = @Trn";
         var r = await _sql.FetchLegacy<OManhourTrnInfo, dynamic>(sql, new { Trn = (trn ?? "").Trim() }, conn);
         return r.FirstOrDefault();
+    }
+
+    public async Task<Dictionary<string, int>> _02RateIds(List<string> empNumbers, string opis, string conn)
+    {
+        var nums = empNumbers.Select(x => x.Trim()).ToList();
+        var r = await _sql.FetchLegacy<OEmpRateRow, dynamic>($"select trim(empnumber) EmpNumber, ifnull(rateID, 2) RateId from {opis}.empmas where trim(empnumber) in @Nums", new { Nums = nums }, conn);
+        return r.GroupBy(x => x.EmpNumber, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First().RateId, StringComparer.OrdinalIgnoreCase);
     }
 
     public async Task<(int Updated, List<string> Skipped)> _03Push(string trn, Dictionary<string, Dictionary<string, double>> byEmp, string paydb, string conn)
@@ -58,7 +65,14 @@ public class OManhourPushDataAccess : IOManhourPushDataAccess
 public interface IOManhourPushDataAccess
 {
     Task<OManhourTrnInfo?> _02TrnInfo(string trn, string paydb, string conn);
+    Task<Dictionary<string, int>> _02RateIds(List<string> empNumbers, string opis, string conn);
     Task<(int Updated, List<string> Skipped)> _03Push(string trn, Dictionary<string, Dictionary<string, double>> byEmp, string paydb, string conn);
+}
+
+public class OEmpRateRow
+{
+    public string EmpNumber { get; set; } = string.Empty;
+    public int    RateId    { get; set; } = 2;
 }
 
 public class OManhourTrnInfo

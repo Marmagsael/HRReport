@@ -36,7 +36,6 @@ public class DA_100O : IDA_100O
         int cfgMap = await Filled("acctconfig", "", opay, conn);
         long grpRate = await Count($"select count(*) from {opay}.payrollgrp where Status = 'A' and ifnull(RatePerDay, 0) > 0", conn);
         long empRate = await Count($"select count(*) from {opis}.empmas where ifnull(EmpBasicRate, 0) > 0", conn);
-        long mand = await Count($"select count(*) from {opay}.dedmandatory where status = 'A'", conn);
         long sss = await Count($"select count(*) from {opay}.ssstbl", conn);
         long phic = await Count($"select count(*) from {opay}.medtbl", conn);
         long pagibig = await Count($"select count(*) from {opay}.pagibigtbl", conn);
@@ -66,7 +65,6 @@ public class DA_100O : IDA_100O
             S("salgrade", "Salary Grade", $"{grades} salary grade(s)", "13T/104", "Salary Grade", grades == 0),
             S("mapping", "Payroll Account Mapping", $"{payMap} payroll account(s) and {cfgMap} allowance account(s) mapped", "13T/105", "Payroll Account Mapping", payMap == 0),
             S("rates", "Rate Setup", $"{grpRate} of {groups} payroll group(s) have a rate, {empRate} employee(s) have their own rate", "13T/106", "Rate Setup", grpRate == 0 && empRate == 0),
-            S("mandatory", "Mandatory Deductions", $"{mand} active mandatory deduction(s)", "13T/605", "Mandatory Deduction", mand == 0),
             S("contrib", "SSS, PhilHealth and Pag-IBIG Tables", $"SSS {sss}, PhilHealth {phic}, Pag-IBIG {pagibig} bracket(s)", "13T/109", "Contribution Tables", sss == 0 || phic == 0 || pagibig == 0),
             S("tax", "Withholding Tax Table", $"{tax} bracket(s)", "13T/111", "Withholding Tax Table", tax == 0),
         ];

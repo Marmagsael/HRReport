@@ -18,7 +18,7 @@ public static class OPayrollCompute
         "daywrk", "rn", "rnot", "absent", "rot", "rd", "rdot", "lh", "lhot", "rdlh", "rdlhot", "sh", "shot", "rdsh", "rdshot",
         "sea", "sealh", "seardlh", "ctpa", "ctpalh", "ctpardlh", "custom1", "custom2", "custom3", "late", "utime",
         "nd", "ndot", "ndlh", "ndlhot", "ndsh", "ndshot", "ndrd", "ndrdot", "ndrdlh", "ndrdlhot", "ndrdsh", "ndrdshot",
-        "dh", "dhot", "rddh", "rddhot"
+        "dh", "dhot", "rddh", "rddhot", "nddh", "nddhot", "ndrddh", "ndrddhot"
     ];
 
     //--- paymaindtl columns saved besides the ones in HourColumns ---
@@ -30,7 +30,7 @@ public static class OPayrollCompute
         "rnot", "rot", "rd", "rdot", "lh", "lhot", "rdlh", "rdlhot", "sh", "shot", "rdsh", "rdshot",
         "nd", "ndot", "ndlh", "ndlhot", "ndsh", "ndshot",
         "ndrd", "ndrdot", "ndrdlh", "ndrdlhot", "ndrdsh", "ndrdshot",
-        "custom1", "custom2", "custom3", "dh", "dhot", "rddh", "rddhot"
+        "custom1", "custom2", "custom3", "dh", "dhot", "rddh", "rddhot", "nddh", "nddhot", "ndrddh", "ndrddhot", "nddh", "nddhot", "ndrddh", "ndrddhot"
     ];
 
     //--- Columns the FoxPro grid shows (hide_payacct) : account set, account found, and show01/show02 for periods 01/02 ---

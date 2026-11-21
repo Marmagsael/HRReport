@@ -10,7 +10,7 @@
         set => Needsotfiling = value ? 1 : 0;
     }
 
-    public int Maxothour { get; set; }
+    public double Maxothour { get; set; }
     public string Empname { get; set; } = string.Empty;
     public string Empnumber { get; set; } = string.Empty;
 }

@@ -1,4 +1,4 @@
-@using HRApiLibrary.Models._00_Main
+﻿@using HRApiLibrary.Models._00_Main
 @using HRApiLibrary.Models._10_Pis
 @using HRApiLibrary.Modules._11003O
 @using HRApiLibrary.DataAccess._10_Pis
@@ -38,8 +38,8 @@
         .att-filter { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; padding:12px 14px; background:var(--att-soft); border:1px solid var(--att-line); border-radius:10px; }
         .att-lbl { font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--att-mute); margin-bottom:3px; }
         .att-strip { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:12px 0 4px; }
-        .att-chip { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:999px; background:#fff; border:1px solid var(--att-line); font-size:12.5px; color:var(--att-ink); }
-        .att-chip b { font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--att-mute); font-weight:700; }
+        .att-chip { display:inline-flex; align-items:baseline; gap:6px; padding:4px 12px; border-radius:999px; background:#fff; border:1px solid var(--att-line); font-size:12.5px; line-height:1.3; color:var(--att-ink); }
+        .att-chip b { font-size:10.5px; line-height:1.3; letter-spacing:.05em; text-transform:uppercase; color:#0b6e99; font-weight:700; }
         .att-chip.code { background:#eef2ff; border-color:#c7d2fe; color:#2f3fa8; font-weight:700; }
         .att-chip.ok { background:#e8f7ee; border-color:#bde5cb; color:#1b6b3a; }
         .att-chip.bad { background:#fdecec; border-color:#f4c3c3; color:#a12727; }
@@ -65,6 +65,22 @@
         .att-r-SH  td, .att-sw-SH  { background:#fff3b0 !important; color:#212529; }
         .att-r-AB  td, .att-sw-AB  { background:#f5b7b1 !important; color:#212529; }
         .att-r-DH  td, .att-sw-DH  { background:#ffd3a8 !important; color:#212529; }
+        .att-sum th.att-h-R { background:#EDF2F9 !important; color:#2b3a4a; }
+        .att-sum thead tr:first-child th.att-h-R { border-bottom:3px solid #6C8EBF; font-weight:700; letter-spacing:.3px; text-align:center; }
+        .att-sum thead tr:nth-child(2) th.att-h-R { background:#F5F8FC !important; color:#4a5a6a; font-weight:600; }
+        .att-sum td:nth-child(n+3):nth-child(-n+7) { background:#FAFBFE; }
+        .att-sum th.att-h-LH { background:#EBF4EE !important; color:#2b3a4a; }
+        .att-sum thead tr:first-child th.att-h-LH { border-bottom:3px solid #6AA584; font-weight:700; letter-spacing:.3px; text-align:center; }
+        .att-sum thead tr:nth-child(2) th.att-h-LH { background:#F4F9F6 !important; color:#4a5a6a; font-weight:600; }
+        .att-sum td:nth-child(n+8):nth-child(-n+12) { background:#F9FCFA; }
+        .att-sum th.att-h-SH { background:#F8F5E8 !important; color:#2b3a4a; }
+        .att-sum thead tr:first-child th.att-h-SH { border-bottom:3px solid #C2A85A; font-weight:700; letter-spacing:.3px; text-align:center; }
+        .att-sum thead tr:nth-child(2) th.att-h-SH { background:#FCFAF3 !important; color:#4a5a6a; font-weight:600; }
+        .att-sum td:nth-child(n+13):nth-child(-n+17) { background:#FEFDFA; }
+        .att-sum th.att-h-DH { background:#F8EEE6 !important; color:#2b3a4a; }
+        .att-sum thead tr:first-child th.att-h-DH { border-bottom:3px solid #C98A5E; font-weight:700; letter-spacing:.3px; text-align:center; }
+        .att-sum thead tr:nth-child(2) th.att-h-DH { background:#FCF6F1 !important; color:#4a5a6a; font-weight:600; }
+        .att-sum td:nth-child(n+18):nth-child(-n+22) { background:#FEFBF8; }
     </style>
 
     <div class="card w-100 p-1 att-page">
@@ -105,15 +121,17 @@
                     <TelerikDatePicker Value="@_end" ValueChanged="@((DateTime v) => { _end = v; ResetResults(); })" Format="MMM dd, yyyy" Width="150px" />
                 </div>
                 <TelerikButton OnClick="OnLoad" ThemeColor="primary" Icon="@SvgIcon.ArrowRotateCw" Enabled="@(!_busy && _payrollGrpId is not null)">@(_busy ? "Loading..." : "Load")</TelerikButton>
+                <TelerikButton OnClick="ExportExcel" FillMode="outline" Icon="@SvgIcon.FileExcel" Enabled="@(SummaryView.Count > 0)">Excel</TelerikButton>
+                <TelerikButton OnClick="ExportPdf" FillMode="outline" Icon="@SvgIcon.FilePdf" Enabled="@(SummaryView.Count > 0)">PDF</TelerikButton>
             </div>
 
             <div class="att-strip">
-                <span class="att-chip code"><b>Payroll Code</b>@(string.IsNullOrEmpty(PayrollCode) ? "-" : PayrollCode)</span>
+                <span class="att-chip code"><b>TRN</b>@(string.IsNullOrEmpty(PayrollCode) ? "-" : PayrollCode)</span>
                 <span class="att-chip"><b>Group</b>@(_payrollGrps.FirstOrDefault(x => x.Id == _payrollGrpId) is { } g ? $"{g.Code} - {g.Name}" : "-")</span>
-                <span class="att-chip"><b>Period</b>@_start.ToString("MMM dd") - @_end.ToString("MMM dd, yyyy")</span>
+                <span class="att-chip"><b>Att. Coverage</b>@_start.ToString("MMM dd") - @_end.ToString("MMM dd, yyyy")</span>
                 @if (!string.IsNullOrEmpty(PayrollCode))
                 {
-                    <span class="att-chip @(_trnStatus is null ? "bad" : _trnStatus == "Lock" ? "lock" : "ok")"><b>Status</b>@(_trnStatus ?? "No open transaction")</span>
+                    <span class="att-chip @(_trnStatus is null ? "bad" : _trnStatus == "Lock" ? "lock" : "ok")"><b>Payroll Status</b>@(_trnStatus ?? "No open transaction")</span>
                 }
             </div>
 
@@ -149,17 +167,19 @@
                             <span class="fw-bold">@(_current is null ? "<<Employee Name>>" : _current.EmpName)</span>
                         </GridToolBarTemplate>
                         <GridColumns>
-                            <GridColumn Field="@nameof(AttDailyRow.Date)"      Title="Date"       DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
+                            <GridColumn Field="@nameof(AttDailyRow.Date)"      Title="Date"       DisplayFormat="{0:MM/dd/yyyy}" Width="100px"><FooterTemplate><b>Total</b></FooterTemplate></GridColumn>
                             <GridColumn Field="@nameof(AttDailyRow.Day)"       Title="Day"        Width="60px" />
                             <GridColumn Field="@nameof(AttDailyRow.DayType)"   Title="Day Type"   Width="80px" />
                             <GridColumn Field="@nameof(AttDailyRow.Holiday)"   Title="Holiday"    Width="70px" />
                             <GridColumn Field="@nameof(AttDailyRow.Remarks)"   Title="Remarks"    Width="110px" />
                             <GridColumn Field="@nameof(AttDailyRow.TimeIn)"    Title="Time In"    Width="80px" />
                             <GridColumn Field="@nameof(AttDailyRow.TimeOut)"   Title="Time Out"   Width="80px" />
-                            <GridColumn Field="@nameof(AttDailyRow.Tardiness)" Title="Tardiness"  DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                            <GridColumn Field="@nameof(AttDailyRow.Undertime)" Title="Undertime"  DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                            <GridColumn Field="@nameof(AttDailyRow.Overtime)"  Title="Overtime"   DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                            <GridColumn Field="@nameof(AttDailyRow.ND)"        Title="ND"         DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                            <GridColumn Field="@nameof(AttDailyRow.LateHrs)"   Title="Late"           TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttDailyRow)context).LateHrs, "#,##0.00")</Template><FooterTemplate><b>@Z(_daily.Sum(x => x.LateHrs), "#,##0.00")</b></FooterTemplate></GridColumn>
+                            <GridColumn Field="@nameof(AttDailyRow.UnderHrs)"  Title="Under Time"     TextAlign="ColumnTextAlign.Right" Width="85px"><Template>@Z(((AttDailyRow)context).UnderHrs, "#,##0.00")</Template><FooterTemplate><b>@Z(_daily.Sum(x => x.UnderHrs), "#,##0.00")</b></FooterTemplate></GridColumn>
+                            <GridColumn Field="@nameof(AttDailyRow.AbsDays)"   Title="Absent (Days)"  TextAlign="ColumnTextAlign.Right" Width="100px"><Template>@Z(((AttDailyRow)context).AbsDays, "#,##0.00")</Template><FooterTemplate><b>@Z(_daily.Sum(x => x.AbsDays), "#,##0.00")</b></FooterTemplate></GridColumn>
+                            <GridColumn Field="@nameof(AttDailyRow.TotTardHrs)" Title="Tot Tardiness" TextAlign="ColumnTextAlign.Right" Width="100px"><Template>@Z(((AttDailyRow)context).TotTardHrs, "#,##0.00")</Template><FooterTemplate><b>@Z(_daily.Sum(x => x.TotTardHrs), "#,##0.00")</b></FooterTemplate></GridColumn>
+                            <GridColumn Field="@nameof(AttDailyRow.Overtime)"  Title="Overtime"   TextAlign="ColumnTextAlign.Right" Width="90px"><Template>@Z(((AttDailyRow)context).Overtime, "#,##0.00")</Template><FooterTemplate><b>@Z(_daily.Sum(x => x.Overtime), "#,##0.00")</b></FooterTemplate></GridColumn>
+                            <GridColumn Field="@nameof(AttDailyRow.ND)"        Title="ND"         TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttDailyRow)context).ND, "#,##0.00")</Template><FooterTemplate><b>@Z(_daily.Sum(x => x.ND), "#,##0.00")</b></FooterTemplate></GridColumn>
                             <GridColumn Field="@nameof(AttDailyRow.DutyStart)" Title="Duty Start" Width="90px" />
                             <GridColumn Field="@nameof(AttDailyRow.DutyEnd)"   Title="Duty End"   Width="90px" />
                         </GridColumns>
@@ -182,58 +202,56 @@
 
             <div class="att-actions">
                 <TelerikButton OnClick="OnPushClick" ThemeColor="primary" Icon="@SvgIcon.Upload" Enabled="@(!_busy && _dailyByEmp.Count > 0)">Push to Payroll Entry</TelerikButton>
-                <TelerikButton OnClick="ExportExcel" FillMode="outline" Icon="@SvgIcon.FileExcel" Enabled="@(SummaryView.Count > 0)">Excel</TelerikButton>
-                <TelerikButton OnClick="ExportPdf" FillMode="outline" Icon="@SvgIcon.FilePdf" Enabled="@(SummaryView.Count > 0)">PDF</TelerikButton>
                 <div class="att-kpis">
                     <div class="att-kpi"><small>Employees</small><span>@SummaryView.Count</span></div>
-                    <div class="att-kpi"><small>Tardiness (min)</small><span>@(SummaryView.Sum(r => r.RegTard + r.LegTard + r.SpTard + r.DbTard).ToString("#,##0;-#,##0;0"))</span></div>
+                    <div class="att-kpi"><small>Tardiness (hrs)</small><span>@(SummaryView.Sum(r => r.RegTard + r.LegTard + r.SpTard + r.DbTard).ToString("#,##0.00"))</span></div>
                     <div class="att-kpi"><small>OT (hrs)</small><span>@(SummaryView.Sum(r => r.RegOT + r.LegOT + r.SpOT + r.DbOT).ToString("#,##0.00"))</span></div>
                     <div class="att-kpi"><small>ND (hrs)</small><span>@(SummaryView.Sum(r => r.RegND + r.LegND + r.SpND + r.DbND).ToString("#,##0.00"))</span></div>
                 </div>
             </div>
 
             <div class="att-card">
-                <TelerikGrid Data="@SummaryView"
+                <TelerikGrid Data="@SummaryView" Class="att-sum"
                              Height="320px"
                              Size="sm"
                              Pageable="false">
                     <GridColumns>
                         <GridColumn Field="@nameof(AttSummaryRow.EmpNumber)" Title="Emp#" Width="80px" />
                         <GridColumn Field="@nameof(AttSummaryRow.EmpName)"   Title="Name" Width="200px" />
-                        <GridColumn Title="Regular Day" HeaderClass="bg-primary-subtle">
+                        <GridColumn Title="Regular Day" HeaderClass="att-h-R">
                             <Columns>
-                                <GridColumn Field="@nameof(AttSummaryRow.RegDays)"  Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.RegRD)"    Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.RegTard)"  Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.RegOT)"    Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.RegND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.RegDays)"  Title="Days" HeaderClass="att-h-R"      TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).RegDays, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.RegRD)"    Title="RD" HeaderClass="att-h-R"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).RegRD, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.RegTard)"  Title="Tardiness" HeaderClass="att-h-R" TextAlign="ColumnTextAlign.Right" Width="90px"><Template>@Z(((AttSummaryRow)context).RegTard, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.RegOT)"    Title="OT" HeaderClass="att-h-R"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).RegOT, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.RegND)"    Title="ND" HeaderClass="att-h-R"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).RegND, "#,##0.00")</Template></GridColumn>
                             </Columns>
                         </GridColumn>
-                        <GridColumn Title="Legal Holiday" HeaderClass="bg-success-subtle">
+                        <GridColumn Title="Legal Holiday" HeaderClass="att-h-LH">
                             <Columns>
-                                <GridColumn Field="@nameof(AttSummaryRow.LegDays)"  Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.LegRD)"    Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.LegTard)"  Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.LegOT)"    Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.LegND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.LegDays)"  Title="Days" HeaderClass="att-h-LH"      TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).LegDays, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.LegRD)"    Title="RD" HeaderClass="att-h-LH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).LegRD, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.LegTard)"  Title="Tardiness" HeaderClass="att-h-LH" TextAlign="ColumnTextAlign.Right" Width="90px"><Template>@Z(((AttSummaryRow)context).LegTard, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.LegOT)"    Title="OT" HeaderClass="att-h-LH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).LegOT, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.LegND)"    Title="ND" HeaderClass="att-h-LH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).LegND, "#,##0.00")</Template></GridColumn>
                             </Columns>
                         </GridColumn>
-                        <GridColumn Title="Special Holiday" HeaderClass="bg-warning-subtle">
+                        <GridColumn Title="Special Holiday" HeaderClass="att-h-SH">
                             <Columns>
-                                <GridColumn Field="@nameof(AttSummaryRow.SpDays)"   Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.SpRD)"     Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.SpTard)"   Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.SpOT)"     Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.SpND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.SpDays)"   Title="Days" HeaderClass="att-h-SH"      TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).SpDays, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.SpRD)"     Title="RD" HeaderClass="att-h-SH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).SpRD, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.SpTard)"  Title="Tardiness" HeaderClass="att-h-SH" TextAlign="ColumnTextAlign.Right" Width="90px"><Template>@Z(((AttSummaryRow)context).SpTard, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.SpOT)"     Title="OT" HeaderClass="att-h-SH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).SpOT, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.SpND)"    Title="ND" HeaderClass="att-h-SH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).SpND, "#,##0.00")</Template></GridColumn>
                             </Columns>
                         </GridColumn>
-                        <GridColumn Title="Double Holiday" HeaderClass="bg-danger-subtle">
+                        <GridColumn Title="Double Holiday" HeaderClass="att-h-DH">
                             <Columns>
-                                <GridColumn Field="@nameof(AttSummaryRow.DbDays)"   Title="Days"      DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.DbRD)"     Title="RD"        DisplayFormat="{0:0.##;-0.##;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.DbTard)"   Title="Tardiness" DisplayFormat="{0:#,##0;-#,##0;}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.DbOT)"     Title="OT"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
-                                <GridColumn Field="@nameof(AttSummaryRow.DbND)"    Title="ND"        DisplayFormat="{0:#,##0.00;-#,##0.00;}" TextAlign="ColumnTextAlign.Right" Width="70px" />
+                                <GridColumn Field="@nameof(AttSummaryRow.DbDays)"   Title="Days" HeaderClass="att-h-DH"      TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).DbDays, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.DbRD)"     Title="RD" HeaderClass="att-h-DH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).DbRD, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.DbTard)"  Title="Tardiness" HeaderClass="att-h-DH" TextAlign="ColumnTextAlign.Right" Width="90px"><Template>@Z(((AttSummaryRow)context).DbTard, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.DbOT)"     Title="OT" HeaderClass="att-h-DH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).DbOT, "#,##0.00")</Template></GridColumn>
+                                <GridColumn Field="@nameof(AttSummaryRow.DbND)"    Title="ND" HeaderClass="att-h-DH"        TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((AttSummaryRow)context).DbND, "#,##0.00")</Template></GridColumn>
                             </Columns>
                         </GridColumn>
                     </GridColumns>
@@ -358,13 +376,13 @@
             var otSettings = (await _otSetDa._02sByPayrollgrpid(_payrollGrpId!.Value, Uc.SchemaUserPis!, Uc.OpisDb!, Uc.Conn!) ?? [])
                                 .Where(x => x is not null)
                                 .GroupBy(x => x!.Empnumber.Trim())
-                                .ToDictionary(g => g.Key, g => g.First()!.NeedsotfilingBool);
+                                .ToDictionary(g => g.Key, g => g.First()!);
 
             var ids       = _emps.Where(x => x.SystemId > 0).Select(x => x.SystemId).Distinct().ToList();
-            var allPunch  = (await _punchDa._02ByIdsByRange(ids, dstart, dend, Uc.SchemaUserPis, Uc.Conn) ?? [])
+            var allPunch  = (await _punchDa._02ByIdsByRange(ids, dstart.AddDays(-14), dend, Uc.SchemaUserPis, Uc.Conn) ?? [])
                                 .Where(p => p is not null).GroupBy(p => p!.EmpmasId ?? 0).ToDictionary(g => g.Key, g => g.ToList());
 
-            var needIds   = _emps.Where(x => x.SystemId > 0 && otSettings.TryGetValue(x.EmpNumber.Trim(), out var nn) && nn).Select(x => x.SystemId).Distinct().ToList();
+            var needIds   = _emps.Where(x => x.SystemId > 0 && otSettings.TryGetValue(x.EmpNumber.Trim(), out var nn) && nn.NeedsotfilingBool).Select(x => x.SystemId).Distinct().ToList();
             var allFiled  = (await _otDtlDa._02ApprovedByEmpmasIds_RangeByPunchIn(needIds, _start, _end, Uc.SchemaUserPis, Uc.Conn) ?? [])
                                 .Where(o => o is not null).GroupBy(o => o!.EmpmasId).ToDictionary(g => g.Key, g => g.ToList());
 
@@ -378,11 +396,13 @@
                 Func<DateTime, bool> isRdDay = d => empTpl is not null && DutyOf(empTpl, d) == "RD";
                 if (e.SystemId > 0 && allPunch.TryGetValue(e.SystemId, out var punches))
                 {
-                    bool needsOt = otSettings.TryGetValue(e.EmpNumber.Trim(), out var n) && n;
+                    otSettings.TryGetValue(e.EmpNumber.Trim(), out var n);
+                    bool needsOt = n?.NeedsotfilingBool ?? false;
+                    double maxOt = n?.Maxothour ?? 0;
                     var filed = new Dictionary<DateTime, double>();
                     if (needsOt && allFiled.TryGetValue(e.SystemId, out var ots))
                         filed = ots.GroupBy(o => o!.PunchIn.Date).ToDictionary(g => g.Key, g => g.Sum(o => o!.TotHrs));
-                    rows = punches.Select(p => ToDaily(p!, holidays, needsOt, filed, nd, isRdDay)).ToList();
+                    rows = punches.Select(p => ToDaily(p!, holidays, needsOt, maxOt, filed, nd, isRdDay)).ToList();
                 }
                 if (e.SystemId > 0)
                 {
@@ -397,11 +417,47 @@
                             rows.Add(new AttDailyRow
                             {
                                 Date = d, Day = d.ToString("ddd", System.Globalization.CultureInfo.InvariantCulture), DayType = "R", Kind = "AB",
-                                Remarks = "Absent", AbsentHrs = OPayrollConstants.HoursPerDay
+                                Remarks = "Absent", Credit = 0, AbsentHrs = OPayrollConstants.HoursPerDay
                             });
+                        }
+                        var byDate = rows.GroupBy(r => r.Date).ToDictionary(g => g.Key, g => g.First());
+                        bool PresentBefore(DateTime d)
+                        {
+                            for (var p = d.AddDays(-1); p >= d.AddDays(-14); p = p.AddDays(-1))
+                            {
+                                if (byDate.TryGetValue(p, out var pr)) return pr.Kind != "AB";
+                                if (holidays.TryGetValue(p, out var ph)) { if (ph == "SH") continue; return false; }
+                                if (DutyOf(tpl, p) == "RD") continue;
+                                return false;
+                            }
+                            return false;
+                        }
+                        for (var d = _start.Date; d <= last; d = d.AddDays(1))
+                        {
+                            if (!holidays.TryGetValue(d, out var hc) || (hc != "LH" && hc != "DH")) continue;
+                            if (byDate.ContainsKey(d) || DutyOf(tpl, d) == "RD") continue;
+                            if (!PresentBefore(d))
+                            {
+                                var ab = new AttDailyRow
+                                {
+                                    Date = d, Day = d.ToString("ddd", System.Globalization.CultureInfo.InvariantCulture), DayType = "R", Kind = "AB",
+                                    Remarks = "Absent (no holiday pay)", Credit = 0, AbsentHrs = OPayrollConstants.HoursPerDay
+                                };
+                                rows.Add(ab);
+                                byDate[d] = ab;
+                                continue;
+                            }
+                            var hp = new AttDailyRow
+                            {
+                                Date = d, Day = d.ToString("ddd", System.Globalization.CultureInfo.InvariantCulture), DayType = "R",
+                                Holiday = hc, Remarks = "Holiday pay (not worked)", Credit = 1
+                            };
+                            rows.Add(hp);
+                            byDate[d] = hp;
                         }
                         rows = rows.OrderBy(r => r.Date).ToList();
                     }
+                    rows = rows.Where(r => r.Date >= _start.Date).ToList();
                 }
                 _dailyByEmp[e.SystemId] = rows;
                 _summary.Add(ToSummary(e, rows));
@@ -430,6 +486,10 @@
     }
 
     static readonly string[] GroupNames = ["Regular Day", "Legal Holiday", "Special Holiday", "Double Holiday"];
+    static readonly string[] GroupColors  = ["#EDF2F9", "#EBF4EE", "#F8F5E8", "#F8EEE6"];
+    static readonly string[] GroupSubs    = ["#F5F8FC", "#F4F9F6", "#FCFAF3", "#FCF6F1"];
+    static readonly string[] GroupTints   = ["#FAFBFE", "#F9FCFA", "#FEFDFA", "#FEFBF8"];
+    static readonly string[] GroupAccents = ["#6C8EBF", "#6AA584", "#C2A85A", "#C98A5E"];
 
     static double[] GroupValues(AttSummaryRow r) =>
     [
@@ -439,8 +499,8 @@
         r.DbDays,  r.DbRD,  r.DbTard,  r.DbOT,  r.DbND
     ];
 
-    static readonly string[] MetricNames = ["Days", "RD", "Tard", "OT", "ND"];
-    static string Metric(int i, double v) => Z(v, i % 5 is 0 or 1 ? "0.##" : i % 5 == 2 ? "#,##0" : "#,##0.00");
+    static readonly string[] MetricNames = ["Days", "RD", "Tardiness", "OT", "ND"];
+    static string Metric(int i, double v) => Z(v, i % 5 is 0 or 1 ? "#,##0.00" : "#,##0.00");
 
     async Task ExportExcel()
     {
@@ -463,7 +523,18 @@
                 for (int m = 0; m < 5; m++) ws.Cell(6, 3 + g * 5 + m).Value = MetricNames[m];
             }
             ws.Range(5, 1, 6, 22).Style.Font.Bold = true;
-            ws.Range(5, 1, 6, 22).Style.Fill.BackgroundColor = XLColor.FromHtml("#F4F6F9");
+            ws.Range(5, 1, 6, 2).Style.Fill.BackgroundColor = XLColor.FromHtml("#F4F6F9");
+            for (int g = 0; g < 4; g++)
+            {
+                var band = ws.Range(5, 3 + g * 5, 5, 7 + g * 5);
+                band.Style.Fill.BackgroundColor = XLColor.FromHtml(GroupColors[g]);
+                band.Style.Font.FontColor = XLColor.FromHtml("#2B3A4A");
+                band.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+                band.Style.Border.BottomBorderColor = XLColor.FromHtml(GroupAccents[g]);
+                var sub = ws.Range(6, 3 + g * 5, 6, 7 + g * 5);
+                sub.Style.Fill.BackgroundColor = XLColor.FromHtml(GroupSubs[g]);
+                sub.Style.Font.FontColor = XLColor.FromHtml("#4A5A6A");
+            }
 
             int n = 6;
             foreach (var r in sum)
@@ -474,11 +545,12 @@
                 for (int i = 0; i < v.Length; i++)
                     if (v[i] != 0) ws.Cell(n, 3 + i).Value = v[i];
             }
-            ws.Range(7, 3, n, 22).Style.NumberFormat.Format = "#,##0.##";
-            ws.Columns().AdjustToContents();
+            ws.Range(7, 3, n, 22).Style.NumberFormat.Format = "#,##0.00"; ws.Range(7, 3, n, 22).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            if (n >= 7) for (int g = 0; g < 4; g++) ws.Range(7, 3 + g * 5, n, 7 + g * 5).Style.Fill.BackgroundColor = XLColor.FromHtml(GroupTints[g]);
+            ws.Columns(1, 22).AdjustToContents(5, Math.Max(n, 6));
 
             var wd = wb.AddWorksheet("Daily");
-            string[] hd = ["Emp#", "Name", "Date", "Day", "Day Type", "Holiday", "Remarks", "Time In", "Time Out", "Tardiness", "Undertime", "Overtime", "ND"];
+            string[] hd = ["Emp#", "Name", "Date", "Day", "Day Type", "Holiday", "Remarks", "Time In", "Time Out", "Late", "Under Time", "Absent (Days)", "Tot Tardiness", "Overtime", "ND"];
             for (int i = 0; i < hd.Length; i++) wd.Cell(1, i + 1).Value = hd[i];
             wd.Row(1).Style.Font.Bold = true;
             wd.Row(1).Style.Fill.BackgroundColor = XLColor.FromHtml("#F4F6F9");
@@ -490,12 +562,14 @@
                     wd.Cell(d, 1).SetValue(e.EmpNumber); wd.Cell(d, 2).Value = e.EmpName.Trim();
                     wd.Cell(d, 3).Value = x.Date.ToString("MM/dd/yyyy"); wd.Cell(d, 4).Value = x.Day; wd.Cell(d, 5).Value = x.DayType;
                     wd.Cell(d, 6).Value = x.Holiday; wd.Cell(d, 7).Value = x.Remarks; wd.Cell(d, 8).Value = x.TimeIn; wd.Cell(d, 9).Value = x.TimeOut;
-                    if (x.Tardiness != 0) wd.Cell(d, 10).Value = x.Tardiness;
-                    if (x.Undertime != 0) wd.Cell(d, 11).Value = x.Undertime;
-                    if (x.Overtime != 0)  wd.Cell(d, 12).Value = x.Overtime;
-                    if (x.ND != 0)        wd.Cell(d, 13).Value = x.ND;
+                    if (x.LateHrs != 0)     wd.Cell(d, 10).Value = x.LateHrs;
+                    if (x.UnderHrs != 0)    wd.Cell(d, 11).Value = x.UnderHrs;
+                    if (x.AbsDays != 0)     wd.Cell(d, 12).Value = x.AbsDays;
+                    if (x.TotTardHrs != 0)  wd.Cell(d, 13).Value = x.TotTardHrs;
+                    if (x.Overtime != 0)    wd.Cell(d, 14).Value = x.Overtime;
+                    if (x.ND != 0)          wd.Cell(d, 15).Value = x.ND;
                 }
-            wd.Range(2, 10, Math.Max(d, 2), 13).Style.NumberFormat.Format = "#,##0.##";
+            wd.Range(2, 10, Math.Max(d, 2), 15).Style.NumberFormat.Format = "#,##0.00"; wd.Range(2, 10, Math.Max(d, 2), 15).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right; wd.Range(1, 10, 1, 15).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
             wd.Columns().AdjustToContents();
 
             using var ms = new MemoryStream();
@@ -512,12 +586,12 @@
         try
         {
             var cols = new List<PdfCol> { new() { Title = "Emp#", Width = 0.6 }, new() { Title = "Name", Width = 1.7 } };
-            string[] mt = ["Days", "RD", "Tardiness", "OT", "ND"];
             for (int g = 0; g < 4; g++)
                 for (int m = 0; m < 5; m++)
-                    cols.Add(new PdfCol { Title = mt[m], Width = m == 2 ? 0.6 : 0.5, Right = true });
+                    cols.Add(new PdfCol { Title = MetricNames[m], Width = m == 2 ? 0.6 : 0.5, Right = true });
             var bands = new List<(string Title, int Span)> { ("", 2) };
             foreach (var gn in GroupNames) bands.Add((gn, 5));
+            for (int g = 0; g < 4; g++) for (int m = 0; m < 5; m++) cols[2 + g * 5 + m].Color = GroupSubs[g];
 
             var list = new List<(string[] Cells, int Kind)>();
             foreach (var r in sum)
@@ -531,8 +605,8 @@
             for (int i = 0; i < 20; i++) tot.Add(Metric(i, sum.Sum(r => GroupValues(r)[i])));
             list.Add((tot.ToArray(), 1));
             var subs = ReportSubtitles();
-            subs.Add("Tardiness in minutes; OT and ND in hours.");
-            var bytes = TablePdf.Build("Attendance Processing", subs, cols, list, landscape: true, paper: System.Drawing.Printing.PaperKind.Legal, bands: bands);
+            subs.Add("Tardiness (late + undertime + absent), OT and ND in hours.");
+            var bytes = TablePdf.Build("Attendance Processing", subs, cols, list, landscape: true, paper: System.Drawing.Printing.PaperKind.Legal, bands: bands, bandColors: ["#F4F6F9", .. GroupColors]);
             _pdfBase64 = Convert.ToBase64String(bytes);
             _showPdf = true;
         }
@@ -569,8 +643,12 @@
         try
         {
             var byEmp = new Dictionary<string, Dictionary<string, double>>();
+            var rateIds = await _pushDa._02RateIds(_selectedEmps.Select(x => x.EmpNumber).ToList(), Uc.OpisDb!, Uc.Conn!);
             foreach (var e in _selectedEmps)
-                byEmp[e.EmpNumber.Trim()] = BuildManhour(_dailyByEmp.TryGetValue(e.SystemId, out var r) ? r : []);
+            {
+                bool monthly = rateIds.TryGetValue(e.EmpNumber.Trim(), out var rid) && rid is 1 or 3;
+                byEmp[e.EmpNumber.Trim()] = BuildManhour(_dailyByEmp.TryGetValue(e.SystemId, out var r) ? r : [], monthly);
+            }
 
             var (updated, skipped) = await _pushDa._03Push(_pushTrn, byEmp, Uc.OpayDb!, Uc.Conn!);
             Notify($"{updated} employee(s) pushed to {_pushTrn}." + (skipped.Count > 0 ? $" Not in the transaction: {string.Join(", ", skipped)}." : string.Empty),
@@ -580,14 +658,15 @@
         _busy = false;
     }
 
-    private static Dictionary<string, double> BuildManhour(List<AttDailyRow> rows)
+    private static Dictionary<string, double> BuildManhour(List<AttDailyRow> rows, bool monthly)
     {
         var m = new Dictionary<string, double>();
         void Add(string col, double v) { if (v != 0 && col != "") m[col] = (m.TryGetValue(col, out var c) ? c : 0) + v; }
 
         foreach (var x in rows)
         {
-            Add("absent", x.AbsentHrs + x.Tardiness / 60.0 + x.Undertime / 60.0);
+            bool onHoliday = x.Holiday is "LH" or "SH" or "DH";
+            Add("absent", (monthly ? x.AbsentHrs : 0) + (onHoliday ? 0 : x.Tardiness / 60.0 + x.Undertime / 60.0));
 
             if (x.Kind is "OB" or "LV") { Add("daywrk", x.Credit); continue; }
             if (x.Kind == "AB") continue;
@@ -603,8 +682,8 @@
                     ("LH", true)  => ["rdlh", "rdlhot", "ndrdlh", "ndrdlhot"],
                     ("SH", false) => ["sh", "shot", "ndsh", "ndshot"],
                     ("SH", true)  => ["rdsh", "rdshot", "ndrdsh", "ndrdshot"],
-                    ("DH", false) => ["dh", "dhot", "", ""],
-                    ("DH", true)  => ["rddh", "rddhot", "", ""],
+                    ("DH", false) => ["dh", "dhot", "nddh", "nddhot"],
+                    ("DH", true)  => ["rddh", "rddhot", "ndrddh", "ndrddhot"],
                     (_, true)     => ["rd", "rdot", "ndrd", "ndrdot"],
                     _             => ["", "rot", "nd", "ndot"]
                 };
@@ -686,7 +765,7 @@
         return list;
     }
 
-    private static AttDailyRow ToDaily(Attpunches1Model p, Dictionary<DateTime, string> holidays, bool needsOt, Dictionary<DateTime, double> filed, (int Start, int End)? nd, Func<DateTime, bool> isRdDay)
+    private static AttDailyRow ToDaily(Attpunches1Model p, Dictionary<DateTime, string> holidays, bool needsOt, double maxOt, Dictionary<DateTime, double> filed, (int Start, int End)? nd, Func<DateTime, bool> isRdDay)
     {
         var date      = (p.PunchInDate ?? DateTime.MinValue).Date;
         int sched     = p.PunchT ?? 0;
@@ -704,6 +783,11 @@
             double fh = kind == "" && filed.TryGetValue(date, out var f) ? f : 0;
             if (fh > ot) otNote = $"Filed OT {fh:N2} > actual {ot:N2} (capped)";
             ot = Math.Min(fh, ot);
+        }
+        if (maxOt > 0 && ot > maxOt)
+        {
+            otNote = (otNote == string.Empty ? string.Empty : otNote + "; ") + $"OT capped at {maxOt:N2} (limit)";
+            ot = maxOt;
         }
 
         double ndReg = 0, ndOt = 0, regHrs = 0, under = 0;
@@ -819,7 +903,7 @@
             l.Add(code.Trim().ToUpper());
         }
 
-        for (int year = _start.Year; year <= _end.Year; year++)
+        for (int year = _start.AddDays(-14).Year; year <= _end.Year; year++)
         {
             foreach (var g in await _holidayDa._02Global(year, Uc!.OpayDb!, Uc.Conn!))
                 Add(g.HDate, g.TypeCode);
@@ -841,10 +925,10 @@
             bool rd = x.DayType == "RD";
             switch (x.Holiday)
             {
-                case "LH": if (rd) r.LegRD += x.Credit; else r.LegDays += x.Credit; r.LegTard += x.Tardiness; break;
-                case "SH": if (rd) r.SpRD += x.Credit;  else r.SpDays += x.Credit;  r.SpTard  += x.Tardiness; break;
-                case "DH": if (rd) r.DbRD += x.Credit;  else r.DbDays += x.Credit;  r.DbTard  += x.Tardiness; break;
-                default:   if (rd) r.RegRD += x.Credit; else r.RegDays += x.Credit; r.RegTard += x.Tardiness; break;
+                case "LH": if (rd) r.LegRD += x.Credit; else r.LegDays += x.Credit; r.LegTard += x.TotTardHrs; break;
+                case "SH": if (rd) r.SpRD += x.Credit;  else r.SpDays += x.Credit;  r.SpTard  += x.TotTardHrs; break;
+                case "DH": if (rd) r.DbRD += x.Credit;  else r.DbDays += x.Credit;  r.DbTard  += x.TotTardHrs; break;
+                default:   if (rd) r.RegRD += x.Credit; else r.RegDays += x.Credit; r.RegTard += x.TotTardHrs; break;
             }
 
             var parts = x.Segs.Count > 0 ? x.Segs.Select(g => (g.Holiday, g.OtHrs, g.Nd + g.NdOt)).ToList()
@@ -891,6 +975,10 @@
         public double   NdReg     { get; set; }
         public double   NdOt      { get; set; }
         public double   AbsentHrs { get; set; }
+        public double   LateHrs    => Tardiness / 60.0;
+        public double   UnderHrs   => Undertime / 60.0;
+        public double   AbsDays    => AbsentHrs / OPayrollConstants.HoursPerDay;
+        public double   TotTardHrs => LateHrs + UnderHrs + AbsentHrs;
         public double   ND        { get; set; }
         public string   DutyStart { get; set; } = string.Empty;
         public string   DutyEnd   { get; set; } = string.Empty;

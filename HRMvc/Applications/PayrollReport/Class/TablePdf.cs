@@ -4,12 +4,12 @@ using Telerik.Reporting.Drawing;
 
 namespace HRMvc.Applications.PayrollReport.Class;
 
-public class PdfCol { public string Title { get; set; } = ""; public double Width { get; set; } public bool Right { get; set; } }
+public class PdfCol { public string Title { get; set; } = ""; public double Width { get; set; } public bool Right { get; set; } public string? Color { get; set; } }
 
 public static class TablePdf
 {
     // widths in inches; rows are pre-formatted strings; kind 1 = bold row
-    public static byte[] Build(string title, List<string> subtitles, List<PdfCol> cols, List<(string[] Cells, int Kind)> rows, bool landscape = true, System.Drawing.Printing.PaperKind paper = System.Drawing.Printing.PaperKind.Legal, List<(string Title, int Span)>? bands = null)
+    public static byte[] Build(string title, List<string> subtitles, List<PdfCol> cols, List<(string[] Cells, int Kind)> rows, bool landscape = true, System.Drawing.Printing.PaperKind paper = System.Drawing.Printing.PaperKind.Legal, List<(string Title, int Span)>? bands = null, string[]? bandColors = null)
     {
         int n = cols.Count;
         var dt = new DataTable();
@@ -38,14 +38,15 @@ public static class TablePdf
         report.Items.Add(hdr);
         if (bands != null)
         {
-            double bx = 0; int ci = 0;
+            double bx = 0; int ci = 0, bi = 0;
             foreach (var (bt, span) in bands)
             {
                 double bw = 0;
                 for (int j = 0; j < span && ci < n; j++, ci++) bw += cols[ci].Width * k;
                 var b = Tb(bt, bx, hy, bw, 0.25, 8, true);
                 b.Style.TextAlign = HorizontalAlign.Center;
-                b.Style.BackgroundColor = System.Drawing.Color.FromArgb(0xE3, 0xE8, 0xEF);
+                b.Style.BackgroundColor = bandColors != null && bi < bandColors.Length ? System.Drawing.ColorTranslator.FromHtml(bandColors[bi]) : System.Drawing.Color.FromArgb(0xE3, 0xE8, 0xEF);
+                bi++;
                 b.Style.BorderStyle.Left = BorderType.Solid; b.Style.BorderColor.Left = System.Drawing.Color.White;
                 hdr.Items.Add(b);
                 bx += bw;
@@ -67,7 +68,7 @@ public static class TablePdf
             body.ConditionalFormatting.Add(fr);
             tbl.Body.SetCellContent(0, i, body);
             var h = Tb(cols[i].Title, x, hy, w, 0.25, 8, true, cols[i].Right);
-            h.Style.BackgroundColor = System.Drawing.Color.FromArgb(0xF4, 0xF6, 0xF9);
+            h.Style.BackgroundColor = cols[i].Color != null ? System.Drawing.ColorTranslator.FromHtml(cols[i].Color!) : System.Drawing.Color.FromArgb(0xF4, 0xF6, 0xF9);
             hdr.Items.Add(h);
             x += w;
             tbl.ColumnGroups.Add(new TableGroup());
