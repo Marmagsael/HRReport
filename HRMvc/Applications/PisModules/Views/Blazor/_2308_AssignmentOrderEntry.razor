@@ -186,6 +186,13 @@
     </WindowContent>
     <WindowActions><WindowAction Name="Close" /></WindowActions>
 </TelerikWindow>
+<TelerikDialog Visible="@showAsk" Title="Personnel Information System" ShowCloseButton="false" Width="420px">
+    <DialogContent><p class="mb-0">@askMsg</p></DialogContent>
+    <DialogButtons>
+        <TelerikButton ThemeColor="primary" OnClick="@(() => AskAnswer(true))">Yes</TelerikButton>
+        <TelerikButton OnClick="@(() => AskAnswer(false))">No</TelerikButton>
+    </DialogButtons>
+</TelerikDialog>
 </TelerikRootComponent>
 
 @code {
@@ -245,7 +252,16 @@
 
     void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
     void Ok(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
-    async Task<bool> Ask(string msg) => await _js.InvokeAsync<bool>("confirm", msg);
+    TaskCompletionSource<bool>? askTcs;
+    bool showAsk;
+    string askMsg = "";
+    Task<bool> Ask(string msg)
+    {
+        askMsg = msg; showAsk = true; askTcs = new TaskCompletionSource<bool>();
+        StateHasChanged();
+        return askTcs.Task;
+    }
+    void AskAnswer(bool yes) { showAsk = false; askTcs?.TrySetResult(yes); }
 
     static DateTime EndOfMonth(DateTime d) => new DateTime(d.Year, d.Month, DateTime.DaysInMonth(d.Year, d.Month));
 

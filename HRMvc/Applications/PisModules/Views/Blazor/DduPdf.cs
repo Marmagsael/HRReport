@@ -1,4 +1,4 @@
-using Telerik.Reporting;
+﻿using Telerik.Reporting;
 using Telerik.Reporting.Drawing;
 
 namespace HRMvc.Applications.PisModules.Views.Blazor;
@@ -109,8 +109,8 @@ public static class DduPdf
             T("b.  the issued Firearm/s to the Guards are licensed, a copy of which is in the possession of the guards.", 3.698, 0.677, 6.0, 0.14);
             T("4.  This Duty Detail Order serves as authority for the aforementioned Security Officers & Guards to carry their issued Firearms.", 3.823, 0.49, 7.3, 0.14);
             T("BY THE AUTHORITY OF THE CHIEF SECURITY OFFICER", 4.031, 2.875, 3.2, 0.14);
-            T(d.SignNm, 4.313, 2.354, 3.771, 0.16, 8, true);
-            T(d.SignPos, 4.458, 2.354, 3.771, 0.16);
+            T(d.SignNm, 4.313, 0.49, 2.26, 0.16, 8, true, "Tahoma", true);
+            T(d.SignPos, 4.458, 0.49, 2.26, 0.16, 8, false, "Tahoma", true);
             L(4.708, 0.49, 2.26);
             T("SIGNATURE OVER PRINTED NAME", 4.719, 0.75, 2.0, 0.14);
             T("D-OD-DDO-F-001", 4.875, 0.625, 1.2, 0.14);

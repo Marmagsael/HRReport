@@ -1,71 +1,284 @@
-﻿@using HRMvc.Applications.PisModules.Vars
-@using HRMvc.Applications.PisModules.Views.Blazor._2309
-@using HRApiLibrary.DataAccess._20_Pay.Interface
+﻿@using HRApiLibrary.Models._00_Main
+@using HRApiLibrary.Modules._2303O
+@using HRApiLibrary.Modules._2308O
+@using HRApiLibrary.Modules._2309O
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@using Telerik.SvgIcons
+@using HRMvc.Applications._00GeneralComponents
 
-@inject ISettingsDataAccess _settings;
+@inject IDA_2308O _da
+@inject IDA_2303O _rtu
+@inject IDA_2309O _dev
+
+<style>
+    .ao-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .ao-card { padding:12px 16px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
+    .ao-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+    .ao-row > label { width:170px; font-weight:600; }
+    .ao-note { color:#6c757d; font-size:12px; }
+</style>
+
 <TelerikRootComponent>
-    <div class="position-relative">
+<TelerikNotification @ref="@NotificationRef" HorizontalPosition="NotificationHorizontalPosition.Center" VerticalPosition="NotificationVerticalPosition.Top" />
+<TelerikLoaderContainer Visible="@busy" Text="Please wait..." LoaderType="@LoaderType.ConvergingSpinner" />
 
-        @*--- TELERIK NOTIFICATION ---*@
-        <TelerikNotification @ref="@NotificationRef"
-                             HorizontalPosition="@NotificationHorizontalPosition.Right"
-                             VerticalPosition="@NotificationVerticalPosition.Top"
-                             AnimationType="@AnimationType.SlideLeft" />
+<_00BT_FullW HdrCaption="Deviation">
+    <Details>
+        <div class="p-2">
+            <TelerikTabStrip ActiveTabId="@tab" ActiveTabIdChanged="@OnTabChanged">
+                <TabStripTab Title="Deviation Entry" Id="entry">
+                    <div class="ao-bar mt-2">
+                        <TelerikButton OnClick="@New" Icon="@SvgIcon.FileAdd" Enabled="@(!busy)">New</TelerikButton>
+                        <TelerikButton OnClick="@Save" ThemeColor="primary" Icon="@SvgIcon.Save" Enabled="@(!busy)">Save</TelerikButton>
+                    </div>
 
-        @*--- TELERIK LOADER ---*@
-        <TelerikLoaderContainer Visible="@v.IsLoading"
-                                LoaderType="@LoaderType.ConvergingSpinner" />
+                    <div class="ao-card">
+                        <div class="ao-row">
+                            <label>Control No.</label>
+                            <TelerikTextBox Value="@controlNo" ValueChanged="@((string v) => OnControlChanged(v))" MaxLength="10" Width="160px" />
+                            <span class="ao-note">RTU control number</span>
+                        </div>
+                        <div class="ao-row">
+                            <label>Client Name</label>
+                            <TelerikTextBox Value="@clientLine" Enabled="false" Width="620px" />
+                        </div>
+                        <div class="ao-row">
+                            <label>Emp No.</label>
+                            <TelerikTextBox Value="@empNumber" Enabled="false" Width="120px" />
+                            <label style="width:60px;">Name</label>
+                            <TelerikTextBox Value="@empName" Enabled="false" Width="320px" />
+                        </div>
+                        <div class="ao-row">
+                            <label>Date Prepared</label>
+                            <TelerikDatePicker Value="@prepDate" Format="MM/dd/yyyy" Width="150px" Enabled="false" />
+                        </div>
+                        <div class="ao-row">
+                            <label>Reason / Instruction</label>
+                            <TelerikTextBox Value="@reason" Enabled="false" Width="620px" />
+                        </div>
+                    </div>
 
-        @*--- PARAMETERS ---*@
-        <CascadingValue Value="@Uc">
-            <CascadingValue Value="@v">
-                <CascadingValue Value="@NotificationRef">
-                    <_00BT_FullW HdrCaption="Deviation Penalty">
-                        <Details>
-                            <div class="p-2">
-                                <TelerikTabStrip @bind-ActiveTabId="@TabStripActiveTabId">
-                                    <TabStripTab Id="tab1" Title="Deviation Entry">
-                                        <_2309_DeviationEntry />
-                                    </TabStripTab>
+                    <div class="ao-card">
+                        <div class="ao-row">
+                            <label>Violation</label>
+                            <TelerikDropDownList Data="@violations" Value="@devNo" ValueChanged="@((string v) => OnViolationChanged(v))" TextField="DevName" ValueField="DevNo" Width="460px" Enabled="@entryOn" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                                <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
+                            </TelerikDropDownList>
+                        </div>
+                        <div class="ao-row">
+                            <label>Penalty</label>
+                            <TelerikDropDownList Data="@penalties" Value="@penaltyNo" ValueChanged="@((string v) => OnPenaltyChanged(v))" TextField="Desc_" ValueField="PenaltyNo" Width="460px" Enabled="@entryOn" />
+                        </div>
+                        <div class="ao-row">
+                            <label>Date Committed</label>
+                            <TelerikDatePicker Value="@occurDt" ValueChanged="@((DateTime? v) => OnOccurChanged(v))" Format="MM/dd/yyyy" Width="150px" Enabled="@entryOn" />
+                            <label style="width:200px;">No. of Times Committed</label>
+                            <TelerikNumericTextBox Value="@freq" Decimals="0" Format="0" Width="80px" Enabled="false" Class="text-end" />
+                        </div>
+                        <div class="ao-row">
+                            <label>No. of Days</label>
+                            <TelerikNumericTextBox Value="@days" ValueChanged="@((int v) => OnDaysChanged(v))" Min="0" Decimals="0" Format="0" Width="80px" Enabled="@entryOn" Class="text-end" />
+                            <label style="width:80px;">Start Date</label>
+                            <TelerikDatePicker Value="@devStart" ValueChanged="@((DateTime? v) => OnStartChanged(v))" Format="MM/dd/yyyy" Width="150px" Enabled="@entryOn" />
+                            <label style="width:80px;">End Date</label>
+                            <TelerikDatePicker Value="@devEnd" Format="MM/dd/yyyy" Width="150px" Enabled="false" />
+                        </div>
+                        <div class="ao-row">
+                            <label>Set Employee Status to</label>
+                            <TelerikDropDownList Data="@statuses" @bind-Value="empStat" TextField="Name" ValueField="Code" Width="240px" />
+                        </div>
+                    </div>
+                </TabStripTab>
 
-
-                                    <TabStripTab Id="tab2" Title="Deviation Line-Up">
-                                        <_2309_DeviationLineUp />
-                                    </TabStripTab>
-                                </TelerikTabStrip>
-                            </div>
-                        </Details>
-                    </_00BT_FullW>
-                </CascadingValue>
-            </CascadingValue>
-        </CascadingValue>
-    </div>
-
+                <TabStripTab Title="Deviation Line-Up" Id="lineup">
+                    <div class="ao-bar mt-2">
+                        <TelerikRadioGroup Data="@orders" @bind-Value="orderBy" Layout="RadioGroupLayout.Horizontal" ValueField="@nameof(OrderOpt.Id)" TextField="@nameof(OrderOpt.Text)" />
+                    </div>
+                    <TelerikGrid Data="@LineUpSorted" Height="460px" Size="@ThemeConstants.Grid.Size.Small" OnRowDoubleClick="@PickLineUp">
+                        <GridColumns>
+                            <GridColumn Field="@nameof(M2309_LineUp.MovNumber)" Title="Control No." Width="120px" />
+                            <GridColumn Field="@nameof(M2309_LineUp.MovDate)" Title="Date Prepared" Width="130px" DisplayFormat="{0:MM/dd/yyyy}" />
+                            <GridColumn Field="@nameof(M2309_LineUp.EmpNumber)" Title="Emp No." Width="100px" />
+                            <GridColumn Field="@nameof(M2309_LineUp.EmpName)" Title="Name" />
+                        </GridColumns>
+                        <NoDataTemplate><div class="p-3 text-muted">Double-click a row to open it in Deviation Entry.</div></NoDataTemplate>
+                    </TelerikGrid>
+                </TabStripTab>
+            </TelerikTabStrip>
+        </div>
+    </Details>
+</_00BT_FullW>
 </TelerikRootComponent>
 
 @code {
-    [Parameter]
-    public UserClaimsModel Uc { get; set; } = new();
+    [Parameter] public UserClaimsModel? Uc { get; set; }
 
-    V2302Model v = new();
-    V00_RepVars rv = new();
+    class OrderOpt { public int Id { get; set; } public string Text { get; set; } = ""; }
 
-    private TelerikNotification? NotificationRef;
+    TelerikNotification? NotificationRef;
+    string Opis => Uc?.OpisDb ?? "";
+    string Conn => Uc?.Conn ?? "";
 
-    private string TabStripActiveTabId { get; set; } = "tab1";
+    List<M2309_Violation> violations = new();
+    List<M2309_Penalty> penalties = new();
+    List<M2309_Status> statuses = new();
+    List<M2309_LineUp> lineUp = new();
+    readonly List<OrderOpt> orders = new() { new OrderOpt { Id = 1, Text = "Order by Date" }, new OrderOpt { Id = 2, Text = "Order by Name" } };
+
+    string tab = "entry", controlNo = "", clientLine = "", clNumber = "", empNumber = "", empName = "", reason = "", devNo = "_", penaltyNo = "_", empStat = "H";
+    DateTime? prepDate, occurDt, devStart, devEnd;
+    int freq, days, orderBy = 1;
+    bool busy, entryOn;
+
+    IEnumerable<M2309_LineUp> LineUpSorted => orderBy == 1
+        ? lineUp.OrderBy(x => x.MovDate).ThenBy(x => x.EmpName)
+        : lineUp.OrderBy(x => x.EmpName).ThenBy(x => x.MovDate);
 
     protected override async Task OnInitializedAsync()
     {
-        v.IsLoading = false;
+        if (string.IsNullOrEmpty(Opis)) return;
+        try
+        {
+            var v = new List<M2309_Violation> { new M2309_Violation { DevNo = "_", DevName = "*****Select One*****" } };
+            v.AddRange(await _dev._02Violations(Opis, Conn));
+            violations = v;
+            var p = new List<M2309_Penalty> { new M2309_Penalty { PenaltyNo = "_", Desc_ = "*****Select One*****" } };
+            p.AddRange(await _dev._02Penalties(Opis, Conn));
+            penalties = p;
+            statuses = await _dev._02DeviationStatuses(Opis, Conn);
+            empStat = statuses.Any(s => s.Code == "H") ? "H" : (statuses.FirstOrDefault()?.Code ?? "");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2309 load: " + ex); Warn("Unable to load the lists."); }
     }
 
+    void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
+    void Ok(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Success);
 
-
-    private async Task ChildAction()
+    void ClearEntry()
     {
-        if (v == null) return;
+        clientLine = ""; clNumber = ""; empNumber = ""; empName = ""; reason = ""; prepDate = null;
+        devNo = "_"; penaltyNo = "_"; occurDt = null; devStart = null; devEnd = null; freq = 0; days = 0;
+        empStat = statuses.Any(s => s.Code == "H") ? "H" : (statuses.FirstOrDefault()?.Code ?? "");
+        entryOn = false;
+    }
 
+    void New() { controlNo = ""; ClearEntry(); }
 
-        v.Action = "";
+    async Task OnTabChanged(string id)
+    {
+        tab = id;
+        if (id == "lineup") await LoadLineUp();
+    }
+
+    async Task LoadLineUp()
+    {
+        try { lineUp = await _dev._02LineUp(Opis, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("2309 lineup: " + ex); Warn("Unable to load the line-up."); }
+    }
+
+    async Task PickLineUp(GridRowClickEventArgs a)
+    {
+        if (a.Item is not M2309_LineUp x) return;
+        tab = "entry";
+        await OnControlChanged(x.MovNumber);
+    }
+
+    async Task OnControlChanged(string v)
+    {
+        controlNo = (v ?? "").Trim();
+        if (controlNo == "") { ClearEntry(); return; }
+        try
+        {
+            var r = await _dev._02Rtu(controlNo, Opis, Conn);
+            if (r == null)
+            {
+                ClearEntry();
+                Warn("CONTROL NO does not exist in the database");
+                return;
+            }
+            var e = await _da._02Employee(r.EmpNumber, Opis, Conn);
+            var c = await _rtu._02Client(r.ClNumber, Opis, Conn);
+            prepDate = r.PrepDate; empNumber = r.EmpNumber.Trim(); empName = e?.FullName ?? ""; reason = r.Reason.Trim();
+            clNumber = c?.ClNumber ?? ""; clientLine = c == null ? "" : $"[{c.ClNumber}] {c.ClName} - {c.AreaCode}";
+            if (r.Existing == null)
+            {
+                devNo = "_"; penaltyNo = "_"; occurDt = null; devStart = null; devEnd = null; freq = 0; days = 0;
+                entryOn = true;
+            }
+            else
+            {
+                devNo = r.Existing.DevNo; penaltyNo = r.Existing.PenaltyNo; occurDt = r.Existing.OccurDt;
+                devStart = r.Existing.DevStart; devEnd = r.Existing.DevEnd;
+                int.TryParse(r.Existing.FreqNo, out freq);
+                days = devStart != null && devEnd != null ? (int)(devEnd.Value - devStart.Value).TotalDays : 0;
+                empStat = statuses.Any(s => s.Code == "H") ? "H" : empStat;
+                entryOn = false;
+            }
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2309 rtu: " + ex); Warn("Unable to load the transaction."); }
+    }
+
+    async Task RecountTimes()
+    {
+        if (devNo == "_" || string.IsNullOrEmpty(devNo)) { freq = 0; return; }
+        try { freq = await _dev._02Times(empNumber, occurDt?.Year ?? 0, devNo, Opis, Conn); }
+        catch (Exception ex) { Console.Error.WriteLine("2309 times: " + ex); Warn("Unable to count the violations."); }
+    }
+
+    async Task OnViolationChanged(string v) { devNo = v; await RecountTimes(); }
+
+    async Task OnOccurChanged(DateTime? v) { occurDt = v; await RecountTimes(); }
+
+    void OnPenaltyChanged(string v)
+    {
+        penaltyNo = v;
+        devStart = null; devEnd = null; occurDt = null; days = 0;
+        var p = penalties.FirstOrDefault(x => x.PenaltyNo == v);
+        if (p != null && v != "_") days = (int)p.Days;
+    }
+
+    void OnDaysChanged(int v)
+    {
+        days = v;
+        if (devStart != null) devEnd = devStart.Value.AddDays(days - 1);
+    }
+
+    void OnStartChanged(DateTime? v)
+    {
+        devStart = v;
+        if (devStart != null) devEnd = devStart.Value.AddDays(days - 1); else devEnd = null;
+    }
+
+    async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(controlNo) || string.IsNullOrWhiteSpace(empName)) { Warn("INVALID RTU CONTROL NUMBER"); return; }
+        if (!entryOn) { Warn("Penalty already applied"); return; }
+        if (devNo == "_") { Warn("Select violation"); return; }
+        if (penaltyNo == "_") { Warn("Select penalty"); return; }
+        if (occurDt == null) { Warn("Invalid date commited"); return; }
+        bool suspended = empStat == "H";
+        if (suspended)
+        {
+            if (devStart == null) { Warn("Invalid date start"); return; }
+            if (devEnd == null) { Warn("Invalid date end"); return; }
+        }
+        string remarks = suspended
+            ? $"Suspended from {devStart:MM/dd/yyyy} until {devEnd:MM/dd/yyyy}"
+            : (violations.FirstOrDefault(x => x.DevNo == devNo)?.DevName ?? "");
+
+        busy = true; StateHasChanged();
+        try
+        {
+            await _dev._01Save(new M2309_Save
+            {
+                ControlNo = controlNo, ClNumber = clNumber, EmpNumber = empNumber, DevNo = devNo, PenaltyNo = penaltyNo, OccurDt = occurDt.Value, Freq = freq,
+                DevStart = suspended ? devStart : null, DevEnd = suspended ? devEnd : null, EmpStat = empStat, Remarks = remarks
+            }, Opis, Conn);
+            entryOn = false;
+            Ok("Employee Deviation recorded successfully!..");
+        }
+        catch (Exception ex) { Console.Error.WriteLine("2309 save: " + ex); Warn("Unable to save the deviation."); }
+        finally { busy = false; }
     }
 }
