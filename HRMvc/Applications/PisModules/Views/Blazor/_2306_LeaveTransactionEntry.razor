@@ -171,6 +171,15 @@
                             <div class="ms-md-2 small text-muted align-self-center">Counted from the dates; change it for a half day.</div>
                         </div>
 
+                        @* -- Reason --- *@
+                        <div class="d-flex flex-column flex-md-row mb-2">
+                            <label class="fw-normal w-180p">Reason</label>
+                            <div class="col-12 col-md-7 col-lg-5">
+                                <TelerikTextArea @bind-Value="@Reason" Rows="3" MaxLength="250" TabIndex="10"
+                                                 Rounded="@ThemeConstants.TextBox.Rounded.Large" FillMode="@ThemeConstants.TextBox.FillMode.Solid" />
+                            </div>
+                        </div>
+
                         @* -- Number of Days With Pay --- *@
                         <div class="d-flex flex-column flex-md-row mb-2">
                             <label class="fw-normal w-180p">Days With Pay</label>
@@ -326,6 +335,7 @@
     private string  EmpName = "", EmpStatus = "", EmpClient = "", EmpError = "";
     private string? LeaveCode;
     private string? SetStatusCode;
+    private string  Reason = "";
     private DateTime LvStart = DateTime.Today;
     private DateTime LvEnd   = DateTime.Today;
     private decimal NoDays   = 1;
@@ -454,7 +464,7 @@
         EmpNumber = null; EmpName = EmpStatus = EmpClient = EmpError = "";
         History = []; Summary = [];
         LeaveCode = null; SetStatusCode = null; Balance = null; BalanceNote = ""; PisEmp = null; PisTypeId = 0; OrigEmpNumber = OrigLeaveCode = null;
-        LvStart = LvEnd = DateTime.Today; NoDays = 1; DaysWithPay = 1;
+        LvStart = LvEnd = DateTime.Today; NoDays = 1; DaysWithPay = 1; Reason = "";
         ControlNumber = "";
     }
 
@@ -571,6 +581,7 @@
         DaysWithPay   = (decimal)(t.DaysWithPay ?? 0);
         OrigEmpNumber = t.EmpNumber?.Trim(); OrigLeaveCode = t.LeaveCode; OrigStart = LvStart; OrigEnd = LvEnd; OrigDaysWithPay = t.DaysWithPay ?? 0;
         await FillEmployee(EmpNumber);
+        Reason = await _da._02Reason(ControlNumber, OPis, Conn);
     }
 
     // ---------------- Save / Delete (old PIS : leave1) ----------------
@@ -606,7 +617,8 @@
             var s = new M2306_Save
             {
                 LvDate = LvDate, EmpNumber = emp, LeaveCode = LeaveCode!,
-                LvStart = LvStart, LvEnd = LvEnd, NoDays = (double)NoDays, DaysWithPay = (double)DaysWithPay
+                LvStart = LvStart, LvEnd = LvEnd, NoDays = (double)NoDays, DaysWithPay = (double)DaysWithPay,
+                Reason = Reason
             };
             var wasExisting = IsExisting;
 
@@ -662,7 +674,7 @@
         var lvaId = await _da._01SavePis(new M2306_PisSave
         {
             Yr = LvStart.Year, EmpmasId = pe.EmpmasId, EmpNumber = emp, DateApplied = LvDate, LeaveTypeId = typeId,
-            LvBalance = Balance ?? 0, DaysCnt = (double)NoDays, DaysWithPay = (double)DaysWithPay, LvStart = LvStart, LvEnd = LvEnd, Days = days
+            LvBalance = Balance ?? 0, DaysCnt = (double)NoDays, DaysWithPay = (double)DaysWithPay, LvStart = LvStart, LvEnd = LvEnd, Reason = string.IsNullOrWhiteSpace(Reason) ? null : Reason.Trim(), Days = days
         }, Uc.EmpmasId ?? 0, Pis, Conn);
 
         // -- the days with pay are leave in the attendance (LV0 / LV1 / LV2); only an employee with a user account has one --

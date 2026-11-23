@@ -1512,7 +1512,8 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
                         `CHANGEBY` varchar(10) DEFAULT NULL,
                         `CHANGEDT` varchar(10) DEFAULT NULL,
                         `POSTED` varchar(1) DEFAULT NULL,
-                        `mode` varchar(1) NOT NULL DEFAULT 'L'
+                        `mode` varchar(1) NOT NULL DEFAULT 'L',
+                        `REASON` varchar(254) DEFAULT NULL
                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1;";
         await ExecLegacy(sql, conn);
 
@@ -1529,6 +1530,13 @@ public class OldPis_TblMakerDataAccess : IOldPis_TblMakerDataAccess
             new { Schema = schema }, conn);
         if (hasPay.FirstOrDefault() == 0)
             await ExecLegacy($"ALTER TABLE {schema}.`leave1` ADD COLUMN `DAYS_WITHPAY` double(5,2) DEFAULT NULL AFTER `WITHPAY`", conn);
+
+        // -- reason of the leave (from the employee portal application or the HR entry) --
+        var hasReason = await _sql.FetchData<long, dynamic>(
+            "select count(*) from information_schema.columns where table_schema = @Schema and table_name = 'leave1' and column_name = 'REASON'",
+            new { Schema = schema }, conn);
+        if (hasReason.FirstOrDefault() == 0)
+            await ExecLegacy($"ALTER TABLE {schema}.`leave1` ADD COLUMN `REASON` varchar(254) DEFAULT NULL", conn);
     }
 
     // -- Official business (OB Entry) : one row per OB, like leave1 for the leave --

@@ -171,12 +171,12 @@ public class LeaveapplicationDataAccess : ILeaveapplicationDataAccess
     //    NO_DAYS keeps the half days (two decimals). LVNUMBER = yy-MM + running number of the month; a leave already posted (same employee, code and dates) is not posted twice. --
     public async Task _01PostToOPis(int? lvaId, int? approverEmpmasId, string? pisdb, string? opisdb, string? conn)
     {
-        string? sql = $@"insert into {opisdb}.leave1 (LVNUMBER, LVDATE, EMPNUMBER, LVCODE, `START`, `END`, NO_DAYS, WITHPAY, DAYS_WITHPAY, ENCODEBY, ENCODEDT, `mode`)
+        string? sql = $@"insert into {opisdb}.leave1 (LVNUMBER, LVDATE, EMPNUMBER, LVCODE, `START`, `END`, NO_DAYS, WITHPAY, DAYS_WITHPAY, ENCODEBY, ENCODEDT, `mode`, REASON)
                          select concat(date_format(now(), '%y-%m'),
                                        lpad(ifnull((select max(cast(right(l.LVNUMBER, 3) as unsigned)) from {opisdb}.leave1 l
                                                     where l.LVNUMBER like concat(date_format(now(), '%y-%m'), '%')), 0) + 1, 3, '0')),
                                 a.DateApplied, trim(e.EmpNumber), left(trim(t.Code), 2), a.LvStart, a.LvEnd,
-                                a.DaysCnt, if(a.DaysWithPay > 0, 'Y', 'N'), a.DaysWithPay, left(trim(ap.EmpNumber), 10), date_format(now(), '%Y-%m-%d'), 'L'
+                                a.DaysCnt, if(a.DaysWithPay > 0, 'Y', 'N'), a.DaysWithPay, left(trim(ap.EmpNumber), 10), date_format(now(), '%Y-%m-%d'), 'L', left(trim(a.Reason), 254)
                          from   {pisdb}.Leaveapplication a
                                 join {pisdb}.Empmas     e  on e.Id = a.EmpmasId
                                 join {pisdb}.Leavetype  t  on t.Id = a.LeaveTypeId

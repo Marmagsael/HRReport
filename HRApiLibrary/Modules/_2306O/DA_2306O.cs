@@ -116,6 +116,8 @@ public class DA_2306O : IDA_2306O
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _numLocks = new();
     private static SemaphoreSlim NumLock(string key) => _numLocks.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
 
+    private static string? Cut(string? r) { r = r?.Trim(); return string.IsNullOrEmpty(r) ? null : r.Length > 254 ? r[..254] : r; }
+
     public async Task<string> _01Save(M2306_Save s, string? encodeBy, string opisdb, string conn)
     {
         var gate = NumLock(opisdb + "|lv|" + s.LvDate.ToString("yy-MM"));
@@ -124,12 +126,12 @@ public class DA_2306O : IDA_2306O
         {
         string lvNumber = await _02NextNumber(s.LvDate, opisdb, conn);
 
-        string sql = $@"insert into {opisdb}.leave1 (LVNUMBER, LVDATE, EMPNUMBER, LVCODE, `START`, `END`, NO_DAYS, WITHPAY, DAYS_WITHPAY, ENCODEBY, ENCODEDT, `mode`)
-                        values (@LvNumber, @LvDate, @EmpNumber, @LeaveCode, @LvStart, @LvEnd, @NoDays, @WithPay, @DaysWithPay, @EncodeBy, @EncodeDt, 'L')";
+        string sql = $@"insert into {opisdb}.leave1 (LVNUMBER, LVDATE, EMPNUMBER, LVCODE, `START`, `END`, NO_DAYS, WITHPAY, DAYS_WITHPAY, ENCODEBY, ENCODEDT, `mode`, REASON)
+                        values (@LvNumber, @LvDate, @EmpNumber, @LeaveCode, @LvStart, @LvEnd, @NoDays, @WithPay, @DaysWithPay, @EncodeBy, @EncodeDt, 'L', @Reason)";
         await _sql.ExecuteLegacyCmd<dynamic>(sql, new
         {
             LvNumber = lvNumber, LvDate = s.LvDate.Date, s.EmpNumber, s.LeaveCode, LvStart = s.LvStart.Date, LvEnd = s.LvEnd.Date, s.NoDays,
-            WithPay = s.DaysWithPay > 0 ? "Y" : "N", s.DaysWithPay, EncodeBy = encodeBy?.Trim(), EncodeDt = DateTime.Now.ToString("yyyy-MM-dd")
+            WithPay = s.DaysWithPay > 0 ? "Y" : "N", s.DaysWithPay, EncodeBy = encodeBy?.Trim(), EncodeDt = DateTime.Now.ToString("yyyy-MM-dd"), Reason = Cut(s.Reason)
         }, conn);
         return lvNumber;
         }
@@ -139,12 +141,12 @@ public class DA_2306O : IDA_2306O
     public async Task _03Update(string lvNumber, M2306_Save s, string? changeBy, string opisdb, string conn)
     {
         string sql = $@"update {opisdb}.leave1 set LVDATE = @LvDate, EMPNUMBER = @EmpNumber, LVCODE = @LeaveCode, `START` = @LvStart, `END` = @LvEnd,
-                               NO_DAYS = @NoDays, WITHPAY = @WithPay, DAYS_WITHPAY = @DaysWithPay, CHANGEBY = @ChangeBy, CHANGEDT = @ChangeDt
+                               NO_DAYS = @NoDays, WITHPAY = @WithPay, DAYS_WITHPAY = @DaysWithPay, CHANGEBY = @ChangeBy, CHANGEDT = @ChangeDt, REASON = @Reason
                         where LVNUMBER = @LvNumber";
         await _sql.ExecuteLegacyCmd<dynamic>(sql, new
         {
             LvNumber = lvNumber, LvDate = s.LvDate.Date, s.EmpNumber, s.LeaveCode, LvStart = s.LvStart.Date, LvEnd = s.LvEnd.Date, s.NoDays,
-            WithPay = s.DaysWithPay > 0 ? "Y" : "N", s.DaysWithPay, ChangeBy = changeBy?.Trim(), ChangeDt = DateTime.Now.ToString("yyyy-MM-dd")
+            WithPay = s.DaysWithPay > 0 ? "Y" : "N", s.DaysWithPay, ChangeBy = changeBy?.Trim(), ChangeDt = DateTime.Now.ToString("yyyy-MM-dd"), Reason = Cut(s.Reason)
         }, conn);
     }
 
@@ -212,6 +214,12 @@ public class DA_2306O : IDA_2306O
         return id;
     }
 
+    public async Task<string> _02Reason(string lvNumber, string opisdb, string conn)
+    {
+        var r = await _sql.FetchLegacy<string, dynamic>($"select ifnull(REASON, '') from {opisdb}.leave1 where LVNUMBER = @N limit 1", new { N = lvNumber }, conn);
+        return r?.FirstOrDefault() ?? "";
+    }
+
     // -- The approved application of that leave (same employee, type and dates) is Cancelled; its leave punches are taken out --
     public async Task _03CancelPis(int empmasId, int systemId, int leaveTypeId, DateTime start, DateTime end, int hrEmpmasId, string pisdb, string conn)
     {
@@ -258,6 +266,7 @@ public interface IDA_2306O
     Task<M2306_PisEmp?>            _02PisEmp(string empNumber, string pisdb, string conn);
     Task<int>                      _02PisLeaveTypeId(string leaveCode, string pisdb, string conn);
     Task<int>                      _01SavePis(M2306_PisSave s, int hrEmpmasId, string pisdb, string conn);
+    Task<string>                   _02Reason(string lvNumber, string opisdb, string conn);
     Task                           _03CancelPis(int empmasId, int systemId, int leaveTypeId, DateTime start, DateTime end, int hrEmpmasId, string pisdb, string conn);
 }
 
@@ -334,6 +343,7 @@ public class M2306_Transaction
 
 public class M2306_Save
 {
+    public string?   Reason       { get; set; }
     public DateTime  LvDate    { get; set; } = DateTime.Today;
     public string    EmpNumber { get; set; } = "";
     public string    LeaveCode { get; set; } = "";
