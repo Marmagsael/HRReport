@@ -1,0 +1,115 @@
+@using HRMvc.Applications._00GeneralComponents
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.StartupConfig.Library
+
+@inject L12_111 _lib
+
+<TelerikRootComponent>
+
+    <style>
+        .op-card    { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:.55rem .8rem; display:flex; align-items:center; gap:.7rem; height:100%; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+        .op-card.sel{ border-color:#1f6fb2; box-shadow:0 0 0 2px rgba(31,111,178,.18); }
+        .op-ico     { flex:0 0 38px; height:38px; display:flex; align-items:center; justify-content:center; border-radius:10px; font-size:1rem; }
+        .op-num     { font-size:1.35rem; font-weight:700; line-height:1.1; color:#1f2937; min-width:46px; text-align:right; }
+        .op-lbl     { flex:1; font-size:.82rem; color:#374151; }
+        .op-more    { border:1px solid #d5dae1; background:#f8f9fb; border-radius:6px; padding:.1rem .55rem; font-weight:700; color:#475467; cursor:pointer; }
+        .op-grp     { font-weight:700; color:#1f2937; margin:.4rem 0 .1rem; }
+    </style>
+
+    <_00BT_FullW HdrCaption="Operation Monitoring Summary">
+    <Details>
+    <div class="p-2 d-flex flex-column gap-2">
+
+        <div class="d-flex align-items-center gap-3">
+            <a href="12/101" class="small">Back to Dashboard</a>
+        </div>
+
+        @if (Cards == null)
+        {
+            <div class="text-secondary">Loading...</div>
+        }
+        else
+        {
+            @foreach (var g in Cards.GroupBy(x => x.Group))
+            {
+                <div class="op-grp">@g.Key</div>
+                <div class="row g-2">
+                    @foreach (var c in g)
+                    {
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <div class="op-card @(Selected == c ? "sel" : "")">
+                                <div class="op-ico" style="background:@(c.Color)1f;color:@c.Color"><i class="fa-solid @c.Icon"></i></div>
+                                <div class="op-lbl">@c.Title</div>
+                                <div class="op-num">@c.Total.ToString("N0")</div>
+                                <button type="button" class="op-more" title="Show the list" @onclick="() => Open(c)">...</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <TelerikWindow Visible="@(Selected != null)" VisibleChanged="@((bool v) => { if (!v) Close(); })" Modal="true" Width="1000px" Height="640px">
+                <WindowTitle><div class="fw-bold">@Selected?.Title <span class="text-secondary fw-normal">(@Rows.Count.ToString("N0"))</span></div></WindowTitle>
+                <WindowActions>
+                    <WindowAction Name="Close" />
+                </WindowActions>
+                <WindowContent>
+                    @if (Selected != null)
+                    {
+                        <TelerikGrid Data="@Rows" Pageable="true" PageSize="20" Sortable="true" Height="540px" Size="@ThemeConstants.Grid.Size.Small">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(V12_111Row.EmpNumber)"   Title="@(Selected.IsClient ? "Client No." : "Emp No.")" Width="110px" />
+                                <GridColumn Field="@nameof(V12_111Row.Name)"        Title="Name" />
+                                @if (!Selected.IsClient)
+                                {
+                                    <GridColumn Field="@nameof(V12_111Row.Client)"  Title="Client" />
+                                    <GridColumn Field="@nameof(V12_111Row.Status)"  Title="Status" Width="150px" />
+                                    <GridColumn Field="@nameof(V12_111Row.OnDate)"  Title="Date" DisplayFormat="{0:MMM dd, yyyy}" Width="130px" TextAlign="@ColumnTextAlign.Right" />
+                                    @if (Selected.MoveMode != null)
+                                    {
+                                        <GridColumn Field="@nameof(V12_111Row.Note)" Title="Reason" />
+                                    }
+                                }
+                                else
+                                {
+                                    <GridColumn Field="@nameof(V12_111Row.Status)"  Title="Status" Width="150px" />
+                                }
+                            </GridColumns>
+                        </TelerikGrid>
+                    }
+                </WindowContent>
+            </TelerikWindow>
+        }
+    </div>
+    </Details>
+    </_00BT_FullW>
+
+</TelerikRootComponent>
+
+@code {
+    [Parameter] public UserClaimsModel Uc { get; set; } = new();
+
+    List<V12_111Card>?  Cards;
+    V12_111Card?        Selected;
+    List<V12_111Row>    Rows = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var opis = (Uc.OpisDb ?? "").Trim();
+        if (opis == "") { Cards = new(); return; }
+        Cards = _lib.Cards(opis);
+        await _lib.Count(Cards, opis, Uc.Conn);
+    }
+
+    async Task Open(V12_111Card c)
+    {
+        Selected = c;
+        Rows = await _lib.Rows(c, Uc.OpisDb!.Trim(), Uc.Conn);
+    }
+
+    void Close()
+    {
+        Selected = null;
+        Rows = new();
+    }
+}

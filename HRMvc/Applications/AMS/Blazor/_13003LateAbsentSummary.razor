@@ -1,3 +1,4 @@
+@using HRMvc.StartupConfig.Library
 @using HRApiLibrary.Models._00_Main
 @using HRApiLibrary.Modules._13003O
 @using ClosedXML.Excel
@@ -8,6 +9,7 @@
 @using HRMvc.Applications._00GeneralComponents
 
 @inject IDA_13003O _da
+@inject AttendanceProcessor _proc
 @inject IJSRuntime _js
 
 <style>
@@ -27,7 +29,7 @@
         <div class="p-2 tg-root">
             <div class="la-bar">
                 <span class="la-lbl">Payroll Group</span>
-                <TelerikDropDownList Data="@clients" @bind-Value="clNumber" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                <TelerikDropDownList Data="@clients" Value="@clNumber" ValueChanged="@((string v) => GroupChanged(v))" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
                     <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
                 </TelerikDropDownList>
                 <span class="la-lbl ms-3">From</span>
@@ -41,6 +43,19 @@
                 <TelerikButton OnClick="@ToPdf" Icon="@SvgIcon.FilePdf" Enabled="@(rows.Count > 0)">PDF</TelerikButton>
             </div>
 
+            <div class="d-flex gap-2">
+            <div style="flex:0 0 340px">
+                <TelerikGrid Data="@emps" SelectionMode="GridSelectionMode.Multiple" @bind-SelectedItems="@selectedEmps" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridCheckboxColumn SelectAll="true" Width="40px" />
+                        <GridColumn Field="@nameof(M13003_Emp.EmpNumber)" Title="Emp. No." Width="80px" />
+                        <GridColumn Field="@nameof(M13003_Emp.EmpName)" Title="Employee" />
+                    </GridColumns>
+                    <GridToolBarTemplate><span class="fw-bold">Employee List</span> <span class="text-muted ms-2">@selectedEmps.Count() of @emps.Count selected</span></GridToolBarTemplate>
+                    <NoDataTemplate><div class="p-2 text-muted">No employees.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+            <div style="flex:1 1 auto;min-width:0">
             <TelerikGrid Data="@rows" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
                 <GridColumns>
                     <GridColumn Field="@nameof(M13003_Sum.EmpNumber)" Title="Emp. No." Width="90px" />
@@ -51,11 +66,14 @@
                     <GridColumn Field="@nameof(M13003_Sum.DaysLate)" Title="Late (days)" TextAlign="ColumnTextAlign.Right" Width="100px" />
                     <GridColumn Field="@nameof(M13003_Sum.LateMinutes)" Title="Late (min.)" TextAlign="ColumnTextAlign.Right" Width="100px" />
                     <GridColumn Field="@nameof(M13003_Sum.DaysLeaveOb)" Title="Leave / OB" TextAlign="ColumnTextAlign.Right" Width="100px" />
+                    <GridColumn Field="@nameof(M13003_Sum.DaysRestWork)" Title="Rest Day Work" TextAlign="ColumnTextAlign.Right" Width="120px" />
                     <GridColumn Field="@nameof(M13003_Sum.Client)" Title="Payroll Group" />
                 </GridColumns>
                 <NoDataTemplate><div class="p-3 text-muted">Select the payroll group and dates, then Fetch Data.</div></NoDataTemplate>
             </TelerikGrid>
-            <div class="small text-muted mt-1">Based on the schedule of each employee. Late = time in after the scheduled time in; no grace period and no holiday applied.</div>
+            </div>
+            </div>
+            <div class="small text-muted mt-1">Follows the rules of Attendance Processing (12011): the schedule is the one on the punch, late = time in after the duty start; absent, holiday pay, OT and ND as in 12011.</div>
         </div>
     </Details>
 </_00BT_FullW>
@@ -78,11 +96,14 @@
     TelerikNotification? NotificationRef;
     string Pis  => UserClaims?.SchemaUserPis ?? "";
     string Opis => UserClaims?.OpisDb ?? "";
+    string Opay => UserClaims?.OpayDb ?? "";
     string Conn => UserClaims?.Conn ?? "";
 
     List<M13003_Client> clients = new();
     List<M13003_Sum> rows = new();
     string clNumber = "";
+    List<M13003_Emp> emps = new();
+    IEnumerable<M13003_Emp> selectedEmps = new List<M13003_Emp>();
     DateTime? dFrom, dTo;
     bool busy, showPdf;
     string? pdfBase64;
@@ -95,23 +116,36 @@
         if (string.IsNullOrEmpty(Opis)) return;
         try
         {
-            clients = new() { new M13003_Client { ClNumber = "", ClName = "All Payroll Groups" } };
-            clients.AddRange(await _da._02Clients(Opis, Conn));
+            var list = new List<M13003_Client> { new M13003_Client { ClNumber = "", ClName = "Select payroll group" } };
+            list.AddRange(await _da._02Clients(Opay, Conn));
+            clients = list;
+            await GroupChanged("");
         }
         catch (Exception ex) { Console.Error.WriteLine("13003 load: " + ex); Warn("Unable to load the payroll groups."); }
     }
 
     void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 
+    async Task GroupChanged(string v)
+    {
+        clNumber = v ?? "";
+        var list = new List<M13003_Emp>();
+        try { if (int.TryParse(clNumber, out var gid)) list.AddRange(await _proc.Employees(UserClaims!, gid)); }
+        catch (Exception ex) { Console.Error.WriteLine("1300x employees: " + ex); Warn("Unable to load the employees."); }
+        emps = list; selectedEmps = list.ToList();
+    }
+
     async Task Fetch()
     {
         rows = new();
         if (dFrom == null || dTo == null || dFrom > dTo) { Warn("The dates are invalid."); return; }
         if ((dTo.Value - dFrom.Value).TotalDays > 62) { Warn("The coverage is too long. Use 62 days or less."); return; }
+        if (!int.TryParse(clNumber, out var groupId)) { Warn("Please select a Payroll Group."); return; }
+        if (!selectedEmps.Any()) { Warn("Select at least one employee."); return; }
         busy = true; StateHasChanged();
         try
         {
-            rows = await _da._02Summary(clNumber ?? "", dFrom.Value, dTo.Value, Pis, Opis, Conn);
+            rows = await _proc.LateAbsent(UserClaims!, groupId, GroupName, selectedEmps, dFrom.Value, dTo.Value);
             if (rows.Count == 0) Warn("No employee found.");
         }
         catch (Exception ex) { Console.Error.WriteLine("13003 fetch: " + ex); Warn("Unable to load the summary."); }
@@ -131,11 +165,11 @@
                 new() { Title = "Emp. No.", Width = 0.8 }, new() { Title = "Employee", Width = 2.3 },
                 new() { Title = "Sched. Days", Width = 0.9, Right = true }, new() { Title = "Present", Width = 0.8, Right = true },
                 new() { Title = "Absent", Width = 0.8, Right = true }, new() { Title = "Late (days)", Width = 0.9, Right = true },
-                new() { Title = "Late (min.)", Width = 0.9, Right = true }, new() { Title = "Leave / OB", Width = 0.9, Right = true }
+                new() { Title = "Late (min.)", Width = 0.9, Right = true }, new() { Title = "Leave / OB", Width = 0.9, Right = true }, new() { Title = "Rest Day Work", Width = 1.0, Right = true }
             };
-            var list = rows.Select(r => (new[] { r.EmpNumber, r.EmpName.Trim(), r.ScheduledDays.ToString(), r.DaysPresent.ToString(), r.DaysAbsent.ToString(), r.DaysLate.ToString(), r.LateMinutes.ToString(), r.DaysLeaveOb.ToString() }, 0)).ToList();
+            var list = rows.Select(r => (new[] { r.EmpNumber, r.EmpName.Trim(), r.ScheduledDays.ToString(), r.DaysPresent.ToString(), r.DaysAbsent.ToString(), r.DaysLate.ToString(), r.LateMinutes.ToString(), r.DaysLeaveOb.ToString(), r.DaysRestWork.ToString() }, 0)).ToList();
             list.Add((new[] { "", "TOTAL", rows.Sum(r => r.ScheduledDays).ToString(), rows.Sum(r => r.DaysPresent).ToString(), rows.Sum(r => r.DaysAbsent).ToString(),
-                              rows.Sum(r => r.DaysLate).ToString(), rows.Sum(r => r.LateMinutes).ToString(), rows.Sum(r => r.DaysLeaveOb).ToString() }, 1));
+                              rows.Sum(r => r.DaysLate).ToString(), rows.Sum(r => r.LateMinutes).ToString(), rows.Sum(r => r.DaysLeaveOb).ToString(), rows.Sum(r => r.DaysRestWork).ToString() }, 1));
             var subs = new List<string> { "For the period covering " + Coverage, "Payroll Group : " + GroupName };
             var bytes = TablePdf.Build("Late and Absent Summary", subs, cols, list, landscape: false, paper: System.Drawing.Printing.PaperKind.Letter);
             pdfBase64 = Convert.ToBase64String(bytes);
@@ -152,7 +186,7 @@
         ws.Cell(1, 1).Value = "Late and Absent Summary"; ws.Cell(1, 1).Style.Font.FontSize = 14; ws.Cell(1, 1).Style.Font.Bold = true;
         ws.Cell(2, 1).Value = "For the period covering " + Coverage;
         ws.Cell(3, 1).Value = "Payroll Group : " + GroupName;
-        string[] hd = { "Emp. No.", "Employee", "Sched. Days", "Present", "Absent", "Late (days)", "Late (min.)", "Leave / OB", "Payroll Group" };
+        string[] hd = { "Emp. No.", "Employee", "Sched. Days", "Present", "Absent", "Late (days)", "Late (min.)", "Leave / OB", "Rest Day Work", "Payroll Group" };
         for (int i = 0; i < hd.Length; i++) ws.Cell(5, i + 1).Value = hd[i];
         ws.Row(5).Style.Font.Bold = true;
         int n = 5;
@@ -161,13 +195,13 @@
             n++;
             ws.Cell(n, 1).SetValue(r.EmpNumber); ws.Cell(n, 2).Value = r.EmpName.Trim();
             ws.Cell(n, 3).Value = r.ScheduledDays; ws.Cell(n, 4).Value = r.DaysPresent; ws.Cell(n, 5).Value = r.DaysAbsent;
-            ws.Cell(n, 6).Value = r.DaysLate; ws.Cell(n, 7).Value = r.LateMinutes; ws.Cell(n, 8).Value = r.DaysLeaveOb; ws.Cell(n, 9).Value = r.Client;
+            ws.Cell(n, 6).Value = r.DaysLate; ws.Cell(n, 7).Value = r.LateMinutes; ws.Cell(n, 8).Value = r.DaysLeaveOb; ws.Cell(n, 9).Value = r.DaysRestWork; ws.Cell(n, 10).Value = r.Client;
         }
         n++;
         ws.Cell(n, 2).Value = "TOTAL";
-        for (int c = 3; c <= 8; c++) ws.Cell(n, c).FormulaA1 = $"=SUM({ws.Cell(6, c).Address}:{ws.Cell(n - 1, c).Address})";
+        for (int c = 3; c <= 9; c++) ws.Cell(n, c).FormulaA1 = $"=SUM({ws.Cell(6, c).Address}:{ws.Cell(n - 1, c).Address})";
         ws.Row(n).Style.Font.Bold = true;
-        ws.Columns().AdjustToContents();
+        ws.Columns().AdjustToContents(5, Math.Max(5, n));
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
         await _js.InvokeVoidAsync("downloadFile", $"LateAbsent_{dFrom:yyyyMMdd}_{dTo:yyyyMMdd}.xlsx", Convert.ToBase64String(ms.ToArray()));

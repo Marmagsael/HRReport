@@ -1,0 +1,37 @@
+@page "/12/111"
+@layout HRMvc.Components.Layout.PISLayout
+@attribute [Authorize]
+
+@using Microsoft.AspNetCore.Authorization
+@using static Microsoft.AspNetCore.Components.Web.RenderMode
+@using HRApiLibrary.Models._00_Main
+@using HRMvc.Applications._12EmployeeProfile.Blazor
+@using HRMvc.Applications.PayrollTransaction.Vars
+@using HRMvc.StartupConfig
+
+<div>
+    @if (uc == null) { }
+    else if (uc.CoTypeCode != "SEC")
+    {
+        <div class="p-3 text-secondary">The Operation Monitoring Summary is for Security Agency companies only.</div>
+    }
+    else if (CompanyRole.IsEmployee(HttpContext!.User))
+    {
+        <div class="p-3 text-secondary">The Operation Monitoring Summary is available to HR and admin users only.</div>
+    }
+    else
+    {
+        <_12_111Operations @rendermode="InteractiveServer" Uc="uc" />
+    }
+</div>
+
+@code {
+    [CascadingParameter] public HttpContext? HttpContext { get; set; }
+
+    UserClaimsModel? uc;
+
+    protected override void OnInitialized()
+    {
+        if (HttpContext != null) uc = PayClaimsHelper.UserToClaims(HttpContext.User);
+    }
+}

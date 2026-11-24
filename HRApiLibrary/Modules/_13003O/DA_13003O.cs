@@ -13,10 +13,21 @@ public class DA_13003O : IDA_13003O
 
     public DA_13003O(I_90_001_MySqlDataAccess sql, IAtttemplateDataAccess tpl) { _sql = sql; _tpl = tpl; }
 
-    public async Task<List<M13003_Client>> _02Clients(string opis, string conn)
+    public async Task<List<M13003_Client>> _02Clients(string opay, string conn)
     {
-        string sql = $"select trim(clnumber) ClNumber, trim(clname) ClName from {opis}.client where status = 'Active' order by clname";
+        string sql = $"select cast(Id as char) ClNumber, trim(Name) ClName from {opay}.payrollgrp where ifnull(Status, 'A') = 'A' order by Name";
         return await _sql.FetchLegacy<M13003_Client, dynamic>(sql, new { }, conn) ?? [];
+    }
+
+    public async Task<List<M13003_Emp>> _02Employees(string clNumber, string opis, string conn)
+    {
+        string sql = $@"select trim(o.EmpNumber) EmpNumber, concat(trim(ifnull(o.EmpLastNm, '')), ', ', trim(ifnull(o.EmpFirstNm, '')), ' ', trim(ifnull(o.EmpMidNm, ''))) EmpName
+                        from {opis}.Empmas o
+                             join {opis}.empstat s on s.code = o.empstat_ and s.IsInPayroll = 1
+                             left join {opis}.deprec dp on trim(dp.EmpNumber) = trim(o.EmpNumber)
+                        where @Cl = '' or cast(dp.PayrollgrpId as char) = @Cl
+                        order by o.EmpLastNm, o.EmpFirstNm, o.EmpMidNm";
+        return await _sql.FetchLegacy<M13003_Emp, dynamic>(sql, new { Cl = clNumber ?? "" }, conn) ?? [];
     }
 
     class Emp
@@ -24,7 +35,7 @@ public class DA_13003O : IDA_13003O
         public string EmpNumber { get; set; } = ""; public string EmpName { get; set; } = ""; public string Client { get; set; } = "";
         public int EmpmasId { get; set; } public DateTime? DateHired { get; set; } public DateTime? Separate { get; set; }
     }
-    class Punch { public int EmpmasId { get; set; } public DateTime PunchDate { get; set; } public DateTime? TimeIn { get; set; } public DateTime? TimeOut { get; set; } }
+    class Punch { public int? PunchT { get; set; } public string? DutyCode { get; set; } public int EmpmasId { get; set; } public DateTime PunchDate { get; set; } public DateTime? TimeIn { get; set; } public DateTime? TimeOut { get; set; } }
     class Req { public string EmpNumber { get; set; } = ""; public DateTime CovStart { get; set; } public DateTime CovEnd { get; set; } public string Category { get; set; } = ""; }
 
     class Ctx
@@ -36,19 +47,20 @@ public class DA_13003O : IDA_13003O
         public List<Req> Reqs = new();
     }
 
-    async Task<Ctx> Load(string clNumber, DateTime from, DateTime to, string pisdb, string opis, string conn)
+    async Task<Ctx> Load(string clNumber, IEnumerable<string>? empNumbers, DateTime from, DateTime to, string pisdb, string opis, string opay, string conn)
     {
         var c = new Ctx();
         string esql = $@"select trim(o.EmpNumber) EmpNumber,
                                 concat(trim(ifnull(o.EmpLastNm, '')), ', ', trim(ifnull(o.EmpFirstNm, '')), ' ', trim(ifnull(o.EmpMidNm, ''))) EmpName,
-                                trim(ifnull(cl.clname, '')) Client, p.Id EmpmasId, o.DateHired DateHired, o.Separate Separate
+                                trim(ifnull(pg.Name, '')) Client, p.Id EmpmasId, o.DateHired DateHired, o.Separate Separate
                          from {opis}.Empmas o
                               join {opis}.empstat s on s.code = o.empstat_ and s.IsInPayroll = 1
-                              left join {opis}.client cl on cl.clnumber = o.client_
+                              left join {opis}.deprec dp on trim(dp.EmpNumber) = trim(o.EmpNumber)
+                              left join {opay}.payrollgrp pg on pg.Id = dp.PayrollgrpId
                               left join {pisdb}.Empmas p on trim(p.EmpNumber) = trim(o.EmpNumber)
-                         where @Cl = '' or trim(o.client_) = @Cl
+                         where (@Cl = '' or cast(dp.PayrollgrpId as char) = @Cl) and (@NoEmp = 1 or trim(o.EmpNumber) in @Emps)
                          order by o.EmpLastNm, o.EmpFirstNm, o.EmpMidNm";
-        c.Emps = await _sql.FetchLegacy<Emp, dynamic>(esql, new { Cl = clNumber ?? "" }, conn) ?? [];
+        c.Emps = await _sql.FetchLegacy<Emp, dynamic>(esql, new { Cl = clNumber ?? "", NoEmp = empNumbers == null ? 1 : 0, Emps = (empNumbers ?? new List<string>()).Select(x => x.Trim()).DefaultIfEmpty("").ToList() }, conn) ?? [];
         foreach (var e in c.Emps)
         {
             if (e.DateHired is { } h && h.Year < 2) e.DateHired = null;
@@ -61,8 +73,8 @@ public class DA_13003O : IDA_13003O
             var tpls = await _sql.FetchData<AtttemplateModel, dynamic>($"select * from {pisdb}.Atttemplate where EmpmasId in @Ids", new { Ids = ids }, conn) ?? [];
             foreach (var t in tpls) if (t.EmpmasId is int id && !c.Tpl.ContainsKey(id)) c.Tpl[id] = t;
 
-            var punches = await _sql.FetchLegacy<Punch, dynamic>($@"select EmpmasId, PunchDate, TimeIn, TimeOut from {pisdb}.AttDaily
-                                                                    where PunchDate between @From and @To and EmpmasId in @Ids", new { From = from.Date, To = to.Date, Ids = ids }, conn) ?? [];
+            var punches = await _sql.FetchLegacy<Punch, dynamic>($@"select p.EmpmasId, p.PunchT, date(p.PunchInDate) PunchDate, p.PunchInDate TimeIn, p.PunchOutDate TimeOut, t.Code DutyCode from {pisdb}.AttPunches1 p left join {pisdb}.AttDutyType t on t.Id = p.DutyTypeId
+                                                                    where p.PunchInDate >= @From and p.PunchInDate < date_add(@To, interval 1 day) and p.EmpmasId in @Ids", new { From = from.Date, To = to.Date, Ids = ids }, conn) ?? [];
             foreach (var p in punches)
             {
                 if (p.TimeIn is { } a && a.Year < 2) p.TimeIn = null;
@@ -104,8 +116,12 @@ public class DA_13003O : IDA_13003O
 
         if (rec?.TimeIn is { } tin)
         {
-            int late = work ? (int)tin.TimeOfDay.TotalMinutes - Minutes(inHhmm) : 0;
-            return (late > 0 ? "Late" : "Present", tin, rec.TimeOut, inHhmm, work, late > 0 ? late : 0);
+            // -- Same rule as Attendance Processing (12011): the schedule is the one stored on the punch (PunchT), late = time in after PunchT --
+            bool punchWork = (rec.DutyCode ?? "R").Trim() != "RD";
+            int sched = rec.PunchT ?? inHhmm;
+            var dutyStart = tin.Date.AddHours(sched / 100).AddMinutes(sched % 100);
+            int late = punchWork && tin > dutyStart ? (int)Math.Floor((tin - dutyStart).TotalMinutes) : 0;
+            return (late > 0 ? "Late" : "Present", tin, rec.TimeOut, sched, punchWork, late);
         }
         var req = c.Reqs.FirstOrDefault(r => r.EmpNumber == e.EmpNumber && r.CovStart.Date <= d.Date && r.CovEnd.Date >= d.Date);
         if (req != null) return (req.Category == "OB" ? "OB" : "On Leave", null, null, inHhmm, work, 0);
@@ -114,9 +130,9 @@ public class DA_13003O : IDA_13003O
 
     static bool InService(Emp e, DateTime d) => (e.DateHired == null || e.DateHired.Value.Date <= d.Date) && (e.Separate == null || e.Separate.Value.Date >= d.Date);
 
-    public async Task<List<M13003_Sum>> _02Summary(string clNumber, DateTime from, DateTime to, string pisdb, string opis, string conn)
+    public async Task<List<M13003_Sum>> _02Summary(string clNumber, IEnumerable<string>? empNumbers, DateTime from, DateTime to, string pisdb, string opis, string opay, string conn)
     {
-        var c = await Load(clNumber, from, to, pisdb, opis, conn);
+        var c = await Load(clNumber, empNumbers, from, to, pisdb, opis, opay, conn);
         var res = new List<M13003_Sum>();
         foreach (var e in c.Emps)
         {
@@ -128,7 +144,7 @@ public class DA_13003O : IDA_13003O
                 if (r.Work) s.ScheduledDays++;
                 switch (r.Status)
                 {
-                    case "Present": s.DaysPresent++; break;
+                    case "Present": if (r.Work) s.DaysPresent++; else s.DaysRestWork++; break;
                     case "Late": s.DaysPresent++; s.DaysLate++; s.LateMinutes += r.LateMin; break;
                     case "Absent": s.DaysAbsent++; break;
                     case "On Leave": case "OB": s.DaysLeaveOb++; break;
@@ -139,9 +155,9 @@ public class DA_13003O : IDA_13003O
         return res;
     }
 
-    public async Task<List<M13004_Row>> _02Daily(string clNumber, DateTime date, string pisdb, string opis, string conn)
+    public async Task<List<M13004_Row>> _02Daily(string clNumber, IEnumerable<string>? empNumbers, DateTime date, string pisdb, string opis, string opay, string conn)
     {
-        var c = await Load(clNumber, date, date, pisdb, opis, conn);
+        var c = await Load(clNumber, empNumbers, date, date, pisdb, opis, opay, conn);
         var res = new List<M13004_Row>();
         foreach (var e in c.Emps)
         {
@@ -159,18 +175,21 @@ public class DA_13003O : IDA_13003O
 
 public interface IDA_13003O
 {
-    Task<List<M13003_Client>> _02Clients(string opis, string conn);
-    Task<List<M13003_Sum>> _02Summary(string clNumber, DateTime from, DateTime to, string pisdb, string opis, string conn);
-    Task<List<M13004_Row>> _02Daily(string clNumber, DateTime date, string pisdb, string opis, string conn);
+    Task<List<M13003_Client>> _02Clients(string opay, string conn);
+    Task<List<M13003_Emp>> _02Employees(string clNumber, string opis, string conn);
+    Task<List<M13003_Sum>> _02Summary(string clNumber, IEnumerable<string>? empNumbers, DateTime from, DateTime to, string pisdb, string opis, string opay, string conn);
+    Task<List<M13004_Row>> _02Daily(string clNumber, IEnumerable<string>? empNumbers, DateTime date, string pisdb, string opis, string opay, string conn);
 }
 
 public class M13003_Client { public string ClNumber { get; set; } = ""; public string ClName { get; set; } = ""; }
+
+public class M13003_Emp { public int SystemId { get; set; } public string EmpNumber { get; set; } = ""; public string EmpName { get; set; } = ""; }
 
 public class M13003_Sum
 {
     public string EmpNumber { get; set; } = ""; public string EmpName { get; set; } = ""; public string Client { get; set; } = "";
     public int ScheduledDays { get; set; } public int DaysPresent { get; set; } public int DaysAbsent { get; set; }
-    public int DaysLate { get; set; } public int LateMinutes { get; set; } public int DaysLeaveOb { get; set; }
+    public int DaysLate { get; set; } public int LateMinutes { get; set; } public int DaysLeaveOb { get; set; } public int DaysRestWork { get; set; }
 }
 
 public class M13004_Row

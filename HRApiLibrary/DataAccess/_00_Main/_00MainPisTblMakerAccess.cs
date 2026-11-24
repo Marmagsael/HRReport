@@ -468,15 +468,17 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         {
             sql = $@"insert into {schema}.AttDutyType
                             (Code,  Name) values 
-                            ('R',  'Regulary Day'), 
+                            ('R',  'Regular Day'), 
                             ('RD', 'Restday')";
             await _sql.ExecuteCmd(sql, new { }, connName);
         }
 
-        // -- RN (regular night) is a duty type too; added to existing tables as well --
+        // -- RN (regular working day) is a duty type too; added to existing tables, and old names are corrected --
         sql = @$"insert into {schema}.AttDutyType (Code, Name)
-                    select 'RN', 'Regular Night' from dual where not exists (select 1 from {schema}.AttDutyType where Code = 'RN')";
+                    select 'RN', 'Regular Working Day' from dual where not exists (select 1 from {schema}.AttDutyType where Code = 'RN')";
         await _sql.ExecuteCmd(sql, new { }, connName);
+        await _sql.ExecuteCmd($"update {schema}.AttDutyType set Name = 'Regular Working Day' where Code = 'RN' and Name in ('Regular Night', 'Reg. Non-Working')", new { }, connName);
+        await _sql.ExecuteCmd($"update {schema}.AttDutyType set Name = 'Regular Day' where Code = 'R' and Name = 'Regulary Day'", new { }, connName);
 
         // -- Face samples for the face punch (Enrollment / Punch Capturing) : one row per sample, EmpmasId = {PIS}.Empmas.Id --
         sql = @$"CREATE TABLE IF NOT EXISTS {schema}.FaceTemplate (

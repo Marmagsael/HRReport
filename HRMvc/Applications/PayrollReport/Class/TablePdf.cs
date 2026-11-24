@@ -9,7 +9,7 @@ public class PdfCol { public string Title { get; set; } = ""; public double Widt
 public static class TablePdf
 {
     // widths in inches; rows are pre-formatted strings; kind 1 = bold row
-    public static byte[] Build(string title, List<string> subtitles, List<PdfCol> cols, List<(string[] Cells, int Kind)> rows, bool landscape = true, System.Drawing.Printing.PaperKind paper = System.Drawing.Printing.PaperKind.Legal, List<(string Title, int Span)>? bands = null, string[]? bandColors = null)
+    public static byte[] Build(string title, List<string> subtitles, List<PdfCol> cols, List<(string[] Cells, int Kind)> rows, bool landscape = true, System.Drawing.Printing.PaperKind paper = System.Drawing.Printing.PaperKind.Legal, List<(string Title, int Span)>? bands = null, string[]? bandColors = null, bool growFirstColumn = false)
     {
         int n = cols.Count;
         var dt = new DataTable();
@@ -27,7 +27,8 @@ public static class TablePdf
         report.PageSettings.Landscape = landscape;
         report.PageSettings.PaperKind = paper;
         report.PageSettings.Margins = new MarginsU(Unit.Inch(0.4), Unit.Inch(0.4), Unit.Inch(0.4), Unit.Inch(0.4));
-        double usable = (landscape ? 14 : 8.5) - 0.8;
+        double longSide = paper switch { System.Drawing.Printing.PaperKind.Letter => 11, System.Drawing.Printing.PaperKind.Folio => 13, System.Drawing.Printing.PaperKind.A4 => 11.69, _ => 14 };
+        double usable = (landscape ? longSide : 8.5) - 0.8;
         double sum = cols.Sum(c => c.Width);
         double k = usable / sum;
 
@@ -63,6 +64,7 @@ public static class TablePdf
             double w = cols[i].Width * k;
             tbl.Body.Columns.Add(new TableBodyColumn(Unit.Inch(w)));
             var body = Tb("= Fields.c" + i, 0, 0, w, 0.2, 8, false, cols[i].Right);
+            if (growFirstColumn && i == 0) body.CanGrow = true;
             var fr = new FormattingRule { Style = { Font = { Bold = true } } };
             fr.Filters.Add(new Filter("= Fields.kind", FilterOperator.Equal, "1"));
             body.ConditionalFormatting.Add(fr);

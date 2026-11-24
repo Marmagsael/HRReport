@@ -52,6 +52,8 @@ public static class HRMvcScope
         services.AddScoped<ClientTerminalService>();
         services.AddScoped<HRMvc.Applications._01Register.Library.L01CompanySetup>();
         services.AddScoped<L12_101>();
+        services.AddScoped<L12_111>();
+        services.AddScoped<AttendanceProcessor>();
         services.AddScoped<L12_102>();
         services.AddScoped<L12_103>();
         services.AddScoped<L12_103NonExlusive>();

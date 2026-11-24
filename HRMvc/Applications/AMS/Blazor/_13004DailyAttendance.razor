@@ -1,3 +1,4 @@
+@using HRMvc.StartupConfig.Library
 @using HRApiLibrary.Models._00_Main
 @using HRApiLibrary.Modules._13003O
 @using ClosedXML.Excel
@@ -8,6 +9,7 @@
 @using HRMvc.Applications._00GeneralComponents
 
 @inject IDA_13003O _da
+@inject AttendanceProcessor _proc
 @inject IJSRuntime _js
 
 <style>
@@ -30,7 +32,7 @@
         <div class="p-2 tg-root">
             <div class="da-bar">
                 <span class="da-lbl">Payroll Group</span>
-                <TelerikDropDownList Data="@clients" @bind-Value="clNumber" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                <TelerikDropDownList Data="@clients" Value="@clNumber" ValueChanged="@((string v) => GroupChanged(v))" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
                     <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
                 </TelerikDropDownList>
                 <span class="da-lbl ms-3">Date</span>
@@ -48,6 +50,19 @@
                 </span>
             </div>
 
+            <div class="d-flex gap-2">
+            <div style="flex:0 0 340px">
+                <TelerikGrid Data="@emps" SelectionMode="GridSelectionMode.Multiple" @bind-SelectedItems="@selectedEmps" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridCheckboxColumn SelectAll="true" Width="40px" />
+                        <GridColumn Field="@nameof(M13003_Emp.EmpNumber)" Title="Emp. No." Width="80px" />
+                        <GridColumn Field="@nameof(M13003_Emp.EmpName)" Title="Employee" />
+                    </GridColumns>
+                    <GridToolBarTemplate><span class="fw-bold">Employee List</span> <span class="text-muted ms-2">@selectedEmps.Count() of @emps.Count selected</span></GridToolBarTemplate>
+                    <NoDataTemplate><div class="p-2 text-muted">No employees.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+            <div style="flex:1 1 auto;min-width:0">
             <TelerikGrid Data="@rows" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false" OnRowRender="@OnRowRender">
                 <GridColumns>
                     <GridColumn Field="@nameof(M13004_Row.EmpNumber)" Title="Emp. No." Width="90px" />
@@ -61,6 +76,8 @@
                 </GridColumns>
                 <NoDataTemplate><div class="p-3 text-muted">Select the payroll group and date, then Fetch Data.</div></NoDataTemplate>
             </TelerikGrid>
+            </div>
+            </div>
         </div>
     </Details>
 </_00BT_FullW>
@@ -83,11 +100,14 @@
     TelerikNotification? NotificationRef;
     string Pis  => UserClaims?.SchemaUserPis ?? "";
     string Opis => UserClaims?.OpisDb ?? "";
+    string Opay => UserClaims?.OpayDb ?? "";
     string Conn => UserClaims?.Conn ?? "";
 
     List<M13003_Client> clients = new();
     List<M13004_Row> rows = new();
     string clNumber = "";
+    List<M13003_Emp> emps = new();
+    IEnumerable<M13003_Emp> selectedEmps = new List<M13003_Emp>();
     DateTime? date = DateTime.Today;
     bool busy, showPdf;
     string? pdfBase64;
@@ -97,8 +117,10 @@
         if (string.IsNullOrEmpty(Opis)) return;
         try
         {
-            clients = new() { new M13003_Client { ClNumber = "", ClName = "All Payroll Groups" } };
-            clients.AddRange(await _da._02Clients(Opis, Conn));
+            var list = new List<M13003_Client> { new M13003_Client { ClNumber = "", ClName = "Select payroll group" } };
+            list.AddRange(await _da._02Clients(Opay, Conn));
+            clients = list;
+            await GroupChanged("");
         }
         catch (Exception ex) { Console.Error.WriteLine("13004 load: " + ex); Warn("Unable to load the payroll groups."); }
     }
@@ -110,14 +132,25 @@
         if (a.Item is M13004_Row r) a.Class = r.Status == "Absent" ? "da-absent" : r.Status == "Late" ? "da-late" : "";
     }
 
+    async Task GroupChanged(string v)
+    {
+        clNumber = v ?? "";
+        var list = new List<M13003_Emp>();
+        try { if (int.TryParse(clNumber, out var gid)) list.AddRange(await _proc.Employees(UserClaims!, gid)); }
+        catch (Exception ex) { Console.Error.WriteLine("1300x employees: " + ex); Warn("Unable to load the employees."); }
+        emps = list; selectedEmps = list.ToList();
+    }
+
     async Task Fetch()
     {
         rows = new();
         if (date == null) { Warn("The date is invalid."); return; }
+        if (!int.TryParse(clNumber, out var groupId)) { Warn("Please select a Payroll Group."); return; }
+        if (!selectedEmps.Any()) { Warn("Select at least one employee."); return; }
         busy = true; StateHasChanged();
         try
         {
-            rows = await _da._02Daily(clNumber ?? "", date.Value, Pis, Opis, Conn);
+            rows = await _proc.Daily(UserClaims!, groupId, GroupName, selectedEmps, date.Value);
             if (rows.Count == 0) Warn("No employee found.");
         }
         catch (Exception ex) { Console.Error.WriteLine("13004 fetch: " + ex); Warn("Unable to load the daily attendance."); }
@@ -167,7 +200,7 @@
             ws.Cell(n, 5).Value = T(r.TimeIn); ws.Cell(n, 6).Value = T(r.TimeOut); ws.Cell(n, 7).Value = r.LateMinutes; ws.Cell(n, 8).Value = r.Client;
             if (r.Status == "Absent") ws.Row(n).Style.Font.FontColor = XLColor.Red;
         }
-        ws.Columns().AdjustToContents();
+        ws.Columns().AdjustToContents(5, Math.Max(5, n));
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
         await _js.InvokeVoidAsync("downloadFile", $"DailyAttendance_{date:yyyyMMdd}.xlsx", Convert.ToBase64String(ms.ToArray()));

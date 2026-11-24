@@ -1,5 +1,7 @@
 @using HRApiLibrary.Models._00_Main
 @using HRApiLibrary.Modules._13002O
+@using HRApiLibrary.Modules._13003O
+@using HRMvc.StartupConfig.Library
 @using ClosedXML.Excel
 @using Telerik.Blazor
 @using Telerik.Blazor.Components
@@ -8,6 +10,7 @@
 @using HRMvc.Applications._00GeneralComponents
 
 @inject IDA_13002O _da
+@inject AttendanceProcessor _proc
 @inject IJSRuntime _js
 
 <style>
@@ -16,6 +19,10 @@
     .tg-root .k-grid th, .tg-root .k-grid .k-header, .tg-root .k-grid .k-column-title { font-size:12.5px !important; font-weight:600; background:#f4f6f9; }
     .dtr-bar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 12px; border:1px solid #c5ccd6; border-radius:6px; background:#fff; margin-bottom:8px; }
     .dtr-bar .dtr-lbl { font-weight:700; }
+    .tg-root .dtr-ab td { color:#c00000; }
+    .tg-root .dtr-rd td { background:#f1f3f5; }
+    .tg-root .dtr-rn td { background:#e4e6fa; }
+    .tg-root .dtr-hol td { background:#fff3bf; }
 </style>
 
 <TelerikRootComponent>
@@ -27,7 +34,7 @@
         <div class="p-2 tg-root">
             <div class="dtr-bar">
                 <span class="dtr-lbl">Payroll Group</span>
-                <TelerikDropDownList Data="@clients" @bind-Value="clNumber" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
+                <TelerikDropDownList Data="@clients" Value="@clNumber" ValueChanged="@((string v) => GroupChanged(v))" TextField="ClName" ValueField="ClNumber" Width="280px" Filterable="true" FilterOperator="Telerik.Blazor.StringFilterOperator.Contains">
                     <DropDownListSettings><DropDownListPopupSettings Height="420px" /></DropDownListSettings>
                 </TelerikDropDownList>
                 <span class="dtr-lbl ms-3">From</span>
@@ -41,20 +48,44 @@
                 <TelerikButton OnClick="@ToPdf" Icon="@SvgIcon.FilePdf" Enabled="@(rows.Count > 0)">PDF</TelerikButton>
             </div>
 
-            <TelerikGrid Data="@rows" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+            <div class="d-flex gap-2">
+            <div style="flex:0 0 340px">
+                <TelerikGrid Data="@emps" SelectionMode="GridSelectionMode.Multiple" @bind-SelectedItems="@selectedEmps" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false">
+                    <GridColumns>
+                        <GridCheckboxColumn SelectAll="true" Width="40px" />
+                        <GridColumn Field="@nameof(M13003_Emp.EmpNumber)" Title="Emp. No." Width="80px" />
+                        <GridColumn Field="@nameof(M13003_Emp.EmpName)" Title="Employee" />
+                    </GridColumns>
+                    <GridToolBarTemplate><span class="fw-bold">Employee List</span> <span class="text-muted ms-2">@selectedEmps.Count() of @emps.Count selected</span></GridToolBarTemplate>
+                    <NoDataTemplate><div class="p-2 text-muted">No employees.</div></NoDataTemplate>
+                </TelerikGrid>
+            </div>
+            <div style="flex:1 1 auto;min-width:0">
+            <TelerikGrid Data="@rows" Height="calc(100vh - 290px)" Size="@ThemeConstants.Grid.Size.Small" Sortable="false" OnRowRender="@OnRowRender">
                 <GridColumns>
-                    <GridColumn Field="@nameof(M13002_Row.EmpNumber)" Title="Emp. No." Width="90px" />
-                    <GridColumn Field="@nameof(M13002_Row.EmpName)" Title="Employee" Width="240px" />
-                    <GridColumn Field="@nameof(M13002_Row.PunchDate)" Title="Date" DisplayFormat="{0:MM/dd/yyyy}" Width="110px" />
-                    <GridColumn Field="@nameof(M13002_Row.DayName)" Title="Day" Width="110px" />
-                    <GridColumn Field="@nameof(M13002_Row.DutyType)" Title="Duty Type" Width="140px" />
-                    <GridColumn Field="@nameof(M13002_Row.TimeIn)" Title="Time In" DisplayFormat="{0:hh:mm tt}" Width="100px" />
-                    <GridColumn Field="@nameof(M13002_Row.TimeOut)" Title="Time Out" DisplayFormat="{0:hh:mm tt}" Width="100px" />
-                    <GridColumn Field="@nameof(M13002_Row.Hours)" Title="Hours" DisplayFormat="{0:N2}" TextAlign="ColumnTextAlign.Right" Width="90px" />
-                    <GridColumn Field="@nameof(M13002_Row.Client)" Title="Payroll Group" />
+                    <GridColumn Field="@nameof(DtrRow.EmpNumber)" Title="Emp. No." Width="90px" />
+                    <GridColumn Field="@nameof(DtrRow.EmpName)" Title="Employee" Width="200px" />
+                    <GridColumn Field="@nameof(DtrRow.Date)" Title="Date" DisplayFormat="{0:MM/dd/yyyy}" Width="100px" />
+                    <GridColumn Field="@nameof(DtrRow.Day)" Title="Day" Width="60px" />
+                    <GridColumn Field="@nameof(DtrRow.DayType)" Title="Day Type" Width="80px" />
+                    <GridColumn Field="@nameof(DtrRow.Holiday)" Title="Holiday" Width="70px" />
+                    <GridColumn Field="@nameof(DtrRow.TimeIn)" Title="Time In" Width="80px" />
+                    <GridColumn Field="@nameof(DtrRow.TimeOut)" Title="Time Out" Width="80px" />
+                    <GridColumn Field="@nameof(DtrRow.Late)" Title="Late" TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((DtrRow)context).Late)</Template></GridColumn>
+                    <GridColumn Field="@nameof(DtrRow.Under)" Title="Undertime" TextAlign="ColumnTextAlign.Right" Width="100px"><Template>@Z(((DtrRow)context).Under)</Template></GridColumn>
+                    <GridColumn Field="@nameof(DtrRow.AbsDays)" Title="Absent (Days)" TextAlign="ColumnTextAlign.Right" Width="110px"><Template>@Z(((DtrRow)context).AbsDays)</Template></GridColumn>
+                    <GridColumn Field="@nameof(DtrRow.TotTard)" Title="Tot Tardiness" TextAlign="ColumnTextAlign.Right" Width="110px"><Template>@Z(((DtrRow)context).TotTard)</Template></GridColumn>
+                    <GridColumn Field="@nameof(DtrRow.Overtime)" Title="Overtime" TextAlign="ColumnTextAlign.Right" Width="90px"><Template>@Z(((DtrRow)context).Overtime)</Template></GridColumn>
+                    <GridColumn Field="@nameof(DtrRow.ND)" Title="ND" TextAlign="ColumnTextAlign.Right" Width="70px"><Template>@Z(((DtrRow)context).ND)</Template></GridColumn>
+                    <GridColumn Field="@nameof(DtrRow.DutyStart)" Title="Duty Start" Width="80px" />
+                    <GridColumn Field="@nameof(DtrRow.DutyEnd)" Title="Duty End" Width="80px" />
+                    <GridColumn Field="@nameof(DtrRow.Remarks)" Title="Remarks" Width="180px" />
                 </GridColumns>
                 <NoDataTemplate><div class="p-3 text-muted">Select the payroll group and dates, then Fetch Data.</div></NoDataTemplate>
             </TelerikGrid>
+            <div class="small text-muted mt-1">Follows the rules of Attendance Processing (12011). Late, undertime, tardiness, OT and ND are in hours.</div>
+            </div>
+            </div>
         </div>
     </Details>
 </_00BT_FullW>
@@ -75,13 +106,26 @@
     [Parameter] public UserClaimsModel? UserClaims { get; set; }
 
     TelerikNotification? NotificationRef;
-    string Pis  => UserClaims?.SchemaUserPis ?? "";
     string Opis => UserClaims?.OpisDb ?? "";
+    string Opay => UserClaims?.OpayDb ?? "";
     string Conn => UserClaims?.Conn ?? "";
 
+    class DtrRow
+    {
+        public string EmpNumber { get; set; } = ""; public string EmpName { get; set; } = "";
+        public DateTime Date { get; set; } public string Day { get; set; } = ""; public string DayType { get; set; } = "";
+        public string Holiday { get; set; } = ""; public string Kind { get; set; } = ""; public string Remarks { get; set; } = "";
+        public string TimeIn { get; set; } = ""; public string TimeOut { get; set; } = "";
+        public double Late { get; set; } public double Under { get; set; } public double AbsDays { get; set; } public double TotTard { get; set; }
+        public double Overtime { get; set; } public double ND { get; set; }
+        public string DutyStart { get; set; } = ""; public string DutyEnd { get; set; } = "";
+    }
+
     List<M13002_Client> clients = new();
-    List<M13002_Row> rows = new();
+    List<DtrRow> rows = new();
     string clNumber = "";
+    List<M13003_Emp> emps = new();
+    IEnumerable<M13003_Emp> selectedEmps = new List<M13003_Emp>();
     DateTime? dFrom, dTo;
     bool busy, showPdf;
     string? pdfBase64;
@@ -94,23 +138,57 @@
         if (string.IsNullOrEmpty(Opis)) return;
         try
         {
-            clients = new() { new M13002_Client { ClNumber = "", ClName = "All Payroll Groups" } };
-            clients.AddRange(await _da._02Clients(Opis, Conn));
+            var list = new List<M13002_Client> { new M13002_Client { ClNumber = "", ClName = "Select payroll group" } };
+            list.AddRange(await _da._02Clients(Opay, Conn));
+            clients = list;
+            await GroupChanged("");
         }
         catch (Exception ex) { Console.Error.WriteLine("13002 load: " + ex); Warn("Unable to load the payroll groups."); }
     }
 
     void Warn(string msg) => NotificationRef?.Show(msg, ThemeConstants.Notification.ThemeColor.Warning);
 
+    static string Z(double v) => v == 0 ? "" : v.ToString("#,##0.00");
+
+    void OnRowRender(GridRowRenderEventArgs a)
+    {
+        if (a.Item is DtrRow r)
+            a.Class = r.Kind == "AB" ? "dtr-ab" : r.Holiday != "" ? "dtr-hol" : r.DayType == "RD" ? "dtr-rd" : r.DayType == "RN" ? "dtr-rn" : "";
+    }
+
+    async Task GroupChanged(string v)
+    {
+        clNumber = v ?? "";
+        rows = new();
+        var list = new List<M13003_Emp>();
+        try { if (int.TryParse(clNumber, out var gid)) list.AddRange(await _proc.Employees(UserClaims!, gid)); }
+        catch (Exception ex) { Console.Error.WriteLine("13002 employees: " + ex); Warn("Unable to load the employees."); }
+        emps = list; selectedEmps = list.ToList();
+    }
+
     async Task Fetch()
     {
         rows = new();
+        if (!int.TryParse(clNumber, out var groupId)) { Warn("Please select a Payroll Group."); return; }
         if (dFrom == null || dTo == null || dFrom > dTo) { Warn("The dates are invalid."); return; }
+        if (!selectedEmps.Any()) { Warn("Select at least one employee."); return; }
         busy = true; StateHasChanged();
         try
         {
-            rows = await _da._02Dtr(clNumber ?? "", dFrom.Value, dTo.Value, Pis, Opis, Conn);
+            var picked = selectedEmps.ToList();
+            var res = await _proc.Process(UserClaims!, groupId, AttendanceProcessor.ToEmpRows(picked), dFrom.Value, dTo.Value);
+            var list = new List<DtrRow>();
+            foreach (var e in picked)
+                foreach (var d in res.DailyByEmp.TryGetValue(e.SystemId, out var r) ? r.OrderBy(x => x.Date) : Enumerable.Empty<AttDailyRow>())
+                    list.Add(new DtrRow
+                    {
+                        EmpNumber = e.EmpNumber, EmpName = e.EmpName, Date = d.Date, Day = d.Day, DayType = d.DayType, Holiday = d.Holiday, Kind = d.Kind, Remarks = d.Remarks,
+                        TimeIn = d.TimeIn, TimeOut = d.TimeOut, Late = d.LateHrs, Under = d.UnderHrs, AbsDays = d.AbsDays, TotTard = d.TotTardHrs, Overtime = d.Overtime, ND = d.ND,
+                        DutyStart = d.DutyStart, DutyEnd = d.DutyEnd
+                    });
+            rows = list;
             if (rows.Count == 0) Warn("No record found.");
+            else if (res.NdMissing) Warn("ND not computed: ND Start/End not found in Pay Settings.");
         }
         catch (Exception ex) { Console.Error.WriteLine("13002 fetch: " + ex); Warn("Unable to load the daily time record."); }
         finally { busy = false; }
@@ -118,8 +196,6 @@
 
     string Coverage => $"{dFrom:MMMM dd, yyyy} to {dTo:MMMM dd, yyyy}";
     string GroupName => clients.FirstOrDefault(c => c.ClNumber == (clNumber ?? ""))?.ClName ?? "";
-    static string T(DateTime? d) => d?.ToString("hh:mm tt") ?? "";
-    static string H(decimal? h) => h?.ToString("N2") ?? "";
 
     async Task ToPdf()
     {
@@ -128,19 +204,22 @@
         {
             var cols = new List<PdfCol>
             {
-                new() { Title = "Date", Width = 1.0 }, new() { Title = "Day", Width = 1.1 }, new() { Title = "Duty Type", Width = 1.5 },
-                new() { Title = "Time In", Width = 1.0 }, new() { Title = "Time Out", Width = 1.0 }, new() { Title = "Hours", Width = 0.9, Right = true }
+                new() { Title = "Date", Width = 0.9 }, new() { Title = "Day", Width = 0.5 }, new() { Title = "Type", Width = 0.5 }, new() { Title = "Hol.", Width = 0.5 },
+                new() { Title = "Time In", Width = 0.7 }, new() { Title = "Time Out", Width = 0.7 },
+                new() { Title = "Late", Width = 0.6, Right = true }, new() { Title = "Undertime", Width = 0.9, Right = true }, new() { Title = "Absent", Width = 0.7, Right = true },
+                new() { Title = "Tardiness", Width = 0.9, Right = true }, new() { Title = "OT", Width = 0.6, Right = true }, new() { Title = "ND", Width = 0.6, Right = true }, new() { Title = "", Width = 0.12 },
+                new() { Title = "Remarks", Width = 1.6 }
             };
             var list = new List<(string[] Cells, int Kind)>();
             foreach (var g in rows.GroupBy(r => r.EmpNumber))
             {
-                list.Add((new[] { "", "", "", "", "", "" }, 0));
-                list.Add((new[] { $"{g.First().EmpName.Trim()}  ({g.Key})", "", "", "", "", "" }, 1));
-                foreach (var r in g) list.Add((new[] { r.PunchDate.ToString("MM/dd/yyyy"), r.DayName, r.DutyType, T(r.TimeIn), T(r.TimeOut), H(r.Hours) }, 0));
-                list.Add((new[] { "Total", "", "", "", "", (g.Sum(r => r.Hours ?? 0)).ToString("N2") }, 1));
+                list.Add((Enumerable.Repeat("", 14).ToArray(), 0));
+                list.Add((new[] { $"{g.First().EmpName.Trim()}  ({g.Key})", "", "", "", "", "", "", "", "", "", "", "", "" }, 1));
+                foreach (var r in g) list.Add((new[] { r.Date.ToString("MM/dd/yyyy"), r.Day, r.DayType, r.Holiday, r.TimeIn, r.TimeOut, Z(r.Late), Z(r.Under), Z(r.AbsDays), Z(r.TotTard), Z(r.Overtime), Z(r.ND), "", r.Remarks }, 0));
+                list.Add((new[] { "Total", "", "", "", "", "", Z(g.Sum(r => r.Late)), Z(g.Sum(r => r.Under)), Z(g.Sum(r => r.AbsDays)), Z(g.Sum(r => r.TotTard)), Z(g.Sum(r => r.Overtime)), Z(g.Sum(r => r.ND)), "", "" }, 1));
             }
-            var subs = new List<string> { "For the period covering " + Coverage, "Payroll Group : " + GroupName };
-            var bytes = TablePdf.Build("Daily Time Record", subs, cols, list, landscape: false, paper: System.Drawing.Printing.PaperKind.Letter);
+            var subs = new List<string> { "For the period covering " + Coverage, "Payroll Group : " + GroupName, "Late, undertime, tardiness, OT and ND in hours." };
+            var bytes = TablePdf.Build("Daily Time Record", subs, cols, list, landscape: false, paper: System.Drawing.Printing.PaperKind.Letter, growFirstColumn: true);
             pdfBase64 = Convert.ToBase64String(bytes);
             showPdf = true;
         }
@@ -155,21 +234,26 @@
         ws.Cell(1, 1).Value = "Daily Time Record"; ws.Cell(1, 1).Style.Font.FontSize = 14; ws.Cell(1, 1).Style.Font.Bold = true;
         ws.Cell(2, 1).Value = "For the period covering " + Coverage;
         ws.Cell(3, 1).Value = "Payroll Group : " + GroupName;
-        string[] hd = { "Emp. No.", "Employee", "Date", "Day", "Duty Type", "Time In", "Time Out", "Hours", "Payroll Group" };
+        string[] hd = { "Emp. No.", "Employee", "Date", "Day", "Day Type", "Holiday", "Time In", "Time Out", "Late", "Undertime", "Absent (Days)", "Tot Tardiness", "Overtime", "ND", "Duty Start", "Duty End", "Remarks" };
         for (int i = 0; i < hd.Length; i++) ws.Cell(5, i + 1).Value = hd[i];
         ws.Row(5).Style.Font.Bold = true;
         int n = 5;
         foreach (var r in rows)
         {
             n++;
-            ws.Cell(n, 1).SetValue(r.EmpNumber); ws.Cell(n, 2).Value = r.EmpName.Trim();
-            ws.Cell(n, 3).Value = r.PunchDate.ToString("MM/dd/yyyy"); ws.Cell(n, 4).Value = r.DayName; ws.Cell(n, 5).Value = r.DutyType;
-            ws.Cell(n, 6).Value = T(r.TimeIn); ws.Cell(n, 7).Value = T(r.TimeOut);
-            if (r.Hours != null) ws.Cell(n, 8).Value = r.Hours.Value;
-            ws.Cell(n, 9).Value = r.Client;
+            ws.Cell(n, 1).SetValue(r.EmpNumber); ws.Cell(n, 2).Value = r.EmpName.Trim(); ws.Cell(n, 3).Value = r.Date; ws.Cell(n, 3).Style.DateFormat.Format = "MM/dd/yyyy";
+            ws.Cell(n, 4).Value = r.Day; ws.Cell(n, 5).Value = r.DayType; ws.Cell(n, 6).Value = r.Holiday; ws.Cell(n, 17).Value = r.Remarks;
+            ws.Cell(n, 7).SetValue(r.TimeIn); ws.Cell(n, 8).SetValue(r.TimeOut);
+            if (r.Late != 0) ws.Cell(n, 9).Value = r.Late;
+            if (r.Under != 0) ws.Cell(n, 10).Value = r.Under;
+            if (r.AbsDays != 0) ws.Cell(n, 11).Value = r.AbsDays;
+            if (r.TotTard != 0) ws.Cell(n, 12).Value = r.TotTard;
+            if (r.Overtime != 0) ws.Cell(n, 13).Value = r.Overtime;
+            if (r.ND != 0) ws.Cell(n, 14).Value = r.ND;
+            ws.Cell(n, 15).SetValue(r.DutyStart); ws.Cell(n, 16).SetValue(r.DutyEnd);
+            for (int c = 9; c <= 14; c++) ws.Cell(n, c).Style.NumberFormat.Format = "#,##0.00";
         }
-        ws.Column(8).Style.NumberFormat.Format = "#,##0.00";
-        ws.Columns().AdjustToContents();
+        ws.Columns().AdjustToContents(5, Math.Max(5, n));
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
         await _js.InvokeVoidAsync("downloadFile", $"DTR_{dFrom:yyyyMMdd}_{dTo:yyyyMMdd}.xlsx", Convert.ToBase64String(ms.ToArray()));

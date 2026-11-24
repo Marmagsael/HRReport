@@ -8,7 +8,7 @@ public class V11002Model
     public List<AttdutytypeModel> AttDutyTypes { get; set; } = 
         [   new () { Code = "R",  Name = "Regular Day" },
             new () { Code = "RD", Name = "Restday" },
-            new () { Code = "RN", Name = "Reg. Non-Working" } 
+            new () { Code = "RN", Name = "Regular Working Day" } 
         ];
 
     public List<AttinscheduleModel> Attinschedules { get; set; } = [
