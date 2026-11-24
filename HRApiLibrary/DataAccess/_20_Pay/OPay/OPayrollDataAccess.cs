@@ -21,8 +21,8 @@ public class OPayrollDataAccess : IOPayrollDataAccess
         _sql = sql;
     }
 
-    public static string MakeTrn(string yy4, string mm, string prd, string clNumber)
-        => $"{yy4[^2..]}{mm.PadLeft(2, '0')}{prd.PadLeft(2, '0')}-{clNumber.Trim()}";
+    public static string MakeTrn(string yy4, string mm, string prd, int payrollGrpId)
+        => $"{yy4[^2..]}{mm.PadLeft(2, '0')}{prd.PadLeft(2, '0')}-{payrollGrpId:D5}";
 
     //--- p1..p5 : which payroll period a setting applies to ---
     static string PrdFld(string? prd) => prd switch { "02" => "p2", "03" => "p3", "04" => "p4", "05" => "p5", _ => "p1" };
@@ -72,16 +72,15 @@ public class OPayrollDataAccess : IOPayrollDataAccess
     public async Task<OPayrollSession> _01Load(string yy4, string mm, string prd, string grpCode, DateTime attStart, DateTime attEnd,
                                                string paydb, string pisdb, string conn, IProgress<string>? progress = null, IEnumerable<string>? selected = null)
     {
+        progress?.Report("Loading payroll group...");
+        var client = (await _sql.FetchLegacy<OPayClient, dynamic>(ClientSql(paydb, pisdb) + " where g.Code = @Code limit 1", new { Code = grpCode.Trim() }, conn))
+                     .FirstOrDefault() ?? new OPayClient { Code = grpCode.Trim() };
         var s = new OPayrollSession
         {
-            Trn = MakeTrn(yy4, mm, prd, grpCode), Yy = yy4, Mm = mm.PadLeft(2, '0'), Prd = prd.PadLeft(2, '0'),
-            AttStart = attStart, AttEnd = attEnd, Paydb = paydb, Pisdb = pisdb, Conn = conn
+            Trn = MakeTrn(yy4, mm, prd, client.Id), Yy = yy4, Mm = mm.PadLeft(2, '0'), Prd = prd.PadLeft(2, '0'),
+            AttStart = attStart, AttEnd = attEnd, Paydb = paydb, Pisdb = pisdb, Conn = conn, Client = client
         };
         var p = new { Trn = s.Trn, Code = grpCode.Trim() };
-
-        progress?.Report("Loading payroll group...");
-        s.Client = (await _sql.FetchLegacy<OPayClient, dynamic>(ClientSql(paydb, pisdb) + " where g.Code = @Code limit 1", p, conn))
-                   .FirstOrDefault() ?? new OPayClient { Code = grpCode.Trim() };
 
         //--- Status: locked, draft or new (setPayrollStatus) ---------------------------------------------------------------
         progress?.Report($"Checking payroll {s.Trn}...");
@@ -193,7 +192,7 @@ public class OPayrollDataAccess : IOPayrollDataAccess
         var r = new OPayNewFetch();
         var client = (await _sql.FetchLegacy<OPayClient, dynamic>(ClientSql(paydb, pisdb) + " where g.Code = @Code limit 1", new { Code = grpCode.Trim() }, conn)).FirstOrDefault();
         if (client == null) return r;
-        var p = new { Trn = MakeTrn(yy4, mm, prd, grpCode), GrpId = client.Id };
+        var p = new { Trn = MakeTrn(yy4, mm, prd, client.Id), GrpId = client.Id };
 
         var locked = await _sql.FetchLegacy<string, dynamic>($"select trn from {paydb}.paymainhdr where trn = @Trn", p, conn);
         var draft  = await _sql.FetchLegacy<(string AttStart, string AttEnd), dynamic>(

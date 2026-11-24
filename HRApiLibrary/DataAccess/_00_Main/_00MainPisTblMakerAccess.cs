@@ -154,6 +154,7 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         // -- Transaction Tables -------------------------------
         await _01AttenanceDaily(schema, connName);
         await _01AttenanceMonthly(schema, connName);
+        await _01EmpDtr(schema, connName);
         await _01EmpMovement(schema, connName);
         await _01Companies(schema, connName);
         await _01Deviation(schema, connName);
@@ -642,6 +643,53 @@ public class _00MainPisTblMakerAccess : I_00MainPisTblMakerAccess
         await _sql.ExecuteCmd(sql, new { });
     }
     
+    private async Task _01EmpDtr(string? schema, string? connName)
+    {
+        foreach (var t in new[] { "EmpDTR", "TempEmpDTR" })
+        {
+            await _sql.ExecuteCmd(@$"CREATE TABLE if not exists {schema}.{t}Hdr (
+                            Id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                            Trn             VARCHAR(20)     NOT NULL,
+                            PayrollGrpId    INT             NOT NULL,
+                            AttStart        DATE            NOT NULL,
+                            AttEnd          DATE            NOT NULL,
+                            Status          CHAR(1)         NOT NULL DEFAULT 'O',
+                            ProcessedBy     VARCHAR(50)     NOT NULL DEFAULT '',
+                            ProcessedAt     DATETIME        NULL,
+                            LockedBy        VARCHAR(50)     NOT NULL DEFAULT '',
+                            LockedAt        DATETIME        NULL,
+                            PushedAt        DATETIME        NULL,
+                        PRIMARY KEY (Id),
+                        UNIQUE KEY uq_trn_grp (Trn, PayrollGrpId)) ENGINE=InnoDB DEFAULT CHARSET=latin1;", new { }, connName);
+
+            await _sql.ExecuteCmd(@$"CREATE TABLE if not exists {schema}.{t}Dtl (
+                            HdrId           BIGINT UNSIGNED NOT NULL,
+                            EmpmasId        INTEGER UNSIGNED NOT NULL,
+                            DtrDate         DATE            NOT NULL,
+                            DayType         VARCHAR(10)     NOT NULL DEFAULT '',
+                            Holiday         VARCHAR(10)     NOT NULL DEFAULT '',
+                            Kind            VARCHAR(20)     NOT NULL DEFAULT '',
+                            Remarks         VARCHAR(100)    NOT NULL DEFAULT '',
+                            Credit          DECIMAL(5,2)    NOT NULL DEFAULT 1,
+                            DutyStart       VARCHAR(5)      NOT NULL DEFAULT '',
+                            DutyEnd         VARCHAR(5)      NOT NULL DEFAULT '',
+                            PunchInDate     DATETIME        NULL,
+                            PunchOutDate    DATETIME        NULL,
+                            PunchStatus     CHAR(3)         NOT NULL DEFAULT '-',
+                            GracePrdMin     INT             NOT NULL DEFAULT 0,
+                            LateMin         DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                            UndertimeMin    DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                            AbsentHrs       DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                            TardinessHrs    DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                            RegHrs          DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                            OvertimeHrs     DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                            NdRegHrs        DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                            NdOtHrs         DECIMAL(8,2)    NOT NULL DEFAULT 0,
+                        PRIMARY KEY (HdrId, EmpmasId, DtrDate),
+                        KEY ix_emp_date (EmpmasId, DtrDate)) ENGINE=InnoDB DEFAULT CHARSET=latin1;", new { }, connName);
+        }
+    }
+
     private async Task _01AttReq(string? schema, string? connName)
     {
 
